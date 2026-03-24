@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, IconButton, Button, TextField, InputAdornment, FormControl, Select, MenuItem } from '@mui/material'
-import { Edit, LocationOn, Search, Add } from '@mui/icons-material'
+import { Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, IconButton, Button, TextField, InputAdornment, Switch, FormControl, Select, MenuItem } from '@mui/material'
+import { Edit, DirectionsCar, Search, Add } from '@mui/icons-material'
 import { useDestino } from '../../Context/DestinoContext'
 import { useAuth } from '../../Context/AuthContext'
 
@@ -9,7 +9,7 @@ const ListarDestino = () => {
   const [destinos, setDestinos] = useState([])
   const [searchTerm, setSearchTerm] = useState('')
   
-  const { getDestinos, updateEstado } = useDestino()
+  const { getDestinos, updateEstado, toggleHabilitado } = useDestino()
   const { usuario } = useAuth()
   const navigate = useNavigate()
 
@@ -24,6 +24,11 @@ const ListarDestino = () => {
   // Cambiar estado directamente en la tabla
   const handleEstadoChange = (id, nuevoEstado) => {
     updateEstado(id, nuevoEstado)
+    setDestinos(getDestinos())
+  }
+
+  const handleToggleHabilitado = (id) => {
+    toggleHabilitado(id)
     setDestinos(getDestinos())
   }
 
@@ -60,13 +65,13 @@ const ListarDestino = () => {
               alignItems: 'center',
               justifyContent: 'center'
             }}>
-              <LocationOn sx={{ color: 'white', fontSize: 28 }} />
+              <DirectionsCar sx={{ color: 'white', fontSize: 28 }} />
             </Box>
             <Box>
-              <Typography variant="h5" sx={{ fontWeight: 700, color: '#0f172a' }}>
+              <Typography variant="h5" sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>
                 Lista de Destinos
               </Typography>
-              <Typography sx={{ color: '#64748b', fontSize: '0.875rem' }}>
+              <Typography sx={{ color: '#64748b', fontSize: '0.75rem' }}>
                 Gestiona los destinos de entrega
               </Typography>
             </Box>
@@ -122,20 +127,21 @@ const ListarDestino = () => {
           <Table>
             <TableHead>
               <TableRow sx={{ backgroundColor: '#f8fafc' }}>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Nombre</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Dirección</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Ciudad</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Departamento</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Teléfono</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Contacto</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Estado</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a', textAlign: 'center' }}>Acciones</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Nombre</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Dirección</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Ciudad</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Departamento</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Teléfono</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Contacto</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Estado</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Habilitado</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem', textAlign: 'center' }}>Acciones</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {filteredDestinos.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} sx={{ textAlign: 'center', py: 4 }}>
+                  <TableCell colSpan={9} sx={{ textAlign: 'center', py: 4 }}>
                     <Typography sx={{ color: '#64748b' }}>
                       No se encontraron destinos
                     </Typography>
@@ -177,6 +183,20 @@ const ListarDestino = () => {
                         </Select>
                       </FormControl>
                     </TableCell>
+                    <TableCell sx={{ py: 1.5 }}>
+                      <Switch 
+                        checked={destino.habilitado !== false}
+                        onChange={() => handleToggleHabilitado(destino.idDestino)}
+                        sx={{
+                          '& .MuiSwitch-switchBase.Mui-checked': {
+                            color: '#10b981',
+                          },
+                          '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                            backgroundColor: '#10b981',
+                          },
+                        }}
+                      />
+                    </TableCell>
                     <TableCell>
                       <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
                         <IconButton 
@@ -201,7 +221,7 @@ const ListarDestino = () => {
 
         {/* Footer con total */}
         <Box sx={{ p: 2, borderTop: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
-          <Typography sx={{ color: '#64748b', fontSize: '0.875rem' }}>
+          <Typography sx={{ color: '#64748b', fontSize: '0.75rem' }}>
             Total de destinos: <strong>{filteredDestinos.length}</strong>
           </Typography>
         </Box>

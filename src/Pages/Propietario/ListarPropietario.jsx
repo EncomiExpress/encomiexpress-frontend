@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, IconButton, Button, TextField, InputAdornment, Switch, FormControl, Select, MenuItem } from '@mui/material'
-import { Edit, Badge, Search, Add, CheckCircle, Cancel } from '@mui/icons-material'
+import { Edit, DirectionsCar, Search, Add, CheckCircle, Cancel } from '@mui/icons-material'
 import { usePropietario } from '../../Context/PropietarioContext'
 import { useAuth } from '../../Context/AuthContext'
 
@@ -43,10 +43,6 @@ const ListarPropietario = () => {
     }
   }
 
-  const getHabilitadoColor = (habilitado) => {
-    return habilitado ? 'success' : 'error'
-  }
-
   const filteredPropietarios = propietarios.filter(p => 
     p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.apellido.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -82,13 +78,13 @@ const ListarPropietario = () => {
               alignItems: 'center',
               justifyContent: 'center'
             }}>
-              <Badge sx={{ color: 'white', fontSize: 28 }} />
+              <DirectionsCar sx={{ color: 'white', fontSize: 28 }} />
             </Box>
             <Box>
-              <Typography variant="h5" sx={{ fontWeight: 700, color: '#0f172a' }}>
+              <Typography variant="h5" sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>
                 Lista de Propietarios
               </Typography>
-              <Typography sx={{ color: '#64748b', fontSize: '0.875rem' }}>
+              <Typography sx={{ color: '#64748b', fontSize: '0.75rem' }}>
                 Gestiona los propietarios de vehículos registrados
               </Typography>
             </Box>
@@ -144,14 +140,14 @@ const ListarPropietario = () => {
           <Table>
             <TableHead>
               <TableRow sx={{ backgroundColor: '#f8fafc' }}>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Identificación</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Nombre</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Teléfono</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Email</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Ciudad</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Estado</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Habilitado</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a', textAlign: 'center' }}>Acciones</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Identificación</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Nombre</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Teléfono</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Email</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Ciudad</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Estado</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Habilitado</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem', textAlign: 'center' }}>Acciones</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -184,7 +180,7 @@ const ListarPropietario = () => {
                             mb: 0.5
                           }}
                         />
-                        <Typography sx={{ fontSize: '0.875rem', fontWeight: 600 }}>
+                        <Typography sx={{ fontSize: '0.75rem', fontWeight: 600 }}>
                           {propietario.numeroIdentificacion}
                         </Typography>
                       </Box>
@@ -223,12 +219,18 @@ const ListarPropietario = () => {
                         </Select>
                       </FormControl>
                     </TableCell>
-                    <TableCell>
-                      <Chip 
-                        label={propietario.habilitado ? 'Habilitado' : 'Inhabilitado'}
-                        size="small"
-                        color={getHabilitadoColor(propietario.habilitado)}
-                        variant={propietario.habilitado ? 'filled' : 'outlined'}
+                    <TableCell sx={{ py: 1.5 }}>
+                      <Switch 
+                        checked={propietario.habilitado !== false}
+                        onChange={() => handleToggleHabilitado(propietario.idPropietario)}
+                        sx={{
+                          '& .MuiSwitch-switchBase.Mui-checked': {
+                            color: '#10b981',
+                          },
+                          '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                            backgroundColor: '#10b981',
+                          },
+                        }}
                       />
                     </TableCell>
                     <TableCell>
@@ -255,7 +257,7 @@ const ListarPropietario = () => {
 
         {/* Footer con total */}
         <Box sx={{ p: 2, borderTop: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
-          <Typography sx={{ color: '#64748b', fontSize: '0.875rem' }}>
+          <Typography sx={{ color: '#64748b', fontSize: '0.75rem' }}>
             Total de propietarios: <strong>{filteredPropietarios.length}</strong>
           </Typography>
         </Box>

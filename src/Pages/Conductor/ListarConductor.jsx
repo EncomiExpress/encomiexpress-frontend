@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, IconButton, Button, TextField, InputAdornment, FormControl, Select, MenuItem } from '@mui/material'
-import { Edit, Person, Search, Add, DirectionsCar } from '@mui/icons-material'
+import { Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, IconButton, Button, TextField, InputAdornment, Switch, FormControl, Select, MenuItem } from '@mui/material'
+import { Edit, DirectionsCar, Search, Add, CheckCircle, Cancel } from '@mui/icons-material'
 import { useConductor } from '../../Context/ConductorContext'
 import { useAuth } from '../../Context/AuthContext'
 
@@ -9,7 +9,7 @@ const ListarConductor = () => {
   const [conductores, setConductores] = useState([])
   const [searchTerm, setSearchTerm] = useState('')
   
-  const { getConductores, updateEstado } = useConductor()
+  const { getConductores, updateEstado, toggleHabilitado } = useConductor()
   const { usuario } = useAuth()
   const navigate = useNavigate()
 
@@ -20,6 +20,11 @@ const ListarConductor = () => {
       setConductores(getConductores())
     }
   }, [usuario, navigate, getConductores])
+
+  const handleToggleHabilitado = (id) => {
+    toggleHabilitado(id)
+    setConductores(getConductores())
+  }
 
   // Cambiar estado directamente en la tabla
   const handleEstadoChange = (id, nuevoEstado) => {
@@ -78,13 +83,13 @@ const ListarConductor = () => {
               alignItems: 'center',
               justifyContent: 'center'
             }}>
-              <Person sx={{ color: 'white', fontSize: 28 }} />
+              <DirectionsCar sx={{ color: 'white', fontSize: 28 }} />
             </Box>
             <Box>
-              <Typography variant="h5" sx={{ fontWeight: 700, color: '#0f172a' }}>
+              <Typography variant="h5" sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>
                 Lista de Conductores
               </Typography>
-              <Typography sx={{ color: '#64748b', fontSize: '0.875rem' }}>
+              <Typography sx={{ color: '#64748b', fontSize: '0.75rem' }}>
                 Gestiona los conductores registrados
               </Typography>
             </Box>
@@ -140,15 +145,15 @@ const ListarConductor = () => {
           <Table>
             <TableHead>
               <TableRow sx={{ backgroundColor: '#f8fafc' }}>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Identificación</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Nombre</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Teléfono</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Email</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Licencia</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Venc. Licencia</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Estado</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Habilitado</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a', textAlign: 'center' }}>Acciones</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Identificación</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Nombre</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Teléfono</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Email</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Licencia</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Venc. Licencia</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Estado</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Habilitado</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem', textAlign: 'center' }}>Acciones</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -181,7 +186,7 @@ const ListarConductor = () => {
                             mb: 0.5
                           }}
                         />
-                        <Typography sx={{ fontSize: '0.875rem', fontWeight: 600 }}>
+                        <Typography sx={{ fontSize: '0.75rem', fontWeight: 600 }}>
                           {conductor.numeroIdentificacion}
                         </Typography>
                       </Box>
@@ -231,12 +236,18 @@ const ListarConductor = () => {
                         </Select>
                       </FormControl>
                     </TableCell>
-                    <TableCell>
-                      <Chip 
-                        label={conductor.habilitado ? 'Habilitado' : 'Inhabilitado'}
-                        size="small"
-                        color={conductor.habilitado ? 'success' : 'error'}
-                        variant={conductor.habilitado ? 'filled' : 'outlined'}
+                    <TableCell sx={{ py: 1.5 }}>
+                      <Switch 
+                        checked={conductor.habilitado !== false}
+                        onChange={() => handleToggleHabilitado(conductor.idConductor)}
+                        sx={{
+                          '& .MuiSwitch-switchBase.Mui-checked': {
+                            color: '#10b981',
+                          },
+                          '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                            backgroundColor: '#10b981',
+                          },
+                        }}
                       />
                     </TableCell>
                     <TableCell>
@@ -263,7 +274,7 @@ const ListarConductor = () => {
 
         {/* Footer con total */}
         <Box sx={{ p: 2, borderTop: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
-          <Typography sx={{ color: '#64748b', fontSize: '0.875rem' }}>
+          <Typography sx={{ color: '#64748b', fontSize: '0.75rem' }}>
             Total de conductores: <strong>{filteredConductores.length}</strong>
           </Typography>
         </Box>
