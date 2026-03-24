@@ -56,6 +56,99 @@ export const PERMISOS = {
   INHABILITAR_USUARIO: 'inhabilitar_usuario',
 }
 
+// Definición de módulos para asignación por módulos
+export const MODULOS = {
+  USUARIOS: {
+    nombre: 'Usuarios',
+    permisos: [
+      PERMISOS.REGISTRAR_USUARIO,
+      PERMISOS.LISTAR_USUARIO,
+      PERMISOS.CONSULTAR_USUARIO,
+      PERMISOS.ACTUALIZAR_USUARIO,
+      PERMISOS.INHABILITAR_USUARIO,
+    ]
+  },
+  ROLES: {
+    nombre: 'Roles',
+    permisos: [
+      PERMISOS.REGISTRAR_ROL,
+      PERMISOS.LISTAR_ROL,
+      PERMISOS.CONSULTAR_ROL,
+      PERMISOS.ACTUALIZAR_ROL,
+    ]
+  },
+  CLIENTES: {
+    nombre: 'Clientes',
+    permisos: [
+      PERMISOS.REGISTRAR_CLIENTE,
+      PERMISOS.LISTAR_CLIENTE,
+      PERMISOS.CONSULTAR_CLIENTE,
+      PERMISOS.ACTUALIZAR_CLIENTE,
+      PERMISOS.INHABILITAR_CLIENTE,
+    ]
+  },
+  VEHICULOS: {
+    nombre: 'Vehículos',
+    permisos: [
+      PERMISOS.REGISTRAR_VEHICULO,
+      PERMISOS.LISTAR_VEHICULO,
+      PERMISOS.CONSULTAR_VEHICULO,
+      PERMISOS.ACTUALIZAR_VEHICULO,
+    ]
+  },
+  CONDUCTORES: {
+    nombre: 'Conductores',
+    permisos: [
+      PERMISOS.REGISTRAR_CONDUCTOR,
+      PERMISOS.LISTAR_CONDUCTOR,
+      PERMISOS.CONSULTAR_CONDUCTOR,
+      PERMISOS.ACTUALIZAR_CONDUCTOR,
+    ]
+  },
+  DESTINOS: {
+    nombre: 'Destinos',
+    permisos: [
+      PERMISOS.REGISTRAR_DESTINO,
+      PERMISOS.LISTAR_DESTINO,
+      PERMISOS.CONSULTAR_DESTINO,
+      PERMISOS.ACTUALIZAR_DESTINO,
+    ]
+  },
+  RUTAS: {
+    nombre: 'Rutas',
+    permisos: [
+      PERMISOS.REGISTRAR_RUTA,
+      PERMISOS.LISTAR_RUTA,
+      PERMISOS.CONSULTAR_RUTA,
+      PERMISOS.ACTUALIZAR_RUTA,
+    ]
+  },
+  ENCOMIENDAS: {
+    nombre: 'Encomiendas',
+    permisos: [
+      PERMISOS.REGISTRAR_ENCOMIENDA,
+      PERMISOS.LISTAR_ENCOMIENDA,
+      PERMISOS.CONSULTAR_ENCOMIENDA,
+      PERMISOS.ACTUALIZAR_ENCOMIENDA,
+    ]
+  },
+  ANTICIPOS: {
+    nombre: 'Anticipos',
+    permisos: [
+      PERMISOS.REGISTRAR_ANTICIPO,
+      PERMISOS.LISTAR_ANTICIPO,
+      PERMISOS.CONSULTAR_ANTICIPO,
+      PERMISOS.ACTUALIZAR_ANTICIPO,
+    ]
+  },
+  VENTAS: {
+    nombre: 'Ventas',
+    permisos: [
+      PERMISOS.REGISTRAR_VENTA,
+    ]
+  },
+}
+
 // ============================================
 // MAPEOS DE PERMISOS Y ROLES (después de PERMISOS)
 // ============================================
