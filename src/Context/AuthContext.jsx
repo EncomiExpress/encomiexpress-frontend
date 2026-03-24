@@ -22,6 +22,7 @@ export const PERMISOS = {
   LISTAR_CLIENTE: 'listar_cliente',
   LISTAR_ENCOMIENDA: 'listar_encomienda',
   LISTAR_ANTICIPO: 'listar_anticipo',
+  LISTAR_VENTA: 'listar_venta',
   LISTAR_USUARIO: 'listar_usuario',
   LISTAR_ROL: 'listar_rol',
   LISTAR_VEHICULO: 'listar_vehiculo',
@@ -32,6 +33,7 @@ export const PERMISOS = {
   // Permisos de Consultar
   CONSULTAR_CLIENTE: 'consultar_cliente',
   CONSULTAR_ENCOMIENDA: 'consultar_encomienda',
+  CONSULTAR_VENTA: 'consultar_venta',
   CONSULTAR_USUARIO: 'consultar_usuario',
   CONSULTAR_ANTICIPO: 'consultar_anticipo',
   CONSULTAR_ROL: 'consultar_rol',
@@ -43,6 +45,7 @@ export const PERMISOS = {
   // Permisos de Actualizar
   ACTUALIZAR_CLIENTE: 'actualizar_cliente',
   ACTUALIZAR_ENCOMIENDA: 'actualizar_encomienda',
+  ACTUALIZAR_VENTA: 'actualizar_venta',
   ACTUALIZAR_USUARIO: 'actualizar_usuario',
   ACTUALIZAR_ANTICIPO: 'actualizar_anticipo',
   ACTUALIZAR_ROL: 'actualizar_rol',
@@ -54,6 +57,7 @@ export const PERMISOS = {
   // Permisos de Inhabilitar
   INHABILITAR_CLIENTE: 'inhabilitar_cliente',
   INHABILITAR_USUARIO: 'inhabilitar_usuario',
+  INHABILITAR_VENTA: 'inhabilitar_venta',
 }
 
 // ============================================
@@ -118,6 +122,13 @@ const MAPEO_PERMISOS = {
     PERMISOS.CONSULTAR_ANTICIPO,
     PERMISOS.ACTUALIZAR_ANTICIPO,
   ],
+  'ventas': [
+    PERMISOS.REGISTRAR_VENTA,
+    PERMISOS.LISTAR_VENTA,
+    PERMISOS.CONSULTAR_VENTA,
+    PERMISOS.ACTUALIZAR_VENTA,
+    PERMISOS.INHABILITAR_VENTA,
+  ],
 }
 
 // Mapeo de nombres de rol del backend al frontend
@@ -170,13 +181,20 @@ export const ROLES = {
       PERMISOS.LISTAR_CLIENTE,
       PERMISOS.LISTAR_ENCOMIENDA,
       PERMISOS.LISTAR_ANTICIPO,
+      PERMISOS.LISTAR_VENTA,
       // Consultar
       PERMISOS.CONSULTAR_CLIENTE,
       PERMISOS.CONSULTAR_ENCOMIENDA,
+      PERMISOS.CONSULTAR_VENTA,
       // Actualizar
       PERMISOS.ACTUALIZAR_CLIENTE,
       PERMISOS.ACTUALIZAR_ENCOMIENDA,
       PERMISOS.ACTUALIZAR_ANTICIPO,
+      PERMISOS.ACTUALIZAR_VENTA,
+      // Inhabilitar
+      PERMISOS.INHABILITAR_CLIENTE,
+      PERMISOS.INHABILITAR_USUARIO,
+      PERMISOS.INHABILITAR_VENTA,
     ],
   },
   VENDEDOR: {
@@ -190,8 +208,10 @@ export const ROLES = {
       // Listar
       PERMISOS.LISTAR_CLIENTE,
       PERMISOS.LISTAR_ENCOMIENDA,
+      PERMISOS.LISTAR_VENTA,
       // Consultar
       PERMISOS.CONSULTAR_CLIENTE,
+      PERMISOS.CONSULTAR_VENTA,
     ],
   },
   CONDUCTOR: {
@@ -361,7 +381,13 @@ export const AuthProvider = ({ children }) => {
       
       if (response.success) {
         const usuarioFormateado = formatUsuarioFromBackend(response.data.usuario)
-        setUsuario(usuarioFormateado)
+        
+        // Solo iniciar sesión automáticamente si NO hay un usuario logueado actualmente
+        // (para auto-registro). Si un admin registra otro usuario, no debe hacer auto-login
+        if (!usuario) {
+          setUsuario(usuarioFormateado)
+        }
+        
         return { success: true, usuario: usuarioFormateado }
       } else {
         return { success: false, mensaje: response.message }

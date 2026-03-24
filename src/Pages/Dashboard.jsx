@@ -30,7 +30,7 @@ const Dashboard = () => {
     <Paper sx={{ p: 2.5, height: '100%', borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.08)', border: '1px solid #f0f0f0' }}>
       <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <Box>
-          <Typography variant="caption" sx={{ textTransform: 'uppercase', fontWeight: 600, color: '#6b7280', fontSize: '0.7rem', letterSpacing: '0.5px' }}>
+          <Typography variant="caption" sx={{ fontWeight: 600, color: '#6b7280', fontSize: '0.7rem', letterSpacing: '0.5px' }}>
             {title}
           </Typography>
           <Typography variant="h4" fontWeight={800} sx={{ my: 1, color: color || '#1f2937', fontSize: '2rem' }}>

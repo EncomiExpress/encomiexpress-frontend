@@ -56,7 +56,7 @@ const ModalConsultar = ({ usuario, onClose }) => {
                 <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
                     {campos.map(c => (
                         <Box key={c.label}>
-                            <Typography variant="caption" color={COLORS.textMuted} fontWeight={600} textTransform="uppercase" letterSpacing={0.8}>
+                            <Typography variant="caption" color={COLORS.textMuted} fontWeight={600}>
                                 {c.label}
                             </Typography>
                             <Typography variant="body2" fontWeight={500} color={COLORS.text}>
@@ -194,9 +194,16 @@ const ModalInhabilitar = ({ usuario, onClose, onConfirm }) => {
 // ── Componente principal ──
 const ListarUsuario = () => {
     const navigate = useNavigate()
-    const { getUsuarios, tienePermiso, PERMISOS } = useAuth()
-    const [usuarios, setUsuarios] = useState([])
-    const [loading, setLoading] = useState(true)
+    const { tienePermiso, PERMISOS } = useAuth()
+    
+    // Datos quemados para el frontend (temporal hasta conectar backend)
+    const [usuarios, setUsuarios] = useState([
+        { id: 1, nombre: 'Admin Principal', email: 'admin@encomiexpress.com', rol: { id: 1, nombre: 'Administrador' }, iniciales: 'AP', habilitado: true },
+        { id: 2, nombre: 'Juan Pérez', email: 'juan.perez@email.com', rol: { id: 3, nombre: 'Vendedor' }, iniciales: 'JP', habilitado: true },
+        { id: 3, nombre: 'María Gómez', email: 'maria.gomez@email.com', rol: { id: 3, nombre: 'Vendedor' }, iniciales: 'MG', habilitado: true },
+        { id: 4, nombre: 'Carlos Rodríguez', email: 'carlos.r@email.com', rol: { id: 4, nombre: 'Conductor' }, iniciales: 'CR', habilitado: true },
+        { id: 5, nombre: 'Ana Martínez', email: 'ana.m@email.com', rol: { id: 2, nombre: 'Gerente' }, iniciales: 'AM', habilitado: false },
+    ])
     
     const [busqueda, setBusqueda] = useState('')
     const [filtroPor, setFiltroPor] = useState('todo')
