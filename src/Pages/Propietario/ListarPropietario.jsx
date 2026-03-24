@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, IconButton, Button, TextField, InputAdornment, Switch, FormControl, Select, MenuItem } from '@mui/material'
-import { Edit, Badge, Search, Add, CheckCircle, Cancel } from '@mui/icons-material'
+import { Edit, DirectionsCar, Search, Add, CheckCircle, Cancel } from '@mui/icons-material'
 import { usePropietario } from '../../Context/PropietarioContext'
 import { useAuth } from '../../Context/AuthContext'
 
@@ -43,10 +43,6 @@ const ListarPropietario = () => {
     }
   }
 
-  const getHabilitadoColor = (habilitado) => {
-    return habilitado ? 'success' : 'error'
-  }
-
   const filteredPropietarios = propietarios.filter(p => 
     p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.apellido.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -82,13 +78,13 @@ const ListarPropietario = () => {
               alignItems: 'center',
               justifyContent: 'center'
             }}>
-              <Badge sx={{ color: 'white', fontSize: 28 }} />
+              <DirectionsCar sx={{ color: 'white', fontSize: 28 }} />
             </Box>
             <Box>
-              <Typography variant="h5" sx={{ fontWeight: 700, color: '#0f172a' }}>
+              <Typography variant="h5" sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>
                 Lista de Propietarios
               </Typography>
-              <Typography sx={{ color: '#64748b', fontSize: '0.875rem' }}>
+              <Typography sx={{ color: '#64748b', fontSize: '0.75rem' }}>
                 Gestiona los propietarios de vehículos registrados
               </Typography>
             </Box>
@@ -223,12 +219,18 @@ const ListarPropietario = () => {
                         </Select>
                       </FormControl>
                     </TableCell>
-                    <TableCell>
-                      <Chip 
-                        label={propietario.habilitado ? 'Habilitado' : 'Inhabilitado'}
-                        size="small"
-                        color={getHabilitadoColor(propietario.habilitado)}
-                        variant={propietario.habilitado ? 'filled' : 'outlined'}
+                    <TableCell sx={{ py: 1.5 }}>
+                      <Switch 
+                        checked={propietario.habilitado !== false}
+                        onChange={() => handleToggleHabilitado(propietario.idPropietario)}
+                        sx={{
+                          '& .MuiSwitch-switchBase.Mui-checked': {
+                            color: '#10b981',
+                          },
+                          '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                            backgroundColor: '#10b981',
+                          },
+                        }}
                       />
                     </TableCell>
                     <TableCell>
