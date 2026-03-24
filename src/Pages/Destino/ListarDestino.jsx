@@ -127,15 +127,15 @@ const ListarDestino = () => {
           <Table>
             <TableHead>
               <TableRow sx={{ backgroundColor: '#f8fafc' }}>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Nombre</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Dirección</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Ciudad</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Departamento</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Teléfono</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Contacto</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Estado</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Habilitado</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a', textAlign: 'center' }}>Acciones</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Nombre</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Dirección</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Ciudad</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Departamento</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Teléfono</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Contacto</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Estado</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Habilitado</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem', textAlign: 'center' }}>Acciones</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -221,7 +221,7 @@ const ListarDestino = () => {
 
         {/* Footer con total */}
         <Box sx={{ p: 2, borderTop: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
-          <Typography sx={{ color: '#64748b', fontSize: '0.875rem' }}>
+          <Typography sx={{ color: '#64748b', fontSize: '0.75rem' }}>
             Total de destinos: <strong>{filteredDestinos.length}</strong>
           </Typography>
         </Box>

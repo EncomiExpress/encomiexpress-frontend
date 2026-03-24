@@ -145,15 +145,15 @@ const ListarConductor = () => {
           <Table>
             <TableHead>
               <TableRow sx={{ backgroundColor: '#f8fafc' }}>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Identificación</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Nombre</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Teléfono</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Email</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Licencia</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Venc. Licencia</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Estado</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Habilitado</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a', textAlign: 'center' }}>Acciones</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Identificación</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Nombre</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Teléfono</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Email</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Licencia</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Venc. Licencia</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Estado</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Habilitado</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem', textAlign: 'center' }}>Acciones</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -186,7 +186,7 @@ const ListarConductor = () => {
                             mb: 0.5
                           }}
                         />
-                        <Typography sx={{ fontSize: '0.875rem', fontWeight: 600 }}>
+                        <Typography sx={{ fontSize: '0.75rem', fontWeight: 600 }}>
                           {conductor.numeroIdentificacion}
                         </Typography>
                       </Box>
@@ -274,7 +274,7 @@ const ListarConductor = () => {
 
         {/* Footer con total */}
         <Box sx={{ p: 2, borderTop: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
-          <Typography sx={{ color: '#64748b', fontSize: '0.875rem' }}>
+          <Typography sx={{ color: '#64748b', fontSize: '0.75rem' }}>
             Total de conductores: <strong>{filteredConductores.length}</strong>
           </Typography>
         </Box>
