@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react'
-import authService, { getUsuario, logout as authLogout } from '../services/authService'
+import authService, { getUsuario, logout as authLogout, getUsuarios, actualizarUsuario, inhabilidadUsuario } from '../services/authService'
 
 // ============================================
 // DEFINICIONES DE PERMISOS (deben ir primero)
@@ -411,6 +411,9 @@ export const AuthProvider = ({ children }) => {
       recargarUsuario,
       ROLES,
       PERMISOS,
+      getUsuarios,
+      actualizarUsuario,
+      inhabilidadUsuario,
     }}>
       {children}
     </AuthContext.Provider>

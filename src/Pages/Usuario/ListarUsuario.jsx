@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth, ROLES } from '../../Context/AuthContext'
 import {
     Box, Typography, Paper, Table, TableBody, TableCell,
@@ -195,7 +195,32 @@ const ModalInhabilitar = ({ usuario, onClose, onConfirm }) => {
 const ListarUsuario = () => {
     const navigate = useNavigate()
     const { getUsuarios, tienePermiso, inhabilidadUsuario, actualizarUsuario, PERMISOS } = useAuth()
-    const [usuarios, setUsuarios] = useState(getUsuarios())
+    const [usuarios, setUsuarios] = useState([])
+    
+    // Cargar usuarios al montar el componente
+    useEffect(() => {
+        const cargarUsuarios = async () => {
+            try {
+                const response = await getUsuarios()
+                if (response.success) {
+                    // Mapear datos del backend al formato esperado por el componente
+                    const usuariosMapeados = response.data.map(u => ({
+                        id: u.idUsuario,
+                        nombre: u.nombre,
+                        apellido: u.apellido,
+                        email: u.email,
+                        iniciales: (u.nombre ? u.nombre.charAt(0) : '') + (u.apellido ? u.apellido.charAt(0) : ''),
+                        habilitado: u.habilitado,
+                        rol: { nombre: u.rol?.nombre || 'Vendedor' }
+                    }))
+                    setUsuarios(usuariosMapeados)
+                }
+            } catch (error) {
+                console.error('Error al cargar usuarios:', error)
+            }
+        }
+        cargarUsuarios()
+    }, [getUsuarios])
     
     const [busqueda, setBusqueda] = useState('')
     const [filtroPor, setFiltroPor] = useState('todo')
@@ -231,19 +256,55 @@ const ListarUsuario = () => {
         return coincideBusqueda && coincideRol
     })
 
-    const handleInhabilitar = (id) => {
-        inhabilidadUsuario(id)
-        setUsuarios(getUsuarios())
-        setUsuarioInhabilitar(null)
-        setMensaje('Usuario actualizado correctamente')
-        setTimeout(() => setMensaje(''), 2000)
+    const handleInhabilitar = async (id) => {
+        try {
+            await inhabilidadUsuario(id)
+            // Recargar la lista de usuarios
+            const response = await getUsuarios()
+            if (response.success) {
+                const usuariosMapeados = response.data.map(u => ({
+                    id: u.idUsuario,
+                    nombre: u.nombre,
+                    apellido: u.apellido,
+                    email: u.email,
+                    iniciales: (u.nombre ? u.nombre.charAt(0) : '') + (u.apellido ? u.apellido.charAt(0) : ''),
+                    habilitado: u.habilitado,
+                    rol: { nombre: u.rol?.nombre || 'Vendedor' }
+                }))
+                setUsuarios(usuariosMapeados)
+            }
+            setUsuarioInhabilitar(null)
+            setMensaje('Usuario actualizado correctamente')
+            setTimeout(() => setMensaje(''), 2000)
+        } catch (error) {
+            console.error('Error al inhabilitar usuario:', error)
+            setMensaje('Error al actualizar usuario')
+        }
     }
 
-    const handleEditar = (id, datos) => {
-        actualizarUsuario({ id, ...datos })
-        setUsuarios(getUsuarios())
-        setMensaje('Usuario actualizado correctamente')
-        setTimeout(() => setMensaje(''), 2000)
+    const handleEditar = async (id, datos) => {
+        try {
+            await actualizarUsuario(id, datos)
+            // Recargar la lista de usuarios
+            const response = await getUsuarios()
+            if (response.success) {
+                const usuariosMapeados = response.data.map(u => ({
+                    id: u.idUsuario,
+                    nombre: u.nombre,
+                    apellido: u.apellido,
+                    email: u.email,
+                    iniciales: (u.nombre ? u.nombre.charAt(0) : '') + (u.apellido ? u.apellido.charAt(0) : ''),
+                    habilitado: u.habilitado,
+                    rol: { nombre: u.rol?.nombre || 'Vendedor' }
+                }))
+                setUsuarios(usuariosMapeados)
+            }
+            setMensaje('Usuario actualizado correctamente')
+            setTimeout(() => setMensaje(''), 2000)
+        } catch (error) {
+            console.error('Error al actualizar usuario:', error)
+            setMensaje('Error al actualizar usuario')
+        }
     }
 
     const limpiarFiltros = () => {
