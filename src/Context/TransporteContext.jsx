@@ -108,6 +108,19 @@ export const TransporteProvider = ({ children }) => {
     return false
   }
 
+  // Actualizar estado del transporte (Activo, Inactivo, Mantenimiento, En Reparación)
+  const updateEstado = (id, nuevoEstado) => {
+    const index = transportes.findIndex(t => t.idVehiculo === id)
+    if (index !== -1) {
+      transportes[index] = { 
+        ...transportes[index], 
+        estado: nuevoEstado 
+      }
+      return true
+    }
+    return false
+  }
+
   // Obtener transportes habilitados
   const getTransportesHabilitados = () => {
     return transportes.filter(t => t.habilitado)
@@ -120,6 +133,7 @@ export const TransporteProvider = ({ children }) => {
       registrarTransporte,
       actualizarTransporte,
       toggleHabilitado,
+      updateEstado,
       getTransportesHabilitados,
     }}>
       {children}

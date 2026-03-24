@@ -6,7 +6,7 @@ import {
     TextField, IconButton, Chip, Tooltip, InputAdornment,
     MenuItem, Select, FormControl, InputLabel, Button,
     Dialog, DialogTitle, DialogContent, DialogContentText,
-    DialogActions, Avatar, Alert
+    DialogActions, Avatar, Alert, Switch
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import VisibilityIcon from '@mui/icons-material/Visibility'
@@ -194,33 +194,9 @@ const ModalInhabilitar = ({ usuario, onClose, onConfirm }) => {
 // ── Componente principal ──
 const ListarUsuario = () => {
     const navigate = useNavigate()
-    const { getUsuarios, tienePermiso, inhabilidadUsuario, actualizarUsuario, PERMISOS } = useAuth()
+    const { getUsuarios, tienePermiso, PERMISOS } = useAuth()
     const [usuarios, setUsuarios] = useState([])
-    
-    // Cargar usuarios al montar el componente
-    useEffect(() => {
-        const cargarUsuarios = async () => {
-            try {
-                const response = await getUsuarios()
-                if (response.success) {
-                    // Mapear datos del backend al formato esperado por el componente
-                    const usuariosMapeados = response.data.map(u => ({
-                        id: u.idUsuario,
-                        nombre: u.nombre,
-                        apellido: u.apellido,
-                        email: u.email,
-                        iniciales: (u.nombre ? u.nombre.charAt(0) : '') + (u.apellido ? u.apellido.charAt(0) : ''),
-                        habilitado: u.habilitado,
-                        rol: { nombre: u.rol?.nombre || 'Vendedor' }
-                    }))
-                    setUsuarios(usuariosMapeados)
-                }
-            } catch (error) {
-                console.error('Error al cargar usuarios:', error)
-            }
-        }
-        cargarUsuarios()
-    }, [getUsuarios])
+    const [loading, setLoading] = useState(true)
     
     const [busqueda, setBusqueda] = useState('')
     const [filtroPor, setFiltroPor] = useState('todo')
@@ -256,55 +232,41 @@ const ListarUsuario = () => {
         return coincideBusqueda && coincideRol
     })
 
-    const handleInhabilitar = async (id) => {
-        try {
-            await inhabilidadUsuario(id)
-            // Recargar la lista de usuarios
-            const response = await getUsuarios()
-            if (response.success) {
-                const usuariosMapeados = response.data.map(u => ({
-                    id: u.idUsuario,
-                    nombre: u.nombre,
-                    apellido: u.apellido,
-                    email: u.email,
-                    iniciales: (u.nombre ? u.nombre.charAt(0) : '') + (u.apellido ? u.apellido.charAt(0) : ''),
-                    habilitado: u.habilitado,
-                    rol: { nombre: u.rol?.nombre || 'Vendedor' }
-                }))
-                setUsuarios(usuariosMapeados)
-            }
-            setUsuarioInhabilitar(null)
-            setMensaje('Usuario actualizado correctamente')
-            setTimeout(() => setMensaje(''), 2000)
-        } catch (error) {
-            console.error('Error al inhabilitar usuario:', error)
-            setMensaje('Error al actualizar usuario')
-        }
+    const handleInhabilitar = (id) => {
+        // Actualizar el estado local del usuario
+        setUsuarios(prevUsuarios => {
+            return prevUsuarios.map(u => {
+                if (u.id === id) {
+                    return { ...u, habilitado: u.habilitado === false }
+                }
+                return u
+            })
+        })
+        setUsuarioInhabilitar(null)
+        setMensaje('Usuario actualizado correctamente')
+        setTimeout(() => setMensaje(''), 2000)
     }
 
-    const handleEditar = async (id, datos) => {
-        try {
-            await actualizarUsuario(id, datos)
-            // Recargar la lista de usuarios
-            const response = await getUsuarios()
-            if (response.success) {
-                const usuariosMapeados = response.data.map(u => ({
-                    id: u.idUsuario,
-                    nombre: u.nombre,
-                    apellido: u.apellido,
-                    email: u.email,
-                    iniciales: (u.nombre ? u.nombre.charAt(0) : '') + (u.apellido ? u.apellido.charAt(0) : ''),
-                    habilitado: u.habilitado,
-                    rol: { nombre: u.rol?.nombre || 'Vendedor' }
-                }))
-                setUsuarios(usuariosMapeados)
-            }
-            setMensaje('Usuario actualizado correctamente')
-            setTimeout(() => setMensaje(''), 2000)
-        } catch (error) {
-            console.error('Error al actualizar usuario:', error)
-            setMensaje('Error al actualizar usuario')
-        }
+    // Cambiar habilitado directamente sin modal
+    const handleHabilitadoChange = (id) => {
+        // Actualizar el estado local del usuario
+        setUsuarios(prevUsuarios => {
+            return prevUsuarios.map(u => {
+                if (u.id === id) {
+                    return { ...u, habilitado: u.habilitado === false }
+                }
+                return u
+            })
+        })
+        setMensaje('Estado actualizado correctamente')
+        setTimeout(() => setMensaje(''), 2000)
+    }
+
+    const handleEditar = (id, datos) => {
+        actualizarUsuario({ id, ...datos })
+        setUsuarios(getUsuarios())
+        setMensaje('Usuario actualizado correctamente')
+        setTimeout(() => setMensaje(''), 2000)
     }
 
     const limpiarFiltros = () => {
@@ -437,11 +399,17 @@ const ListarUsuario = () => {
                                         </TableCell>
                                         <TableCell>{usuario.iniciales}</TableCell>
                                         <TableCell>
-                                            <Chip 
-                                                icon={usuario.habilitado !== false ? <CheckCircleIcon /> : <BlockIcon />}
-                                                label={usuario.habilitado !== false ? 'Activo' : 'Inactivo'}
-                                                size="small"
-                                                color={usuario.habilitado !== false ? 'success' : 'error'}
+                                            <Switch 
+                                                checked={usuario.habilitado !== false}
+                                                onChange={() => handleHabilitadoChange(usuario.id)}
+                                                sx={{
+                                                    '& .MuiSwitch-switchBase.Mui-checked': {
+                                                        color: '#10b981',
+                                                    },
+                                                    '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                                                        backgroundColor: '#10b981',
+                                                    },
+                                                }}
                                             />
                                         </TableCell>
                                         <TableCell align="center">
@@ -492,5 +460,3 @@ const ListarUsuario = () => {
 }
 
 export default ListarUsuario
-
-

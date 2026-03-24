@@ -7,7 +7,7 @@ import {
     TextField, IconButton, Chip, Tooltip, InputAdornment,
     MenuItem, Select, FormControl, InputLabel, Button,
     Dialog, DialogTitle, DialogContent, DialogContentText,
-    DialogActions, Avatar
+    DialogActions, Avatar, Switch
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import VisibilityIcon from '@mui/icons-material/Visibility'
@@ -110,7 +110,7 @@ const ModalInhabilitar = ({ cliente, onClose, onConfirm }) => {
 // ── Componente principal ──
 const ListarCliente = () => {
     const navigate = useNavigate()
-    const { clientes, inhabilitarCliente } = useClientes()  // 👈 viene del context
+    const { clientes, invalidateCliente } = useClientes()  // 👈 viene del context
     const [busqueda, setBusqueda] = useState('')
     const [filtroPor, setFiltroPor] = useState('todo')
     const [filtroTipoDoc, setFiltroTipoDoc] = useState('todos')
@@ -153,8 +153,15 @@ const ListarCliente = () => {
     })
 
     // 👈 ahora usa inhabilitarCliente del context
+    // Cambiar habilitado directamente sin modal
+    const handleHabilitadoChange = (id) => {
+        invalidateCliente(id)
+        setMensaje('Estado actualizado correctamente')
+        setTimeout(() => setMensaje(''), 2000)
+    }
+
     const handleInhabilitar = (id) => {
-        inhabilitarCliente(id)
+        invalidateCliente(id)
         setClienteInhabilitar(null)
     }
 
@@ -357,13 +364,16 @@ const ListarCliente = () => {
                                             </TableCell>
 
                                             <TableCell sx={{ py: 1.5 }}>
-                                                <Chip
-                                                    label={cliente.habilitado ? 'Activo' : 'Inactivo'}
-                                                    size="small"
+                                                <Switch 
+                                                    checked={cliente.habilitado !== false}
+                                                    onChange={() => handleHabilitadoChange(cliente.idCliente)}
                                                     sx={{
-                                                        fontSize: '0.72rem', fontWeight: 600, height: 22,
-                                                        backgroundColor: cliente.habilitado ? '#E8F5E9' : '#FFF3F3',
-                                                        color: cliente.habilitado ? '#2E7D32' : COLORS.primary,
+                                                        '& .MuiSwitch-switchBase.Mui-checked': {
+                                                            color: '#10b981',
+                                                        },
+                                                        '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                                                            backgroundColor: '#10b981',
+                                                        },
                                                     }}
                                                 />
                                             </TableCell>

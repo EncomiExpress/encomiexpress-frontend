@@ -1,10 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import {
-  Box, TextField, Button, Typography, Paper, Grid, MenuItem,
-  Snackbar, Alert, Divider, InputAdornment, Chip, IconButton,
-  Tooltip, Dialog, DialogContent, DialogTitle
-} from '@mui/material'
+import { Box, Typography, Paper, Grid, MenuItem, Divider, Chip, IconButton, Tooltip, Dialog, DialogContent, DialogTitle } from '@mui/material'
 import EditIcon from '@mui/icons-material/Edit'
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
@@ -14,13 +10,10 @@ import CloseIcon from '@mui/icons-material/Close'
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import { useAnticipos, conductoresMock, rutasMock } from '../../Context/AnticipoExcedenteContext'
-
-const theme = {
-  primary: '#CC1818',
-  secondary: '#1A2E6E',
-  textMuted: '#8A94A6',
-  border: '#E0E0E0',
-}
+import { 
+  theme, FormField, FormSelect, PrimaryButton, SecondaryButton, 
+  FormAlert, FormHeader, FormButtonGroup 
+} from '../../Components/FormularioEstandarizado'
 
 const ESTADO_COLORS = {
   'entregado':           { bg: '#E3F2FD', color: '#1565C0' },
@@ -36,7 +29,7 @@ const formatMoney = (val) => {
   return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(num)
 }
 
-// ── Vista previa de imagen ──
+// Vista previa de imagen
 const ModalImagen = ({ soporte, onClose }) => {
   if (!soporte) return null
   return (
@@ -71,7 +64,7 @@ const ModalImagen = ({ soporte, onClose }) => {
   )
 }
 
-// ── Tarjeta de soporte (solo lectura) ──
+// Tarjeta de soporte (solo lectura)
 const TarjetaSoporte = ({ soporte, onVer }) => {
   const esImagen = soporte.tipo === 'image'
   return (
@@ -135,7 +128,7 @@ const TarjetaSoporte = ({ soporte, onVer }) => {
   )
 }
 
-// ── Componente principal ──
+// Componente principal
 const ActualizarAnticipoExcedente = () => {
   const { id } = useParams()
   const { anticipos, actualizarAnticipo } = useAnticipos()
@@ -193,17 +186,27 @@ const ActualizarAnticipoExcedente = () => {
 
   return (
     <Box sx={{ p: 4 }}>
-      <Paper elevation={3} sx={{ p: 4, maxWidth: 900, margin: '0 auto' }}>
+      <Paper elevation={0} sx={{ p: 4, borderRadius: 2, border: '1px solid #e2e8f0', maxWidth: 900, mx: 'auto' }}>
 
         {/* Título */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-          <EditIcon sx={{ color: theme.primary, fontSize: 32 }} />
+          <Box sx={{
+            width: 48,
+            height: 48,
+            borderRadius: 2,
+            background: 'linear-gradient(135deg, #CC1818 0%, #dc2626 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <EditIcon sx={{ color: 'white', fontSize: 28 }} />
+          </Box>
           <Box>
-            <Typography variant="h5" sx={{ color: theme.secondary, fontWeight: 'bold' }}>
+            <Typography variant="h5" sx={{ color: '#0f172a', fontWeight: 700 }}>
               Actualizar Anticipo / Excedente
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.3 }}>
-              <Typography variant="caption" sx={{ color: theme.textMuted }}>ID: {id}</Typography>
+              <Typography variant="caption" sx={{ color: '#64748b' }}>ID: {id}</Typography>
               <Chip
                 label={form.estado}
                 size="small"
@@ -222,7 +225,7 @@ const ActualizarAnticipoExcedente = () => {
 
         <Grid container spacing={3}>
 
-          {/* ── Asignación ── */}
+          {/* Asignación */}
           <Grid item xs={12}>
             <Typography variant="caption" sx={{ color: theme.textMuted, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>
               Asignación
@@ -231,32 +234,34 @@ const ActualizarAnticipoExcedente = () => {
           </Grid>
 
           <Grid item xs={12} sm={6}>
-            <TextField
-              select label="Conductor" name="idConductor"
-              value={form.idConductor} onChange={handleChange}
-              fullWidth variant="outlined"
-              error={!!errores.idConductor} helperText={errores.idConductor}
+            <FormSelect
+              label="Conductor"
+              name="idConductor"
+              value={form.idConductor}
+              onChange={handleChange}
+              error={errores.idConductor}
             >
               {conductoresMock.map(c => (
                 <MenuItem key={c.idConductor} value={c.idConductor}>{c.nombre}</MenuItem>
               ))}
-            </TextField>
+            </FormSelect>
           </Grid>
 
           <Grid item xs={12} sm={6}>
-            <TextField
-              select label="Ruta" name="idRuta"
-              value={form.idRuta} onChange={handleChange}
-              fullWidth variant="outlined"
-              error={!!errores.idRuta} helperText={errores.idRuta}
+            <FormSelect
+              label="Ruta"
+              name="idRuta"
+              value={form.idRuta}
+              onChange={handleChange}
+              error={errores.idRuta}
             >
               {rutasMock.map(r => (
                 <MenuItem key={r.idRuta} value={r.idRuta}>{r.idRuta} - {r.nombre}</MenuItem>
               ))}
-            </TextField>
+            </FormSelect>
           </Grid>
 
-          {/* ── Valores ── */}
+          {/* Valores */}
           <Grid item xs={12}>
             <Typography variant="caption" sx={{ color: theme.textMuted, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>
               Valores
@@ -265,23 +270,29 @@ const ActualizarAnticipoExcedente = () => {
           </Grid>
 
           <Grid item xs={12} sm={6}>
-            <TextField
-              label="Valor del anticipo" name="valorAnticipo"
-              value={form.valorAnticipo} onChange={handleChange}
-              fullWidth variant="outlined" type="number"
-              InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
-              error={!!errores.valorAnticipo} helperText={errores.valorAnticipo}
+            <FormField
+              label="Valor del anticipo"
+              name="valorAnticipo"
+              type="number"
+              value={form.valorAnticipo}
+              onChange={handleChange}
+              required
+              error={errores.valorAnticipo}
+              helperText={errores.valorAnticipo}
+              icon={AttachMoneyIcon}
             />
           </Grid>
 
           <Grid item xs={12} sm={6}>
-            <TextField
-              label="Valor gastado" name="valorGastado"
-              value={form.valorGastado} onChange={handleChange}
-              fullWidth variant="outlined" type="number"
-              InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
-              error={!!errores.valorGastado}
+            <FormField
+              label="Valor gastado"
+              name="valorGastado"
+              type="number"
+              value={form.valorGastado}
+              onChange={handleChange}
+              error={errores.valorGastado}
               helperText={errores.valorGastado || 'Completar al legalizar'}
+              icon={AttachMoneyIcon}
             />
           </Grid>
 
@@ -307,7 +318,7 @@ const ActualizarAnticipoExcedente = () => {
             </Box>
           </Grid>
 
-          {/* ── Estado y fechas ── */}
+          {/* Estado y fechas */}
           <Grid item xs={12}>
             <Typography variant="caption" sx={{ color: theme.textMuted, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>
               Estado y fechas
@@ -316,59 +327,67 @@ const ActualizarAnticipoExcedente = () => {
           </Grid>
 
           <Grid item xs={12} sm={6}>
-            <TextField
-              select label="Estado" name="estado"
-              value={form.estado} onChange={handleChange}
-              fullWidth variant="outlined"
-              error={!!errores.estado} helperText={errores.estado}
+            <FormSelect
+              label="Estado"
+              name="estado"
+              value={form.estado}
+              onChange={handleChange}
+              error={errores.estado}
             >
               <MenuItem value="entregado">Entregado</MenuItem>
               <MenuItem value="en legalización">En legalización</MenuItem>
               <MenuItem value="legalizado">Legalizado</MenuItem>
               <MenuItem value="excedente pendiente">Excedente pendiente</MenuItem>
               <MenuItem value="cerrado">Cerrado</MenuItem>
-            </TextField>
+            </FormSelect>
           </Grid>
 
           <Grid item xs={12} sm={6}>
-            <TextField
-              label="Fecha de entrega" name="fechaEntrega"
-              value={form.fechaEntrega} onChange={handleChange}
-              fullWidth variant="outlined" type="date"
-              InputLabelProps={{ shrink: true }}
-              error={!!errores.fechaEntrega} helperText={errores.fechaEntrega}
+            <FormField
+              label="Fecha de entrega"
+              name="fechaEntrega"
+              type="date"
+              value={form.fechaEntrega}
+              onChange={handleChange}
+              error={errores.fechaEntrega}
+              helperText={errores.fechaEntrega}
             />
           </Grid>
 
           <Grid item xs={12} sm={6}>
-            <TextField
-              label="Fecha de legalización" name="fechaLegalizacion"
-              value={form.fechaLegalizacion} onChange={handleChange}
-              fullWidth variant="outlined" type="date"
-              InputLabelProps={{ shrink: true }}
+            <FormField
+              label="Fecha de legalización"
+              name="fechaLegalizacion"
+              type="date"
+              value={form.fechaLegalizacion}
+              onChange={handleChange}
               helperText="Opcional"
             />
           </Grid>
 
           <Grid item xs={12} sm={6}>
-            <TextField
-              label="Fecha entrega excedente" name="fechaEntregaExcedente"
-              value={form.fechaEntregaExcedente} onChange={handleChange}
-              fullWidth variant="outlined" type="date"
-              InputLabelProps={{ shrink: true }}
+            <FormField
+              label="Fecha entrega excedente"
+              name="fechaEntregaExcedente"
+              type="date"
+              value={form.fechaEntregaExcedente}
+              onChange={handleChange}
               helperText="Opcional"
             />
           </Grid>
 
           <Grid item xs={12}>
-            <TextField
-              label="Observaciones" name="observaciones"
-              value={form.observaciones || ''} onChange={handleChange}
-              fullWidth variant="outlined" multiline rows={2}
+            <FormField
+              label="Observaciones"
+              name="observaciones"
+              value={form.observaciones || ''}
+              onChange={handleChange}
+              multiline
+              rows={2}
             />
           </Grid>
 
-          {/* ── Soportes (solo lectura) ── */}
+          {/* Soportes (solo lectura) */}
           <Grid item xs={12}>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Box>
@@ -435,31 +454,18 @@ const ActualizarAnticipoExcedente = () => {
         </Grid>
 
         {/* Botones */}
-        <Box sx={{ display: 'flex', gap: 2, mt: 4, justifyContent: 'flex-end' }}>
-          <Button
-            variant="outlined"
+        <FormButtonGroup>
+          <SecondaryButton 
             onClick={() => navigate('/anticipos/listar')}
-            sx={{ borderColor: theme.secondary, color: theme.secondary }}
-          >
-            Cancelar
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<EditIcon />}
+            children="Cancelar"
+          />
+          <PrimaryButton 
             onClick={handleSubmit}
-            sx={{ backgroundColor: theme.primary, '&:hover': { backgroundColor: '#a01212' } }}
-          >
-            Guardar cambios
-          </Button>
-        </Box>
+            children="Guardar cambios"
+          />
+        </FormButtonGroup>
 
       </Paper>
-
-      <Snackbar open={exito} autoHideDuration={1500} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
-        <Alert severity="success" sx={{ fontWeight: 600 }}>
-          ¡Anticipo actualizado exitosamente!
-        </Alert>
-      </Snackbar>
 
       <ModalImagen soporte={imagenVista} onClose={() => setImagenVista(null)} />
     </Box>

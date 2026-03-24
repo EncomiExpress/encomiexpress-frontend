@@ -1,9 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import {
-  Box, TextField, Button, Typography, Paper, Grid, MenuItem,
-  Snackbar, Alert, InputAdornment, Divider, Stepper, Step, StepLabel
-} from '@mui/material'
+import { Box, Typography, Paper, Grid, MenuItem, Stepper, Step, StepLabel } from '@mui/material'
 import PersonAddIcon from '@mui/icons-material/PersonAdd'
 import PersonIcon from '@mui/icons-material/Person'
 import BadgeIcon from '@mui/icons-material/Badge'
@@ -11,15 +8,11 @@ import PhoneIcon from '@mui/icons-material/Phone'
 import EmailIcon from '@mui/icons-material/Email'
 import HomeIcon from '@mui/icons-material/Home'
 import LocationCityIcon from '@mui/icons-material/LocationCity'
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
-import ArrowBackIcon from '@mui/icons-material/ArrowBack'
-import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import { useClientes } from '../../Context/ClienteContext'
-
-const theme = {
-  primary: '#CC1818',
-  secondary: '#1A2E6E'
-}
+import { 
+  theme, FormField, FormSelect, PrimaryButton, SecondaryButton, 
+  FormAlert, FormHeader, FormFieldsContainer, FormButtonGroup 
+} from '../../Components/FormularioEstandarizado'
 
 const steps = ['Datos Personales', 'Información de Contacto', 'Confirmación']
 
@@ -176,85 +169,40 @@ const RegistrarCliente = () => {
     switch (activeStep) {
       case 0:
         return (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+          <FormFieldsContainer>
             <Typography variant="h6" sx={{ color: theme.primary, fontWeight: 600, mb: 1 }}>
               Datos Personales
             </Typography>
             
-            <TextField
+            <FormField
               label="Nombres"
               name="nombre"
               value={form.nombre}
               onChange={handleChange}
-              fullWidth
-              variant="outlined"
-              error={!!errores.nombre}
+              required
+              error={errores.nombre}
               helperText={errores.nombre}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <PersonIcon sx={{ color: '#9ca3af' }} />
-                  </InputAdornment>
-                ),
-              }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  '&:hover fieldset': { borderColor: theme.primary },
-                  '&.Mui-focused fieldset': { borderColor: theme.primary }
-                },
-                '& .MuiFormLabel-root.Mui-focused': { color: theme.primary }
-              }}
+              icon={PersonIcon}
             />
 
-            <TextField
+            <FormField
               label="Apellidos"
               name="apellido"
               value={form.apellido}
               onChange={handleChange}
-              fullWidth
-              variant="outlined"
-              error={!!errores.apellido}
+              required
+              error={errores.apellido}
               helperText={errores.apellido}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <PersonIcon sx={{ color: '#9ca3af' }} />
-                  </InputAdornment>
-                ),
-              }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  '&:hover fieldset': { borderColor: theme.primary },
-                  '&.Mui-focused fieldset': { borderColor: theme.primary }
-                },
-                '& .MuiFormLabel-root.Mui-focused': { color: theme.primary }
-              }}
+              icon={PersonIcon}
             />
 
-            <TextField
-              select
+            <FormSelect
               label="Tipo de documento"
               name="tipoIdentificacion"
               value={form.tipoIdentificacion}
               onChange={handleChange}
-              fullWidth
-              variant="outlined"
-              error={!!errores.tipoIdentificacion}
-              helperText={errores.tipoIdentificacion}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <BadgeIcon sx={{ color: '#9ca3af' }} />
-                  </InputAdornment>
-                ),
-              }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  '&:hover fieldset': { borderColor: theme.primary },
-                  '&.Mui-focused fieldset': { borderColor: theme.primary }
-                },
-                '& .MuiFormLabel-root.Mui-focused': { color: theme.primary }
-              }}
+              required
+              error={errores.tipoIdentificacion}
             >
               <MenuItem value="CC">Cédula de Ciudadanía (CC)</MenuItem>
               <MenuItem value="TI">Tarjeta de Identidad (TI)</MenuItem>
@@ -262,146 +210,76 @@ const RegistrarCliente = () => {
               <MenuItem value="CE">Cédula Extranjería (CE)</MenuItem>
               <MenuItem value="RC">Registro Civil (RC)</MenuItem>
               <MenuItem value="PAS">Pasaporte</MenuItem>
-            </TextField>
+            </FormSelect>
 
-            <TextField
+            <FormField
               label="Número de documento"
               name="numeroIdentificacion"
               value={form.numeroIdentificacion}
               onChange={handleChange}
-              fullWidth
-              variant="outlined"
-              error={!!errores.numeroIdentificacion}
+              required
+              error={errores.numeroIdentificacion}
               helperText={errores.numeroIdentificacion}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <BadgeIcon sx={{ color: '#9ca3af' }} />
-                  </InputAdornment>
-                ),
-              }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  '&:hover fieldset': { borderColor: theme.primary },
-                  '&.Mui-focused fieldset': { borderColor: theme.primary }
-                },
-                '& .MuiFormLabel-root.Mui-focused': { color: theme.primary }
-              }}
+              icon={BadgeIcon}
             />
-          </Box>
+          </FormFieldsContainer>
         )
       case 1:
         return (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+          <FormFieldsContainer>
             <Typography variant="h6" sx={{ color: theme.primary, fontWeight: 600, mb: 1 }}>
               Información de Contacto
             </Typography>
 
-            <TextField
+            <FormField
               label="Teléfono"
               name="telefono"
               value={form.telefono}
               onChange={handleChange}
-              fullWidth
-              variant="outlined"
-              error={!!errores.telefono}
+              required
+              error={errores.telefono}
               helperText={errores.telefono || 'Número de 10 dígitos'}
-              inputProps={{ maxLength: 10 }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <PhoneIcon sx={{ color: '#9ca3af' }} />
-                  </InputAdornment>
-                ),
-              }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  '&:hover fieldset': { borderColor: theme.primary },
-                  '&.Mui-focused fieldset': { borderColor: theme.primary }
-                },
-                '& .MuiFormLabel-root.Mui-focused': { color: theme.primary }
-              }}
+              icon={PhoneIcon}
             />
 
-            <TextField
+            <FormField
               label="Correo electrónico"
               name="email"
+              type="email"
               value={form.email}
               onChange={handleChange}
-              fullWidth
-              variant="outlined"
-              error={!!errores.email}
+              required
+              error={errores.email}
               helperText={errores.email}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <EmailIcon sx={{ color: '#9ca3af' }} />
-                  </InputAdornment>
-                ),
-              }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  '&:hover fieldset': { borderColor: theme.primary },
-                  '&.Mui-focused fieldset': { borderColor: theme.primary }
-                },
-                '& .MuiFormLabel-root.Mui-focused': { color: theme.primary }
-              }}
+              icon={EmailIcon}
             />
 
-            <TextField
+            <FormField
               label="Dirección"
               name="direccion"
               value={form.direccion}
               onChange={handleChange}
-              fullWidth
-              variant="outlined"
-              error={!!errores.direccion}
+              required
+              error={errores.direccion}
               helperText={errores.direccion || 'Ej: Calle 45 #20-10'}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <HomeIcon sx={{ color: '#9ca3af' }} />
-                  </InputAdornment>
-                ),
-              }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  '&:hover fieldset': { borderColor: theme.primary },
-                  '&.Mui-focused fieldset': { borderColor: theme.primary }
-                },
-                '& .MuiFormLabel-root.Mui-focused': { color: theme.primary }
-              }}
+              icon={HomeIcon}
             />
 
-            <TextField
+            <FormField
               label="Ciudad"
               name="ciudad"
               value={form.ciudad}
               onChange={handleChange}
-              fullWidth
-              variant="outlined"
-              error={!!errores.ciudad}
+              required
+              error={errores.ciudad}
               helperText={errores.ciudad}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <LocationCityIcon sx={{ color: '#9ca3af' }} />
-                  </InputAdornment>
-                ),
-              }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  '&:hover fieldset': { borderColor: theme.primary },
-                  '&.Mui-focused fieldset': { borderColor: theme.primary }
-                },
-                '& .MuiFormLabel-root.Mui-focused': { color: theme.primary }
-              }}
+              icon={LocationCityIcon}
             />
-          </Box>
+          </FormFieldsContainer>
         )
       case 2:
         return (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+          <FormFieldsContainer>
             <Typography variant="h6" sx={{ color: theme.primary, fontWeight: 600, mb: 1 }}>
               Confirmar Información
             </Typography>
@@ -450,7 +328,7 @@ const RegistrarCliente = () => {
                 </Box>
               </Box>
             </Paper>
-          </Box>
+          </FormFieldsContainer>
         )
       default:
         return null
@@ -460,35 +338,21 @@ const RegistrarCliente = () => {
   return (
     <Box sx={{ p: 4 }}>
       <Paper 
-        elevation={4} 
+        elevation={0} 
         sx={{ 
           p: 4, 
-          maxWidth: 600, 
-          margin: '0 auto',
-          borderRadius: 3
+          maxWidth: 900, 
+          mx: 'auto',
+          borderRadius: 2,
+          border: '1px solid #e2e8f0'
         }}
       >
         {/* Título */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
-          <Box sx={{
-            p: 1.5,
-            borderRadius: 2,
-            backgroundColor: `${theme.primary}15`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}>
-            <PersonAddIcon sx={{ color: theme.primary, fontSize: 28 }} />
-          </Box>
-          <Box>
-            <Typography variant="h5" sx={{ color: theme.primary, fontWeight: 'bold' }}>
-              Registrar Cliente
-            </Typography>
-            <Typography variant="body2" sx={{ color: '#64748b' }}>
-              Complete los datos del nuevo cliente
-            </Typography>
-          </Box>
-        </Box>
+        <FormHeader 
+          icon={PersonAddIcon} 
+          title="Registrar Cliente" 
+          subtitle="Complete los datos del nuevo cliente"
+        />
 
         {/* Stepper */}
         <Stepper activeStep={activeStep} sx={{ mb: 4 }} alternativeLabel>
@@ -498,17 +362,8 @@ const RegistrarCliente = () => {
                 sx={{ 
                   '& .MuiStepLabel-label': { 
                     fontWeight: activeStep === index ? 600 : 400,
-                    color: activeStep === index ? theme.primary : '#94a3b8'
-                  },
-                  '& .MuiStepIcon-root': {
-                    color: activeStep >= index ? theme.primary : '#e2e8f0',
-                    '&.Mui-active': {
-                      color: theme.primary
-                    },
-                    '&.Mui-completed': {
-                      color: theme.primary
-                    }
-                  }
+                    color: activeStep === index ? theme.primary : '#64748b'
+                  } 
                 }}
               >
                 {label}
@@ -517,81 +372,38 @@ const RegistrarCliente = () => {
           ))}
         </Stepper>
 
-        <Divider sx={{ mb: 4 }} />
-
-        {/* Contenido del formulario */}
-        <Box sx={{ minHeight: 350 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
           {renderStepContent()}
         </Box>
 
         {/* Botones */}
-        <Box sx={{ display: 'flex', gap: 2, mt: 4, justifyContent: 'space-between' }}>
-          <Button
-            variant="outlined"
-            onClick={handleCancelar}
-            startIcon={<ArrowBackIcon />}
-            sx={{ 
-              borderColor: '#94a3b8', 
-              color: '#64748b',
-              '&:hover': { borderColor: '#64748b', backgroundColor: '#f1f5f9' }
-            }}
-          >
-            Cancelar
-          </Button>
-          
+        <FormButtonGroup justify="space-between">
           <Box sx={{ display: 'flex', gap: 2 }}>
-            {activeStep > 0 && (
-              <Button
-                variant="outlined"
-                onClick={handleBack}
-                startIcon={<ArrowBackIcon />}
-                sx={{ 
-                  borderColor: theme.primary, 
-                  color: theme.primary,
-                  '&:hover': { borderColor: theme.primary, backgroundColor: '#fef2f2' }
-                }}
-              >
-                Atrás
-              </Button>
-            )}
-            
+            <SecondaryButton 
+              onClick={handleBack} 
+              disabled={activeStep === 0}
+              children="Anterior"
+            />
+          </Box>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <SecondaryButton 
+              onClick={handleCancelar}
+              children="Cancelar"
+            />
             {activeStep < steps.length - 1 ? (
-              <Button
-                variant="contained"
+              <PrimaryButton 
                 onClick={handleNext}
-                endIcon={<ArrowForwardIcon />}
-                sx={{ 
-                  backgroundColor: theme.primary, 
-                  '&:hover': { backgroundColor: '#a01212' }
-                }}
-              >
-                Siguiente
-              </Button>
+                children="Siguiente"
+              />
             ) : (
-              <Button
-                variant="contained"
-                startIcon={<PersonAddIcon />}
+              <PrimaryButton 
                 onClick={handleSubmit}
-                sx={{ 
-                  backgroundColor: theme.primary, 
-                  '&:hover': { backgroundColor: '#a01212' }
-                }}
-              >
-                Registrar Cliente
-              </Button>
+                children="Registrar"
+              />
             )}
           </Box>
-        </Box>
-
+        </FormButtonGroup>
       </Paper>
-
-      {/* Mensaje de éxito */}
-      <Snackbar open={exito} autoHideDuration={1500} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
-        <Alert severity="success" sx={{ fontWeight: 600, '& .MuiAlert-icon': { fontSize: 28 }, backgroundColor: theme.primary, color: 'white' }}>
-          ¡Cliente registrado exitosamente!
-        </Alert>
-      </Snackbar>
-
     </Box>
   )
 }

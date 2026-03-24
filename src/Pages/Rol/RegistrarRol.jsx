@@ -1,9 +1,16 @@
 import { useState } from 'react'
-import { Box, Typography, TextField, Button, Paper, FormControlLabel, Checkbox, Grid, Alert } from '@mui/material'
+import { useNavigate } from 'react-router-dom'
+import { Box, Typography, TextField, Paper, FormControlLabel, Checkbox, Grid, Alert } from '@mui/material'
+import { Security } from '@mui/icons-material'
 import { useAuth, PERMISOS } from '../../Context/AuthContext'
+import { 
+  theme, FormField, PrimaryButton, SecondaryButton, 
+  FormAlert, FormHeader, FormFieldsContainer, FormButtonGroup 
+} from '../../Components/FormularioEstandarizado'
 
 const RegistrarRol = () => {
   const { tienePermiso, registrarRol, getRoles } = useAuth()
+  const navigate = useNavigate()
   
   const [formData, setFormData] = useState({
     nombre: '',
@@ -59,55 +66,58 @@ const RegistrarRol = () => {
 
   if (!tienePermiso(PERMISOS.REGISTRAR_ROL)) {
     return (
-      <Box sx={{ p: 3 }}>
-        <Alert severity="error">
-          No tienes permisos para registrar roles.
-        </Alert>
+      <Box sx={{ p: 4 }}>
+        <Paper elevation={0} sx={{ p: 4, borderRadius: 2, border: '1px solid #e2e8f0', maxWidth: 800, mx: 'auto' }}>
+          <FormAlert severity="error">
+            No tienes permisos para registrar roles.
+          </FormAlert>
+        </Paper>
       </Box>
     )
   }
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h5" sx={{ fontWeight: 700, mb: 3 }}>
-        Registrar Nuevo Rol
-      </Typography>
+    <Box sx={{ p: 4 }}>
+      <Paper elevation={0} sx={{ p: 4, borderRadius: 2, border: '1px solid #e2e8f0', maxWidth: 800, mx: 'auto' }}>
+        <FormHeader 
+          icon={Security} 
+          title="Registrar Nuevo Rol" 
+          subtitle="Configura los permisos del rol"
+        />
 
-      {mensaje && (
-        <Alert severity="success" sx={{ mb: 2 }}>
-          {mensaje}
-        </Alert>
-      )}
+        {mensaje && (
+          <FormAlert severity="success">
+            {mensaje}
+          </FormAlert>
+        )}
 
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
+        {error && (
+          <FormAlert>
+            {error}
+          </FormAlert>
+        )}
 
-      <Paper sx={{ p: 3, maxWidth: 800 }}>
         <form onSubmit={handleSubmit}>
           <Grid container spacing={3}>
             <Grid item xs={12}>
-              <TextField
+              <FormField
                 label="Nombre del rol"
                 name="nombre"
                 value={formData.nombre}
                 onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-                fullWidth
                 required
                 placeholder="Ej: Supervisor, Contador, etc."
               />
             </Grid>
 
             <Grid item xs={12}>
-              <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+              <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: theme.secondary }}>
                 Permisos del rol
               </Typography>
               
               {Object.entries(permisosPorCategoria).map(([categoria, permisos]) => (
                 <Box key={categoria} sx={{ mb: 3 }}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1, color: '#1A2E6E' }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1, color: theme.secondary }}>
                     {categoria}
                   </Typography>
                   <Grid container spacing={1}>
@@ -118,7 +128,7 @@ const RegistrarRol = () => {
                             <Checkbox
                               checked={formData.permisos.includes(permiso)}
                               onChange={() => handlePermisoChange(permiso)}
-                              sx={{ color: '#CC1818', '&.Mui-checked': { color: '#CC1818' } }}
+                              sx={{ color: theme.primary, '&.Mui-checked': { color: theme.primary } }}
                             />
                           }
                           label={permiso.replace(/_/g, ' ')}
@@ -135,26 +145,13 @@ const RegistrarRol = () => {
             </Grid>
 
             <Grid item xs={12}>
-              <Box sx={{ mt: 2 }}>
-                <Button 
-                  type="submit" 
-                  variant="contained" 
-                  sx={{ 
-                    backgroundColor: '#CC1818', 
-                    '&:hover': { backgroundColor: '#a01515' },
-                    mr: 2
-                  }}
-                >
-                  Registrar
-                </Button>
-                <Button 
-                  type="button" 
-                  variant="outlined"
-                  onClick={() => setFormData({ nombre: '', permisos: [] })}
-                >
-                  Limpiar
-                </Button>
-              </Box>
+              <FormButtonGroup>
+                <PrimaryButton children="Registrar" />
+                <SecondaryButton 
+                  onClick={() => navigate('/roles/listar')}
+                  children="Cancelar"
+                />
+              </FormButtonGroup>
             </Grid>
           </Grid>
         </form>
@@ -164,5 +161,3 @@ const RegistrarRol = () => {
 }
 
 export default RegistrarRol
-
-

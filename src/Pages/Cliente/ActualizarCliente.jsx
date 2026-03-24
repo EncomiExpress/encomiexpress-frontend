@@ -1,16 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import {
-  Box, TextField, Button, Typography, Paper, Grid, MenuItem,
-  Snackbar, Alert
-} from '@mui/material'
+import { Box, Typography, Paper, Grid, MenuItem, Alert, Snackbar } from '@mui/material'
 import EditIcon from '@mui/icons-material/Edit'
 import { useClientes } from '../../Context/ClienteContext'
-
-const theme = {
-  primary: '#CC1818',
-  secondary: '#1A2E6E'
-}
+import { 
+  theme, FormField, FormSelect, PrimaryButton, SecondaryButton, 
+  FormAlert, FormHeader, FormFieldsContainer, FormButtonGroup 
+} from '../../Components/FormularioEstandarizado'
 
 const ActualizarCliente = () => {
   const { id } = useParams()
@@ -111,155 +107,130 @@ const ActualizarCliente = () => {
 
   return (
     <Box sx={{ p: 4 }}>
-      <Paper elevation={3} sx={{ p: 4, maxWidth: 800, margin: '0 auto' }}>
+      <Paper elevation={0} sx={{ p: 4, borderRadius: 2, border: '1px solid #e2e8f0', maxWidth: 900, mx: 'auto' }}>
 
         {/* Título */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
-          <EditIcon sx={{ color: theme.primary, fontSize: 32 }} />
-          <Box>
-            <Typography variant="h5" sx={{ color: theme.secondary, fontWeight: 'bold' }}>
-              Actualizar Cliente
-            </Typography>
-            <Typography variant="caption" sx={{ color: '#8A94A6' }}>
-              ID: {id} — Modifica los campos que necesites
-            </Typography>
-          </Box>
-        </Box>
+        <FormHeader 
+          icon={EditIcon} 
+          title="Actualizar Cliente" 
+          subtitle={`ID: ${id} — Modifica los campos que necesites`}
+        />
 
         {/* Formulario */}
         <Grid container spacing={3}>
-
           <Grid item xs={12} sm={6}>
-            <TextField
+            <FormField
               label="Nombres"
               name="nombre"
               value={form.nombre}
               onChange={handleChange}
-              fullWidth
-              variant="outlined"
-              error={!!errores.nombre}
+              required
+              error={errores.nombre}
               helperText={errores.nombre}
             />
           </Grid>
 
           <Grid item xs={12} sm={6}>
-            <TextField
+            <FormField
               label="Apellidos"
               name="apellido"
               value={form.apellido}
               onChange={handleChange}
-              fullWidth
-              variant="outlined"
-              error={!!errores.apellido}
+              required
+              error={errores.apellido}
               helperText={errores.apellido}
             />
           </Grid>
 
           <Grid item xs={12} sm={6}>
-            <TextField
-              select
+            <FormSelect
               label="Tipo de documento"
               name="tipoIdentificacion"
               value={form.tipoIdentificacion}
               onChange={handleChange}
-              fullWidth
-              variant="outlined"
-              error={!!errores.tipoIdentificacion}
-              helperText={errores.tipoIdentificacion}
+              required
+              error={errores.tipoIdentificacion}
             >
               <MenuItem value="CC">Cédula de Ciudadanía</MenuItem>
               <MenuItem value="TI">Tarjeta de Identidad</MenuItem>
               <MenuItem value="NIT">NIT</MenuItem>
               <MenuItem value="CE">Cédula Extranjería</MenuItem>
-            </TextField>
+            </FormSelect>
           </Grid>
 
           <Grid item xs={12} sm={6}>
-            <TextField
+            <FormField
               label="Número de documento"
               name="numeroIdentificacion"
               value={form.numeroIdentificacion}
               onChange={handleChange}
-              fullWidth
-              variant="outlined"
-              error={!!errores.numeroIdentificacion}
+              required
+              error={errores.numeroIdentificacion}
               helperText={errores.numeroIdentificacion}
             />
           </Grid>
 
           <Grid item xs={12} sm={6}>
-            <TextField
+            <FormField
               label="Teléfono"
               name="telefono"
               value={form.telefono}
               onChange={handleChange}
-              fullWidth
-              variant="outlined"
-              error={!!errores.telefono}
+              required
+              error={errores.telefono}
               helperText={errores.telefono}
             />
           </Grid>
 
           <Grid item xs={12} sm={6}>
-            <TextField
+            <FormField
               label="Correo electrónico"
               name="email"
+              type="email"
               value={form.email}
               onChange={handleChange}
-              fullWidth
-              variant="outlined"
-              type="email"
-              error={!!errores.email}
+              required
+              error={errores.email}
               helperText={errores.email}
             />
           </Grid>
 
           <Grid item xs={12}>
-            <TextField
+            <FormField
               label="Dirección"
               name="direccion"
               value={form.direccion}
               onChange={handleChange}
-              fullWidth
-              variant="outlined"
-              error={!!errores.direccion}
+              required
+              error={errores.direccion}
               helperText={errores.direccion}
             />
           </Grid>
 
           <Grid item xs={12} sm={6}>
-            <TextField
+            <FormField
               label="Ciudad"
               name="ciudad"
               value={form.ciudad}
               onChange={handleChange}
-              fullWidth
-              variant="outlined"
-              error={!!errores.ciudad}
+              required
+              error={errores.ciudad}
               helperText={errores.ciudad}
             />
           </Grid>
-
         </Grid>
 
         {/* Botones */}
-        <Box sx={{ display: 'flex', gap: 2, mt: 4, justifyContent: 'flex-end' }}>
-          <Button
-            variant="outlined"
+        <FormButtonGroup>
+          <SecondaryButton 
             onClick={handleCancelar}
-            sx={{ borderColor: theme.secondary, color: theme.secondary }}
-          >
-            Cancelar
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<EditIcon />}
+            children="Cancelar"
+          />
+          <PrimaryButton 
             onClick={handleSubmit}
-            sx={{ backgroundColor: theme.primary, '&:hover': { backgroundColor: '#a01212' } }}
-          >
-            Guardar cambios
-          </Button>
-        </Box>
+            children="Guardar cambios"
+          />
+        </FormButtonGroup>
 
       </Paper>
 

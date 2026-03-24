@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, IconButton, Button, TextField, InputAdornment } from '@mui/material'
-import { Edit, Delete, DirectionsCar, Search, Add } from '@mui/icons-material'
+import { Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, IconButton, Button, TextField, InputAdornment, Switch, FormControl, Select, MenuItem } from '@mui/material'
+import { Edit, DirectionsCar, Search, Add, CheckCircle, Cancel } from '@mui/icons-material'
 import { useTransporte } from '../../Context/TransporteContext'
 import { useAuth } from '../../Context/AuthContext'
 
@@ -9,7 +9,7 @@ const ListarTransporte = () => {
   const [transportes, setTransportes] = useState([])
   const [searchTerm, setSearchTerm] = useState('')
   
-  const { getTransportes, toggleHabilitado } = useTransporte()
+  const { getTransportes, toggleHabilitado, updateEstado } = useTransporte()
   const { usuario } = useAuth()
   const navigate = useNavigate()
 
@@ -22,6 +22,24 @@ const ListarTransporte = () => {
   }, [usuario, navigate, getTransportes])
 
   const handleToggleHabilitado = (id) => {
+    toggleHabilitado(id)
+    setTransportes(getTransportes())
+  }
+
+  // Cambiar estado directamente en la tabla
+  const handleEstadoChange = (id, nuevoEstado) => {
+    setTransportes(prevTransportes => {
+      return prevTransportes.map(t => {
+        if (t.idVehiculo === id) {
+          return { ...t, estado: nuevoEstado }
+        }
+        return t
+      })
+    })
+  }
+
+  // Cambiar habilitado directamente
+  const handleHabilitadoChange = (id) => {
     toggleHabilitado(id)
     setTransportes(getTransportes())
   }
@@ -58,7 +76,7 @@ const ListarTransporte = () => {
   }
 
   return (
-    <Box sx={{ p: 4 }}>
+    <Box sx={{ p: 1 }}>
       <Paper elevation={0} sx={{ borderRadius: 2, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
         {/* Header */}
         <Box sx={{ p: 3, borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
@@ -134,7 +152,6 @@ const ListarTransporte = () => {
           <Table>
             <TableHead>
               <TableRow sx={{ backgroundColor: '#f8fafc' }}>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>ID</TableCell>
                 <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Placa</TableCell>
                 <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Marca</TableCell>
                 <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Modelo</TableCell>
@@ -143,14 +160,13 @@ const ListarTransporte = () => {
                 <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Capacidad</TableCell>
                 <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Estado</TableCell>
                 <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>SOAT</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Estado</TableCell>
                 <TableCell sx={{ fontWeight: 700, color: '#0f172a', textAlign: 'center' }}>Acciones</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {filteredTransportes.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={11} sx={{ textAlign: 'center', py: 4 }}>
+                  <TableCell colSpan={10} sx={{ textAlign: 'center', py: 4 }}>
                     <Typography sx={{ color: '#64748b' }}>
                       No se encontraron transportes
                     </Typography>
@@ -165,7 +181,6 @@ const ListarTransporte = () => {
                       '&:last-child td': { borderBottom: 0 }
                     }}
                   >
-                    <TableCell>{transporte.idVehiculo}</TableCell>
                     <TableCell>
                       <Chip 
                         label={transporte.placa} 
@@ -183,11 +198,24 @@ const ListarTransporte = () => {
                     <TableCell>{transporte.tipo}</TableCell>
                     <TableCell>{transporte.capacidad} kg</TableCell>
                     <TableCell>
-                      <Chip 
-                        label={transporte.estado} 
-                        size="small"
-                        color={getEstadoColor(transporte.estado)}
-                      />
+                      <FormControl size="small" sx={{ minWidth: 120 }}>
+                        <Select
+                          value={transporte.estado}
+                          onChange={(e) => handleEstadoChange(transporte.idVehiculo, e.target.value)}
+                          sx={{ 
+                            fontSize: '0.75rem',
+                            '& .MuiSelect-select': { py: 0.5 },
+                            color: getEstadoColor(transporte.estado) === 'success' ? '#10b981' : 
+                                   getEstadoColor(transporte.estado) === 'warning' ? '#f59e0b' :
+                                   getEstadoColor(transporte.estado) === 'error' ? '#dc2626' : '#64748b'
+                          }}
+                        >
+                          <MenuItem value="Activo">Activo</MenuItem>
+                          <MenuItem value="Inactivo">Inactivo</MenuItem>
+                          <MenuItem value="Mantenimiento">Mantenimiento</MenuItem>
+                          <MenuItem value="En Reparación">En Reparación</MenuItem>
+                        </Select>
+                      </FormControl>
                     </TableCell>
                     <TableCell>
                       <Chip 
@@ -198,25 +226,17 @@ const ListarTransporte = () => {
                       />
                     </TableCell>
                     <TableCell>
-                      <Chip 
-                        label={transporte.habilitado ? 'Habilitado' : 'Inhabilitado'} 
-                        size="small"
-                        color={getHabilitadoColor(transporte.habilitado)}
-                      />
-                    </TableCell>
-                    <TableCell>
                       <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
                         <IconButton 
                           size="small"
-                          onClick={() => handleToggleHabilitado(transporte.idVehiculo)}
+                          component={Link}
+                          to={`/actualizar-transporte/${transporte.idVehiculo}`}
                           sx={{ 
-                            color: transporte.habilitado ? '#dc2626' : '#10b981',
-                            '&:hover': { 
-                              backgroundColor: transporte.habilitado ? '#fef2f2' : '#ecfdf5'
-                            }
+                            color: '#1A2E6E',
+                            '&:hover': { backgroundColor: '#eef2ff' }
                           }}
                         >
-                          <Delete fontSize="small" />
+                          <Edit fontSize="small" />
                         </IconButton>
                       </Box>
                     </TableCell>

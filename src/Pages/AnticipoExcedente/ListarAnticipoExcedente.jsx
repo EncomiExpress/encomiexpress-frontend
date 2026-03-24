@@ -253,7 +253,7 @@ const ModalConsultar = ({ anticipo, onClose }) => {
 // ── Componente principal ──
 const ListarAnticipoExcedente = () => {
     const navigate = useNavigate()
-    const { anticipos } = useAnticipos()
+    const { anticipos, cambiarEstado } = useAnticipos()
 
     const [busqueda, setBusqueda] = useState('')
     const [filtroPor, setFiltroPor] = useState('todo')
@@ -297,6 +297,11 @@ const ListarAnticipoExcedente = () => {
         setFiltroRuta('todos')
         setFiltroConductor('todos')
         setPage(0)
+    }
+
+    // Función para cambiar el estado directamente en la tabla
+    const handleEstadoChange = (id, nuevoEstado) => {
+        cambiarEstado(id, nuevoEstado)
     }
 
     const hayFiltrosActivos = busqueda || filtroEstado !== 'todos' || filtroRuta !== 'todos' || filtroConductor !== 'todos'
@@ -518,11 +523,22 @@ const ListarAnticipoExcedente = () => {
                                                 </TableCell>
 
                                                 <TableCell sx={{ py: 1.5 }}>
-                                                    <Chip label={anticipo.estado} size="small" sx={{
-                                                        fontSize: '0.7rem', fontWeight: 600, height: 22,
-                                                        backgroundColor: estadoStyle.bg, color: estadoStyle.color,
-                                                        textTransform: 'capitalize', whiteSpace: 'nowrap',
-                                                    }} />
+                                                    <FormControl size="small" sx={{ minWidth: 120 }}>
+                                                        <Select
+                                                            value={anticipo.estado}
+                                                            onChange={(e) => handleEstadoChange(anticipo.idAnticipoExcedente, e.target.value)}
+                                                            sx={{ 
+                                                                fontSize: '0.7rem',
+                                                                '& .MuiSelect-select': { py: 0.5 },
+                                                            }}
+                                                        >
+                                                            <MenuItem value="entregado">Entregado</MenuItem>
+                                                            <MenuItem value="en legalización">En Legalización</MenuItem>
+                                                            <MenuItem value="legalizado">Legalizado</MenuItem>
+                                                            <MenuItem value="excedente pendiente">Excedente Pendiente</MenuItem>
+                                                            <MenuItem value="cerrado">Cerrado</MenuItem>
+                                                        </Select>
+                                                    </FormControl>
                                                 </TableCell>
 
                                                 <TableCell sx={{ py: 1.5 }}>

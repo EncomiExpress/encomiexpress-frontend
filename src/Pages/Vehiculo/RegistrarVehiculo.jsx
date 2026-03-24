@@ -1,9 +1,15 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Box, TextField, Button, Typography, Paper, Alert, MenuItem, Select, FormControl, InputLabel, InputAdornment } from '@mui/material'
+import { Box, TextField, Typography, Paper, MenuItem, Select, FormControl, InputLabel, InputAdornment, Stepper, Step, StepLabel } from '@mui/material'
 import { DirectionsCar, Person, Business, Event, Speed } from '@mui/icons-material'
 import { useTransporte } from '../../Context/TransporteContext'
 import { useAuth } from '../../Context/AuthContext'
+import { 
+  theme, FormField, FormSelect, PasswordField, PrimaryButton, SecondaryButton, 
+  FormAlert, FormHeader, FormFieldsContainer, FormButtonGroup 
+} from '../../Components/FormularioEstandarizado'
+
+const steps = ['Datos del Vehículo', 'Documentación y Estado']
 
 const RegistrarTransporte = () => {
   const [formData, setFormData] = useState({
@@ -22,7 +28,8 @@ const RegistrarTransporte = () => {
   })
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
-  
+  const [activeStep, setActiveStep] = useState(0)
+   
   const { registrarTransporte } = useTransporte()
   const { usuario } = useAuth()
   const navigate = useNavigate()
@@ -85,6 +92,20 @@ const RegistrarTransporte = () => {
     }
   }
 
+  const handleNext = () => {
+    // Validar campos del paso 1
+    if (!formData.placa || !formData.marca || !formData.modelo || !formData.color || !formData.tipo || !formData.capacidad) {
+      setError('Todos los campos del vehículo son requeridos')
+      return
+    }
+    setError('')
+    setActiveStep((prev) => prev + 1)
+  }
+
+  const handleBack = () => {
+    setActiveStep((prev) => prev - 1)
+  }
+
   const tiposVehiculo = [
     'Camioneta',
     'Camión',
@@ -102,180 +123,60 @@ const RegistrarTransporte = () => {
     'En Reparación'
   ]
 
-  return (
-    <Box sx={{ p: 4 }}>
-      <Paper elevation={0} sx={{ p: 4, borderRadius: 2, border: '1px solid #e2e8f0' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-          <Box sx={{ 
-            width: 48, 
-            height: 48, 
-            borderRadius: 2,
-            background: 'linear-gradient(135deg, #CC1818 0%, #dc2626 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}>
-            <DirectionsCar sx={{ color: 'white', fontSize: 28 }} />
-          </Box>
-          <Box>
-            <Typography variant="h5" sx={{ fontWeight: 700, color: '#0f172a' }}>
-              Registrar Transporte
-            </Typography>
-            <Typography sx={{ color: '#64748b', fontSize: '0.875rem' }}>
-              Ingresa los datos del vehículo
-            </Typography>
-          </Box>
-        </Box>
-
-        {success && (
-          <Alert severity="success" sx={{ mb: 3, borderRadius: 2 }}>
-            {success}
-          </Alert>
-        )}
-
-        {error && (
-          <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
-            {error}
-          </Alert>
-        )}
-
-        <form onSubmit={handleSubmit}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            {/* Placa */}
-            <TextField
-              fullWidth
+  // Renderizar contenido del stepper
+  const renderStepContent = () => {
+    switch (activeStep) {
+      case 0:
+        return (
+          <FormFieldsContainer>
+            <FormField
               label="Placa"
               name="placa"
               value={formData.placa}
               onChange={handleChange}
               required
               placeholder="Ej: ABC-123"
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <DirectionsCar sx={{ color: '#94a3b8' }} />
-                  </InputAdornment>
-                ),
-              }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
-                  '& fieldset': { borderColor: '#e2e8f0' },
-                  '&:hover fieldset': { borderColor: '#CC1818' },
-                  '&.Mui-focused fieldset': { borderColor: '#CC1818', borderWidth: 2 },
-                },
-                '& .MuiInputLabel-root.Mui-focused': { color: '#CC1818' },
-              }}
+              icon={DirectionsCar}
             />
-
-            {/* Marca */}
-            <TextField
-              fullWidth
+            <FormField
               label="Marca"
               name="marca"
               value={formData.marca}
               onChange={handleChange}
               required
               placeholder="Ej: Toyota"
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Business sx={{ color: '#94a3b8' }} />
-                  </InputAdornment>
-                ),
-              }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
-                  '& fieldset': { borderColor: '#e2e8f0' },
-                  '&:hover fieldset': { borderColor: '#CC1818' },
-                  '&.Mui-focused fieldset': { borderColor: '#CC1818', borderWidth: 2 },
-                },
-                '& .MuiInputLabel-root.Mui-focused': { color: '#CC1818' },
-              }}
+              icon={Business}
             />
-
-            {/* Modelo */}
-            <TextField
-              fullWidth
+            <FormField
               label="Modelo"
               name="modelo"
               value={formData.modelo}
               onChange={handleChange}
               required
               placeholder="Ej: Hilux"
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <DirectionsCar sx={{ color: '#94a3b8' }} />
-                  </InputAdornment>
-                ),
-              }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
-                  '& fieldset': { borderColor: '#e2e8f0' },
-                  '&:hover fieldset': { borderColor: '#CC1818' },
-                  '&.Mui-focused fieldset': { borderColor: '#CC1818', borderWidth: 2 },
-                },
-                '& .MuiInputLabel-root.Mui-focused': { color: '#CC1818' },
-              }}
+              icon={DirectionsCar}
             />
-
-            {/* Color */}
-            <TextField
-              fullWidth
+            <FormField
               label="Color"
               name="color"
               value={formData.color}
               onChange={handleChange}
               required
               placeholder="Ej: Blanco"
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <DirectionsCar sx={{ color: '#94a3b8' }} />
-                  </InputAdornment>
-                ),
-              }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
-                  '& fieldset': { borderColor: '#e2e8f0' },
-                  '&:hover fieldset': { borderColor: '#CC1818' },
-                  '&.Mui-focused fieldset': { borderColor: '#CC1818', borderWidth: 2 },
-                },
-                '& .MuiInputLabel-root.Mui-focused': { color: '#CC1818' },
-              }}
+              icon={DirectionsCar}
             />
-
-            {/* Tipo */}
-            <FormControl fullWidth required sx={{
-              '& .MuiOutlinedInput-root': {
-                borderRadius: 2,
-                '& fieldset': { borderColor: '#e2e8f0' },
-                '&:hover fieldset': { borderColor: '#CC1818' },
-                '&.Mui-focused fieldset': { borderColor: '#CC1818', borderWidth: 2 },
-              },
-            }}>
-              <InputLabel sx={{ '&.Mui-focused': { color: '#CC1818' } }}>Tipo de Vehículo</InputLabel>
-              <Select
-                name="tipo"
-                value={formData.tipo}
-                label="Tipo de Vehículo"
-                onChange={handleChange}
-              >
-                {tiposVehiculo.map((tipo) => (
-                  <MenuItem key={tipo} value={tipo}>
-                    {tipo}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            {/* Capacidad */}
-            <TextField
-              fullWidth
+            <FormSelect
+              label="Tipo de Vehículo"
+              name="tipo"
+              value={formData.tipo}
+              onChange={handleChange}
+              required
+            >
+              {tiposVehiculo.map((tipo) => (
+                <MenuItem key={tipo} value={tipo}>{tipo}</MenuItem>
+              ))}
+            </FormSelect>
+            <FormField
               label="Capacidad (kg)"
               name="capacidad"
               type="number"
@@ -283,27 +184,14 @@ const RegistrarTransporte = () => {
               onChange={handleChange}
               required
               placeholder="Ej: 1500"
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Speed sx={{ color: '#94a3b8' }} />
-                  </InputAdornment>
-                ),
-              }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
-                  '& fieldset': { borderColor: '#e2e8f0' },
-                  '&:hover fieldset': { borderColor: '#CC1818' },
-                  '&.Mui-focused fieldset': { borderColor: '#CC1818', borderWidth: 2 },
-                },
-                '& .MuiInputLabel-root.Mui-focused': { color: '#CC1818' },
-              }}
+              icon={Speed}
             />
-
-            {/* ID Conductor */}
-            <TextField
-              fullWidth
+          </FormFieldsContainer>
+        )
+      case 1:
+        return (
+          <FormFieldsContainer>
+            <FormField
               label="ID Conductor"
               name="idConductor"
               type="number"
@@ -311,27 +199,9 @@ const RegistrarTransporte = () => {
               onChange={handleChange}
               required
               placeholder="Ej: 4"
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Person sx={{ color: '#94a3b8' }} />
-                  </InputAdornment>
-                ),
-              }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
-                  '& fieldset': { borderColor: '#e2e8f0' },
-                  '&:hover fieldset': { borderColor: '#CC1818' },
-                  '&.Mui-focused fieldset': { borderColor: '#CC1818', borderWidth: 2 },
-                },
-                '& .MuiInputLabel-root.Mui-focused': { color: '#CC1818' },
-              }}
+              icon={Person}
             />
-
-            {/* ID Propietario */}
-            <TextField
-              fullWidth
+            <FormField
               label="ID Propietario"
               name="idPropietario"
               type="number"
@@ -339,152 +209,115 @@ const RegistrarTransporte = () => {
               onChange={handleChange}
               required
               placeholder="Ej: 6"
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Business sx={{ color: '#94a3b8' }} />
-                  </InputAdornment>
-                ),
-              }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
-                  '& fieldset': { borderColor: '#e2e8f0' },
-                  '&:hover fieldset': { borderColor: '#CC1818' },
-                  '&.Mui-focused fieldset': { borderColor: '#CC1818', borderWidth: 2 },
-                },
-                '& .MuiInputLabel-root.Mui-focused': { color: '#CC1818' },
-              }}
+              icon={Business}
             />
-
-            {/* Estado */}
-            <FormControl fullWidth required sx={{
-              '& .MuiOutlinedInput-root': {
-                borderRadius: 2,
-                '& fieldset': { borderColor: '#e2e8f0' },
-                '&:hover fieldset': { borderColor: '#CC1818' },
-                '&.Mui-focused fieldset': { borderColor: '#CC1818', borderWidth: 2 },
-              },
-            }}>
-              <InputLabel sx={{ '&.Mui-focused': { color: '#CC1818' } }}>Estado</InputLabel>
-              <Select
-                name="estado"
-                value={formData.estado}
-                label="Estado"
-                onChange={handleChange}
-              >
-                {estados.map((estado) => (
-                  <MenuItem key={estado} value={estado}>
-                    {estado}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            {/* Vencimiento SOAT */}
-            <TextField
-              fullWidth
+            <FormSelect
+              label="Estado"
+              name="estado"
+              value={formData.estado}
+              onChange={handleChange}
+              required
+            >
+              {estados.map((estado) => (
+                <MenuItem key={estado} value={estado}>{estado}</MenuItem>
+              ))}
+            </FormSelect>
+            <FormField
               label="Vencimiento SOAT"
               name="vencimientoSOAT"
               type="date"
               value={formData.vencimientoSOAT}
               onChange={handleChange}
-              InputLabelProps={{ shrink: true }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Event sx={{ color: '#94a3b8' }} />
-                  </InputAdornment>
-                ),
-              }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
-                  '& fieldset': { borderColor: '#e2e8f0' },
-                  '&:hover fieldset': { borderColor: '#CC1818' },
-                  '&.Mui-focused fieldset': { borderColor: '#CC1818', borderWidth: 2 },
-                },
-                '& .MuiInputLabel-root.Mui-focused': { color: '#CC1818' },
-              }}
+              icon={Event}
             />
-
-            {/* Vencimiento Revisión Técnica */}
-            <TextField
-              fullWidth
+            <FormField
               label="Vencimiento Revisión Técnica"
               name="vencimientoRevisionTecnica"
               type="date"
               value={formData.vencimientoRevisionTecnica}
               onChange={handleChange}
-              InputLabelProps={{ shrink: true }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Event sx={{ color: '#94a3b8' }} />
-                  </InputAdornment>
-                ),
-              }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
-                  '& fieldset': { borderColor: '#e2e8f0' },
-                  '&:hover fieldset': { borderColor: '#CC1818' },
-                  '&.Mui-focused fieldset': { borderColor: '#CC1818', borderWidth: 2 },
-                },
-                '& .MuiInputLabel-root.Mui-focused': { color: '#CC1818' },
-              }}
+              icon={Event}
             />
-
-            {/* Vencimiento Seguro de Terceros */}
-            <TextField
-              fullWidth
+            <FormField
               label="Vencimiento Seguro de Terceros"
               name="vencimientoSeguroTerceros"
               type="date"
               value={formData.vencimientoSeguroTerceros}
               onChange={handleChange}
-              InputLabelProps={{ shrink: true }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Event sx={{ color: '#94a3b8' }} />
-                  </InputAdornment>
-                ),
-              }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
-                  '& fieldset': { borderColor: '#e2e8f0' },
-                  '&:hover fieldset': { borderColor: '#CC1818' },
-                  '&.Mui-focused fieldset': { borderColor: '#CC1818', borderWidth: 2 },
-                },
-                '& .MuiInputLabel-root.Mui-focused': { color: '#CC1818' },
-              }}
+              icon={Event}
             />
+          </FormFieldsContainer>
+        )
+      default:
+        return null
+    }
+  }
 
-            {/* Botón de envío */}
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              size="large"
-              sx={{
-                backgroundColor: '#CC1818',
-                borderRadius: 2,
-                py: 1.5,
-                fontWeight: 700,
-                fontSize: '1rem',
-                textTransform: 'none',
-                boxShadow: '0 4px 14px rgba(204, 24, 24, 0.3)',
-                '&:hover': { 
-                  backgroundColor: '#b91c1c',
-                  boxShadow: '0 6px 20px rgba(204, 24, 24, 0.4)',
-                },
-              }}
-            >
-              Registrar Transporte
-            </Button>
-          </Box>
+  return (
+    <Box sx={{ p: 4 }}>
+      <Paper elevation={0} sx={{ p: 4, borderRadius: 2, border: '1px solid #e2e8f0', maxWidth: 700, mx: 'auto' }}>
+        <FormHeader 
+          icon={DirectionsCar} 
+          title="Registrar Transporte" 
+          subtitle="Ingresa los datos del vehículo"
+        />
+
+        {success && (
+          <FormAlert severity="success">
+            {success}
+          </FormAlert>
+        )}
+
+        {error && (
+          <FormAlert>
+            {error}
+          </FormAlert>
+        )}
+
+        {/* Stepper */}
+        <Stepper activeStep={activeStep} sx={{ mb: 4 }} alternativeLabel>
+          {steps.map((label, index) => (
+            <Step key={label}>
+              <StepLabel 
+                sx={{ 
+                  '& .MuiStepLabel-label': { 
+                    fontWeight: activeStep === index ? 600 : 400,
+                    color: activeStep === index ? theme.primary : '#64748b'
+                  } 
+                }}
+              >
+                {label}
+              </StepLabel>
+            </Step>
+          ))}
+        </Stepper>
+
+        <form onSubmit={handleSubmit}>
+          {renderStepContent()}
+
+          {/* Botones de navegación */}
+          <FormButtonGroup justify="space-between">
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <SecondaryButton 
+                onClick={handleBack} 
+                disabled={activeStep === 0}
+                children="Anterior"
+              />
+            </Box>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              {activeStep < steps.length - 1 ? (
+                <PrimaryButton 
+                  onClick={handleNext}
+                  children="Siguiente"
+                />
+              ) : (
+                <PrimaryButton 
+                  type="submit"
+                  children="Registrar"
+                />
+              )}
+            </Box>
+          </FormButtonGroup>
         </form>
       </Paper>
     </Box>
