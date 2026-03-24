@@ -77,8 +77,10 @@ export const login = async (email, password) => {
 /**
  * Registrar nuevo usuario
  * POST /api/auth/register
+ * @param {Object} userData - Datos del usuario
+ * @param {boolean} autoLogin - Si true, guarda token para auto-login (para self-registration)
  */
-export const register = async (userData) => {
+export const register = async (userData, autoLogin = true) => {
   // Mapear los datos del formulario al formato del backend
   const dataBackend = {
     tipoIdentificacion: userData.tipoIdentificacion || 'CC',
@@ -96,8 +98,9 @@ export const register = async (userData) => {
     body: JSON.stringify(dataBackend),
   });
 
-  // Guardar token y usuario si el registro fue exitoso
-  if (data.success && data.data.token) {
+  // Solo guardar token y usuario si el registro fue exitoso Y autoLogin es true
+  // (para auto-registro). Si un admin registra otro usuario, no debe hacer auto-login
+  if (autoLogin && data.success && data.data.token) {
     setAuthData(data.data.token, data.data.usuario);
   }
 
@@ -132,6 +135,16 @@ export const resetPassword = async (token, newPassword) => {
  */
 export const getProfile = async () => {
   return await fetchWithAuth('/auth/profile', {
+    method: 'GET',
+  });
+};
+
+/**
+ * Obtener todos los usuarios
+ * GET /api/usuarios
+ */
+export const getAllUsuarios = async () => {
+  return await fetchWithAuth('/usuarios', {
     method: 'GET',
   });
 };
@@ -200,6 +213,7 @@ export default {
   recuperarPassword,
   resetPassword,
   getProfile,
+  getAllUsuarios,
   logout,
   getToken,
   getUsuario,

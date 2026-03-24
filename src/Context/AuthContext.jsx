@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react'
-import authService, { getUsuario, logout as authLogout, getUsuarios, actualizarUsuario, inhabilidadUsuario } from '../services/authService'
+import authService, { getUsuario, logout as authLogout, getAllUsuarios, actualizarUsuario as actualizarUsuarioService, inhabilidadUsuario as inhabilidadUsuarioService } from '../services/authService'
 
 // ============================================
 // DEFINICIONES DE PERMISOS (deben ir primero)
@@ -375,16 +375,18 @@ export const AuthProvider = ({ children }) => {
   const getRoles = () => Object.values(ROLES)
 
   // Registrar usuario - conecta con el backend
-  const registrarUsuario = async (nuevoUsuario) => {
+  // autoLogin: true para self-registration (cuando no hay nadie logueado)
+  // autoLogin: false para cuando un admin registra otro usuario
+  const registrarUsuario = async (nuevoUsuario, autoLogin = true) => {
     try {
-      const response = await authService.register(nuevoUsuario)
+      const response = await authService.register(nuevoUsuario, autoLogin)
       
       if (response.success) {
         const usuarioFormateado = formatUsuarioFromBackend(response.data.usuario)
         
-        // Solo iniciar sesión automáticamente si NO hay un usuario logueado actualmente
+        // Solo iniciar sesión automáticamente si autoLogin es true Y NO hay un usuario logueado actualmente
         // (para auto-registro). Si un admin registra otro usuario, no debe hacer auto-login
-        if (!usuario) {
+        if (autoLogin && !usuario) {
           setUsuario(usuarioFormateado)
         }
         
@@ -422,6 +424,53 @@ export const AuthProvider = ({ children }) => {
     return null
   }
 
+  // Función para obtener todos los usuarios
+  const getUsuarios = async () => {
+    try {
+      const response = await getAllUsuarios()
+      if (response.success && response.data) {
+        // Mapear los usuarios del backend al formato esperado
+        return response.data.map(u => ({
+          id: u.idUsuario || u.id,
+          nombre: u.nombre,
+          email: u.email,
+          iniciales: u.iniciales || (u.nombre ? u.nombre.substring(0, 2).toUpperCase() : '??'),
+          rol: {
+            nombre: u.rol?.nombre || u.rol || 'Vendedor'
+          },
+          habilitado: u.habilitado !== false,
+          estado: u.estado || (u.habilitado !== false ? 'Activo' : 'Inactivo'),
+        }))
+      }
+      return []
+    } catch (error) {
+      console.error('Error al obtener usuarios:', error)
+      return []
+    }
+  }
+
+  // Función para actualizar un usuario
+  const actualizarUsuario = async (id, datos) => {
+    try {
+      const response = await actualizarUsuarioService(id, datos)
+      return response
+    } catch (error) {
+      console.error('Error al actualizar usuario:', error)
+      return { success: false, message: error.message || 'Error al actualizar usuario' }
+    }
+  }
+
+  // Función para habilitar/inhabilitar un usuario
+  const inhabilidadUsuario = async (id) => {
+    try {
+      const response = await inhabilidadUsuarioService(id)
+      return response
+    } catch (error) {
+      console.error('Error al cambiar estado del usuario:', error)
+      return { success: false, message: error.message || 'Error al cambiar estado del usuario' }
+    }
+  }
+
   return (
     <AuthContext.Provider value={{
       usuario,
@@ -435,11 +484,11 @@ export const AuthProvider = ({ children }) => {
       registrarUsuario,
       recuperarPassword,
       recargarUsuario,
-      ROLES,
-      PERMISOS,
       getUsuarios,
       actualizarUsuario,
       inhabilidadUsuario,
+      ROLES,
+      PERMISOS,
     }}>
       {children}
     </AuthContext.Provider>

@@ -194,16 +194,9 @@ const ModalInhabilitar = ({ usuario, onClose, onConfirm }) => {
 // ── Componente principal ──
 const ListarUsuario = () => {
     const navigate = useNavigate()
-    const { tienePermiso, PERMISOS } = useAuth()
+    const { tienePermiso, PERMISOS, getUsuarios, actualizarUsuario, inhabilidadUsuario } = useAuth()
     
-    // Datos quemados para el frontend (temporal hasta conectar backend)
-    const [usuarios, setUsuarios] = useState([
-        { id: 1, nombre: 'Admin Principal', email: 'admin@encomiexpress.com', rol: { id: 1, nombre: 'Administrador' }, iniciales: 'AP', habilitado: true },
-        { id: 2, nombre: 'Juan Pérez', email: 'juan.perez@email.com', rol: { id: 3, nombre: 'Vendedor' }, iniciales: 'JP', habilitado: true },
-        { id: 3, nombre: 'María Gómez', email: 'maria.gomez@email.com', rol: { id: 3, nombre: 'Vendedor' }, iniciales: 'MG', habilitado: true },
-        { id: 4, nombre: 'Carlos Rodríguez', email: 'carlos.r@email.com', rol: { id: 4, nombre: 'Conductor' }, iniciales: 'CR', habilitado: true },
-        { id: 5, nombre: 'Ana Martínez', email: 'ana.m@email.com', rol: { id: 2, nombre: 'Gerente' }, iniciales: 'AM', habilitado: false },
-    ])
+    const [usuarios, setUsuarios] = useState([])
     
     const [busqueda, setBusqueda] = useState('')
     const [filtroPor, setFiltroPor] = useState('todo')
@@ -214,6 +207,19 @@ const ListarUsuario = () => {
     const [usuarioEditar, setUsuarioEditar] = useState(null)
     const [usuarioInhabilitar, setUsuarioInhabilitar] = useState(null)
     const [mensaje, setMensaje] = useState('')
+
+    // Cargar usuarios al montar el componente
+    useEffect(() => {
+        const cargarUsuarios = async () => {
+            try {
+                const usuariosData = await getUsuarios()
+                setUsuarios(usuariosData)
+            } catch (error) {
+                console.error('Error al cargar usuarios:', error)
+            }
+        }
+        cargarUsuarios()
+    }, [getUsuarios])
 
     const puedeRegistrar = tienePermiso(PERMISOS.REGISTRAR_USUARIO)
     const puedeConsultar = tienePermiso(PERMISOS.CONSULTAR_USUARIO)
@@ -239,41 +245,46 @@ const ListarUsuario = () => {
         return coincideBusqueda && coincideRol
     })
 
-    const handleInhabilitar = (id) => {
-        // Actualizar el estado local del usuario
-        setUsuarios(prevUsuarios => {
-            return prevUsuarios.map(u => {
-                if (u.id === id) {
-                    return { ...u, habilitado: u.habilitado === false }
-                }
-                return u
-            })
-        })
-        setUsuarioInhabilitar(null)
-        setMensaje('Usuario actualizado correctamente')
-        setTimeout(() => setMensaje(''), 2000)
+    const handleInhabilitar = async (id) => {
+        try {
+            await inhabilidadUsuario(id)
+            // Recargar usuarios después de cambiar el estado
+            const usuariosActualizados = await getUsuarios()
+            setUsuarios(usuariosActualizados)
+            setUsuarioInhabilitar(null)
+            setMensaje('Usuario actualizado correctamente')
+            setTimeout(() => setMensaje(''), 2000)
+        } catch (error) {
+            console.error('Error al cambiar estado del usuario:', error)
+        }
     }
 
     // Cambiar habilitado directamente sin modal
-    const handleHabilitadoChange = (id) => {
-        // Actualizar el estado local del usuario
-        setUsuarios(prevUsuarios => {
-            return prevUsuarios.map(u => {
-                if (u.id === id) {
-                    return { ...u, habilitado: u.habilitado === false }
-                }
-                return u
-            })
-        })
-        setMensaje('Estado actualizado correctamente')
-        setTimeout(() => setMensaje(''), 2000)
+    const handleHabilitadoChange = async (id) => {
+        try {
+            await inhabilidadUsuario(id)
+            // Recargar usuarios después de cambiar el estado
+            const usuariosActualizados = await getUsuarios()
+            setUsuarios(usuariosActualizados)
+            setMensaje('Estado actualizado correctamente')
+            setTimeout(() => setMensaje(''), 2000)
+        } catch (error) {
+            console.error('Error al cambiar estado del usuario:', error)
+        }
     }
 
-    const handleEditar = (id, datos) => {
-        actualizarUsuario({ id, ...datos })
-        setUsuarios(getUsuarios())
-        setMensaje('Usuario actualizado correctamente')
-        setTimeout(() => setMensaje(''), 2000)
+    const handleEditar = async (id, datos) => {
+        try {
+            await actualizarUsuario(id, datos)
+            // Recargar usuarios después de actualizar
+            const usuariosActualizados = await getUsuarios()
+            setUsuarios(usuariosActualizados)
+            setUsuarioEditar(null)
+            setMensaje('Usuario actualizado correctamente')
+            setTimeout(() => setMensaje(''), 2000)
+        } catch (error) {
+            console.error('Error al actualizar usuario:', error)
+        }
     }
 
     const limpiarFiltros = () => {
