@@ -151,7 +151,6 @@ const ListarConductor = () => {
                 <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Email</TableCell>
                 <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Licencia</TableCell>
                 <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Venc. Licencia</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Estado</TableCell>
                 <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Habilitado</TableCell>
                 <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem', textAlign: 'center' }}>Acciones</TableCell>
               </TableRow>
@@ -218,23 +217,6 @@ const ListarConductor = () => {
                         color={isVencido(conductor.fechaVencimientoLicencia) ? 'error' : 'success'}
                         variant={isVencido(conductor.fechaVencimientoLicencia) ? 'filled' : 'outlined'}
                       />
-                    </TableCell>
-                    <TableCell>
-                      <FormControl size="small" sx={{ minWidth: 120 }}>
-                        <Select
-                          value={conductor.estado}
-                          onChange={(e) => handleEstadoChange(conductor.idConductor, e.target.value)}
-                          sx={{ 
-                            fontSize: '0.75rem',
-                            '& .MuiSelect-select': { py: 0.5 },
-                            color: getEstadoColor(conductor.estado) === 'success' ? '#10b981' : 
-                                   getEstadoColor(conductor.estado) === 'error' ? '#dc2626' : '#64748b'
-                          }}
-                        >
-                          <MenuItem value="Activo">Activo</MenuItem>
-                          <MenuItem value="Inactivo">Inactivo</MenuItem>
-                        </Select>
-                      </FormControl>
                     </TableCell>
                     <TableCell sx={{ py: 1.5 }}>
                       <Switch 

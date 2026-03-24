@@ -140,14 +140,13 @@ const ListarPropietario = () => {
           <Table>
             <TableHead>
               <TableRow sx={{ backgroundColor: '#f8fafc' }}>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Identificación</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Nombre</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Teléfono</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Email</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Ciudad</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Estado</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Habilitado</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem', textAlign: 'center' }}>Acciones</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Identificación</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Nombre</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Teléfono</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Email</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Ciudad</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Habilitado</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#0f172a', textAlign: 'center' }}>Acciones</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -180,7 +179,7 @@ const ListarPropietario = () => {
                             mb: 0.5
                           }}
                         />
-                        <Typography sx={{ fontSize: '0.75rem', fontWeight: 600 }}>
+                        <Typography sx={{ fontSize: '0.875rem', fontWeight: 600 }}>
                           {propietario.numeroIdentificacion}
                         </Typography>
                       </Box>
@@ -202,23 +201,7 @@ const ListarPropietario = () => {
                       {propietario.email || '-'}
                     </TableCell>
                     <TableCell>{propietario.ciudad}</TableCell>
-                    <TableCell>
-                      <FormControl size="small" sx={{ minWidth: 120 }}>
-                        <Select
-                          value={propietario.estado}
-                          onChange={(e) => handleEstadoChange(propietario.idPropietario, e.target.value)}
-                          sx={{ 
-                            fontSize: '0.75rem',
-                            '& .MuiSelect-select': { py: 0.5 },
-                            color: getEstadoColor(propietario.estado) === 'success' ? '#10b981' : 
-                                   getEstadoColor(propietario.estado) === 'error' ? '#dc2626' : '#64748b'
-                          }}
-                        >
-                          <MenuItem value="Activo">Activo</MenuItem>
-                          <MenuItem value="Inactivo">Inactivo</MenuItem>
-                        </Select>
-                      </FormControl>
-                    </TableCell>
+        
                     <TableCell sx={{ py: 1.5 }}>
                       <Switch 
                         checked={propietario.habilitado !== false}
@@ -257,7 +240,7 @@ const ListarPropietario = () => {
 
         {/* Footer con total */}
         <Box sx={{ p: 2, borderTop: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
-          <Typography sx={{ color: '#64748b', fontSize: '0.75rem' }}>
+          <Typography sx={{ color: '#64748b', fontSize: '0.875rem' }}>
             Total de propietarios: <strong>{filteredPropietarios.length}</strong>
           </Typography>
         </Box>
@@ -267,3 +250,4 @@ const ListarPropietario = () => {
 }
 
 export default ListarPropietario
+
