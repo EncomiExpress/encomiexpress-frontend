@@ -157,6 +157,41 @@ export const logout = () => {
 };
 
 // ============================================
+// FUNCIONES DE USUARIOS
+// ============================================
+
+/**
+ * Obtener todos los usuarios
+ * GET /api/usuarios
+ */
+export const getUsuarios = async () => {
+  return await fetchWithAuth('/usuarios', {
+    method: 'GET',
+  });
+};
+
+/**
+ * Actualizar usuario
+ * PUT /api/usuarios/:id
+ */
+export const actualizarUsuario = async (id, datos) => {
+  return await fetchWithAuth(`/usuarios/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(datos),
+  });
+};
+
+/**
+ * Inhabilitar usuario
+ * DELETE /api/usuarios/:id
+ */
+export const inhabilidadUsuario = async (id) => {
+  return await fetchWithAuth(`/usuarios/${id}`, {
+    method: 'DELETE',
+  });
+};
+
+// ============================================
 // MAPEO DE ROLES
 // ============================================
 
@@ -185,4 +220,7 @@ export default {
   setAuthData,
   clearAuthData,
   getRolId,
+  getUsuarios,
+  actualizarUsuario,
+  inhabilidadUsuario,
 };

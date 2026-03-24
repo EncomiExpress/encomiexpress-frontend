@@ -1,5 +1,9 @@
 import { createContext, useContext, useState, useEffect } from 'react'
+<<<<<<< HEAD
+import authService, { getUsuario, logout as authLogout, getAllUsuarios, actualizarUsuario as actualizarUsuarioService, inhabilidadUsuario as inhabilidadUsuarioService } from '../services/authService'
+=======
 import authService, { getUsuario, logout as authLogout, getAllUsuarios } from '../services/authService'
+>>>>>>> 82ae9b43c01bc8d7146675f6787fd06d38c992fc
 
 // ============================================
 // DEFINICIONES DE PERMISOS (deben ir primero)
@@ -22,6 +26,7 @@ export const PERMISOS = {
   LISTAR_CLIENTE: 'listar_cliente',
   LISTAR_ENCOMIENDA: 'listar_encomienda',
   LISTAR_ANTICIPO: 'listar_anticipo',
+  LISTAR_VENTA: 'listar_venta',
   LISTAR_USUARIO: 'listar_usuario',
   LISTAR_ROL: 'listar_rol',
   LISTAR_VEHICULO: 'listar_vehiculo',
@@ -32,6 +37,7 @@ export const PERMISOS = {
   // Permisos de Consultar
   CONSULTAR_CLIENTE: 'consultar_cliente',
   CONSULTAR_ENCOMIENDA: 'consultar_encomienda',
+  CONSULTAR_VENTA: 'consultar_venta',
   CONSULTAR_USUARIO: 'consultar_usuario',
   CONSULTAR_ANTICIPO: 'consultar_anticipo',
   CONSULTAR_ROL: 'consultar_rol',
@@ -43,6 +49,7 @@ export const PERMISOS = {
   // Permisos de Actualizar
   ACTUALIZAR_CLIENTE: 'actualizar_cliente',
   ACTUALIZAR_ENCOMIENDA: 'actualizar_encomienda',
+  ACTUALIZAR_VENTA: 'actualizar_venta',
   ACTUALIZAR_USUARIO: 'actualizar_usuario',
   ACTUALIZAR_ANTICIPO: 'actualizar_anticipo',
   ACTUALIZAR_ROL: 'actualizar_rol',
@@ -54,6 +61,7 @@ export const PERMISOS = {
   // Permisos de Inhabilitar
   INHABILITAR_CLIENTE: 'inhabilitar_cliente',
   INHABILITAR_USUARIO: 'inhabilitar_usuario',
+  INHABILITAR_VENTA: 'inhabilitar_venta',
 }
 
 // Definición de módulos para asignación por módulos
@@ -211,6 +219,13 @@ const MAPEO_PERMISOS = {
     PERMISOS.CONSULTAR_ANTICIPO,
     PERMISOS.ACTUALIZAR_ANTICIPO,
   ],
+  'ventas': [
+    PERMISOS.REGISTRAR_VENTA,
+    PERMISOS.LISTAR_VENTA,
+    PERMISOS.CONSULTAR_VENTA,
+    PERMISOS.ACTUALIZAR_VENTA,
+    PERMISOS.INHABILITAR_VENTA,
+  ],
 }
 
 // Mapeo de nombres de rol del backend al frontend
@@ -263,13 +278,20 @@ export const ROLES = {
       PERMISOS.LISTAR_CLIENTE,
       PERMISOS.LISTAR_ENCOMIENDA,
       PERMISOS.LISTAR_ANTICIPO,
+      PERMISOS.LISTAR_VENTA,
       // Consultar
       PERMISOS.CONSULTAR_CLIENTE,
       PERMISOS.CONSULTAR_ENCOMIENDA,
+      PERMISOS.CONSULTAR_VENTA,
       // Actualizar
       PERMISOS.ACTUALIZAR_CLIENTE,
       PERMISOS.ACTUALIZAR_ENCOMIENDA,
       PERMISOS.ACTUALIZAR_ANTICIPO,
+      PERMISOS.ACTUALIZAR_VENTA,
+      // Inhabilitar
+      PERMISOS.INHABILITAR_CLIENTE,
+      PERMISOS.INHABILITAR_USUARIO,
+      PERMISOS.INHABILITAR_VENTA,
     ],
   },
   VENDEDOR: {
@@ -283,8 +305,10 @@ export const ROLES = {
       // Listar
       PERMISOS.LISTAR_CLIENTE,
       PERMISOS.LISTAR_ENCOMIENDA,
+      PERMISOS.LISTAR_VENTA,
       // Consultar
       PERMISOS.CONSULTAR_CLIENTE,
+      PERMISOS.CONSULTAR_VENTA,
     ],
   },
   CONDUCTOR: {
@@ -522,6 +546,31 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
+<<<<<<< HEAD
+  // Función para actualizar un usuario
+  const actualizarUsuario = async (id, datos) => {
+    try {
+      const response = await actualizarUsuarioService(id, datos)
+      return response
+    } catch (error) {
+      console.error('Error al actualizar usuario:', error)
+      return { success: false, message: error.message || 'Error al actualizar usuario' }
+    }
+  }
+
+  // Función para habilitar/inhabilitar un usuario
+  const inhabilidadUsuario = async (id) => {
+    try {
+      const response = await inhabilidadUsuarioService(id)
+      return response
+    } catch (error) {
+      console.error('Error al cambiar estado del usuario:', error)
+      return { success: false, message: error.message || 'Error al cambiar estado del usuario' }
+    }
+  }
+
+=======
+>>>>>>> 82ae9b43c01bc8d7146675f6787fd06d38c992fc
   return (
     <AuthContext.Provider value={{
       usuario,
@@ -536,6 +585,11 @@ export const AuthProvider = ({ children }) => {
       recuperarPassword,
       recargarUsuario,
       getUsuarios,
+<<<<<<< HEAD
+      actualizarUsuario,
+      inhabilidadUsuario,
+=======
+>>>>>>> 82ae9b43c01bc8d7146675f6787fd06d38c992fc
       ROLES,
       PERMISOS,
     }}>

@@ -10,6 +10,7 @@ import { PropietarioProvider } from './Context/PropietarioContext.jsx'
 import { ConductorProvider } from './Context/ConductorContext.jsx'
 import { DestinoProvider } from './Context/DestinoContext.jsx'
 import { RutaProgramacionProvider } from './Context/RutaProgramacionContext.jsx'
+import { VentaProvider } from './Context/VentaContext.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -21,9 +22,11 @@ createRoot(document.getElementById('root')).render(
               <DestinoProvider>
                 <RutaProgramacionProvider>
                   <ClienteProvider>
-                  <AnticipoExcedenteProvider>
-                    <App />
-                  </AnticipoExcedenteProvider>
+                    <VentaProvider>
+                      <AnticipoExcedenteProvider>
+                        <App />
+                      </AnticipoExcedenteProvider>
+                    </VentaProvider>
                   </ClienteProvider>
                 </RutaProgramacionProvider>
               </DestinoProvider>

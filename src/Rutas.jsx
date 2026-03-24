@@ -30,6 +30,9 @@ import ActualizarDestino from './Pages/Destino/ActualizarDestino'
 import ListarRutaProgramacion from './Pages/RutaProgramacion/ListarRutaProgramacion'
 import RegistrarRutaProgramacion from './Pages/RutaProgramacion/RegistrarRutaProgramacion'
 import ActualizarRutaProgramacion from './Pages/RutaProgramacion/ActualizarRutaProgramacion'
+import RegistrarVenta from './Pages/Venta/RegistrarVenta'
+import ListarVenta from './Pages/Venta/ListarVenta'
+import ActualizarVenta from './Pages/Venta/ActualizarVenta'
 import { PERMISOS } from './Context/AuthContext'
 
 const Rutas = () => {
@@ -295,25 +298,23 @@ const Rutas = () => {
         path="/ventas/registrar"
         element={
           <ProtectedRoute permisosRequeridos={[PERMISOS.REGISTRAR_VENTA]} requiereTodos={false}>
-            <Layout>
-              <div style={{ padding: 20 }}>
-                <h2>Nueva Venta</h2>
-                <p>Formulario de nueva venta.</p>
-              </div>
-            </Layout>
+            <Layout><RegistrarVenta /></Layout>
           </ProtectedRoute>
         }
       />
       <Route
         path="/ventas/listar"
         element={
-          <ProtectedRoute permisosRequeridos={[]} requiresTodos={false}>
-            <Layout>
-              <div style={{ padding: 20 }}>
-                <h2>Historial de Ventas</h2>
-                <p>Listado de ventas realizadas.</p>
-              </div>
-            </Layout>
+          <ProtectedRoute permisosRequeridos={[PERMISOS.LISTAR_VENTA]} requiereTodos={false}>
+            <Layout><ListarVenta /></Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/ventas/actualizar/:id"
+        element={
+          <ProtectedRoute permisosRequeridos={[PERMISOS.ACTUALIZAR_VENTA]} requiereTodos={false}>
+            <Layout><ActualizarVenta /></Layout>
           </ProtectedRoute>
         }
       />

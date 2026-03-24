@@ -56,7 +56,7 @@ const ModalConsultar = ({ usuario, onClose }) => {
                 <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
                     {campos.map(c => (
                         <Box key={c.label}>
-                            <Typography variant="caption" color={COLORS.textMuted} fontWeight={600} textTransform="uppercase" letterSpacing={0.8}>
+                            <Typography variant="caption" color={COLORS.textMuted} fontWeight={600}>
                                 {c.label}
                             </Typography>
                             <Typography variant="body2" fontWeight={500} color={COLORS.text}>
@@ -194,9 +194,9 @@ const ModalInhabilitar = ({ usuario, onClose, onConfirm }) => {
 // ── Componente principal ──
 const ListarUsuario = () => {
     const navigate = useNavigate()
-    const { getUsuarios, tienePermiso, PERMISOS } = useAuth()
+    const { tienePermiso, PERMISOS, getUsuarios, actualizarUsuario, inhabilidadUsuario } = useAuth()
+    
     const [usuarios, setUsuarios] = useState([])
-    const [loading, setLoading] = useState(true)
     
     const [busqueda, setBusqueda] = useState('')
     const [filtroPor, setFiltroPor] = useState('todo')
@@ -242,41 +242,46 @@ const ListarUsuario = () => {
         return coincideBusqueda && coincideRol
     })
 
-    const handleInhabilitar = (id) => {
-        // Actualizar el estado local del usuario
-        setUsuarios(prevUsuarios => {
-            return prevUsuarios.map(u => {
-                if (u.id === id) {
-                    return { ...u, habilitado: u.habilitado === false }
-                }
-                return u
-            })
-        })
-        setUsuarioInhabilitar(null)
-        setMensaje('Usuario actualizado correctamente')
-        setTimeout(() => setMensaje(''), 2000)
+    const handleInhabilitar = async (id) => {
+        try {
+            await inhabilidadUsuario(id)
+            // Recargar usuarios después de cambiar el estado
+            const usuariosActualizados = await getUsuarios()
+            setUsuarios(usuariosActualizados)
+            setUsuarioInhabilitar(null)
+            setMensaje('Usuario actualizado correctamente')
+            setTimeout(() => setMensaje(''), 2000)
+        } catch (error) {
+            console.error('Error al cambiar estado del usuario:', error)
+        }
     }
 
     // Cambiar habilitado directamente sin modal
-    const handleHabilitadoChange = (id) => {
-        // Actualizar el estado local del usuario
-        setUsuarios(prevUsuarios => {
-            return prevUsuarios.map(u => {
-                if (u.id === id) {
-                    return { ...u, habilitado: u.habilitado === false }
-                }
-                return u
-            })
-        })
-        setMensaje('Estado actualizado correctamente')
-        setTimeout(() => setMensaje(''), 2000)
+    const handleHabilitadoChange = async (id) => {
+        try {
+            await inhabilidadUsuario(id)
+            // Recargar usuarios después de cambiar el estado
+            const usuariosActualizados = await getUsuarios()
+            setUsuarios(usuariosActualizados)
+            setMensaje('Estado actualizado correctamente')
+            setTimeout(() => setMensaje(''), 2000)
+        } catch (error) {
+            console.error('Error al cambiar estado del usuario:', error)
+        }
     }
 
-    const handleEditar = (id, datos) => {
-        actualizarUsuario({ id, ...datos })
-        setUsuarios(getUsuarios())
-        setMensaje('Usuario actualizado correctamente')
-        setTimeout(() => setMensaje(''), 2000)
+    const handleEditar = async (id, datos) => {
+        try {
+            await actualizarUsuario(id, datos)
+            // Recargar usuarios después de actualizar
+            const usuariosActualizados = await getUsuarios()
+            setUsuarios(usuariosActualizados)
+            setUsuarioEditar(null)
+            setMensaje('Usuario actualizado correctamente')
+            setTimeout(() => setMensaje(''), 2000)
+        } catch (error) {
+            console.error('Error al actualizar usuario:', error)
+        }
     }
 
     const limpiarFiltros = () => {
@@ -470,5 +475,3 @@ const ListarUsuario = () => {
 }
 
 export default ListarUsuario
-
-

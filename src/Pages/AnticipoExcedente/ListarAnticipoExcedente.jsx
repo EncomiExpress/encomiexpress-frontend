@@ -157,23 +157,23 @@ const ModalConsultar = ({ anticipo, onClose }) => {
                     <Grid container spacing={2}>
                         {/* Datos principales */}
                         <Grid item xs={6}>
-                            <Typography variant="caption" color={COLORS.textMuted} fontWeight={600} textTransform="uppercase" letterSpacing={0.8} display="block">Conductor</Typography>
+                            <Typography variant="caption" color={COLORS.textMuted} fontWeight={600} display="block">Conductor</Typography>
                             <Typography variant="body2" fontWeight={500} color={COLORS.text}>{getNombreConductor(anticipo.idConductor)}</Typography>
                         </Grid>
                         <Grid item xs={6}>
-                            <Typography variant="caption" color={COLORS.textMuted} fontWeight={600} textTransform="uppercase" letterSpacing={0.8} display="block">Ruta</Typography>
+                            <Typography variant="caption" color={COLORS.textMuted} fontWeight={600} display="block">Ruta</Typography>
                             <Typography variant="body2" fontWeight={500} color={COLORS.text}>{getNombreRuta(anticipo.idRuta)}</Typography>
                         </Grid>
                         <Grid item xs={6}>
-                            <Typography variant="caption" color={COLORS.textMuted} fontWeight={600} textTransform="uppercase" letterSpacing={0.8} display="block">Valor anticipo</Typography>
+                            <Typography variant="caption" color={COLORS.textMuted} fontWeight={600} display="block">Valor anticipo</Typography>
                             <Typography variant="body2" fontWeight={600} color={COLORS.secondary}>{formatMoney(anticipo.valorAnticipo)}</Typography>
                         </Grid>
                         <Grid item xs={6}>
-                            <Typography variant="caption" color={COLORS.textMuted} fontWeight={600} textTransform="uppercase" letterSpacing={0.8} display="block">Valor gastado</Typography>
+                            <Typography variant="caption" color={COLORS.textMuted} fontWeight={600} display="block">Valor gastado</Typography>
                             <Typography variant="body2" fontWeight={500} color={COLORS.text}>{anticipo.valorGastado ? formatMoney(anticipo.valorGastado) : '—'}</Typography>
                         </Grid>
                         <Grid item xs={6}>
-                            <Typography variant="caption" color={COLORS.textMuted} fontWeight={600} textTransform="uppercase" letterSpacing={0.8} display="block">
+                            <Typography variant="caption" color={COLORS.textMuted} fontWeight={600} display="block">
                                 {excedente >= 0 ? 'Excedente' : 'Faltante'}
                             </Typography>
                             <Typography variant="body2" fontWeight={700} color={excedente >= 0 ? '#2E7D32' : COLORS.primary}>
@@ -181,27 +181,27 @@ const ModalConsultar = ({ anticipo, onClose }) => {
                             </Typography>
                         </Grid>
                         <Grid item xs={6}>
-                            <Typography variant="caption" color={COLORS.textMuted} fontWeight={600} textTransform="uppercase" letterSpacing={0.8} display="block">Estado</Typography>
+                            <Typography variant="caption" color={COLORS.textMuted} fontWeight={600} display="block">Estado</Typography>
                             <Chip label={anticipo.estado} size="small" sx={{
                                 mt: 0.3, fontSize: '0.7rem', fontWeight: 600, height: 20,
                                 backgroundColor: estadoStyle.bg, color: estadoStyle.color, textTransform: 'capitalize',
                             }} />
                         </Grid>
                         <Grid item xs={4}>
-                            <Typography variant="caption" color={COLORS.textMuted} fontWeight={600} textTransform="uppercase" letterSpacing={0.8} display="block">F. Entrega</Typography>
+                            <Typography variant="caption" color={COLORS.textMuted} fontWeight={600} display="block">F. Entrega</Typography>
                             <Typography variant="body2" color={COLORS.text}>{formatFecha(anticipo.fechaEntrega)}</Typography>
                         </Grid>
                         <Grid item xs={4}>
-                            <Typography variant="caption" color={COLORS.textMuted} fontWeight={600} textTransform="uppercase" letterSpacing={0.8} display="block">F. Legalización</Typography>
+                            <Typography variant="caption" color={COLORS.textMuted} fontWeight={600} display="block">F. Legalización</Typography>
                             <Typography variant="body2" color={COLORS.text}>{formatFecha(anticipo.fechaLegalizacion)}</Typography>
                         </Grid>
                         <Grid item xs={4}>
-                            <Typography variant="caption" color={COLORS.textMuted} fontWeight={600} textTransform="uppercase" letterSpacing={0.8} display="block">F. Excedente</Typography>
+                            <Typography variant="caption" color={COLORS.textMuted} fontWeight={600} display="block">F. Excedente</Typography>
                             <Typography variant="body2" color={COLORS.text}>{formatFecha(anticipo.fechaEntregaExcedente)}</Typography>
                         </Grid>
                         {anticipo.observaciones && (
                             <Grid item xs={12}>
-                                <Typography variant="caption" color={COLORS.textMuted} fontWeight={600} textTransform="uppercase" letterSpacing={0.8} display="block">Observaciones</Typography>
+                                <Typography variant="caption" color={COLORS.textMuted} fontWeight={600} display="block">Observaciones</Typography>
                                 <Typography variant="body2" color={COLORS.text}>{anticipo.observaciones}</Typography>
                             </Grid>
                         )}
@@ -210,7 +210,7 @@ const ModalConsultar = ({ anticipo, onClose }) => {
                         <Grid item xs={12}>
                             <Divider sx={{ mb: 1.5 }} />
                             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                                <Typography variant="caption" color={COLORS.textMuted} fontWeight={700} textTransform="uppercase" letterSpacing={0.8}>
+                                <Typography variant="caption" color={COLORS.textMuted} fontWeight={700} display="block">
                                     Soportes de pago
                                 </Typography>
                                 <Chip
@@ -335,7 +335,7 @@ const ListarAnticipoExcedente = () => {
             <Paper elevation={0} sx={{ p: 2, mb: 2, border: `1px solid ${COLORS.border}`, borderRadius: 3 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
                     <FilterListIcon sx={{ color: COLORS.textMuted, fontSize: 18 }} />
-                    <Typography variant="caption" fontWeight={700} color={COLORS.textMuted} textTransform="uppercase" letterSpacing={1}>
+                    <Typography variant="caption" fontWeight={700} color={COLORS.textMuted} display="block">
                         Filtros y búsqueda
                     </Typography>
                     {hayFiltrosActivos && (
@@ -427,7 +427,7 @@ const ListarAnticipoExcedente = () => {
                                 {['#', 'Conductor', 'Ruta', 'Anticipo', 'Gastado', 'Excedente', 'Soportes', 'Fecha entrega', 'Estado', 'Acciones'].map(col => (
                                     <TableCell key={col} sx={{
                                         fontWeight: 700, fontSize: '0.75rem', color: COLORS.textMuted,
-                                        textTransform: 'uppercase', letterSpacing: 0.8, py: 1.5,
+                                        py: 1.5,
                                         borderBottom: `2px solid ${COLORS.border}`, whiteSpace: 'nowrap',
                                     }}>
                                         {col}

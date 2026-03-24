@@ -59,7 +59,7 @@ const ModalConsultar = ({ cliente, onClose }) => {
                 <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
                     {campos.map(c => (
                         <Box key={c.label}>
-                            <Typography variant="caption" color={COLORS.textMuted} fontWeight={600} textTransform="uppercase" letterSpacing={0.8}>
+                            <Typography variant="caption" color={COLORS.textMuted} fontWeight={600}>
                                 {c.label}
                             </Typography>
                             <Typography variant="body2" fontWeight={500} color={COLORS.text}>
@@ -211,7 +211,7 @@ const ListarCliente = () => {
             <Paper elevation={0} sx={{ p: 2, mb: 2, border: `1px solid ${COLORS.border}`, borderRadius: 3 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
                     <FilterListIcon sx={{ color: COLORS.textMuted, fontSize: 18 }} />
-                    <Typography variant="caption" fontWeight={700} color={COLORS.textMuted} textTransform="uppercase" letterSpacing={1}>
+                    <Typography variant="caption" fontWeight={700} color={COLORS.textMuted} letterSpacing={1}>
                         Filtros y búsqueda
                     </Typography>
                     {hayFiltrosActivos && (
@@ -298,7 +298,7 @@ const ListarCliente = () => {
                                 {['#', 'Cliente', 'Identificación', 'Teléfono', 'Correo', 'Estado', 'Acciones'].map(col => (
                                     <TableCell key={col} sx={{
                                         fontWeight: 700, fontSize: '0.75rem', color: COLORS.textMuted,
-                                        textTransform: 'uppercase', letterSpacing: 0.8, py: 1.5,
+                                        letterSpacing: 0.8, py: 1.5,
                                         borderBottom: `2px solid ${COLORS.border}`,
                                     }}>
                                         {col}
