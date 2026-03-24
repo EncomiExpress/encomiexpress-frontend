@@ -210,15 +210,12 @@ const ListarUsuario = () => {
 
     // Cargar usuarios al montar el componente
     useEffect(() => {
-        const cargarUsuarios = async () => {
-            try {
-                const usuariosData = await getUsuarios()
-                setUsuarios(usuariosData)
-            } catch (error) {
-                console.error('Error al cargar usuarios:', error)
-            }
-        }
-        cargarUsuarios()
+      const cargarUsuarios = async () => {
+        const usuariosData = await getUsuarios()
+        setUsuarios(usuariosData)
+        setLoading(false)
+      }
+      cargarUsuarios()
     }, [getUsuarios])
 
     const puedeRegistrar = tienePermiso(PERMISOS.REGISTRAR_USUARIO)

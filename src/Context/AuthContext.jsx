@@ -1,5 +1,9 @@
 import { createContext, useContext, useState, useEffect } from 'react'
+<<<<<<< HEAD
 import authService, { getUsuario, logout as authLogout, getAllUsuarios, actualizarUsuario as actualizarUsuarioService, inhabilidadUsuario as inhabilidadUsuarioService } from '../services/authService'
+=======
+import authService, { getUsuario, logout as authLogout, getAllUsuarios } from '../services/authService'
+>>>>>>> 82ae9b43c01bc8d7146675f6787fd06d38c992fc
 
 // ============================================
 // DEFINICIONES DE PERMISOS (deben ir primero)
@@ -58,6 +62,99 @@ export const PERMISOS = {
   INHABILITAR_CLIENTE: 'inhabilitar_cliente',
   INHABILITAR_USUARIO: 'inhabilitar_usuario',
   INHABILITAR_VENTA: 'inhabilitar_venta',
+}
+
+// Definición de módulos para asignación por módulos
+export const MODULOS = {
+  USUARIOS: {
+    nombre: 'Usuarios',
+    permisos: [
+      PERMISOS.REGISTRAR_USUARIO,
+      PERMISOS.LISTAR_USUARIO,
+      PERMISOS.CONSULTAR_USUARIO,
+      PERMISOS.ACTUALIZAR_USUARIO,
+      PERMISOS.INHABILITAR_USUARIO,
+    ]
+  },
+  ROLES: {
+    nombre: 'Roles',
+    permisos: [
+      PERMISOS.REGISTRAR_ROL,
+      PERMISOS.LISTAR_ROL,
+      PERMISOS.CONSULTAR_ROL,
+      PERMISOS.ACTUALIZAR_ROL,
+    ]
+  },
+  CLIENTES: {
+    nombre: 'Clientes',
+    permisos: [
+      PERMISOS.REGISTRAR_CLIENTE,
+      PERMISOS.LISTAR_CLIENTE,
+      PERMISOS.CONSULTAR_CLIENTE,
+      PERMISOS.ACTUALIZAR_CLIENTE,
+      PERMISOS.INHABILITAR_CLIENTE,
+    ]
+  },
+  VEHICULOS: {
+    nombre: 'Vehículos',
+    permisos: [
+      PERMISOS.REGISTRAR_VEHICULO,
+      PERMISOS.LISTAR_VEHICULO,
+      PERMISOS.CONSULTAR_VEHICULO,
+      PERMISOS.ACTUALIZAR_VEHICULO,
+    ]
+  },
+  CONDUCTORES: {
+    nombre: 'Conductores',
+    permisos: [
+      PERMISOS.REGISTRAR_CONDUCTOR,
+      PERMISOS.LISTAR_CONDUCTOR,
+      PERMISOS.CONSULTAR_CONDUCTOR,
+      PERMISOS.ACTUALIZAR_CONDUCTOR,
+    ]
+  },
+  DESTINOS: {
+    nombre: 'Destinos',
+    permisos: [
+      PERMISOS.REGISTRAR_DESTINO,
+      PERMISOS.LISTAR_DESTINO,
+      PERMISOS.CONSULTAR_DESTINO,
+      PERMISOS.ACTUALIZAR_DESTINO,
+    ]
+  },
+  RUTAS: {
+    nombre: 'Rutas',
+    permisos: [
+      PERMISOS.REGISTRAR_RUTA,
+      PERMISOS.LISTAR_RUTA,
+      PERMISOS.CONSULTAR_RUTA,
+      PERMISOS.ACTUALIZAR_RUTA,
+    ]
+  },
+  ENCOMIENDAS: {
+    nombre: 'Encomiendas',
+    permisos: [
+      PERMISOS.REGISTRAR_ENCOMIENDA,
+      PERMISOS.LISTAR_ENCOMIENDA,
+      PERMISOS.CONSULTAR_ENCOMIENDA,
+      PERMISOS.ACTUALIZAR_ENCOMIENDA,
+    ]
+  },
+  ANTICIPOS: {
+    nombre: 'Anticipos',
+    permisos: [
+      PERMISOS.REGISTRAR_ANTICIPO,
+      PERMISOS.LISTAR_ANTICIPO,
+      PERMISOS.CONSULTAR_ANTICIPO,
+      PERMISOS.ACTUALIZAR_ANTICIPO,
+    ]
+  },
+  VENTAS: {
+    nombre: 'Ventas',
+    permisos: [
+      PERMISOS.REGISTRAR_VENTA,
+    ]
+  },
 }
 
 // ============================================
@@ -449,6 +546,7 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
+<<<<<<< HEAD
   // Función para actualizar un usuario
   const actualizarUsuario = async (id, datos) => {
     try {
@@ -471,6 +569,8 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
+=======
+>>>>>>> 82ae9b43c01bc8d7146675f6787fd06d38c992fc
   return (
     <AuthContext.Provider value={{
       usuario,
@@ -485,8 +585,11 @@ export const AuthProvider = ({ children }) => {
       recuperarPassword,
       recargarUsuario,
       getUsuarios,
+<<<<<<< HEAD
       actualizarUsuario,
       inhabilidadUsuario,
+=======
+>>>>>>> 82ae9b43c01bc8d7146675f6787fd06d38c992fc
       ROLES,
       PERMISOS,
     }}>
