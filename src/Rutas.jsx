@@ -18,6 +18,18 @@ import RegistrarVehiculo from './Pages/Vehiculo/RegistrarVehiculo'
 import ListarVehiculo from './Pages/Vehiculo/ListarVehiculo'
 import RegistrarRol from './Pages/Rol/RegistrarRol'
 import ListarRol from './Pages/Rol/ListarRol'
+import ListarPropietario from './Pages/Propietario/ListarPropietario'
+import RegistrarPropietario from './Pages/Propietario/RegistrarPropietario'
+import ActualizarPropietario from './Pages/Propietario/ActualizarPropietario'
+import ListarConductor from './Pages/Conductor/ListarConductor'
+import RegistrarConductor from './Pages/Conductor/RegistrarConductor'
+import ActualizarConductor from './Pages/Conductor/ActualizarConductor'
+import ListarDestino from './Pages/Destino/ListarDestino'
+import RegistrarDestino from './Pages/Destino/RegistrarDestino'
+import ActualizarDestino from './Pages/Destino/ActualizarDestino'
+import ListarRutaProgramacion from './Pages/RutaProgramacion/ListarRutaProgramacion'
+import RegistrarRutaProgramacion from './Pages/RutaProgramacion/RegistrarRutaProgramacion'
+import ActualizarRutaProgramacion from './Pages/RutaProgramacion/ActualizarRutaProgramacion'
 import { PERMISOS } from './Context/AuthContext'
 
 const Rutas = () => {
@@ -142,6 +154,110 @@ const Rutas = () => {
         element={
           <ProtectedRoute permisosRequeridos={[PERMISOS.REGISTRAR_VEHICULO]} requiereTodos={false}>
             <Layout><RegistrarVehiculo /></Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Rutas de Propietarios */}
+      <Route
+        path="/transporte/propietarios"
+        element={
+          <ProtectedRoute permisosRequeridos={[]} requiereTodos={false}>
+            <Layout><ListarPropietario /></Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/transporte/propietarios/registrar"
+        element={
+          <ProtectedRoute permisosRequeridos={[]} requiereTodos={false}>
+            <Layout><RegistrarPropietario /></Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/transporte/propietarios/actualizar/:id"
+        element={
+          <ProtectedRoute permisosRequeridos={[]} requiereTodos={false}>
+            <Layout><ActualizarPropietario /></Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Rutas de Conductores */}
+      <Route
+        path="/transporte/conductores"
+        element={
+          <ProtectedRoute permisosRequeridos={[]} requiereTodos={false}>
+            <Layout><ListarConductor /></Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/transporte/conductores/registrar"
+        element={
+          <ProtectedRoute permisosRequeridos={[]} requiereTodos={false}>
+            <Layout><RegistrarConductor /></Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/transporte/conductores/actualizar/:id"
+        element={
+          <ProtectedRoute permisosRequeridos={[]} requiereTodos={false}>
+            <Layout><ActualizarConductor /></Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Rutas de Destinos */}
+      <Route
+        path="/transporte/destinos"
+        element={
+          <ProtectedRoute permisosRequeridos={[]} requiereTodos={false}>
+            <Layout><ListarDestino /></Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/transporte/destinos/registrar"
+        element={
+          <ProtectedRoute permisosRequeridos={[]} requiereTodos={false}>
+            <Layout><RegistrarDestino /></Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/transporte/destinos/actualizar/:id"
+        element={
+          <ProtectedRoute permisosRequeridos={[]} requiereTodos={false}>
+            <Layout><ActualizarDestino /></Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Rutas de Programación de Rutas */}
+      <Route
+        path="/transporte/rutas"
+        element={
+          <ProtectedRoute permisosRequeridos={[]} requiereTodos={false}>
+            <Layout><ListarRutaProgramacion /></Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/transporte/rutas/registrar"
+        element={
+          <ProtectedRoute permisosRequeridos={[]} requiereTodos={false}>
+            <Layout><RegistrarRutaProgramacion /></Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/transporte/rutas/actualizar/:id"
+        element={
+          <ProtectedRoute permisosRequeridos={[]} requiereTodos={false}>
+            <Layout><ActualizarRutaProgramacion /></Layout>
           </ProtectedRoute>
         }
       />

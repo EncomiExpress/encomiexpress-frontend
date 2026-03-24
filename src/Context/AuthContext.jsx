@@ -361,7 +361,13 @@ export const AuthProvider = ({ children }) => {
       
       if (response.success) {
         const usuarioFormateado = formatUsuarioFromBackend(response.data.usuario)
-        setUsuario(usuarioFormateado)
+        
+        // Solo iniciar sesión automáticamente si NO hay un usuario logueado actualmente
+        // (para auto-registro). Si un admin registra otro usuario, no debe hacer auto-login
+        if (!usuario) {
+          setUsuario(usuarioFormateado)
+        }
+        
         return { success: true, usuario: usuarioFormateado }
       } else {
         return { success: false, mensaje: response.message }

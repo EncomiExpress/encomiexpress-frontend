@@ -6,17 +6,29 @@ import { ClienteProvider } from './Context/ClienteContext.jsx'
 import { AnticipoExcedenteProvider } from './Context/AnticipoExcedenteContext.jsx'
 import { AuthProvider } from './Context/AuthContext.jsx'
 import { TransporteProvider } from './Context/TransporteContext.jsx'
+import { PropietarioProvider } from './Context/PropietarioContext.jsx'
+import { ConductorProvider } from './Context/ConductorContext.jsx'
+import { DestinoProvider } from './Context/DestinoContext.jsx'
+import { RutaProgramacionProvider } from './Context/RutaProgramacionContext.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
       <AuthProvider>
         <TransporteProvider>
-          <ClienteProvider>
-            <AnticipoExcedenteProvider>
-              <App />
-            </AnticipoExcedenteProvider>
-          </ClienteProvider>
+          <PropietarioProvider>
+            <ConductorProvider>
+              <DestinoProvider>
+                <RutaProgramacionProvider>
+                  <ClienteProvider>
+                  <AnticipoExcedenteProvider>
+                    <App />
+                  </AnticipoExcedenteProvider>
+                  </ClienteProvider>
+                </RutaProgramacionProvider>
+              </DestinoProvider>
+            </ConductorProvider>
+          </PropietarioProvider>
         </TransporteProvider>
       </AuthProvider>
     </BrowserRouter>
