@@ -6,7 +6,7 @@ import {
     TextField, IconButton, Chip, Tooltip, InputAdornment,
     MenuItem, Select, FormControl, InputLabel, Button,
     Dialog, DialogTitle, DialogContent, DialogContentText,
-    DialogActions, Avatar, Alert
+    DialogActions, Avatar, Alert, Switch
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import VisibilityIcon from '@mui/icons-material/Visibility'
@@ -194,8 +194,9 @@ const ModalInhabilitar = ({ usuario, onClose, onConfirm }) => {
 // ── Componente principal ──
 const ListarUsuario = () => {
     const navigate = useNavigate()
-    const { getUsuarios, tienePermiso, inhabilidadUsuario, actualizarUsuario, PERMISOS } = useAuth()
-    const [usuarios, setUsuarios] = useState(getUsuarios())
+    const { getUsuarios, tienePermiso, PERMISOS } = useAuth()
+    const [usuarios, setUsuarios] = useState([])
+    const [loading, setLoading] = useState(true)
     
     const [busqueda, setBusqueda] = useState('')
     const [filtroPor, setFiltroPor] = useState('todo')
@@ -232,10 +233,32 @@ const ListarUsuario = () => {
     })
 
     const handleInhabilitar = (id) => {
-        inhabilidadUsuario(id)
-        setUsuarios(getUsuarios())
+        // Actualizar el estado local del usuario
+        setUsuarios(prevUsuarios => {
+            return prevUsuarios.map(u => {
+                if (u.id === id) {
+                    return { ...u, habilitado: u.habilitado === false }
+                }
+                return u
+            })
+        })
         setUsuarioInhabilitar(null)
         setMensaje('Usuario actualizado correctamente')
+        setTimeout(() => setMensaje(''), 2000)
+    }
+
+    // Cambiar habilitado directamente sin modal
+    const handleHabilitadoChange = (id) => {
+        // Actualizar el estado local del usuario
+        setUsuarios(prevUsuarios => {
+            return prevUsuarios.map(u => {
+                if (u.id === id) {
+                    return { ...u, habilitado: u.habilitado === false }
+                }
+                return u
+            })
+        })
+        setMensaje('Estado actualizado correctamente')
         setTimeout(() => setMensaje(''), 2000)
     }
 
@@ -376,11 +399,17 @@ const ListarUsuario = () => {
                                         </TableCell>
                                         <TableCell>{usuario.iniciales}</TableCell>
                                         <TableCell>
-                                            <Chip 
-                                                icon={usuario.habilitado !== false ? <CheckCircleIcon /> : <BlockIcon />}
-                                                label={usuario.habilitado !== false ? 'Activo' : 'Inactivo'}
-                                                size="small"
-                                                color={usuario.habilitado !== false ? 'success' : 'error'}
+                                            <Switch 
+                                                checked={usuario.habilitado !== false}
+                                                onChange={() => handleHabilitadoChange(usuario.id)}
+                                                sx={{
+                                                    '& .MuiSwitch-switchBase.Mui-checked': {
+                                                        color: '#10b981',
+                                                    },
+                                                    '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                                                        backgroundColor: '#10b981',
+                                                    },
+                                                }}
                                             />
                                         </TableCell>
                                         <TableCell align="center">

@@ -30,14 +30,14 @@ export const ClienteProvider = ({ children }) => {
         )
     }
 
-    const inhabilitarCliente = (id) => {
-        setClientes(prev => prev.map(c => c.idCliente === id ? { ...c, habilitado: false } : c))
+    // Cambia el estado de habilitado/inhabilitado (toggle)
+    const invalidateCliente = (id) => {
+        setClientes(prev => prev.map(c => c.idCliente === id ? { ...c, habilitado: !c.habilitado } : c))
     }
 
     return (
-        <ClienteContext.Provider value={{ clientes, agregarCliente, inhabilitarCliente, actualizarCliente }}>
+        <ClienteContext.Provider value={{ clientes, agregarCliente, invalidateCliente, actualizarCliente }}>
             {children}
         </ClienteContext.Provider>
-        
     )
 }

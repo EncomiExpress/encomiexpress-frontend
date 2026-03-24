@@ -1,29 +1,26 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import {
-  Box, TextField, Button, Typography, Paper, MenuItem,
-  Snackbar, Alert, InputAdornment, Select, FormControl, InputLabel
-} from '@mui/material'
+import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, InputAdornment } from '@mui/material'
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
 import PersonIcon from '@mui/icons-material/Person'
 import RouteIcon from '@mui/icons-material/Route'
 import EventIcon from '@mui/icons-material/Event'
 import NotesIcon from '@mui/icons-material/Notes'
-import SaveIcon from '@mui/icons-material/Save'
-import CancelIcon from '@mui/icons-material/Cancel'
 import { useAnticipos, conductoresMock, rutasMock } from '../../Context/AnticipoExcedenteContext'
+import { 
+  theme, FormField, FormSelect, PrimaryButton, SecondaryButton, 
+  FormAlert, FormHeader, FormFieldsContainer, FormButtonGroup 
+} from '../../Components/FormularioEstandarizado'
 
-const theme = {
-  primary: '#CC1818',
-  secondary: '#1A2E6E'
-}
+const steps = ['Asignación y Valores', 'Estado y Fechas']
 
 const RegistrarAnticipoExcedente = () => {
   const { agregarAnticipo } = useAnticipos()
   const navigate = useNavigate()
   const [exito, setExito] = useState(false)
   const [errores, setErrores] = useState({})
+  const [activeStep, setActiveStep] = useState(0)
 
   const [form, setForm] = useState({
     idConductor: '',
@@ -89,141 +86,99 @@ const RegistrarAnticipoExcedente = () => {
     navigate('/anticipos/listar')
   }
 
+  // Validar solo el paso actual
+  const validarPaso = (step) => {
+    const e = {}
+    if (step === 0) {
+      if (!form.idConductor) e.idConductor = 'Selecciona un conductor'
+      if (!form.idRuta) e.idRuta = 'Selecciona una ruta'
+      if (!form.valorAnticipo) e.valorAnticipo = 'El valor del anticipo es obligatorio'
+      else if (isNaN(form.valorAnticipo) || parseFloat(form.valorAnticipo) <= 0)
+        e.valorAnticipo = 'Ingresa un valor válido mayor a 0'
+    }
+    if (step === 1) {
+      if (!form.fechaEntrega) e.fechaEntrega = 'La fecha de entrega es obligatoria'
+      if (!form.estado) e.estado = 'Selecciona un estado'
+    }
+    return e
+  }
+
+  const handleNext = () => {
+    const erroresEncontrados = validarPaso(activeStep)
+    if (Object.keys(erroresEncontrados).length > 0) {
+      setErrores(erroresEncontrados)
+      return
+    }
+    setActiveStep((prev) => prev + 1)
+  }
+
+  const handleBack = () => {
+    setActiveStep((prev) => prev - 1)
+  }
+
   const formatMoney = (val) => {
     const num = parseFloat(val)
     if (isNaN(num)) return '$0'
     return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(num)
   }
 
-  return (
-    <Box sx={{ p: 4 }}>
-      <Paper elevation={0} sx={{ p: 4, borderRadius: 2, border: '1px solid #e2e8f0' }}>
-        
-        {/* Título con icono */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
-          <Box sx={{ 
-            width: 56, 
-            height: 56, 
-            borderRadius: 2,
-            background: 'linear-gradient(135deg, #CC1818 0%, #dc2626 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 4px 14px rgba(204, 24, 24, 0.3)'
-          }}>
-            <AccountBalanceWalletIcon sx={{ color: 'white', fontSize: 32 }} />
-          </Box>
-          <Box>
-            <Typography variant="h5" sx={{ color: '#0f172a', fontWeight: 700 }}>
-              Registrar Anticipo / Excedente
-            </Typography>
-            <Typography sx={{ color: '#64748b', fontSize: '0.875rem' }}>
-              Ingresa los datos del anticipo para el conductor
-            </Typography>
-          </Box>
-        </Box>
+  // Renderizar contenido del stepper
+  const renderStepContent = () => {
+    switch (activeStep) {
+      case 0:
+        return (
+          <FormFieldsContainer>
+            <FormSelect
+              label="Conductor"
+              name="idConductor"
+              value={form.idConductor}
+              onChange={handleChange}
+              error={errores.idConductor}
+            >
+              {conductoresMock.map(c => (
+                <MenuItem key={c.idConductor} value={c.idConductor}>
+                  {c.nombre}
+                </MenuItem>
+              ))}
+            </FormSelect>
 
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          
-          {/* ── Sección: Asignación ──*/}
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            
-            {/* Conductor */}
-            <FormControl fullWidth error={!!errores.idConductor} sx={{
-              '& .MuiOutlinedInput-root': {
-                borderRadius: 2,
-                '& fieldset': { borderColor: '#e2e8f0' },
-                '&:hover fieldset': { borderColor: '#CC1818' },
-                '&.Mui-focused fieldset': { borderColor: '#CC1818', borderWidth: 2 },
-              },
-            }}>
-              <InputLabel sx={{ '&.Mui-focused': { color: '#CC1818' } }}>Conductor</InputLabel>
-              <Select
-                name="idConductor"
-                value={form.idConductor}
-                label="Conductor"
-                onChange={handleChange}
-              >
-                {conductoresMock.map(c => (
-                  <MenuItem key={c.idConductor} value={c.idConductor}>
-                    {c.nombre}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <FormSelect
+              label="Ruta"
+              name="idRuta"
+              value={form.idRuta}
+              onChange={handleChange}
+              error={errores.idRuta}
+            >
+              {rutasMock.map(r => (
+                <MenuItem key={r.idRuta} value={r.idRuta}>
+                  {r.nombre}
+                </MenuItem>
+              ))}
+            </FormSelect>
 
-            {/* Ruta */}
-            <FormControl fullWidth error={!!errores.idRuta} sx={{
-              '& .MuiOutlinedInput-root': {
-                borderRadius: 2,
-                '& fieldset': { borderColor: '#e2e8f0' },
-                '&:hover fieldset': { borderColor: '#CC1818' },
-                '&.Mui-focused fieldset': { borderColor: '#CC1818', borderWidth: 2 },
-              },
-            }}>
-              <InputLabel sx={{ '&.Mui-focused': { color: '#CC1818' } }}>Ruta</InputLabel>
-              <Select
-                name="idRuta"
-                value={form.idRuta}
-                label="Ruta"
-                onChange={handleChange}
-              >
-                {rutasMock.map(r => (
-                  <MenuItem key={r.idRuta} value={r.idRuta}>
-                    {r.nombre}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            {/* Valor del anticipo */}
-            <TextField
+            <FormField
               label="Valor del anticipo"
               name="valorAnticipo"
+              type="number"
               value={form.valorAnticipo}
               onChange={handleChange}
-              fullWidth
-              type="number"
+              required
               placeholder="Ej: 500000"
-              error={!!errores.valorAnticipo}
+              error={errores.valorAnticipo}
               helperText={errores.valorAnticipo}
-              InputProps={{
-                startAdornment: <InputAdornment position="start"><AttachMoneyIcon sx={{ color: '#94a3b8' }} /></InputAdornment>,
-              }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
-                  '& fieldset': { borderColor: '#e2e8f0' },
-                  '&:hover fieldset': { borderColor: '#CC1818' },
-                  '&.Mui-focused fieldset': { borderColor: '#CC1818', borderWidth: 2 },
-                },
-                '& .MuiInputLabel-root.Mui-focused': { color: '#CC1818' },
-              }}
+              icon={AttachMoneyIcon}
             />
 
-            {/* Valor gastado */}
-            <TextField
+            <FormField
               label="Valor gastado"
               name="valorGastado"
+              type="number"
               value={form.valorGastado}
               onChange={handleChange}
-              fullWidth
-              type="number"
               placeholder="Ej: 350000"
-              error={!!errores.valorGastado}
+              error={errores.valorGastado}
               helperText={errores.valorGastado || 'Diligenciar al legalizar'}
-              InputProps={{
-                startAdornment: <InputAdornment position="start"><AttachMoneyIcon sx={{ color: '#94a3b8' }} /></InputAdornment>,
-              }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
-                  '& fieldset': { borderColor: '#e2e8f0' },
-                  '&:hover fieldset': { borderColor: '#CC1818' },
-                  '&.Mui-focused fieldset': { borderColor: '#CC1818', borderWidth: 2 },
-                },
-                '& .MuiInputLabel-root.Mui-focused': { color: '#CC1818' },
-              }}
+              icon={AttachMoneyIcon}
             />
 
             {/* Tarjeta de excedente calculado */}
@@ -248,183 +203,134 @@ const RegistrarAnticipoExcedente = () => {
                 </Typography>
               </Box>
             </Box>
+          </FormFieldsContainer>
+        )
+      case 1:
+        return (
+          <FormFieldsContainer>
+            <FormSelect
+              label="Estado"
+              name="estado"
+              value={form.estado}
+              onChange={handleChange}
+              error={errores.estado}
+            >
+              <MenuItem value="entregado">Entregado</MenuItem>
+              <MenuItem value="en legalización">En legalización</MenuItem>
+              <MenuItem value="legalizado">Legalizado</MenuItem>
+              <MenuItem value="excedente pendiente">Excedente pendiente</MenuItem>
+              <MenuItem value="cerrado">Cerrado</MenuItem>
+            </FormSelect>
 
-            {/* Estado */}
-            <FormControl fullWidth error={!!errores.estado} sx={{
-              '& .MuiOutlinedInput-root': {
-                borderRadius: 2,
-                '& fieldset': { borderColor: '#e2e8f0' },
-                '&:hover fieldset': { borderColor: '#CC1818' },
-                '&.Mui-focused fieldset': { borderColor: '#CC1818', borderWidth: 2 },
-              },
-            }}>
-              <InputLabel sx={{ '&.Mui-focused': { color: '#CC1818' } }}>Estado</InputLabel>
-              <Select
-                name="estado"
-                value={form.estado}
-                label="Estado"
-                onChange={handleChange}
-              >
-                <MenuItem value="entregado">Entregado</MenuItem>
-                <MenuItem value="en legalización">En legalización</MenuItem>
-                <MenuItem value="legalizado">Legalizado</MenuItem>
-                <MenuItem value="excedente pendiente">Excedente pendiente</MenuItem>
-                <MenuItem value="cerrado">Cerrado</MenuItem>
-              </Select>
-            </FormControl>
-
-            {/* Fecha de entrega */}
-            <TextField
+            <FormField
               label="Fecha de entrega"
               name="fechaEntrega"
+              type="date"
               value={form.fechaEntrega}
               onChange={handleChange}
-              fullWidth
-              type="date"
-              InputLabelProps={{ shrink: true }}
-              error={!!errores.fechaEntrega}
+              error={errores.fechaEntrega}
               helperText={errores.fechaEntrega}
-              InputProps={{
-                startAdornment: <InputAdornment position="start"><EventIcon sx={{ color: '#94a3b8' }} /></InputAdornment>,
-              }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
-                  '& fieldset': { borderColor: '#e2e8f0' },
-                  '&:hover fieldset': { borderColor: '#CC1818' },
-                  '&.Mui-focused fieldset': { borderColor: '#CC1818', borderWidth: 2 },
-                },
-                '& .MuiInputLabel-root.Mui-focused': { color: '#CC1818' },
-              }}
+              icon={EventIcon}
             />
 
-            {/* Fecha de legalización */}
-            <TextField
+            <FormField
               label="Fecha de legalización"
               name="fechaLegalizacion"
+              type="date"
               value={form.fechaLegalizacion}
               onChange={handleChange}
-              fullWidth
-              type="date"
-              InputLabelProps={{ shrink: true }}
               helperText="Opcional — completar al legalizar"
-              InputProps={{
-                startAdornment: <InputAdornment position="start"><EventIcon sx={{ color: '#94a3b8' }} /></InputAdornment>,
-              }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
-                  '& fieldset': { borderColor: '#e2e8f0' },
-                  '&:hover fieldset': { borderColor: '#CC1818' },
-                  '&.Mui-focused fieldset': { borderColor: '#CC1818', borderWidth: 2 },
-                },
-                '& .MuiInputLabel-root.Mui-focused': { color: '#CC1818' },
-              }}
+              icon={EventIcon}
             />
 
-            {/* Fecha entrega excedente */}
-            <TextField
+            <FormField
               label="Fecha entrega excedente"
               name="fechaEntregaExcedente"
+              type="date"
               value={form.fechaEntregaExcedente}
               onChange={handleChange}
-              fullWidth
-              type="date"
-              InputLabelProps={{ shrink: true }}
               helperText="Opcional — completar al entregar excedente"
-              InputProps={{
-                startAdornment: <InputAdornment position="start"><EventIcon sx={{ color: '#94a3b8' }} /></InputAdornment>,
-              }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
-                  '& fieldset': { borderColor: '#e2e8f0' },
-                  '&:hover fieldset': { borderColor: '#CC1818' },
-                  '&.Mui-focused fieldset': { borderColor: '#CC1818', borderWidth: 2 },
-                },
-                '& .MuiInputLabel-root.Mui-focused': { color: '#CC1818' },
-              }}
+              icon={EventIcon}
             />
 
-            {/* Observaciones */}
-            <TextField
+            <FormField
               label="Observaciones"
               name="soporte"
               value={form.soporte}
               onChange={handleChange}
-              fullWidth
               multiline
               rows={3}
               placeholder="Agrega alguna observación si es necesario..."
-              InputProps={{
-                startAdornment: <InputAdornment position="start"><NotesIcon sx={{ color: '#94a3b8' }} /></InputAdornment>,
-              }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
-                  '& fieldset': { borderColor: '#e2e8f0' },
-                  '&:hover fieldset': { borderColor: '#CC1818' },
-                  '&.Mui-focused fieldset': { borderColor: '#CC1818', borderWidth: 2 },
-                },
-                '& .MuiInputLabel-root.Mui-focused': { color: '#CC1818' },
-              }}
+              icon={NotesIcon}
             />
+          </FormFieldsContainer>
+        )
+      default:
+        return null
+    }
+  }
 
+  return (
+    <Box sx={{ p: 4 }}>
+      <Paper elevation={0} sx={{ p: 4, borderRadius: 2, border: '1px solid #e2e8f0', maxWidth: 700, mx: 'auto' }}>
+        
+        {/* Título con icono */}
+        <FormHeader 
+          icon={AccountBalanceWalletIcon} 
+          title="Registrar Anticipo / Excedente" 
+          subtitle="Ingresa los datos del anticipo para el conductor"
+        />
+
+        {/* Stepper - 2 pasos */}
+        <Stepper activeStep={activeStep} sx={{ mb: 4 }} alternativeLabel>
+          {steps.map((label, index) => (
+            <Step key={label}>
+              <StepLabel 
+                sx={{ 
+                  '& .MuiStepLabel-label': { 
+                    fontWeight: activeStep === index ? 600 : 400,
+                    color: activeStep === index ? theme.primary : '#64748b'
+                  } 
+                }}
+              >
+                {label}
+              </StepLabel>
+            </Step>
+          ))}
+        </Stepper>
+
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          {renderStepContent()}
+        </Box>
+
+        {/* Botones de navegación del stepper */}
+        <FormButtonGroup justify="space-between">
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <SecondaryButton 
+              onClick={handleBack} 
+              disabled={activeStep === 0}
+              children="Anterior"
+            />
           </Box>
-
-        </Box>
-
-        {/* Botones */}
-        <Box sx={{ display: 'flex', gap: 2, mt: 4 }}>
-          <Button
-            variant="outlined"
-            startIcon={<CancelIcon />}
-            onClick={handleCancelar}
-            sx={{ 
-              borderColor: '#e2e8f0',
-              color: '#64748b',
-              borderRadius: 2,
-              py: 1.5,
-              px: 3,
-              fontWeight: 600,
-              textTransform: 'none',
-              '&:hover': { 
-                borderColor: '#94a3b8',
-                backgroundColor: '#f8fafc'
-              },
-            }}
-          >
-            Cancelar
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<SaveIcon />}
-            onClick={handleSubmit}
-            sx={{ 
-              backgroundColor: '#CC1818',
-              borderRadius: 2,
-              py: 1.5,
-              px: 3,
-              fontWeight: 600,
-              textTransform: 'none',
-              boxShadow: '0 4px 14px rgba(204, 24, 24, 0.3)',
-              '&:hover': { 
-                backgroundColor: '#b91c1c',
-                boxShadow: '0 6px 20px rgba(204, 24, 24, 0.4)'
-              },
-            }}
-          >
-            Registrar anticipo
-          </Button>
-        </Box>
-
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <SecondaryButton 
+              onClick={handleCancelar}
+              children="Cancelar"
+            />
+            {activeStep < steps.length - 1 ? (
+              <PrimaryButton 
+                onClick={handleNext}
+                children="Siguiente"
+              />
+            ) : (
+              <PrimaryButton 
+                onClick={handleSubmit}
+                children="Registrar"
+              />
+            )}
+          </Box>
+        </FormButtonGroup>
       </Paper>
-
-      <Snackbar open={exito} autoHideDuration={1500} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
-        <Alert severity="success" sx={{ fontWeight: 600, borderRadius: 2 }}>
-          ¡Anticipo registrado exitosamente!
-        </Alert>
-      </Snackbar>
     </Box>
   )
 }
