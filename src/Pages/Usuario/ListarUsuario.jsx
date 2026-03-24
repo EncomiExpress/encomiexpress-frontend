@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth, ROLES } from '../../Context/AuthContext'
 import {
     Box, Typography, Paper, Table, TableBody, TableCell,
@@ -207,6 +207,16 @@ const ListarUsuario = () => {
     const [usuarioEditar, setUsuarioEditar] = useState(null)
     const [usuarioInhabilitar, setUsuarioInhabilitar] = useState(null)
     const [mensaje, setMensaje] = useState('')
+
+    // Cargar usuarios al montar el componente
+    useEffect(() => {
+      const cargarUsuarios = async () => {
+        const usuariosData = await getUsuarios()
+        setUsuarios(usuariosData)
+        setLoading(false)
+      }
+      cargarUsuarios()
+    }, [getUsuarios])
 
     const puedeRegistrar = tienePermiso(PERMISOS.REGISTRAR_USUARIO)
     const puedeConsultar = tienePermiso(PERMISOS.CONSULTAR_USUARIO)

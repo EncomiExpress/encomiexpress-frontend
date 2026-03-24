@@ -36,7 +36,8 @@ const RegistrarUsuario = () => {
       return
     }
 
-    registrarUsuario(formData)
+    // Pasar autoLogin=false para que un admin registrando otro usuario no inicie sesión automáticamente
+    registrarUsuario(formData, false)
     
     setMensaje('Usuario registrado correctamente')
     setError('')
