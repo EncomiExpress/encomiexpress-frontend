@@ -5,7 +5,7 @@ import { Security, ExpandMore, ExpandLess, CheckBox, CheckBoxOutlineBlank } from
 import { useAuth, PERMISOS, MODULOS } from '../../Context/AuthContext'
 import { 
   theme, FormField, PrimaryButton, SecondaryButton, 
-  FormAlert, FormHeader, FormFieldsContainer, FormButtonGroup 
+  FormAlert, FormHeader, FormButtonGroup 
 } from '../../Components/FormularioEstandarizado'
 
 const RegistrarRol = () => {
@@ -162,8 +162,8 @@ const RegistrarRol = () => {
   }
 
   return (
-    <Box sx={{ p: 4 }}>
-      <Paper elevation={0} sx={{ p: 4, borderRadius: 2, border: '1px solid #e2e8f0', maxWidth: 900, mx: 'auto' }}>
+    <Box sx={{ p: 2, height: 'calc(100vh - 100px)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <Paper elevation={0} sx={{ p: 3, borderRadius: 2, border: '1px solid #e2e8f0', flex: 1, overflow: 'auto' }}>
         <FormHeader 
           icon={Security} 
           title="Registrar Nuevo Rol" 
@@ -183,7 +183,7 @@ const RegistrarRol = () => {
         )}
 
         <form onSubmit={handleSubmit}>
-          <FormFieldsContainer>
+          <Box sx={{ mb: 2 }}>
             <FormField
               label="Nombre del Rol"
               name="nombre"
@@ -192,17 +192,17 @@ const RegistrarRol = () => {
               placeholder="Ej: Gerente, Vendedor, Conductor"
               required
             />
-          </FormFieldsContainer>
+          </Box>
 
-          <Box sx={{ mt: 3, mb: 2 }}>
-            <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: '#1A2E6E' }}>
+          <Box sx={{ mt: 2, mb: 1 }}>
+            <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 600, color: '#1A2E6E' }}>
               Permisos por Módulo
             </Typography>
             <Typography variant="body2" sx={{ mb: 3, color: '#64748b' }}>
-              Selecciona los módulos completos o los permisos individuales
+              Selecciona los módulos o permisos individuales
             </Typography>
 
-            <Grid container spacing={2}>
+            <Grid container spacing={1}>
               {modulos.map(([moduloKey, modulo]) => {
                 const expandido = modulosExpandidos[moduloKey] !== false // Por defecto expandido
                 const completo = isModuloCompleto(moduloKey)
@@ -221,7 +221,7 @@ const RegistrarRol = () => {
                       {/* Encabezado del módulo */}
                       <Box 
                         sx={{ 
-                          p: 2, 
+                          p: 1.5, 
                           display: 'flex', 
                           alignItems: 'center',
                           justifyContent: 'space-between',
@@ -258,7 +258,7 @@ const RegistrarRol = () => {
 
                       {/* Permisos individuales del módulo */}
                       <Collapse in={expandido}>
-                        <Box sx={{ p: 2, pt: 1, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                        <Box sx={{ p: 1.5, pt: 1, display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                           {modulo.permisos.map((permiso) => (
                             <FormControlLabel
                               key={permiso}
@@ -294,7 +294,7 @@ const RegistrarRol = () => {
             </Grid>
           </Box>
 
-          <Box sx={{ mt: 3 }}>
+          <Box sx={{ mt: 2 }}>
             <Typography variant="body2" sx={{ color: '#64748b', mb: 1 }}>
               Permisos seleccionados: {formData.permisos.length}
             </Typography>
