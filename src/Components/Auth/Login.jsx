@@ -12,8 +12,9 @@ import {
   Badge,
   ArrowBack
 } from '@mui/icons-material'
-import { useAuth, ROLES } from '../Context/AuthContext'
-import logo from '../assets/logo.png'
+import { useAuth, ROLES } from '../../Context/AuthContext'
+import { LoadingScreen, TIPOS_CARGA } from '../LoadingScreen'
+import logo from '../../assets/logo.png'
 
 const Login = () => {
   const [email, setEmail] = useState('')
@@ -21,6 +22,9 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [openRegister, setOpenRegister] = useState(false)
+  const [cargando, setCargando] = useState(false)
+  const [tipoCarga, setTipoCarga] = useState(TIPOS_CARGA.CIRCULAR)
+  const [yaNavego, setYaNavego] = useState(false)
   const [registerData, setRegisterData] = useState({
     nombre: '',
     email: '',
@@ -34,20 +38,52 @@ const Login = () => {
   const { login, registrarUsuario, usuario } = useAuth()
   const navigate = useNavigate()
 
+  // Effect para navegar al dashboard cuando el usuario está establecido
+  // Solo navega si NO estamos en modo carga y si no hemos navegado antes
   useEffect(() => {
-    if (usuario) {
+    if (usuario && !cargando && !yaNavego) {
+      setYaNavego(true)
       navigate('/dashboard')
     }
-  }, [usuario, navigate])
+  }, [usuario, navigate, cargando, yaNavego])
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
-    const resultado = login(email, password)
-    if (resultado.success) {
-      navigate('/dashboard')
-    } else {
-      setError(resultado.mensaje)
+
+    // Mostrar pantalla de carga primero
+    setCargando(true)
+    setTipoCarga(TIPOS_CARGA.CIRCULAR)
+
+    try {
+      const resultado = await login(email, password)
+
+      if (resultado.success) {
+        // Personalizar el tipo de carga según el rol del usuario
+        const rolUsuario = resultado.usuario?.rol?.toLowerCase() || ''
+        if (rolUsuario.includes('admin') || rolUsuario.includes('administrador')) {
+          setTipoCarga(TIPOS_CARGA.CAMION)
+        } else if (rolUsuario.includes('conductor')) {
+          setTipoCarga(TIPOS_CARGA.PULSO)
+        } else if (rolUsuario.includes('vendedor') || rolUsuario.includes('venta')) {
+          setTipoCarga(TIPOS_CARGA.ESPIRAL)
+        } else {
+          setTipoCarga(TIPOS_CARGA.CIRCULAR)
+        }
+
+        // Después de 3 segundos, navegar
+        setTimeout(() => {
+          setCargando(false)
+          navigate('/dashboard')
+        }, 9000)
+      } else {
+        // Login falló - ocultar pantalla de carga
+        setCargando(false)
+        setError(resultado.mensaje)
+      }
+    } catch (err) {
+      setCargando(false)
+      setError('Error al iniciar sesión')
     }
   }
 
@@ -72,6 +108,20 @@ const Login = () => {
     }
   }
 
+  // Mensaje dinámico según el tipo de carga
+  const getMensajeCarga = () => {
+    switch (tipoCarga) {
+      case TIPOS_CARGA.CAMION:
+        return 'Preparando panel de administrador...'
+      case TIPOS_CARGA.PULSO:
+        return 'Cargando datos del conductor...'
+      case TIPOS_CARGA.ESPIRAL:
+        return 'Inicializando módulo de ventas...'
+      default:
+        return 'Iniciando sesión...'
+    }
+  }
+
   return (
     <Box
       sx={{
@@ -86,6 +136,9 @@ const Login = () => {
         overflow: 'hidden',
       }}
     >
+      {/* Pantalla de carga - solo se muestra cuando está cargando */}
+      {cargando && <LoadingScreen tipo={tipoCarga} mensaje={getMensajeCarga()} />}
+
       {/* Barra superior roja */}
       <Box sx={{
         position: 'absolute', top: 0, left: 0, right: 0, height: 4,
@@ -226,7 +279,7 @@ const Login = () => {
                   </InputAdornment>
                 ),
               }}
-              sx={{ 
+              sx={{
                 mb: 3,
                 '& .MuiOutlinedInput-root': {
                   '&.Mui-focused fieldset': {
@@ -264,7 +317,7 @@ const Login = () => {
                   </InputAdornment>
                 ),
               }}
-              sx={{ 
+              sx={{
                 mb: 4,
                 '& .MuiOutlinedInput-root': {
                   '&.Mui-focused fieldset': {
@@ -282,6 +335,7 @@ const Login = () => {
               variant="contained"
               size="large"
               endIcon={<LoginIcon />}
+              disabled={cargando}
               sx={{
                 backgroundColor: '#CC1818',
                 borderRadius: 2,
@@ -296,30 +350,9 @@ const Login = () => {
                 },
               }}
             >
-              Iniciar Sesión
+              {cargando ? 'Ingresando...' : 'Iniciar Sesión'}
             </Button>
           </form>
-
-          <Box sx={{ mt: 3, textAlign: 'center' }}>
-            <Typography sx={{ color: 'rgba(33,33,33,0.45)', fontSize: '0.875rem' }}>
-              ¿No tienes cuenta?{' '}
-              <Button
-                component={Link}
-                to="/register"
-                variant="text"
-                sx={{
-                  color: '#CC1818',
-                  fontWeight: 600,
-                  p: 0,
-                  minWidth: 'auto',
-                  textTransform: 'none',
-                  '&:hover': { textDecoration: 'underline' },
-                }}
-              >
-                Regístrate
-              </Button>
-            </Typography>
-          </Box>
 
           <Divider sx={{ my: 3 }}>
             <Typography sx={{ color: 'rgba(33,33,33,0.45)', fontSize: '0.75rem' }}>O</Typography>

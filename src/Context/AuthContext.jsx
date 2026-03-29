@@ -1,9 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react'
-<<<<<<< HEAD
-import authService, { getUsuario, logout as authLogout, getAllUsuarios, actualizarUsuario as actualizarUsuarioService, inhabilidadUsuario as inhabilidadUsuarioService } from '../services/authService'
-=======
 import authService, { getUsuario, logout as authLogout, getAllUsuarios } from '../services/authService'
->>>>>>> 82ae9b43c01bc8d7146675f6787fd06d38c992fc
 
 // ============================================
 // DEFINICIONES DE PERMISOS (deben ir primero)
@@ -546,31 +542,6 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
-<<<<<<< HEAD
-  // Función para actualizar un usuario
-  const actualizarUsuario = async (id, datos) => {
-    try {
-      const response = await actualizarUsuarioService(id, datos)
-      return response
-    } catch (error) {
-      console.error('Error al actualizar usuario:', error)
-      return { success: false, message: error.message || 'Error al actualizar usuario' }
-    }
-  }
-
-  // Función para habilitar/inhabilitar un usuario
-  const inhabilidadUsuario = async (id) => {
-    try {
-      const response = await inhabilidadUsuarioService(id)
-      return response
-    } catch (error) {
-      console.error('Error al cambiar estado del usuario:', error)
-      return { success: false, message: error.message || 'Error al cambiar estado del usuario' }
-    }
-  }
-
-=======
->>>>>>> 82ae9b43c01bc8d7146675f6787fd06d38c992fc
   return (
     <AuthContext.Provider value={{
       usuario,
@@ -585,11 +556,6 @@ export const AuthProvider = ({ children }) => {
       recuperarPassword,
       recargarUsuario,
       getUsuarios,
-<<<<<<< HEAD
-      actualizarUsuario,
-      inhabilidadUsuario,
-=======
->>>>>>> 82ae9b43c01bc8d7146675f6787fd06d38c992fc
       ROLES,
       PERMISOS,
     }}>

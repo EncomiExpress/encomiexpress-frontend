@@ -2,13 +2,13 @@ import { Link } from 'react-router-dom'
 import { Box, Button, Typography, Grid } from '@mui/material'
 import { Login as LoginIcon } from '@mui/icons-material'
 import { useState, useEffect } from 'react'
-import logo from '../assets/logo.png'
+import logo from '../../assets/logo.png'
 
 // Imágenes
-import slide1 from '../assets/box.png'
-import slide2 from '../assets/camion.png'
-import slide3 from '../assets/customers.png'
-import slide4 from '../assets/cashbag.png'
+import slide1 from '../../assets/box.png'
+import slide2 from '../../assets/camion.png'
+import slide3 from '../../assets/customers.png'
+import slide4 from '../../assets/cashbag.png'
 
 const slides = [slide1, slide2, slide3, slide4]
 

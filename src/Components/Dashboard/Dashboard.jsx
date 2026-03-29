@@ -5,8 +5,8 @@ import LocalShippingIcon from '@mui/icons-material/LocalShipping'
 import PointOfSaleIcon from '@mui/icons-material/PointOfSale'
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
 import Inventory2Icon from '@mui/icons-material/Inventory2'
-import { useClientes } from '../Context/ClienteContext'
-import { useAnticipos } from '../Context/AnticipoExcedenteContext'
+import { useClientes } from '../../Context/ClienteContext'
+import { useAnticipos } from '../../Context/AnticipoExcedenteContext'
 
 const Dashboard = () => {
   const { clientes } = useClientes()
@@ -14,11 +14,11 @@ const Dashboard = () => {
 
   const clientesActivos = clientes.filter(c => c.habilitado !== false).length
   const clientesInactivos = clientes.length - clientesActivos
-  
+
   const anticiposEntregados = anticipos.filter(a => a.estado === 'entregado').length
   const anticiposLegalizados = anticipos.filter(a => a.estado === 'legalizado').length
   const anticiposEnLegalizacion = anticipos.filter(a => a.estado === 'en legalización').length
-  
+
   const totalAnticipos = anticipos.reduce((sum, a) => sum + parseFloat(a.valorAnticipo || 0), 0)
   const totalGastado = anticipos.reduce((sum, a) => sum + parseFloat(a.valorGastado || 0), 0)
   const totalExcedentes = anticipos.reduce((sum, a) => sum + parseFloat(a.excedente || 0), 0)
@@ -40,9 +40,9 @@ const Dashboard = () => {
             {subtitle}
           </Typography>
         </Box>
-        <Box sx={{ 
-          p: 1.5, 
-          borderRadius: 2, 
+        <Box sx={{
+          p: 1.5,
+          borderRadius: 2,
           backgroundColor: `${color}10`,
           display: 'flex',
           alignItems: 'center',
@@ -69,8 +69,8 @@ const Dashboard = () => {
       {/* Indicadores principales */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} sm={6} md={3}>
-          <IndicatorCard 
-            title="Total Clientes" 
+          <IndicatorCard
+            title="Total Clientes"
             value={clientes.length}
             subtitle={`${clientesActivos} activos, ${clientesInactivos} inactivos`}
             icon={<PeopleIcon sx={{ fontSize: 32, color: '#1A2E6E' }} />}
@@ -79,8 +79,8 @@ const Dashboard = () => {
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <IndicatorCard 
-            title="Encomiendas" 
+          <IndicatorCard
+            title="Encomiendas"
             value={encomiendasRegistradas}
             subtitle="Registradas este mes"
             icon={<Inventory2Icon sx={{ fontSize: 32, color: '#CC1818' }} />}
@@ -89,8 +89,8 @@ const Dashboard = () => {
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <IndicatorCard 
-            title="Ventas" 
+          <IndicatorCard
+            title="Ventas"
             value={ventasRealizadas}
             subtitle="Realizadas este mes"
             icon={<PointOfSaleIcon sx={{ fontSize: 32, color: '#059669' }} />}
@@ -99,8 +99,8 @@ const Dashboard = () => {
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <IndicatorCard 
-            title="Anticipos" 
+          <IndicatorCard
+            title="Anticipos"
             value={anticipos.length}
             subtitle={`${anticiposEntregados} entregados, ${anticiposLegalizados} legalizados`}
             icon={<AccountBalanceWalletIcon sx={{ fontSize: 32, color: '#dc2626' }} />}
@@ -200,14 +200,14 @@ const Dashboard = () => {
                 { icon: '💰', text: 'Nuevo Anticipo', color: '#dc2626' },
               ].map((item, i) => (
                 <Grid item xs={6} key={i}>
-                  <Box sx={{ 
-                    p: 2, 
-                    borderRadius: 2, 
-                    backgroundColor: '#f9fafb', 
+                  <Box sx={{
+                    p: 2,
+                    borderRadius: 2,
+                    backgroundColor: '#f9fafb',
                     border: '1px solid #e5e7eb',
                     cursor: 'pointer',
                     transition: 'all 0.2s',
-                    '&:hover': { 
+                    '&:hover': {
                       backgroundColor: '#f3f4f6',
                       borderColor: item.color,
                       transform: 'translateY(-2px)'

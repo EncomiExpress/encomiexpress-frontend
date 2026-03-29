@@ -12,8 +12,8 @@ import {
   ArrowBack,
   PersonAdd
 } from '@mui/icons-material'
-import { useAuth, ROLES } from '../Context/AuthContext'
-import logo from '../assets/logo.png'
+import { useAuth, ROLES } from '../../Context/AuthContext'
+import logo from '../../assets/logo.png'
 
 const TIPOS_IDENTIFICACION = [
   { value: 'CC', label: 'Cédula de Ciudadanía' },
@@ -38,7 +38,7 @@ const Register = () => {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
-  
+
   const { registrarUsuario, usuario } = useAuth()
   const navigate = useNavigate()
 
@@ -68,9 +68,9 @@ const Register = () => {
     e.preventDefault()
     setError('')
     setSuccess('')
-    
+
     const { tipoIdentificacion, numeroIdentificacion, nombre, apellido, telefono, email, password, idRol } = formData
-    
+
     if (!tipoIdentificacion || !numeroIdentificacion || !nombre || !apellido || !email || !password) {
       setError('Todos los campos son requeridos')
       return
@@ -90,7 +90,7 @@ const Register = () => {
       }
 
       const resultado = await registrarUsuario(datosRegistro)
-      
+
       if (resultado.success) {
         setSuccess('Usuario registrado correctamente. Redirigiendo...')
         setTimeout(() => {
@@ -279,7 +279,7 @@ const Register = () => {
                       </InputAdornment>
                     ),
                   }}
-                  sx={{ 
+                  sx={{
                     mb: 2.5,
                     '& .MuiOutlinedInput-root': { '&.Mui-focused fieldset': { borderColor: '#CC1818' } },
                     '& .MuiInputLabel-root.Mui-focused': { color: '#CC1818' },
@@ -301,7 +301,7 @@ const Register = () => {
                       </InputAdornment>
                     ),
                   }}
-                  sx={{ 
+                  sx={{
                     mb: 2.5,
                     '& .MuiOutlinedInput-root': { '&.Mui-focused fieldset': { borderColor: '#CC1818' } },
                     '& .MuiInputLabel-root.Mui-focused': { color: '#CC1818' },
@@ -323,7 +323,7 @@ const Register = () => {
                       </InputAdornment>
                     ),
                   }}
-                  sx={{ 
+                  sx={{
                     mb: 2.5,
                     '& .MuiOutlinedInput-root': { '&.Mui-focused fieldset': { borderColor: '#CC1818' } },
                     '& .MuiInputLabel-root.Mui-focused': { color: '#CC1818' },
@@ -347,7 +347,7 @@ const Register = () => {
                       </InputAdornment>
                     ),
                   }}
-                  sx={{ 
+                  sx={{
                     mb: 2.5,
                     '& .MuiOutlinedInput-root': { '&.Mui-focused fieldset': { borderColor: '#CC1818' } },
                     '& .MuiInputLabel-root.Mui-focused': { color: '#CC1818' },
@@ -370,7 +370,7 @@ const Register = () => {
                       </InputAdornment>
                     ),
                   }}
-                  sx={{ 
+                  sx={{
                     mb: 2.5,
                     '& .MuiOutlinedInput-root': { '&.Mui-focused fieldset': { borderColor: '#CC1818' } },
                     '& .MuiInputLabel-root.Mui-focused': { color: '#CC1818' },
@@ -404,7 +404,7 @@ const Register = () => {
                       </InputAdornment>
                     ),
                   }}
-                  sx={{ 
+                  sx={{
                     mb: 2.5,
                     '& .MuiOutlinedInput-root': { '&.Mui-focused fieldset': { borderColor: '#CC1818' } },
                     '& .MuiInputLabel-root.Mui-focused': { color: '#CC1818' },
@@ -432,10 +432,10 @@ const Register = () => {
             </Box>
 
             {/* Iniciales automáticas */}
-            <Box sx={{ 
-              p: 1.5, 
+            <Box sx={{
+              p: 1.5,
               mb: 3,
-              backgroundColor: '#f8f9fa', 
+              backgroundColor: '#f8f9fa',
               borderRadius: 2,
               border: '1px solid rgba(26,46,110,0.1)',
               display: 'flex',
@@ -466,7 +466,7 @@ const Register = () => {
                 fontSize: '1rem',
                 textTransform: 'none',
                 boxShadow: '0 4px 14px rgba(204, 24, 24, 0.3)',
-                '&:hover': { 
+                '&:hover': {
                   backgroundColor: '#b91c1c',
                   boxShadow: '0 6px 20px rgba(204, 24, 24, 0.4)',
                 },
