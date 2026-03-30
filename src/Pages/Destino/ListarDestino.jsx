@@ -133,7 +133,6 @@ const ListarDestino = () => {
                 <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Departamento</TableCell>
                 <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Teléfono</TableCell>
                 <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Contacto</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Estado</TableCell>
                 <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem' }}>Habilitado</TableCell>
                 <TableCell sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.75rem', textAlign: 'center' }}>Acciones</TableCell>
               </TableRow>
@@ -166,23 +165,6 @@ const ListarDestino = () => {
                     <TableCell>{destino.departamento}</TableCell>
                     <TableCell>{destino.telefono}</TableCell>
                     <TableCell>{destino.contacto}</TableCell>
-                    <TableCell>
-                      <FormControl size="small" sx={{ minWidth: 120 }}>
-                        <Select
-                          value={destino.estado}
-                          onChange={(e) => handleEstadoChange(destino.idDestino, e.target.value)}
-                          sx={{ 
-                            fontSize: '0.75rem',
-                            '& .MuiSelect-select': { py: 0.5 },
-                            color: getEstadoColor(destino.estado) === 'success' ? '#10b981' : 
-                                   getEstadoColor(destino.estado) === 'error' ? '#dc2626' : '#64748b'
-                          }}
-                        >
-                          <MenuItem value="Activo">Activo</MenuItem>
-                          <MenuItem value="Inactivo">Inactivo</MenuItem>
-                        </Select>
-                      </FormControl>
-                    </TableCell>
                     <TableCell sx={{ py: 1.5 }}>
                       <Switch 
                         checked={destino.habilitado !== false}
