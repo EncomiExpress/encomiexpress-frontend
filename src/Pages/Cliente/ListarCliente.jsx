@@ -3,78 +3,150 @@ import { useNavigate } from 'react-router-dom'
 import { useClientes } from '../../Context/ClienteContext'
 import {
     Box, Typography, Paper, Table, TableBody, TableCell,
-    TableContainer, TableHead, TableRow, TablePagination,
-    TextField, IconButton, Chip, Tooltip, InputAdornment,
-    MenuItem, Select, FormControl, InputLabel, Button,
-    Dialog, DialogTitle, DialogContent, DialogContentText,
-    DialogActions, Avatar, Switch
+    TableContainer, TableHead, TableRow, TextField,
+    IconButton, Chip, Tooltip, InputAdornment,
+    Button, Dialog, DialogTitle, DialogContent, DialogContentText,
+    DialogActions, Avatar, Select, MenuItem, Pagination
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
-import VisibilityIcon from '@mui/icons-material/Visibility'
-import EditIcon from '@mui/icons-material/Edit'
-import BlockIcon from '@mui/icons-material/Block'
-import PeopleIcon from '@mui/icons-material/People'
-import FilterListIcon from '@mui/icons-material/FilterList'
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
+import BlockOutlinedIcon from '@mui/icons-material/BlockOutlined'
+import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
+import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
+import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined'
+import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
+import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
+import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import ClearIcon from '@mui/icons-material/Clear'
 
 const COLORS = {
     primary: '#CC1818',
+    primaryLight: '#FFE8E8',
     secondary: '#1A2E6E',
-    text: '#2D3748',
+    text: '#1a0e0c',
     textMuted: '#8A94A6',
     border: '#E0E0E0',
-    activeBg: '#FFE8E8',
     hoverBg: '#F9F9F9',
 }
+
+const thStyle = {
+    fontWeight: 700,
+    fontSize: '0.80rem',
+    color: '#1a0e0c',
+    letterSpacing: 0.5,
+    py: 1.5,
+    borderBottom: `1px solid #E0E0E0`,
+    whiteSpace: 'nowrap',
+}
+
+// ── Fila de campo reutilizable ──
+const CampoFila = ({ label, value, esEstado }) => (
+    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
+        <Typography variant="body2" sx={{ color: '#9C4040', fontWeight: 500 }}>{label}</Typography>
+        {esEstado ? (
+            <Chip
+                label={value}
+                size="small"
+                sx={{
+                    backgroundColor: value === 'Habilitado' ? '#DCFCE7' : '#F3F4F6',
+                    color: value === 'Habilitado' ? '#16A34A' : '#9CA3AF',
+                    fontWeight: 600, fontSize: '0.72rem',
+                    height: 22, borderRadius: 10, border: 'none',
+                }}
+            />
+        ) : (
+            <Typography variant="body2" fontWeight={500} color="#2D3748">
+                {String(value ?? '—')}
+            </Typography>
+        )}
+    </Box>
+)
 
 // ── Modal Consultar ──
 const ModalConsultar = ({ cliente, onClose }) => {
     if (!cliente) return null
-    const campos = [
-        { label: 'ID', value: cliente.idCliente },
-        { label: 'Tipo identificación', value: cliente.tipoIdentificacion },
-        { label: 'Número identificación', value: cliente.numeroIdentificacion },
-        { label: 'Nombre', value: cliente.nombre },
-        { label: 'Apellido', value: cliente.apellido },
-        { label: 'Teléfono', value: cliente.telefono },
-        { label: 'Email', value: cliente.email },
-        { label: 'Dirección', value: cliente.direccion },
-        { label: 'Ciudad', value: cliente.ciudad },
-        { label: 'Estado', value: cliente.habilitado ? 'Activo' : 'Inactivo' },
-    ]
+    const estado = cliente.habilitado ? 'Habilitado' : 'Inhabilitado'
+
+    const cardSx = { borderRadius: 2, p: 3, border: `1px solid ${COLORS.border}`, backgroundColor: 'white' }
+    const tituloSx = { display: 'flex', alignItems: 'center', gap: 1, mb: 1 }
+
     return (
-        <Dialog open onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
-            <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pb: 1 }}>
-                <Avatar sx={{ backgroundColor: COLORS.secondary, width: 36, height: 36, fontSize: '0.85rem' }}>
-                    {cliente.nombre[0]}{cliente.apellido[0]}
-                </Avatar>
-                <Box>
-                    <Typography fontWeight={700} color={COLORS.secondary}>
-                        {cliente.nombre} {cliente.apellido}
+        <Dialog open onClose={onClose} maxWidth="md" fullWidth
+            slotProps={{ paper: { sx: { borderRadius: 3, p: 3, backgroundColor: '#FAFAFA' } } }}>
+
+            {/* ── Fila superior: Perfil (ancho completo) ── */}
+            <Paper elevation={0} sx={{ ...cardSx, mb: 2 }}>
+                <Box sx={tituloSx}>
+                    <PersonOutlinedIcon sx={{ fontSize: 22, color: COLORS.text }} />
+                    <Typography fontWeight={700} fontSize="1.05rem" color={COLORS.text}>Perfil</Typography>
+                </Box>
+                <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2.5 }}>
+                    Información del perfil del cliente
+                </Typography>
+
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5 }}>
+                    <Avatar sx={{ backgroundColor: '#FFCDD2', color: '#C62828', width: 70, height: 70, fontSize: '1.5rem', fontWeight: 700 }}>
+                        {cliente.nombre[0]}{cliente.apellido[0]}
+                    </Avatar>
+                    <Box>
+                        <Typography fontWeight={700} fontSize="1.1rem" color={COLORS.text}>
+                            {cliente.nombre} {cliente.apellido}
+                        </Typography>
+                        <Typography variant="body2" color={COLORS.textMuted} mt={0.4}>
+                            {cliente.email}
+                        </Typography>
+                    </Box>
+                </Box>
+            </Paper>
+
+            {/* ── Fila inferior: Detalles + Contacto ── */}
+            <Box sx={{ display: 'flex', gap: 2 }}>
+
+                {/* Detalles del Cliente */}
+                <Paper elevation={0} sx={{ ...cardSx, flex: 1 }}>
+                    <Box sx={tituloSx}>
+                        <AssignmentIndOutlinedIcon sx={{ fontSize: 22, color: COLORS.text }} />
+                        <Typography fontWeight={700} fontSize="1.05rem" color={COLORS.text}>Detalles del Cliente</Typography>
+                    </Box>
+                    <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2 }}>
+                        Identificación y datos personales
                     </Typography>
-                    <Typography variant="caption" color={COLORS.textMuted}>Detalle del cliente</Typography>
-                </Box>
-            </DialogTitle>
-            <DialogContent dividers>
-                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                    {campos.map(c => (
-                        <Box key={c.label}>
-                            <Typography variant="caption" color={COLORS.textMuted} fontWeight={600}>
-                                {c.label}
-                            </Typography>
-                            <Typography variant="body2" fontWeight={500} color={COLORS.text}>
-                                {String(c.value)}
-                            </Typography>
-                        </Box>
-                    ))}
-                </Box>
-            </DialogContent>
-            <DialogActions sx={{ px: 3, py: 2 }}>
-                <Button onClick={onClose} variant="contained"
-                    sx={{ backgroundColor: COLORS.secondary, borderRadius: 2, textTransform: 'none' }}>
+
+                    <CampoFila label="Tipo identificación" value={cliente.tipoIdentificacion} />
+                    <CampoFila label="Número identificación" value={cliente.numeroIdentificacion} />
+                    <CampoFila label="Nombre" value={cliente.nombre} />
+                    <CampoFila label="Apellido" value={cliente.apellido} />
+                </Paper>
+
+                {/* Información de Contacto */}
+                <Paper elevation={0} sx={{ ...cardSx, flex: 1 }}>
+                    <Box sx={tituloSx}>
+                        <AssignmentIndOutlinedIcon sx={{ fontSize: 22, color: COLORS.text }} />
+                        <Typography fontWeight={700} fontSize="1.05rem" color={COLORS.text}>Información de Contacto</Typography>
+                    </Box>
+                    <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2 }}>
+                        Datos de contacto y estado de la cuenta
+                    </Typography>
+
+                    <CampoFila label="Teléfono" value={cliente.telefono} />
+                    <CampoFila label="Correo" value={cliente.email} />
+                    <CampoFila label="Dirección" value={cliente.direccion} />
+                    <CampoFila label="Ciudad" value={cliente.ciudad} />
+                    <CampoFila label="Estado" value={estado} esEstado />
+                </Paper>
+            </Box>
+
+            {/* Botón cerrar */}
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+                <Button onClick={onClose} variant="contained" sx={{
+                    backgroundColor: COLORS.primary, borderRadius: 2, textTransform: 'none',
+                    boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
+                    '&:hover': { backgroundColor: '#b91c1c', boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
+                }}>
                     Cerrar
                 </Button>
-            </DialogActions>
+            </Box>
         </Dialog>
     )
 }
@@ -83,7 +155,7 @@ const ModalConsultar = ({ cliente, onClose }) => {
 const ModalInhabilitar = ({ cliente, onClose, onConfirm }) => {
     if (!cliente) return null
     return (
-        <Dialog open onClose={onClose} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+        <Dialog open onClose={onClose} maxWidth="xs" fullWidth slotProps={{ paper: { sx: { borderRadius: 3 } } }}>
             <DialogTitle sx={{ color: COLORS.primary, fontWeight: 700 }}>
                 ¿Inhabilitar cliente?
             </DialogTitle>
@@ -107,322 +179,427 @@ const ModalInhabilitar = ({ cliente, onClose, onConfirm }) => {
     )
 }
 
+// ── Filtros de estado ──
+const FILTROS = [
+    { value: 'todo', label: 'Todo' },
+    { value: 'habilitado', label: 'Habilitado' },
+    { value: 'inhabilitado', label: 'Inhabilitado' },
+]
+
 // ── Componente principal ──
 const ListarCliente = () => {
     const navigate = useNavigate()
-    const { clientes, invalidateCliente } = useClientes()  // 👈 viene del context
+    const { clientes, invalidateCliente } = useClientes()
     const [busqueda, setBusqueda] = useState('')
-    const [filtroPor, setFiltroPor] = useState('todo')
-    const [filtroTipoDoc, setFiltroTipoDoc] = useState('todos')
-    const [filtroEstado, setFiltroEstado] = useState('todos')
-    const [page, setPage] = useState(0)
+    const [filtroEstado, setFiltroEstado] = useState('todo')
+    const [page, setPage] = useState(1)
     const [rowsPerPage, setRowsPerPage] = useState(5)
     const [clienteConsulta, setClienteConsulta] = useState(null)
     const [clienteInhabilitar, setClienteInhabilitar] = useState(null)
 
     // ── Filtrado ──
     const clientesFiltrados = clientes.filter(c => {
-        const q = busqueda.toLowerCase()
-        let coincideBusqueda = true
+        const q = busqueda.toLowerCase().trim()
+        const coincideBusqueda = !q ||
+            c.nombre.toLowerCase().includes(q) ||
+            c.apellido.toLowerCase().includes(q) ||
+            (`${c.nombre} ${c.apellido}`).toLowerCase().includes(q) ||
+            c.email.toLowerCase().includes(q) ||
+            c.telefono.includes(q) ||
+            c.numeroIdentificacion.includes(q) ||
+            c.tipoIdentificacion.toLowerCase().includes(q)
 
-        if (q) {
-            switch (filtroPor) {
-                case 'nombre': coincideBusqueda = c.nombre.toLowerCase().includes(q); break
-                case 'apellido': coincideBusqueda = c.apellido.toLowerCase().includes(q); break
-                case 'nombreApellido': coincideBusqueda = `${c.nombre} ${c.apellido}`.toLowerCase().includes(q); break
-                case 'telefono': coincideBusqueda = c.telefono.includes(q); break
-                case 'email': coincideBusqueda = c.email.toLowerCase().includes(q); break
-                case 'identificacion': coincideBusqueda = c.numeroIdentificacion.includes(q); break
-                default:
-                    coincideBusqueda =
-                        c.nombre.toLowerCase().includes(q) ||
-                        c.apellido.toLowerCase().includes(q) ||
-                        c.email.toLowerCase().includes(q) ||
-                        c.telefono.includes(q) ||
-                        c.numeroIdentificacion.includes(q)
-            }
-        }
-
-        const coincideTipoDoc = filtroTipoDoc === 'todos' || c.tipoIdentificacion === filtroTipoDoc
         const coincideEstado =
-            filtroEstado === 'todos' ||
-            (filtroEstado === 'activo' && c.habilitado) ||
-            (filtroEstado === 'inactivo' && !c.habilitado)
+            filtroEstado === 'todo' ||
+            (filtroEstado === 'habilitado' && c.habilitado) ||
+            (filtroEstado === 'inhabilitado' && !c.habilitado)
 
-        return coincideBusqueda && coincideTipoDoc && coincideEstado
+        return coincideBusqueda && coincideEstado
     })
-
-    // 👈 ahora usa inhabilitarCliente del context
-    // Cambiar habilitado directamente sin modal
-    const handleHabilitadoChange = (id) => {
-        invalidateCliente(id)
-        setMensaje('Estado actualizado correctamente')
-        setTimeout(() => setMensaje(''), 2000)
-    }
 
     const handleInhabilitar = (id) => {
         invalidateCliente(id)
         setClienteInhabilitar(null)
     }
 
-    const limpiarFiltros = () => {
-        setBusqueda('')
-        setFiltroPor('todo')
-        setFiltroTipoDoc('todos')
-        setFiltroEstado('todos')
-        setPage(0)
-    }
-
-    const hayFiltrosActivos = busqueda || filtroTipoDoc !== 'todos' || filtroEstado !== 'todos'
+    const totalPages = Math.max(1, Math.ceil(clientesFiltrados.length / rowsPerPage))
+    const safePage = Math.min(page, totalPages)
+    const paginatedClientes = clientesFiltrados.slice((safePage - 1) * rowsPerPage, safePage * rowsPerPage)
+    const from = clientesFiltrados.length === 0 ? 0 : (safePage - 1) * rowsPerPage + 1
+    const to = Math.min(safePage * rowsPerPage, clientesFiltrados.length)
 
     return (
-        <Box sx={{ p: 1 }}>
+        <Box sx={{ p: 3.5 }}>
 
             {/* ── Encabezado ── */}
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <PeopleIcon sx={{ color: COLORS.primary, fontSize: 28 }} />
-                    <Box>
-                        <Typography variant="h6" fontWeight={800} color={COLORS.secondary}>
-                            Clientes
-                        </Typography>
-                        <Typography variant="caption" color={COLORS.textMuted}>
-                            {clientesFiltrados.length} resultado{clientesFiltrados.length !== 1 ? 's' : ''} encontrado{clientesFiltrados.length !== 1 ? 's' : ''}
-                        </Typography>
-                    </Box>
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
+                <Box>
+                    <Typography variant="h5" fontWeight={700} color={COLORS.text}>
+                        Clientes
+                    </Typography>
+                    <Typography variant="body2" color={COLORS.textMuted} mt={0.3}>
+                        Gestiona los clientes registrados en el sistema.
+                    </Typography>
                 </Box>
                 <Button
                     onClick={() => navigate('/clientes/registrar')}
                     variant="contained"
-                    size="small"
+                    startIcon={<AddOutlinedIcon />}
                     sx={{
                         backgroundColor: COLORS.primary,
                         borderRadius: 2,
                         textTransform: 'none',
                         fontWeight: 600,
-                        '&:hover': { backgroundColor: '#a01212' }
+                        boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
+                        '&:hover': {
+                            backgroundColor: '#b91c1c',
+                            boxShadow: '0 6px 20px rgba(204,24,24,0.2)',
+                        },
                     }}
                 >
-                    + Nuevo cliente
+                    Nuevo cliente
                 </Button>
             </Box>
 
-            {/* ── Filtros y búsqueda ── */}
-            <Paper elevation={0} sx={{ p: 2, mb: 2, border: `1px solid ${COLORS.border}`, borderRadius: 3 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-                    <FilterListIcon sx={{ color: COLORS.textMuted, fontSize: 18 }} />
-                    <Typography variant="caption" fontWeight={700} color={COLORS.textMuted} letterSpacing={1}>
-                        Filtros y búsqueda
-                    </Typography>
-                    {hayFiltrosActivos && (
-                        <Chip
-                            label="Limpiar"
-                            size="small"
-                            icon={<ClearIcon sx={{ fontSize: '14px !important' }} />}
-                            onClick={limpiarFiltros}
-                            sx={{ ml: 'auto', fontSize: '0.72rem', height: 24, cursor: 'pointer', backgroundColor: COLORS.activeBg, color: COLORS.primary }}
-                        />
-                    )}
-                </Box>
-
-                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                    <FormControl size="small" sx={{ minWidth: 160 }}>
-                        <InputLabel sx={{ fontSize: '0.82rem' }}>Buscar por</InputLabel>
-                        <Select value={filtroPor} label="Buscar por"
-                            onChange={e => { setFiltroPor(e.target.value); setPage(0) }}
-                            sx={{ fontSize: '0.82rem', borderRadius: 2 }}>
-                            <MenuItem value="todo">Todo</MenuItem>
-                            <MenuItem value="nombre">Nombre</MenuItem>
-                            <MenuItem value="apellido">Apellido</MenuItem>
-                            <MenuItem value="nombreApellido">Nombre y apellido</MenuItem>
-                            <MenuItem value="telefono">Teléfono</MenuItem>
-                            <MenuItem value="email">Correo</MenuItem>
-                            <MenuItem value="identificacion">N° identificación</MenuItem>
-                        </Select>
-                    </FormControl>
-
-                    <TextField
+            {/* ── Filtros de estado ── */}
+            <Box sx={{
+                display: 'inline-flex',
+                backgroundColor: '#FFECEC',
+                borderRadius: 4,
+                p: '4px',
+                mb: 2.5,
+                gap: '5px',
+            }}>
+                {FILTROS.map(f => (
+                    <Button
+                        key={f.value}
+                        onClick={() => { setFiltroEstado(f.value); setPage(1) }}
                         size="small"
-                        placeholder="Escribe para buscar..."
-                        value={busqueda}
-                        onChange={e => { setBusqueda(e.target.value); setPage(0) }}
-                        sx={{ flex: 1, minWidth: 200, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-                        InputProps={{
+                        disableElevation
+                        disableRipple
+                        sx={{
+                            borderRadius: 3,
+                            textTransform: 'none',
+                            fontSize: '0.75rem',
+                            px: 2,
+                            py: 0.5,
+                            minWidth: 0,
+                            fontWeight: filtroEstado === f.value ? 600 : 400,
+                            backgroundColor: filtroEstado === f.value ? 'white' : 'transparent',
+                            color: filtroEstado === f.value ? COLORS.text : '#B05050',
+                            boxShadow: filtroEstado === f.value
+                                ? '0 1px 4px rgba(0,0,0,0.12)'
+                                : 'none',
+                            border: 'none',
+                            '&:hover': {
+                                backgroundColor: filtroEstado === f.value ? 'white' : 'transparent',
+                                color: filtroEstado === f.value ? COLORS.text : '#5C3333',
+                                border: 'none',
+                            },
+                        }}
+                    >
+                        {f.label}
+                    </Button>
+                ))}
+            </Box>
+
+            {/* ── Barra de búsqueda + Export ── */}
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
+                <TextField
+                    size="small"
+                    placeholder="Buscar clientes..."
+                    sx={{
+                        width: 320,
+                        '& .MuiOutlinedInput-root': {
+                            borderRadius: 2,
+                            '&.Mui-focused': {
+                                boxShadow: '0 0 0 3px rgba(229,115,115,0.18)',
+                            },
+                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                borderColor: '#CC1818',
+                                borderWidth: '1px',
+                            },
+                        },
+                    }}
+                    value={busqueda}
+                    onChange={e => { setBusqueda(e.target.value); setPage(1) }}
+                    slotProps={{
+                        input: {
                             startAdornment: (
                                 <InputAdornment position="start">
-                                    <SearchIcon sx={{ color: COLORS.textMuted, fontSize: 18 }} />
+                                    <SearchIcon sx={{ color: COLORS.textMuted, fontSize: 20 }} />
                                 </InputAdornment>
                             ),
                             endAdornment: busqueda && (
                                 <InputAdornment position="end">
-                                    <IconButton size="small" onClick={() => setBusqueda('')}>
+                                    <IconButton size="small" onClick={() => { setBusqueda(''); setPage(1) }}>
                                         <ClearIcon sx={{ fontSize: 16 }} />
                                     </IconButton>
                                 </InputAdornment>
                             )
-                        }}
-                    />
-
-                    <FormControl size="small" sx={{ minWidth: 140 }}>
-                        <InputLabel sx={{ fontSize: '0.82rem' }}>Tipo doc.</InputLabel>
-                        <Select value={filtroTipoDoc} label="Tipo doc."
-                            onChange={e => { setFiltroTipoDoc(e.target.value); setPage(0) }}
-                            sx={{ fontSize: '0.82rem', borderRadius: 2 }}>
-                            <MenuItem value="todos">Todos</MenuItem>
-                            <MenuItem value="CC">CC</MenuItem>
-                            <MenuItem value="TI">TI</MenuItem>
-                            <MenuItem value="NIT">NIT</MenuItem>
-                            <MenuItem value="CE">CE</MenuItem>
-                        </Select>
-                    </FormControl>
-
-                    <FormControl size="small" sx={{ minWidth: 120 }}>
-                        <InputLabel sx={{ fontSize: '0.82rem' }}>Estado</InputLabel>
-                        <Select value={filtroEstado} label="Estado"
-                            onChange={e => { setFiltroEstado(e.target.value); setPage(0) }}
-                            sx={{ fontSize: '0.82rem', borderRadius: 2 }}>
-                            <MenuItem value="todos">Todos</MenuItem>
-                            <MenuItem value="activo">Activo</MenuItem>
-                            <MenuItem value="inactivo">Inactivo</MenuItem>
-                        </Select>
-                    </FormControl>
-                </Box>
-            </Paper>
+                        }
+                    }}
+                />
+                <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<FileDownloadOutlinedIcon />}
+                    sx={{
+                        borderRadius: 2,
+                        textTransform: 'none',
+                        fontSize: '0.85rem',
+                        borderColor: COLORS.border,
+                        color: COLORS.text,
+                        fontWeight: 500,
+                        '&:hover': { backgroundColor: COLORS.primaryLight },
+                    }}
+                >
+                    Exportar
+                </Button>
+            </Box>
 
             {/* ── Tabla ── */}
             <Paper elevation={0} sx={{ border: `1px solid ${COLORS.border}`, borderRadius: 3, overflow: 'hidden' }}>
                 <TableContainer>
-                    <Table size="small">
+                    <Table>
                         <TableHead>
                             <TableRow sx={{ backgroundColor: '#F8F9FA' }}>
-                                {['#', 'Cliente', 'Identificación', 'Teléfono', 'Correo', 'Estado', 'Acciones'].map(col => (
-                                    <TableCell key={col} sx={{
-                                        fontWeight: 700, fontSize: '0.75rem', color: COLORS.textMuted,
-                                        letterSpacing: 0.8, py: 1.5,
-                                        borderBottom: `2px solid ${COLORS.border}`,
-                                    }}>
-                                        {col}
-                                    </TableCell>
-                                ))}
+                                <TableCell sx={thStyle}>Nombre</TableCell>
+                                <TableCell sx={thStyle}>Tipo Identificación</TableCell>
+                                <TableCell sx={thStyle}>N° Identificación</TableCell>
+                                <TableCell sx={thStyle}>Teléfono</TableCell>
+                                <TableCell sx={thStyle}>Correo</TableCell>
+                                <TableCell sx={thStyle}>Estado</TableCell>
+                                <TableCell sx={{ ...thStyle, width: 110 }} />
                             </TableRow>
                         </TableHead>
 
                         <TableBody>
-                            {clientesFiltrados.length === 0 ? (
+                            {paginatedClientes.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={7} align="center" sx={{ py: 6 }}>
+                                    <TableCell colSpan={7} align="center" sx={{ py: 7 }}>
                                         <Typography color={COLORS.textMuted} variant="body2">
-                                            No se encontraron clientes con los filtros aplicados
+                                            No se encontraron clientes con los filtros aplicados.
                                         </Typography>
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                clientesFiltrados
-                                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                                    .map((cliente, index) => (
-                                        <TableRow key={cliente.idCliente}
-                                            sx={{
-                                                '&:hover': { backgroundColor: COLORS.hoverBg },
-                                                opacity: cliente.habilitado ? 1 : 0.6,
-                                                transition: 'background-color 0.15s',
-                                            }}
-                                        >
-                                            <TableCell sx={{ fontSize: '0.8rem', color: COLORS.textMuted, py: 1.5 }}>
-                                                {page * rowsPerPage + index + 1}
-                                            </TableCell>
-
-                                            <TableCell sx={{ py: 1.5 }}>
-                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
-                                                    <Avatar sx={{
-                                                        width: 30, height: 30,
-                                                        backgroundColor: cliente.habilitado ? COLORS.secondary : COLORS.textMuted,
-                                                        fontSize: '0.7rem', fontWeight: 700,
-                                                    }}>
-                                                        {cliente.nombre[0]}{cliente.apellido[0]}
-                                                    </Avatar>
-                                                    <Typography variant="body2" fontWeight={600} color={COLORS.text} noWrap>
-                                                        {cliente.nombre} {cliente.apellido}
-                                                    </Typography>
-                                                </Box>
-                                            </TableCell>
-
-                                            <TableCell sx={{ py: 1.5 }}>
-                                                <Typography variant="body2" color={COLORS.textMuted} fontSize="0.78rem">
-                                                    {cliente.tipoIdentificacion}
+                                paginatedClientes.map(cliente => (
+                                    <TableRow
+                                        key={cliente.idCliente}
+                                        sx={{
+                                            '&:hover': { backgroundColor: COLORS.hoverBg },
+                                            transition: 'background-color 0.15s',
+                                        }}
+                                    >
+                                        {/* Nombre */}
+                                        <TableCell sx={{ py: 1.5 }}>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                                <Avatar sx={{
+                                                    width: 34, height: 34,
+                                                    backgroundColor: cliente.habilitado ? '#FFCDD2' : '#E0E0E0',
+                                                    fontSize: '0.73rem',
+                                                    fontWeight: 700,
+                                                    color: cliente.habilitado ? '#C62828' : '#8E8E8E',
+                                                }}>
+                                                    {cliente.nombre[0]}{cliente.apellido[0]}
+                                                </Avatar>
+                                                <Typography variant="body2" fontWeight={500} color={COLORS.text} noWrap>
+                                                    {cliente.nombre} {cliente.apellido}
                                                 </Typography>
-                                                <Typography variant="body2" fontWeight={500} color={COLORS.text} fontSize="0.82rem">
-                                                    {cliente.numeroIdentificacion}
-                                                </Typography>
-                                            </TableCell>
+                                            </Box>
+                                        </TableCell>
 
-                                            <TableCell sx={{ fontSize: '0.82rem', color: COLORS.text, py: 1.5 }}>
-                                                {cliente.telefono}
-                                            </TableCell>
+                                        {/* Tipo ID */}
+                                        <TableCell sx={{ fontSize: '0.85rem', color: COLORS.text, py: 1.5 }}>
+                                            {cliente.tipoIdentificacion}
+                                        </TableCell>
 
-                                            <TableCell sx={{ fontSize: '0.82rem', color: COLORS.text, py: 1.5 }}>
+                                        {/* Número ID */}
+                                        <TableCell sx={{ fontSize: '0.85rem', color: COLORS.text, py: 1.5 }}>
+                                            {cliente.numeroIdentificacion}
+                                        </TableCell>
+
+                                        {/* Teléfono */}
+                                        <TableCell sx={{ fontSize: '0.85rem', color: COLORS.text, py: 1.5 }}>
+                                            {cliente.telefono}
+                                        </TableCell>
+
+                                        {/* Correo */}
+                                        <TableCell sx={{ fontSize: '0.85rem', color: COLORS.text, py: 1.5, maxWidth: 200 }}>
+                                            <Typography variant="body2" color={COLORS.text} noWrap>
                                                 {cliente.email}
-                                            </TableCell>
+                                            </Typography>
+                                        </TableCell>
 
-                                            <TableCell sx={{ py: 1.5 }}>
-                                                <Switch 
-                                                    checked={cliente.habilitado !== false}
-                                                    onChange={() => handleHabilitadoChange(cliente.idCliente)}
-                                                    sx={{
-                                                        '& .MuiSwitch-switchBase.Mui-checked': {
-                                                            color: '#10b981',
-                                                        },
-                                                        '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                                                            backgroundColor: '#10b981',
-                                                        },
-                                                    }}
-                                                />
-                                            </TableCell>
+                                        {/* Estado */}
+                                        <TableCell sx={{ py: 1.5 }}>
+                                            <Chip
+                                                label={cliente.habilitado ? 'Habilitado' : 'Inhabilitado'}
+                                                size="small"
+                                                sx={{
+                                                    backgroundColor: cliente.habilitado ? '#DCFCE7' : '#F3F4F6',
+                                                    color: cliente.habilitado ? '#16A34A' : '#9CA3AF',
+                                                    fontWeight: 600,
+                                                    fontSize: '0.72rem',
+                                                    height: 22,
+                                                    borderRadius: 10,
+                                                    border: 'none',
+                                                }}
+                                            />
+                                        </TableCell>
 
-                                            <TableCell sx={{ py: 1.5 }}>
-                                                <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                                    <Tooltip title="Consultar">
-                                                        <IconButton size="small" onClick={() => setClienteConsulta(cliente)}
-                                                            sx={{ color: COLORS.secondary, '&:hover': { backgroundColor: '#EEF2FF' } }}>
-                                                            <VisibilityIcon sx={{ fontSize: 17 }} />
+                                        {/* Acciones */}
+                                        <TableCell sx={{ py: 1.5 }}>
+                                            <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                                <Tooltip title="Ver detalle">
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={() => setClienteConsulta(cliente)}
+                                                        sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}
+                                                    >
+                                                        <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
+                                                    </IconButton>
+                                                </Tooltip>
+                                                <Tooltip title="Editar">
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={() => navigate(`/clientes/actualizar/${cliente.idCliente}`)}
+                                                        sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}
+                                                    >
+                                                        <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                                                    </IconButton>
+                                                </Tooltip>
+                                                {cliente.habilitado && (
+                                                    <Tooltip title="Inhabilitar">
+                                                        <IconButton
+                                                            size="small"
+                                                            onClick={() => setClienteInhabilitar(cliente)}
+                                                            sx={{ color: COLORS.primary, '&:hover': { backgroundColor: COLORS.primaryLight } }}
+                                                        >
+                                                            <BlockOutlinedIcon sx={{ fontSize: 18 }} />
                                                         </IconButton>
                                                     </Tooltip>
-                                                    <Tooltip title="Actualizar">
-                                                        <IconButton size="small"
-                                                            onClick={() => navigate(`/clientes/actualizar/${cliente.idCliente}`)}
-                                                            sx={{ color: '#F59E0B', '&:hover': { backgroundColor: '#FFFBEB' } }}>
-                                                            <EditIcon sx={{ fontSize: 17 }} />
-                                                        </IconButton>
-                                                    </Tooltip>
-                                                    {cliente.habilitado && (
-                                                        <Tooltip title="Inhabilitar">
-                                                            <IconButton size="small" onClick={() => setClienteInhabilitar(cliente)}
-                                                                sx={{ color: COLORS.primary, '&:hover': { backgroundColor: COLORS.activeBg } }}>
-                                                                <BlockIcon sx={{ fontSize: 17 }} />
-                                                            </IconButton>
-                                                        </Tooltip>
-                                                    )}
-                                                </Box>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))
+                                                )}
+                                            </Box>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
                             )}
                         </TableBody>
                     </Table>
                 </TableContainer>
 
-                <TablePagination
-                    component="div"
-                    count={clientesFiltrados.length}
-                    page={page}
-                    onPageChange={(_, newPage) => setPage(newPage)}
-                    rowsPerPage={rowsPerPage}
-                    onRowsPerPageChange={e => { setRowsPerPage(parseInt(e.target.value)); setPage(0) }}
-                    rowsPerPageOptions={[5, 10, 25]}
-                    labelRowsPerPage="Filas por página:"
-                    labelDisplayedRows={({ from, to, count }) => `${from}–${to} de ${count}`}
-                    sx={{ borderTop: `1px solid ${COLORS.border}`, fontSize: '0.8rem' }}
-                />
             </Paper>
+
+            {/* ── Paginación ── */}
+            <Box sx={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                px: 0.5, pt: 1.5,
+            }}>
+                <Typography variant="body2" color={COLORS.textMuted}>
+                    Mostrando {from}–{to} de {clientesFiltrados.length} resultado{clientesFiltrados.length !== 1 ? 's' : ''}
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="body2" color={COLORS.textMuted} fontWeight={500}>
+                            Filas
+                        </Typography>
+                        <Select
+                            value={rowsPerPage}
+                            onChange={e => { setRowsPerPage(Number(e.target.value)); setPage(1) }}
+                            size="small"
+                            renderValue={(value) => value}
+                            IconComponent={KeyboardArrowDownOutlinedIcon}
+                            sx={{
+                                fontSize: '0.82rem',
+                                borderRadius: 2,
+                                '& .MuiSelect-select': { py: 0.6, pl: 1.5, pr: '28px !important' },
+                                '& .MuiOutlinedInput-notchedOutline': { borderColor: COLORS.border },
+                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#BDBDBD' },
+                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                    borderColor: '#E57373',
+                                    borderWidth: '1px',
+                                },
+                                '&.Mui-focused': {
+                                    boxShadow: '0 0 0 3px rgba(229,115,115,0.18)',
+                                },
+                                '& .MuiSelect-icon': { color: COLORS.textMuted, fontSize: 18 },
+                                '& .MuiTouchRipple-root': { display: 'none' },
+                            }}
+                            MenuProps={{
+                                slotProps: {
+                                    paper: {
+                                        sx: {
+                                            borderRadius: 2,
+                                            boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+                                            mt: 0.5,
+                                            minWidth: 80,
+                                            '& .MuiMenuItem-root': {
+                                                fontSize: '0.82rem',
+                                                py: 0.9,
+                                                px: 2,
+                                                display: 'flex',
+                                                justifyContent: 'space-between',
+                                                gap: 2,
+                                                '&:hover': { backgroundColor: '#FFF5F5' },
+                                                '&.Mui-selected': {
+                                                    backgroundColor: 'transparent',
+                                                    fontWeight: 600,
+                                                    color: COLORS.text,
+                                                },
+                                                '&.Mui-selected:hover': { backgroundColor: '#FFF5F5' },
+                                            },
+                                        },
+                                    },
+                                },
+                            }}
+                        >
+                            {[5, 10, 25].map(n => (
+                                <MenuItem key={n} value={n}>
+                                    {n}
+                                    {rowsPerPage === n && (
+                                        <CheckOutlinedIcon sx={{ fontSize: 14, color: COLORS.textMuted }} />
+                                    )}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </Box>
+                    <Pagination
+                        count={totalPages}
+                        page={safePage}
+                        onChange={(_, val) => setPage(val)}
+                        size="small"
+                        shape="rounded"
+                        sx={{
+                            '& .MuiPaginationItem-root': {
+                                fontSize: '0.82rem',
+                                borderRadius: '8px',
+                                minWidth: 34,
+                                height: 34,
+                                mx: 0.2,
+                                color: COLORS.text,
+                                border: `1px solid ${COLORS.border}`,
+                                '& .MuiTouchRipple-root': { display: 'none' },
+                            },
+                            '& .MuiPaginationItem-ellipsis': {
+                                border: 'none',
+                            },
+                            '& .MuiPaginationItem-root.Mui-selected': {
+                                backgroundColor: COLORS.primary,
+                                borderColor: COLORS.primary,
+                                color: 'white',
+                                fontWeight: 600,
+                                '&:hover': { backgroundColor: '#a01212' },
+                            },
+                            '& .MuiPaginationItem-root:hover:not(.Mui-selected)': {
+                                backgroundColor: COLORS.hoverBg,
+                                borderColor: '#BDBDBD',
+                            },
+                        }}
+                    />
+                </Box>
+            </Box>
 
             <ModalConsultar cliente={clienteConsulta} onClose={() => setClienteConsulta(null)} />
             <ModalInhabilitar
@@ -430,7 +607,6 @@ const ListarCliente = () => {
                 onClose={() => setClienteInhabilitar(null)}
                 onConfirm={handleInhabilitar}
             />
-
         </Box>
     )
 }
