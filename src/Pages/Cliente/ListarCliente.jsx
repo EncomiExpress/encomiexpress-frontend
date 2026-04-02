@@ -6,12 +6,14 @@ import {
     TableContainer, TableHead, TableRow, TextField,
     IconButton, Chip, Tooltip, InputAdornment,
     Button, Dialog, DialogTitle, DialogContent, DialogContentText,
-    DialogActions, Avatar, Select, MenuItem, Pagination
+    DialogActions, Avatar, Select, MenuItem, Pagination, Snackbar, Alert,
+    CircularProgress
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import BlockOutlinedIcon from '@mui/icons-material/BlockOutlined'
+import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined'
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined'
@@ -132,7 +134,6 @@ const ModalConsultar = ({ cliente, onClose }) => {
                     <CampoFila label="Teléfono" value={cliente.telefono} />
                     <CampoFila label="Correo" value={cliente.email} />
                     <CampoFila label="Dirección" value={cliente.direccion} />
-                    <CampoFila label="Ciudad" value={cliente.ciudad} />
                     <CampoFila label="Estado" value={estado} esEstado />
                 </Paper>
             </Box>
@@ -151,28 +152,41 @@ const ModalConsultar = ({ cliente, onClose }) => {
     )
 }
 
-// ── Modal Inhabilitar ──
-const ModalInhabilitar = ({ cliente, onClose, onConfirm }) => {
+// ── Modal Toggle Habilitado (sirve para habilitar e inhabilitar) ──
+const ModalToggleHabilitado = ({ cliente, onClose, onConfirm, loading }) => {
     if (!cliente) return null
+    const esHabilitar = !cliente.habilitado
+
     return (
         <Dialog open onClose={onClose} maxWidth="xs" fullWidth slotProps={{ paper: { sx: { borderRadius: 3 } } }}>
-            <DialogTitle sx={{ color: COLORS.primary, fontWeight: 700 }}>
-                ¿Inhabilitar cliente?
+            <DialogTitle sx={{ color: esHabilitar ? '#16A34A' : COLORS.primary, fontWeight: 700 }}>
+                {esHabilitar ? '¿Habilitar cliente?' : '¿Inhabilitar cliente?'}
             </DialogTitle>
             <DialogContent>
                 <DialogContentText>
-                    Estás a punto de inhabilitar a <strong>{cliente.nombre} {cliente.apellido}</strong>.
-                    El cliente no podrá ser usado en el sistema hasta que sea habilitado nuevamente.
+                    Estás a punto de {esHabilitar ? 'habilitar' : 'inhabilitar'} a{' '}
+                    <strong>{cliente.nombre} {cliente.apellido}</strong>.{' '}
+                    {esHabilitar
+                        ? 'El cliente volverá a estar disponible en el sistema.'
+                        : 'El cliente no podrá ser usado en el sistema hasta que sea habilitado nuevamente.'
+                    }
                 </DialogContentText>
             </DialogContent>
             <DialogActions sx={{ px: 3, py: 2, gap: 1 }}>
-                <Button onClick={onClose} variant="outlined"
+                <Button onClick={onClose} disabled={loading} variant="outlined"
                     sx={{ borderColor: COLORS.border, color: COLORS.text, borderRadius: 2, textTransform: 'none' }}>
                     Cancelar
                 </Button>
-                <Button onClick={() => onConfirm(cliente.idCliente)} variant="contained"
-                    sx={{ backgroundColor: COLORS.primary, borderRadius: 2, textTransform: 'none', '&:hover': { backgroundColor: '#a01212' } }}>
-                    Sí, inhabilitar
+                <Button onClick={() => onConfirm(cliente.idCliente)} disabled={loading} variant="contained"
+                    sx={{
+                        backgroundColor: esHabilitar ? '#16A34A' : COLORS.primary,
+                        borderRadius: 2, textTransform: 'none',
+                        '&:hover': { backgroundColor: esHabilitar ? '#15803D' : '#a01212' },
+                    }}>
+                    {loading
+                        ? (esHabilitar ? 'Habilitando...' : 'Inhabilitando...')
+                        : (esHabilitar ? 'Sí, habilitar' : 'Sí, inhabilitar')
+                    }
                 </Button>
             </DialogActions>
         </Dialog>
@@ -189,13 +203,15 @@ const FILTROS = [
 // ── Componente principal ──
 const ListarCliente = () => {
     const navigate = useNavigate()
-    const { clientes, invalidateCliente } = useClientes()
+    const { clientes, loading, error, invalidateCliente } = useClientes()
     const [busqueda, setBusqueda] = useState('')
     const [filtroEstado, setFiltroEstado] = useState('todo')
     const [page, setPage] = useState(1)
     const [rowsPerPage, setRowsPerPage] = useState(5)
     const [clienteConsulta, setClienteConsulta] = useState(null)
-    const [clienteInhabilitar, setClienteInhabilitar] = useState(null)
+    const [clienteToggle, setClienteToggle] = useState(null)
+    const [toggling, setToggling] = useState(false)
+    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
 
     // ── Filtrado ──
     const clientesFiltrados = clientes.filter(c => {
@@ -217,9 +233,28 @@ const ListarCliente = () => {
         return coincideBusqueda && coincideEstado
     })
 
-    const handleInhabilitar = (id) => {
-        invalidateCliente(id)
-        setClienteInhabilitar(null)
+    const handleToggle = async (id) => {
+        const cliente = clientes.find(c => c.idCliente === id)
+        const esHabilitar = !cliente?.habilitado
+        setToggling(true)
+        try {
+            await invalidateCliente(id)
+            setClienteToggle(null)
+            setSnackbar({
+                open: true,
+                message: esHabilitar ? 'Cliente habilitado correctamente.' : 'Cliente inhabilitado correctamente.',
+                severity: esHabilitar ? 'success' : 'warning',
+            })
+        } catch (err) {
+            setClienteToggle(null)
+            setSnackbar({
+                open: true,
+                message: err.message || 'Error al cambiar el estado del cliente.',
+                severity: 'error',
+            })
+        } finally {
+            setToggling(false)
+        }
     }
 
     const totalPages = Math.max(1, Math.ceil(clientesFiltrados.length / rowsPerPage))
@@ -227,6 +262,8 @@ const ListarCliente = () => {
     const paginatedClientes = clientesFiltrados.slice((safePage - 1) * rowsPerPage, safePage * rowsPerPage)
     const from = clientesFiltrados.length === 0 ? 0 : (safePage - 1) * rowsPerPage + 1
     const to = Math.min(safePage * rowsPerPage, clientesFiltrados.length)
+
+    const hayFiltrosActivos = busqueda.trim() !== '' || filtroEstado !== 'todo'
 
     return (
         <Box sx={{ p: 3.5 }}>
@@ -260,6 +297,13 @@ const ListarCliente = () => {
                     Nuevo cliente
                 </Button>
             </Box>
+
+            {/* ── Alerta de error de carga ── */}
+            {error && (
+                <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
+                    Error al cargar los clientes: {error}
+                </Alert>
+            )}
 
             {/* ── Filtros de estado ── */}
             <Box sx={{
@@ -375,11 +419,35 @@ const ListarCliente = () => {
                         </TableHead>
 
                         <TableBody>
-                            {paginatedClientes.length === 0 ? (
+                            {loading ? (
+                                <TableRow>
+                                    <TableCell colSpan={7} align="center" sx={{ py: 7 }}>
+                                        <CircularProgress size={28} sx={{ color: COLORS.primary }} />
+                                        <Typography variant="body2" color={COLORS.textMuted} mt={1.5}>
+                                            Cargando clientes...
+                                        </Typography>
+                                    </TableCell>
+                                </TableRow>
+                            ) : error ? (
+                                <TableRow>
+                                    <TableCell colSpan={7} align="center" sx={{ py: 5 }}>
+                                        <Typography color="error" variant="body2">
+                                            No se pudieron cargar los clientes. Verifica la conexión con el servidor.
+                                        </Typography>
+                                    </TableCell>
+                                </TableRow>
+                            ) : paginatedClientes.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={7} align="center" sx={{ py: 7 }}>
                                         <Typography color={COLORS.textMuted} variant="body2">
-                                            No se encontraron clientes con los filtros aplicados.
+                                            {clientes.length === 0
+                                                ? 'No hay clientes registrados en el sistema.'
+                                                : busqueda.trim() !== '' && filtroEstado !== 'todo'
+                                                    ? 'No se encontraron resultados con la búsqueda y el filtro aplicados.'
+                                                    : busqueda.trim() !== ''
+                                                        ? 'No se encontraron clientes que coincidan con la búsqueda.'
+                                                        : 'No se encontraron clientes en este estado.'
+                                            }
                                         </Typography>
                                     </TableCell>
                                 </TableRow>
@@ -390,6 +458,7 @@ const ListarCliente = () => {
                                         sx={{
                                             '&:hover': { backgroundColor: COLORS.hoverBg },
                                             transition: 'background-color 0.15s',
+                                            opacity: cliente.habilitado ? 1 : 0.55,
                                         }}
                                     >
                                         {/* Nombre */}
@@ -470,17 +539,23 @@ const ListarCliente = () => {
                                                         <EditOutlinedIcon sx={{ fontSize: 18 }} />
                                                     </IconButton>
                                                 </Tooltip>
-                                                {cliente.habilitado && (
-                                                    <Tooltip title="Inhabilitar">
-                                                        <IconButton
-                                                            size="small"
-                                                            onClick={() => setClienteInhabilitar(cliente)}
-                                                            sx={{ color: COLORS.primary, '&:hover': { backgroundColor: COLORS.primaryLight } }}
-                                                        >
-                                                            <BlockOutlinedIcon sx={{ fontSize: 18 }} />
-                                                        </IconButton>
-                                                    </Tooltip>
-                                                )}
+                                                <Tooltip title={cliente.habilitado ? 'Inhabilitar' : 'Habilitar'}>
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={() => setClienteToggle(cliente)}
+                                                        sx={{
+                                                            color: cliente.habilitado ? COLORS.primary : '#16A34A',
+                                                            '&:hover': {
+                                                                backgroundColor: cliente.habilitado ? COLORS.primaryLight : '#DCFCE7',
+                                                            },
+                                                        }}
+                                                    >
+                                                        {cliente.habilitado
+                                                            ? <BlockOutlinedIcon sx={{ fontSize: 18 }} />
+                                                            : <CheckCircleOutlinedIcon sx={{ fontSize: 18 }} />
+                                                        }
+                                                    </IconButton>
+                                                </Tooltip>
                                             </Box>
                                         </TableCell>
                                     </TableRow>
@@ -489,7 +564,6 @@ const ListarCliente = () => {
                         </TableBody>
                     </Table>
                 </TableContainer>
-
             </Paper>
 
             {/* ── Paginación ── */}
@@ -602,11 +676,27 @@ const ListarCliente = () => {
             </Box>
 
             <ModalConsultar cliente={clienteConsulta} onClose={() => setClienteConsulta(null)} />
-            <ModalInhabilitar
-                cliente={clienteInhabilitar}
-                onClose={() => setClienteInhabilitar(null)}
-                onConfirm={handleInhabilitar}
+            <ModalToggleHabilitado
+                cliente={clienteToggle}
+                onClose={() => !toggling && setClienteToggle(null)}
+                onConfirm={handleToggle}
+                loading={toggling}
             />
+
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={2000}
+                onClose={() => setSnackbar(s => ({ ...s, open: false }))}
+                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+            >
+                <Alert
+                    severity={snackbar.severity}
+                    sx={{ fontWeight: 600 }}
+                    onClose={() => setSnackbar(s => ({ ...s, open: false }))}
+                >
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </Box>
     )
 }

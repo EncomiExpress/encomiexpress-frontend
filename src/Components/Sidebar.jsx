@@ -70,13 +70,7 @@ const SECTIONS = [
           { id: 'usuarios-listar', label: 'Listar', icon: ListIcon, path: '/usuarios/listar' },
         ],
       },
-      {
-        id: 'clientes', label: 'Clientes', icon: PeopleIcon, path: '/clientes',
-        children: [
-          { id: 'clientes-registrar', label: 'Registrar', icon: PersonAddIcon, path: '/clientes/registrar' },
-          { id: 'clientes-listar', label: 'Listar', icon: ListIcon, path: '/clientes/listar' },
-        ],
-      },
+      { id: 'clientes', label: 'Clientes', icon: PeopleIcon, path: '/clientes/listar' },
     ],
   },
   {

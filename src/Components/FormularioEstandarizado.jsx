@@ -1,5 +1,5 @@
 import { TextField, Button, Box, Typography, Select, MenuItem, FormControl, InputLabel, InputAdornment, IconButton, Alert } from '@mui/material'
-import { Save, Cancel, Visibility, VisibilityOff } from '@mui/icons-material'
+import { SaveOutlined, VisibilityOutlined, VisibilityOffOutlined } from '@mui/icons-material'
 import { useState } from 'react'
 
 // Colores del tema
@@ -16,7 +16,12 @@ export const formFieldStyles = {
     borderRadius: 2,
     '& fieldset': { borderColor: theme.border },
     '&:hover fieldset': { borderColor: theme.primary },
-    '&.Mui-focused fieldset': { borderColor: theme.primary, borderWidth: 2 },
+    '&.Mui-focused': { boxShadow: '0 0 0 3px rgba(229,115,115,0.18)' },
+    '&.Mui-focused fieldset': { borderColor: theme.primary, borderWidth: '1px' },
+    '& input:-webkit-autofill': {
+      WebkitBoxShadow: '0 0 0 1000px #FFF5F5 inset',
+      WebkitTextFillColor: '#1a0e0c',
+    },
   },
   '& .MuiInputLabel-root.Mui-focused': { color: theme.primary },
 }
@@ -145,7 +150,7 @@ export const PasswordField = ({
               edge="end"
               sx={{ color: '#94a3b8' }}
             >
-              {showPassword ? <VisibilityOff /> : <Visibility />}
+              {showPassword ? <VisibilityOffOutlined /> : <VisibilityOutlined />}
             </IconButton>
           </InputAdornment>
         ),
@@ -164,7 +169,7 @@ export const PrimaryButton = ({ children, onClick, type = 'submit', fullWidth = 
       fullWidth={fullWidth}
       disabled={disabled}
       onClick={onClick}
-      startIcon={Icon ? <Icon /> : <Save />}
+      startIcon={Icon ? <Icon /> : <SaveOutlined />}
       sx={{
         backgroundColor: theme.primary,
         borderRadius: 2,
@@ -194,7 +199,7 @@ export const SecondaryButton = ({ children, onClick, type = 'button', fullWidth 
       disabled={disabled}
       onClick={onClick}
       href={href}
-      startIcon={Icon ? <Icon /> : <Cancel />}
+      startIcon={Icon ? <Icon /> : undefined}
       sx={{
         borderColor: theme.border,
         color: theme.textMuted,
