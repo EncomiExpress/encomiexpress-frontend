@@ -271,9 +271,25 @@ const ListarCliente = () => {
             {/* ── Encabezado ── */}
             <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
                 <Box>
-                    <Typography variant="h5" fontWeight={700} color={COLORS.text}>
-                        Clientes
-                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <Typography variant="h5" fontWeight={700} color={COLORS.text}>
+                            Clientes
+                        </Typography>
+                        {!loading && !error && (
+                            <Chip
+                                label={`${clientes.length} registrado${clientes.length !== 1 ? 's' : ''}`}
+                                size="small"
+                                sx={{
+                                    backgroundColor: '#F3F4F6',
+                                    color: COLORS.textMuted,
+                                    fontWeight: 500,
+                                    fontSize: '0.72rem',
+                                    height: 22,
+                                    borderRadius: 10,
+                                }}
+                            />
+                        )}
+                    </Box>
                     <Typography variant="body2" color={COLORS.textMuted} mt={0.3}>
                         Gestiona los clientes registrados en el sistema.
                     </Typography>
