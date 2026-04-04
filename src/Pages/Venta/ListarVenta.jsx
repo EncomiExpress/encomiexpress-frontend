@@ -7,7 +7,7 @@ import {
     IconButton, Chip, Tooltip, InputAdornment,
     Button, Dialog, DialogTitle, DialogContent, DialogContentText,
     DialogActions, Avatar, Select, MenuItem, Pagination, Snackbar, Alert,
-    CircularProgress, FormControl, InputLabel, Grid, Divider
+    CircularProgress, FormControl, InputLabel
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
@@ -19,8 +19,12 @@ import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined'
+import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined'
+import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
+import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined'
+import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined'
+import PaymentOutlinedIcon from '@mui/icons-material/PaymentOutlined'
 import ClearIcon from '@mui/icons-material/Clear'
-import FilterListOutlinedIcon from '@mui/icons-material/FilterListOutlined'
 import { ESTADOS_ENCOMIENDA, METODOS_PAGO } from '../../Context/VentaContext'
 
 const COLORS = {
@@ -60,180 +64,145 @@ const getPagoColor = (estadoPago) =>
         ? { bg: '#D1FAE5', color: '#065F46' }
         : { bg: '#FEE2E2', color: '#991B1B' }
 
+// ── Fila de campo reutilizable ──
+const CampoFila = ({ label, value }) => (
+    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
+        <Typography variant="body2" sx={{ color: '#9C4040', fontWeight: 500 }}>{label}</Typography>
+        <Typography variant="body2" fontWeight={500} color="#2D3748">
+            {String(value ?? '—')}
+        </Typography>
+    </Box>
+)
+
 // ── Modal Consultar ──
 const ModalConsultar = ({ venta, onClose }) => {
     if (!venta) return null
     const estadoStyles = getEstadoColor(venta.estado)
     const pagoStyles = getPagoColor(venta.estadoPago)
 
+    const cardSx = { borderRadius: 2, p: 3, border: `1px solid ${COLORS.border}`, backgroundColor: 'white' }
+    const tituloSx = { display: 'flex', alignItems: 'center', gap: 1, mb: 1 }
+
     return (
         <Dialog open onClose={onClose} maxWidth="md" fullWidth
-            slotProps={{ paper: { sx: { borderRadius: 3 } } }}>
-            <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pb: 1 }}>
-                <Avatar sx={{ backgroundColor: COLORS.secondary, width: 40, height: 40 }}>
-                    <LocalShippingOutlinedIcon sx={{ fontSize: 20 }} />
-                </Avatar>
-                <Box>
-                    <Typography fontWeight={700} color={COLORS.secondary}>
-                        Guía: {venta.numeroGuia}
-                    </Typography>
-                    <Typography variant="caption" color={COLORS.textMuted}>Detalle de la encomienda</Typography>
+            slotProps={{ paper: { sx: { borderRadius: 3, p: 3, backgroundColor: '#FAFAFA' } } }}>
+
+            {/* ── Tarjeta superior: encomienda ── */}
+            <Paper elevation={0} sx={{ ...cardSx, mb: 2 }}>
+                <Box sx={tituloSx}>
+                    <LocalShippingOutlinedIcon sx={{ fontSize: 22, color: COLORS.text }} />
+                    <Typography fontWeight={700} fontSize="1.05rem" color={COLORS.text}>Encomienda</Typography>
                 </Box>
-            </DialogTitle>
-            <DialogContent dividers>
-                <Grid container spacing={2}>
-                    {/* Estado y Pago */}
-                    <Grid item xs={12}>
-                        <Box sx={{ display: 'flex', gap: 1 }}>
-                            <Chip
-                                label={venta.estado}
-                                size="small"
-                                sx={{ backgroundColor: estadoStyles.bg, color: estadoStyles.color, fontWeight: 600 }}
-                            />
-                            <Chip
-                                label={venta.estadoPago}
-                                size="small"
-                                sx={{ backgroundColor: pagoStyles.bg, color: pagoStyles.color, fontWeight: 600 }}
-                            />
-                        </Box>
-                    </Grid>
-
-                    {/* Datos principales */}
-                    <Grid item xs={12} md={6}>
-                        <Typography variant="subtitle2" color={COLORS.textMuted}>Número de guía</Typography>
-                        <Typography variant="body1" fontWeight={600}>{venta.numeroGuia}</Typography>
-
-                        <Typography variant="subtitle2" color={COLORS.textMuted} sx={{ mt: 1 }}>Número de factura</Typography>
-                        <Typography variant="body1">{venta.numeroFactura}</Typography>
-
-                        <Typography variant="subtitle2" color={COLORS.textMuted} sx={{ mt: 1 }}>Fecha de registro</Typography>
-                        <Typography variant="body1">{venta.fechaRegistro}</Typography>
-
-                        <Typography variant="subtitle2" color={COLORS.textMuted} sx={{ mt: 1 }}>Fecha estimada de entrega</Typography>
-                        <Typography variant="body1">{venta.fechaEstimadaEntrega}</Typography>
-                    </Grid>
-
-                    <Grid item xs={12}><Divider /></Grid>
-
-                    {/* Datos del Remitente */}
-                    <Grid item xs={12} md={6}>
-                        <Typography variant="subtitle2" sx={{ color: COLORS.primary, fontWeight: 700, mb: 1 }}>
-                            Datos del remitente
-                        </Typography>
-                        <Box sx={{ display: 'grid', gap: 1 }}>
-                            <Box>
-                                <Typography variant="caption" color={COLORS.textMuted}>Nombre:</Typography>
-                                <Typography variant="body2" fontWeight={500}>{venta.cliente?.nombre} {venta.cliente?.apellido}</Typography>
-                            </Box>
-                            <Box>
-                                <Typography variant="caption" color={COLORS.textMuted}>Identificación:</Typography>
-                                <Typography variant="body2">{venta.cliente?.tipoIdentificacion} {venta.cliente?.numeroIdentificacion}</Typography>
-                            </Box>
-                            <Box>
-                                <Typography variant="caption" color={COLORS.textMuted}>Teléfono:</Typography>
-                                <Typography variant="body2">{venta.cliente?.telefono}</Typography>
-                            </Box>
-                            <Box>
-                                <Typography variant="caption" color={COLORS.textMuted}>Dirección:</Typography>
-                                <Typography variant="body2">{venta.cliente?.direccion}</Typography>
-                            </Box>
-                        </Box>
-                    </Grid>
-
-                    {/* Datos del Destinatario */}
-                    <Grid item xs={12} md={6}>
-                        <Typography variant="subtitle2" sx={{ color: COLORS.secondary, fontWeight: 700, mb: 1 }}>
-                            Datos del destinatario
-                        </Typography>
-                        <Box sx={{ display: 'grid', gap: 1 }}>
-                            <Box>
-                                <Typography variant="caption" color={COLORS.textMuted}>Nombre:</Typography>
-                                <Typography variant="body2" fontWeight={500}>{venta.destinatario?.nombreDestinatario}</Typography>
-                            </Box>
-                            <Box>
-                                <Typography variant="caption" color={COLORS.textMuted}>Teléfono:</Typography>
-                                <Typography variant="body2">{venta.destinatario?.telefonoDestinatario}</Typography>
-                            </Box>
-                            <Box>
-                                <Typography variant="caption" color={COLORS.textMuted}>Dirección:</Typography>
-                                <Typography variant="body2">{venta.destinatario?.direccionDestinatario}</Typography>
-                            </Box>
-                        </Box>
-                    </Grid>
-
-                    <Grid item xs={12}><Divider /></Grid>
-
-                    {/* Datos del Paquete */}
-                    <Grid item xs={12} md={6}>
-                        <Typography variant="subtitle2" sx={{ color: COLORS.primary, fontWeight: 700, mb: 1 }}>
-                            Características del paquete
-                        </Typography>
-                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}>
-                            <Box>
-                                <Typography variant="caption" color={COLORS.textMuted}>Contenido:</Typography>
-                                <Typography variant="body2">{venta.paquete?.descripcionContenido}</Typography>
-                            </Box>
-                            <Box>
-                                <Typography variant="caption" color={COLORS.textMuted}>Peso:</Typography>
-                                <Typography variant="body2">{venta.paquete?.peso} kg</Typography>
-                            </Box>
-                            <Box>
-                                <Typography variant="caption" color={COLORS.textMuted}>Dimensiones:</Typography>
-                                <Typography variant="body2">{venta.paquete?.alto}x{venta.paquete?.ancho}x{venta.paquete?.profundidad} cm</Typography>
-                            </Box>
-                            <Box>
-                                <Typography variant="caption" color={COLORS.textMuted}>Valor declarado:</Typography>
-                                <Typography variant="body2">${(venta.paquete?.valorDeclarado || 0).toLocaleString()}</Typography>
-                            </Box>
-                        </Box>
-                    </Grid>
-
-                    {/* Pago y Destino */}
-                    <Grid item xs={12} md={6}>
-                        <Typography variant="subtitle2" sx={{ color: COLORS.secondary, fontWeight: 700, mb: 1 }}>
-                            Pago y destino
-                        </Typography>
-                        <Box sx={{ display: 'grid', gap: 1 }}>
-                            <Box>
-                                <Typography variant="caption" color={COLORS.textMuted}>Destino:</Typography>
-                                <Typography variant="body2" fontWeight={500}>{venta.ruta?.destino}</Typography>
-                            </Box>
-                            <Box>
-                                <Typography variant="caption" color={COLORS.textMuted}>Método de pago:</Typography>
-                                <Typography variant="body2">{venta.metodoPago}</Typography>
-                            </Box>
-                            <Box>
-                                <Typography variant="caption" color={COLORS.textMuted}>Valor servicio:</Typography>
-                                <Typography variant="body2">${venta.valorServicio?.toLocaleString()}</Typography>
-                            </Box>
-                            <Box>
-                                <Typography variant="caption" color={COLORS.textMuted}>Total:</Typography>
-                                <Typography variant="body2" fontWeight={700} color={COLORS.primary}>${venta.total?.toLocaleString()}</Typography>
-                            </Box>
-                        </Box>
-                    </Grid>
-
-                    {venta.observaciones && (
-                        <>
-                            <Grid item xs={12}><Divider /></Grid>
-                            <Grid item xs={12}>
-                                <Typography variant="subtitle2" color={COLORS.textMuted}>OBSERVACIONES</Typography>
-                                <Typography variant="body2">{venta.observaciones}</Typography>
-                            </Grid>
-                        </>
-                    )}
-                </Grid>
-            </DialogContent>
-            <DialogActions sx={{ px: 3, py: 2 }}>
-                <Button onClick={onClose} variant="contained"
-                    sx={{
-                        backgroundColor: COLORS.primary, borderRadius: 2, textTransform: 'none',
-                        boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
-                        '&:hover': { backgroundColor: '#b91c1c', boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
+                <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2.5 }}>
+                    Información general de la guía de envío
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5 }}>
+                    <Box sx={{
+                        width: 64, height: 64, borderRadius: 2,
+                        backgroundColor: COLORS.primaryLight,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                     }}>
+                        <ArticleOutlinedIcon sx={{ fontSize: 45, color: COLORS.primary }} />
+                    </Box>
+                    <Box sx={{ flex: 1 }}>
+                        <Typography fontWeight={700} fontSize="1.1rem" color={COLORS.text}>
+                            {venta.numeroGuia}
+                        </Typography>
+                        <Typography variant="body2" color={COLORS.textMuted} mt={0.3}>
+                            Factura: {venta.numeroFactura}
+                        </Typography>
+                        <Box sx={{ display: 'flex', gap: 1, mt: 0.8 }}>
+                            <Chip label={venta.estado} size="small"
+                                sx={{ backgroundColor: estadoStyles.bg, color: estadoStyles.color, fontWeight: 600, fontSize: '0.72rem', height: 22, borderRadius: 10 }} />
+                            <Chip label={venta.estadoPago} size="small"
+                                sx={{ backgroundColor: pagoStyles.bg, color: pagoStyles.color, fontWeight: 600, fontSize: '0.72rem', height: 22, borderRadius: 10 }} />
+                        </Box>
+                    </Box>
+                    <Box sx={{ textAlign: 'right' }}>
+                        <Typography variant="caption" color={COLORS.textMuted}>Fecha de registro</Typography>
+                        <Typography variant="body2" fontWeight={600} display="block">{venta.fechaRegistro}</Typography>
+                        <Typography variant="caption" color={COLORS.textMuted} display="block" mt={0.8}>Fecha estimada</Typography>
+                        <Typography variant="body2" fontWeight={600} display="block">{venta.fechaEstimadaEntrega}</Typography>
+                    </Box>
+                </Box>
+            </Paper>
+
+            {/* ── Fila: Remitente + Destinatario ── */}
+            <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+                <Paper elevation={0} sx={{ ...cardSx, flex: 1 }}>
+                    <Box sx={tituloSx}>
+                        <PersonOutlinedIcon sx={{ fontSize: 22, color: COLORS.text }} />
+                        <Typography fontWeight={700} fontSize="1.05rem" color={COLORS.text}>Remitente</Typography>
+                    </Box>
+                    <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2 }}>
+                        Datos del cliente que envía
+                    </Typography>
+                    <CampoFila label="Nombre" value={`${venta.cliente?.nombre} ${venta.cliente?.apellido}`} />
+                    <CampoFila label="Identificación" value={`${venta.cliente?.tipoIdentificacion} ${venta.cliente?.numeroIdentificacion}`} />
+                    <CampoFila label="Teléfono" value={venta.cliente?.telefono} />
+                    <CampoFila label="Dirección" value={venta.cliente?.direccion} />
+                </Paper>
+                <Paper elevation={0} sx={{ ...cardSx, flex: 1 }}>
+                    <Box sx={tituloSx}>
+                        <AssignmentIndOutlinedIcon sx={{ fontSize: 22, color: COLORS.text }} />
+                        <Typography fontWeight={700} fontSize="1.05rem" color={COLORS.text}>Destinatario</Typography>
+                    </Box>
+                    <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2 }}>
+                        Datos de quien recibe el paquete
+                    </Typography>
+                    <CampoFila label="Nombre" value={venta.destinatario?.nombreDestinatario} />
+                    <CampoFila label="Teléfono" value={venta.destinatario?.telefonoDestinatario} />
+                    <CampoFila label="Dirección" value={venta.destinatario?.direccionDestinatario} />
+                </Paper>
+            </Box>
+
+            {/* ── Fila: Paquete + Pago y Destino ── */}
+            <Box sx={{ display: 'flex', gap: 2 }}>
+                <Paper elevation={0} sx={{ ...cardSx, flex: 1 }}>
+                    <Box sx={tituloSx}>
+                        <Inventory2OutlinedIcon sx={{ fontSize: 22, color: COLORS.text }} />
+                        <Typography fontWeight={700} fontSize="1.05rem" color={COLORS.text}>Paquete</Typography>
+                    </Box>
+                    <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2 }}>
+                        Características del paquete enviado
+                    </Typography>
+                    <CampoFila label="Contenido" value={venta.paquete?.descripcionContenido} />
+                    <CampoFila label="Peso" value={`${venta.paquete?.peso} kg`} />
+                    <CampoFila label="Dimensiones" value={`${venta.paquete?.alto}×${venta.paquete?.ancho}×${venta.paquete?.profundidad} cm`} />
+                    <CampoFila label="Valor declarado" value={`$${(venta.paquete?.valorDeclarado || 0).toLocaleString()}`} />
+                </Paper>
+                <Paper elevation={0} sx={{ ...cardSx, flex: 1 }}>
+                    <Box sx={tituloSx}>
+                        <PaymentOutlinedIcon sx={{ fontSize: 22, color: COLORS.text }} />
+                        <Typography fontWeight={700} fontSize="1.05rem" color={COLORS.text}>Pago y Destino</Typography>
+                    </Box>
+                    <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2 }}>
+                        Información de pago y ruta de envío
+                    </Typography>
+                    <CampoFila label="Destino" value={venta.ruta?.destino} />
+                    <CampoFila label="Método de pago" value={venta.metodoPago} />
+                    <CampoFila label="Valor servicio" value={`$${venta.valorServicio?.toLocaleString()}`} />
+                    <CampoFila label="Total" value={`$${venta.total?.toLocaleString()}`} />
+                </Paper>
+            </Box>
+
+            {venta.observaciones && (
+                <Paper elevation={0} sx={{ ...cardSx, mt: 2 }}>
+                    <Typography variant="subtitle2" color={COLORS.textMuted} mb={0.5}>Observaciones</Typography>
+                    <Typography variant="body2">{venta.observaciones}</Typography>
+                </Paper>
+            )}
+
+            {/* Botón cerrar */}
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+                <Button onClick={onClose} variant="contained" sx={{
+                    backgroundColor: COLORS.primary, borderRadius: 2, textTransform: 'none',
+                    boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
+                    '&:hover': { backgroundColor: '#b91c1c', boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
+                }}>
                     Cerrar
                 </Button>
-            </DialogActions>
+            </Box>
         </Dialog>
     )
 }
@@ -279,6 +248,36 @@ const ModalToggleHabilitado = ({ venta, onClose, onConfirm, loading }) => {
     )
 }
 
+// ── Estilos reutilizables para los Select de filtros ──
+const filterSelectSx = {
+    fontSize: '0.82rem',
+    borderRadius: 2,
+    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#E0E0E0' },
+    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#BDBDBD' },
+    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#E57373', borderWidth: '1px' },
+    '&.Mui-focused': { boxShadow: '0 0 0 3px rgba(229,115,115,0.18)' },
+    '& .MuiSelect-icon': { color: '#8A94A6', fontSize: 18 },
+    '& .MuiTouchRipple-root': { display: 'none' },
+}
+
+const filterMenuProps = {
+    slotProps: {
+        paper: {
+            sx: {
+                borderRadius: 2,
+                boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+                mt: 0.5,
+                '& .MuiMenuItem-root': {
+                    fontSize: '0.82rem',
+                    '&:hover': { backgroundColor: '#FFF5F5' },
+                    '&.Mui-selected': { backgroundColor: 'transparent', fontWeight: 600, color: '#1a0e0c' },
+                    '&.Mui-selected:hover': { backgroundColor: '#FFF5F5' },
+                },
+            },
+        },
+    },
+}
+
 // ── Filtros de estado (habilitado) ──
 const FILTROS = [
     { value: 'todo', label: 'Todo' },
@@ -294,7 +293,6 @@ const ListarVenta = () => {
     const error = null      // reemplazar cuando se conecte a la API real
 
     const [busqueda, setBusqueda] = useState('')
-    const [filtroPor, setFiltroPor] = useState('todo')
     const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
     const [filtroEstadoEncomienda, setFiltroEstadoEncomienda] = useState('todos')
     const [filtroPago, setFiltroPago] = useState('todos')
@@ -314,21 +312,11 @@ const ListarVenta = () => {
             (filtroHabilitado === 'inhabilitado' && !v.habilitado)
 
         const q = busqueda.toLowerCase()
-        let coincideBusqueda = true
-        if (q) {
-            switch (filtroPor) {
-                case 'guia': coincideBusqueda = v.numeroGuia.toLowerCase().includes(q); break
-                case 'cliente': coincideBusqueda = `${v.cliente?.nombre} ${v.cliente?.apellido}`.toLowerCase().includes(q); break
-                case 'destinatario': coincideBusqueda = v.destinatario?.nombreDestinatario?.toLowerCase().includes(q); break
-                case 'destino': coincideBusqueda = v.ruta?.destino?.toLowerCase().includes(q); break
-                default:
-                    coincideBusqueda =
-                        v.numeroGuia.toLowerCase().includes(q) ||
-                        `${v.cliente?.nombre} ${v.cliente?.apellido}`.toLowerCase().includes(q) ||
-                        v.destinatario?.nombreDestinatario?.toLowerCase().includes(q) ||
-                        v.ruta?.destino?.toLowerCase().includes(q)
-            }
-        }
+        const coincideBusqueda = !q ||
+            v.numeroGuia.toLowerCase().includes(q) ||
+            `${v.cliente?.nombre} ${v.cliente?.apellido}`.toLowerCase().includes(q) ||
+            v.destinatario?.nombreDestinatario?.toLowerCase().includes(q) ||
+            v.ruta?.destino?.toLowerCase().includes(q)
 
         const coincideEstado = filtroEstadoEncomienda === 'todos' || v.estado === filtroEstadoEncomienda
         const coincidePago = filtroPago === 'todos' || v.estadoPago === filtroPago
@@ -363,7 +351,6 @@ const ListarVenta = () => {
 
     const limpiarFiltros = () => {
         setBusqueda('')
-        setFiltroPor('todo')
         setFiltroEstadoEncomienda('todos')
         setFiltroPago('todos')
         setFiltroMetodoPago('todos')
@@ -474,54 +461,92 @@ const ListarVenta = () => {
                 ))}
             </Box>
 
-            {/* ── Barra de búsqueda + Export ── */}
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <FormControl size="small" sx={{ minWidth: 140 }}>
-                        <InputLabel sx={{ fontSize: '0.82rem' }}>Buscar por</InputLabel>
-                        <Select value={filtroPor} label="Buscar por"
-                            onChange={e => { setFiltroPor(e.target.value); setPage(1) }}
-                            sx={{ fontSize: '0.82rem', borderRadius: 2 }}>
-                            <MenuItem value="todo">Todo</MenuItem>
-                            <MenuItem value="guia">N° Guía</MenuItem>
-                            <MenuItem value="cliente">Remitente</MenuItem>
-                            <MenuItem value="destinatario">Destinatario</MenuItem>
-                            <MenuItem value="destino">Destino</MenuItem>
-                        </Select>
-                    </FormControl>
-                    <TextField
-                        size="small"
-                        placeholder="Buscar ventas..."
-                        sx={{
-                            width: 260,
-                            '& .MuiOutlinedInput-root': {
-                                borderRadius: 2,
-                                '&.Mui-focused': { boxShadow: '0 0 0 3px rgba(229,115,115,0.18)' },
-                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                    borderColor: '#CC1818', borderWidth: '1px',
-                                },
+            {/* ── Búsqueda + filtros + Export ── */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
+                <TextField
+                    size="small"
+                    placeholder="Buscar ventas..."
+                    sx={{
+                        width: 320,
+                        '& .MuiOutlinedInput-root': {
+                            borderRadius: 2,
+                            '&.Mui-focused': { boxShadow: '0 0 0 3px rgba(229,115,115,0.18)' },
+                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                borderColor: '#CC1818', borderWidth: '1px',
                             },
-                        }}
-                        value={busqueda}
-                        onChange={e => { setBusqueda(e.target.value); setPage(1) }}
-                        slotProps={{
-                            input: {
-                                startAdornment: (
-                                    <InputAdornment position="start">
-                                        <SearchIcon sx={{ color: COLORS.textMuted, fontSize: 20 }} />
-                                    </InputAdornment>
-                                ),
-                                endAdornment: busqueda && (
-                                    <InputAdornment position="end">
-                                        <IconButton size="small" onClick={() => { setBusqueda(''); setPage(1) }}>
-                                            <ClearIcon sx={{ fontSize: 16 }} />
-                                        </IconButton>
-                                    </InputAdornment>
-                                )
-                            }
-                        }}
+                        },
+                    }}
+                    value={busqueda}
+                    onChange={e => { setBusqueda(e.target.value); setPage(1) }}
+                    slotProps={{
+                        input: {
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <SearchIcon sx={{ color: COLORS.textMuted, fontSize: 20 }} />
+                                </InputAdornment>
+                            ),
+                            endAdornment: busqueda && (
+                                <InputAdornment position="end">
+                                    <IconButton size="small" onClick={() => { setBusqueda(''); setPage(1) }}>
+                                        <ClearIcon sx={{ fontSize: 16 }} />
+                                    </IconButton>
+                                </InputAdornment>
+                            )
+                        }
+                    }}
+                />
+
+                <FormControl size="small" sx={{ width: 160 }}>
+                    <InputLabel sx={{ fontSize: '0.82rem', '&.Mui-focused': { color: '#E57373' } }}>Estado encomienda</InputLabel>
+                    <Select value={filtroEstadoEncomienda} label="Estado encomienda"
+                        onChange={e => { setFiltroEstadoEncomienda(e.target.value); setPage(1) }}
+                        IconComponent={KeyboardArrowDownOutlinedIcon}
+                        sx={filterSelectSx}
+                        MenuProps={filterMenuProps}>
+                        <MenuItem value="todos">Todos</MenuItem>
+                        {ESTADOS_ENCOMIENDA.map(estado => (
+                            <MenuItem key={estado} value={estado}>{estado}</MenuItem>
+                        ))}
+                    </Select>
+                </FormControl>
+
+                <FormControl size="small" sx={{ minWidth: 130 }}>
+                    <InputLabel sx={{ fontSize: '0.82rem', '&.Mui-focused': { color: '#E57373' } }}>Estado pago</InputLabel>
+                    <Select value={filtroPago} label="Estado pago"
+                        onChange={e => { setFiltroPago(e.target.value); setPage(1) }}
+                        IconComponent={KeyboardArrowDownOutlinedIcon}
+                        sx={filterSelectSx}
+                        MenuProps={filterMenuProps}>
+                        <MenuItem value="todos">Todos</MenuItem>
+                        <MenuItem value="pagado">Pagado</MenuItem>
+                        <MenuItem value="pendiente">Pendiente</MenuItem>
+                    </Select>
+                </FormControl>
+
+                <FormControl size="small" sx={{ minWidth: 140 }}>
+                    <InputLabel sx={{ fontSize: '0.82rem', '&.Mui-focused': { color: '#E57373' } }}>Método de pago</InputLabel>
+                    <Select value={filtroMetodoPago} label="Método de pago"
+                        onChange={e => { setFiltroMetodoPago(e.target.value); setPage(1) }}
+                        IconComponent={KeyboardArrowDownOutlinedIcon}
+                        sx={filterSelectSx}
+                        MenuProps={filterMenuProps}>
+                        <MenuItem value="todos">Todos</MenuItem>
+                        {METODOS_PAGO.map(mp => (
+                            <MenuItem key={mp} value={mp}>{mp}</MenuItem>
+                        ))}
+                    </Select>
+                </FormControl>
+
+                {hayFiltrosActivos && (
+                    <Chip
+                        label="Limpiar"
+                        size="small"
+                        icon={<ClearIcon sx={{ fontSize: '14px !important' }} />}
+                        onClick={limpiarFiltros}
+                        sx={{ fontSize: '0.72rem', height: 28, cursor: 'pointer', backgroundColor: COLORS.primaryLight, color: COLORS.primary }}
                     />
-                </Box>
+                )}
+
                 <Button
                     variant="outlined"
                     size="small"
@@ -533,67 +558,13 @@ const ListarVenta = () => {
                         borderColor: COLORS.border,
                         color: COLORS.text,
                         fontWeight: 500,
+                        ml: 'auto',
                         '&:hover': { backgroundColor: COLORS.primaryLight },
                     }}
                 >
                     Exportar
                 </Button>
             </Box>
-
-            {/* ── Filtros adicionales de encomienda ── */}
-            <Paper elevation={0} sx={{ p: 2, mb: 2, border: `1px solid ${COLORS.border}`, borderRadius: 3 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-                    <FilterListOutlinedIcon sx={{ color: COLORS.textMuted, fontSize: 18 }} />
-                    <Typography variant="caption" fontWeight={700} color={COLORS.textMuted} letterSpacing={1}>
-                        Filtros de encomienda
-                    </Typography>
-                    {hayFiltrosActivos && (
-                        <Chip
-                            label="Limpiar"
-                            size="small"
-                            icon={<ClearIcon sx={{ fontSize: '14px !important' }} />}
-                            onClick={limpiarFiltros}
-                            sx={{ ml: 'auto', fontSize: '0.72rem', height: 24, cursor: 'pointer', backgroundColor: COLORS.primaryLight, color: COLORS.primary }}
-                        />
-                    )}
-                </Box>
-                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                    <FormControl size="small" sx={{ minWidth: 160 }}>
-                        <InputLabel sx={{ fontSize: '0.82rem' }}>Estado encomienda</InputLabel>
-                        <Select value={filtroEstadoEncomienda} label="Estado encomienda"
-                            onChange={e => { setFiltroEstadoEncomienda(e.target.value); setPage(1) }}
-                            sx={{ fontSize: '0.82rem', borderRadius: 2 }}>
-                            <MenuItem value="todos">Todos</MenuItem>
-                            {ESTADOS_ENCOMIENDA.map(estado => (
-                                <MenuItem key={estado} value={estado}>{estado}</MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-
-                    <FormControl size="small" sx={{ minWidth: 140 }}>
-                        <InputLabel sx={{ fontSize: '0.82rem' }}>Estado pago</InputLabel>
-                        <Select value={filtroPago} label="Estado pago"
-                            onChange={e => { setFiltroPago(e.target.value); setPage(1) }}
-                            sx={{ fontSize: '0.82rem', borderRadius: 2 }}>
-                            <MenuItem value="todos">Todos</MenuItem>
-                            <MenuItem value="pagado">Pagado</MenuItem>
-                            <MenuItem value="pendiente">Pendiente</MenuItem>
-                        </Select>
-                    </FormControl>
-
-                    <FormControl size="small" sx={{ minWidth: 150 }}>
-                        <InputLabel sx={{ fontSize: '0.82rem' }}>Método de pago</InputLabel>
-                        <Select value={filtroMetodoPago} label="Método de pago"
-                            onChange={e => { setFiltroMetodoPago(e.target.value); setPage(1) }}
-                            sx={{ fontSize: '0.82rem', borderRadius: 2 }}>
-                            <MenuItem value="todos">Todos</MenuItem>
-                            {METODOS_PAGO.map(mp => (
-                                <MenuItem key={mp} value={mp}>{mp}</MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-                </Box>
-            </Paper>
 
             {/* ── Tabla ── */}
             <Paper elevation={0} sx={{ border: `1px solid ${COLORS.border}`, borderRadius: 3, overflow: 'hidden' }}>

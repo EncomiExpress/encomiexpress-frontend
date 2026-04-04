@@ -2,12 +2,15 @@ import { TextField, Button, Box, Typography, Select, MenuItem, FormControl, Inpu
 import { SaveOutlined, VisibilityOutlined, VisibilityOffOutlined } from '@mui/icons-material'
 import { useState } from 'react'
 
-// Colores del tema
+// Colores del tema — alineados con COLORS usado en las páginas
 export const theme = {
   primary: '#CC1818',
+  primaryLight: '#FFE8E8',
   secondary: '#1A2E6E',
-  textMuted: '#64748b',
-  border: '#e2e8f0'
+  text: '#1a0e0c',
+  textMuted: '#8A94A6',
+  border: '#E0E0E0',
+  hoverBg: '#F9F9F9',
 }
 
 // Estilos estándar para TextField
@@ -32,7 +35,7 @@ export const formSelectStyles = {
     borderRadius: 2,
     '& fieldset': { borderColor: theme.border },
     '&:hover fieldset': { borderColor: theme.primary },
-    '&.Mui-focused fieldset': { borderColor: theme.primary, borderWidth: 2 },
+    '&.Mui-focused fieldset': { borderColor: theme.primary, borderWidth: '1px' },
   },
   '& .MuiInputLabel-root.Mui-focused': { color: theme.primary },
 }
@@ -70,13 +73,15 @@ export const FormField = ({
       multiline={multiline}
       rows={multiline ? rows : 1}
       select={select}
-      InputProps={{
-        startAdornment: Icon ? (
-          <InputAdornment position="start">
-            <Icon sx={{ color: '#94a3b8' }} />
-          </InputAdornment>
-        ) : null,
-        ...inputProps
+      slotProps={{
+        input: {
+          startAdornment: Icon ? (
+            <InputAdornment position="start">
+              <Icon sx={{ color: '#94a3b8' }} />
+            </InputAdornment>
+          ) : undefined,
+          ...inputProps
+        }
       }}
       sx={formFieldStyles}
     >
@@ -137,23 +142,25 @@ export const PasswordField = ({
       placeholder={placeholder}
       error={!!error}
       helperText={error || helperText}
-      InputProps={{
-        startAdornment: Icon ? (
-          <InputAdornment position="start">
-            <Icon sx={{ color: '#94a3b8' }} />
-          </InputAdornment>
-        ) : null,
-        endAdornment: (
-          <InputAdornment position="end">
-            <IconButton
-              onClick={() => setShowPassword(!showPassword)}
-              edge="end"
-              sx={{ color: '#94a3b8' }}
-            >
-              {showPassword ? <VisibilityOffOutlined /> : <VisibilityOutlined />}
-            </IconButton>
-          </InputAdornment>
-        ),
+      slotProps={{
+        input: {
+          startAdornment: Icon ? (
+            <InputAdornment position="start">
+              <Icon sx={{ color: '#94a3b8' }} />
+            </InputAdornment>
+          ) : undefined,
+          endAdornment: (
+            <InputAdornment position="end">
+              <IconButton
+                onClick={() => setShowPassword(!showPassword)}
+                edge="end"
+                sx={{ color: '#94a3b8' }}
+              >
+                {showPassword ? <VisibilityOffOutlined /> : <VisibilityOutlined />}
+              </IconButton>
+            </InputAdornment>
+          ),
+        }
       }}
       sx={formFieldStyles}
     />
