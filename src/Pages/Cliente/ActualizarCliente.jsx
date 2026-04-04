@@ -1,15 +1,18 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Snackbar, Alert } from '@mui/material'
+import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Snackbar, Alert, TextField, Select, InputAdornment } from '@mui/material'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined'
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
 import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined'
+import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined'
 import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined'
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined'
 import { useClientes } from '../../Context/ClienteContext'
-import { FormField, FormSelect } from '../../Components/FormularioEstandarizado'
+import { FormField, FormSelect, formFieldStyles } from '../../Components/FormularioEstandarizado'
+
+const DOMINIOS_EMAIL = ['@gmail.com', '@hotmail.com', '@outlook.com', '@yahoo.com', '@icloud.com', '@live.com']
 
 const COLORS = {
     primary: '#CC1818',
@@ -38,7 +41,8 @@ const ActualizarCliente = () => {
         tipoIdentificacion: '',
         numeroIdentificacion: '',
         telefono: '',
-        email: '',
+        emailLocal: '',
+        emailDominio: '@gmail.com',
         direccion: '',
         habilitado: true
     })
@@ -47,14 +51,33 @@ const ActualizarCliente = () => {
         if (loading) return
         const cliente = clientes.find(c => c.idCliente === parseInt(id))
         if (cliente) {
-            setForm(cliente)
+            const atIdx = cliente.email ? cliente.email.lastIndexOf('@') : -1
+            const emailLocal = atIdx >= 0 ? cliente.email.slice(0, atIdx) : cliente.email || ''
+            const rawDominio = atIdx >= 0 ? '@' + cliente.email.slice(atIdx + 1) : ''
+            const emailDominio = DOMINIOS_EMAIL.includes(rawDominio) ? rawDominio : '@gmail.com'
+            setForm({ ...cliente, emailLocal, emailDominio })
         } else {
             navigate('/clientes/listar')
         }
     }, [id, clientes, loading, navigate])
 
     const handleChange = (e) => {
-        const { name, value } = e.target
+        const { name } = e.target
+        let { value } = e.target
+
+        // Solo letras y espacios en nombres
+        if (name === 'nombre' || name === 'apellido') {
+            value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
+        }
+        // Solo dígitos en campos numéricos
+        if (name === 'numeroIdentificacion' || name === 'telefono') {
+            value = value.replace(/[^0-9]/g, '')
+        }
+        // Sin @ ni espacios en el local del correo
+        if (name === 'emailLocal') {
+            value = value.replace(/[@\s]/g, '')
+        }
+
         setForm(prev => ({ ...prev, [name]: value }))
         setErrores(prev => ({ ...prev, [name]: '' }))
         setApiError(null)
@@ -83,8 +106,7 @@ const ActualizarCliente = () => {
             if (!form.telefono.trim()) e.telefono = 'El teléfono es obligatorio'
             else if (!/^\d{10}$/.test(form.telefono)) e.telefono = 'El teléfono debe tener exactamente 10 dígitos'
 
-            if (!form.email.trim()) e.email = 'El correo es obligatorio'
-            else if (!emailValido.test(form.email)) e.email = 'Ingresa un correo electrónico válido'
+            if (!form.emailLocal.trim()) e.emailLocal = 'El correo es obligatorio'
 
             if (!form.direccion.trim()) e.direccion = 'La dirección es obligatoria'
         }
@@ -112,7 +134,8 @@ const ActualizarCliente = () => {
         setSubmitting(true)
         setApiError(null)
         try {
-            await actualizarCliente(form)
+            const { emailLocal, emailDominio, ...resto } = form
+            await actualizarCliente({ ...resto, email: emailLocal + emailDominio })
             setExito(true)
             setTimeout(() => navigate('/clientes/listar'), 1500)
         } catch (err) {
@@ -130,9 +153,11 @@ const ActualizarCliente = () => {
                 return (
                     <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                         <FormField label="Nombres" name="nombre" value={form.nombre} onChange={handleChange}
-                            required error={errores.nombre} helperText={errores.nombre} icon={PersonOutlinedIcon} />
+                            required error={errores.nombre} helperText={errores.nombre} icon={PersonOutlinedIcon}
+                            inputProps={{ maxLength: 50 }} />
                         <FormField label="Apellidos" name="apellido" value={form.apellido} onChange={handleChange}
-                            required error={errores.apellido} helperText={errores.apellido} icon={PersonOutlinedIcon} />
+                            required error={errores.apellido} helperText={errores.apellido} icon={PersonOutlinedIcon}
+                            inputProps={{ maxLength: 50 }} />
                         <FormSelect label="Tipo de documento" name="tipoIdentificacion" value={form.tipoIdentificacion}
                             onChange={handleChange} required error={errores.tipoIdentificacion}>
                             <MenuItem value="CC">Cédula de Ciudadanía (CC)</MenuItem>
@@ -144,7 +169,8 @@ const ActualizarCliente = () => {
                         </FormSelect>
                         <FormField label="Número de documento" name="numeroIdentificacion" value={form.numeroIdentificacion}
                             onChange={handleChange} required error={errores.numeroIdentificacion}
-                            helperText={errores.numeroIdentificacion} icon={BadgeOutlinedIcon} />
+                            helperText={errores.numeroIdentificacion} icon={BadgeOutlinedIcon}
+                            inputProps={{ maxLength: 15 }} />
                     </Box>
                 )
             case 1:
@@ -158,14 +184,38 @@ const ActualizarCliente = () => {
                         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                             <FormField label="Teléfono" name="telefono" value={form.telefono} onChange={handleChange}
                                 required error={errores.telefono} helperText={errores.telefono || 'Número de 10 dígitos'}
-                                icon={PhoneOutlinedIcon} />
-                            <FormField label="Correo electrónico" name="email" type="email" value={form.email}
-                                onChange={handleChange} required error={errores.email} helperText={errores.email}
-                                icon={EmailOutlinedIcon} />
+                                icon={PhoneOutlinedIcon} inputProps={{ maxLength: 10 }} />
+                            <TextField fullWidth label="Correo electrónico" name="emailLocal"
+                                value={form.emailLocal} onChange={handleChange} required
+                                error={!!errores.emailLocal} helperText={errores.emailLocal}
+                                slotProps={{
+                                    input: {
+                                        startAdornment: (
+                                            <InputAdornment position="start">
+                                                <EmailOutlinedIcon sx={{ color: '#94a3b8' }} />
+                                            </InputAdornment>
+                                        ),
+                                        endAdornment: (
+                                            <InputAdornment position="end">
+                                                <Select name="emailDominio" value={form.emailDominio}
+                                                    onChange={handleChange} variant="standard" disableUnderline
+                                                    IconComponent={KeyboardArrowDownOutlinedIcon}
+                                                    sx={{ fontSize: '0.8rem', color: '#8A94A6',
+                                                        '& .MuiSelect-select': { py: 0, pl: 0.5, pr: '22px !important' } }}>
+                                                    {DOMINIOS_EMAIL.map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
+                                                </Select>
+                                            </InputAdornment>
+                                        ),
+                                    },
+                                    htmlInput: { maxLength: 50 }
+                                }}
+                                sx={formFieldStyles} />
                             <Box sx={{ gridColumn: '1 / -1' }}>
                                 <FormField label="Dirección" name="direccion" value={form.direccion}
                                     onChange={handleChange} required error={errores.direccion}
-                                    helperText={errores.direccion || 'Ej: Calle 45 #20-10'} icon={HomeOutlinedIcon} />
+                                    placeholder="Ej: Calle 45 #20-10"
+                                    helperText={errores.direccion || `${form.direccion.length}/200`} icon={HomeOutlinedIcon}
+                                    inputProps={{ maxLength: 200 }} />
                             </Box>
                         </Box>
                     </Box>

@@ -41,22 +41,23 @@ export const formSelectStyles = {
 }
 
 // Componente de campo de texto estándar
-export const FormField = ({ 
-  label, 
-  name, 
-  value, 
-  onChange, 
-  type = 'text', 
-  required = false, 
-  placeholder, 
-  error, 
-  helperText, 
-  icon: Icon, 
-  multiline = false, 
+export const FormField = ({
+  label,
+  name,
+  value,
+  onChange,
+  type = 'text',
+  required = false,
+  placeholder,
+  error,
+  helperText,
+  icon: Icon,
+  multiline = false,
   rows = 1,
   inputProps = {},
   select = false,
-  children 
+  disabled = false,
+  children
 }) => {
   return (
     <TextField
@@ -73,6 +74,7 @@ export const FormField = ({
       multiline={multiline}
       rows={multiline ? rows : 1}
       select={select}
+      disabled={disabled}
       slotProps={{
         input: {
           startAdornment: Icon ? (
@@ -80,6 +82,8 @@ export const FormField = ({
               <Icon sx={{ color: '#94a3b8' }} />
             </InputAdornment>
           ) : undefined,
+        },
+        htmlInput: {
           ...inputProps
         }
       }}
