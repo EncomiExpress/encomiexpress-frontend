@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, IconButton, Button, TextField, InputAdornment, Switch, FormControl, Select, MenuItem } from '@mui/material'
-import { Edit, DirectionsCar, Search, Add, CheckCircle, Cancel } from '@mui/icons-material'
+import { Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, IconButton, Button, TextField, InputAdornment, Switch, FormControl, Select, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material'
+import { Edit, DirectionsCar, Search, Add, CheckCircle, Cancel, Visibility } from '@mui/icons-material'
 import { useTransporte } from '../../Context/TransporteContext'
 import { useAuth } from '../../Context/AuthContext'
 
 const ListarTransporte = () => {
   const [transportes, setTransportes] = useState([])
   const [searchTerm, setSearchTerm] = useState('')
+  const [vehiculoVer, setVehiculoVer] = useState(null)
   
   const { getTransportes, toggleHabilitado, updateEstado } = useTransporte()
   const { usuario } = useAuth()
@@ -227,17 +228,8 @@ const ListarTransporte = () => {
                     </TableCell>
                     <TableCell>
                       <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
-                        <IconButton 
-                          size="small"
-                          component={Link}
-                          to={`/actualizar-transporte/${transporte.idVehiculo}`}
-                          sx={{ 
-                            color: '#1A2E6E',
-                            '&:hover': { backgroundColor: '#eef2ff' }
-                          }}
-                        >
-                          <Edit fontSize="small" />
-                        </IconButton>
+                        <IconButton size="small" onClick={() => setVehiculoVer(transporte)} sx={{ color: '#1A2E6E', '&:hover': { backgroundColor: '#e8edff' }}}><Visibility fontSize="small" /></IconButton>
+                        <IconButton size="small" component={Link} to={`/actualizar-transporte/${transporte.idVehiculo}`} sx={{ color: '#1A2E6E', '&:hover': { backgroundColor: '#eef2ff' }}}><Edit fontSize="small" /></IconButton>
                       </Box>
                     </TableCell>
                   </TableRow>
@@ -254,6 +246,33 @@ const ListarTransporte = () => {
           </Typography>
         </Box>
       </Paper>
+
+      <Dialog open={!!vehiculoVer} onClose={() => setVehiculoVer(null)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pb: 1 }}>
+          <Box sx={{ width: 36, height: 36, borderRadius: '50%', backgroundColor: '#1A2E6E', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <DirectionsCar sx={{ color: 'white', fontSize: 18 }} />
+          </Box>
+          <Box>
+            <Typography fontWeight={700} color="#1A2E6E">{vehiculoVer?.placa}</Typography>
+            <Typography variant="caption" color="#8A94A6">Detalle del vehículo</Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent dividers>
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+            <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Marca</Typography><Typography variant="body2" fontWeight={500}>{vehiculoVer?.marca}</Typography></Box>
+            <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Modelo</Typography><Typography variant="body2" fontWeight={500}>{vehiculoVer?.modelo}</Typography></Box>
+            <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Tipo</Typography><Typography variant="body2" fontWeight={500}>{vehiculoVer?.tipo}</Typography></Box>
+            <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Color</Typography><Typography variant="body2" fontWeight={500}>{vehiculoVer?.color}</Typography></Box>
+            <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Capacidad</Typography><Typography variant="body2" fontWeight={500}>{vehiculoVer?.capacidad} kg</Typography></Box>
+            <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Estado</Typography><Typography variant="body2" fontWeight={500}>{vehiculoVer?.estado}</Typography></Box>
+            <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Vencimiento SOAT</Typography><Typography variant="body2" fontWeight={500} color={isVencido(vehiculoVer?.vencimientoSOAT) ? '#ef4444' : '#2E7D32'}>{vehiculoVer?.vencimientoSOAT ? new Date(vehiculoVer.vencimientoSOAT).toLocaleDateString() : 'N/A'}</Typography></Box>
+            <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Estado</Typography><Typography variant="body2" fontWeight={500} color={vehiculoVer?.habilitado !== false ? '#2E7D32' : '#ef4444'}>{vehiculoVer?.habilitado !== false ? 'Activo' : 'Inactivo'}</Typography></Box>
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button onClick={() => setVehiculoVer(null)} variant="contained" sx={{ backgroundColor: '#1A2E6E', borderRadius: 2, textTransform: 'none' }}>Cerrar</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   )
 }
