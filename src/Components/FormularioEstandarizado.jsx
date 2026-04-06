@@ -1,4 +1,4 @@
-import { TextField, Button, Box, Typography, Select, MenuItem, FormControl, InputLabel, InputAdornment, IconButton, Alert } from '@mui/material'
+import { TextField, Button, Box, Typography, Select, MenuItem, FormControl, InputLabel, InputAdornment, IconButton, Alert, FormHelperText } from '@mui/material'
 import { SaveOutlined, VisibilityOutlined, VisibilityOffOutlined } from '@mui/icons-material'
 import { useState } from 'react'
 
@@ -34,7 +34,8 @@ export const formSelectStyles = {
   '& .MuiOutlinedInput-root': {
     borderRadius: 2,
     '& fieldset': { borderColor: theme.border },
-    '&:hover fieldset': { borderColor: theme.primary },
+    '&:hover fieldset': { borderColor: theme.primary, borderWidth: '1px' },
+    '&.Mui-focused': { boxShadow: '0 0 0 3px rgba(229,115,115,0.18)' },
     '&.Mui-focused fieldset': { borderColor: theme.primary, borderWidth: '1px' },
   },
   '& .MuiInputLabel-root.Mui-focused': { color: theme.primary },
@@ -116,6 +117,11 @@ export const FormSelect = ({
       >
         {children}
       </Select>
+      {helperText && (
+        <FormHelperText error={!!error}>
+          {helperText}
+        </FormHelperText>
+      )}
     </FormControl>
   )
 }

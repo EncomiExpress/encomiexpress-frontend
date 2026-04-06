@@ -80,6 +80,7 @@ const RegistrarVenta = () => {
         fechaEstimadaEntrega: '',
         observaciones: '',
         metodoPago: '',
+        estadoPago: 'Pendiente',
         valorServicio: '',
         impuestos: '',
         total: '',
@@ -101,12 +102,24 @@ const RegistrarVenta = () => {
         }
 
         // Solo letras y espacios en campos de nombre
-        if (['nombreRemitente', 'apellidoRemitente', 'nombreDestinatario'].includes(name)) {
+        if (['nombreRemitente', 'apellidoRemitente', 'nombreDestinatario', 'descripcionContenido'].includes(name)) {
             value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
         }
         // Solo dígitos en teléfonos e identificación
         if (['telefonoRemitente', 'telefonoDestinatario', 'numeroIdentificacion'].includes(name)) {
             value = value.replace(/[^0-9]/g, '')
+        }
+        // Solo letras sin tildes, números, puntos, guiones y guiones bajos en el correo
+        if (name === 'emailRemitente') {
+            value = value.replace(/[^a-zA-Z0-9._-]/g, '')
+        }
+        // Solo letras sin tildes, números, espacios y caracteres especiales básicos en dirección
+        if (name === 'direccionRemitente' || name === 'direccionDestinatario') {
+            value = value.replace(/[^a-zA-Z0-9\s,.\-#\/']/g, '')
+        }
+        // Solo letras, números, espacios y caracteres básicos en observaciones
+        if (name === 'observaciones') {
+            value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ0-9\s,.-]/g, '')
         }
 
         if (name === 'idCliente') {
@@ -162,6 +175,7 @@ const RegistrarVenta = () => {
 
         if (step === 0) {
             if (!form.idCliente) e.idCliente = 'Selecciona un cliente'
+            if (!form.numeroIdentificacion) e.numeroIdentificacion = 'El número de identificación es obligatorio'
             if (!form.nombreRemitente.trim()) e.nombreRemitente = 'El nombre es obligatorio'
             else if (!soloLetras.test(form.nombreRemitente)) e.nombreRemitente = 'Solo se permiten letras'
             if (!form.apellidoRemitente.trim()) e.apellidoRemitente = 'El apellido es obligatorio'
@@ -242,7 +256,7 @@ const RegistrarVenta = () => {
         try {
             const payload = {
                 idCliente: parseInt(form.idCliente),
-                ...(form.idRuta && { idRuta: parseInt(form.idRuta) }),
+                // idRuta: pendiente de conectar cuando el módulo de rutas esté listo
                 destinatario: {
                     nombreDestinatario: form.nombreDestinatario,
                     telefonoDestinatario: form.telefonoDestinatario,
@@ -261,7 +275,7 @@ const RegistrarVenta = () => {
                 metodoPago: form.metodoPago,
                 valorServicio: parseFloat(form.valorServicio) || 0,
                 impuestos: parseFloat(form.impuestos) || 0,
-                estadoPago: form.metodoPago === 'Contraentrega' ? 'Pendiente' : 'Pagado',
+                estadoPago: form.estadoPago,
             }
             await agregarVenta(payload)
             setExito(true)
@@ -298,6 +312,7 @@ const RegistrarVenta = () => {
                             renderInput={(params) => (
                                 <TextField {...params} label="Cliente *"
                                     error={!!errores.idCliente} helperText={errores.idCliente}
+                                    InputLabelProps={{ shrink: !!form.idCliente }}
                                     sx={formFieldStyles} />
                             )}
                         />
@@ -393,7 +408,6 @@ const RegistrarVenta = () => {
                         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                             <FormSelect label="Destino" name="idRuta" value={form.idRuta}
                                 onChange={handleChange} required error={errores.idRuta}>
-                                <MenuItem value="">Seleccione un destino</MenuItem>
                                 {rutasMock.map(r => (
                                     <MenuItem key={r.idRuta} value={r.idRuta}>
                                         {r.destino} — ${r.tarifa.toLocaleString()}
@@ -408,7 +422,7 @@ const RegistrarVenta = () => {
                         </Box>
                         <FormField label="Observaciones" name="observaciones" value={form.observaciones}
                             onChange={handleChange} multiline rows={2}
-                            helperText={errores.observaciones || `${(form.observaciones || '').length}/500`}
+                            helperText={errores.observaciones || `Opcional ${(form.observaciones || '').length}/500`}
                             error={errores.observaciones}
                             inputProps={{ maxLength: 500 }} />
                     </Box>
@@ -417,8 +431,8 @@ const RegistrarVenta = () => {
                 return (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                         <FormSelect label="Método de pago" name="metodoPago" value={form.metodoPago}
-                            onChange={handleChange} required error={errores.metodoPago}>
-                            <MenuItem value="">Seleccione método de pago</MenuItem>
+                            onChange={handleChange} required error={errores.metodoPago}
+                            helperText={errores.metodoPago}>
                             <MenuItem value="Contraentrega">Contraentrega</MenuItem>
                             <MenuItem value="Efectivo">Efectivo</MenuItem>
                             <MenuItem value="Transferencia">Transferencia</MenuItem>

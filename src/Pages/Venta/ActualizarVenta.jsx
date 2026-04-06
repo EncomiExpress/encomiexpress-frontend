@@ -26,6 +26,23 @@ const COLORS = {
     hoverBg: '#F9F9F9',
 }
 
+const getEstadoColor = (estado) => {
+    switch (estado) {
+        case 'pendiente de recogida': return { bg: '#FEF3C7', color: '#92400E' }
+        case 'en recogida': return { bg: '#DBEAFE', color: '#1E40AF' }
+        case 'programada': return { bg: '#E0E7FF', color: '#3730A3' }
+        case 'en tránsito': return { bg: '#CFFAFE', color: '#155E75' }
+        case 'entregado': return { bg: '#D1FAE5', color: '#065F46' }
+        case 'devuelto': return { bg: '#FEE2E2', color: '#991B1B' }
+        default: return { bg: '#F3F4F6', color: '#6B7280' }
+    }
+}
+
+const getPagoColor = (estadoPago) =>
+    estadoPago?.toLowerCase() === 'pagado'
+        ? { bg: '#D1FAE5', color: '#065F46' }
+        : { bg: '#FEE2E2', color: '#991B1B' }
+
 const steps = ['Remitente', 'Destinatario', 'Paquete', 'Envío', 'Pago', 'Confirmación']
 
 const ConfirmRow = ({ label, value }) => (
@@ -35,6 +52,25 @@ const ConfirmRow = ({ label, value }) => (
             sx={{ textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
             {value || '—'}
         </Typography>
+    </Box>
+)
+
+const ConfirmRowChip = ({ label, value, colors }) => (
+    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, py: 0.9, overflow: 'hidden' }}>
+        <Typography variant="body2" sx={{ color: '#9C4040', fontWeight: 500, flexShrink: 0 }}>{label}</Typography>
+        <Box sx={{ 
+            display: 'inline-flex', 
+            alignItems: 'center',
+            backgroundColor: colors?.bg || '#F3F4F6', 
+            color: colors?.color || '#6B7280', 
+            px: 1.5, 
+            py: 0.3, 
+            borderRadius: 10,
+            fontWeight: 600,
+            fontSize: '0.75rem',
+        }}>
+            {value || '—'}
+        </Box>
     </Box>
 )
 
@@ -49,6 +85,8 @@ const ActualizarVenta = () => {
     const [submitting, setSubmitting] = useState(false)
     const [exito, setExito] = useState(false)
     const [ventaOriginal, setVentaOriginal] = useState(null)
+    const [formOriginal, setFormOriginal] = useState(null)
+    const [sinCambios, setSinCambios] = useState(false)
 
     // TODO: reemplazar por datos reales cuando el módulo de Rutas esté listo
     const rutasMock = [
@@ -102,7 +140,7 @@ const ActualizarVenta = () => {
                 const paquete = venta.paquetes?.[0] || null
                 setVentaOriginal(venta)
                 setEstadoOriginal(venta.estado || '')
-                setForm({
+                const datosForm = {
                     idCliente: venta.cliente?.id || venta.idCliente || '',
                     numeroIdentificacion: venta.cliente?.numeroIdentificacion || '',
                     nombreRemitente: venta.cliente?.nombre || '',
@@ -131,7 +169,9 @@ const ActualizarVenta = () => {
                     impuestos: venta.impuestos || '',
                     total: venta.total || '',
                     estadoPago: venta.estadoPago || 'Pendiente',
-                })
+                }
+                setForm(datosForm)
+                setFormOriginal(datosForm)
             })
             .catch(() => setApiError('No se pudo cargar la venta. Verifica la conexión.'))
     }, [id])
@@ -148,6 +188,27 @@ const ActualizarVenta = () => {
         if (name in NUMERIC_LIMITS && value !== '') {
             const num = parseFloat(value)
             if (!isNaN(num) && (num > NUMERIC_LIMITS[name] || num < 0)) return
+        }
+
+        // Solo letras y espacios en campos de nombre
+        if (['nombreRemitente', 'apellidoRemitente', 'nombreDestinatario', 'descripcionContenido'].includes(name)) {
+            value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
+        }
+        // Solo dígitos en teléfonos e identificación
+        if (['telefonoRemitente', 'telefonoDestinatario', 'numeroIdentificacion'].includes(name)) {
+            value = value.replace(/[^0-9]/g, '')
+        }
+        // Solo letras sin tildes, números, puntos, guiones y guiones bajos en el correo
+        if (name === 'emailRemitente') {
+            value = value.replace(/[^a-zA-Z0-9._-]/g, '')
+        }
+        // Solo letras sin tildes, números, espacios y caracteres especiales básicos en dirección
+        if (name === 'direccionRemitente' || name === 'direccionDestinatario') {
+            value = value.replace(/[^a-zA-Z0-9\s,.\-#\/']/g, '')
+        }
+        // Solo letras, números, espacios y caracteres básicos en observaciones
+        if (name === 'observaciones') {
+            value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ0-9\s,.-]/g, '')
         }
 
         if (name === 'idCliente') {
@@ -194,6 +255,7 @@ const ActualizarVenta = () => {
         })
         setErrores(prev => ({ ...prev, [name]: '' }))
         setApiError(null)
+        setSinCambios(false)
     }
 
     const validarPaso = (step) => {
@@ -202,6 +264,7 @@ const ActualizarVenta = () => {
 
         if (step === 0) {
             if (!form.idCliente) e.idCliente = 'Selecciona un cliente'
+            if (!form.numeroIdentificacion) e.numeroIdentificacion = 'El número de identificación es obligatorio'
             if (!form.nombreRemitente.trim()) e.nombreRemitente = 'El nombre es obligatorio'
             if (!form.apellidoRemitente.trim()) e.apellidoRemitente = 'El apellido es obligatorio'
             if (!form.telefonoRemitente.trim()) e.telefonoRemitente = 'El teléfono es obligatorio'
@@ -275,18 +338,50 @@ const ActualizarVenta = () => {
     const handleBack = () => setActiveStep(prev => prev - 1)
 
     const handleSubmit = async () => {
+        // Verificar si hubo cambios comparado con los datos originales
+        if (formOriginal) {
+            const hayCambios = Object.keys(form).some(key => {
+                const original = formOriginal[key] !== undefined ? String(formOriginal[key]) : ''
+                const actual = form[key] !== undefined ? String(form[key]) : ''
+                return original !== actual
+            })
+            
+            if (!hayCambios) {
+                setSinCambios(true)
+                setActiveStep(5) // Ir al paso de confirmación para mostrar la alerta
+                return
+            }
+        }
+        
+        setSinCambios(false)
         setSubmitting(true)
         setApiError(null)
         try {
             const numId = parseInt(id)
             const payload = {
-                ...(form.idRuta && { idRuta: parseInt(form.idRuta) }),
+                // TODO: habilitar cuando el módulo de rutas esté implementado
+                // ...(form.idRuta && { idRuta: parseInt(form.idRuta) }),
                 fechaEstimadaEntrega: form.fechaEstimadaEntrega || null,
                 observaciones: form.observaciones || null,
                 metodoPago: form.metodoPago,
                 valorServicio: parseFloat(form.valorServicio) || 0,
                 impuestos: parseFloat(form.impuestos) || 0,
                 estadoPago: form.estadoPago,
+                // Datos del destinatario
+                destinatario: {
+                    nombreDestinatario: form.nombreDestinatario,
+                    telefonoDestinatario: form.telefonoDestinatario || null,
+                    direccionDestinatario: form.direccionDestinatario || null,
+                },
+                // Datos del paquete
+                paquetes: [{
+                    descripcionContenido: form.descripcionContenido || null,
+                    peso: form.peso ? parseFloat(form.peso) : null,
+                    alto: form.alto ? parseFloat(form.alto) : null,
+                    ancho: form.ancho ? parseFloat(form.ancho) : null,
+                    profundidad: form.profundidad ? parseFloat(form.profundidad) : null,
+                    valorDeclarado: form.valorDeclarado ? parseFloat(form.valorDeclarado) : null,
+                }],
             }
             await actualizarVenta(numId, payload)
 
@@ -329,6 +424,7 @@ const ActualizarVenta = () => {
                             renderInput={(params) => (
                                 <TextField {...params} label="Cliente *"
                                     error={!!errores.idCliente} helperText={errores.idCliente}
+                                    InputLabelProps={{ shrink: !!form.idCliente }}
                                     sx={formFieldStyles} />
                             )}
                         />
@@ -413,7 +509,6 @@ const ActualizarVenta = () => {
                         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                             <FormSelect label="Destino" name="idRuta" value={form.idRuta}
                                 onChange={handleChange} required error={errores.idRuta}>
-                                <MenuItem value="">Seleccione un destino</MenuItem>
                                 {rutasMock.map(r => (
                                     <MenuItem key={r.idRuta} value={r.idRuta}>
                                         {r.destino} — ${r.tarifa.toLocaleString()}
@@ -426,14 +521,31 @@ const ActualizarVenta = () => {
                                 slotProps={{ inputLabel: { shrink: true } }}
                                 sx={formFieldStyles} />
                             <FormSelect label="Estado de la encomienda" name="estado" value={form.estado} onChange={handleChange}>
-                                {estadosEncomienda.map(e => (
-                                    <MenuItem key={e} value={e}>{e.charAt(0).toUpperCase() + e.slice(1)}</MenuItem>
-                                ))}
+                                {estadosEncomienda.map(e => {
+                                    const styles = getEstadoColor(e)
+                                    return (
+                                        <MenuItem key={e} value={e}>
+                                            <Box sx={{ 
+                                                display: 'inline-flex', 
+                                                alignItems: 'center',
+                                                backgroundColor: styles.bg, 
+                                                color: styles.color, 
+                                                px: 1.5, 
+                                                py: 0.3, 
+                                                borderRadius: 10,
+                                                fontWeight: 600,
+                                                fontSize: '0.75rem',
+                                            }}>
+                                                {e.charAt(0).toUpperCase() + e.slice(1)}
+                                            </Box>
+                                        </MenuItem>
+                                    )
+                                })}
                             </FormSelect>
                         </Box>
                         <FormField label="Observaciones" name="observaciones" value={form.observaciones}
                             onChange={handleChange} multiline rows={2}
-                            helperText={errores.observaciones || `${(form.observaciones || '').length}/500`}
+                            helperText={errores.observaciones || `Opcional ${(form.observaciones || '').length}/500`}
                             error={errores.observaciones}
                             inputProps={{ maxLength: 500 }} />
                     </Box>
@@ -444,15 +556,42 @@ const ActualizarVenta = () => {
                         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                             <FormSelect label="Método de pago" name="metodoPago" value={form.metodoPago}
                                 onChange={handleChange} required error={errores.metodoPago}>
-                                <MenuItem value="">Seleccione método de pago</MenuItem>
                                 <MenuItem value="Contraentrega">Contraentrega</MenuItem>
                                 <MenuItem value="Efectivo">Efectivo</MenuItem>
                                 <MenuItem value="Transferencia">Transferencia</MenuItem>
                                 <MenuItem value="Nequi">Nequi</MenuItem>
                             </FormSelect>
                             <FormSelect label="Estado de pago" name="estadoPago" value={form.estadoPago} onChange={handleChange}>
-                                <MenuItem value="Pendiente">Pendiente</MenuItem>
-                                <MenuItem value="Pagado">Pagado</MenuItem>
+                                <MenuItem value="Pendiente">
+                                    <Box sx={{ 
+                                        display: 'inline-flex', 
+                                        alignItems: 'center',
+                                        backgroundColor: '#FEE2E2', 
+                                        color: '#991B1B', 
+                                        px: 1.5, 
+                                        py: 0.3, 
+                                        borderRadius: 10,
+                                        fontWeight: 600,
+                                        fontSize: '0.75rem',
+                                    }}>
+                                        Pendiente
+                                    </Box>
+                                </MenuItem>
+                                <MenuItem value="Pagado">
+                                    <Box sx={{ 
+                                        display: 'inline-flex', 
+                                        alignItems: 'center',
+                                        backgroundColor: '#D1FAE5', 
+                                        color: '#065F46', 
+                                        px: 1.5, 
+                                        py: 0.3, 
+                                        borderRadius: 10,
+                                        fontWeight: 600,
+                                        fontSize: '0.75rem',
+                                    }}>
+                                        Pagado
+                                    </Box>
+                                </MenuItem>
                             </FormSelect>
                         </Box>
                         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2.5 }}>
@@ -470,6 +609,11 @@ const ActualizarVenta = () => {
             case 5:
                 return (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        {sinCambios && (
+                            <Alert severity="warning" sx={{ borderRadius: 2 }} onClose={() => setSinCambios(false)}>
+                                No has realizado ningún cambio. Los datos ya están actualizados.
+                            </Alert>
+                        )}
                         {apiError && (
                             <Alert severity="error" sx={{ borderRadius: 2 }} onClose={() => setApiError(null)}>
                                 {apiError}
@@ -517,9 +661,9 @@ const ActualizarVenta = () => {
                                 <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2 }}>Destino, estado y valores</Typography>
                                 <ConfirmRow label="Destino" value={form.destino} />
                                 <ConfirmRow label="Fecha entrega" value={form.fechaEstimadaEntrega} />
-                                <ConfirmRow label="Estado" value={form.estado} />
+                                <ConfirmRowChip label="Estado" value={form.estado?.charAt(0).toUpperCase() + form.estado?.slice(1)} colors={getEstadoColor(form.estado)} />
                                 <ConfirmRow label="Método de pago" value={form.metodoPago} />
-                                <ConfirmRow label="Estado de pago" value={form.estadoPago} />
+                                <ConfirmRowChip label="Estado de pago" value={form.estadoPago} colors={getPagoColor(form.estadoPago)} />
                                 <ConfirmRow label="Total" value={form.total ? `$${parseFloat(form.total).toLocaleString()}` : null} />
                             </Paper>
                         </Box>
@@ -612,7 +756,7 @@ const ActualizarVenta = () => {
                         <Button
                             onClick={activeStep < steps.length - 1 ? handleNext : handleSubmit}
                             variant="contained"
-                            disabled={submitting}
+                            disabled={submitting || (activeStep === steps.length - 1 && sinCambios)}
                             endIcon={activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <SaveOutlinedIcon />}
                             disableRipple
                             sx={{
@@ -620,10 +764,11 @@ const ActualizarVenta = () => {
                                 backgroundColor: COLORS.primary,
                                 boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
                                 '&:hover': { backgroundColor: '#b91c1c', boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
+                                '&.Mui-disabled': { backgroundColor: '#E0E0E0', color: '#9E9E9E' },
                             }}>
                             {activeStep < steps.length - 1
                                 ? 'Siguiente'
-                                : submitting ? 'Guardando...' : 'Guardar cambios'
+                                : submitting ? 'Guardando...' : sinCambios ? 'Sin cambios' : 'Guardar cambios'
                             }
                         </Button>
                     </Box>

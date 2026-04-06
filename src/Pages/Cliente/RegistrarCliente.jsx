@@ -70,9 +70,14 @@ const RegistrarCliente = () => {
         if (name === 'numeroIdentificacion' || name === 'telefono') {
             value = value.replace(/[^0-9]/g, '')
         }
-        // Sin @ ni espacios en el local del correo
+        // Solo letras sin tildes, números, puntos, guiones y guiones bajos en el local del correo
         if (name === 'emailLocal') {
-            value = value.replace(/[@\s]/g, '')
+            value = value.replace(/[^a-zA-Z0-9._-]/g, '')
+        }
+
+        // Solo letras sin tildes, números, espacios y caracteres especiales básicos en dirección
+        if (name === 'direccion') {
+            value = value.replace(/[^a-zA-Z0-9\s,.\-#\/']/g, '')
         }
 
         setForm(prev => ({ ...prev, [name]: value }))
@@ -158,7 +163,7 @@ const RegistrarCliente = () => {
                             required error={errores.apellido} helperText={errores.apellido} icon={PersonOutlinedIcon}
                             inputProps={{ maxLength: 50 }} />
                         <FormSelect label="Tipo de documento" name="tipoIdentificacion" value={form.tipoIdentificacion}
-                            onChange={handleChange} required error={errores.tipoIdentificacion}>
+                            onChange={handleChange} required error={errores.tipoIdentificacion} helperText={errores.tipoIdentificacion}>
                             <MenuItem value="CC">Cédula de Ciudadanía (CC)</MenuItem>
                             <MenuItem value="TI">Tarjeta de Identidad (TI)</MenuItem>
                             <MenuItem value="NIT">NIT (Persona Jurídica)</MenuItem>
@@ -206,7 +211,6 @@ const RegistrarCliente = () => {
                         <Box sx={{ gridColumn: '1 / -1' }}>
                             <FormField label="Dirección" name="direccion" value={form.direccion}
                                 onChange={handleChange} required error={errores.direccion}
-                                placeholder="Ej: Calle 45 #20-10"
                                 helperText={errores.direccion || `${form.direccion.length}/200`} icon={HomeOutlinedIcon}
                                 inputProps={{ maxLength: 200 }} />
                         </Box>
