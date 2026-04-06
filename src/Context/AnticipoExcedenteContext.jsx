@@ -60,6 +60,7 @@ export const AnticipoExcedenteProvider = ({ children }) => {
       valorGastado: 450000,
       excedente: 50000,
       estado: 'legalizado',
+      habilitado: true,
       observaciones: 'Viaje sin novedades, combustible y peaje pagados.',
       soportes: soportesMock,
       fechaEntrega: '2025-01-10',
@@ -74,6 +75,7 @@ export const AnticipoExcedenteProvider = ({ children }) => {
       valorGastado: 0,
       excedente: 0,
       estado: 'entregado',
+      habilitado: true,
       observaciones: '',
       soportes: [],
       fechaEntrega: '2025-02-01',
@@ -88,8 +90,9 @@ export const AnticipoExcedenteProvider = ({ children }) => {
       valorGastado: 620000,
       excedente: 0,
       estado: 'en legalización',
+      habilitado: false,
       observaciones: 'Gasto adicional por desvío de vía.',
-      soportes: [soportesMock[0], soportesMock[2]],
+      supports: [soportesMock[0], soportesMock[2]],
       fechaEntrega: '2025-02-05',
       fechaLegalizacion: '',
       fechaEntregaExcedente: '',
@@ -131,6 +134,14 @@ export const AnticipoExcedenteProvider = ({ children }) => {
     )
   }
 
+  const toggleHabilitado = (id) => {
+    setAnticipos(prev =>
+      prev.map(a =>
+        a.idAnticipoExcedente === id ? { ...a, habilitado: !a.habilitado } : a
+      )
+    )
+  }
+
   // En producción esto sería un upload al servidor; aquí simula agregar la referencia
   const agregarSoporte = (idAnticipo, soporte) => {
     setAnticipos(prev =>
@@ -159,6 +170,7 @@ export const AnticipoExcedenteProvider = ({ children }) => {
         agregarAnticipo,
         actualizarAnticipo,
         cambiarEstado,
+        toggleHabilitado,
         agregarSoporte,
         eliminarSoporte,
       }}

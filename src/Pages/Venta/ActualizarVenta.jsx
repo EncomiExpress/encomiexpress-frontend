@@ -182,7 +182,7 @@ const ActualizarVenta = () => {
     }
 
     const handleChange = (e) => {
-        const { name, value } = e.target
+        let { name, value } = e.target
 
         // Bloquear valores numéricos fuera de rango
         if (name in NUMERIC_LIMITS && value !== '') {

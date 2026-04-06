@@ -3,42 +3,105 @@ import { useNavigate } from 'react-router-dom'
 import { useAnticipos, conductoresMock, rutasMock } from '../../Context/AnticipoExcedenteContext'
 import {
     Box, Typography, Paper, Table, TableBody, TableCell,
-    TableContainer, TableHead, TableRow, TablePagination,
-    TextField, IconButton, Chip, Tooltip, InputAdornment,
-    MenuItem, Select, FormControl, InputLabel, Button,
-    Dialog, DialogTitle, DialogContent, DialogActions,
-    Avatar, Grid, Divider
+    TableContainer, TableHead, TableRow, TextField,
+    IconButton, Chip, Tooltip, InputAdornment,
+    Button, Dialog, DialogTitle, DialogContent, DialogContentText,
+    DialogActions, Avatar, Select, MenuItem, Pagination, Snackbar, Alert,
+    CircularProgress, FormControl, InputLabel
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
-import VisibilityIcon from '@mui/icons-material/Visibility'
-import EditIcon from '@mui/icons-material/Edit'
-import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
-import FilterListIcon from '@mui/icons-material/FilterList'
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
+import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
+import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
+import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined'
+import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
+import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import ClearIcon from '@mui/icons-material/Clear'
 import RouteIcon from '@mui/icons-material/Route'
 import PersonIcon from '@mui/icons-material/Person'
-import ImageIcon from '@mui/icons-material/Image'
-import ZoomInIcon from '@mui/icons-material/ZoomIn'
+import FilterListIcon from '@mui/icons-material/FilterList'
 import CloseIcon from '@mui/icons-material/Close'
+import ImageIcon from '@mui/icons-material/Image'
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile'
+import ZoomInIcon from '@mui/icons-material/ZoomIn'
+import BlockOutlinedIcon from '@mui/icons-material/BlockOutlined'
+import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined'
+import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 
 const COLORS = {
     primary: '#CC1818',
+    primaryLight: '#FFE8E8',
     secondary: '#1A2E6E',
-    text: '#2D3748',
+    text: '#1a0e0c',
     textMuted: '#8A94A6',
     border: '#E0E0E0',
-    activeBg: '#FFE8E8',
     hoverBg: '#F9F9F9',
 }
 
-const ESTADO_COLORS = {
-    'entregado':           { bg: '#E3F2FD', color: '#1565C0' },
-    'en legalización':     { bg: '#FFF8E1', color: '#F57F17' },
-    'legalizado':          { bg: '#E8F5E9', color: '#2E7D32' },
-    'excedente pendiente': { bg: '#FFF3E0', color: '#E65100' },
-    'cerrado':             { bg: '#F3E5F5', color: '#6A1B9A' },
+const thStyle = {
+    fontWeight: 700,
+    fontSize: '0.80rem',
+    color: '#1a0e0c',
+    letterSpacing: 0.5,
+    py: 1.5,
+    borderBottom: `1px solid #E0E0E0`,
+    whiteSpace: 'nowrap',
 }
+
+// ── Estilos reutilizables para los Select de filtros ──
+const filterSelectSx = {
+    fontSize: '0.82rem',
+    borderRadius: 2,
+    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#E0E0E0' },
+    '&:hover': { backgroundColor: 'transparent' },
+    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#BDBDBD' },
+    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#E57373', borderWidth: '1px' },
+    '&.Mui-focused': { boxShadow: '0 0 0 3px rgba(229,115,115,0.18)' },
+    '& .MuiSelect-icon': { color: '#8A94A6', fontSize: 18 },
+    '& .MuiTouchRipple-root': { display: 'none' },
+}
+
+const filterMenuProps = {
+    slotProps: {
+        paper: {
+            sx: {
+                borderRadius: 2,
+                boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+                mt: 0.5,
+                '& .MuiMenuItem-root': {
+                    fontSize: '0.82rem',
+                    '&:hover': { backgroundColor: '#FFF5F5' },
+                    '&.Mui-selected': { backgroundColor: 'transparent', fontWeight: 600, color: '#1a0e0c' },
+                    '&.Mui-selected:hover': { backgroundColor: '#FFF5F5' },
+                },
+            },
+        },
+    },
+}
+
+const ESTADO_COLORS = {
+    'entregado': { bg: '#E3F2FD', color: '#1565C0' },
+    'en legalización': { bg: '#FFF8E1', color: '#F57F17' },
+    'legalizado': { bg: '#E8F5E9', color: '#2E7D32' },
+    'excedente pendiente': { bg: '#FFF3E0', color: '#E65100' },
+    'cerrado': { bg: '#F3E5F5', color: '#6A1B9A' },
+}
+
+const FILTROS_ESTADO = [
+    { value: 'todo', label: 'Todo' },
+    { value: 'habilitado', label: 'Habilitado' },
+    { value: 'inhabilitado', label: 'Inhabilitado' },
+]
+
+const FILTROS_ANTICIPO = [
+    { value: 'todos', label: 'Todos los estados' },
+    { value: 'entregado', label: 'Entregado' },
+    { value: 'en legalización', label: 'En legalización' },
+    { value: 'legalizado', label: 'Legalizado' },
+    { value: 'excedente pendiente', label: 'Excedente pendiente' },
+    { value: 'cerrado', label: 'Cerrado' },
+]
 
 const formatMoney = (val) => {
     const num = parseFloat(val || 0)
@@ -62,523 +125,661 @@ const getNombreRuta = (id) => {
     return r ? `${r.idRuta} - ${r.nombre}` : '—'
 }
 
-// ── Modal ver imagen ampliada ──
-const ModalImagenAmpliada = ({ soporte, onClose }) => {
-    if (!soporte) return null
-    return (
-        <Dialog open onClose={onClose} maxWidth="md" PaperProps={{ sx: { borderRadius: 3, overflow: 'hidden' } }}>
-            <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 1.5, px: 2 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <ImageIcon sx={{ color: COLORS.secondary, fontSize: 20 }} />
-                    <Typography fontWeight={700} color={COLORS.secondary} fontSize="0.9rem">{soporte.nombre}</Typography>
-                </Box>
-                <IconButton size="small" onClick={onClose}><CloseIcon fontSize="small" /></IconButton>
-            </DialogTitle>
-            <DialogContent sx={{ p: 0 }}>
-                <img src={soporte.url} alt={soporte.nombre}
-                    style={{ width: '100%', display: 'block', maxHeight: '65vh', objectFit: 'contain', backgroundColor: '#f5f5f5' }} />
-                <Box sx={{ px: 2, py: 1.5, display: 'flex', gap: 3 }}>
-                    <Typography variant="caption" color={COLORS.textMuted}>Subido por: <strong>{soporte.subidoPor}</strong></Typography>
-                    <Typography variant="caption" color={COLORS.textMuted}>Fecha: <strong>{soporte.fecha}</strong></Typography>
-                </Box>
-            </DialogContent>
-        </Dialog>
-    )
-}
-
-// ── Miniatura de soporte en modal consultar ──
-const MiniaturaConsulta = ({ soporte, onVer }) => {
-    const esImagen = soporte.tipo === 'image'
-    return (
-        <Box
-            onClick={() => esImagen && onVer(soporte)}
-            sx={{
-                border: `1px solid ${COLORS.border}`, borderRadius: 2, overflow: 'hidden',
-                cursor: esImagen ? 'pointer' : 'default',
-                position: 'relative',
-                '&:hover .mini-overlay': { opacity: esImagen ? 1 : 0 },
-            }}
-        >
-            {esImagen ? (
-                <Box component="img" src={soporte.url} alt={soporte.nombre}
-                    sx={{ width: '100%', height: 80, objectFit: 'cover', display: 'block', backgroundColor: '#f5f5f5' }} />
-            ) : (
-                <Box sx={{ height: 80, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F8F9FA' }}>
-                    <InsertDriveFileIcon sx={{ fontSize: 32, color: COLORS.textMuted }} />
-                </Box>
-            )}
-            <Box className="mini-overlay" sx={{
-                position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.35)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                opacity: 0, transition: 'opacity 0.2s',
-            }}>
-                <ZoomInIcon sx={{ color: '#fff', fontSize: 22 }} />
-            </Box>
-            {soporte.subidoPor === 'Conductor' && (
-                <Box sx={{ position: 'absolute', top: 4, left: 4 }}>
-                    <Chip label="Conductor" size="small"
-                        sx={{ fontSize: '0.58rem', height: 16, backgroundColor: 'rgba(26,46,110,0.85)', color: '#fff', fontWeight: 600 }} />
-                </Box>
-            )}
-            <Box sx={{ px: 0.8, py: 0.5 }}>
-                <Typography variant="caption" color={COLORS.textMuted} noWrap display="block" fontSize="0.65rem">{soporte.nombre}</Typography>
-            </Box>
-        </Box>
-    )
-}
+// ── Fila de campo reutilizable ──
+const CampoFila = ({ label, value, esEstado, estadoValue }) => (
+    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
+        <Typography variant="body2" sx={{ color: '#9C4040', fontWeight: 500 }}>{label}</Typography>
+        {esEstado ? (
+            <Chip
+                label={estadoValue}
+                size="small"
+                sx={{
+                    backgroundColor: ESTADO_COLORS[estadoValue]?.bg || '#F3F4F6',
+                    color: ESTADO_COLORS[estadoValue]?.color || '#9CA3AF',
+                    fontWeight: 600, fontSize: '0.72rem',
+                    height: 22, borderRadius: 10, border: 'none', textTransform: 'capitalize',
+                }}
+            />
+        ) : (
+            <Typography variant="body2" fontWeight={500} color="#2D3748">
+                {String(value ?? '—')}
+            </Typography>
+        )}
+    </Box>
+)
 
 // ── Modal Consultar ──
 const ModalConsultar = ({ anticipo, onClose }) => {
-    const [imagenVista, setImagenVista] = useState(null)
     if (!anticipo) return null
 
     const excedente = parseFloat(anticipo.valorAnticipo || 0) - parseFloat(anticipo.valorGastado || 0)
     const estadoStyle = ESTADO_COLORS[anticipo.estado] || { bg: '#F5F5F5', color: '#757575' }
     const soportes = anticipo.soportes || []
 
+    const cardSx = { borderRadius: 2, p: 3, border: `1px solid ${COLORS.border}`, backgroundColor: 'white' }
+    const tituloSx = { display: 'flex', alignItems: 'center', gap: 1, mb: 1 }
+
     return (
-        <>
-            <Dialog open onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
-                <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pb: 1 }}>
-                    <Avatar sx={{ backgroundColor: COLORS.secondary, width: 36, height: 36 }}>
-                        <AccountBalanceWalletIcon sx={{ fontSize: 18 }} />
-                    </Avatar>
-                    <Box>
-                        <Typography fontWeight={700} color={COLORS.secondary}>
-                            Anticipo #{anticipo.idAnticipoExcedente}
-                        </Typography>
-                        <Typography variant="caption" color={COLORS.textMuted}>
-                            {getNombreConductor(anticipo.idConductor)} · {getNombreRuta(anticipo.idRuta)}
-                        </Typography>
-                    </Box>
-                </DialogTitle>
+        <Dialog open onClose={onClose} maxWidth="md" fullWidth
+            slotProps={{ paper: { sx: { borderRadius: 3, p: 3, backgroundColor: '#FAFAFA' } } }}>
 
-                <DialogContent dividers sx={{ px: 3, py: 2 }}>
-                    <Grid container spacing={2}>
-                        {/* Datos principales */}
-                        <Grid item xs={6}>
-                            <Typography variant="caption" color={COLORS.textMuted} fontWeight={600} display="block">Conductor</Typography>
-                            <Typography variant="body2" fontWeight={500} color={COLORS.text}>{getNombreConductor(anticipo.idConductor)}</Typography>
-                        </Grid>
-                        <Grid item xs={6}>
-                            <Typography variant="caption" color={COLORS.textMuted} fontWeight={600} display="block">Ruta</Typography>
-                            <Typography variant="body2" fontWeight={500} color={COLORS.text}>{getNombreRuta(anticipo.idRuta)}</Typography>
-                        </Grid>
-                        <Grid item xs={6}>
-                            <Typography variant="caption" color={COLORS.textMuted} fontWeight={600} display="block">Valor anticipo</Typography>
-                            <Typography variant="body2" fontWeight={600} color={COLORS.secondary}>{formatMoney(anticipo.valorAnticipo)}</Typography>
-                        </Grid>
-                        <Grid item xs={6}>
-                            <Typography variant="caption" color={COLORS.textMuted} fontWeight={600} display="block">Valor gastado</Typography>
-                            <Typography variant="body2" fontWeight={500} color={COLORS.text}>{anticipo.valorGastado ? formatMoney(anticipo.valorGastado) : '—'}</Typography>
-                        </Grid>
-                        <Grid item xs={6}>
-                            <Typography variant="caption" color={COLORS.textMuted} fontWeight={600} display="block">
-                                {excedente >= 0 ? 'Excedente' : 'Faltante'}
-                            </Typography>
-                            <Typography variant="body2" fontWeight={700} color={excedente >= 0 ? '#2E7D32' : COLORS.primary}>
-                                {excedente >= 0 ? '+' : '-'}{formatMoney(Math.abs(excedente))}
-                            </Typography>
-                        </Grid>
-                        <Grid item xs={6}>
-                            <Typography variant="caption" color={COLORS.textMuted} fontWeight={600} display="block">Estado</Typography>
-                            <Chip label={anticipo.estado} size="small" sx={{
-                                mt: 0.3, fontSize: '0.7rem', fontWeight: 600, height: 20,
-                                backgroundColor: estadoStyle.bg, color: estadoStyle.color, textTransform: 'capitalize',
-                            }} />
-                        </Grid>
-                        <Grid item xs={4}>
-                            <Typography variant="caption" color={COLORS.textMuted} fontWeight={600} display="block">F. Entrega</Typography>
-                            <Typography variant="body2" color={COLORS.text}>{formatFecha(anticipo.fechaEntrega)}</Typography>
-                        </Grid>
-                        <Grid item xs={4}>
-                            <Typography variant="caption" color={COLORS.textMuted} fontWeight={600} display="block">F. Legalización</Typography>
-                            <Typography variant="body2" color={COLORS.text}>{formatFecha(anticipo.fechaLegalizacion)}</Typography>
-                        </Grid>
-                        <Grid item xs={4}>
-                            <Typography variant="caption" color={COLORS.textMuted} fontWeight={600} display="block">F. Excedente</Typography>
-                            <Typography variant="body2" color={COLORS.text}>{formatFecha(anticipo.fechaEntregaExcedente)}</Typography>
-                        </Grid>
+            <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pb: 1 }}>
+                <Avatar sx={{ backgroundColor: '#FFCDD2', color: '#C62828', width: 36, height: 36 }}>
+                    <RouteIcon sx={{ fontSize: 18 }} />
+                </Avatar>
+                <Box>
+                    <Typography fontWeight={700} color={COLORS.secondary}>
+                        Anticipo #{anticipo.idAnticipoExcedente}
+                    </Typography>
+                    <Typography variant="caption" color={COLORS.textMuted}>
+                        {getNombreConductor(anticipo.idConductor)} · {getNombreRuta(anticipo.idRuta)}
+                    </Typography>
+                </Box>
+            </DialogTitle>
+
+            <DialogContent dividers sx={{ px: 3, py: 2 }}>
+                <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+                    <Paper elevation={0} sx={{ ...cardSx, flex: 1 }}>
+                        <Box sx={tituloSx}>
+                            <PersonOutlinedIcon sx={{ fontSize: 22, color: COLORS.text }} />
+                            <Typography fontWeight={700} fontSize="1.05rem" color={COLORS.text}>Datos del Anticipo</Typography>
+                        </Box>
+                        <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2 }}>
+                            Información principal del anticipo
+                        </Typography>
+                        <CampoFila label="Conductor" value={getNombreConductor(anticipo.idConductor)} />
+                        <CampoFila label="Ruta" value={getNombreRuta(anticipo.idRuta)} />
+                        <CampoFila label="Valor anticipo" value={formatMoney(anticipo.valorAnticipo)} />
+                        <CampoFila label="Valor gastado" value={anticipo.valorGastado ? formatMoney(anticipo.valorGastado) : '—'} />
+                        <CampoFila
+                            label={excedente >= 0 ? 'Excedente' : 'Faltante'}
+                            value={(excedente >= 0 ? '+' : '-') + formatMoney(Math.abs(excedente))}
+                        />
+                        <CampoFila label="Estado" value={anticipo.estado} esEstado estadoValue={anticipo.estado} />
+                    </Paper>
+
+                    <Paper elevation={0} sx={{ ...cardSx, flex: 1 }}>
+                        <Box sx={tituloSx}>
+                            <AssignmentIndOutlinedIcon sx={{ fontSize: 22, color: COLORS.text }} />
+                            <Typography fontWeight={700} fontSize="1.05rem" color={COLORS.text}>Fechas</Typography>
+                        </Box>
+                        <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2 }}>
+                            Fechas relacionadas al anticipo
+                        </Typography>
+                        <CampoFila label="F. Entrega" value={formatFecha(anticipo.fechaEntrega)} />
+                        <CampoFila label="F. Legalización" value={formatFecha(anticipo.fechaLegalizacion)} />
+                        <CampoFila label="F. Excedente" value={formatFecha(anticipo.fechaEntregaExcedente)} />
                         {anticipo.observaciones && (
-                            <Grid item xs={12}>
-                                <Typography variant="caption" color={COLORS.textMuted} fontWeight={600} display="block">Observaciones</Typography>
-                                <Typography variant="body2" color={COLORS.text}>{anticipo.observaciones}</Typography>
-                            </Grid>
+                            <>
+                                <Box sx={{ pt: 1 }}>
+                                    <Typography variant="caption" color={COLORS.textMuted} fontWeight={600} display="block">Observaciones</Typography>
+                                    <Typography variant="body2" color={COLORS.text}>{anticipo.observaciones}</Typography>
+                                </Box>
+                            </>
                         )}
+                    </Paper>
+                </Box>
 
-                        {/* ── Soportes ── */}
-                        <Grid item xs={12}>
-                            <Divider sx={{ mb: 1.5 }} />
-                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                                <Typography variant="caption" color={COLORS.textMuted} fontWeight={700} display="block">
-                                    Soportes de pago
-                                </Typography>
-                                <Chip
-                                    label={`${soportes.length} archivo${soportes.length !== 1 ? 's' : ''}`}
-                                    size="small"
-                                    sx={{ fontSize: '0.68rem', height: 20, backgroundColor: soportes.length > 0 ? '#E8F5E9' : '#F5F5F5', color: soportes.length > 0 ? '#2E7D32' : COLORS.textMuted, fontWeight: 600 }}
-                                />
-                            </Box>
-
-                            {soportes.length === 0 ? (
-                                <Box sx={{ py: 2, textAlign: 'center', backgroundColor: '#FAFAFA', borderRadius: 2, border: `1px dashed ${COLORS.border}` }}>
-                                    <Typography variant="caption" color={COLORS.textMuted} fontStyle="italic">
-                                        El conductor aún no ha subido soportes
+                {soportes.length > 0 && (
+                    <Paper elevation={0} sx={{ ...cardSx }}>
+                        <Box sx={tituloSx}>
+                            <ImageIcon sx={{ fontSize: 22, color: COLORS.text }} />
+                            <Typography fontWeight={700} fontSize="1.05rem" color={COLORS.text}>Soportes de pago</Typography>
+                            <Chip label={`${soportes.length} archivo${soportes.length !== 1 ? 's' : ''}`} size="small" sx={{ ml: 'auto', fontSize: '0.68rem', height: 20, backgroundColor: '#E8F5E9', color: '#2E7D32', fontWeight: 600 }} />
+                        </Box>
+                        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 1.5 }}>
+                            {soportes.map((s, idx) => (
+                                <Box key={idx} sx={{ width: 80, borderRadius: 1, overflow: 'hidden', border: `1px solid ${COLORS.border}` }}>
+                                    {s.tipo === 'image' ? (
+                                        <Box component="img" src={s.url} alt={s.nombre} sx={{ width: '100%', height: 60, objectFit: 'cover' }} />
+                                    ) : (
+                                        <Box sx={{ height: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F8F9FA' }}>
+                                            <InsertDriveFileIcon sx={{ color: COLORS.textMuted }} />
+                                        </Box>
+                                    )}
+                                    <Typography variant="caption" sx={{ display: 'block', p: 0.5, fontSize: '0.6rem', color: COLORS.textMuted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                        {s.nombre}
                                     </Typography>
                                 </Box>
-                            ) : (
-                                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: 1 }}>
-                                    {soportes.map(s => (
-                                        <MiniaturaConsulta key={s.id} soporte={s} onVer={setImagenVista} />
-                                    ))}
-                                </Box>
-                            )}
-                        </Grid>
-                    </Grid>
-                </DialogContent>
+                            ))}
+                        </Box>
+                    </Paper>
+                )}
+            </DialogContent>
 
-                <DialogActions sx={{ px: 3, py: 2 }}>
-                    <Button onClick={onClose} variant="contained"
-                        sx={{ backgroundColor: COLORS.secondary, borderRadius: 2, textTransform: 'none' }}>
-                        Cerrar
-                    </Button>
-                </DialogActions>
-            </Dialog>
-
-            <ModalImagenAmpliada soporte={imagenVista} onClose={() => setImagenVista(null)} />
-        </>
+            <DialogActions sx={{ px: 3, py: 2 }}>
+                <Button onClick={onClose} variant="contained" sx={{ backgroundColor: COLORS.primary, borderRadius: 2, textTransform: 'none' }}>
+                    Cerrar
+                </Button>
+            </DialogActions>
+        </Dialog>
     )
 }
 
 // ── Componente principal ──
 const ListarAnticipoExcedente = () => {
     const navigate = useNavigate()
-    const { anticipos, cambiarEstado } = useAnticipos()
+    const { anticipos, toggleHabilitado } = useAnticipos()
 
     const [busqueda, setBusqueda] = useState('')
-    const [filtroPor, setFiltroPor] = useState('todo')
-    const [filtroEstado, setFiltroEstado] = useState('todos')
-    const [filtroRuta, setFiltroRuta] = useState('todos')
-    const [filtroConductor, setFiltroConductor] = useState('todos')
-    const [page, setPage] = useState(0)
+    const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
+    const [filtroEstadoAnticipo, setFiltroEstadoAnticipo] = useState('todos')
+    const [page, setPage] = useState(1)
     const [rowsPerPage, setRowsPerPage] = useState(5)
     const [anticipoConsulta, setAnticipoConsulta] = useState(null)
+    const [anticipoToggle, setAnticipoToggle] = useState(null)
+    const [toggling, setToggling] = useState(false)
+    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
 
     const anticiposFiltrados = anticipos.filter(a => {
-        const q = busqueda.toLowerCase()
-        let coincideBusqueda = true
+        const q = busqueda.toLowerCase().trim()
+        const nombreConductor = getNombreConductor(a.idConductor).toLowerCase()
+        const nombreRuta = getNombreRuta(a.idRuta).toLowerCase()
 
-        if (q) {
-            const nombreConductor = getNombreConductor(a.idConductor).toLowerCase()
-            const nombreRuta = getNombreRuta(a.idRuta).toLowerCase()
-            switch (filtroPor) {
-                case 'conductor': coincideBusqueda = nombreConductor.includes(q); break
-                case 'ruta': coincideBusqueda = nombreRuta.includes(q); break
-                case 'soporte': coincideBusqueda = (a.observaciones || '').toLowerCase().includes(q); break
-                default:
-                    coincideBusqueda =
-                        nombreConductor.includes(q) ||
-                        nombreRuta.includes(q) ||
-                        (a.observaciones || '').toLowerCase().includes(q)
-            }
-        }
+        const coincideBusqueda = !q ||
+            nombreConductor.includes(q) ||
+            nombreRuta.includes(q) ||
+            (a.observaciones || '').toLowerCase().includes(q)
 
-        const coincideEstado = filtroEstado === 'todos' || a.estado === filtroEstado
-        const coincideRuta = filtroRuta === 'todos' || parseInt(a.idRuta) === parseInt(filtroRuta)
-        const coincideConductor = filtroConductor === 'todos' || parseInt(a.idConductor) === parseInt(filtroConductor)
+        const coincideHabilitado =
+            filtroHabilitado === 'todo' ||
+            (filtroHabilitado === 'habilitado' && a.habilitado !== false) ||
+            (filtroHabilitado === 'inhabilitado' && a.habilitado === false)
 
-        return coincideBusqueda && coincideEstado && coincideRuta && coincideConductor
+        const coincideEstadoAnticipo = filtroEstadoAnticipo === 'todos' || a.estado === filtroEstadoAnticipo
+
+        return coincideBusqueda && coincideHabilitado && coincideEstadoAnticipo
     })
 
-    const limpiarFiltros = () => {
-        setBusqueda('')
-        setFiltroPor('todo')
-        setFiltroEstado('todos')
-        setFiltroRuta('todos')
-        setFiltroConductor('todos')
-        setPage(0)
-    }
+    const totalPages = Math.max(1, Math.ceil(anticiposFiltrados.length / rowsPerPage))
+    const safePage = Math.min(page, totalPages)
+    const paginatedAnticipos = anticiposFiltrados.slice((safePage - 1) * rowsPerPage, safePage * rowsPerPage)
+    const from = anticiposFiltrados.length === 0 ? 0 : (safePage - 1) * rowsPerPage + 1
+    const to = Math.min(safePage * rowsPerPage, anticiposFiltrados.length)
 
-    // Función para cambiar el estado directamente en la tabla
-    const handleEstadoChange = (id, nuevoEstado) => {
-        cambiarEstado(id, nuevoEstado)
-    }
+    const hayFiltrosActivos = busqueda.trim() !== '' || filtroHabilitado !== 'todo' || filtroEstadoAnticipo !== 'todos'
 
-    const hayFiltrosActivos = busqueda || filtroEstado !== 'todos' || filtroRuta !== 'todos' || filtroConductor !== 'todos'
+    const handleToggle = async (id) => {
+        const anticipo = anticipos.find(a => a.idAnticipoExcedente === id)
+        const esHabilitar = !anticipo?.habilitado
+        setToggling(true)
+        try {
+            toggleHabilitado(id)
+            setAnticipoToggle(null)
+            setSnackbar({
+                open: true,
+                message: esHabilitar ? 'Anticipo habilitado correctamente.' : 'Anticipo inhabilitado correctamente.',
+                severity: esHabilitar ? 'success' : 'warning',
+            })
+        } catch (err) {
+            setAnticipoToggle(null)
+            setSnackbar({
+                open: true,
+                message: err.message || 'Error al cambiar el estado del anticipo.',
+                severity: 'error',
+            })
+        } finally {
+            setToggling(false)
+        }
+    }
 
     return (
-        <Box sx={{ p: 1 }}>
+        <Box sx={{ p: 3.5 }}>
 
             {/* ── Encabezado ── */}
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <AccountBalanceWalletIcon sx={{ color: COLORS.primary, fontSize: 28 }} />
-                    <Box>
-                        <Typography variant="h6" fontWeight={800} color={COLORS.secondary}>
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
+                <Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <Typography variant="h5" fontWeight={700} color={COLORS.text}>
                             Anticipos y Excedentes
                         </Typography>
-                        <Typography variant="caption" color={COLORS.textMuted}>
-                            {anticiposFiltrados.length} resultado{anticiposFiltrados.length !== 1 ? 's' : ''} encontrado{anticiposFiltrados.length !== 1 ? 's' : ''}
-                        </Typography>
+                        <Chip
+                            label={`${anticipos.length} registrado${anticipos.length !== 1 ? 's' : ''}`}
+                            size="small"
+                            sx={{
+                                backgroundColor: '#F3F4F6',
+                                color: COLORS.textMuted,
+                                fontWeight: 500,
+                                fontSize: '0.72rem',
+                                height: 22,
+                                borderRadius: 10,
+                            }}
+                        />
                     </Box>
+                    <Typography variant="body2" color={COLORS.textMuted} mt={0.3}>
+                        Gestiona los anticipos y excedentes de los conductores.
+                    </Typography>
                 </Box>
                 <Button
                     onClick={() => navigate('/anticipos/registrar')}
-                    variant="contained" size="small"
-                    sx={{ backgroundColor: COLORS.primary, borderRadius: 2, textTransform: 'none', fontWeight: 600, '&:hover': { backgroundColor: '#a01212' } }}
+                    variant="contained"
+                    startIcon={<AddOutlinedIcon />}
+                    sx={{
+                        backgroundColor: COLORS.primary,
+                        borderRadius: 2,
+                        textTransform: 'none',
+                        fontWeight: 600,
+                        boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
+                        '&:hover': {
+                            backgroundColor: '#b91c1c',
+                            boxShadow: '0 6px 20px rgba(204,24,24,0.2)',
+                        },
+                    }}
                 >
-                    + Nuevo anticipo
+                    Nuevo anticipo
                 </Button>
             </Box>
 
-            {/* ── Filtros ── */}
-            <Paper elevation={0} sx={{ p: 2, mb: 2, border: `1px solid ${COLORS.border}`, borderRadius: 3 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-                    <FilterListIcon sx={{ color: COLORS.textMuted, fontSize: 18 }} />
-                    <Typography variant="caption" fontWeight={700} color={COLORS.textMuted} display="block">
-                        Filtros y búsqueda
-                    </Typography>
-                    {hayFiltrosActivos && (
-                        <Chip label="Limpiar" size="small"
-                            icon={<ClearIcon sx={{ fontSize: '14px !important' }} />}
-                            onClick={limpiarFiltros}
-                            sx={{ ml: 'auto', fontSize: '0.72rem', height: 24, cursor: 'pointer', backgroundColor: COLORS.activeBg, color: COLORS.primary }}
-                        />
-                    )}
-                </Box>
+            {/* ── Filtros de estado ── */}
+            <Box sx={{
+                display: 'inline-flex',
+                backgroundColor: '#FFECEC',
+                borderRadius: 4,
+                p: '4px',
+                mb: 2.5,
+                gap: '5px',
+            }}>
+                {FILTROS_ESTADO.map(f => (
+                    <Button
+                        key={f.value}
+                        onClick={() => { setFiltroHabilitado(f.value); setPage(1) }}
+                        size="small"
+                        disableElevation
+                        disableRipple
+                        sx={{
+                            borderRadius: 3,
+                            textTransform: 'none',
+                            fontSize: '0.75rem',
+                            px: 2,
+                            py: 0.5,
+                            minWidth: 0,
+                            fontWeight: filtroHabilitado === f.value ? 600 : 400,
+                            backgroundColor: filtroHabilitado === f.value ? 'white' : 'transparent',
+                            color: filtroHabilitado === f.value ? COLORS.text : '#B05050',
+                            boxShadow: filtroHabilitado === f.value
+                                ? '0 1px 4px rgba(0,0,0,0.12)'
+                                : 'none',
+                            border: 'none',
+                            '&:hover': {
+                                backgroundColor: filtroHabilitado === f.value ? 'white' : 'transparent',
+                                color: filtroHabilitado === f.value ? COLORS.text : '#5C3333',
+                                border: 'none',
+                            },
+                        }}
+                    >
+                        {f.label}
+                    </Button>
+                ))}
+            </Box>
 
-                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                    <FormControl size="small" sx={{ minWidth: 150 }}>
-                        <InputLabel sx={{ fontSize: '0.82rem' }}>Buscar por</InputLabel>
-                        <Select value={filtroPor} label="Buscar por"
-                            onChange={e => { setFiltroPor(e.target.value); setPage(0) }}
-                            sx={{ fontSize: '0.82rem', borderRadius: 2 }}>
-                            <MenuItem value="todo">Todo</MenuItem>
-                            <MenuItem value="conductor">Conductor</MenuItem>
-                            <MenuItem value="ruta">Ruta</MenuItem>
-                            <MenuItem value="soporte">Observaciones</MenuItem>
-                        </Select>
-                    </FormControl>
-
-                    <TextField
-                        size="small" placeholder="Escribe para buscar..."
-                        value={busqueda} onChange={e => { setBusqueda(e.target.value); setPage(0) }}
-                        sx={{ flex: 1, minWidth: 180, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-                        InputProps={{
-                            startAdornment: <InputAdornment position="start"><SearchIcon sx={{ color: COLORS.textMuted, fontSize: 18 }} /></InputAdornment>,
+            {/* ── Búsqueda + filtros ── */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
+                <TextField
+                    size="small"
+                    placeholder="Buscar anticipos..."
+                    sx={{
+                        width: 320,
+                        '& .MuiOutlinedInput-root': {
+                            borderRadius: 2,
+                            '&.Mui-focused': {
+                                boxShadow: '0 0 0 3px rgba(229,115,115,0.18)',
+                            },
+                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                borderColor: '#CC1818',
+                                borderWidth: '1px',
+                            },
+                        },
+                    }}
+                    value={busqueda}
+                    onChange={e => { setBusqueda(e.target.value); setPage(1) }}
+                    slotProps={{
+                        input: {
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <SearchIcon sx={{ color: COLORS.textMuted, fontSize: 20 }} />
+                                </InputAdornment>
+                            ),
                             endAdornment: busqueda && (
                                 <InputAdornment position="end">
-                                    <IconButton size="small" onClick={() => setBusqueda('')}><ClearIcon sx={{ fontSize: 16 }} /></IconButton>
+                                    <IconButton size="small" onClick={() => { setBusqueda(''); setPage(1) }}>
+                                        <ClearIcon sx={{ fontSize: 16 }} />
+                                    </IconButton>
                                 </InputAdornment>
                             )
-                        }}
-                    />
+                        }
+                    }}
+                />
 
-                    <FormControl size="small" sx={{ minWidth: 175 }}>
-                        <InputLabel sx={{ fontSize: '0.82rem' }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><PersonIcon sx={{ fontSize: 14 }} /> Conductor</Box>
-                        </InputLabel>
-                        <Select value={filtroConductor} label="  Conductor"
-                            onChange={e => { setFiltroConductor(e.target.value); setPage(0) }}
-                            sx={{ fontSize: '0.82rem', borderRadius: 2 }}>
-                            <MenuItem value="todos">Todos</MenuItem>
-                            {conductoresMock.map(c => (
-                                <MenuItem key={c.idConductor} value={c.idConductor} sx={{ fontSize: '0.82rem' }}>{c.nombre}</MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-
-                    <FormControl size="small" sx={{ minWidth: 200 }}>
-                        <InputLabel sx={{ fontSize: '0.82rem' }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><RouteIcon sx={{ fontSize: 14 }} /> Ruta</Box>
-                        </InputLabel>
-                        <Select value={filtroRuta} label="  Ruta"
-                            onChange={e => { setFiltroRuta(e.target.value); setPage(0) }}
-                            sx={{ fontSize: '0.82rem', borderRadius: 2 }}>
-                            <MenuItem value="todos">Todas</MenuItem>
-                            {rutasMock.map(r => (
-                                <MenuItem key={r.idRuta} value={r.idRuta} sx={{ fontSize: '0.82rem' }}>{r.idRuta} - {r.nombre}</MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-
-                    <FormControl size="small" sx={{ minWidth: 175 }}>
-                        <InputLabel sx={{ fontSize: '0.82rem' }}>Estado</InputLabel>
-                        <Select value={filtroEstado} label="Estado"
-                            onChange={e => { setFiltroEstado(e.target.value); setPage(0) }}
-                            sx={{ fontSize: '0.82rem', borderRadius: 2 }}>
-                            <MenuItem value="todos">Todos</MenuItem>
-                            <MenuItem value="entregado">Entregado</MenuItem>
-                            <MenuItem value="en legalización">En legalización</MenuItem>
-                            <MenuItem value="legalizado">Legalizado</MenuItem>
-                            <MenuItem value="excedente pendiente">Excedente pendiente</MenuItem>
-                            <MenuItem value="cerrado">Cerrado</MenuItem>
-                        </Select>
-                    </FormControl>
-                </Box>
-            </Paper>
+                <FormControl size="small" sx={{ minWidth: 180 }}>
+                    <InputLabel sx={{ fontSize: '0.82rem', '&.Mui-focused': { color: '#E57373' } }}>Estado anticipo</InputLabel>
+                    <Select value={filtroEstadoAnticipo} label="Estado anticipo"
+                        onChange={e => { setFiltroEstadoAnticipo(e.target.value); setPage(1) }}
+                        IconComponent={KeyboardArrowDownOutlinedIcon}
+                        sx={filterSelectSx}
+                        MenuProps={filterMenuProps}
+                    >
+                        {FILTROS_ANTICIPO.map(f => (
+                            <MenuItem key={f.value} value={f.value} sx={{ fontSize: '0.8rem' }}>
+                                {f.label}
+                            </MenuItem>
+                        ))}
+                    </Select>
+                </FormControl>
+            </Box>
 
             {/* ── Tabla ── */}
             <Paper elevation={0} sx={{ border: `1px solid ${COLORS.border}`, borderRadius: 3, overflow: 'hidden' }}>
                 <TableContainer>
-                    <Table size="small">
+                    <Table>
                         <TableHead>
                             <TableRow sx={{ backgroundColor: '#F8F9FA' }}>
-                                {['#', 'Conductor', 'Ruta', 'Anticipo', 'Gastado', 'Excedente', 'Soportes', 'Fecha entrega', 'Estado', 'Acciones'].map(col => (
-                                    <TableCell key={col} sx={{
-                                        fontWeight: 700, fontSize: '0.75rem', color: COLORS.textMuted,
-                                        py: 1.5,
-                                        borderBottom: `2px solid ${COLORS.border}`, whiteSpace: 'nowrap',
-                                    }}>
-                                        {col}
-                                    </TableCell>
-                                ))}
+                                <TableCell sx={thStyle}>Conductor</TableCell>
+                                <TableCell sx={thStyle}>Ruta</TableCell>
+                                <TableCell sx={thStyle}>Anticipo</TableCell>
+                                <TableCell sx={thStyle}>Gastado</TableCell>
+                                <TableCell sx={thStyle}>Excedente</TableCell>
+                                <TableCell sx={thStyle}>F. Entrega</TableCell>
+                                <TableCell sx={thStyle}>Estado</TableCell>
+                                <TableCell sx={thStyle}>Habilitado</TableCell>
+                                <TableCell sx={{ ...thStyle, width: 130 }}>Acciones</TableCell>
                             </TableRow>
                         </TableHead>
 
                         <TableBody>
-                            {anticiposFiltrados.length === 0 ? (
+                            {paginatedAnticipos.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={10} align="center" sx={{ py: 6 }}>
+                                    <TableCell colSpan={9} align="center" sx={{ py: 7 }}>
                                         <Typography color={COLORS.textMuted} variant="body2">
-                                            No se encontraron registros con los filtros aplicados
+                                            {anticipos.length === 0
+                                                ? 'No hay anticipos registrados en el sistema.'
+                                                : busqueda.trim() !== '' || filtroHabilitado !== 'todo' || filtroEstadoAnticipo !== 'todos'
+                                                    ? 'No se encontraron resultados con la búsqueda y los filtros aplicados.'
+                                                    : 'No se encontraron anticipos.'
+                                            }
                                         </Typography>
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                anticiposFiltrados
-                                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                                    .map((anticipo, index) => {
-                                        const excedente = parseFloat(anticipo.valorAnticipo || 0) - parseFloat(anticipo.valorGastado || 0)
-                                        const estadoStyle = ESTADO_COLORS[anticipo.estado] || { bg: '#F5F5F5', color: '#757575' }
-                                        const totalSoportes = (anticipo.soportes || []).length
+                                paginatedAnticipos.map((anticipo) => {
+                                    const excedente = parseFloat(anticipo.valorAnticipo || 0) - parseFloat(anticipo.valorGastado || 0)
+                                    const estadoStyle = ESTADO_COLORS[anticipo.estado] || { bg: '#F5F5F5', color: '#757575' }
 
-                                        return (
-                                            <TableRow key={anticipo.idAnticipoExcedente}
-                                                sx={{ '&:hover': { backgroundColor: COLORS.hoverBg }, transition: 'background-color 0.15s' }}>
-
-                                                <TableCell sx={{ fontSize: '0.8rem', color: COLORS.textMuted, py: 1.5 }}>
-                                                    {page * rowsPerPage + index + 1}
-                                                </TableCell>
-
-                                                <TableCell sx={{ py: 1.5 }}>
-                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                        <Avatar sx={{ width: 28, height: 28, backgroundColor: COLORS.secondary, fontSize: '0.65rem', fontWeight: 700 }}>
-                                                            {getNombreConductor(anticipo.idConductor).split(' ').map(n => n[0]).slice(0, 2).join('')}
-                                                        </Avatar>
-                                                        <Typography variant="body2" fontWeight={600} color={COLORS.text} noWrap sx={{ maxWidth: 130 }}>
-                                                            {getNombreConductor(anticipo.idConductor)}
-                                                        </Typography>
-                                                    </Box>
-                                                </TableCell>
-
-                                                <TableCell sx={{ py: 1.5 }}>
-                                                    <Typography variant="body2" color={COLORS.textMuted} fontSize="0.75rem">Ruta {anticipo.idRuta}</Typography>
-                                                    <Typography variant="body2" fontWeight={500} color={COLORS.text} fontSize="0.8rem" noWrap sx={{ maxWidth: 140 }}>
-                                                        {rutasMock.find(r => r.idRuta === parseInt(anticipo.idRuta))?.nombre || '—'}
+                                    return (
+                                        <TableRow
+                                            key={anticipo.idAnticipoExcedente}
+                                            sx={{
+                                                '&:hover': { backgroundColor: COLORS.hoverBg },
+                                                transition: 'background-color 0.15s',
+                                                opacity: anticipo.habilitado !== false ? 1 : 0.55,
+                                            }}
+                                        >
+                                            {/* Conductor */}
+                                            <TableCell sx={{ py: 1.5 }}>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                                    <Avatar sx={{
+                                                        width: 34, height: 34,
+                                                        backgroundColor: '#FFCDD2',
+                                                        fontSize: '0.73rem',
+                                                        fontWeight: 700,
+                                                        color: '#C62828',
+                                                    }}>
+                                                        {getNombreConductor(anticipo.idConductor).split(' ').map(n => n[0]).slice(0, 2).join('')}
+                                                    </Avatar>
+                                                    <Typography variant="body2" fontWeight={500} color={COLORS.text} noWrap>
+                                                        {getNombreConductor(anticipo.idConductor)}
                                                     </Typography>
-                                                </TableCell>
+                                                </Box>
+                                            </TableCell>
 
-                                                <TableCell sx={{ py: 1.5 }}>
-                                                    <Typography variant="body2" fontWeight={600} color={COLORS.secondary} fontSize="0.82rem">
-                                                        {formatMoney(anticipo.valorAnticipo)}
+                                            {/* Ruta */}
+                                            <TableCell sx={{ py: 1.5 }}>
+                                                <Typography variant="body2" color={COLORS.textMuted} fontSize="0.75rem">
+                                                    Ruta {anticipo.idRuta}
+                                                </Typography>
+                                                <Typography variant="body2" fontWeight={500} color={COLORS.text} fontSize="0.8rem" noWrap>
+                                                    {getNombreRuta(anticipo.idRuta).split(' - ')[1] || '—'}
+                                                </Typography>
+                                            </TableCell>
+
+                                            {/* Anticipo */}
+                                            <TableCell sx={{ py: 1.5 }}>
+                                                <Typography variant="body2" fontWeight={600} color={COLORS.secondary} fontSize="0.82rem">
+                                                    {formatMoney(anticipo.valorAnticipo)}
+                                                </Typography>
+                                            </TableCell>
+
+                                            {/* Gastado */}
+                                            <TableCell sx={{ py: 1.5 }}>
+                                                <Typography variant="body2" color={anticipo.valorGastado ? COLORS.text : COLORS.textMuted} fontSize="0.82rem">
+                                                    {anticipo.valorGastado ? formatMoney(anticipo.valorGastado) : '—'}
+                                                </Typography>
+                                            </TableCell>
+
+                                            {/* Excedente */}
+                                            <TableCell sx={{ py: 1.5 }}>
+                                                {anticipo.valorGastado ? (
+                                                    <Typography variant="body2" fontWeight={600} fontSize="0.82rem"
+                                                        color={excedente >= 0 ? '#2E7D32' : COLORS.primary}>
+                                                        {excedente >= 0 ? '+' : '-'}{formatMoney(Math.abs(excedente))}
                                                     </Typography>
-                                                </TableCell>
+                                                ) : (
+                                                    <Typography variant="body2" color={COLORS.textMuted} fontSize="0.82rem">—</Typography>
+                                                )}
+                                            </TableCell>
 
-                                                <TableCell sx={{ py: 1.5 }}>
-                                                    <Typography variant="body2" color={anticipo.valorGastado ? COLORS.text : COLORS.textMuted} fontSize="0.82rem">
-                                                        {anticipo.valorGastado ? formatMoney(anticipo.valorGastado) : '—'}
-                                                    </Typography>
-                                                </TableCell>
+                                            {/* Fecha */}
+                                            <TableCell sx={{ fontSize: '0.8rem', color: COLORS.text, py: 1.5 }}>
+                                                {formatFecha(anticipo.fechaEntrega)}
+                                            </TableCell>
 
-                                                <TableCell sx={{ py: 1.5 }}>
-                                                    {anticipo.valorGastado ? (
-                                                        <Typography variant="body2" fontWeight={600} fontSize="0.82rem"
-                                                            color={excedente >= 0 ? '#2E7D32' : COLORS.primary}>
-                                                            {excedente >= 0 ? '+' : '-'}{formatMoney(Math.abs(excedente))}
-                                                        </Typography>
-                                                    ) : (
-                                                        <Typography variant="body2" color={COLORS.textMuted} fontSize="0.82rem">—</Typography>
-                                                    )}
-                                                </TableCell>
+                                            {/* Estado */}
+                                            <TableCell sx={{ py: 1.5 }}>
+                                                <Chip
+                                                    label={anticipo.estado}
+                                                    size="small"
+                                                    sx={{
+                                                        fontSize: '0.7rem', fontWeight: 600, height: 22,
+                                                        backgroundColor: estadoStyle.bg, color: estadoStyle.color,
+                                                        textTransform: 'capitalize', border: 'none',
+                                                    }}
+                                                />
+                                            </TableCell>
 
-                                                {/* Columna soportes */}
-                                                <TableCell sx={{ py: 1.5 }}>
-                                                    <Chip
-                                                        icon={<ImageIcon sx={{ fontSize: '13px !important' }} />}
-                                                        label={totalSoportes === 0 ? 'Sin soportes' : `${totalSoportes} archivo${totalSoportes !== 1 ? 's' : ''}`}
-                                                        size="small"
-                                                        onClick={() => setAnticipoConsulta(anticipo)}
-                                                        sx={{
-                                                            fontSize: '0.7rem', fontWeight: 600, height: 22, cursor: 'pointer',
-                                                            backgroundColor: totalSoportes > 0 ? '#E8F5E9' : '#F5F5F5',
-                                                            color: totalSoportes > 0 ? '#2E7D32' : COLORS.textMuted,
-                                                            '&:hover': { opacity: 0.8 },
-                                                        }}
-                                                    />
-                                                </TableCell>
+                                            {/* Habilitado */}
+                                            <TableCell sx={{ py: 1.5 }}>
+                                                <Chip
+                                                    label={anticipo.habilitado !== false ? 'Habilitado' : 'Inhabilitado'}
+                                                    size="small"
+                                                    sx={{
+                                                        fontSize: '0.7rem', fontWeight: 600, height: 22,
+                                                        backgroundColor: anticipo.habilitado !== false ? '#DCFCE7' : '#F3F4F6',
+                                                        color: anticipo.habilitado !== false ? '#16A34A' : '#9CA3AF',
+                                                        border: 'none',
+                                                    }}
+                                                />
+                                            </TableCell>
 
-                                                <TableCell sx={{ fontSize: '0.8rem', color: COLORS.text, py: 1.5 }}>
-                                                    {formatFecha(anticipo.fechaEntrega)}
-                                                </TableCell>
-
-                                                <TableCell sx={{ py: 1.5 }}>
-                                                    <FormControl size="small" sx={{ minWidth: 120 }}>
-                                                        <Select
-                                                            value={anticipo.estado}
-                                                            onChange={(e) => handleEstadoChange(anticipo.idAnticipoExcedente, e.target.value)}
-                                                            sx={{ 
-                                                                fontSize: '0.7rem',
-                                                                '& .MuiSelect-select': { py: 0.5 },
-                                                            }}
-                                                        >
-                                                            <MenuItem value="entregado">Entregado</MenuItem>
-                                                            <MenuItem value="en legalización">En Legalización</MenuItem>
-                                                            <MenuItem value="legalizado">Legalizado</MenuItem>
-                                                            <MenuItem value="excedente pendiente">Excedente Pendiente</MenuItem>
-                                                            <MenuItem value="cerrado">Cerrado</MenuItem>
-                                                        </Select>
-                                                    </FormControl>
-                                                </TableCell>
-
-                                                <TableCell sx={{ py: 1.5 }}>
-                                                    <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                                        <Tooltip title="Consultar">
-                                                            <IconButton size="small" onClick={() => setAnticipoConsulta(anticipo)}
-                                                                sx={{ color: COLORS.secondary, '&:hover': { backgroundColor: '#EEF2FF' } }}>
-                                                                <VisibilityIcon sx={{ fontSize: 17 }} />
-                                                            </IconButton>
-                                                        </Tooltip>
-                                                        <Tooltip title="Editar">
-                                                            <IconButton size="small"
-                                                                onClick={() => navigate(`/anticipos/actualizar/${anticipo.idAnticipoExcedente}`)}
-                                                                sx={{ color: '#F59E0B', '&:hover': { backgroundColor: '#FFFBEB' } }}>
-                                                                <EditIcon sx={{ fontSize: 17 }} />
-                                                            </IconButton>
-                                                        </Tooltip>
-                                                    </Box>
-                                                </TableCell>
-                                            </TableRow>
-                                        )
-                                    })
+                                            {/* Acciones */}
+                                            <TableCell sx={{ py: 1.5 }}>
+                                                <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                                    <Tooltip title="Ver detalle">
+                                                        <IconButton size="small" onClick={() => setAnticipoConsulta(anticipo)}
+                                                            sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}>
+                                                            <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                    <Tooltip title="Editar">
+                                                        <IconButton size="small"
+                                                            onClick={() => navigate(`/anticipos/actualizar/${anticipo.idAnticipoExcedente}`)}
+                                                            sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}>
+                                                            <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                    <Tooltip title={anticipo.habilitado !== false ? 'Inhabilitar' : 'Habilitar'}>
+                                                        <IconButton size="small" onClick={() => setAnticipoToggle(anticipo)} sx={{
+                                                            color: anticipo.habilitado !== false ? COLORS.primary : '#16A34A',
+                                                            '&:hover': { backgroundColor: anticipo.habilitado !== false ? COLORS.primaryLight : '#DCFCE7' },
+                                                        }}>
+                                                            {anticipo.habilitado !== false ? <BlockOutlinedIcon sx={{ fontSize: 18 }} /> : <CheckCircleOutlinedIcon sx={{ fontSize: 18 }} />}
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                </Box>
+                                            </TableCell>
+                                        </TableRow>
+                                    )
+                                })
                             )}
                         </TableBody>
                     </Table>
                 </TableContainer>
-
-                <TablePagination
-                    component="div" count={anticiposFiltrados.length}
-                    page={page} onPageChange={(_, newPage) => setPage(newPage)}
-                    rowsPerPage={rowsPerPage}
-                    onRowsPerPageChange={e => { setRowsPerPage(parseInt(e.target.value)); setPage(0) }}
-                    rowsPerPageOptions={[5, 10, 25]}
-                    labelRowsPerPage="Filas por página:"
-                    labelDisplayedRows={({ from, to, count }) => `${from}–${to} de ${count}`}
-                    sx={{ borderTop: `1px solid ${COLORS.border}`, fontSize: '0.8rem' }}
-                />
             </Paper>
 
+            {/* ── Paginación ── */}
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
+                <Typography variant="body2" color={COLORS.textMuted} fontWeight={500}>
+                    Mostrando {from}–{to} de {anticiposFiltrados.length} resultado{anticiposFiltrados.length !== 1 ? 's' : ''}
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="body2" color={COLORS.textMuted} fontWeight={500}>
+                            Filas
+                        </Typography>
+                        <Select
+                            value={rowsPerPage}
+                            onChange={e => { setRowsPerPage(Number(e.target.value)); setPage(1) }}
+                            size="small"
+                            renderValue={(value) => value}
+                            IconComponent={KeyboardArrowDownOutlinedIcon}
+                            sx={{
+                                fontSize: '0.82rem',
+                                borderRadius: 2,
+                                '& .MuiSelect-select': { py: 0.6, pl: 1.5, pr: '28px !important' },
+                                '& .MuiOutlinedInput-notchedOutline': { borderColor: COLORS.border },
+                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#BDBDBD' },
+                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                    borderColor: '#E57373', borderWidth: '1px',
+                                },
+                                '&.Mui-focused': { boxShadow: '0 0 0 3px rgba(229,115,115,0.18)' },
+                                '& .MuiSelect-icon': { color: COLORS.textMuted, fontSize: 18 },
+                                '& .MuiTouchRipple-root': { display: 'none' },
+                            }}
+                            MenuProps={{
+                                slotProps: {
+                                    paper: {
+                                        sx: {
+                                            borderRadius: 2,
+                                            boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+                                            mt: 0.5,
+                                            minWidth: 80,
+                                            '& .MuiMenuItem-root': {
+                                                fontSize: '0.82rem',
+                                                py: 0.9,
+                                                px: 2,
+                                                display: 'flex',
+                                                justifyContent: 'space-between',
+                                                gap: 2,
+                                                '&:hover': { backgroundColor: '#FFF5F5' },
+                                                '&.Mui-selected': {
+                                                    backgroundColor: 'transparent',
+                                                    fontWeight: 600,
+                                                    color: COLORS.text,
+                                                },
+                                                '&.Mui-selected:hover': { backgroundColor: '#FFF5F5' },
+                                            },
+                                        },
+                                    },
+                                },
+                            }}
+                        >
+                            {[5, 10, 25].map(n => (
+                                <MenuItem key={n} value={n}>
+                                    {n}
+                                    {rowsPerPage === n && (
+                                        <CheckOutlinedIcon sx={{ fontSize: 14, color: COLORS.textMuted }} />
+                                    )}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </Box>
+                    <Pagination
+                        count={totalPages}
+                        page={safePage}
+                        onChange={(_, val) => setPage(val)}
+                        size="small"
+                        shape="rounded"
+                        sx={{
+                            '& .MuiPaginationItem-root': {
+                                fontSize: '0.82rem',
+                                borderRadius: '8px',
+                                minWidth: 34,
+                                height: 34,
+                                mx: 0.2,
+                                color: COLORS.text,
+                                border: `1px solid ${COLORS.border}`,
+                                '& .MuiTouchRipple-root': { display: 'none' },
+                            },
+                            '& .MuiPaginationItem-ellipsis': { border: 'none' },
+                            '& .MuiPaginationItem-root.Mui-selected': {
+                                backgroundColor: COLORS.primary,
+                                borderColor: COLORS.primary,
+                                color: 'white',
+                                fontWeight: 600,
+                                '&:hover': { backgroundColor: '#a01212' },
+                            },
+                            '& .MuiPaginationItem-root:hover:not(.Mui-selected)': {
+                                backgroundColor: COLORS.hoverBg,
+                                borderColor: '#BDBDBD',
+                            },
+                        }}
+                    />
+                </Box>
+            </Box>
+
             <ModalConsultar anticipo={anticipoConsulta} onClose={() => setAnticipoConsulta(null)} />
+
+            {/* ── Modal Toggle Habilitado ── */}
+            <Dialog open={!!anticipoToggle} onClose={() => setAnticipoToggle(null)} maxWidth="xs" fullWidth slotProps={{ paper: { sx: { borderRadius: 3 } } }}>
+                <DialogTitle sx={{ color: anticipoToggle?.habilitado ? COLORS.primary : '#16A34A', fontWeight: 700 }}>
+                    {anticipoToggle?.habilitado ? '¿Inhabilitar anticipo?' : '¿Habilitar anticipo?'}
+                </DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        Estás a punto de {anticipoToggle?.habilitado ? 'inhabilitar' : 'habilitar'} el anticipo #{anticipoToggle?.idAnticipoExcedente}.{' '}
+                        {anticipoToggle?.habilitado
+                            ? 'El anticipo no podrá ser usado en el sistema hasta que sea habilitado nuevamente.'
+                            : 'El anticipo volverá a estar disponible en el sistema.'
+                        }
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions sx={{ px: 3, py: 2, gap: 1 }}>
+                    <Button onClick={() => setAnticipoToggle(null)} disabled={toggling} variant="outlined"
+                        sx={{ borderColor: COLORS.border, color: COLORS.text, borderRadius: 2, textTransform: 'none' }}>
+                        Cancelar
+                    </Button>
+                    <Button onClick={() => handleToggle(anticipoToggle.idAnticipoExcedente)} disabled={toggling} variant="contained"
+                        sx={{
+                            backgroundColor: anticipoToggle?.habilitado ? COLORS.primary : '#16A34A',
+                            borderRadius: 2, textTransform: 'none',
+                            '&:hover': { backgroundColor: anticipoToggle?.habilitado ? '#a01212' : '#15803D' },
+                        }}>
+                        {toggling
+                            ? (anticipoToggle?.habilitado ? 'Inhabilitando...' : 'Habilitando...')
+                            : (anticipoToggle?.habilitado ? 'Sí, inhabilidad' : 'Sí, habilitar')
+                        }
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={3000}
+                onClose={() => setSnackbar({ ...snackbar, open: false })}
+                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+            >
+                <Alert severity={snackbar.severity} sx={{ fontWeight: 600 }}>
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </Box>
     )
 }
