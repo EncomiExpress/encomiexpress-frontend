@@ -90,8 +90,6 @@ const ESTADO_COLORS = {
 
 const FILTROS_ESTADO = [
     { value: 'todo', label: 'Todo' },
-    { value: 'habilitado', label: 'Habilitado' },
-    { value: 'inhabilitado', label: 'Inhabilitado' },
 ]
 
 const FILTROS_ANTICIPO = [
@@ -259,16 +257,13 @@ const ModalConsultar = ({ anticipo, onClose }) => {
 // ── Componente principal ──
 const ListarAnticipoExcedente = () => {
     const navigate = useNavigate()
-    const { anticipos, toggleHabilitado } = useAnticipos()
+    const { anticipos } = useAnticipos()
 
     const [busqueda, setBusqueda] = useState('')
-    const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
     const [filtroEstadoAnticipo, setFiltroEstadoAnticipo] = useState('todos')
     const [page, setPage] = useState(1)
     const [rowsPerPage, setRowsPerPage] = useState(5)
     const [anticipoConsulta, setAnticipoConsulta] = useState(null)
-    const [anticipoToggle, setAnticipoToggle] = useState(null)
-    const [toggling, setToggling] = useState(false)
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
 
     const anticiposFiltrados = anticipos.filter(a => {
@@ -281,14 +276,9 @@ const ListarAnticipoExcedente = () => {
             nombreRuta.includes(q) ||
             (a.observaciones || '').toLowerCase().includes(q)
 
-        const coincideHabilitado =
-            filtroHabilitado === 'todo' ||
-            (filtroHabilitado === 'habilitado' && a.habilitado !== false) ||
-            (filtroHabilitado === 'inhabilitado' && a.habilitado === false)
-
         const coincideEstadoAnticipo = filtroEstadoAnticipo === 'todos' || a.estado === filtroEstadoAnticipo
 
-        return coincideBusqueda && coincideHabilitado && coincideEstadoAnticipo
+        return coincideBusqueda && coincideEstadoAnticipo
     })
 
     const totalPages = Math.max(1, Math.ceil(anticiposFiltrados.length / rowsPerPage))
@@ -297,31 +287,7 @@ const ListarAnticipoExcedente = () => {
     const from = anticiposFiltrados.length === 0 ? 0 : (safePage - 1) * rowsPerPage + 1
     const to = Math.min(safePage * rowsPerPage, anticiposFiltrados.length)
 
-    const hayFiltrosActivos = busqueda.trim() !== '' || filtroHabilitado !== 'todo' || filtroEstadoAnticipo !== 'todos'
-
-    const handleToggle = async (id) => {
-        const anticipo = anticipos.find(a => a.idAnticipoExcedente === id)
-        const esHabilitar = !anticipo?.habilitado
-        setToggling(true)
-        try {
-            toggleHabilitado(id)
-            setAnticipoToggle(null)
-            setSnackbar({
-                open: true,
-                message: esHabilitar ? 'Anticipo habilitado correctamente.' : 'Anticipo inhabilitado correctamente.',
-                severity: esHabilitar ? 'success' : 'warning',
-            })
-        } catch (err) {
-            setAnticipoToggle(null)
-            setSnackbar({
-                open: true,
-                message: err.message || 'Error al cambiar el estado del anticipo.',
-                severity: 'error',
-            })
-        } finally {
-            setToggling(false)
-        }
-    }
+    const hayFiltrosActivos = busqueda.trim() !== '' || filtroEstadoAnticipo !== 'todos'
 
     return (
         <Box sx={{ p: 3.5 }}>
@@ -371,18 +337,11 @@ const ListarAnticipoExcedente = () => {
             </Box>
 
             {/* ── Filtros de estado ── */}
-            <Box sx={{
-                display: 'inline-flex',
-                backgroundColor: '#FFECEC',
-                borderRadius: 4,
-                p: '4px',
-                mb: 2.5,
-                gap: '5px',
-            }}>
-                {FILTROS_ESTADO.map(f => (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                {FILTROS_ANTICIPO.map(f => (
                     <Button
                         key={f.value}
-                        onClick={() => { setFiltroHabilitado(f.value); setPage(1) }}
+                        onClick={() => { setFiltroEstadoAnticipo(f.value); setPage(1) }}
                         size="small"
                         disableElevation
                         disableRipple
@@ -393,16 +352,16 @@ const ListarAnticipoExcedente = () => {
                             px: 2,
                             py: 0.5,
                             minWidth: 0,
-                            fontWeight: filtroHabilitado === f.value ? 600 : 400,
-                            backgroundColor: filtroHabilitado === f.value ? 'white' : 'transparent',
-                            color: filtroHabilitado === f.value ? COLORS.text : '#B05050',
-                            boxShadow: filtroHabilitado === f.value
+                            fontWeight: filtroEstadoAnticipo === f.value ? 600 : 400,
+                            backgroundColor: filtroEstadoAnticipo === f.value ? 'white' : 'transparent',
+                            color: filtroEstadoAnticipo === f.value ? COLORS.text : '#B05050',
+                            boxShadow: filtroEstadoAnticipo === f.value
                                 ? '0 1px 4px rgba(0,0,0,0.12)'
                                 : 'none',
                             border: 'none',
                             '&:hover': {
-                                backgroundColor: filtroHabilitado === f.value ? 'white' : 'transparent',
-                                color: filtroHabilitado === f.value ? COLORS.text : '#5C3333',
+                                backgroundColor: filtroEstadoAnticipo === f.value ? 'white' : 'transparent',
+                                color: filtroEstadoAnticipo === f.value ? COLORS.text : '#5C3333',
                                 border: 'none',
                             },
                         }}
@@ -480,7 +439,6 @@ const ListarAnticipoExcedente = () => {
                                 <TableCell sx={thStyle}>Excedente</TableCell>
                                 <TableCell sx={thStyle}>F. Entrega</TableCell>
                                 <TableCell sx={thStyle}>Estado</TableCell>
-                                <TableCell sx={thStyle}>Habilitado</TableCell>
                                 <TableCell sx={{ ...thStyle, width: 130 }}>Acciones</TableCell>
                             </TableRow>
                         </TableHead>
@@ -488,11 +446,11 @@ const ListarAnticipoExcedente = () => {
                         <TableBody>
                             {paginatedAnticipos.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={9} align="center" sx={{ py: 7 }}>
+                                    <TableCell colSpan={8} align="center" sx={{ py: 7 }}>
                                         <Typography color={COLORS.textMuted} variant="body2">
                                             {anticipos.length === 0
                                                 ? 'No hay anticipos registrados en el sistema.'
-                                                : busqueda.trim() !== '' || filtroHabilitado !== 'todo' || filtroEstadoAnticipo !== 'todos'
+                                                : busqueda.trim() !== '' || filtroEstadoAnticipo !== 'todos'
                                                     ? 'No se encontraron resultados con la búsqueda y los filtros aplicados.'
                                                     : 'No se encontraron anticipos.'
                                             }
@@ -581,20 +539,6 @@ const ListarAnticipoExcedente = () => {
                                                         fontSize: '0.7rem', fontWeight: 600, height: 22,
                                                         backgroundColor: estadoStyle.bg, color: estadoStyle.color,
                                                         textTransform: 'capitalize', border: 'none',
-                                                    }}
-                                                />
-                                            </TableCell>
-
-                                            {/* Habilitado */}
-                                            <TableCell sx={{ py: 1.5 }}>
-                                                <Chip
-                                                    label={anticipo.habilitado !== false ? 'Habilitado' : 'Inhabilitado'}
-                                                    size="small"
-                                                    sx={{
-                                                        fontSize: '0.7rem', fontWeight: 600, height: 22,
-                                                        backgroundColor: anticipo.habilitado !== false ? '#DCFCE7' : '#F3F4F6',
-                                                        color: anticipo.habilitado !== false ? '#16A34A' : '#9CA3AF',
-                                                        border: 'none',
                                                     }}
                                                 />
                                             </TableCell>

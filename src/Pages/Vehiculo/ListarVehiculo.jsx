@@ -1,280 +1,404 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, IconButton, Button, TextField, InputAdornment, Switch, FormControl, Select, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material'
-import { Edit, DirectionsCar, Search, Add, CheckCircle, Cancel, Visibility } from '@mui/icons-material'
+import {
+    Box, Typography, Paper, Table, TableBody, TableCell,
+    TableContainer, TableHead, TableRow, Chip, IconButton,
+    TextField, InputAdornment, Select, MenuItem, FormControl,
+    Snackbar, Alert, Tooltip, Button, Dialog, Avatar
+} from '@mui/material'
+import SearchIcon from '@mui/icons-material/Search'
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
+import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
+import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
+import ClearIcon from '@mui/icons-material/Clear'
+import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
+import SpeedOutlinedIcon from '@mui/icons-material/SpeedOutlined'
+import EventOutlinedIcon from '@mui/icons-material/EventOutlined'
 import { useTransporte } from '../../Context/TransporteContext'
 import { useAuth } from '../../Context/AuthContext'
 
-const ListarTransporte = () => {
-  const [transportes, setTransportes] = useState([])
-  const [searchTerm, setSearchTerm] = useState('')
-  const [vehiculoVer, setVehiculoVer] = useState(null)
-  
-  const { getTransportes, toggleHabilitado, updateEstado } = useTransporte()
-  const { usuario } = useAuth()
-  const navigate = useNavigate()
+const COLORS = {
+    primary: '#CC1818',
+    primaryLight: '#FFE8E8',
+    text: '#1a0e0c',
+    textMuted: '#8A94A6',
+    border: '#E0E0E0',
+    hoverBg: '#F9F9F9',
+}
 
-  useEffect(() => {
-    if (!usuario) {
-      navigate('/login')
-    } else {
-      setTransportes(getTransportes())
-    }
-  }, [usuario, navigate, getTransportes])
+const thStyle = {
+    fontWeight: 700,
+    fontSize: '0.80rem',
+    color: '#1a0e0c',
+    letterSpacing: 0.5,
+    py: 1.5,
+    borderBottom: `1px solid #E0E0E0`,
+    whiteSpace: 'nowrap',
+}
 
-  const handleToggleHabilitado = (id) => {
-    toggleHabilitado(id)
-    setTransportes(getTransportes())
-  }
+const ESTADOS = ['Activo', 'Inactivo', 'Mantenimiento', 'En Reparación']
 
-  // Cambiar estado directamente en la tabla
-  const handleEstadoChange = (id, nuevoEstado) => {
-    setTransportes(prevTransportes => {
-      return prevTransportes.map(t => {
-        if (t.idVehiculo === id) {
-          return { ...t, estado: nuevoEstado }
-        }
-        return t
-      })
-    })
-  }
+const filterMenuProps = {
+    slotProps: {
+        paper: {
+            sx: {
+                borderRadius: 2,
+                boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+                mt: 0.5,
+                '& .MuiMenuItem-root': {
+                    fontSize: '0.82rem',
+                    '&:hover': { backgroundColor: '#FFF5F5' },
+                    '&.Mui-selected': { backgroundColor: 'transparent', fontWeight: 600, color: '#1a0e0c' },
+                    '&.Mui-selected:hover': { backgroundColor: '#FFF5F5' },
+                },
+            },
+        },
+    },
+}
 
-  // Cambiar habilitado directamente
-  const handleHabilitadoChange = (id) => {
-    toggleHabilitado(id)
-    setTransportes(getTransportes())
-  }
+const FILTROS = [
+    { value: 'todo', label: 'Todo' },
+]
 
-  const getEstadoColor = (estado) => {
-    switch (estado) {
-      case 'Activo':
-        return 'success'
-      case 'Inactivo':
-        return 'error'
-      case 'Mantenimiento':
-        return 'warning'
-      case 'En Reparación':
-        return 'info'
-      default:
-        return 'default'
-    }
-  }
-
-  const getHabilitadoColor = (habilitado) => {
-    return habilitado ? 'success' : 'error'
-  }
-
-  const filteredTransportes = transportes.filter(t => 
-    t.placa.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    t.marca.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    t.modelo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    t.tipo.toLowerCase().includes(searchTerm.toLowerCase())
-  )
-
-  const isVencido = (fecha) => {
+const isVencido = (fecha) => {
     if (!fecha) return false
     return new Date(fecha) < new Date()
-  }
+}
 
-  return (
-    <Box sx={{ p: 1 }}>
-      <Paper elevation={0} sx={{ borderRadius: 2, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-        {/* Header */}
-        <Box sx={{ p: 3, borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Box sx={{ 
-              width: 48, 
-              height: 48, 
-              borderRadius: 2,
-              background: 'linear-gradient(135deg, #CC1818 0%, #dc2626 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <DirectionsCar sx={{ color: 'white', fontSize: 28 }} />
-            </Box>
-            <Box>
-              <Typography variant="h5" sx={{ fontWeight: 700, color: '#0f172a' }}>
-                Lista de Transportes
-              </Typography>
-              <Typography sx={{ color: '#64748b', fontSize: '0.875rem' }}>
-                Gestiona los vehículos registrados
-              </Typography>
-            </Box>
-          </Box>
-          
-          <Button
-            component={Link}
-            to="/registrar-transporte"
-            variant="contained"
-            startIcon={<Add />}
-            sx={{
-              backgroundColor: '#CC1818',
-              borderRadius: 2,
-              fontWeight: 600,
-              textTransform: 'none',
-              boxShadow: '0 4px 14px rgba(204, 24, 24, 0.3)',
-              '&:hover': { 
-                backgroundColor: '#b91c1c',
-                boxShadow: '0 6px 20px rgba(204, 24, 24, 0.4)',
-              },
-            }}
-          >
-            Nuevo Transporte
-          </Button>
-        </Box>
+const ListarTransporte = () => {
+    const [transportes, setTransportes] = useState([])
+    const [searchTerm, setSearchTerm] = useState('')
+    const [vehiculoVer, setVehiculoVer] = useState(null)
+    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
 
-        {/* Buscador */}
-        <Box sx={{ p: 3, borderBottom: '1px solid #e2e8f0' }}>
-          <TextField
-            fullWidth
-            placeholder="Buscar por placa, marca, modelo o tipo..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Search sx={{ color: '#94a3b8' }} />
-                </InputAdornment>
-              ),
-            }}
-            sx={{
-              maxWidth: 400,
-              '& .MuiOutlinedInput-root': {
-                borderRadius: 2,
-                '& fieldset': { borderColor: '#e2e8f0' },
-              },
-            }}
-          />
-        </Box>
+    const { getTransportes, updateEstado } = useTransporte()
+    const { usuario } = useAuth()
+    const navigate = useNavigate()
 
-        {/* Tabla */}
-        <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow sx={{ backgroundColor: '#f8fafc' }}>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Placa</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Marca</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Modelo</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Color</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Tipo</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Capacidad</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Estado</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>SOAT</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a', textAlign: 'center' }}>Acciones</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {filteredTransportes.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={10} sx={{ textAlign: 'center', py: 4 }}>
-                    <Typography sx={{ color: '#64748b' }}>
-                      No se encontraron transportes
+    useEffect(() => {
+        if (!usuario) {
+            navigate('/login')
+        } else {
+            setTransportes(getTransportes())
+        }
+    }, [usuario, navigate, getTransportes])
+
+    const handleEstadoChange = (id, nuevoEstado) => {
+        updateEstado(id, nuevoEstado)
+        setTransportes(getTransportes())
+        setSnackbar({
+            open: true,
+            message: `Estado actualizado a ${nuevoEstado}.`,
+            severity: 'success',
+        })
+    }
+
+    const filteredTransportes = transportes.filter(t => {
+        const q = searchTerm.toLowerCase()
+        const coincideBusqueda = !q ||
+            t.placa.toLowerCase().includes(q) ||
+            t.marca.toLowerCase().includes(q) ||
+            t.modelo.toLowerCase().includes(q) ||
+            t.tipo.toLowerCase().includes(q)
+
+        return coincideBusqueda
+    })
+
+    return (
+        <Box sx={{ p: 3.5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
+                <Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <Typography variant="h5" fontWeight={700} color={COLORS.text}>
+                            Vehículos
+                        </Typography>
+                        <Chip
+                            label={`${transportes.length} registrado${transportes.length !== 1 ? 's' : ''}`}
+                            size="small"
+                            sx={{
+                                backgroundColor: '#F3F4F6',
+                                color: COLORS.textMuted,
+                                fontWeight: 500,
+                                fontSize: '0.72rem',
+                                height: 22,
+                                borderRadius: 10,
+                            }}
+                        />
+                    </Box>
+                    <Typography variant="body2" color={COLORS.textMuted} mt={0.3}>
+                        Gestiona los vehículos registrados en el sistema.
                     </Typography>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredTransportes.map((transporte) => (
-                  <TableRow 
-                    key={transporte.idVehiculo}
-                    sx={{ 
-                      '&:hover': { backgroundColor: '#fef2f2' },
-                      '&:last-child td': { borderBottom: 0 }
+                </Box>
+                <Button
+                    component={Link}
+                    to="/registrar-transporte"
+                    variant="contained"
+                    startIcon={<AddOutlinedIcon />}
+                    sx={{
+                        backgroundColor: COLORS.primary,
+                        borderRadius: 2,
+                        textTransform: 'none',
+                        fontWeight: 600,
+                        boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
+                        '&:hover': {
+                            backgroundColor: '#b91c1c',
+                            boxShadow: '0 6px 20px rgba(204,24,24,0.2)',
+                        },
                     }}
-                  >
-                    <TableCell>
-                      <Chip 
-                        label={transporte.placa} 
-                        size="small"
-                        sx={{ 
-                          fontWeight: 600,
-                          backgroundColor: '#fef2f2',
-                          color: '#CC1818'
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell>{transporte.marca}</TableCell>
-                    <TableCell>{transporte.modelo}</TableCell>
-                    <TableCell>{transporte.color}</TableCell>
-                    <TableCell>{transporte.tipo}</TableCell>
-                    <TableCell>{transporte.capacidad} kg</TableCell>
-                    <TableCell>
-                      <FormControl size="small" sx={{ minWidth: 120 }}>
-                        <Select
-                          value={transporte.estado}
-                          onChange={(e) => handleEstadoChange(transporte.idVehiculo, e.target.value)}
-                          sx={{ 
-                            fontSize: '0.75rem',
-                            '& .MuiSelect-select': { py: 0.5 },
-                            color: getEstadoColor(transporte.estado) === 'success' ? '#10b981' : 
-                                   getEstadoColor(transporte.estado) === 'warning' ? '#f59e0b' :
-                                   getEstadoColor(transporte.estado) === 'error' ? '#dc2626' : '#64748b'
-                          }}
-                        >
-                          <MenuItem value="Activo">Activo</MenuItem>
-                          <MenuItem value="Inactivo">Inactivo</MenuItem>
-                          <MenuItem value="Mantenimiento">Mantenimiento</MenuItem>
-                          <MenuItem value="En Reparación">En Reparación</MenuItem>
-                        </Select>
-                      </FormControl>
-                    </TableCell>
-                    <TableCell>
-                      <Chip 
-                        label={transporte.vencimientoSOAT ? new Date(transporte.vencimientoSOAT).toLocaleDateString() : 'N/A'} 
-                        size="small"
-                        color={isVencido(transporte.vencimientoSOAT) ? 'error' : 'success'}
-                        variant={isVencido(transporte.vencimientoSOAT) ? 'filled' : 'outlined'}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
-                        <IconButton size="small" onClick={() => setVehiculoVer(transporte)} sx={{ color: '#1A2E6E', '&:hover': { backgroundColor: '#e8edff' }}}><Visibility fontSize="small" /></IconButton>
-                        <IconButton size="small" component={Link} to={`/actualizar-transporte/${transporte.idVehiculo}`} sx={{ color: '#1A2E6E', '&:hover': { backgroundColor: '#eef2ff' }}}><Edit fontSize="small" /></IconButton>
-                      </Box>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+                >
+                    Nuevo vehículo
+                </Button>
+            </Box>
 
-        {/* Footer con total */}
-        <Box sx={{ p: 2, borderTop: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
-          <Typography sx={{ color: '#64748b', fontSize: '0.875rem' }}>
-            Total de transportes: <strong>{filteredTransportes.length}</strong>
-          </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
+                <TextField
+                    size="small"
+                    placeholder="Buscar vehículos..."
+                    sx={{
+                        width: 320,
+                        '& .MuiOutlinedInput-root': {
+                            borderRadius: 2,
+                            '&.Mui-focused': { boxShadow: '0 0 0 3px rgba(229,115,115,0.18)' },
+                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                borderColor: '#CC1818', borderWidth: '1px',
+                            },
+                        },
+                    }}
+                    value={searchTerm}
+                    onChange={e => setSearchTerm(e.target.value)}
+                    slotProps={{
+                        input: {
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <SearchIcon sx={{ color: COLORS.textMuted, fontSize: 20 }} />
+                                </InputAdornment>
+                            ),
+                            endAdornment: searchTerm && (
+                                <InputAdornment position="end">
+                                    <IconButton size="small" onClick={() => setSearchTerm('')}>
+                                        <ClearIcon sx={{ fontSize: 16 }} />
+                                    </IconButton>
+                                </InputAdornment>
+                            )
+                        }
+                    }}
+                />
+            </Box>
+
+            <Paper elevation={0} sx={{ border: `1px solid ${COLORS.border}`, borderRadius: 3, overflow: 'hidden' }}>
+                <TableContainer>
+                    <Table>
+                        <TableHead>
+                            <TableRow sx={{ backgroundColor: '#F8F9FA' }}>
+                                <TableCell sx={thStyle}>Placa</TableCell>
+                                <TableCell sx={thStyle}>Marca</TableCell>
+                                <TableCell sx={thStyle}>Modelo</TableCell>
+                                <TableCell sx={thStyle}>Color</TableCell>
+                                <TableCell sx={thStyle}>Tipo</TableCell>
+                                <TableCell sx={thStyle}>Capacidad</TableCell>
+                                <TableCell sx={thStyle}>Estado</TableCell>
+                                <TableCell sx={thStyle}>SOAT</TableCell>
+                                <TableCell sx={{ ...thStyle, width: 110 }} />
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {filteredTransportes.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={9} align="center" sx={{ py: 7 }}>
+                                        <Typography color={COLORS.textMuted} variant="body2">
+                                            {transportes.length === 0
+                                                ? 'No hay vehículos registrados en el sistema.'
+                                                : 'No se encontraron vehículos que coincidan con la búsqueda.'
+                                            }
+                                        </Typography>
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                                filteredTransportes.map((transporte) => (
+                                    <TableRow
+                                        key={transporte.idVehiculo}
+                                        sx={{
+                                            '&:hover': { backgroundColor: COLORS.hoverBg },
+                                            transition: 'background-color 0.15s',
+                                            opacity: transporte.habilitado ? 1 : 0.55,
+                                        }}
+                                    >
+                                        <TableCell sx={{ py: 1.5 }}>
+                                            <Chip
+                                                label={transporte.placa}
+                                                size="small"
+                                                sx={{
+                                                    fontWeight: 600,
+                                                    backgroundColor: '#FEF2F2',
+                                                    color: '#CC1818',
+                                                    fontSize: '0.75rem',
+                                                }}
+                                            />
+                                        </TableCell>
+                                        <TableCell sx={{ py: 1.5 }}>{transporte.marca}</TableCell>
+                                        <TableCell sx={{ py: 1.5 }}>{transporte.modelo}</TableCell>
+                                        <TableCell sx={{ py: 1.5 }}>{transporte.color}</TableCell>
+                                        <TableCell sx={{ py: 1.5 }}>{transporte.tipo}</TableCell>
+                                        <TableCell sx={{ py: 1.5 }}>{transporte.capacidad} kg</TableCell>
+                                        <TableCell sx={{ py: 1.5 }}>
+                                            <FormControl size="small" sx={{ minWidth: 120 }}>
+                                                <Select
+                                                    value={transporte.estado}
+                                                    onChange={(e) => handleEstadoChange(transporte.idVehiculo, e.target.value)}
+                                                    IconComponent={KeyboardArrowDownOutlinedIcon}
+                                                    sx={{
+                                                        fontSize: '0.75rem',
+                                                        py: 0.5,
+                                                        color: transporte.estado === 'Activo' ? '#10b981' :
+                                                               transporte.estado === 'Inactivo' ? '#dc2626' :
+                                                               transporte.estado === 'Mantenimiento' ? '#f59e0b' : '#6366f1',
+                                                    }}
+                                                    MenuProps={filterMenuProps}
+                                                >
+                                                    {ESTADOS.map(estado => (
+                                                        <MenuItem key={estado} value={estado}>{estado}</MenuItem>
+                                                    ))}
+                                                </Select>
+                                            </FormControl>
+                                        </TableCell>
+                                        <TableCell sx={{ py: 1.5 }}>
+                                            <Chip
+                                                label={transporte.vencimientoSOAT ? new Date(transporte.vencimientoSOAT).toLocaleDateString() : 'N/A'}
+                                                size="small"
+                                                color={isVencido(transporte.vencimientoSOAT) ? 'error' : 'success'}
+                                                variant={isVencido(transporte.vencimientoSOAT) ? 'filled' : 'outlined'}
+                                                sx={{ fontSize: '0.7rem' }}
+                                            />
+                                        </TableCell>
+                                        <TableCell sx={{ py: 1.5 }}>
+                                            <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                                <Tooltip title="Ver detalle">
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={() => setVehiculoVer(transporte)}
+                                                        sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}
+                                                    >
+                                                        <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
+                                                    </IconButton>
+                                                </Tooltip>
+                                                <Tooltip title="Editar">
+                                                    <IconButton
+                                                        size="small"
+                                                        component={Link}
+                                                        to={`/actualizar-transporte/${transporte.idVehiculo}`}
+                                                        sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}
+                                                    >
+                                                        <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                                                    </IconButton>
+                                                </Tooltip>
+                                            </Box>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+            </Paper>
+
+            <Box sx={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                px: 0.5, pt: 1.5,
+            }}>
+                <Typography variant="body2" color={COLORS.textMuted}>
+                    Total de vehículos: {filteredTransportes.length}
+                </Typography>
+            </Box>
+
+            {vehiculoVer && (
+                <Dialog open onClose={() => setVehiculoVer(null)} maxWidth="md" fullWidth
+                    slotProps={{ paper: { sx: { borderRadius: 3, p: 3, backgroundColor: '#FAFAFA' } } }}>
+                    <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${COLORS.border}`, backgroundColor: 'white', mb: 2 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                            <DirectionsCarOutlinedIcon sx={{ fontSize: 22, color: COLORS.text }} />
+                            <Typography fontWeight={700} fontSize="1.05rem" color={COLORS.text}>Perfil</Typography>
+                        </Box>
+                        <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2.5 }}>
+                            Información del vehículo
+                        </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5 }}>
+                            <Avatar sx={{ backgroundColor: '#FFCDD2', color: '#C62828', width: 70, height: 70, fontSize: '1.5rem', fontWeight: 700 }}>
+                                {vehiculoVer.marca?.[0]}
+                            </Avatar>
+                            <Box>
+                                <Typography fontWeight={700} fontSize="1.1rem" color={COLORS.text}>
+                                    {vehiculoVer.marca} {vehiculoVer.modelo}
+                                </Typography>
+                                <Typography variant="body2" color={COLORS.textMuted} mt={0.4}>
+                                    Placa: {vehiculoVer.placa}
+                                </Typography>
+                            </Box>
+                        </Box>
+                    </Paper>
+
+                    <Box sx={{ display: 'flex', gap: 2 }}>
+                        <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${COLORS.border}`, backgroundColor: 'white', flex: 1 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                <SpeedOutlinedIcon sx={{ fontSize: 22, color: COLORS.text }} />
+                                <Typography fontWeight={700} fontSize="1.05rem" color={COLORS.text}>Detalles del Vehículo</Typography>
+                            </Box>
+                            <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2 }}>
+                                Características del vehículo
+                            </Typography>
+                            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                                <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Marca</Typography><Typography variant="body2" fontWeight={500}>{vehiculoVer.marca}</Typography></Box>
+                                <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Modelo</Typography><Typography variant="body2" fontWeight={500}>{vehiculoVer.modelo}</Typography></Box>
+                                <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Tipo</Typography><Typography variant="body2" fontWeight={500}>{vehiculoVer.tipo}</Typography></Box>
+                                <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Color</Typography><Typography variant="body2" fontWeight={500}>{vehiculoVer.color}</Typography></Box>
+                                <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Capacidad</Typography><Typography variant="body2" fontWeight={500}>{vehiculoVer.capacidad} kg</Typography></Box>
+                                <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Placa</Typography><Typography variant="body2" fontWeight={500}>{vehiculoVer.placa}</Typography></Box>
+                            </Box>
+                        </Paper>
+
+                        <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${COLORS.border}`, backgroundColor: 'white', flex: 1 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                <EventOutlinedIcon sx={{ fontSize: 22, color: COLORS.text }} />
+                                <Typography fontWeight={700} fontSize="1.05rem" color={COLORS.text}>Estado y Documentos</Typography>
+                            </Box>
+                            <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2 }}>
+                                Estado actual y documentación
+                            </Typography>
+                            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                                <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Estado</Typography><Typography variant="body2" fontWeight={500} color={vehiculoVer.estado === 'Activo' ? '#2E7D32' : '#ef4444'}>{vehiculoVer.estado}</Typography></Box>
+                                <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Vencimiento SOAT</Typography><Typography variant="body2" fontWeight={500} color={isVencido(vehiculoVer.vencimientoSOAT) ? '#ef4444' : '#2E7D32'}>{vehiculoVer.vencimientoSOAT ? new Date(vehiculoVer.vencimientoSOAT).toLocaleDateString() : 'N/A'}</Typography></Box>
+                            </Box>
+                        </Paper>
+                    </Box>
+
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+                        <Button onClick={() => setVehiculoVer(null)} variant="contained" sx={{
+                            backgroundColor: COLORS.primary, borderRadius: 2, textTransform: 'none',
+                            boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
+                            '&:hover': { backgroundColor: '#b91c1c', boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
+                        }}>
+                            Cerrar
+                        </Button>
+                    </Box>
+                </Dialog>
+            )}
+
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={2000}
+                onClose={() => setSnackbar(s => ({ ...s, open: false }))}
+                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+            >
+                <Alert
+                    severity={snackbar.severity}
+                    sx={{ fontWeight: 600 }}
+                    onClose={() => setSnackbar(s => ({ ...s, open: false }))}
+                >
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </Box>
-      </Paper>
-
-      <Dialog open={!!vehiculoVer} onClose={() => setVehiculoVer(null)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pb: 1 }}>
-          <Box sx={{ width: 36, height: 36, borderRadius: '50%', backgroundColor: '#1A2E6E', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <DirectionsCar sx={{ color: 'white', fontSize: 18 }} />
-          </Box>
-          <Box>
-            <Typography fontWeight={700} color="#1A2E6E">{vehiculoVer?.placa}</Typography>
-            <Typography variant="caption" color="#8A94A6">Detalle del vehículo</Typography>
-          </Box>
-        </DialogTitle>
-        <DialogContent dividers>
-          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-            <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Marca</Typography><Typography variant="body2" fontWeight={500}>{vehiculoVer?.marca}</Typography></Box>
-            <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Modelo</Typography><Typography variant="body2" fontWeight={500}>{vehiculoVer?.modelo}</Typography></Box>
-            <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Tipo</Typography><Typography variant="body2" fontWeight={500}>{vehiculoVer?.tipo}</Typography></Box>
-            <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Color</Typography><Typography variant="body2" fontWeight={500}>{vehiculoVer?.color}</Typography></Box>
-            <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Capacidad</Typography><Typography variant="body2" fontWeight={500}>{vehiculoVer?.capacidad} kg</Typography></Box>
-            <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Estado</Typography><Typography variant="body2" fontWeight={500}>{vehiculoVer?.estado}</Typography></Box>
-            <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Vencimiento SOAT</Typography><Typography variant="body2" fontWeight={500} color={isVencido(vehiculoVer?.vencimientoSOAT) ? '#ef4444' : '#2E7D32'}>{vehiculoVer?.vencimientoSOAT ? new Date(vehiculoVer.vencimientoSOAT).toLocaleDateString() : 'N/A'}</Typography></Box>
-            <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Estado</Typography><Typography variant="body2" fontWeight={500} color={vehiculoVer?.habilitado !== false ? '#2E7D32' : '#ef4444'}>{vehiculoVer?.habilitado !== false ? 'Activo' : 'Inactivo'}</Typography></Box>
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, py: 2 }}>
-          <Button onClick={() => setVehiculoVer(null)} variant="contained" sx={{ backgroundColor: '#1A2E6E', borderRadius: 2, textTransform: 'none' }}>Cerrar</Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
-  )
+    )
 }
 
 export default ListarTransporte

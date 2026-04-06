@@ -1,134 +1,378 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton, Button, TextField, InputAdornment, Switch, Dialog, DialogTitle, DialogContent, DialogActions, Grid } from '@mui/material'
-import { Edit, LocationOn, Search, Add, Visibility } from '@mui/icons-material'
+import {
+    Box, Typography, Paper, Table, TableBody, TableCell,
+    TableContainer, TableHead, TableRow, Chip, IconButton,
+    TextField, InputAdornment, Select, MenuItem, FormControl,
+    Snackbar, Alert, Tooltip, Button, Dialog, Avatar
+} from '@mui/material'
+import SearchIcon from '@mui/icons-material/Search'
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
+import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
+import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
+import ClearIcon from '@mui/icons-material/Clear'
+import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined'
+import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
+import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
+import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined'
 import { useDestino } from '../../Context/DestinoContext'
 import { useAuth } from '../../Context/AuthContext'
 
+const COLORS = {
+    primary: '#CC1818',
+    primaryLight: '#FFE8E8',
+    text: '#1a0e0c',
+    textMuted: '#8A94A6',
+    border: '#E0E0E0',
+    hoverBg: '#F9F9F9',
+}
+
+const thStyle = {
+    fontWeight: 700,
+    fontSize: '0.80rem',
+    color: '#1a0e0c',
+    letterSpacing: 0.5,
+    py: 1.5,
+    borderBottom: `1px solid #E0E0E0`,
+    whiteSpace: 'nowrap',
+}
+
+const ESTADOS = ['Activo', 'Inactivo', 'En revisión']
+
+const filterMenuProps = {
+    slotProps: {
+        paper: {
+            sx: {
+                borderRadius: 2,
+                boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+                mt: 0.5,
+                '& .MuiMenuItem-root': {
+                    fontSize: '0.82rem',
+                    '&:hover': { backgroundColor: '#FFF5F5' },
+                    '&.Mui-selected': { backgroundColor: 'transparent', fontWeight: 600, color: '#1a0e0c' },
+                    '&.Mui-selected:hover': { backgroundColor: '#FFF5F5' },
+                },
+            },
+        },
+    },
+}
+
+const FILTROS = [
+    { value: 'todo', label: 'Todo' },
+]
+
 const ListarDestino = () => {
-  const [destinos, setDestinos] = useState([])
-  const [searchTerm, setSearchTerm] = useState('')
-  const [destinoVer, setDestinoVer] = useState(null)
-  
-  const { getDestinos, toggleHabilitado } = useDestino()
-  const { usuario } = useAuth()
-  const navigate = useNavigate()
+    const [destinos, setDestinos] = useState([])
+    const [searchTerm, setSearchTerm] = useState('')
+    const [destinoVer, setDestinoVer] = useState(null)
+    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
 
-  useEffect(() => {
-    if (!usuario) {
-      navigate('/login')
-    } else {
-      setDestinos(getDestinos())
+    const { getDestinos, updateEstado } = useDestino()
+    const { usuario } = useAuth()
+    const navigate = useNavigate()
+
+    useEffect(() => {
+        if (!usuario) {
+            navigate('/login')
+        } else {
+            setDestinos(getDestinos())
+        }
+    }, [usuario, navigate, getDestinos])
+
+    const handleEstadoChange = (id, nuevoEstado) => {
+        updateEstado(id, nuevoEstado)
+        setDestinos(getDestinos())
+        setSnackbar({
+            open: true,
+            message: `Estado actualizado a ${nuevoEstado}.`,
+            severity: 'success',
+        })
     }
-  }, [usuario, navigate, getDestinos])
 
-  const handleToggleHabilitado = (id) => {
-    toggleHabilitado(id)
-    setDestinos(getDestinos())
-  }
+    const filteredDestinos = destinos.filter(d => {
+        const q = searchTerm.toLowerCase()
+        const coincideBusqueda = !q ||
+            d.nombre.toLowerCase().includes(q) ||
+            d.ciudad.toLowerCase().includes(q) ||
+            d.departamento.toLowerCase().includes(q) ||
+            d.direccion.toLowerCase().includes(q)
 
-  const filteredDestinos = destinos.filter(d => 
-    d.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    d.ciudad.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    d.departamento.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    d.direccion.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+        return coincideBusqueda
+    })
 
-  return (
-    <Box sx={{ p: 1 }}>
-      <Paper elevation={0} sx={{ borderRadius: 2, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-        <Box sx={{ p: 3, borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Box sx={{ width: 48, height: 48, borderRadius: 2, background: 'linear-gradient(135deg, #CC1818 0%, #dc2626 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <LocationOn sx={{ color: 'white', fontSize: 28 }} />
+    return (
+        <Box sx={{ p: 3.5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
+                <Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <Typography variant="h5" fontWeight={700} color={COLORS.text}>
+                            Destinos
+                        </Typography>
+                        <Chip
+                            label={`${destinos.length} registrado${destinos.length !== 1 ? 's' : ''}`}
+                            size="small"
+                            sx={{
+                                backgroundColor: '#F3F4F6',
+                                color: COLORS.textMuted,
+                                fontWeight: 500,
+                                fontSize: '0.72rem',
+                                height: 22,
+                                borderRadius: 10,
+                            }}
+                        />
+                    </Box>
+                    <Typography variant="body2" color={COLORS.textMuted} mt={0.3}>
+                        Gestiona los destinos de entrega registrados en el sistema.
+                    </Typography>
+                </Box>
+                <Button
+                    component={Link}
+                    to="/transporte/destinos/registrar"
+                    variant="contained"
+                    startIcon={<AddOutlinedIcon />}
+                    sx={{
+                        backgroundColor: COLORS.primary,
+                        borderRadius: 2,
+                        textTransform: 'none',
+                        fontWeight: 600,
+                        boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
+                        '&:hover': {
+                            backgroundColor: '#b91c1c',
+                            boxShadow: '0 6px 20px rgba(204,24,24,0.2)',
+                        },
+                    }}
+                >
+                    Nuevo destino
+                </Button>
             </Box>
-            <Box>
-              <Typography variant="h5" sx={{ fontWeight: 700, color: '#0f172a' }}>Lista de Destinos</Typography>
-              <Typography sx={{ color: '#64748b', fontSize: '0.875rem' }}>Gestiona los destinos de entrega</Typography>
+
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
+                <TextField
+                    size="small"
+                    placeholder="Buscar destinos..."
+                    sx={{
+                        width: 320,
+                        '& .MuiOutlinedInput-root': {
+                            borderRadius: 2,
+                            '&.Mui-focused': { boxShadow: '0 0 0 3px rgba(229,115,115,0.18)' },
+                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                borderColor: '#CC1818', borderWidth: '1px',
+                            },
+                        },
+                    }}
+                    value={searchTerm}
+                    onChange={e => setSearchTerm(e.target.value)}
+                    slotProps={{
+                        input: {
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <SearchIcon sx={{ color: COLORS.textMuted, fontSize: 20 }} />
+                                </InputAdornment>
+                            ),
+                            endAdornment: searchTerm && (
+                                <InputAdornment position="end">
+                                    <IconButton size="small" onClick={() => setSearchTerm('')}>
+                                        <ClearIcon sx={{ fontSize: 16 }} />
+                                    </IconButton>
+                                </InputAdornment>
+                            )
+                        }
+                    }}
+                />
             </Box>
-          </Box>
-          <Button component={Link} to="/transporte/destinos/registrar" variant="contained" startIcon={<Add />} sx={{ backgroundColor: '#CC1818', borderRadius: 2, fontWeight: 600, textTransform: 'none', boxShadow: '0 4px 14px rgba(204, 24, 24, 0.3)', '&:hover': { backgroundColor: '#b91c1c', boxShadow: '0 6px 20px rgba(204, 24, 24, 0.4)' }}}>
-            Nuevo Destino
-          </Button>
+
+            <Paper elevation={0} sx={{ border: `1px solid ${COLORS.border}`, borderRadius: 3, overflow: 'hidden' }}>
+                <TableContainer>
+                    <Table>
+                        <TableHead>
+                            <TableRow sx={{ backgroundColor: '#F8F9FA' }}>
+                                <TableCell sx={thStyle}>Nombre</TableCell>
+                                <TableCell sx={thStyle}>Dirección</TableCell>
+                                <TableCell sx={thStyle}>Ciudad</TableCell>
+                                <TableCell sx={thStyle}>Departamento</TableCell>
+                                <TableCell sx={thStyle}>Teléfono</TableCell>
+                                <TableCell sx={thStyle}>Contacto</TableCell>
+                                <TableCell sx={thStyle}>Estado</TableCell>
+                                <TableCell sx={{ ...thStyle, width: 110 }} />
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {filteredDestinos.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={8} align="center" sx={{ py: 7 }}>
+                                        <Typography color={COLORS.textMuted} variant="body2">
+                                            {destinos.length === 0
+                                                ? 'No hay destinos registrados en el sistema.'
+                                                : 'No se encontraron destinos que coincidan con la búsqueda.'
+                                            }
+                                        </Typography>
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                                filteredDestinos.map((destino) => (
+                                    <TableRow
+                                        key={destino.idDestino}
+                                        sx={{
+                                            '&:hover': { backgroundColor: COLORS.hoverBg },
+                                            transition: 'background-color 0.15s',
+                                            opacity: destino.habilitado ? 1 : 0.55,
+                                        }}
+                                    >
+                                        <TableCell sx={{ py: 1.5, fontSize: '0.85rem' }}>
+                                            {destino.nombre}
+                                        </TableCell>
+                                        <TableCell sx={{ py: 1.5 }}>{destino.direccion}</TableCell>
+                                        <TableCell sx={{ py: 1.5 }}>{destino.ciudad}</TableCell>
+                                        <TableCell sx={{ py: 1.5 }}>{destino.departamento}</TableCell>
+                                        <TableCell sx={{ py: 1.5 }}>{destino.telefono}</TableCell>
+                                        <TableCell sx={{ py: 1.5 }}>{destino.contacto}</TableCell>
+                                        <TableCell sx={{ py: 1.5 }}>
+                                            <FormControl size="small" sx={{ minWidth: 100 }}>
+                                                <Select
+                                                    value={destino.estado}
+                                                    onChange={(e) => handleEstadoChange(destino.idDestino, e.target.value)}
+                                                    IconComponent={KeyboardArrowDownOutlinedIcon}
+                                                    sx={{
+                                                        fontSize: '0.75rem',
+                                                        py: 0.5,
+                                                        color: destino.estado === 'Activo' ? '#10b981' :
+                                                               destino.estado === 'Inactivo' ? '#dc2626' : '#f59e0b',
+                                                    }}
+                                                    MenuProps={filterMenuProps}
+                                                >
+                                                    {ESTADOS.map(estado => (
+                                                        <MenuItem key={estado} value={estado}>{estado}</MenuItem>
+                                                    ))}
+                                                </Select>
+                                            </FormControl>
+                                        </TableCell>
+                                        <TableCell sx={{ py: 1.5 }}>
+                                            <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                                <Tooltip title="Ver detalle">
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={() => setDestinoVer(destino)}
+                                                        sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}
+                                                    >
+                                                        <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
+                                                    </IconButton>
+                                                </Tooltip>
+                                                <Tooltip title="Editar">
+                                                    <IconButton
+                                                        size="small"
+                                                        component={Link}
+                                                        to={`/transporte/destinos/actualizar/${destino.idDestino}`}
+                                                        sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}
+                                                    >
+                                                        <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                                                    </IconButton>
+                                                </Tooltip>
+                                            </Box>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+            </Paper>
+
+            <Box sx={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                px: 0.5, pt: 1.5,
+            }}>
+                <Typography variant="body2" color={COLORS.textMuted}>
+                    Total de destinos: {filteredDestinos.length}
+                </Typography>
+            </Box>
+
+            {destinoVer && (
+                <Dialog open onClose={() => setDestinoVer(null)} maxWidth="md" fullWidth
+                    slotProps={{ paper: { sx: { borderRadius: 3, p: 3, backgroundColor: '#FAFAFA' } } }}>
+                    <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${COLORS.border}`, backgroundColor: 'white', mb: 2 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                            <LocationOnOutlinedIcon sx={{ fontSize: 22, color: COLORS.text }} />
+                            <Typography fontWeight={700} fontSize="1.05rem" color={COLORS.text}>Perfil</Typography>
+                        </Box>
+                        <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2.5 }}>
+                            Información del destino
+                        </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5 }}>
+                            <Avatar sx={{ backgroundColor: '#FFCDD2', color: '#C62828', width: 70, height: 70, fontSize: '1.5rem', fontWeight: 700 }}>
+                                {destinoVer.nombre?.[0]}
+                            </Avatar>
+                            <Box>
+                                <Typography fontWeight={700} fontSize="1.1rem" color={COLORS.text}>
+                                    {destinoVer.nombre}
+                                </Typography>
+                                <Typography variant="body2" color={COLORS.textMuted} mt={0.4}>
+                                    {destinoVer.direccion}
+                                </Typography>
+                            </Box>
+                        </Box>
+                    </Paper>
+
+                    <Box sx={{ display: 'flex', gap: 2 }}>
+                        <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${COLORS.border}`, backgroundColor: 'white', flex: 1 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                <BusinessOutlinedIcon sx={{ fontSize: 22, color: COLORS.text }} />
+                                <Typography fontWeight={700} fontSize="1.05rem" color={COLORS.text}>Ubicación</Typography>
+                            </Box>
+                            <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2 }}>
+                                Datos de ubicación del destino
+                            </Typography>
+                            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                                <Box sx={{ gridColumn: '1 / -1' }}><Typography variant="caption" color="#8A94A6" fontWeight={600}>Dirección</Typography><Typography variant="body2" fontWeight={500}>{destinoVer.direccion}</Typography></Box>
+                                <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Ciudad</Typography><Typography variant="body2" fontWeight={500}>{destinoVer.ciudad}</Typography></Box>
+                                <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Departamento</Typography><Typography variant="body2" fontWeight={500}>{destinoVer.departamento}</Typography></Box>
+                            </Box>
+                        </Paper>
+
+                        <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${COLORS.border}`, backgroundColor: 'white', flex: 1 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                <PhoneOutlinedIcon sx={{ fontSize: 22, color: COLORS.text }} />
+                                <Typography fontWeight={700} fontSize="1.05rem" color={COLORS.text}>Información de Contacto</Typography>
+                            </Box>
+                            <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2 }}>
+                                Datos de contacto del destino
+                            </Typography>
+                            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                                <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Teléfono</Typography><Typography variant="body2" fontWeight={500}>{destinoVer.telefono}</Typography></Box>
+                                <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Contacto</Typography><Typography variant="body2" fontWeight={500}>{destinoVer.contacto}</Typography></Box>
+                                <Box sx={{ gridColumn: '1 / -1' }}><Typography variant="caption" color="#8A94A6" fontWeight={600}>Estado</Typography><Typography variant="body2" fontWeight={500} color={destinoVer.estado === 'Activo' ? '#2E7D32' : '#ef4444'}>{destinoVer.estado}</Typography></Box>
+                            </Box>
+                        </Paper>
+                    </Box>
+
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+                        <Button onClick={() => setDestinoVer(null)} variant="contained" sx={{
+                            backgroundColor: COLORS.primary, borderRadius: 2, textTransform: 'none',
+                            boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
+                            '&:hover': { backgroundColor: '#b91c1c', boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
+                        }}>
+                            Cerrar
+                        </Button>
+                    </Box>
+                </Dialog>
+            )}
+
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={2000}
+                onClose={() => setSnackbar(s => ({ ...s, open: false }))}
+                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+            >
+                <Alert
+                    severity={snackbar.severity}
+                    sx={{ fontWeight: 600 }}
+                    onClose={() => setSnackbar(s => ({ ...s, open: false }))}
+                >
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </Box>
-
-        <Box sx={{ p: 3, borderBottom: '1px solid #e2e8f0' }}>
-          <TextField fullWidth placeholder="Buscar por nombre, ciudad, departamento o dirección..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} InputProps={{ startAdornment: (<InputAdornment position="start"><Search sx={{ color: '#94a3b8' }} /></InputAdornment>)}} sx={{ maxWidth: 400, '& .MuiOutlinedInput-root': { borderRadius: 2, '& fieldset': { borderColor: '#e2e8f0' } }}} />
-        </Box>
-
-        <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow sx={{ backgroundColor: '#f8fafc' }}>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Nombre</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Dirección</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Ciudad</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Departamento</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Teléfono</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Contacto</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Habilitado</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a', textAlign: 'center' }}>Acciones</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {filteredDestinos.length === 0 ? (
-                <TableRow><TableCell colSpan={8} sx={{ textAlign: 'center', py: 4 }}><Typography sx={{ color: '#64748b' }}>No se encontraron destinos</Typography></TableCell></TableRow>
-              ) : (
-                filteredDestinos.map((destino) => (
-                  <TableRow key={destino.idDestino} sx={{ '&:hover': { backgroundColor: '#f0f5ff' }, '&:last-child td': { borderBottom: 0 }}}>
-                    <TableCell><Typography sx={{ fontWeight: 600 }}>{destino.nombre}</Typography></TableCell>
-                    <TableCell>{destino.direccion}</TableCell>
-                    <TableCell>{destino.ciudad}</TableCell>
-                    <TableCell>{destino.departamento}</TableCell>
-                    <TableCell>{destino.telefono}</TableCell>
-                    <TableCell>{destino.contacto}</TableCell>
-                    <TableCell sx={{ py: 1.5 }}>
-                      <Switch checked={destino.habilitado !== false} onChange={() => handleToggleHabilitado(destino.idDestino)} sx={{ '& .MuiSwitch-switchBase.Mui-checked': { color: '#10b981' }, '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#10b981' }}} />
-                    </TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
-                        <IconButton size="small" onClick={() => setDestinoVer(destino)} sx={{ color: '#1A2E6E', '&:hover': { backgroundColor: '#e8edff' }}}><Visibility fontSize="small" /></IconButton>
-                        <IconButton size="small" component={Link} to={`/transporte/destinos/actualizar/${destino.idDestino}`} sx={{ color: '#CC1818', '&:hover': { backgroundColor: '#fef2f2' }}}><Edit fontSize="small" /></IconButton>
-                      </Box>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-
-        <Box sx={{ p: 2, borderTop: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
-          <Typography sx={{ color: '#64748b', fontSize: '0.875rem' }}>Total de destinos: <strong>{filteredDestinos.length}</strong></Typography>
-        </Box>
-      </Paper>
-
-      <Dialog open={!!destinoVer} onClose={() => setDestinoVer(null)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pb: 1 }}>
-          <Box sx={{ width: 36, height: 36, borderRadius: '50%', backgroundColor: '#1A2E6E', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <LocationOn sx={{ color: 'white', fontSize: 18 }} />
-          </Box>
-          <Box>
-            <Typography fontWeight={700} color="#1A2E6E">{destinoVer?.nombre}</Typography>
-            <Typography variant="caption" color="#8A94A6">Detalle del destino</Typography>
-          </Box>
-        </DialogTitle>
-        <DialogContent dividers>
-          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-            <Box sx={{ gridColumn: '1 / -1' }}><Typography variant="caption" color="#8A94A6" fontWeight={600}>Dirección</Typography><Typography variant="body2" fontWeight={500}>{destinoVer?.direccion}</Typography></Box>
-            <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Ciudad</Typography><Typography variant="body2" fontWeight={500}>{destinoVer?.ciudad}</Typography></Box>
-            <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Departamento</Typography><Typography variant="body2" fontWeight={500}>{destinoVer?.departamento}</Typography></Box>
-            <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Teléfono</Typography><Typography variant="body2" fontWeight={500}>{destinoVer?.telefono}</Typography></Box>
-            <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Contacto</Typography><Typography variant="body2" fontWeight={500}>{destinoVer?.contacto}</Typography></Box>
-            <Box sx={{ gridColumn: '1 / -1' }}><Typography variant="caption" color="#8A94A6" fontWeight={600}>Estado</Typography><Typography variant="body2" fontWeight={500} color={destinoVer?.habilitado !== false ? '#2E7D32' : '#ef4444'}>{destinoVer?.habilitado !== false ? 'Activo' : 'Inactivo'}</Typography></Box>
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, py: 2 }}>
-          <Button onClick={() => setDestinoVer(null)} variant="contained" sx={{ backgroundColor: '#1A2E6E', borderRadius: 2, textTransform: 'none' }}>Cerrar</Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
-  )
+    )
 }
 
 export default ListarDestino
