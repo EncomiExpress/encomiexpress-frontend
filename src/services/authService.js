@@ -25,10 +25,10 @@ export const clearAuthData = () => {
   localStorage.removeItem(USER_KEY);
 };
 
-// Función helper para hacer peticiones con token
-const fetchWithAuth = async (endpoint, options = {}) => {
+// Función helper para hacer peticiones con token — compartida con todos los servicios
+export const fetchWithAuth = async (endpoint, options = {}) => {
   const token = getToken();
-  
+
   const headers = {
     'Content-Type': 'application/json',
     ...options.headers,
@@ -42,6 +42,13 @@ const fetchWithAuth = async (endpoint, options = {}) => {
     ...options,
     headers,
   });
+
+  // Token expirado o inválido → limpiar sesión y redirigir al login
+  if (response.status === 401) {
+    clearAuthData();
+    window.location.href = '/login';
+    throw new Error('Sesión expirada. Por favor inicia sesión de nuevo.');
+  }
 
   const data = await response.json();
 

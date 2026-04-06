@@ -60,7 +60,7 @@ const getEstadoColor = (estado) => {
 }
 
 const getPagoColor = (estadoPago) =>
-    estadoPago === 'pagado'
+    estadoPago?.toLowerCase() === 'pagado'
         ? { bg: '#D1FAE5', color: '#065F46' }
         : { bg: '#FEE2E2', color: '#991B1B' }
 
@@ -112,7 +112,7 @@ const ModalConsultar = ({ venta, onClose }) => {
                             Factura: {venta.numeroFactura}
                         </Typography>
                         <Box sx={{ display: 'flex', gap: 1, mt: 0.8 }}>
-                            <Chip label={venta.estado} size="small"
+                            <Chip label={venta.estado ? venta.estado.charAt(0).toUpperCase() + venta.estado.slice(1) : '—'} size="small"
                                 sx={{ backgroundColor: estadoStyles.bg, color: estadoStyles.color, fontWeight: 600, fontSize: '0.72rem', height: 22, borderRadius: 10 }} />
                             <Chip label={venta.estadoPago} size="small"
                                 sx={{ backgroundColor: pagoStyles.bg, color: pagoStyles.color, fontWeight: 600, fontSize: '0.72rem', height: 22, borderRadius: 10 }} />
@@ -288,9 +288,7 @@ const FILTROS = [
 // ── Componente principal ──
 const ListarVenta = () => {
     const navigate = useNavigate()
-    const { ventas, invalidateVenta } = useVentas()
-    const loading = false   // reemplazar cuando se conecte a la API real
-    const error = null      // reemplazar cuando se conecte a la API real
+    const { ventas, loading, error, invalidateVenta } = useVentas()
 
     const [busqueda, setBusqueda] = useState('')
     const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
@@ -319,8 +317,8 @@ const ListarVenta = () => {
             v.ruta?.destino?.toLowerCase().includes(q)
 
         const coincideEstado = filtroEstadoEncomienda === 'todos' || v.estado === filtroEstadoEncomienda
-        const coincidePago = filtroPago === 'todos' || v.estadoPago === filtroPago
-        const coincideMetodo = filtroMetodoPago === 'todos' || v.metodoPago === filtroMetodoPago
+        const coincidePago = filtroPago === 'todos' || v.estadoPago?.toLowerCase() === filtroPago.toLowerCase()
+        const coincideMetodo = filtroMetodoPago === 'todos' || v.metodoPago?.toLowerCase() === filtroMetodoPago.toLowerCase()
 
         return coincideHabilitado && coincideBusqueda && coincideEstado && coincidePago && coincideMetodo
     })
@@ -505,7 +503,9 @@ const ListarVenta = () => {
                         MenuProps={filterMenuProps}>
                         <MenuItem value="todos">Todos</MenuItem>
                         {ESTADOS_ENCOMIENDA.map(estado => (
-                            <MenuItem key={estado} value={estado}>{estado}</MenuItem>
+                            <MenuItem key={estado} value={estado}>
+                                {estado.charAt(0).toUpperCase() + estado.slice(1)}
+                            </MenuItem>
                         ))}
                     </Select>
                 </FormControl>
@@ -667,7 +667,7 @@ const ListarVenta = () => {
                                             {/* Estado encomienda */}
                                             <TableCell sx={{ py: 1.5 }}>
                                                 <Chip
-                                                    label={venta.estado}
+                                                    label={venta.estado ? venta.estado.charAt(0).toUpperCase() + venta.estado.slice(1) : '—'}
                                                     size="small"
                                                     sx={{
                                                         backgroundColor: estadoStyles.bg,
