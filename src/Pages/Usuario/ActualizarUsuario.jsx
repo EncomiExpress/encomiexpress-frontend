@@ -1,6 +1,6 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, Snackbar, TextField, Select, InputAdornment, CircularProgress } from '@mui/material'
+import { useState, useEffect } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Snackbar, Alert, TextField, Select, InputAdornment, CircularProgress } from '@mui/material'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined'
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
@@ -9,8 +9,7 @@ import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDown
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined'
 import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined'
 import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined'
-import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined'
-import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
+import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined'
 import { useAuth, ROLES } from '../../Context/AuthContext'
 import { formFieldStyles } from '../../Components/FormularioEstandarizado'
 
@@ -37,14 +36,19 @@ const ConfirmRow = ({ label, value }) => (
     </Box>
 )
 
-const RegistrarUsuario = () => {
-    const { tienePermiso, registrarUsuario } = useAuth()
+const ActualizarUsuario = () => {
+    const { id } = useParams()
+    const { getUsuarios, actualizarUsuario } = useAuth()
     const navigate = useNavigate()
-    const [errores, setErrores] = useState({})
+    const [usuarios, setUsuarios] = useState([])
+    const [loading, setLoading] = useState(true)
+    const [exito, setExito] = useState(false)
     const [apiError, setApiError] = useState(null)
+    const [errores, setErrores] = useState({})
     const [activeStep, setActiveStep] = useState(0)
     const [submitting, setSubmitting] = useState(false)
-    const [exito, setExito] = useState(false)
+    const [formOriginal, setFormOriginal] = useState(null)
+    const [sinCambios, setSinCambios] = useState(false)
 
     const [form, setForm] = useState({
         nombre: '',
@@ -54,10 +58,50 @@ const RegistrarUsuario = () => {
         telefono: '',
         emailLocal: '',
         emailDominio: '@gmail.com',
+        idRol: '',
         password: '',
         confirmarPassword: '',
-        idRol: '',
     })
+
+    useEffect(() => {
+        const cargarUsuarios = async () => {
+            try {
+                const data = await getUsuarios()
+                setUsuarios(data)
+            } catch (err) {
+                console.error('Error al cargar usuarios:', err)
+            } finally {
+                setLoading(false)
+            }
+        }
+        cargarUsuarios()
+    }, [getUsuarios])
+
+    useEffect(() => {
+        if (loading) return
+        const usuario = usuarios.find(u => u.id === parseInt(id))
+        if (usuario) {
+            const atIdx = usuario.email ? usuario.email.lastIndexOf('@') : -1
+            const emailLocal = atIdx >= 0 ? usuario.email.slice(0, atIdx) : usuario.email || ''
+            const rawDominio = atIdx >= 0 ? '@' + usuario.email.slice(atIdx + 1) : ''
+            const emailDominio = DOMINIOS_EMAIL.includes(rawDominio) ? rawDominio : '@gmail.com'
+            
+            const rolId = Object.values(ROLES).find(r => r.nombre === usuario.rol?.nombre)?.id || ''
+            
+            const datosForm = {
+                ...usuario,
+                emailLocal,
+                emailDominio,
+                idRol: rolId,
+                password: '',
+                confirmarPassword: '',
+            }
+            setForm(datosForm)
+            setFormOriginal(datosForm)
+        } else {
+            navigate('/usuarios/listar')
+        }
+    }, [id, usuarios, loading, navigate])
 
     const handleChange = (e) => {
         const { name } = e.target
@@ -76,6 +120,7 @@ const RegistrarUsuario = () => {
         setForm(prev => ({ ...prev, [name]: value }))
         setErrores(prev => ({ ...prev, [name]: '' }))
         setApiError(null)
+        setSinCambios(false)
     }
 
     const validarPaso = (step) => {
@@ -102,13 +147,14 @@ const RegistrarUsuario = () => {
 
             if (!form.emailLocal.trim()) e.emailLocal = 'El correo es obligatorio'
 
-            if (!form.password) e.password = 'La contraseña es obligatoria'
-            else if (form.password.length < 6) e.password = 'La contraseña debe tener al menos 6 caracteres'
-
-            if (!form.confirmarPassword) e.confirmarPassword = 'Confirma la contraseña'
-            else if (form.password !== form.confirmarPassword) e.confirmarPassword = 'Las contraseñas no coinciden'
-
             if (!form.idRol) e.idRol = 'Selecciona un rol'
+
+            if (form.password && form.password.length < 6) {
+                e.password = 'La contraseña debe tener al menos 6 caracteres'
+            }
+            if (form.password && form.password !== form.confirmarPassword) {
+                e.confirmarPassword = 'Las contraseñas no coinciden'
+            }
         }
 
         return e
@@ -126,24 +172,58 @@ const RegistrarUsuario = () => {
     const handleBack = () => setActiveStep((prev) => prev - 1)
 
     const handleSubmit = async () => {
+        const erroresEncontrados = validarPaso(activeStep)
+        if (Object.keys(erroresEncontrados).length > 0) {
+            setErrores(erroresEncontrados)
+            return
+        }
+
+        if (formOriginal) {
+            const keysToCompare = ['nombre', 'apellido', 'tipoIdentificacion', 'numeroIdentificacion', 'telefono', 'idRol']
+            if (form.emailLocal && form.emailDominio) {
+                keysToCompare.push('email')
+            }
+            if (form.password) {
+                keysToCompare.push('password')
+            }
+
+            const hayCambios = keysToCompare.some(key => {
+                let original = formOriginal[key] !== undefined ? String(formOriginal[key]) : ''
+                let actual = form[key] !== undefined ? String(form[key]) : ''
+                if (key === 'email') {
+                    original = formOriginal.emailLocal + formOriginal.emailDominio
+                    actual = form.emailLocal + form.emailDominio
+                }
+                return original !== actual
+            })
+            
+            if (!hayCambios && !form.password) {
+                setSinCambios(true)
+                return
+            }
+        }
+
+        setSinCambios(false)
         setSubmitting(true)
         setApiError(null)
         try {
-            const { emailLocal, emailDominio, password, confirmarPassword, ...resto } = form
             const datosBackend = {
-                ...resto,
-                password,
-                email: emailLocal + emailDominio,
+                nombre: form.nombre,
+                apellido: form.apellido,
+                tipoIdentificacion: form.tipoIdentificacion,
+                numeroIdentificacion: form.numeroIdentificacion,
+                telefono: form.telefono,
+                email: form.emailLocal + form.emailDominio,
+                idRol: parseInt(form.idRol),
             }
-            
-            const result = await registrarUsuario(datosBackend, false)
-            
-            if (result.success) {
-                setExito(true)
-                setTimeout(() => navigate('/usuarios/listar'), 1500)
-            } else {
-                setApiError(result.mensaje || 'Error al registrar usuario')
+
+            if (form.password) {
+                datosBackend.password = form.password
             }
+
+            await actualizarUsuario(id, datosBackend)
+            setExito(true)
+            setTimeout(() => navigate('/usuarios/listar'), 1500)
         } catch (err) {
             setApiError(err.message)
         } finally {
@@ -246,9 +326,9 @@ const RegistrarUsuario = () => {
                             ))}
                         </TextField>
                         <Box sx={{ gridColumn: '1 / -1', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
-                            <TextField fullWidth label="Contraseña" name="password" type="password"
+                            <TextField fullWidth label="Nueva contraseña" name="password" type="password"
                                 value={form.password} onChange={handleChange}
-                                error={!!errores.password} helperText={errores.password || 'Mínimo 6 caracteres'}
+                                error={!!errores.password} helperText={errores.password || 'Dejar vacío para mantener la actual'}
                                 slotProps={{ input: { startAdornment: <InputAdornment position="start"><LockOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment>, sx: { pl: 1.5 } } }}
                                 sx={formFieldStyles} />
                             <TextField fullWidth label="Confirmar contraseña" name="confirmarPassword" type="password"
@@ -262,6 +342,11 @@ const RegistrarUsuario = () => {
             case 2:
                 return (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        {sinCambios && (
+                            <Alert severity="warning" sx={{ borderRadius: 2 }} onClose={() => setSinCambios(false)}>
+                                No has realizado ningún cambio. Los datos ya están actualizados.
+                            </Alert>
+                        )}
                         {apiError && (
                             <Alert severity="error" sx={{ borderRadius: 2 }} onClose={() => setApiError(null)}>
                                 {apiError}
@@ -288,6 +373,7 @@ const RegistrarUsuario = () => {
                                 <ConfirmRow label="Teléfono" value={form.telefono} />
                                 <ConfirmRow label="Correo" value={form.emailLocal + form.emailDominio} />
                                 <ConfirmRow label="Rol" value={Object.values(ROLES).find(r => r.id === parseInt(form.idRol))?.nombre || form.idRol} />
+                                <ConfirmRow label="Contraseña" value={form.password ? '••••••••' : 'Sin cambiar'} />
                             </Paper>
                         </Box>
                     </Box>
@@ -297,14 +383,10 @@ const RegistrarUsuario = () => {
         }
     }
 
-    if (!tienePermiso('registrar_usuario')) {
+    if (loading) {
         return (
-            <Box sx={{ p: 4 }}>
-                <Paper elevation={0} sx={{ p: 4, borderRadius: 2, border: '1px solid #e2e8f0', maxWidth: 900, mx: 'auto' }}>
-                    <Alert severity="error">
-                        No tienes permisos para registrar usuarios.
-                    </Alert>
-                </Paper>
+            <Box sx={{ p: 3.5, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
+                <CircularProgress sx={{ color: COLORS.primary }} />
             </Box>
         )
     }
@@ -312,9 +394,12 @@ const RegistrarUsuario = () => {
     return (
         <Box sx={{ p: 3.5 }}>
             <Box sx={{ mb: 3 }}>
-                <Typography variant="h5" fontWeight={700} color={COLORS.text}>Registrar Usuario</Typography>
+                <Typography variant="h5" fontWeight={700} color={COLORS.text}>Editar Usuario</Typography>
                 <Typography variant="body2" color={COLORS.textMuted} mt={0.3}>
-                    Complete los datos del nuevo usuario paso a paso.
+                    {formOriginal?.nombre && formOriginal?.apellido
+                        ? `Modificando datos de ${formOriginal.nombre} ${formOriginal.apellido}`
+                        : 'Modifica los campos que necesites.'
+                    }
                 </Typography>
             </Box>
 
@@ -369,8 +454,8 @@ const RegistrarUsuario = () => {
                         <Button
                             onClick={activeStep < steps.length - 1 ? handleNext : handleSubmit}
                             variant="contained"
-                            disabled={submitting}
-                            endIcon={submitting ? <CircularProgress size={18} color="inherit" /> : (activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <CheckOutlinedIcon />)}
+                            disabled={submitting || (activeStep === steps.length - 1 && sinCambios)}
+                            endIcon={submitting ? <CircularProgress size={18} color="inherit" /> : (activeStep < steps.length - 1 ? undefined : <SaveOutlinedIcon />)}
                             disableRipple
                             sx={{
                                 textTransform: 'none', borderRadius: 2, fontWeight: 600,
@@ -379,7 +464,7 @@ const RegistrarUsuario = () => {
                                 '&:hover': { backgroundColor: '#b91c1c', boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
                                 '&.Mui-disabled': { backgroundColor: '#e0e0e0', color: '#9e9e9e' },
                             }}>
-                            {activeStep < steps.length - 1 ? 'Siguiente' : submitting ? 'Registrando...' : 'Registrar'}
+                            {activeStep < steps.length - 1 ? 'Siguiente' : submitting ? 'Guardando...' : sinCambios ? 'Sin cambios' : 'Guardar cambios'}
                         </Button>
                     </Box>
                 </Box>
@@ -387,11 +472,11 @@ const RegistrarUsuario = () => {
 
             <Snackbar open={exito} autoHideDuration={1500} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
                 <Alert severity="success" sx={{ fontWeight: 600 }}>
-                    ¡Usuario registrado exitosamente!
+                    ¡Usuario actualizado exitosamente!
                 </Alert>
             </Snackbar>
         </Box>
     )
 }
 
-export default RegistrarUsuario
+export default ActualizarUsuario

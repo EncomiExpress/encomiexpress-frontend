@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react'
-import authService, { getUsuario, logout as authLogout, getAllUsuarios } from '../services/authService'
+import authService, { getUsuario, logout as authLogout, getAllUsuarios, actualizarUsuario as actualizarUsuarioAPI, habilitarInhabilitarUsuario as habilitarInhabilitarUsuarioAPI } from '../services/authService'
 
 // ============================================
 // DEFINICIONES DE PERMISOS (deben ir primero)
@@ -264,11 +264,13 @@ export const ROLES = {
   ADMINISTRADOR: {
     id: 1,
     nombre: 'Administrador',
+    descripcion: 'Usuario con acceso completo al sistema y todos los permisos',
     permisos: todosLosPermisos, // Tiene todos los permisos
   },
   GERENTE: {
     id: 2,
     nombre: 'Gerente',
+    descripcion: 'Usuario con permisos de gestión y supervisión de operaciones',
     permisos: [
       // Listar
       PERMISOS.LISTAR_CLIENTE,
@@ -293,6 +295,7 @@ export const ROLES = {
   VENDEDOR: {
     id: 3,
     nombre: 'Vendedor',
+    descripcion: 'Usuario con permisos para registrar ventas y gestionar clientes',
     permisos: [
       // Registrar
       PERMISOS.REGISTRAR_CLIENTE,
@@ -310,6 +313,7 @@ export const ROLES = {
   CONDUCTOR: {
     id: 4,
     nombre: 'Conductor',
+    descripcion: 'Usuario con permisos para gestionar anticipos y excedentes',
     permisos: [
       // Registrar
       PERMISOS.REGISTRAR_ANTICIPO,
@@ -322,6 +326,7 @@ export const ROLES = {
   AUXILIAR: {
     id: 5,
     nombre: 'Auxiliar',
+    descripcion: 'Usuario con permisos básicos de registro y consulta',
     permisos: [
       // Registrar
       PERMISOS.REGISTRAR_ENCOMIENDA,
@@ -525,20 +530,45 @@ export const AuthProvider = ({ children }) => {
         // Mapear los usuarios del backend al formato esperado
         return response.data.map(u => ({
           id: u.idUsuario || u.id,
+          tipoIdentificacion: u.tipoIdentificacion,
+          numeroIdentificacion: u.numeroIdentificacion,
           nombre: u.nombre,
+          apellido: u.apellido,
+          telefono: u.telefono || '',
           email: u.email,
-          iniciales: u.iniciales || (u.nombre ? u.nombre.substring(0, 2).toUpperCase() : '??'),
+          iniciales: u.nombre ? u.nombre.substring(0, 2).toUpperCase() : '??',
           rol: {
             nombre: u.rol?.nombre || u.rol || 'Vendedor'
           },
           habilitado: u.habilitado !== false,
-          estado: u.estado || (u.habilitado !== false ? 'Activo' : 'Inactivo'),
         }))
       }
       return []
     } catch (error) {
       console.error('Error al obtener usuarios:', error)
       return []
+    }
+  }
+
+  // Función para actualizar un usuario
+  const actualizarUsuario = async (id, datos) => {
+    try {
+      const response = await actualizarUsuarioAPI(id, datos)
+      return response
+    } catch (error) {
+      console.error('Error al actualizar usuario:', error)
+      throw error
+    }
+  }
+
+  // Función para habilitar/inhabilitar un usuario
+  const habilitarInhabilitarUsuario = async (id) => {
+    try {
+      const response = await habilitarInhabilitarUsuarioAPI(id)
+      return response
+    } catch (error) {
+      console.error('Error al cambiar estado del usuario:', error)
+      throw error
     }
   }
 
@@ -556,6 +586,8 @@ export const AuthProvider = ({ children }) => {
       recuperarPassword,
       recargarUsuario,
       getUsuarios,
+      actualizarUsuario,
+      habilitarInhabilitarUsuario,
       ROLES,
       PERMISOS,
     }}>
