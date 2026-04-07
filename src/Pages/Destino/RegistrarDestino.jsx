@@ -1,234 +1,281 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Box, TextField, Typography, Paper, MenuItem, Select, FormControl, InputLabel } from '@mui/material'
-import { LocationOn, Phone, Person, Business } from '@mui/icons-material'
+import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, Snackbar, TextField, Select, InputAdornment } from '@mui/material'
+import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined'
+import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
+import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
+import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined'
+import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined'
+import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
+import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined'
 import { useDestino } from '../../Context/DestinoContext'
-import { useAuth } from '../../Context/AuthContext'
-import { 
-  FormField, FormSelect, PrimaryButton, SecondaryButton, 
-  FormAlert, FormHeader, FormButtonGroup, FormGrid 
-} from '../../Components/FormularioEstandarizado'
+import { FormField, FormSelect, formFieldStyles } from '../../Components/FormularioEstandarizado'
+
+const COLORS = {
+    primary: '#CC1818',
+    primaryLight: '#FFE8E8',
+    text: '#1a0e0c',
+    textMuted: '#8A94A6',
+    border: '#E0E0E0',
+    hoverBg: '#F9F9F9',
+}
+
+const steps = ['Información del Destino', 'Datos de Contacto', 'Confirmación']
+
+const ConfirmRow = ({ label, value }) => (
+    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, py: 0.9, overflow: 'hidden' }}>
+        <Typography variant="body2" sx={{ color: '#9C4040', fontWeight: 500, flexShrink: 0 }}>{label}</Typography>
+        <Typography variant="body2" fontWeight={500} color={COLORS.text}
+            sx={{ textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
+            {value || '—'}
+        </Typography>
+    </Box>
+)
 
 const RegistrarDestino = () => {
-  const [formData, setFormData] = useState({
-    nombre: '',
-    direccion: '',
-    ciudad: '',
-    departamento: '',
-    telefono: '',
-    contacto: ''
-  })
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
-    
-  const { registrarDestino } = useDestino()
-  const { usuario } = useAuth()
-  const navigate = useNavigate()
+    const { registrarDestino } = useDestino()
+    const navigate = useNavigate()
+    const [errores, setErrores] = useState({})
+    const [apiError, setApiError] = useState(null)
+    const [activeStep, setActiveStep] = useState(0)
+    const [submitting, setSubmitting] = useState(false)
+    const [exito, setExito] = useState(false)
 
-  useEffect(() => {
-    if (!usuario) {
-      navigate('/login')
-    }
-  }, [usuario, navigate])
-
-  const handleChange = (e) => {
-    const { name, value } = e.target
-    setFormData({ ...formData, [name]: value })
-    setError('')
-    setSuccess('')
-  }
-
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    setError('')
-    
-    // Validar campos requeridos
-    if (!formData.nombre || !formData.direccion || !formData.ciudad || !formData.departamento || !formData.telefono) {
-      setError('Los campos marcados con * son requeridos')
-      return
-    }
-
-    try {
-      registrarDestino({
-        ...formData,
-        nombre: formData.nombre.trim(),
-        direccion: formData.direccion.trim(),
-        ciudad: formData.ciudad.trim(),
-        departamento: formData.departamento.trim(),
-        telefono: formData.telefono.trim(),
-        contacto: formData.contacto ? formData.contacto.trim() : ''
-      })
-      setSuccess('Destino registrado correctamente')
-      
-      // Limpiar el formulario
-      setFormData({
+    const [form, setForm] = useState({
         nombre: '',
         direccion: '',
         ciudad: '',
         departamento: '',
         telefono: '',
         contacto: ''
-      })
-      
-      // Redirigir al listado después de 2 segundos
-      setTimeout(() => {
-        navigate('/transporte/destinos')
-      }, 2000)
-    } catch (err) {
-      setError('Error al registrar destino')
+    })
+
+    const handleChange = (e) => {
+        const { name, value } = e.target
+        
+        if (name === 'telefono') {
+            const filtered = value.replace(/[^0-9]/g, '')
+            setForm(prev => ({ ...prev, [name]: filtered }))
+        } else {
+            setForm(prev => ({ ...prev, [name]: value }))
+        }
+        setErrores(prev => ({ ...prev, [name]: '' }))
+        setApiError(null)
     }
-  }
 
-  const departamentos = [
-    'Antioquia',
-    'Atlántico',
-    'Bogotá D.C.',
-    'Bolívar',
-    'Boyacá',
-    'Caldas',
-    'Caquetá',
-    'Casanare',
-    'Cauca',
-    'Cundinamarca',
-    'Chocó',
-    'Huila',
-    'La Guajira',
-    'Magdalena',
-    'Meta',
-    'Nariño',
-    'Norte de Santander',
-    'Quindío',
-    'Risaralda',
-    'Santander',
-    'Sucre',
-    'Tolima',
-    'Valle del Cauca',
-    'Vaupés',
-    'Vichada'
-  ]
+    const validarPaso = (step) => {
+        const e = {}
 
-  const ciudadesPorDepartamento = {
-    'Antioquia': ['Medellín', 'Bello', 'Itagüí', 'Envigado', 'Rionegro'],
-    'Atlántico': ['Barranquilla', ' Soledad', 'Malambo', 'Baranoa'],
-    'Bogotá D.C.': ['Bogotá'],
-    'Cundinamarca': ['Zipaquirá', 'Facatativá', 'Girardot', 'Chía', 'Cajicá'],
-    'Valle del Cauca': ['Cali', 'Palmira', 'Buenaventura', 'Tuluá', 'Buga'],
-    'Santander': ['Bucaramanga', 'Piedecuesta', 'Floridablanca', 'Girón'],
-    'Tolima': ['Ibagué', 'Espinal', 'Honda'],
-    'Huila': ['Neiva', 'Pitalito', 'Garzón'],
-    'Meta': ['Villavicencio', 'Acacías', 'Granada']
-  }
+        if (step === 0) {
+            if (!form.nombre?.trim()) e.nombre = 'El nombre del destino es obligatorio'
+            if (!form.direccion?.trim()) e.direccion = 'La dirección es obligatoria'
+            if (!form.departamento) e.departamento = 'Selecciona un departamento'
+            if (!form.ciudad?.trim()) e.ciudad = 'La ciudad es obligatoria'
+        }
 
-  return (
-    <Box sx={{ p: 4 }}>
-      <Paper elevation={0} sx={{ p: 4, borderRadius: 2, border: '1px solid #e2e8f0', maxWidth: 800, mx: 'auto' }}>
-        <FormHeader 
-          icon={LocationOn} 
-          title="Registrar Destino" 
-          subtitle="Ingresa los datos del destino"
-        />
+        if (step === 1) {
+            if (!form.telefono?.trim()) e.telefono = 'El teléfono es obligatorio'
+            else if (!/^\d{10}$/.test(form.telefono)) e.telefono = 'El teléfono debe tener 10 dígitos'
+        }
 
-        {success && (
-          <FormAlert severity="success">
-            {success}
-          </FormAlert>
-        )}
+        return e
+    }
 
-        {error && (
-          <FormAlert>
-            {error}
-          </FormAlert>
-        )}
+    const handleNext = () => {
+        const erroresEncontrados = validarPaso(activeStep)
+        if (Object.keys(erroresEncontrados).length > 0) {
+            setErrores(erroresEncontrados)
+            return
+        }
+        setActiveStep((prev) => prev + 1)
+    }
 
-        <form onSubmit={handleSubmit}>
-          <FormGrid>
-            {/* Nombre */}
-            <FormField
-              label="Nombre del Destino"
-              name="nombre"
-              value={formData.nombre}
-              onChange={handleChange}
-              required
-              placeholder="Ej: Terminal de Medellín"
-              icon={LocationOn}
-            />
+    const handleBack = () => setActiveStep((prev) => prev - 1)
 
-            {/* Dirección */}
-            <FormField
-              label="Dirección"
-              name="direccion"
-              value={formData.direccion}
-              onChange={handleChange}
-              required
-              placeholder="Ej: Cra 50 #30-25"
-              icon={Business}
-            />
+    const handleSubmit = async () => {
+        setSubmitting(true)
+        setApiError(null)
+        try {
+            registrarDestino({
+                ...form,
+                habilitado: true,
+                estado: 'Activo'
+            })
+            setExito(true)
+            setTimeout(() => navigate('/transporte/destinos'), 1500)
+        } catch (err) {
+            setApiError(err.message || 'Error al registrar el destino')
+        } finally {
+            setSubmitting(false)
+        }
+    }
 
-            {/* Departamento */}
-            <FormSelect
-              label="Departamento"
-              name="departamento"
-              value={formData.departamento}
-              onChange={handleChange}
-              required
-            >
-              {departamentos.map((dept) => (
-                <MenuItem key={dept} value={dept}>{dept}</MenuItem>
-              ))}
-            </FormSelect>
+    const handleCancelar = () => navigate('/transporte/destinos')
 
-            {/* Ciudad */}
-            <FormField
-              label="Ciudad"
-              name="ciudad"
-              value={formData.ciudad}
-              onChange={handleChange}
-              required
-              placeholder="Ej: Medellín"
-              icon={LocationOn}
-            />
+    const cardSx = {
+        flex: 1, minWidth: 0, borderRadius: 2, p: 2.5,
+        border: `1px solid ${COLORS.border}`,
+        backgroundColor: 'white', elevation: 0,
+        overflow: 'hidden',
+    }
 
-            {/* Teléfono */}
-            <FormField
-              label="Teléfono"
-              name="telefono"
-              value={formData.telefono}
-              onChange={handleChange}
-              required
-              placeholder="Ej: 6041234567"
-              icon={Phone}
-            />
+    const departamentos = [
+        'Antioquia', 'Atlántico', 'Bogotá D.C.', 'Bolívar', 'Boyacá',
+        'Caldas', 'Caquetá', 'Casanare', 'Cauca', 'Cundinamarca',
+        'Chocó', 'Huila', 'La Guajira', 'Magdalena', 'Meta',
+        'Nariño', 'Norte de Santander', 'Quindío', 'Risaralda',
+        'Santander', 'Sucre', 'Tolima', 'Valle del Cauca'
+    ]
 
-            {/* Contacto */}
-            <FormField
-              label="Persona de Contacto"
-              name="contacto"
-              value={formData.contacto}
-              onChange={handleChange}
-              placeholder="Ej: Juan Pérez"
-              icon={Person}
-            />
-          </FormGrid>
+    const renderStepContent = () => {
+        switch (activeStep) {
+            case 0:
+                return (
+                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
+                        <FormField label="Nombre del Destino" name="nombre" value={form.nombre} onChange={handleChange}
+                            required error={errores.nombre} helperText={errores.nombre} icon={LocationOnOutlinedIcon}
+                            inputProps={{ maxLength: 100 }} placeholder="Ej: Terminal de Medellín" />
+                        <FormField label="Dirección" name="direccion" value={form.direccion} onChange={handleChange}
+                            required error={errores.direccion} helperText={errores.direccion} icon={BusinessOutlinedIcon}
+                            inputProps={{ maxLength: 200 }} placeholder="Ej: Cra 50 #30-25" />
+                        <FormSelect label="Departamento" name="departamento" value={form.departamento}
+                            onChange={handleChange} required error={errores.departamento} helperText={errores.departamento}>
+                            {departamentos.map(dept => <MenuItem key={dept} value={dept}>{dept}</MenuItem>)}
+                        </FormSelect>
+                        <FormField label="Ciudad" name="ciudad" value={form.ciudad} onChange={handleChange}
+                            required error={errores.ciudad} helperText={errores.ciudad} icon={LocationOnOutlinedIcon}
+                            inputProps={{ maxLength: 50 }} placeholder="Ej: Medellín" />
+                    </Box>
+                )
+            case 1:
+                return (
+                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
+                        <FormField label="Teléfono" name="telefono" value={form.telefono} onChange={handleChange}
+                            required error={errores.telefono} helperText={errores.telefono || 'Número de 10 dígitos'}
+                            icon={PhoneOutlinedIcon} inputProps={{ maxLength: 10 }} placeholder="Ej: 6041234567" />
+                        <FormField label="Persona de Contacto" name="contacto" value={form.contacto} onChange={handleChange}
+                            icon={PersonOutlinedIcon} inputProps={{ maxLength: 100 }} placeholder="Ej: Juan Pérez" />
+                    </Box>
+                )
+            case 2:
+                return (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        {apiError && (
+                            <Alert severity="error" sx={{ borderRadius: 2 }} onClose={() => setApiError(null)}>
+                                {apiError}
+                            </Alert>
+                        )}
+                        <Box sx={{ display: 'flex', gap: 2 }}>
+                            <Paper elevation={0} sx={cardSx}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                                    <LocationOnOutlinedIcon sx={{ fontSize: 20, color: COLORS.text }} />
+                                    <Typography fontWeight={700} fontSize="0.95rem" color={COLORS.text}>Información del Destino</Typography>
+                                </Box>
+                                <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2 }}>Verifica la información del destino</Typography>
+                                <ConfirmRow label="Nombre" value={form.nombre} />
+                                <ConfirmRow label="Dirección" value={form.direccion} />
+                                <ConfirmRow label="Departamento" value={form.departamento} />
+                                <ConfirmRow label="Ciudad" value={form.ciudad} />
+                            </Paper>
+                            <Paper elevation={0} sx={cardSx}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                                    <PersonOutlinedIcon sx={{ fontSize: 20, color: COLORS.text }} />
+                                    <Typography fontWeight={700} fontSize="0.95rem" color={COLORS.text}>Datos de Contacto</Typography>
+                                </Box>
+                                <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2 }}>Verifica los datos de contacto</Typography>
+                                <ConfirmRow label="Teléfono" value={form.telefono} />
+                                <ConfirmRow label="Contacto" value={form.contacto || 'N/A'} />
+                            </Paper>
+                        </Box>
+                    </Box>
+                )
+            default:
+                return null
+        }
+    }
 
-          {/* Botones de navegación */}
-          <FormButtonGroup justify="space-between">
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <SecondaryButton 
-                onClick={() => navigate('/transporte/destinos')}
-                children="Cancelar"
-              />
+    return (
+        <Box sx={{ p: 3.5 }}>
+            <Box sx={{ mb: 3 }}>
+                <Typography variant="h5" fontWeight={700} color={COLORS.text}>Registrar Destino</Typography>
+                <Typography variant="body2" color={COLORS.textMuted} mt={0.3}>
+                    Complete los datos del nuevo destino paso a paso.
+                </Typography>
             </Box>
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <PrimaryButton 
-                type="submit"
-                children="Registrar Destino"
-              />
-            </Box>
-          </FormButtonGroup>
-        </form>
-      </Paper>
-    </Box>
-  )
+
+            <Paper elevation={0} sx={{ border: `1px solid ${COLORS.border}`, borderRadius: 3, overflow: 'hidden' }}>
+                <Box sx={{ px: 4, pt: 3.5, pb: 2.5, borderBottom: `1px solid ${COLORS.border}` }}>
+                    <Stepper activeStep={activeStep} alternativeLabel
+                        sx={{
+                            '& .MuiStepIcon-root': { color: '#E0E0E0' },
+                            '& .MuiStepIcon-root.Mui-active': { color: COLORS.primary },
+                            '& .MuiStepIcon-root.Mui-completed': { color: COLORS.primary },
+                            '& .MuiStepIcon-text': { fill: 'white', fontSize: '0.7rem', fontWeight: 700 },
+                            '& .MuiStepConnector-line': { borderColor: COLORS.border },
+                            '& .MuiStepConnector-root.Mui-active .MuiStepConnector-line': { borderColor: COLORS.primary },
+                            '& .MuiStepConnector-root.Mui-completed .MuiStepConnector-line': { borderColor: COLORS.primary },
+                            '& .MuiStepLabel-label': { fontSize: '0.8rem', color: COLORS.textMuted, mt: 0.5 },
+                            '& .MuiStepLabel-label.Mui-active': { color: COLORS.text, fontWeight: 600 },
+                            '& .MuiStepLabel-label.Mui-completed': { color: COLORS.primary, fontWeight: 500 },
+                        }}
+                    >
+                        {steps.map(label => <Step key={label}><StepLabel>{label}</StepLabel></Step>)}
+                    </Stepper>
+                </Box>
+
+                <Box sx={{ px: 4, py: 3.5 }}>
+                    <Box sx={{ maxWidth: 700, mx: 'auto' }}>
+                        {renderStepContent()}
+                    </Box>
+                </Box>
+
+                <Box sx={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    px: 4, py: 2.5, borderTop: `1px solid ${COLORS.border}`, backgroundColor: '#FAFAFA',
+                }}>
+                    <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined"
+                        startIcon={<ArrowBackOutlinedIcon />} disableRipple
+                        sx={{
+                            textTransform: 'none', borderRadius: 2, borderColor: COLORS.border,
+                            color: COLORS.text, fontWeight: 500,
+                            '&:hover': { borderColor: '#BDBDBD', backgroundColor: COLORS.hoverBg },
+                            '&.Mui-disabled': { borderColor: COLORS.border, color: COLORS.textMuted },
+                        }}>
+                        Anterior
+                    </Button>
+                    <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                        <Button onClick={handleCancelar} disableRipple
+                            sx={{
+                                textTransform: 'none', color: COLORS.textMuted, fontWeight: 500, borderRadius: 2,
+                                '&:hover': { backgroundColor: COLORS.hoverBg, color: COLORS.text },
+                            }}>
+                            Cancelar
+                        </Button>
+                        <Button
+                            onClick={activeStep < steps.length - 1 ? handleNext : handleSubmit}
+                            variant="contained"
+                            disabled={submitting}
+                            endIcon={activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <CheckOutlinedIcon />}
+                            disableRipple
+                            sx={{
+                                textTransform: 'none', borderRadius: 2, fontWeight: 600,
+                                backgroundColor: COLORS.primary,
+                                boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
+                                '&:hover': { backgroundColor: '#b91c1c', boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
+                            }}>
+                            {activeStep < steps.length - 1 ? 'Siguiente' : submitting ? 'Registrando...' : 'Registrar'}
+                        </Button>
+                    </Box>
+                </Box>
+            </Paper>
+
+            <Snackbar open={exito} autoHideDuration={1500} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
+                <Alert severity="success" sx={{ fontWeight: 600 }}>
+                    ¡Destino registrado exitosamente!
+                </Alert>
+            </Snackbar>
+        </Box>
+    )
 }
 
 export default RegistrarDestino

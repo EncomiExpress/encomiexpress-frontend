@@ -25,8 +25,6 @@ import CloseIcon from '@mui/icons-material/Close'
 import ImageIcon from '@mui/icons-material/Image'
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile'
 import ZoomInIcon from '@mui/icons-material/ZoomIn'
-import BlockOutlinedIcon from '@mui/icons-material/BlockOutlined'
-import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 
 const COLORS = {
@@ -86,6 +84,8 @@ const ESTADO_COLORS = {
     'legalizado': { bg: '#E8F5E9', color: '#2E7D32' },
     'excedente pendiente': { bg: '#FFF3E0', color: '#E65100' },
     'cerrado': { bg: '#F3E5F5', color: '#6A1B9A' },
+    'habilitado': { bg: '#DCFCE7', color: '#16A34A' },
+    'inhabilitado': { bg: '#F3F4F6', color: '#9CA3AF' },
 }
 
 const FILTROS_ESTADO = [
@@ -101,6 +101,11 @@ const FILTROS_ANTICIPO = [
     { value: 'legalizado', label: 'Legalizado' },
     { value: 'excedente pendiente', label: 'Excedente pendiente' },
     { value: 'cerrado', label: 'Cerrado' },
+]
+
+const ESTADOS_HABILITADO = [
+    { value: 'habilitado', label: 'Habilitado' },
+    { value: 'inhabilitado', label: 'Inhabilitado' },
 ]
 
 const formatMoney = (val) => {
@@ -259,7 +264,7 @@ const ModalConsultar = ({ anticipo, onClose }) => {
 // ── Componente principal ──
 const ListarAnticipoExcedente = () => {
     const navigate = useNavigate()
-    const { anticipos, toggleHabilitado } = useAnticipos()
+    const { anticipos, toggleHabilitado, cambiarEstado } = useAnticipos()
 
     const [busqueda, setBusqueda] = useState('')
     const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
@@ -267,9 +272,8 @@ const ListarAnticipoExcedente = () => {
     const [page, setPage] = useState(1)
     const [rowsPerPage, setRowsPerPage] = useState(5)
     const [anticipoConsulta, setAnticipoConsulta] = useState(null)
-    const [anticipoToggle, setAnticipoToggle] = useState(null)
-    const [toggling, setToggling] = useState(false)
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
+    const [cambiandoEstado, setCambiandoEstado] = useState(null)
 
     const anticiposFiltrados = anticipos.filter(a => {
         const q = busqueda.toLowerCase().trim()
@@ -299,28 +303,19 @@ const ListarAnticipoExcedente = () => {
 
     const hayFiltrosActivos = busqueda.trim() !== '' || filtroHabilitado !== 'todo' || filtroEstadoAnticipo !== 'todos'
 
-    const handleToggle = async (id) => {
-        const anticipo = anticipos.find(a => a.idAnticipoExcedente === id)
-        const esHabilitar = !anticipo?.habilitado
-        setToggling(true)
-        try {
+    const handleCambiarEstado = (id, nuevoEstado) => {
+        if (nuevoEstado === '__habilitar__') {
             toggleHabilitado(id)
-            setAnticipoToggle(null)
-            setSnackbar({
-                open: true,
-                message: esHabilitar ? 'Anticipo habilitado correctamente.' : 'Anticipo inhabilitado correctamente.',
-                severity: esHabilitar ? 'success' : 'warning',
-            })
-        } catch (err) {
-            setAnticipoToggle(null)
-            setSnackbar({
-                open: true,
-                message: err.message || 'Error al cambiar el estado del anticipo.',
-                severity: 'error',
-            })
-        } finally {
-            setToggling(false)
+            setSnackbar({ open: true, message: 'Anticipo habilitado correctamente.', severity: 'success' })
+            return
         }
+        if (nuevoEstado === '__inhabilitar__') {
+            toggleHabilitado(id)
+            setSnackbar({ open: true, message: 'Anticipo inhabilitado correctamente.', severity: 'warning' })
+            return
+        }
+        cambiarEstado(id, nuevoEstado)
+        setSnackbar({ open: true, message: 'Estado actualizado correctamente.', severity: 'success' })
     }
 
     return (
@@ -480,7 +475,6 @@ const ListarAnticipoExcedente = () => {
                                 <TableCell sx={thStyle}>Excedente</TableCell>
                                 <TableCell sx={thStyle}>F. Entrega</TableCell>
                                 <TableCell sx={thStyle}>Estado</TableCell>
-                                <TableCell sx={thStyle}>Habilitado</TableCell>
                                 <TableCell sx={{ ...thStyle, width: 130 }}>Acciones</TableCell>
                             </TableRow>
                         </TableHead>
@@ -573,30 +567,139 @@ const ListarAnticipoExcedente = () => {
                                             </TableCell>
 
                                             {/* Estado */}
-                                            <TableCell sx={{ py: 1.5 }}>
-                                                <Chip
-                                                    label={anticipo.estado}
-                                                    size="small"
-                                                    sx={{
-                                                        fontSize: '0.7rem', fontWeight: 600, height: 22,
-                                                        backgroundColor: estadoStyle.bg, color: estadoStyle.color,
-                                                        textTransform: 'capitalize', border: 'none',
-                                                    }}
-                                                />
-                                            </TableCell>
-
-                                            {/* Habilitado */}
-                                            <TableCell sx={{ py: 1.5 }}>
-                                                <Chip
-                                                    label={anticipo.habilitado !== false ? 'Habilitado' : 'Inhabilitado'}
-                                                    size="small"
-                                                    sx={{
-                                                        fontSize: '0.7rem', fontWeight: 600, height: 22,
-                                                        backgroundColor: anticipo.habilitado !== false ? '#DCFCE7' : '#F3F4F6',
-                                                        color: anticipo.habilitado !== false ? '#16A34A' : '#9CA3AF',
-                                                        border: 'none',
-                                                    }}
-                                                />
+                                            <TableCell sx={{ py: 1.5, minWidth: 140 }}>
+                                                {cambiandoEstado === anticipo.idAnticipoExcedente ? (
+                                                    <CircularProgress size={20} sx={{ color: COLORS.primary }} />
+                                                ) : (
+                                                    <Select
+                                                        value={anticipo.habilitado === false ? '__inhabilitado__' : anticipo.estado || 'entregado'}
+                                                        onChange={(e) => handleCambiarEstado(anticipo.idAnticipoExcedente, e.target.value)}
+                                                        size="small"
+                                                        fullWidth
+                                                        renderValue={(val) => {
+                                                            const isInhabilitado = val === '__inhabilitado__'
+                                                            const style = isInhabilitado
+                                                                ? ESTADO_COLORS['inhabilitado']
+                                                                : (ESTADO_COLORS[val] || { bg: '#F5F5F5', color: '#757575' })
+                                                            const label = isInhabilitado ? 'Inhabilitado' : val
+                                                            return (
+                                                                <Box sx={{
+                                                                    display: 'inline-flex',
+                                                                    alignItems: 'center',
+                                                                    backgroundColor: style.bg,
+                                                                    color: style.color,
+                                                                    px: 1.2,
+                                                                    py: 0.2,
+                                                                    borderRadius: 8,
+                                                                    fontWeight: 600,
+                                                                    fontSize: '0.7rem',
+                                                                }}>
+                                                                    {label.charAt(0).toUpperCase() + label.slice(1)}
+                                                                </Box>
+                                                            )
+                                                        }}
+                                                        sx={{
+                                                            backgroundColor: anticipo.habilitado === false
+                                                                ? ESTADO_COLORS['inhabilitado'].bg
+                                                                : (estadoStyle.bg || '#F5F5F5'),
+                                                            color: anticipo.habilitado === false
+                                                                ? ESTADO_COLORS['inhabilitado'].color
+                                                                : (estadoStyle.color || '#757575'),
+                                                            fontSize: '0.72rem',
+                                                            fontWeight: 600,
+                                                            height: 26,
+                                                            borderRadius: 10,
+                                                            '& .MuiSelect-select': {
+                                                                py: 0.5,
+                                                                px: 1,
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                            },
+                                                            '& .MuiOutlinedInput-notchedOutline': {
+                                                                border: 'none',
+                                                            },
+                                                            '&:hover .MuiOutlinedInput-notchedOutline': {
+                                                                border: 'none',
+                                                            },
+                                                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                                                border: 'none',
+                                                            },
+                                                            '& .MuiSelect-icon': {
+                                                                color: anticipo.habilitado === false
+                                                                    ? ESTADO_COLORS['inhabilitado'].color
+                                                                    : (estadoStyle.color || '#757575'),
+                                                                fontSize: 18,
+                                                            },
+                                                        }}
+                                                        MenuProps={{
+                                                            slotProps: {
+                                                                paper: {
+                                                                    sx: {
+                                                                        borderRadius: 2,
+                                                                        boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+                                                                        mt: 0.5,
+                                                                    },
+                                                                },
+                                                            },
+                                                        }}
+                                                    >
+                                                        {anticipo.habilitado === false ? (
+                                                            <MenuItem value="__habilitar__" dense>
+                                                                <Box sx={{
+                                                                    display: 'inline-flex',
+                                                                    alignItems: 'center',
+                                                                    backgroundColor: ESTADO_COLORS['habilitado'].bg,
+                                                                    color: ESTADO_COLORS['habilitado'].color,
+                                                                    px: 1.2,
+                                                                    py: 0.2,
+                                                                    borderRadius: 8,
+                                                                    fontWeight: 600,
+                                                                    fontSize: '0.7rem',
+                                                                }}>
+                                                                    Habilitar
+                                                                </Box>
+                                                            </MenuItem>
+                                                        ) : (
+                                                            <>
+                                                                {FILTROS_ANTICIPO.slice(1).map(est => {
+                                                                    const estStyles = ESTADO_COLORS[est.value] || { bg: '#F5F5F5', color: '#757575' }
+                                                                    return (
+                                                                        <MenuItem key={est.value} value={est.value} dense>
+                                                                            <Box sx={{
+                                                                                display: 'inline-flex',
+                                                                                alignItems: 'center',
+                                                                                backgroundColor: estStyles.bg,
+                                                                                color: estStyles.color,
+                                                                                px: 1.2,
+                                                                                py: 0.2,
+                                                                                borderRadius: 8,
+                                                                                fontWeight: 600,
+                                                                                fontSize: '0.7rem',
+                                                                            }}>
+                                                                                {est.label}
+                                                                            </Box>
+                                                                        </MenuItem>
+                                                                    )
+                                                                })}
+                                                                <MenuItem value="__inhabilitar__" dense>
+                                                                    <Box sx={{
+                                                                        display: 'inline-flex',
+                                                                        alignItems: 'center',
+                                                                        backgroundColor: ESTADO_COLORS['inhabilitado'].bg,
+                                                                        color: ESTADO_COLORS['inhabilitado'].color,
+                                                                        px: 1.2,
+                                                                        py: 0.2,
+                                                                        borderRadius: 8,
+                                                                        fontWeight: 600,
+                                                                        fontSize: '0.7rem',
+                                                                    }}>
+                                                                        Inhabilitar
+                                                                    </Box>
+                                                                </MenuItem>
+                                                            </>
+                                                        )}
+                                                    </Select>
+                                                )}
                                             </TableCell>
 
                                             {/* Acciones */}
@@ -613,14 +716,6 @@ const ListarAnticipoExcedente = () => {
                                                             onClick={() => navigate(`/anticipos/actualizar/${anticipo.idAnticipoExcedente}`)}
                                                             sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}>
                                                             <EditOutlinedIcon sx={{ fontSize: 18 }} />
-                                                        </IconButton>
-                                                    </Tooltip>
-                                                    <Tooltip title={anticipo.habilitado !== false ? 'Inhabilitar' : 'Habilitar'}>
-                                                        <IconButton size="small" onClick={() => setAnticipoToggle(anticipo)} sx={{
-                                                            color: anticipo.habilitado !== false ? COLORS.primary : '#16A34A',
-                                                            '&:hover': { backgroundColor: anticipo.habilitado !== false ? COLORS.primaryLight : '#DCFCE7' },
-                                                        }}>
-                                                            {anticipo.habilitado !== false ? <BlockOutlinedIcon sx={{ fontSize: 18 }} /> : <CheckCircleOutlinedIcon sx={{ fontSize: 18 }} />}
                                                         </IconButton>
                                                     </Tooltip>
                                                 </Box>
@@ -737,42 +832,9 @@ const ListarAnticipoExcedente = () => {
 
             <ModalConsultar anticipo={anticipoConsulta} onClose={() => setAnticipoConsulta(null)} />
 
-            {/* ── Modal Toggle Habilitado ── */}
-            <Dialog open={!!anticipoToggle} onClose={() => setAnticipoToggle(null)} maxWidth="xs" fullWidth slotProps={{ paper: { sx: { borderRadius: 3 } } }}>
-                <DialogTitle sx={{ color: anticipoToggle?.habilitado ? COLORS.primary : '#16A34A', fontWeight: 700 }}>
-                    {anticipoToggle?.habilitado ? '¿Inhabilitar anticipo?' : '¿Habilitar anticipo?'}
-                </DialogTitle>
-                <DialogContent>
-                    <DialogContentText>
-                        Estás a punto de {anticipoToggle?.habilitado ? 'inhabilitar' : 'habilitar'} el anticipo #{anticipoToggle?.idAnticipoExcedente}.{' '}
-                        {anticipoToggle?.habilitado
-                            ? 'El anticipo no podrá ser usado en el sistema hasta que sea habilitado nuevamente.'
-                            : 'El anticipo volverá a estar disponible en el sistema.'
-                        }
-                    </DialogContentText>
-                </DialogContent>
-                <DialogActions sx={{ px: 3, py: 2, gap: 1 }}>
-                    <Button onClick={() => setAnticipoToggle(null)} disabled={toggling} variant="outlined"
-                        sx={{ borderColor: COLORS.border, color: COLORS.text, borderRadius: 2, textTransform: 'none' }}>
-                        Cancelar
-                    </Button>
-                    <Button onClick={() => handleToggle(anticipoToggle.idAnticipoExcedente)} disabled={toggling} variant="contained"
-                        sx={{
-                            backgroundColor: anticipoToggle?.habilitado ? COLORS.primary : '#16A34A',
-                            borderRadius: 2, textTransform: 'none',
-                            '&:hover': { backgroundColor: anticipoToggle?.habilitado ? '#a01212' : '#15803D' },
-                        }}>
-                        {toggling
-                            ? (anticipoToggle?.habilitado ? 'Inhabilitando...' : 'Habilitando...')
-                            : (anticipoToggle?.habilitado ? 'Sí, inhabilidad' : 'Sí, habilitar')
-                        }
-                    </Button>
-                </DialogActions>
-            </Dialog>
-
             <Snackbar
                 open={snackbar.open}
-                autoHideDuration={3000}
+                autoHideDuration={2000}
                 onClose={() => setSnackbar({ ...snackbar, open: false })}
                 anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
             >

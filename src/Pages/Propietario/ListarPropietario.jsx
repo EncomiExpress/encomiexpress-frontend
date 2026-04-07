@@ -1,143 +1,417 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, IconButton, Button, TextField, InputAdornment, Switch, Dialog, DialogTitle, DialogContent, DialogActions, Grid } from '@mui/material'
-import { Edit, DirectionsCar, Search, Add, Visibility } from '@mui/icons-material'
+import {
+    Box, Typography, Paper, Table, TableBody, TableCell,
+    TableContainer, TableHead, TableRow, Chip, IconButton,
+    TextField, InputAdornment, Select, MenuItem, FormControl,
+    Snackbar, Alert, Tooltip, Button, Dialog, Avatar
+} from '@mui/material'
+import SearchIcon from '@mui/icons-material/Search'
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
+import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
+import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
+import ClearIcon from '@mui/icons-material/Clear'
+import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
+import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined'
+import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
+import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined'
+import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined'
 import { usePropietario } from '../../Context/PropietarioContext'
 import { useAuth } from '../../Context/AuthContext'
 
-const ListarPropietario = () => {
-  const [propietarios, setPropietarios] = useState([])
-  const [searchTerm, setSearchTerm] = useState('')
-  const [propietarioVer, setPropietarioVer] = useState(null)
-  
-  const { getPropietarios, toggleHabilitado } = usePropietario()
-  const { usuario } = useAuth()
-  const navigate = useNavigate()
+const COLORS = {
+    primary: '#CC1818',
+    primaryLight: '#FFE8E8',
+    text: '#1a0e0c',
+    textMuted: '#8A94A6',
+    border: '#E0E0E0',
+    hoverBg: '#F9F9F9',
+}
 
-  useEffect(() => {
-    if (!usuario) {
-      navigate('/login')
-    } else {
-      setPropietarios(getPropietarios())
-    }
-  }, [usuario, navigate, getPropietarios])
+const thStyle = {
+    fontWeight: 700,
+    fontSize: '0.80rem',
+    color: '#1a0e0c',
+    letterSpacing: 0.5,
+    py: 1.5,
+    borderBottom: `1px solid #E0E0E0`,
+    whiteSpace: 'nowrap',
+}
 
-  const handleToggleHabilitado = (id) => {
-    toggleHabilitado(id)
-    setPropietarios(getPropietarios())
-  }
+const ESTADOS = ['Activo', 'Inactivo', 'En revisión']
 
-  const getTipoIdentificacionLabel = (tipo) => {
+const filterSelectSx = {
+    fontSize: '0.75rem',
+    borderRadius: 2,
+    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#E0E0E0' },
+    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#BDBDBD' },
+    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#E57373', borderWidth: '1px' },
+    '&.Mui-focused': { boxShadow: '0 0 0 3px rgba(229,115,115,0.18)' },
+    '& .MuiSelect-icon': { color: '#8A94A6', fontSize: 18 },
+    '& .MuiTouchRipple-root': { display: 'none' },
+}
+
+const filterMenuProps = {
+    slotProps: {
+        paper: {
+            sx: {
+                borderRadius: 2,
+                boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+                mt: 0.5,
+                '& .MuiMenuItem-root': {
+                    fontSize: '0.82rem',
+                    '&:hover': { backgroundColor: '#FFF5F5' },
+                    '&.Mui-selected': { backgroundColor: 'transparent', fontWeight: 600, color: '#1a0e0c' },
+                    '&.Mui-selected:hover': { backgroundColor: '#FFF5F5' },
+                },
+            },
+        },
+    },
+}
+
+const getTipoIdentificacionLabel = (tipo) => {
     const tipos = {
-      'CC': 'Cédula', 'NIT': 'NIT', 'CE': 'Cédula Extranjería',
-      'TI': 'Tarjeta Identidad', 'PAS': 'Pasaporte', 'RC': 'Registro Civil'
+        'CC': 'Cédula', 'NIT': 'NIT', 'CE': 'Cédula Extranjería',
+        'TI': 'Tarjeta Identidad', 'PAS': 'Pasaporte', 'RC': 'Registro Civil'
     }
     return tipos[tipo] || tipo
-  }
+}
 
-  const filteredPropietarios = propietarios.filter(p => 
-    p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.apellido.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.numeroIdentificacion.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.ciudad.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (p.email && p.email.toLowerCase().includes(searchTerm.toLowerCase()))
-  )
+const FILTROS = [
+    { value: 'todo', label: 'Todo' },
+]
 
-  return (
-    <Box sx={{ p: 1 }}>
-      <Paper elevation={0} sx={{ borderRadius: 2, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-        <Box sx={{ p: 3, borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Box sx={{ width: 48, height: 48, borderRadius: 2, background: 'linear-gradient(135deg, #CC1818 0%, #dc2626 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <DirectionsCar sx={{ color: 'white', fontSize: 28 }} />
+const ListarPropietario = () => {
+    const [propietarios, setPropietarios] = useState([])
+    const [searchTerm, setSearchTerm] = useState('')
+    const [propietarioVer, setPropietarioVer] = useState(null)
+    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
+
+    const { getPropietarios, updateEstado } = usePropietario()
+    const { usuario } = useAuth()
+    const navigate = useNavigate()
+
+    useEffect(() => {
+        if (!usuario) {
+            navigate('/login')
+        } else {
+            setPropietarios(getPropietarios())
+        }
+    }, [usuario, navigate, getPropietarios])
+
+    const handleEstadoChange = (id, nuevoEstado) => {
+        updateEstado(id, nuevoEstado)
+        setPropietarios(getPropietarios())
+        setSnackbar({
+            open: true,
+            message: `Estado actualizado a ${nuevoEstado}.`,
+            severity: 'success',
+        })
+    }
+
+    const propietariosFiltrados = propietarios.filter(p => {
+        const q = searchTerm.toLowerCase()
+        const coincideBusqueda = !q ||
+            p.nombre.toLowerCase().includes(q) ||
+            p.apellido.toLowerCase().includes(q) ||
+            p.numeroIdentificacion.toLowerCase().includes(q) ||
+            p.ciudad.toLowerCase().includes(q) ||
+            (p.email && p.email.toLowerCase().includes(q))
+
+        return coincideBusqueda
+    })
+
+    const hayFiltrosActivos = searchTerm.trim() !== ''
+
+    return (
+        <Box sx={{ p: 3.5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
+                <Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <Typography variant="h5" fontWeight={700} color={COLORS.text}>
+                            Propietarios
+                        </Typography>
+                        <Chip
+                            label={`${propietarios.length} registrado${propietarios.length !== 1 ? 's' : ''}`}
+                            size="small"
+                            sx={{
+                                backgroundColor: '#F3F4F6',
+                                color: COLORS.textMuted,
+                                fontWeight: 500,
+                                fontSize: '0.72rem',
+                                height: 22,
+                                borderRadius: 10,
+                            }}
+                        />
+                    </Box>
+                    <Typography variant="body2" color={COLORS.textMuted} mt={0.3}>
+                        Gestiona los propietarios de vehículos registrados en el sistema.
+                    </Typography>
+                </Box>
+                <Button
+                    component={Link}
+                    to="/transporte/propietarios/registrar"
+                    variant="contained"
+                    startIcon={<AddOutlinedIcon />}
+                    sx={{
+                        backgroundColor: COLORS.primary,
+                        borderRadius: 2,
+                        textTransform: 'none',
+                        fontWeight: 600,
+                        boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
+                        '&:hover': {
+                            backgroundColor: '#b91c1c',
+                            boxShadow: '0 6px 20px rgba(204,24,24,0.2)',
+                        },
+                    }}
+                >
+                    Nuevo propietario
+                </Button>
             </Box>
-            <Box>
-              <Typography variant="h5" sx={{ fontWeight: 700, color: '#0f172a' }}>Lista de Propietarios</Typography>
-              <Typography sx={{ color: '#64748b', fontSize: '0.875rem' }}>Gestiona los propietarios de vehículos registrados</Typography>
+
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
+                <TextField
+                    size="small"
+                    placeholder="Buscar propietarios..."
+                    sx={{
+                        width: 320,
+                        '& .MuiOutlinedInput-root': {
+                            borderRadius: 2,
+                            '&.Mui-focused': { boxShadow: '0 0 0 3px rgba(229,115,115,0.18)' },
+                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                borderColor: '#CC1818', borderWidth: '1px',
+                            },
+                        },
+                    }}
+                    value={searchTerm}
+                    onChange={e => setSearchTerm(e.target.value)}
+                    slotProps={{
+                        input: {
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <SearchIcon sx={{ color: COLORS.textMuted, fontSize: 20 }} />
+                                </InputAdornment>
+                            ),
+                            endAdornment: searchTerm && (
+                                <InputAdornment position="end">
+                                    <IconButton size="small" onClick={() => setSearchTerm('')}>
+                                        <ClearIcon sx={{ fontSize: 16 }} />
+                                    </IconButton>
+                                </InputAdornment>
+                            )
+                        }
+                    }}
+                />
             </Box>
-          </Box>
-          <Button component={Link} to="/transporte/propietarios/registrar" variant="contained" startIcon={<Add />} sx={{ backgroundColor: '#CC1818', borderRadius: 2, fontWeight: 600, textTransform: 'none', boxShadow: '0 4px 14px rgba(204, 24, 24, 0.3)', '&:hover': { backgroundColor: '#b91c1c', boxShadow: '0 6px 20px rgba(204, 24, 24, 0.4)' }}}>
-            Nuevo Propietario
-          </Button>
+
+            <Paper elevation={0} sx={{ border: `1px solid ${COLORS.border}`, borderRadius: 3, overflow: 'hidden' }}>
+                <TableContainer>
+                    <Table>
+                        <TableHead>
+                            <TableRow sx={{ backgroundColor: '#F8F9FA' }}>
+                                <TableCell sx={thStyle}>Identificación</TableCell>
+                                <TableCell sx={thStyle}>Nombre</TableCell>
+                                <TableCell sx={thStyle}>Teléfono</TableCell>
+                                <TableCell sx={thStyle}>Email</TableCell>
+                                <TableCell sx={thStyle}>Ciudad</TableCell>
+                                <TableCell sx={thStyle}>Estado</TableCell>
+                                <TableCell sx={{ ...thStyle, width: 110 }} />
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {propietariosFiltrados.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={7} align="center" sx={{ py: 7 }}>
+                                        <Typography color={COLORS.textMuted} variant="body2">
+                                            {propietarios.length === 0
+                                                ? 'No hay propietarios registrados en el sistema.'
+                                                : 'No se encontraron propietarios que coincidan con la búsqueda.'
+                                            }
+                                        </Typography>
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                                propietariosFiltrados.map((propietario) => (
+                                    <TableRow
+                                        key={propietario.idPropietario}
+                                        sx={{
+                                            '&:hover': { backgroundColor: COLORS.hoverBg },
+                                            transition: 'background-color 0.15s',
+                                            opacity: propietario.habilitado ? 1 : 0.55,
+                                        }}
+                                    >
+                                        <TableCell sx={{ py: 1.5 }}>
+                                            <Box>
+                                                <Chip
+                                                    label={getTipoIdentificacionLabel(propietario.tipoIdentificacion)}
+                                                    size="small"
+                                                    sx={{
+                                                        fontWeight: 600,
+                                                        backgroundColor: '#FEF2F2',
+                                                        color: '#CC1818',
+                                                        mb: 0.5,
+                                                        height: 20,
+                                                        fontSize: '0.7rem',
+                                                    }}
+                                                />
+                                                {propietario.numeroIdentificacion}
+                                            </Box>
+                                        </TableCell>
+                                        <TableCell sx={{ py: 1.5, fontSize: '0.85rem' }}>
+                                            {propietario.nombre} {propietario.apellido}
+                                        </TableCell>
+                                        <TableCell sx={{ py: 1.5 }}>{propietario.telefono}</TableCell>
+                                        <TableCell sx={{ py: 1.5 }}>{propietario.email || '-'}</TableCell>
+                                        <TableCell sx={{ py: 1.5 }}>{propietario.ciudad}</TableCell>
+                                        <TableCell sx={{ py: 1.5 }}>
+                                            <FormControl size="small" sx={{ minWidth: 100 }}>
+                                                <Select
+                                                    value={propietario.estado}
+                                                    onChange={(e) => handleEstadoChange(propietario.idPropietario, e.target.value)}
+                                                    IconComponent={KeyboardArrowDownOutlinedIcon}
+                                                    sx={{
+                                                        fontSize: '0.75rem',
+                                                        py: 0.5,
+                                                        color: propietario.estado === 'Activo' ? '#10b981' :
+                                                               propietario.estado === 'Inactivo' ? '#dc2626' : '#f59e0b',
+                                                    }}
+                                                    MenuProps={filterMenuProps}
+                                                >
+                                                    {ESTADOS.map(estado => (
+                                                        <MenuItem key={estado} value={estado}>{estado}</MenuItem>
+                                                    ))}
+                                                </Select>
+                                            </FormControl>
+                                        </TableCell>
+                                        <TableCell sx={{ py: 1.5 }}>
+                                            <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                                <Tooltip title="Ver detalle">
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={() => setPropietarioVer(propietario)}
+                                                        sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}
+                                                    >
+                                                        <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
+                                                    </IconButton>
+                                                </Tooltip>
+                                                <Tooltip title="Editar">
+                                                    <IconButton
+                                                        size="small"
+                                                        component={Link}
+                                                        to={`/transporte/propietarios/actualizar/${propietario.idPropietario}`}
+                                                        sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}
+                                                    >
+                                                        <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                                                    </IconButton>
+                                                </Tooltip>
+                                            </Box>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+            </Paper>
+
+            <Box sx={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                px: 0.5, pt: 1.5,
+            }}>
+                <Typography variant="body2" color={COLORS.textMuted}>
+                    Total de propietarios: {propietariosFiltrados.length}
+                </Typography>
+            </Box>
+
+            {propietarioVer && (
+                <Dialog open onClose={() => setPropietarioVer(null)} maxWidth="md" fullWidth
+                    slotProps={{ paper: { sx: { borderRadius: 3, p: 3, backgroundColor: '#FAFAFA' } } }}>
+                    <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${COLORS.border}`, backgroundColor: 'white', mb: 2 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                            <PersonOutlinedIcon sx={{ fontSize: 22, color: COLORS.text }} />
+                            <Typography fontWeight={700} fontSize="1.05rem" color={COLORS.text}>Perfil</Typography>
+                        </Box>
+                        <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2.5 }}>
+                            Información del perfil del propietario
+                        </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5 }}>
+                            <Avatar sx={{ backgroundColor: '#FFCDD2', color: '#C62828', width: 70, height: 70, fontSize: '1.5rem', fontWeight: 700 }}>
+                                {propietarioVer.nombre?.[0]}{propietarioVer.apellido?.[0]}
+                            </Avatar>
+                            <Box>
+                                <Typography fontWeight={700} fontSize="1.1rem" color={COLORS.text}>
+                                    {propietarioVer.nombre} {propietarioVer.apellido}
+                                </Typography>
+                                <Typography variant="body2" color={COLORS.textMuted} mt={0.4}>
+                                    {propietarioVer.email || 'Sin email'}
+                                </Typography>
+                            </Box>
+                        </Box>
+                    </Paper>
+
+                    <Box sx={{ display: 'flex', gap: 2 }}>
+                        <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${COLORS.border}`, backgroundColor: 'white', flex: 1 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                <AssignmentIndOutlinedIcon sx={{ fontSize: 22, color: COLORS.text }} />
+                                <Typography fontWeight={700} fontSize="1.05rem" color={COLORS.text}>Detalles del Propietario</Typography>
+                            </Box>
+                            <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2 }}>
+                                Identificación y datos personales
+                            </Typography>
+                            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                                <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Tipo ID</Typography><Typography variant="body2" fontWeight={500}>{getTipoIdentificacionLabel(propietarioVer.tipoIdentificacion)}</Typography></Box>
+                                <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Número ID</Typography><Typography variant="body2" fontWeight={500}>{propietarioVer.numeroIdentificacion}</Typography></Box>
+                                <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Nombre</Typography><Typography variant="body2" fontWeight={500}>{propietarioVer.nombre}</Typography></Box>
+                                <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Apellido</Typography><Typography variant="body2" fontWeight={500}>{propietarioVer.apellido}</Typography></Box>
+                            </Box>
+                        </Paper>
+
+                        <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${COLORS.border}`, backgroundColor: 'white', flex: 1 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                <PhoneOutlinedIcon sx={{ fontSize: 22, color: COLORS.text }} />
+                                <Typography fontWeight={700} fontSize="1.05rem" color={COLORS.text}>Información de Contacto</Typography>
+                            </Box>
+                            <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2 }}>
+                                Datos de contacto y ubicación
+                            </Typography>
+                            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                                <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Teléfono</Typography><Typography variant="body2" fontWeight={500}>{propietarioVer.telefono}</Typography></Box>
+                                <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Ciudad</Typography><Typography variant="body2" fontWeight={500}>{propietarioVer.ciudad}</Typography></Box>
+                                <Box sx={{ gridColumn: '1 / -1' }}><Typography variant="caption" color="#8A94A6" fontWeight={600}>Email</Typography><Typography variant="body2" fontWeight={500}>{propietarioVer.email || '—'}</Typography></Box>
+                                <Box sx={{ gridColumn: '1 / -1' }}><Typography variant="caption" color="#8A94A6" fontWeight={600}>Estado</Typography><Typography variant="body2" fontWeight={500} color={propietarioVer.estado === 'Activo' ? '#2E7D32' : '#ef4444'}>{propietarioVer.estado}</Typography></Box>
+                            </Box>
+                        </Paper>
+                    </Box>
+
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+                        <Button onClick={() => setPropietarioVer(null)} variant="contained" sx={{
+                            backgroundColor: COLORS.primary, borderRadius: 2, textTransform: 'none',
+                            boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
+                            '&:hover': { backgroundColor: '#b91c1c', boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
+                        }}>
+                            Cerrar
+                        </Button>
+                    </Box>
+                </Dialog>
+            )}
+
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={2000}
+                onClose={() => setSnackbar(s => ({ ...s, open: false }))}
+                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+            >
+                <Alert
+                    severity={snackbar.severity}
+                    sx={{ fontWeight: 600 }}
+                    onClose={() => setSnackbar(s => ({ ...s, open: false }))}
+                >
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </Box>
-
-        <Box sx={{ p: 3, borderBottom: '1px solid #e2e8f0' }}>
-          <TextField fullWidth placeholder="Buscar por nombre, identificación, ciudad o email..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} InputProps={{ startAdornment: (<InputAdornment position="start"><Search sx={{ color: '#94a3b8' }} /></InputAdornment>)}} sx={{ maxWidth: 400, '& .MuiOutlinedInput-root': { borderRadius: 2, '& fieldset': { borderColor: '#e2e8f0' } }}} />
-        </Box>
-
-        <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow sx={{ backgroundColor: '#f8fafc' }}>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Identificación</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Nombre</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Teléfono</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Email</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Ciudad</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a' }}>Habilitado</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: '#0f172a', textAlign: 'center' }}>Acciones</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {filteredPropietarios.length === 0 ? (
-                <TableRow><TableCell colSpan={7} sx={{ textAlign: 'center', py: 4 }}><Typography sx={{ color: '#64748b' }}>No se encontraron propietarios</Typography></TableCell></TableRow>
-              ) : (
-                filteredPropietarios.map((propietario) => (
-                  <TableRow key={propietario.idPropietario} sx={{ '&:hover': { backgroundColor: '#f0f5ff' }, '&:last-child td': { borderBottom: 0 }}}>
-                    <TableCell>
-                      <Box><Chip label={getTipoIdentificacionLabel(propietario.tipoIdentificacion)} size="small" sx={{ fontWeight: 600, backgroundColor: '#fef2f2', color: '#CC1818', mb: 0.5 }} /><Typography sx={{ fontSize: '0.875rem', fontWeight: 600 }}>{propietario.numeroIdentificacion}</Typography></Box>
-                    </TableCell>
-                    <TableCell><Typography sx={{ fontWeight: 600 }}>{propietario.nombre} {propietario.apellido}</Typography></TableCell>
-                    <TableCell>{propietario.telefono}</TableCell>
-                    <TableCell>{propietario.email || '-'}</TableCell>
-                    <TableCell>{propietario.ciudad}</TableCell>
-                    <TableCell sx={{ py: 1.5 }}>
-                      <Switch checked={propietario.habilitado !== false} onChange={() => handleToggleHabilitado(propietario.idPropietario)} sx={{ '& .MuiSwitch-switchBase.Mui-checked': { color: '#10b981' }, '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#10b981' }}} />
-                    </TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
-                        <IconButton size="small" onClick={() => setPropietarioVer(propietario)} sx={{ color: '#1A2E6E', '&:hover': { backgroundColor: '#e8edff' }}}><Visibility fontSize="small" /></IconButton>
-                        <IconButton size="small" component={Link} to={`/transporte/propietarios/actualizar/${propietario.idPropietario}`} sx={{ color: '#CC1818', '&:hover': { backgroundColor: '#fef2f2' }}}><Edit fontSize="small" /></IconButton>
-                      </Box>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-
-        <Box sx={{ p: 2, borderTop: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
-          <Typography sx={{ color: '#64748b', fontSize: '0.875rem' }}>Total de propietarios: <strong>{filteredPropietarios.length}</strong></Typography>
-        </Box>
-      </Paper>
-
-      <Dialog open={!!propietarioVer} onClose={() => setPropietarioVer(null)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pb: 1 }}>
-          <Box sx={{ width: 36, height: 36, borderRadius: '50%', backgroundColor: '#1A2E6E', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <DirectionsCar sx={{ color: 'white', fontSize: 18 }} />
-          </Box>
-          <Box>
-            <Typography fontWeight={700} color="#1A2E6E">{propietarioVer?.nombre} {propietarioVer?.apellido}</Typography>
-            <Typography variant="caption" color="#8A94A6">Detalle del propietario</Typography>
-          </Box>
-        </DialogTitle>
-        <DialogContent dividers>
-          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-            <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Tipo ID</Typography><Typography variant="body2" fontWeight={500}>{getTipoIdentificacionLabel(propietarioVer?.tipoIdentificacion)}</Typography></Box>
-            <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Número ID</Typography><Typography variant="body2" fontWeight={500}>{propietarioVer?.numeroIdentificacion}</Typography></Box>
-            <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Teléfono</Typography><Typography variant="body2" fontWeight={500}>{propietarioVer?.telefono}</Typography></Box>
-            <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Ciudad</Typography><Typography variant="body2" fontWeight={500}>{propietarioVer?.ciudad}</Typography></Box>
-            <Box sx={{ gridColumn: '1 / -1' }}><Typography variant="caption" color="#8A94A6" fontWeight={600}>Email</Typography><Typography variant="body2" fontWeight={500}>{propietarioVer?.email || '-'}</Typography></Box>
-            <Box sx={{ gridColumn: '1 / -1' }}><Typography variant="caption" color="#8A94A6" fontWeight={600}>Estado</Typography><Typography variant="body2" fontWeight={500} color={propietarioVer?.habilitado !== false ? '#2E7D32' : '#ef4444'}>{propietarioVer?.habilitado !== false ? 'Activo' : 'Inactivo'}</Typography></Box>
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, py: 2 }}>
-          <Button onClick={() => setPropietarioVer(null)} variant="contained" sx={{ backgroundColor: '#1A2E6E', borderRadius: 2, textTransform: 'none' }}>Cerrar</Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
-  )
+    )
 }
 
 export default ListarPropietario
