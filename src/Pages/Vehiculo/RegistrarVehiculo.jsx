@@ -85,7 +85,7 @@ const RegistrarTransporte = () => {
       
       // Redirigir al listado después de 2 segundos
       setTimeout(() => {
-        navigate('/transporte/listar')
+        navigate('/vehiculos/listar')
       }, 2000)
     } catch (err) {
       setError('Error al registrar transporte')
