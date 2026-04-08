@@ -132,7 +132,7 @@ const ListarTransporte = () => {
                 </Box>
                 <Button
                     component={Link}
-                    to="/transporte/vehiculos/registrar"
+                    to="/registrar-transporte"
                     variant="contained"
                     startIcon={<AddOutlinedIcon />}
                     sx={{
@@ -286,7 +286,7 @@ const ListarTransporte = () => {
                                                     <IconButton
                                                         size="small"
                                                         component={Link}
-                                                        to={`/vehiculos/actualizar/${transporte.idVehiculo}`}
+                                                        to={`/actualizar-transporte/${transporte.idVehiculo}`}
                                                         sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}
                                                     >
                                                         <EditOutlinedIcon sx={{ fontSize: 18 }} />

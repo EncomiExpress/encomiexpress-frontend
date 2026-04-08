@@ -64,11 +64,7 @@ const SECTIONS = [
         ],
       },
       {
-        id: 'usuarios', label: 'Usuarios', icon: GroupAddIcon, path: '/usuarios',
-        children: [
-          { id: 'usuarios-registrar', label: 'Registrar', icon: PersonAddIcon, path: '/usuarios/registrar' },
-          { id: 'usuarios-listar', label: 'Listar', icon: ListIcon, path: '/usuarios/listar' },
-        ],
+        id: 'usuarios', label: 'Usuarios', icon: GroupAddIcon, path: '/usuarios/listar',
       },
       { id: 'clientes', label: 'Clientes', icon: PeopleIcon, path: '/clientes/listar' },
     ],
@@ -88,26 +84,14 @@ const SECTIONS = [
     id: 'finanzas',
     label: 'Finanzas',
     items: [
-      {
-        id: 'anticipos', label: 'Anticipos y Excedentes', icon: MoneyIcon, path: '/anticipos',
-        children: [
-          { id: 'anticipos-registrar', label: 'Registrar', icon: PersonAddIcon, path: '/anticipos/registrar' },
-          { id: 'anticipos-listar', label: 'Listar', icon: ListIcon, path: '/anticipos/listar' },
-        ],
-      },
+      { id: 'anticipos', label: 'Anticipos y Excedentes', icon: MoneyIcon, path: '/anticipos/listar' },
     ],
   },
   {
     id: 'paquetes',
     label: 'Paquetes',
     items: [
-      {
-        id: 'ventas', label: 'Ventas', icon: SalesIcon, path: '/ventas',
-        children: [
-          { id: 'ventas-registrar', label: 'Nueva venta', icon: PersonAddIcon, path: '/ventas/registrar' },
-          { id: 'ventas-listar', label: 'Listar', icon: ListIcon, path: '/ventas/listar' },
-        ],
-      },
+      { id: 'ventas', label: 'Ventas', icon: SalesIcon, path: '/ventas/listar' },
     ],
   },
 ]

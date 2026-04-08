@@ -13,6 +13,7 @@ import ListarAnticipoExcedente from './Pages/AnticipoExcedente/ListarAnticipoExc
 import ActualizarAnticipoExcedente from './Pages/AnticipoExcedente/ActualizarAnticipoExcedente'
 import ListarUsuario from './Pages/Usuario/ListarUsuario'
 import RegistrarUsuario from './Pages/Usuario/RegistrarUsuario'
+import ActualizarUsuario from './Pages/Usuario/ActualizarUsuario'
 import RegistrarVehiculo from './Pages/Vehiculo/RegistrarVehiculo'
 import ActualizarVehiculo from './Pages/Vehiculo/ActualizarVehiculo'
 import ListarVehiculo from './Pages/Vehiculo/ListarVehiculo'
@@ -121,6 +122,14 @@ const Rutas = () => {
         element={
           <ProtectedRoute permisosRequeridos={[PERMISOS.REGISTRAR_USUARIO]} requiereTodos={false}>
             <Layout><RegistrarUsuario /></Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/usuarios/actualizar/:id"
+        element={
+          <ProtectedRoute permisosRequeridos={[PERMISOS.ACTUALIZAR_USUARIO]} requiereTodos={false}>
+            <Layout><ActualizarUsuario /></Layout>
           </ProtectedRoute>
         }
       />

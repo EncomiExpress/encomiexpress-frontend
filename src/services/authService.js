@@ -189,12 +189,12 @@ export const actualizarUsuario = async (id, datos) => {
 };
 
 /**
- * Inhabilitar usuario
- * DELETE /api/usuarios/:id
+ * Habilitar/Inhabilitar usuario (toggle)
+ * PATCH /api/usuarios/:id/toggle-habilitado
  */
-export const inhabilidadUsuario = async (id) => {
-  return await fetchWithAuth(`/usuarios/${id}`, {
-    method: 'DELETE',
+export const habilitarInhabilitarUsuario = async (id) => {
+  return await fetchWithAuth(`/usuarios/${id}/toggle-habilitado`, {
+    method: 'PATCH',
   });
 };
 
@@ -229,5 +229,5 @@ export default {
   getRolId,
   getUsuarios,
   actualizarUsuario,
-  inhabilidadUsuario,
+  habilitarInhabilitarUsuario,
 };
