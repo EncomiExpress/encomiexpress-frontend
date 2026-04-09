@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Box, Typography, Paper, FormControlLabel, Checkbox, Grid, Alert } from '@mui/material'
+import { Box, Typography, Paper, FormControlLabel, Checkbox, Grid, Alert, Snackbar } from '@mui/material'
 import { Security } from '@mui/icons-material'
 import { MODULOS, ROLES } from '../../Context/AuthContext'
 import { 
@@ -76,12 +76,6 @@ const ActualizarRol = () => {
           </Typography>
         </Box>
       </Box>
-
-      {mensaje && (
-        <Alert severity="success" sx={{ mb: 2, borderRadius: 2 }}>
-          {mensaje}
-        </Alert>
-      )}
 
       {error && (
         <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
@@ -209,6 +203,12 @@ const ActualizarRol = () => {
           </FormButtonGroup>
         </form>
       </Paper>
+
+      <Snackbar open={!!mensaje} autoHideDuration={2500} onClose={() => setMensaje('')} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
+        <Alert severity="success" variant="filled" sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }} onClose={() => setMensaje('')}>
+          ¡Rol actualizado exitosamente!
+        </Alert>
+      </Snackbar>
     </Box>
   )
 }

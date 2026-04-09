@@ -150,7 +150,7 @@ const ListarTransporte = () => {
                 </Box>
                 <Button
                     component={Link}
-                    to="/registrar-transporte"
+                    to="/vehiculos/registrar"
                     variant="contained"
                     startIcon={<AddOutlinedIcon />}
                     sx={{

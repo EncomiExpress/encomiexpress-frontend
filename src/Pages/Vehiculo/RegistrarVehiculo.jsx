@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Box, TextField, Typography, Paper, MenuItem, Select, FormControl, InputLabel, InputAdornment, Stepper, Step, StepLabel } from '@mui/material'
+import { Box, TextField, Typography, Paper, MenuItem, Select, FormControl, InputLabel, InputAdornment, Stepper, Step, StepLabel, Snackbar, Alert } from '@mui/material'
 import { DirectionsCar, Person, Business, Event, Speed } from '@mui/icons-material'
 import { useTransporte } from '../../Context/TransporteContext'
 import { useAuth } from '../../Context/AuthContext'
@@ -262,12 +262,6 @@ const RegistrarTransporte = () => {
           subtitle="Ingresa los datos del vehículo"
         />
 
-        {success && (
-          <FormAlert severity="success">
-            {success}
-          </FormAlert>
-        )}
-
         {error && (
           <FormAlert>
             {error}
@@ -320,6 +314,12 @@ const RegistrarTransporte = () => {
           </FormButtonGroup>
         </form>
       </Paper>
+
+      <Snackbar open={!!success} autoHideDuration={2500} onClose={() => setSuccess('')} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
+        <Alert severity="success" variant="filled" sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }} onClose={() => setSuccess('')}>
+          ¡Vehículo registrado exitosamente!
+        </Alert>
+      </Snackbar>
     </Box>
   )
 }

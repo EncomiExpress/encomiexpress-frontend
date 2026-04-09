@@ -428,8 +428,8 @@ const ActualizarVehiculo = () => {
         </Box>
       </Paper>
 
-      <Snackbar open={success} autoHideDuration={1500} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
-        <Alert severity="success" sx={{ fontWeight: 600 }}>
+      <Snackbar open={success} autoHideDuration={2500} onClose={() => setSuccess(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
+        <Alert severity="success" variant="filled" sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }} onClose={() => setSuccess(false)}>
           ¡Vehículo actualizado exitosamente!
         </Alert>
       </Snackbar>

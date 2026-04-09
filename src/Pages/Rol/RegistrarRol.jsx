@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Box, Typography, Paper, FormControlLabel, Checkbox, Grid, Alert, Collapse, IconButton } from '@mui/material'
+import { Box, Typography, Paper, FormControlLabel, Checkbox, Grid, Alert, Collapse, IconButton, Snackbar } from '@mui/material'
 import { Security, ExpandMore, ExpandLess, CheckBox, CheckBoxOutlineBlank } from '@mui/icons-material'
 import { useAuth, PERMISOS, MODULOS } from '../../Context/AuthContext'
 import { 
@@ -170,12 +170,6 @@ const RegistrarRol = () => {
           subtitle="Asigna permisos por módulos"
         />
 
-        {mensaje && (
-          <FormAlert severity="success">
-            {mensaje}
-          </FormAlert>
-        )}
-
         {error && (
           <FormAlert>
             {error}
@@ -310,6 +304,12 @@ const RegistrarRol = () => {
           </FormButtonGroup>
         </form>
       </Paper>
+
+      <Snackbar open={!!mensaje} autoHideDuration={2500} onClose={() => setMensaje('')} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
+        <Alert severity="success" variant="filled" sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }} onClose={() => setMensaje('')}>
+          ¡Rol registrado exitosamente!
+        </Alert>
+      </Snackbar>
     </Box>
   )
 }

@@ -382,8 +382,8 @@ const ActualizarCliente = () => {
                 </Box>
             </Paper>
 
-            <Snackbar open={exito} autoHideDuration={1500} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
-                <Alert severity="success" sx={{ fontWeight: 600 }}>
+            <Snackbar open={exito} autoHideDuration={2500} onClose={() => setExito(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
+                <Alert severity="success" variant="filled" sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }} onClose={() => setExito(false)}>
                     ¡Cliente actualizado exitosamente!
                 </Alert>
             </Snackbar>
