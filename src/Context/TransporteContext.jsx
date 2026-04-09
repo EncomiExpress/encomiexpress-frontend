@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from 'react'
+import { createContext, useContext, useState, useCallback } from 'react'
 
 const TransporteContext = createContext()
 
@@ -63,68 +63,84 @@ export const TransporteProvider = ({ children }) => {
   const [transportes, setTransportes] = useState(transportesMock)
 
   // Obtener todos los transportes
-  const getTransportes = () => {
+  const getTransportes = useCallback(() => {
     return transportes
-  }
+  }, [transportes])
 
   // Obtener transporte por ID
-  const getTransporteById = (id) => {
-    return transportes.find(t => t.idVehiculo === id)
-  }
+  const getTransporteById = useCallback((id) => {
+    return transportes.find(t => t.idVehiculo === parseInt(id))
+  }, [transportes])
 
   // Registrar transporte
-  const registrarTransporte = (nuevoTransporte) => {
-    const maxId = Math.max(...transportes.map(t => t.idVehiculo))
-    const nuevo = {
-      ...nuevoTransporte,
-      idVehiculo: maxId + 1,
-      habilitado: true,
-      fechaRegistro: new Date().toISOString().split('T')[0]
-    }
-    transportes.push(nuevo)
-    return nuevo
-  }
-
-  // Actualizar transporte
-  const actualizarTransporte = (transporteActualizado) => {
-    const index = transportes.findIndex(t => t.idVehiculo === transporteActualizado.idVehiculo)
-    if (index !== -1) {
-      transportes[index] = { ...transportes[index], ...transporteActualizado }
-      return true
-    }
-    return false
-  }
+  const registrarTransporte = useCallback((nuevoTransporte) => {
+    setTransportes(prevTransportes => {
+      const maxId = prevTransportes.length > 0 
+        ? Math.max(...prevTransportes.map(t => t.idVehiculo)) 
+        : 0
+      const nuevo = {
+        ...nuevoTransporte,
+        idVehiculo: maxId + 1,
+        habilitado: true,
+        fechaRegistro: new Date().toISOString().split('T')[0]
+      }
+      return [...prevTransportes, nuevo]
+    })
+    return nuevoTransporte
+  }, [])
 
   // Habilitar/Inhabilitar transporte
-  const toggleHabilitado = (id) => {
-    const index = transportes.findIndex(t => t.idVehiculo === id)
-    if (index !== -1) {
-      transportes[index] = { 
-        ...transportes[index], 
-        habilitado: !transportes[index].habilitado 
+  const toggleHabilitado = useCallback((id) => {
+    setTransportes(prevTransportes => {
+      const index = prevTransportes.findIndex(t => t.idVehiculo === id)
+      if (index !== -1) {
+        const updated = [...prevTransportes]
+        updated[index] = { 
+          ...updated[index], 
+          habilitado: !updated[index].habilitado 
+        }
+        return updated
       }
-      return true
-    }
-    return false
-  }
+      return prevTransportes
+    })
+    return true
+  }, [])
 
   // Actualizar estado del transporte (Activo, Inactivo, Mantenimiento, En Reparación)
-  const updateEstado = (id, nuevoEstado) => {
-    const index = transportes.findIndex(t => t.idVehiculo === id)
-    if (index !== -1) {
-      transportes[index] = { 
-        ...transportes[index], 
-        estado: nuevoEstado 
+  const updateEstado = useCallback((id, nuevoEstado) => {
+    setTransportes(prevTransportes => {
+      const index = prevTransportes.findIndex(t => t.idVehiculo === id)
+      if (index !== -1) {
+        const updated = [...prevTransportes]
+        updated[index] = { 
+          ...updated[index], 
+          estado: nuevoEstado 
+        }
+        return updated
       }
-      return true
-    }
-    return false
-  }
+      return prevTransportes
+    })
+    return true
+  }, [])
+
+  // Actualizar transporte
+  const actualizarTransporte = useCallback((transporteActualizado) => {
+    setTransportes(prevTransportes => {
+      const index = prevTransportes.findIndex(t => t.idVehiculo === transporteActualizado.idVehiculo)
+      if (index !== -1) {
+        const updated = [...prevTransportes]
+        updated[index] = { ...updated[index], ...transporteActualizado }
+        return updated
+      }
+      return prevTransportes
+    })
+    return true
+  }, [])
 
   // Obtener transportes habilitados
-  const getTransportesHabilitados = () => {
+  const getTransportesHabilitados = useCallback(() => {
     return transportes.filter(t => t.habilitado)
-  }
+  }, [transportes])
 
   return (
     <TransporteContext.Provider value={{

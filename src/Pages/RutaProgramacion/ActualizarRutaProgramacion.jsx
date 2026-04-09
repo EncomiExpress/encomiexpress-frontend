@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Box, TextField, Typography, Paper, MenuItem, Select, FormControl, InputLabel } from '@mui/material'
+import { Box, TextField, Typography, Paper, MenuItem, Select, FormControl, InputLabel, Snackbar, Alert } from '@mui/material'
 import { Route, DirectionsCar, Person, LocationOn, Event, Schedule } from '@mui/icons-material'
 import { useRutaProgramacion } from '../../Context/RutaProgramacionContext'
 import { useTransporte } from '../../Context/TransporteContext'
@@ -8,8 +8,7 @@ import { useConductor } from '../../Context/ConductorContext'
 import { useDestino } from '../../Context/DestinoContext'
 import { useAuth } from '../../Context/AuthContext'
 import { 
-  FormField, FormSelect, PrimaryButton, SecondaryButton, 
-  FormAlert, FormHeader, FormButtonGroup, FormGrid 
+  FormField, FormSelect, PrimaryButton, SecondaryButton, FormButtonGroup, FormGrid 
 } from '../../Components/FormularioEstandarizado'
 
 const ActualizarRutaProgramacion = () => {
@@ -127,28 +126,26 @@ const ActualizarRutaProgramacion = () => {
   }
 
   return (
-    <Box sx={{ p: 4 }}>
-      <Paper elevation={0} sx={{ p: 4, borderRadius: 2, border: '1px solid #e2e8f0', maxWidth: 900, mx: 'auto' }}>
-        <FormHeader 
-          icon={Route} 
-          title="Actualizar Ruta Programada" 
-          subtitle="Modifica los datos de la ruta"
-        />
+    <Box sx={{ p: 3.5 }}>
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="h5" fontWeight={700} color="#1a0e0c">Actualizar Ruta Programada</Typography>
+        <Typography variant="body2" color="#8A94A6" mt={0.3}>
+          Modifica los datos de la ruta
+        </Typography>
+      </Box>
 
-        {success && (
-          <FormAlert severity="success">
-            {success}
-          </FormAlert>
-        )}
-
+      <Paper elevation={0} sx={{ border: '1px solid #E0E0E0', borderRadius: 3, overflow: 'hidden' }}>
         {error && (
-          <FormAlert>
-            {error}
-          </FormAlert>
+          <Box sx={{ p: 2, borderBottom: '1px solid #E0E0E0', backgroundColor: '#FFF5F5' }}>
+            <Alert severity="error" sx={{ borderRadius: 2 }} onClose={() => setError('')}>
+              {error}
+            </Alert>
+          </Box>
         )}
 
-        <form onSubmit={handleSubmit}>
-          <FormGrid>
+        <Box sx={{ p: 3 }}>
+          <form onSubmit={handleSubmit}>
+            <FormGrid>
             {/* Nombre de la Ruta */}
             <FormField
               label="Nombre de la Ruta"
@@ -271,7 +268,14 @@ const ActualizarRutaProgramacion = () => {
             </Box>
           </FormButtonGroup>
         </form>
+        </Box>
       </Paper>
+
+      <Snackbar open={!!success} autoHideDuration={2500} onClose={() => setSuccess('')} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
+        <Alert severity="success" variant="filled" sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }} onClose={() => setSuccess('')}>
+          ¡Ruta programada actualizada exitosamente!
+        </Alert>
+      </Snackbar>
     </Box>
   )
 }

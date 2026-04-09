@@ -138,22 +138,6 @@ const RegistrarAnticipoExcedente = () => {
 
     const excedente = parseFloat(form.valorAnticipo || 0) - parseFloat(form.valorGastado || 0)
 
-    const getNombreConductor = (id) => {
-        const c = conductoresMock.find(c => c.idConductor === parseInt(id))
-        return c ? c.nombre : '—'
-    }
-
-    const getNombreRuta = (id) => {
-        const r = rutasMock.find(r => r.idRuta === parseInt(id))
-        return r ? r.nombre : '—'
-    }
-
-    const formatFecha = (fecha) => {
-        if (!fecha) return '—'
-        const [y, m, d] = fecha.split('-')
-        return `${d}/${m}/${y}`
-    }
-
     const renderStepContent = () => {
         switch (activeStep) {
             case 0:
@@ -392,8 +376,8 @@ const RegistrarAnticipoExcedente = () => {
                 </Box>
             </Paper>
 
-            <Snackbar open={exito} autoHideDuration={1500} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
-                <Alert severity="success" sx={{ fontWeight: 600 }}>
+            <Snackbar open={exito} autoHideDuration={2500} onClose={() => setExito(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
+                <Alert severity="success" variant="filled" sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }} onClose={() => setExito(false)}>
                     ¡Anticipo registrado exitosamente!
                 </Alert>
             </Snackbar>
