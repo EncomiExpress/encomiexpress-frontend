@@ -77,7 +77,7 @@ const RegistrarCliente = () => {
 
         // Solo letras sin tildes, números, espacios y caracteres especiales básicos en dirección
         if (name === 'direccion') {
-            value = value.replace(/[^a-zA-Z0-9\s,.\-#\/']/g, '')
+            value = value.replace(/[^a-zA-Z0-9\s,.\-#/' ]/g, '')
         }
 
         setForm(prev => ({ ...prev, [name]: value }))

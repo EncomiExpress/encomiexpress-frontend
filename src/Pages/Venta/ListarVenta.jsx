@@ -238,6 +238,12 @@ const filterMenuProps = {
 // ── Filtros de estado (habilitado) ──
 const FILTROS = [
     { value: 'todo', label: 'Todo' },
+    { value: 'pendiente de recogida', label: 'Pendiente' },
+    { value: 'en recogida', label: 'En Recogida' },
+    { value: 'programada', label: 'Programada' },
+    { value: 'en tránsito', label: 'En Tránsito' },
+    { value: 'entregado', label: 'Entregado' },
+    { value: 'devuelto', label: 'Devuelto' },
 ]
 
 // ── Componente principal ──
@@ -246,7 +252,7 @@ const ListarVenta = () => {
     const { ventas, loading, error, invalidateVenta, cambiarEstadoVenta } = useVentas()
 
     const [busqueda, setBusqueda] = useState('')
-    const [filtroEstadoEncomienda, setFiltroEstadoEncomienda] = useState('todos')
+    const [filtroEstadoEncomienda, setFiltroEstadoEncomienda] = useState('todo')
     const [filtroPago, setFiltroPago] = useState('todos')
     const [filtroMetodoPago, setFiltroMetodoPago] = useState('todos')
     const [page, setPage] = useState(1)
@@ -263,12 +269,22 @@ const ListarVenta = () => {
             v.destinatario?.nombreDestinatario?.toLowerCase().includes(q) ||
             v.ruta?.destino?.toLowerCase().includes(q)
 
-        const coincideEstado = filtroEstadoEncomienda === 'todos' || v.estado === filtroEstadoEncomienda
+        const coincideEstado = filtroEstadoEncomienda === 'todo' || v.estado === filtroEstadoEncomienda
         const coincidePago = filtroPago === 'todos' || v.estadoPago?.toLowerCase() === filtroPago.toLowerCase()
         const coincideMetodo = filtroMetodoPago === 'todos' || v.metodoPago?.toLowerCase() === filtroMetodoPago.toLowerCase()
 
         return coincideBusqueda && coincideEstado && coincidePago && coincideMetodo
     })
+
+    const limpiarFiltros = () => {
+        setBusqueda('')
+        setFiltroEstadoEncomienda('todo')
+        setFiltroPago('todos')
+        setFiltroMetodoPago('todos')
+        setPage(1)
+    }
+
+    const hayFiltrosActivos = busqueda || filtroEstadoEncomienda !== 'todo' || filtroPago !== 'todos' || filtroMetodoPago !== 'todos'
 
     const handleEstadoChange = async (id, nuevoEstado) => {
         try {
@@ -286,16 +302,6 @@ const ListarVenta = () => {
             })
         }
     }
-
-    const limpiarFiltros = () => {
-        setBusqueda('')
-        setFiltroEstadoEncomienda('todos')
-        setFiltroPago('todos')
-        setFiltroMetodoPago('todos')
-        setPage(1)
-    }
-
-    const hayFiltrosActivos = busqueda || filtroEstadoEncomienda !== 'todos' || filtroPago !== 'todos' || filtroMetodoPago !== 'todos'
 
     const totalPages = Math.max(1, Math.ceil(ventasFiltradas.length / rowsPerPage))
     const safePage = Math.min(page, totalPages)
@@ -360,6 +366,47 @@ const ListarVenta = () => {
             )}
 
             {/* ── Filtros de estado (habilitado) ── */}
+            <Box sx={{
+                display: 'inline-flex',
+                backgroundColor: '#FFECEC',
+                borderRadius: 4,
+                p: '4px',
+                mb: 2.5,
+                gap: '5px',
+            }}>
+                {FILTROS.map(f => (
+                    <Button
+                        key={f.value}
+                        onClick={() => { setFiltroEstadoEncomienda(f.value); setPage(1) }}
+                        size="small"
+                        disableElevation
+                        disableRipple
+                        sx={{
+                            borderRadius: 3,
+                            textTransform: 'none',
+                            fontSize: '0.75rem',
+                            px: 2,
+                            py: 0.5,
+                            minWidth: 0,
+                            fontWeight: filtroEstadoEncomienda === f.value ? 600 : 400,
+                            backgroundColor: filtroEstadoEncomienda === f.value ? 'white' : 'transparent',
+                            color: filtroEstadoEncomienda === f.value ? COLORS.text : '#B05050',
+                            boxShadow: filtroEstadoEncomienda === f.value
+                                ? '0 1px 4px rgba(0,0,0,0.12)'
+                                : 'none',
+                            border: 'none',
+                            '&:hover': {
+                                backgroundColor: filtroEstadoEncomienda === f.value ? 'white' : 'transparent',
+                                color: filtroEstadoEncomienda === f.value ? COLORS.text : '#5C3333',
+                                border: 'none',
+                            },
+                        }}
+                    >
+                        {f.label}
+                    </Button>
+                ))}
+            </Box>
+
             {/* ── Búsqueda + filtros + Export ── */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
                 <TextField
@@ -745,13 +792,19 @@ const ListarVenta = () => {
 
             <Snackbar
                 open={snackbar.open}
-                autoHideDuration={2000}
+                autoHideDuration={3000}
                 onClose={() => setSnackbar(s => ({ ...s, open: false }))}
-                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
             >
                 <Alert
                     severity={snackbar.severity}
-                    sx={{ fontWeight: 600 }}
+                    variant="filled"
+                    sx={{ 
+                        fontWeight: 600,
+                        borderRadius: 2,
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                        fontSize: '0.85rem',
+                    }}
                     onClose={() => setSnackbar(s => ({ ...s, open: false }))}
                 >
                     {snackbar.message}

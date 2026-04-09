@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from 'react'
+import { createContext, useContext, useState, useCallback } from 'react'
 
 const TransporteContext = createContext()
 
@@ -63,17 +63,17 @@ export const TransporteProvider = ({ children }) => {
   const [transportes, setTransportes] = useState(transportesMock)
 
   // Obtener todos los transportes
-  const getTransportes = () => {
+  const getTransportes = useCallback(() => {
     return transportes
-  }
+  }, [transportes])
 
   // Obtener transporte por ID
-  const getTransporteById = (id) => {
-    return transportes.find(t => t.idVehiculo === id)
-  }
+  const getTransporteById = useCallback((id) => {
+    return transportes.find(t => t.idVehiculo === parseInt(id))
+  }, [transportes])
 
   // Registrar transporte
-  const registrarTransporte = (nuevoTransporte) => {
+  const registrarTransporte = useCallback((nuevoTransporte) => {
     setTransportes(prevTransportes => {
       const maxId = prevTransportes.length > 0 
         ? Math.max(...prevTransportes.map(t => t.idVehiculo)) 
@@ -87,10 +87,10 @@ export const TransporteProvider = ({ children }) => {
       return [...prevTransportes, nuevo]
     })
     return nuevoTransporte
-  }
+  }, [])
 
   // Habilitar/Inhabilitar transporte
-  const toggleHabilitado = (id) => {
+  const toggleHabilitado = useCallback((id) => {
     setTransportes(prevTransportes => {
       const index = prevTransportes.findIndex(t => t.idVehiculo === id)
       if (index !== -1) {
@@ -104,10 +104,10 @@ export const TransporteProvider = ({ children }) => {
       return prevTransportes
     })
     return true
-  }
+  }, [])
 
   // Actualizar estado del transporte (Activo, Inactivo, Mantenimiento, En Reparación)
-  const updateEstado = (id, nuevoEstado) => {
+  const updateEstado = useCallback((id, nuevoEstado) => {
     setTransportes(prevTransportes => {
       const index = prevTransportes.findIndex(t => t.idVehiculo === id)
       if (index !== -1) {
@@ -121,10 +121,10 @@ export const TransporteProvider = ({ children }) => {
       return prevTransportes
     })
     return true
-  }
+  }, [])
 
   // Actualizar transporte
-  const actualizarTransporte = (transporteActualizado) => {
+  const actualizarTransporte = useCallback((transporteActualizado) => {
     setTransportes(prevTransportes => {
       const index = prevTransportes.findIndex(t => t.idVehiculo === transporteActualizado.idVehiculo)
       if (index !== -1) {
@@ -135,12 +135,12 @@ export const TransporteProvider = ({ children }) => {
       return prevTransportes
     })
     return true
-  }
+  }, [])
 
   // Obtener transportes habilitados
-  const getTransportesHabilitados = () => {
+  const getTransportesHabilitados = useCallback(() => {
     return transportes.filter(t => t.habilitado)
-  }
+  }, [transportes])
 
   return (
     <TransporteContext.Provider value={{

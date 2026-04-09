@@ -64,6 +64,10 @@ const filterMenuProps = {
 
 const FILTROS = [
     { value: 'todo', label: 'Todo' },
+    { value: 'Programada', label: 'Programada' },
+    { value: 'En Curso', label: 'En Curso' },
+    { value: 'Completada', label: 'Completada' },
+    { value: 'Cancelada', label: 'Cancelada' },
 ]
 
 const getEstadoColor = (estado) => {
@@ -81,6 +85,8 @@ const ListarRutaProgramacion = () => {
     const [searchTerm, setSearchTerm] = useState('')
     const [rutaVer, setRutaVer] = useState(null)
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
+    const [filtroEstado, setFiltroEstado] = useState('todo')
+    const [page, setPage] = useState(1)
     
     const { getRutasProgramadas, updateEstado } = useRutaProgramacion()
     const { getTransportes } = useTransporte()
@@ -133,8 +139,20 @@ const ListarRutaProgramacion = () => {
             getVehiculoPlaca(r.idVehiculo).toLowerCase().includes(q) ||
             getConductorNombre(r.idConductor).toLowerCase().includes(q)
 
-        return coincideBusqueda
+        const coincideEstado =
+            filtroEstado === 'todo' ||
+            r.estado === filtroEstado
+
+        return coincideBusqueda && coincideEstado
     })
+
+    const limpiarFiltros = () => {
+        setSearchTerm('')
+        setFiltroEstado('todo')
+        setPage(1)
+    }
+
+    const hayFiltrosActivos = searchTerm.trim() !== '' || filtroEstado !== 'todo'
 
     return (
         <Box sx={{ p: 3.5 }}>
@@ -183,6 +201,51 @@ const ListarRutaProgramacion = () => {
             </Box>
 
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
+            </Box>
+
+            {/* ── Filtros de estado ── */}
+            <Box sx={{
+                display: 'inline-flex',
+                backgroundColor: '#FFECEC',
+                borderRadius: 4,
+                p: '4px',
+                mb: 2.5,
+                gap: '5px',
+            }}>
+                {FILTROS.map(f => (
+                    <Button
+                        key={f.value}
+                        onClick={() => { setFiltroEstado(f.value); setPage(1) }}
+                        size="small"
+                        disableElevation
+                        disableRipple
+                        sx={{
+                            borderRadius: 3,
+                            textTransform: 'none',
+                            fontSize: '0.75rem',
+                            px: 2,
+                            py: 0.5,
+                            minWidth: 0,
+                            fontWeight: filtroEstado === f.value ? 600 : 400,
+                            backgroundColor: filtroEstado === f.value ? 'white' : 'transparent',
+                            color: filtroEstado === f.value ? COLORS.text : '#B05050',
+                            boxShadow: filtroEstado === f.value
+                                ? '0 1px 4px rgba(0,0,0,0.12)'
+                                : 'none',
+                            border: 'none',
+                            '&:hover': {
+                                backgroundColor: filtroEstado === f.value ? 'white' : 'transparent',
+                                color: filtroEstado === f.value ? COLORS.text : '#5C3333',
+                                border: 'none',
+                            },
+                        }}
+                    >
+                        {f.label}
+                    </Button>
+                ))}
+            </Box>
+
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
                 <TextField
                     size="small"
                     placeholder="Buscar rutas..."
@@ -215,6 +278,16 @@ const ListarRutaProgramacion = () => {
                         }
                     }}
                 />
+
+                {hayFiltrosActivos && (
+                    <Chip
+                        label="Limpiar"
+                        size="small"
+                        icon={<ClearIcon sx={{ fontSize: '14px !important' }} />}
+                        onClick={limpiarFiltros}
+                        sx={{ fontSize: '0.72rem', height: 28, cursor: 'pointer', backgroundColor: COLORS.primaryLight, color: COLORS.primary }}
+                    />
+                )}
             </Box>
 
             <Paper elevation={0} sx={{ border: `1px solid ${COLORS.border}`, borderRadius: 3, overflow: 'hidden' }}>
@@ -344,7 +417,7 @@ const ListarRutaProgramacion = () => {
                     <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${COLORS.border}`, backgroundColor: 'white', mb: 2 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                             <RouteIcon sx={{ fontSize: 22, color: COLORS.text }} />
-                            <Typography fontWeight={700} fontSize="1.05rem" color={COLORS.text}>Perfil</Typography>
+                            <Typography fontWeight={700} fontSize="1.05rem" color={COLORS.text}>Detalles de la Ruta</Typography>
                         </Box>
                         <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2.5 }}>
                             Información de la ruta programada
@@ -410,13 +483,19 @@ const ListarRutaProgramacion = () => {
 
             <Snackbar
                 open={snackbar.open}
-                autoHideDuration={2000}
+                autoHideDuration={3000}
                 onClose={() => setSnackbar(s => ({ ...s, open: false }))}
-                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
             >
                 <Alert
                     severity={snackbar.severity}
-                    sx={{ fontWeight: 600 }}
+                    variant="filled"
+                    sx={{ 
+                        fontWeight: 600,
+                        borderRadius: 2,
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                        fontSize: '0.85rem',
+                    }}
                     onClose={() => setSnackbar(s => ({ ...s, open: false }))}
                 >
                     {snackbar.message}

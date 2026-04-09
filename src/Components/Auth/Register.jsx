@@ -69,7 +69,7 @@ const Register = () => {
     setError('')
     setSuccess('')
 
-    const { tipoIdentificacion, numeroIdentificacion, nombre, apellido, telefono, email, password, idRol } = formData
+    const { tipoIdentificacion, numeroIdentificacion, nombre, apellido, email, password, idRol } = formData
 
     if (!tipoIdentificacion || !numeroIdentificacion || !nombre || !apellido || !email || !password) {
       setError('Todos los campos son requeridos')
@@ -99,7 +99,7 @@ const Register = () => {
       } else {
         setError(resultado.mensaje || 'Error al registrar usuario')
       }
-    } catch (err) {
+    } catch {
       setError('Error de conexión. Intenta de nuevo.')
     } finally {
       setLoading(false)

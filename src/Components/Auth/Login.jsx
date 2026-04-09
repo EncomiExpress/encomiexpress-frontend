@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { Box, TextField, Button, Typography, Paper, Alert, Grid, MenuItem, Select, FormControl, InputLabel, InputAdornment, IconButton, Divider, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material'
 import {
@@ -38,14 +38,16 @@ const Login = () => {
   const { login, registrarUsuario, usuario } = useAuth()
   const navigate = useNavigate()
 
-  // Effect para navegar al dashboard cuando el usuario está establecido
-  // Solo navega si NO estamos en modo carga y si no hemos navegado antes
+  const shouldNavigate = useMemo(() => {
+    return usuario && !cargando && !yaNavego
+  }, [usuario, cargando, yaNavego])
+
   useEffect(() => {
-    if (usuario && !cargando && !yaNavego) {
+    if (shouldNavigate && !yaNavego) {
       setYaNavego(true)
       navigate('/dashboard')
     }
-  }, [usuario, navigate, cargando, yaNavego])
+  }, [shouldNavigate, yaNavego, navigate])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -81,7 +83,7 @@ const Login = () => {
         setCargando(false)
         setError(resultado.mensaje)
       }
-    } catch (err) {
+    } catch {
       setCargando(false)
       setError('Error al iniciar sesión')
     }
@@ -103,7 +105,7 @@ const Login = () => {
       setRegisterSuccess('Usuario registrado correctamente. Ahora puedes iniciar sesión.')
       setOpenRegister(false)
       setRegisterData({ nombre: '', email: '', password: '', rol: '', iniciales: '' })
-    } catch (err) {
+    } catch {
       setRegisterError('Error al registrar usuario')
     }
   }

@@ -94,7 +94,7 @@ const ActualizarCliente = () => {
         }
         // Solo letras sin tildes, números, espacios y caracteres especiales básicos en dirección
         if (name === 'direccion') {
-            value = value.replace(/[^a-zA-Z0-9\s,.\-#\/']/g, '')
+            value = value.replace(/[^a-zA-Z0-9\s,.\-#/' ]/g, '')
         }
 
         setForm(prev => ({ ...prev, [name]: value }))
@@ -107,7 +107,6 @@ const ActualizarCliente = () => {
         const e = {}
         const soloLetras = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/
         const soloNumeros = /^\d+$/
-        const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
         if (step === 0) {
             if (!form.nombre.trim()) e.nombre = 'El nombre es obligatorio'

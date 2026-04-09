@@ -138,22 +138,6 @@ const RegistrarAnticipoExcedente = () => {
 
     const excedente = parseFloat(form.valorAnticipo || 0) - parseFloat(form.valorGastado || 0)
 
-    const getNombreConductor = (id) => {
-        const c = conductoresMock.find(c => c.idConductor === parseInt(id))
-        return c ? c.nombre : '—'
-    }
-
-    const getNombreRuta = (id) => {
-        const r = rutasMock.find(r => r.idRuta === parseInt(id))
-        return r ? r.nombre : '—'
-    }
-
-    const formatFecha = (fecha) => {
-        if (!fecha) return '—'
-        const [y, m, d] = fecha.split('-')
-        return `${d}/${m}/${y}`
-    }
-
     const renderStepContent = () => {
         switch (activeStep) {
             case 0:

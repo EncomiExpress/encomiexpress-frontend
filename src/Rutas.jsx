@@ -18,6 +18,7 @@ import RegistrarVehiculo from './Pages/Vehiculo/RegistrarVehiculo'
 import ActualizarVehiculo from './Pages/Vehiculo/ActualizarVehiculo'
 import ListarVehiculo from './Pages/Vehiculo/ListarVehiculo'
 import RegistrarRol from './Pages/Rol/RegistrarRol'
+import ActualizarRol from './Pages/Rol/ActualizarRol'
 import ListarRol from './Pages/Rol/ListarRol'
 import ListarPropietario from './Pages/Propietario/ListarPropietario'
 import RegistrarPropietario from './Pages/Propietario/RegistrarPropietario'
@@ -140,6 +141,14 @@ const Rutas = () => {
         element={
           <ProtectedRoute permisosRequeridos={[PERMISOS.REGISTRAR_ROL]} requiereTodos={false}>
             <Layout><RegistrarRol /></Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/roles/actualizar/:id"
+        element={
+          <ProtectedRoute permisosRequeridos={[PERMISOS.ACTUALIZAR_ROL]} requiereTodos={false}>
+            <Layout><ActualizarRol /></Layout>
           </ProtectedRoute>
         }
       />
@@ -340,7 +349,7 @@ const Rutas = () => {
       <Route
         path="/transporte/registrar"
         element={
-          <ProtectedRoute permisosRequeridos={[PERMISOS.REGISTRAR_TRANSPORTE]} requiereTodos={false}>
+          <ProtectedRoute permisosRequeridos={[PERMISOS.REGISTRAR_VEHICULO]} requiereTodos={false}>
             <Layout>
               <div style={{ padding: 20 }}>
                 <h2>Registrar Transporte</h2>
@@ -353,7 +362,7 @@ const Rutas = () => {
       <Route
         path="/transporte/listar"
         element={
-          <ProtectedRoute permisosRequeridos={[]}>
+          <ProtectedRoute permisosRequeridos={[PERMISOS.LISTAR_VEHICULO]} requiereTodos={false}>
             <Layout>
               <div style={{ padding: 20 }}>
                 <h2>Listar Transporte</h2>

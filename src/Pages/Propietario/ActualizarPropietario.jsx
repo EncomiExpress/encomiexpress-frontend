@@ -89,7 +89,7 @@ const ActualizarPropietario = () => {
             value = value.replace(/[^a-zA-Z0-9._-]/g, '')
         }
         if (name === 'direccion') {
-            value = value.replace(/[^a-zA-Z0-9\s,.\-#\/']/g, '')
+            value = value.replace(/[^a-zA-Z0-9\s,.\-#/' ]/g, '')
         }
 
         setForm(prev => ({ ...prev, [name]: value }))

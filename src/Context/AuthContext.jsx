@@ -342,7 +342,7 @@ export const ROLES = {
 }
 
 // Obtener permisos del rol por nombre
-const getPermisosPorRol = (nombreRol) => {
+const _getPermisosPorRol = (nombreRol) => {
   const rol = Object.values(ROLES).find(r => r.nombre === nombreRol)
   return rol ? rol.permisos : []
 }
@@ -472,6 +472,15 @@ export const AuthProvider = ({ children }) => {
   // Obtener todos los roles disponibles
   const getRoles = () => Object.values(ROLES)
 
+  const actualizarRol = (rolActualizado) => {
+    const { id, nombre, permisos } = rolActualizado
+    const rolKey = Object.keys(ROLES).find(key => ROLES[key].id === id)
+    if (rolKey) {
+      ROLES[rolKey] = { ...ROLES[rolKey], nombre, permisos }
+    }
+    return true
+  }
+
   // Registrar usuario - conecta con el backend
   // autoLogin: true para self-registration (cuando no hay nadie logueado)
   // autoLogin: false para cuando un admin registra otro usuario
@@ -588,6 +597,7 @@ export const AuthProvider = ({ children }) => {
       getUsuarios,
       actualizarUsuario,
       habilitarInhabilitarUsuario,
+      actualizarRol,
       ROLES,
       PERMISOS,
     }}>
