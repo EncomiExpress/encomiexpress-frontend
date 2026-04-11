@@ -1,17 +1,15 @@
-import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Box, TextField, Typography, Paper, MenuItem, Select, FormControl, InputLabel, InputAdornment, Stepper, Step, StepLabel, Snackbar, Alert } from '@mui/material'
-import { DirectionsCar, Person, Business, Event, Speed } from '@mui/icons-material'
+import { useState } from 'react'
+import { Box, TextField, Typography, Paper, MenuItem, Dialog, DialogTitle, DialogContent, Stepper, Step, StepLabel, Snackbar, Alert, IconButton } from '@mui/material'
+import { DirectionsCar, Person, Business, Event, Speed, Close } from '@mui/icons-material'
 import { useTransporte } from '../../Context/TransporteContext'
-import { useAuth } from '../../Context/AuthContext'
 import { 
-  theme, FormField, FormSelect, PasswordField, PrimaryButton, SecondaryButton, 
+  theme, FormField, FormSelect, PrimaryButton, SecondaryButton, 
   FormAlert, FormHeader, FormFieldsContainer, FormButtonGroup 
 } from '../../Components/FormularioEstandarizado'
 
 const steps = ['Datos del Vehículo', 'Documentación y Estado']
 
-const RegistrarTransporte = () => {
+const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
     idConductor: '',
     idPropietario: '',
@@ -31,14 +29,6 @@ const RegistrarTransporte = () => {
   const [activeStep, setActiveStep] = useState(0)
    
   const { registrarTransporte } = useTransporte()
-  const { usuario } = useAuth()
-  const navigate = useNavigate()
-
-  useEffect(() => {
-    if (!usuario) {
-      navigate('/login')
-    }
-  }, [usuario, navigate])
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -51,7 +41,6 @@ const RegistrarTransporte = () => {
     e.preventDefault()
     setError('')
     
-    // Validar campos requeridos
     if (!formData.placa || !formData.marca || !formData.modelo || !formData.color || 
         !formData.tipo || !formData.capacidad || !formData.idConductor || !formData.idPropietario) {
       setError('Todos los campos son requeridos')
@@ -67,29 +56,34 @@ const RegistrarTransporte = () => {
       })
       setSuccess('Transporte registrado correctamente')
       
-      // Limpiar el formulario
-      setFormData({
-        idConductor: '',
-        idPropietario: '',
-        placa: '',
-        marca: '',
-        modelo: '',
-        color: '',
-        tipo: '',
-        capacidad: '',
-        estado: 'Activo',
-        vencimientoSOAT: '',
-        vencimientoRevisionTecnica: '',
-        vencimientoSeguroTerceros: ''
-      })
-      
-      // Redirigir al listado después de 2 segundos
       setTimeout(() => {
-        navigate('/vehiculos/listar')
-      }, 2000)
+        handleClose()
+        if (onSuccess) onSuccess()
+      }, 1500)
     } catch (err) {
       setError('Error al registrar transporte')
     }
+  }
+
+  const handleClose = () => {
+    setFormData({
+      idConductor: '',
+      idPropietario: '',
+      placa: '',
+      marca: '',
+      modelo: '',
+      color: '',
+      tipo: '',
+      capacidad: '',
+      estado: 'Activo',
+      vencimientoSOAT: '',
+      vencimientoRevisionTecnica: '',
+      vencimientoSeguroTerceros: ''
+    })
+    setError('')
+    setSuccess('')
+    setActiveStep(0)
+    onClose()
   }
 
   const handleNext = () => {
@@ -254,22 +248,35 @@ const RegistrarTransporte = () => {
   }
 
   return (
-    <Box sx={{ p: 4 }}>
-      <Paper elevation={0} sx={{ p: 4, borderRadius: 2, border: '1px solid #e2e8f0', maxWidth: 700, mx: 'auto' }}>
-        <FormHeader 
-          icon={DirectionsCar} 
-          title="Registrar Transporte" 
-          subtitle="Ingresa los datos del vehículo"
-        />
-
+    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth
+      slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}>
+      <DialogTitle sx={{ m: 0, p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Box sx={{
+            width: 40,
+            height: 40,
+            borderRadius: 2,
+            background: 'linear-gradient(135deg, #CC1818 0%, #dc2626 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <DirectionsCar sx={{ color: 'white', fontSize: 22 }} />
+          </Box>
+          <Typography variant="h6" fontWeight={700}>Registrar Vehículo</Typography>
+        </Box>
+        <IconButton onClick={handleClose} sx={{ color: '#8A94A6' }}>
+          <Close />
+        </IconButton>
+      </DialogTitle>
+      <DialogContent sx={{ p: 3 }}>
         {error && (
           <FormAlert>
             {error}
           </FormAlert>
         )}
 
-        {/* Stepper */}
-        <Stepper activeStep={activeStep} sx={{ mb: 4 }} alternativeLabel>
+        <Stepper activeStep={activeStep} sx={{ mb: 3 }} alternativeLabel>
           {steps.map((label, index) => (
             <Step key={label}>
               <StepLabel 
@@ -289,7 +296,6 @@ const RegistrarTransporte = () => {
         <form onSubmit={handleSubmit}>
           {renderStepContent()}
 
-          {/* Botones de navegación */}
           <FormButtonGroup justify="space-between">
             <Box sx={{ display: 'flex', gap: 2 }}>
               <SecondaryButton 
@@ -313,15 +319,15 @@ const RegistrarTransporte = () => {
             </Box>
           </FormButtonGroup>
         </form>
-      </Paper>
+      </DialogContent>
 
       <Snackbar open={!!success} autoHideDuration={2500} onClose={() => setSuccess('')} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
         <Alert severity="success" variant="filled" sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }} onClose={() => setSuccess('')}>
           ¡Vehículo registrado exitosamente!
         </Alert>
       </Snackbar>
-    </Box>
+    </Dialog>
   )
 }
 
-export default RegistrarTransporte
+export default RegistrarVehiculo

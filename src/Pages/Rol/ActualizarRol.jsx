@@ -1,17 +1,13 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
-import { Box, Typography, Paper, FormControlLabel, Checkbox, Grid, Alert, Snackbar } from '@mui/material'
-import { Security } from '@mui/icons-material'
+import { Box, Typography, Paper, FormControlLabel, Checkbox, Grid, Alert, Snackbar, Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material'
+import { Security, Close } from '@mui/icons-material'
 import { MODULOS, ROLES } from '../../Context/AuthContext'
 import { 
   FormField, PrimaryButton, SecondaryButton, 
   FormButtonGroup 
 } from '../../Components/FormularioEstandarizado'
 
-const ActualizarRol = () => {
-  const navigate = useNavigate()
-  const { id } = useParams()
-  
+const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
   const [formData, setFormData] = useState({
     nombre: '',
     permisos: []
@@ -20,15 +16,13 @@ const ActualizarRol = () => {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    const rolId = parseInt(id)
-    const rol = Object.values(ROLES).find(r => r.id === rolId)
-    if (rol) {
+    if (rolProp) {
       setFormData({
-        nombre: rol.nombre || '',
-        permisos: rol.permisos || []
+        nombre: rolProp.nombre || '',
+        permisos: rolProp.permisos || []
       })
     }
-  }, [id, ROLES])
+  }, [rolProp])
 
   const modulos = Object.entries(MODULOS)
 
@@ -47,43 +41,48 @@ const ActualizarRol = () => {
 
     try {
       setMensaje('Rol actualizado exitosamente')
-      setTimeout(() => navigate('/roles/listar'), 1500)
+      setTimeout(() => {
+        onClose()
+        if (onSuccess) onSuccess()
+      }, 1500)
     } catch (err) {
       setError(err.message || 'Error al actualizar el rol')
     }
   }
 
+  const handleCancelar = () => {
+    onClose()
+  }
+
   return (
-    <Box sx={{ p: 2.5, height: 'calc(100vh - 80px)', display: 'flex', flexDirection: 'column' }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-        <Box sx={{
-          width: 40,
-          height: 40,
-          borderRadius: 2,
-          background: 'linear-gradient(135deg, #CC1818 0%, #dc2626 100%)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}>
-          <Security sx={{ color: 'white', fontSize: 24 }} />
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth
+      slotProps={{ paper: { sx: { borderRadius: 3, p: 0, maxHeight: '90vh' } } }}>
+      <DialogTitle sx={{ m: 0, p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Box sx={{
+            width: 40,
+            height: 40,
+            borderRadius: 2,
+            background: 'linear-gradient(135deg, #CC1818 0%, #dc2626 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <Security sx={{ color: 'white', fontSize: 22 }} />
+          </Box>
+          <Typography variant="h6" fontWeight={700}>Actualizar Rol</Typography>
         </Box>
-        <Box>
-          <Typography variant="h6" sx={{ fontWeight: 700, color: '#0f172a' }}>
-            Actualizar Rol
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Edita los permisos del rol en el sistema
-          </Typography>
-        </Box>
-      </Box>
+        <IconButton onClick={onClose} sx={{ color: '#8A94A6' }}>
+          <Close />
+        </IconButton>
+      </DialogTitle>
+      <DialogContent sx={{ p: 3 }}>
+        {error && (
+          <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
+            {error}
+          </Alert>
+        )}
 
-      {error && (
-        <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
-          {error}
-        </Alert>
-      )}
-
-      <Paper elevation={0} sx={{ border: `1px solid #E0E0E0`, borderRadius: 3, p: 2, flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
           <FormField
             label="Nombre del Rol"
@@ -194,7 +193,7 @@ const ActualizarRol = () => {
           </Box>
 
           <FormButtonGroup sx={{ mt: 2, pt: 2, borderTop: '1px solid #E0E0E0' }}>
-            <SecondaryButton onClick={() => navigate('/roles/listar')}>
+            <SecondaryButton onClick={handleCancelar}>
               Cancelar
             </SecondaryButton>
             <PrimaryButton type="submit">
@@ -202,14 +201,14 @@ const ActualizarRol = () => {
             </PrimaryButton>
           </FormButtonGroup>
         </form>
-      </Paper>
+      </DialogContent>
 
       <Snackbar open={!!mensaje} autoHideDuration={2500} onClose={() => setMensaje('')} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
         <Alert severity="success" variant="filled" sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }} onClose={() => setMensaje('')}>
           ¡Rol actualizado exitosamente!
         </Alert>
       </Snackbar>
-    </Box>
+    </Dialog>
   )
 }
 

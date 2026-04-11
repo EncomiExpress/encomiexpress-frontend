@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useVentas } from '../../Context/VentaContext'
 import {
     Box, Typography, Paper, Table, TableBody, TableCell,
@@ -24,6 +23,8 @@ import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined'
 import PaymentOutlinedIcon from '@mui/icons-material/PaymentOutlined'
 import ClearIcon from '@mui/icons-material/Clear'
 import { ESTADOS_ENCOMIENDA, METODOS_PAGO } from '../../Context/VentaContext'
+import RegistrarVenta from './RegistrarVenta'
+import ActualizarVenta from './ActualizarVenta'
 
 const COLORS = {
     primary: '#CC1818',
@@ -248,7 +249,6 @@ const FILTROS = [
 
 // ── Componente principal ──
 const ListarVenta = () => {
-    const navigate = useNavigate()
     const { ventas, loading, error, invalidateVenta, cambiarEstadoVenta } = useVentas()
 
     const [busqueda, setBusqueda] = useState('')
@@ -259,6 +259,9 @@ const ListarVenta = () => {
     const [rowsPerPage, setRowsPerPage] = useState(5)
     const [ventaConsulta, setVentaConsulta] = useState(null)
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
+    const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
+    const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
+    const [ventaEditar, setVentaEditar] = useState(null)
 
     // ── Filtrado ──
     const ventasFiltradas = ventas.filter(v => {
@@ -339,7 +342,7 @@ const ListarVenta = () => {
                     </Typography>
                 </Box>
                 <Button
-                    onClick={() => navigate('/ventas/registrar')}
+                    onClick={() => setModalRegistrarOpen(true)}
                     variant="contained"
                     startIcon={<AddOutlinedIcon />}
                     sx={{
@@ -668,7 +671,7 @@ const ListarVenta = () => {
                                                     </Tooltip>
                                                     <Tooltip title="Editar">
                                                         <IconButton size="small"
-                                                            onClick={() => navigate(`/ventas/actualizar/${venta.idEncomiendaVenta}`)}
+                                                            onClick={() => { setVentaEditar(venta); setModalActualizarOpen(true) }}
                                                             sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}>
                                                             <EditOutlinedIcon sx={{ fontSize: 18 }} />
                                                         </IconButton>

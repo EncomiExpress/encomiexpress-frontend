@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import {
     Box, Typography, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, Chip, IconButton,
@@ -18,6 +18,8 @@ import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined'
 import { useDestino } from '../../Context/DestinoContext'
 import { useAuth } from '../../Context/AuthContext'
+import RegistrarDestino from './RegistrarDestino'
+import ActualizarDestino from './ActualizarDestino'
 
 const COLORS = {
     primary: '#CC1818',
@@ -72,6 +74,9 @@ const ListarDestino = () => {
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
     const [filtroEstado, setFiltroEstado] = useState('todo')
     const [page, setPage] = useState(1)
+    const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
+    const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
+    const [destinoEditar, setDestinoEditar] = useState(null)
 
     const { getDestinos, updateEstado } = useDestino()
     const { usuario } = useAuth()
@@ -144,8 +149,7 @@ const ListarDestino = () => {
                     </Typography>
                 </Box>
                 <Button
-                    component={Link}
-                    to="/transporte/destinos/registrar"
+                    onClick={() => setModalRegistrarOpen(true)}
                     variant="contained"
                     startIcon={<AddOutlinedIcon />}
                     sx={{
@@ -167,7 +171,6 @@ const ListarDestino = () => {
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
             </Box>
 
-            {/* ── Filtros de estado ── */}
             <Box sx={{
                 display: 'inline-flex',
                 backgroundColor: '#FFECEC',
@@ -333,8 +336,7 @@ const ListarDestino = () => {
                                                 <Tooltip title="Editar">
                                                     <IconButton
                                                         size="small"
-                                                        component={Link}
-                                                        to={`/transporte/destinos/actualizar/${destino.idDestino}`}
+                                                        onClick={() => { setDestinoEditar(destino); setModalActualizarOpen(true) }}
                                                         sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}
                                                     >
                                                         <EditOutlinedIcon sx={{ fontSize: 18 }} />
@@ -428,6 +430,25 @@ const ListarDestino = () => {
                     </Box>
                 </Dialog>
             )}
+
+            <RegistrarDestino 
+                open={modalRegistrarOpen} 
+                onClose={() => setModalRegistrarOpen(false)} 
+                onSuccess={() => {
+                    setDestinos(getDestinos())
+                    setSnackbar({ open: true, message: 'Destino registrado correctamente', severity: 'success' })
+                }}
+            />
+
+            <ActualizarDestino
+                open={modalActualizarOpen}
+                onClose={() => { setModalActualizarOpen(false); setDestinoEditar(null) }}
+                destino={destinoEditar}
+                onSuccess={() => {
+                    setDestinos(getDestinos())
+                    setSnackbar({ open: true, message: 'Destino actualizado correctamente', severity: 'success' })
+                }}
+            />
 
             <Snackbar
                 open={snackbar.open}

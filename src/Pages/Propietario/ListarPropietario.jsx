@@ -19,6 +19,8 @@ import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined'
 import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined'
 import { usePropietario } from '../../Context/PropietarioContext'
 import { useAuth } from '../../Context/AuthContext'
+import RegistrarPropietario from './RegistrarPropietario'
+import ActualizarPropietario from './ActualizarPropietario'
 
 const COLORS = {
     primary: '#CC1818',
@@ -86,16 +88,19 @@ const FILTROS = [
 ]
 
 const ListarPropietario = () => {
+    const navigate = useNavigate()
     const [propietarios, setPropietarios] = useState([])
     const [searchTerm, setSearchTerm] = useState('')
     const [propietarioVer, setPropietarioVer] = useState(null)
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
     const [filtroEstado, setFiltroEstado] = useState('todo')
     const [page, setPage] = useState(1)
+    const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
+    const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
+    const [propietarioEditar, setPropietarioEditar] = useState(null)
 
     const { getPropietarios, updateEstado } = usePropietario()
     const { usuario } = useAuth()
-    const navigate = useNavigate()
 
     useEffect(() => {
         if (!usuario) {
@@ -165,8 +170,7 @@ const ListarPropietario = () => {
                     </Typography>
                 </Box>
                 <Button
-                    component={Link}
-                    to="/transporte/propietarios/registrar"
+                    onClick={() => setModalRegistrarOpen(true)}
                     variant="contained"
                     startIcon={<AddOutlinedIcon />}
                     sx={{
@@ -368,8 +372,7 @@ const ListarPropietario = () => {
                                                 <Tooltip title="Editar">
                                                     <IconButton
                                                         size="small"
-                                                        component={Link}
-                                                        to={`/transporte/propietarios/actualizar/${propietario.idPropietario}`}
+                                                        onClick={() => { setPropietarioEditar(propietario); setModalActualizarOpen(true) }}
                                                         sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}
                                                     >
                                                         <EditOutlinedIcon sx={{ fontSize: 18 }} />
@@ -465,6 +468,23 @@ const ListarPropietario = () => {
                     </Box>
                 </Dialog>
             )}
+
+            <RegistrarPropietario 
+                open={modalRegistrarOpen} 
+                onClose={() => setModalRegistrarOpen(false)} 
+                onSuccess={() => {
+                    setSnackbar({ open: true, message: 'Propietario registrado correctamente', severity: 'success' })
+                }}
+            />
+
+            <ActualizarPropietario
+                open={modalActualizarOpen}
+                onClose={() => { setModalActualizarOpen(false); setPropietarioEditar(null) }}
+                propietario={propietarioEditar}
+                onSuccess={() => {
+                    setSnackbar({ open: true, message: 'Propietario actualizado correctamente', severity: 'success' })
+                }}
+            />
 
             <Snackbar
                 open={snackbar.open}

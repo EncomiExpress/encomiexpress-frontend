@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../Context/AuthContext'
 import {
     Box, Typography, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, TextField,
     IconButton, Chip, Tooltip, InputAdornment,
     Button, Dialog, DialogTitle, DialogContent,
-    DialogActions, Avatar, Select, MenuItem, Pagination, Snackbar, Alert,
+    Avatar, Select, MenuItem, Pagination, Snackbar, Alert,
     CircularProgress, FormControl
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
@@ -19,6 +18,8 @@ import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import ClearIcon from '@mui/icons-material/Clear'
+import RegistrarUsuario from './RegistrarUsuario'
+import ActualizarUsuario from './ActualizarUsuario'
 
 const COLORS = {
     primary: '#CC1818',
@@ -40,7 +41,6 @@ const thStyle = {
     whiteSpace: 'nowrap',
 }
 
-// ── Fila de campo reutilizable ──
 const CampoFila = ({ label, value, esEstado, esRol }) => (
     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
         <Typography variant="body2" sx={{ color: '#9C4040', fontWeight: 500 }}>{label}</Typography>
@@ -77,7 +77,6 @@ const CampoFila = ({ label, value, esEstado, esRol }) => (
     </Box>
 )
 
-// ── Modal Consultar ──
 const ModalConsultar = ({ usuario, onClose }) => {
     if (!usuario) return null
     const estado = usuario.habilitado ? 'Habilitado' : 'Inhabilitado'
@@ -158,16 +157,13 @@ const ModalConsultar = ({ usuario, onClose }) => {
     )
 }
 
-// ── Filtros de estado ──
 const FILTROS = [
     { value: 'todo', label: 'Todo' },
     { value: 'Activo', label: 'Activo' },
     { value: 'Inactivo', label: 'Inactivo' },
 ]
 
-// ── Componente principal ──
 const ListarUsuario = () => {
-    const navigate = useNavigate()
     const { tienePermiso, PERMISOS, getUsuarios } = useAuth()
     
     const [usuarios, setUsuarios] = useState([])
@@ -180,20 +176,23 @@ const ListarUsuario = () => {
     const [rowsPerPage, setRowsPerPage] = useState(5)
     const [usuarioConsulta, setUsuarioConsulta] = useState(null)
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
+    const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
+    const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
+    const [usuarioEditar, setUsuarioEditar] = useState(null)
 
-    // Cargar usuarios
-    useEffect(() => {
-        const cargarUsuarios = async () => {
-            setLoading(true)
-            try {
-                const data = await getUsuarios()
-                setUsuarios(data)
-            } catch (err) {
-                setError(err.message)
-            } finally {
-                setLoading(false)
-            }
+    const cargarUsuarios = async () => {
+        setLoading(true)
+        try {
+            const data = await getUsuarios()
+            setUsuarios(data)
+        } catch (err) {
+            setError(err.message)
+        } finally {
+            setLoading(false)
         }
+    }
+
+    useEffect(() => {
         cargarUsuarios()
     }, [getUsuarios])
 
@@ -213,7 +212,6 @@ const ListarUsuario = () => {
         }
     }
 
-    // ── Filtrado ──
     const usuariosFiltrados = usuarios.filter(u => {
         const q = busqueda.toLowerCase().trim()
         const coincideBusqueda = !q ||
@@ -246,7 +244,6 @@ const ListarUsuario = () => {
     return (
         <Box sx={{ p: 3.5 }}>
 
-            {/* ── Encabezado ── */}
             <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
                 <Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -274,7 +271,7 @@ const ListarUsuario = () => {
                 </Box>
                 {puedeRegistrar && (
                     <Button
-                        onClick={() => navigate('/usuarios/registrar')}
+                        onClick={() => setModalRegistrarOpen(true)}
                         variant="contained"
                         startIcon={<AddOutlinedIcon />}
                         sx={{
@@ -294,14 +291,12 @@ const ListarUsuario = () => {
                 )}
             </Box>
 
-            {/* ── Alerta de error de carga ── */}
             {error && (
                 <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
                     Error al cargar los usuarios: {error}
                 </Alert>
             )}
 
-            {/* ── Filtros de estado ── */}
             <Box sx={{
                 display: 'inline-flex',
                 backgroundColor: '#FFECEC',
@@ -343,7 +338,6 @@ const ListarUsuario = () => {
                 ))}
             </Box>
 
-            {/* ── Barra de búsqueda + Filtros + Export ── */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
                 <TextField
                     size="small"
@@ -410,7 +404,6 @@ const ListarUsuario = () => {
                 </Button>
             </Box>
 
-            {/* ── Tabla ── */}
             <Paper elevation={0} sx={{ border: `1px solid ${COLORS.border}`, borderRadius: 3, overflow: 'hidden' }}>
                 <TableContainer>
                     <Table>
@@ -466,7 +459,6 @@ const ListarUsuario = () => {
                                             opacity: usuario.habilitado ? 1 : 0.55,
                                         }}
                                     >
-                                        {/* Nombre */}
                                         <TableCell sx={{ py: 1.5 }}>
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                                                 <Avatar sx={{
@@ -484,27 +476,22 @@ const ListarUsuario = () => {
                                             </Box>
                                         </TableCell>
 
-                                        {/* Tipo ID */}
                                         <TableCell sx={{ fontSize: '0.85rem', color: COLORS.text, py: 1.5 }}>
                                             {usuario.tipoIdentificacion}
                                         </TableCell>
 
-                                        {/* Número ID */}
                                         <TableCell sx={{ fontSize: '0.85rem', color: COLORS.text, py: 1.5 }}>
                                             {usuario.numeroIdentificacion}
                                         </TableCell>
 
-                                        {/* Teléfono */}
                                         <TableCell sx={{ fontSize: '0.85rem', color: COLORS.text, py: 1.5 }}>
                                             {usuario.telefono || '—'}
                                         </TableCell>
 
-                                        {/* Email */}
                                         <TableCell sx={{ fontSize: '0.85rem', color: COLORS.text, py: 1.5 }}>
                                             {usuario.email}
                                         </TableCell>
 
-                                        {/* Rol */}
                                         <TableCell sx={{ py: 1.5 }}>
                                             <Chip
                                                 label={usuario.rol?.nombre}
@@ -521,7 +508,6 @@ const ListarUsuario = () => {
                                             />
                                         </TableCell>
 
-                                        {/* Estado */}
                                         <TableCell sx={{ py: 1.5 }}>
                                             <FormControl size="small" sx={{ minWidth: 120 }}>
                                                 <Select
@@ -558,7 +544,6 @@ const ListarUsuario = () => {
                                             </FormControl>
                                         </TableCell>
 
-                                        {/* Acciones */}
                                         <TableCell sx={{ py: 1.5 }}>
                                             <Box sx={{ display: 'flex', gap: 0.5 }}>
                                                 <Tooltip title="Ver detalle">
@@ -573,7 +558,7 @@ const ListarUsuario = () => {
                                                 <Tooltip title="Editar">
                                                     <IconButton
                                                         size="small"
-                                                        onClick={() => navigate(`/usuarios/actualizar/${usuario.id}`)}
+                                                        onClick={() => { setUsuarioEditar(usuario); setModalActualizarOpen(true) }}
                                                         sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}
                                                     >
                                                         <EditOutlinedIcon sx={{ fontSize: 18 }} />
@@ -589,7 +574,6 @@ const ListarUsuario = () => {
                 </TableContainer>
             </Paper>
 
-            {/* ── Paginación ── */}
             <Box sx={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 px: 0.5, pt: 1.5,
@@ -699,6 +683,25 @@ const ListarUsuario = () => {
             </Box>
 
             <ModalConsultar usuario={usuarioConsulta} onClose={() => setUsuarioConsulta(null)} />
+
+            <RegistrarUsuario
+                open={modalRegistrarOpen}
+                onClose={() => setModalRegistrarOpen(false)}
+                onSuccess={() => {
+                    cargarUsuarios()
+                    setSnackbar({ open: true, message: 'Usuario registrado correctamente', severity: 'success' })
+                }}
+            />
+
+            <ActualizarUsuario
+                open={modalActualizarOpen}
+                onClose={() => { setModalActualizarOpen(false); setUsuarioEditar(null) }}
+                usuario={usuarioEditar}
+                onSuccess={() => {
+                    cargarUsuarios()
+                    setSnackbar({ open: true, message: 'Usuario actualizado correctamente', severity: 'success' })
+                }}
+            />
 
             <Snackbar
                 open={snackbar.open}

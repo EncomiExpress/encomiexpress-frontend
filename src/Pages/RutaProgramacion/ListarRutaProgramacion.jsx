@@ -22,6 +22,8 @@ import { useTransporte } from '../../Context/TransporteContext'
 import { useConductor } from '../../Context/ConductorContext'
 import { useDestino } from '../../Context/DestinoContext'
 import { useAuth } from '../../Context/AuthContext'
+import RegistrarRutaProgramacion from './RegistrarRutaProgramacion'
+import ActualizarRutaProgramacion from './ActualizarRutaProgramacion'
 
 const COLORS = {
     primary: '#CC1818',
@@ -81,19 +83,22 @@ const getEstadoColor = (estado) => {
 }
 
 const ListarRutaProgramacion = () => {
+    const navigate = useNavigate()
     const [rutasProgramadas, setRutasProgramadas] = useState([])
     const [searchTerm, setSearchTerm] = useState('')
     const [rutaVer, setRutaVer] = useState(null)
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
     const [filtroEstado, setFiltroEstado] = useState('todo')
     const [page, setPage] = useState(1)
+    const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
+    const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
+    const [rutaEditar, setRutaEditar] = useState(null)
     
     const { getRutasProgramadas, updateEstado } = useRutaProgramacion()
     const { getTransportes } = useTransporte()
     const { getConductores } = useConductor()
     const { getDestinos } = useDestino()
     const { usuario } = useAuth()
-    const navigate = useNavigate()
 
     useEffect(() => {
         if (!usuario) {
@@ -154,6 +159,24 @@ const ListarRutaProgramacion = () => {
 
     const hayFiltrosActivos = searchTerm.trim() !== '' || filtroEstado !== 'todo'
 
+    const handleActualizarSuccess = () => {
+        setRutasProgramadas(getRutasProgramadas())
+        setSnackbar({
+            open: true,
+            message: 'Ruta actualizada correctamente.',
+            severity: 'success',
+        })
+    }
+
+    const handleRegistrarSuccess = () => {
+        setRutasProgramadas(getRutasProgramadas())
+        setSnackbar({
+            open: true,
+            message: 'Ruta programada correctamente.',
+            severity: 'success',
+        })
+    }
+
     return (
         <Box sx={{ p: 3.5 }}>
             <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
@@ -180,8 +203,7 @@ const ListarRutaProgramacion = () => {
                     </Typography>
                 </Box>
                 <Button
-                    component={Link}
-                    to="/transporte/rutas/registrar"
+                    onClick={() => setModalRegistrarOpen(true)}
                     variant="contained"
                     startIcon={<AddOutlinedIcon />}
                     sx={{
@@ -312,8 +334,7 @@ const ListarRutaProgramacion = () => {
                                         <Typography color={COLORS.textMuted} variant="body2">
                                             {rutasProgramadas.length === 0
                                                 ? 'No hay rutas programadas en el sistema.'
-                                                : 'No se encontraron rutas que coincidan con la búsqueda.'
-                                            }
+                                                : 'No se encontraron rutas que coincidan con la búsqueda.'}
                                         </Typography>
                                     </TableCell>
                                 </TableRow>
@@ -384,8 +405,10 @@ const ListarRutaProgramacion = () => {
                                                     <Tooltip title="Editar">
                                                         <IconButton
                                                             size="small"
-                                                            component={Link}
-                                                            to={`/transporte/rutas/actualizar/${ruta.idRutaProgramada}`}
+                                                            onClick={() => {
+                                                                setRutaEditar(ruta)
+                                                                setModalActualizarOpen(true)
+                                                            }}
                                                             sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}
                                                         >
                                                             <EditOutlinedIcon sx={{ fontSize: 18 }} />
@@ -480,6 +503,19 @@ const ListarRutaProgramacion = () => {
                     </Box>
                 </Dialog>
             )}
+
+            <RegistrarRutaProgramacion
+                open={modalRegistrarOpen}
+                onClose={() => setModalRegistrarOpen(false)}
+                onSuccess={handleRegistrarSuccess}
+            />
+
+            <ActualizarRutaProgramacion
+                open={modalActualizarOpen}
+                onClose={() => setModalActualizarOpen(false)}
+                ruta={rutaEditar}
+                onSuccess={handleActualizarSuccess}
+            />
 
             <Snackbar
                 open={snackbar.open}

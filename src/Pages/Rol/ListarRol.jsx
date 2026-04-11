@@ -1,12 +1,12 @@
 import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useAuth, ROLES } from '../../Context/AuthContext'
 import {
     Box, Typography, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, TextField,
     IconButton, Tooltip, InputAdornment,
     Button, Dialog, DialogTitle, DialogContent,
-    DialogActions, Select, MenuItem, Pagination, Chip, Avatar
+    DialogActions, Select, MenuItem, Pagination, Chip, Avatar, Snackbar, Alert
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
@@ -17,6 +17,8 @@ import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDown
 import ClearIcon from '@mui/icons-material/Clear'
 import SecurityOutlinedIcon from '@mui/icons-material/SecurityOutlined'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
+import RegistrarRol from './RegistrarRol'
+import ActualizarRol from './ActualizarRol'
 
 const COLORS = {
     primary: '#CC1818',
@@ -79,7 +81,6 @@ const getRolColor = (nombre) => {
     return colors[nombre] || { bg: '#F5F5F5', color: '#616161' }
 }
 
-// ── Modal Consultar ──
 const ModalConsultar = ({ rol, onClose }) => {
     if (!rol) return null
 
@@ -219,9 +220,7 @@ const ModalConsultar = ({ rol, onClose }) => {
     )
 }
 
-// ── Componente principal ──
 const ListarRol = () => {
-    const navigate = useNavigate()
     const { tienePermiso, PERMISOS } = useAuth()
     
     const roles = Object.values(ROLES)
@@ -229,10 +228,13 @@ const ListarRol = () => {
     const [page, setPage] = useState(1)
     const [rowsPerPage, setRowsPerPage] = useState(5)
     const [rolConsulta, setRolConsulta] = useState(null)
+    const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
+    const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
+    const [rolEditar, setRolEditar] = useState(null)
+    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
 
     const puedeRegistrar = tienePermiso(PERMISOS.REGISTRAR_ROL)
 
-    // ── Filtrado ──
     const rolesFiltrados = roles.filter(r => {
         const q = busqueda.toLowerCase().trim()
         if (!q) return true
@@ -249,7 +251,6 @@ const ListarRol = () => {
     return (
         <Box sx={{ p: 3.5 }}>
 
-            {/* ── Encabezado ── */}
             <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
                 <Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -275,7 +276,7 @@ const ListarRol = () => {
                 </Box>
                 {puedeRegistrar && (
                     <Button
-                        onClick={() => navigate('/roles/registrar')}
+                        onClick={() => setModalRegistrarOpen(true)}
                         variant="contained"
                         startIcon={<AddOutlinedIcon />}
                         sx={{
@@ -295,7 +296,6 @@ const ListarRol = () => {
                 )}
             </Box>
 
-            {/* ── Barra de búsqueda ── */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
                 <TextField
                     size="small"
@@ -334,7 +334,6 @@ const ListarRol = () => {
                 />
             </Box>
 
-            {/* ── Tabla ── */}
             <Paper elevation={0} sx={{ border: `1px solid ${COLORS.border}`, borderRadius: 3, overflow: 'hidden' }}>
                 <TableContainer>
                     <Table>
@@ -370,7 +369,6 @@ const ListarRol = () => {
                                                 transition: 'background-color 0.15s',
                                             }}
                                         >
-                                            {/* Rol */}
                                             <TableCell sx={{ py: 1.5 }}>
                                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                                                     <Avatar sx={{
@@ -388,14 +386,12 @@ const ListarRol = () => {
                                                 </Box>
                                             </TableCell>
 
-                                            {/* Descripción */}
                                             <TableCell sx={{ py: 1.5 }}>
                                                 <Typography variant="body2" color={COLORS.textMuted} sx={{ maxWidth: 250, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                                     {rol.descripcion || 'Sin descripción'}
                                                 </Typography>
                                             </TableCell>
 
-                                            {/* Permisos */}
                                             <TableCell sx={{ py: 1.5 }}>
                                                 <Chip
                                                     label={`${rol.permisos?.length || 0} permisos`}
@@ -412,7 +408,6 @@ const ListarRol = () => {
                                                 />
                                             </TableCell>
 
-                                            {/* Acciones */}
                                             <TableCell sx={{ py: 1.5 }}>
                                                 <Box sx={{ display: 'flex', gap: 0.5 }}>
                                                     <Tooltip title="Ver detalle">
@@ -427,8 +422,7 @@ const ListarRol = () => {
                                                     <Tooltip title="Editar">
                                                         <IconButton
                                                             size="small"
-                                                            component={Link}
-                                                            to={`/roles/actualizar/${rol.id}`}
+                                                            onClick={() => { setRolEditar(rol); setModalActualizarOpen(true) }}
                                                             sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}
                                                         >
                                                             <EditOutlinedIcon sx={{ fontSize: 18 }} />
@@ -445,7 +439,6 @@ const ListarRol = () => {
                 </TableContainer>
             </Paper>
 
-            {/* ── Paginación ── */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
                 <Typography variant="body2" color={COLORS.textMuted} fontWeight={500}>
                     Mostrando {from}–{to} de {rolesFiltrados.length} resultado{rolesFiltrados.length !== 1 ? 's' : ''}
@@ -550,8 +543,45 @@ const ListarRol = () => {
                 </Box>
             </Box>
 
-            {/* ── Modales ── */}
             <ModalConsultar rol={rolConsulta} onClose={() => setRolConsulta(null)} />
+
+            <RegistrarRol 
+                open={modalRegistrarOpen} 
+                onClose={() => setModalRegistrarOpen(false)} 
+                onSuccess={() => {
+                    setSnackbar({ open: true, message: 'Rol registrado correctamente', severity: 'success' })
+                }}
+            />
+
+            <ActualizarRol
+                open={modalActualizarOpen}
+                onClose={() => { setModalActualizarOpen(false); setRolEditar(null) }}
+                rol={rolEditar}
+                onSuccess={() => {
+                    setSnackbar({ open: true, message: 'Rol actualizado correctamente', severity: 'success' })
+                }}
+            />
+
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={3000}
+                onClose={() => setSnackbar(s => ({ ...s, open: false }))}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            >
+                <Alert
+                    severity={snackbar.severity}
+                    variant="filled"
+                    sx={{ 
+                        fontWeight: 600,
+                        borderRadius: 2,
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                        fontSize: '0.85rem',
+                    }}
+                    onClose={() => setSnackbar(s => ({ ...s, open: false }))}
+                >
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </Box>
     )
 }

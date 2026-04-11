@@ -17,6 +17,8 @@ import SpeedOutlinedIcon from '@mui/icons-material/SpeedOutlined'
 import EventOutlinedIcon from '@mui/icons-material/EventOutlined'
 import { useTransporte } from '../../Context/TransporteContext'
 import { useAuth } from '../../Context/AuthContext'
+import RegistrarVehiculo from './RegistrarVehiculo'
+import ActualizarVehiculo from './ActualizarVehiculo'
 
 const COLORS = {
     primary: '#CC1818',
@@ -77,6 +79,9 @@ const ListarTransporte = () => {
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
     const [filtroEstado, setFiltroEstado] = useState('todo')
     const [page, setPage] = useState(1)
+    const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
+    const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
+    const [vehiculoEditar, setVehiculoEditar] = useState(null)
 
     const { getTransportes, updateEstado } = useTransporte()
     const { usuario } = useAuth()
@@ -149,8 +154,7 @@ const ListarTransporte = () => {
                     </Typography>
                 </Box>
                 <Button
-                    component={Link}
-                    to="/vehiculos/registrar"
+                    onClick={() => setModalRegistrarOpen(true)}
                     variant="contained"
                     startIcon={<AddOutlinedIcon />}
                     sx={{
@@ -358,8 +362,7 @@ const ListarTransporte = () => {
                                                 <Tooltip title="Editar">
                                                     <IconButton
                                                         size="small"
-                                                        component={Link}
-                                                        to={`/vehiculos/actualizar/${transporte.idVehiculo}`}
+                                                        onClick={() => { setVehiculoEditar(transporte); setModalActualizarOpen(true) }}
                                                         sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}
                                                     >
                                                         <EditOutlinedIcon sx={{ fontSize: 18 }} />
@@ -455,6 +458,25 @@ const ListarTransporte = () => {
                     </Box>
                 </Dialog>
             )}
+
+            <RegistrarVehiculo 
+                open={modalRegistrarOpen} 
+                onClose={() => setModalRegistrarOpen(false)} 
+                onSuccess={() => {
+                    setTransportes(getTransportes())
+                    setSnackbar({ open: true, message: 'Vehículo registrado correctamente', severity: 'success' })
+                }}
+            />
+
+            <ActualizarVehiculo
+                open={modalActualizarOpen}
+                onClose={() => { setModalActualizarOpen(false); setVehiculoEditar(null) }}
+                transporte={vehiculoEditar}
+                onSuccess={() => {
+                    setTransportes(getTransportes())
+                    setSnackbar({ open: true, message: 'Vehículo actualizado correctamente', severity: 'success' })
+                }}
+            />
 
             <Snackbar
                 open={snackbar.open}

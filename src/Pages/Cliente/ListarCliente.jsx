@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useClientes } from '../../Context/ClienteContext'
 import {
     Box, Typography, Paper, Table, TableBody, TableCell,
@@ -19,6 +18,8 @@ import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import ClearIcon from '@mui/icons-material/Clear'
+import RegistrarCliente from './RegistrarCliente'
+import ActualizarCliente from './ActualizarCliente'
 
 const COLORS = {
     primary: '#CC1818',
@@ -159,7 +160,6 @@ const FILTROS = [
 
 // ── Componente principal ──
 const ListarCliente = () => {
-    const navigate = useNavigate()
     const { clientes, loading, error, actualizarEstadoCliente } = useClientes()
     const [busqueda, setBusqueda] = useState('')
     const [filtroEstado, setFiltroEstado] = useState('todo')
@@ -167,6 +167,9 @@ const ListarCliente = () => {
     const [rowsPerPage, setRowsPerPage] = useState(5)
     const [clienteConsulta, setClienteConsulta] = useState(null)
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
+    const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
+    const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
+    const [clienteEditar, setClienteEditar] = useState(null)
 
     const ESTADOS = ['Activo', 'Inactivo']
 
@@ -243,7 +246,7 @@ const ListarCliente = () => {
                     </Typography>
                 </Box>
                 <Button
-                    onClick={() => navigate('/clientes/registrar')}
+                    onClick={() => setModalRegistrarOpen(true)}
                     variant="contained"
                     startIcon={<AddOutlinedIcon />}
                     sx={{
@@ -526,7 +529,7 @@ const ListarCliente = () => {
                                                 <Tooltip title="Editar">
                                                     <IconButton
                                                         size="small"
-                                                        onClick={() => navigate(`/clientes/actualizar/${cliente.idCliente}`)}
+                                                        onClick={() => { setClienteEditar(cliente); setModalActualizarOpen(true) }}
                                                         sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}
                                                     >
                                                         <EditOutlinedIcon sx={{ fontSize: 18 }} />
@@ -652,6 +655,23 @@ const ListarCliente = () => {
             </Box>
 
             <ModalConsultar cliente={clienteConsulta} onClose={() => setClienteConsulta(null)} />
+
+            <RegistrarCliente 
+                open={modalRegistrarOpen} 
+                onClose={() => setModalRegistrarOpen(false)} 
+                onSuccess={() => {
+                    setSnackbar({ open: true, message: 'Cliente registrado correctamente', severity: 'success' })
+                }}
+            />
+
+            <ActualizarCliente
+                open={modalActualizarOpen}
+                onClose={() => { setModalActualizarOpen(false); setClienteEditar(null) }}
+                cliente={clienteEditar}
+                onSuccess={() => {
+                    setSnackbar({ open: true, message: 'Cliente actualizado correctamente', severity: 'success' })
+                }}
+            />
 
             <Snackbar
                 open={snackbar.open}

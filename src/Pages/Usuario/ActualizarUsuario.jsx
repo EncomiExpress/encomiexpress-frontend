@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
-import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Snackbar, Alert, TextField, Select, InputAdornment, CircularProgress } from '@mui/material'
+import { Dialog, DialogTitle, DialogContent, IconButton, Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Snackbar, Alert, TextField, Select, InputAdornment, CircularProgress } from '@mui/material'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined'
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
@@ -10,6 +9,7 @@ import LockOutlinedIcon from '@mui/icons-material/LockOutlined'
 import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined'
 import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined'
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined'
+import CloseIcon from '@mui/icons-material/Close'
 import { useAuth, ROLES } from '../../Context/AuthContext'
 import { formFieldStyles } from '../../Components/FormularioEstandarizado'
 
@@ -36,12 +36,8 @@ const ConfirmRow = ({ label, value }) => (
     </Box>
 )
 
-const ActualizarUsuario = () => {
-    const { id } = useParams()
-    const { getUsuarios, actualizarUsuario } = useAuth()
-    const navigate = useNavigate()
-    const [usuarios, setUsuarios] = useState([])
-    const [loading, setLoading] = useState(true)
+const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) => {
+    const { actualizarUsuario } = useAuth()
     const [exito, setExito] = useState(false)
     const [apiError, setApiError] = useState(null)
     const [errores, setErrores] = useState({})
@@ -64,23 +60,8 @@ const ActualizarUsuario = () => {
     })
 
     useEffect(() => {
-        const cargarUsuarios = async () => {
-            try {
-                const data = await getUsuarios()
-                setUsuarios(data)
-            } catch (err) {
-                console.error('Error al cargar usuarios:', err)
-            } finally {
-                setLoading(false)
-            }
-        }
-        cargarUsuarios()
-    }, [getUsuarios])
-
-    useEffect(() => {
-        if (loading) return
-        const usuario = usuarios.find(u => u.id === parseInt(id))
-        if (usuario) {
+        if (open && usuarioProp) {
+            const usuario = usuarioProp
             const atIdx = usuario.email ? usuario.email.lastIndexOf('@') : -1
             const emailLocal = atIdx >= 0 ? usuario.email.slice(0, atIdx) : usuario.email || ''
             const rawDominio = atIdx >= 0 ? '@' + usuario.email.slice(atIdx + 1) : ''
@@ -98,10 +79,8 @@ const ActualizarUsuario = () => {
             }
             setForm(datosForm)
             setFormOriginal(datosForm)
-        } else {
-            navigate('/usuarios/listar')
         }
-    }, [id, usuarios, loading, navigate])
+    }, [open, usuarioProp])
 
     const handleChange = (e) => {
         const { name } = e.target
@@ -221,9 +200,12 @@ const ActualizarUsuario = () => {
                 datosBackend.password = form.password
             }
 
-            await actualizarUsuario(id, datosBackend)
+            await actualizarUsuario(usuarioProp.id, datosBackend)
             setExito(true)
-            setTimeout(() => navigate('/usuarios/listar'), 1500)
+            setTimeout(() => {
+                onClose()
+                if (onSuccess) onSuccess()
+            }, 1500)
         } catch (err) {
             setApiError(err.message)
         } finally {
@@ -231,7 +213,7 @@ const ActualizarUsuario = () => {
         }
     }
 
-    const handleCancelar = () => navigate('/usuarios/listar')
+    const handleCancelar = () => onClose()
 
     const cardSx = {
         flex: 1, minWidth: 0, borderRadius: 2, p: 2.5,
@@ -383,28 +365,36 @@ const ActualizarUsuario = () => {
         }
     }
 
-    if (loading) {
-        return (
-            <Box sx={{ p: 3.5, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
-                <CircularProgress sx={{ color: COLORS.primary }} />
-            </Box>
-        )
-    }
-
     return (
-        <Box sx={{ p: 3.5 }}>
-            <Box sx={{ mb: 3 }}>
-                <Typography variant="h5" fontWeight={700} color={COLORS.text}>Editar Usuario</Typography>
-                <Typography variant="body2" color={COLORS.textMuted} mt={0.3}>
-                    {formOriginal?.nombre && formOriginal?.apellido
-                        ? `Modificando datos de ${formOriginal.nombre} ${formOriginal.apellido}`
-                        : 'Modifica los campos que necesites.'
-                    }
-                </Typography>
-            </Box>
-
-            <Paper elevation={0} sx={{ border: `1px solid ${COLORS.border}`, borderRadius: 3, overflow: 'hidden' }}>
+        <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth
+            slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}>
+            <DialogTitle sx={{ m: 0, p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${COLORS.border}` }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <Box sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 2,
+                        background: 'linear-gradient(135deg, #CC1818 0%, #dc2626 100%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                    }}>
+                        <PersonOutlinedIcon sx={{ color: 'white', fontSize: 22 }} />
+                    </Box>
+                    <Typography variant="h6" fontWeight={700}>Editar Usuario</Typography>
+                </Box>
+                <IconButton onClick={onClose} sx={{ color: '#8A94A6' }}>
+                    <CloseIcon />
+                </IconButton>
+            </DialogTitle>
+            <DialogContent sx={{ p: 0 }}>
                 <Box sx={{ px: 4, pt: 3.5, pb: 2.5, borderBottom: `1px solid ${COLORS.border}` }}>
+                    <Typography variant="body2" color={COLORS.textMuted} mb={1}>
+                        {formOriginal?.nombre && formOriginal?.apellido
+                            ? `Modificando datos de ${formOriginal.nombre} ${formOriginal.apellido}`
+                            : 'Modifica los campos que necesites.'
+                        }
+                    </Typography>
                     <Stepper activeStep={activeStep} alternativeLabel
                         sx={{
                             '& .MuiStepIcon-root': { color: '#E0E0E0' },
@@ -468,14 +458,14 @@ const ActualizarUsuario = () => {
                         </Button>
                     </Box>
                 </Box>
-            </Paper>
+            </DialogContent>
 
             <Snackbar open={exito} autoHideDuration={2500} onClose={() => setExito(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
                 <Alert severity="success" variant="filled" sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }} onClose={() => setExito(false)}>
                     ¡Usuario actualizado exitosamente!
                 </Alert>
             </Snackbar>
-        </Box>
+        </Dialog>
     )
 }
 

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
-import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Snackbar, Alert, TextField, Select, InputAdornment } from '@mui/material'
+import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Snackbar, Alert, TextField, Select, InputAdornment, Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined'
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
@@ -10,6 +9,7 @@ import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined'
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined'
 import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
 import EventOutlinedIcon from '@mui/icons-material/EventOutlined'
+import CloseIcon from '@mui/icons-material/Close'
 import { useConductor } from '../../Context/ConductorContext'
 import { FormField, FormSelect, formFieldStyles } from '../../Components/FormularioEstandarizado'
 
@@ -36,10 +36,8 @@ const ConfirmRow = ({ label, value }) => (
     </Box>
 )
 
-const ActualizarConductor = () => {
-    const { id } = useParams()
+const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSuccess }) => {
     const { getConductorById, actualizarConductor } = useConductor()
-    const navigate = useNavigate()
     const [exito, setExito] = useState(false)
     const [apiError, setApiError] = useState(null)
     const [errores, setErrores] = useState({})
@@ -61,19 +59,19 @@ const ActualizarConductor = () => {
     })
 
     useEffect(() => {
-        const conductor = getConductorById(id)
-        if (conductor) {
-            const atIdx = conductor.email ? conductor.email.lastIndexOf('@') : -1
-            const emailLocal = atIdx >= 0 ? conductor.email.slice(0, atIdx) : conductor.email || ''
-            const rawDominio = atIdx >= 0 ? '@' + conductor.email.slice(atIdx + 1) : ''
-            const emailDominio = DOMINIOS_EMAIL.includes(rawDominio) ? rawDominio : '@gmail.com'
-            const datosForm = { ...conductor, emailLocal, emailDominio }
-            setForm(datosForm)
-            setFormOriginal(datosForm)
-        } else {
-            navigate('/transporte/conductores')
+        if (open && conductorProp) {
+            const conductor = getConductorById(conductorProp.idConductor)
+            if (conductor) {
+                const atIdx = conductor.email ? conductor.email.lastIndexOf('@') : -1
+                const emailLocal = atIdx >= 0 ? conductor.email.slice(0, atIdx) : conductor.email || ''
+                const rawDominio = atIdx >= 0 ? '@' + conductor.email.slice(atIdx + 1) : ''
+                const emailDominio = DOMINIOS_EMAIL.includes(rawDominio) ? rawDominio : '@gmail.com'
+                const datosForm = { ...conductor, emailLocal, emailDominio }
+                setForm(datosForm)
+                setFormOriginal(datosForm)
+            }
         }
-    }, [id, getConductorById, navigate])
+    }, [open, conductorProp, getConductorById])
 
     const handleChange = (e) => {
         const { name } = e.target
@@ -130,6 +128,8 @@ const ActualizarConductor = () => {
 
     const handleBack = () => setActiveStep((prev) => prev - 1)
 
+    const handleCancelar = () => onClose()
+
     const handleSubmit = async () => {
         const erroresEncontrados = validarPaso(activeStep)
         if (Object.keys(erroresEncontrados).length > 0) {
@@ -156,20 +156,21 @@ const ActualizarConductor = () => {
         try {
             const { emailLocal, emailDominio, ...resto } = form
             actualizarConductor({
-                idConductor: parseInt(id),
+                idConductor: parseInt(conductorProp?.idConductor),
                 ...resto,
                 email: emailLocal ? emailLocal + emailDominio : ''
             })
             setExito(true)
-            setTimeout(() => navigate('/transporte/conductores'), 1500)
+            setTimeout(() => {
+                onClose()
+                if (onSuccess) onSuccess()
+            }, 1500)
         } catch (err) {
             setApiError(err.message || 'Error al actualizar el conductor')
         } finally {
             setSubmitting(false)
         }
     }
-
-    const handleCancelar = () => navigate('/transporte/conductores')
 
     const cardSx = {
         flex: 1, minWidth: 0, borderRadius: 2, p: 2.5,
@@ -308,90 +309,109 @@ const ActualizarConductor = () => {
     }
 
     return (
-        <Box sx={{ p: 3.5 }}>
-            <Box sx={{ mb: 3 }}>
-                <Typography variant="h5" fontWeight={700} color={COLORS.text}>Editar Conductor</Typography>
-                <Typography variant="body2" color={COLORS.textMuted} mt={0.3}>
+        <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth
+            slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}>
+            <DialogTitle sx={{ m: 0, p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <Box sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 2,
+                        background: 'linear-gradient(135deg, #CC1818 0%, #dc2626 100%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                    }}>
+                        <PersonOutlinedIcon sx={{ color: 'white', fontSize: 22 }} />
+                    </Box>
+                    <Typography variant="h6" fontWeight={700}>Editar Conductor</Typography>
+                </Box>
+                <IconButton onClick={onClose} sx={{ color: '#8A94A6' }}>
+                    <CloseIcon />
+                </IconButton>
+            </DialogTitle>
+            <DialogContent sx={{ p: 3 }}>
+                <Typography variant="body2" color={COLORS.textMuted} sx={{ mb: 3 }}>
                     {formOriginal?.nombre && formOriginal?.apellido
                         ? `Modificando datos de ${formOriginal.nombre} ${formOriginal.apellido}`
                         : 'Modifica los campos que necesites.'
                     }
                 </Typography>
-            </Box>
 
-            <Paper elevation={0} sx={{ border: `1px solid ${COLORS.border}`, borderRadius: 3, overflow: 'hidden' }}>
-                <Box sx={{ px: 4, pt: 3.5, pb: 2.5, borderBottom: `1px solid ${COLORS.border}` }}>
-                    <Stepper activeStep={activeStep} alternativeLabel
-                        sx={{
-                            '& .MuiStepIcon-root': { color: '#E0E0E0' },
-                            '& .MuiStepIcon-root.Mui-active': { color: COLORS.primary },
-                            '& .MuiStepIcon-root.Mui-completed': { color: COLORS.primary },
-                            '& .MuiStepIcon-text': { fill: 'white', fontSize: '0.7rem', fontWeight: 700 },
-                            '& .MuiStepConnector-line': { borderColor: COLORS.border },
-                            '& .MuiStepConnector-root.Mui-active .MuiStepConnector-line': { borderColor: COLORS.primary },
-                            '& .MuiStepConnector-root.Mui-completed .MuiStepConnector-line': { borderColor: COLORS.primary },
-                            '& .MuiStepLabel-label': { fontSize: '0.8rem', color: COLORS.textMuted, mt: 0.5 },
-                            '& .MuiStepLabel-label.Mui-active': { color: COLORS.text, fontWeight: 600 },
-                            '& .MuiStepLabel-label.Mui-completed': { color: COLORS.primary, fontWeight: 500 },
-                        }}
-                    >
-                        {steps.map(label => <Step key={label}><StepLabel>{label}</StepLabel></Step>)}
-                    </Stepper>
-                </Box>
-
-                <Box sx={{ px: 4, py: 3.5 }}>
-                    <Box sx={{ maxWidth: 700, mx: 'auto' }}>
-                        {renderStepContent()}
-                    </Box>
-                </Box>
-
-                <Box sx={{
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    px: 4, py: 2.5, borderTop: `1px solid ${COLORS.border}`, backgroundColor: '#FAFAFA',
-                }}>
-                    <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined"
-                        startIcon={<ArrowBackOutlinedIcon />} disableRipple
-                        sx={{
-                            textTransform: 'none', borderRadius: 2, borderColor: COLORS.border,
-                            color: COLORS.text, fontWeight: 500,
-                            '&:hover': { borderColor: '#BDBDBD', backgroundColor: COLORS.hoverBg },
-                            '&.Mui-disabled': { borderColor: COLORS.border, color: COLORS.textMuted },
-                        }}>
-                        Anterior
-                    </Button>
-                    <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
-                        <Button onClick={handleCancelar} disableRipple
+                <Paper elevation={0} sx={{ border: `1px solid ${COLORS.border}`, borderRadius: 3, overflow: 'hidden' }}>
+                    <Box sx={{ px: 4, pt: 3.5, pb: 2.5, borderBottom: `1px solid ${COLORS.border}` }}>
+                        <Stepper activeStep={activeStep} alternativeLabel
                             sx={{
-                                textTransform: 'none', color: COLORS.textMuted, fontWeight: 500, borderRadius: 2,
-                                '&:hover': { backgroundColor: COLORS.hoverBg, color: COLORS.text },
-                            }}>
-                            Cancelar
-                        </Button>
-                        <Button
-                            onClick={activeStep < steps.length - 1 ? handleNext : handleSubmit}
-                            variant="contained"
-                            disabled={submitting || (activeStep === steps.length - 1 && sinCambios)}
-                            endIcon={activeStep < steps.length - 1 ? undefined : <SaveOutlinedIcon />}
-                            disableRipple
-                            sx={{
-                                textTransform: 'none', borderRadius: 2, fontWeight: 600,
-                                backgroundColor: COLORS.primary,
-                                boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
-                                '&:hover': { backgroundColor: '#b91c1c', boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
-                                '&.Mui-disabled': { backgroundColor: '#E0E0E0', color: '#9E9E9E' },
-                            }}>
-                            {activeStep < steps.length - 1 ? 'Siguiente' : submitting ? 'Guardando...' : sinCambios ? 'Sin cambios' : 'Guardar cambios'}
-                        </Button>
+                                '& .MuiStepIcon-root': { color: '#E0E0E0' },
+                                '& .MuiStepIcon-root.Mui-active': { color: COLORS.primary },
+                                '& .MuiStepIcon-root.Mui-completed': { color: COLORS.primary },
+                                '& .MuiStepIcon-text': { fill: 'white', fontSize: '0.7rem', fontWeight: 700 },
+                                '& .MuiStepConnector-line': { borderColor: COLORS.border },
+                                '& .MuiStepConnector-root.Mui-active .MuiStepConnector-line': { borderColor: COLORS.primary },
+                                '& .MuiStepConnector-root.Mui-completed .MuiStepConnector-line': { borderColor: COLORS.primary },
+                                '& .MuiStepLabel-label': { fontSize: '0.8rem', color: COLORS.textMuted, mt: 0.5 },
+                                '& .MuiStepLabel-label.Mui-active': { color: COLORS.text, fontWeight: 600 },
+                                '& .MuiStepLabel-label.Mui-completed': { color: COLORS.primary, fontWeight: 500 },
+                            }}
+                        >
+                            {steps.map(label => <Step key={label}><StepLabel>{label}</StepLabel></Step>)}
+                        </Stepper>
                     </Box>
-                </Box>
-            </Paper>
 
-            <Snackbar open={exito} autoHideDuration={2500} onClose={() => setExito(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-                <Alert severity="success" variant="filled" sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }} onClose={() => setExito(false)}>
-                    ¡Conductor actualizado exitosamente!
-                </Alert>
-            </Snackbar>
-        </Box>
+                    <Box sx={{ px: 4, py: 3.5 }}>
+                        <Box sx={{ maxWidth: 700, mx: 'auto' }}>
+                            {renderStepContent()}
+                        </Box>
+                    </Box>
+
+                    <Box sx={{
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        px: 4, py: 2.5, borderTop: `1px solid ${COLORS.border}`, backgroundColor: '#FAFAFA',
+                    }}>
+                        <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined"
+                            startIcon={<ArrowBackOutlinedIcon />} disableRipple
+                            sx={{
+                                textTransform: 'none', borderRadius: 2, borderColor: COLORS.border,
+                                color: COLORS.text, fontWeight: 500,
+                                '&:hover': { borderColor: '#BDBDBD', backgroundColor: COLORS.hoverBg },
+                                '&.Mui-disabled': { borderColor: COLORS.border, color: COLORS.textMuted },
+                            }}>
+                            Anterior
+                        </Button>
+                        <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                            <Button onClick={handleCancelar} disableRipple
+                                sx={{
+                                    textTransform: 'none', color: COLORS.textMuted, fontWeight: 500, borderRadius: 2,
+                                    '&:hover': { backgroundColor: COLORS.hoverBg, color: COLORS.text },
+                                }}>
+                                Cancelar
+                            </Button>
+                            <Button
+                                onClick={activeStep < steps.length - 1 ? handleNext : handleSubmit}
+                                variant="contained"
+                                disabled={submitting || (activeStep === steps.length - 1 && sinCambios)}
+                                endIcon={activeStep < steps.length - 1 ? undefined : <SaveOutlinedIcon />}
+                                disableRipple
+                                sx={{
+                                    textTransform: 'none', borderRadius: 2, fontWeight: 600,
+                                    backgroundColor: COLORS.primary,
+                                    boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
+                                    '&:hover': { backgroundColor: '#b91c1c', boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
+                                    '&.Mui-disabled': { backgroundColor: '#E0E0E0', color: '#9E9E9E' },
+                                }}>
+                                {activeStep < steps.length - 1 ? 'Siguiente' : submitting ? 'Guardando...' : sinCambios ? 'Sin cambios' : 'Guardar cambios'}
+                            </Button>
+                        </Box>
+                    </Box>
+                </Paper>
+
+                <Snackbar open={exito} autoHideDuration={2500} onClose={() => setExito(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
+                    <Alert severity="success" variant="filled" sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }} onClose={() => setExito(false)}>
+                        ¡Conductor actualizado exitosamente!
+                    </Alert>
+                </Snackbar>
+            </DialogContent>
+        </Dialog>
     )
 }
 

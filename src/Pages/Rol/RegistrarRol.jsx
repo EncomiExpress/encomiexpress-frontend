@@ -1,16 +1,14 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Box, Typography, Paper, FormControlLabel, Checkbox, Grid, Alert, Collapse, IconButton, Snackbar } from '@mui/material'
-import { Security, ExpandMore, ExpandLess, CheckBox, CheckBoxOutlineBlank } from '@mui/icons-material'
+import { Box, Typography, Paper, FormControlLabel, Checkbox, Grid, Alert, Collapse, IconButton, Snackbar, Dialog, DialogTitle, DialogContent } from '@mui/material'
+import { Security, ExpandMore, ExpandLess, Close } from '@mui/icons-material'
 import { useAuth, PERMISOS, MODULOS } from '../../Context/AuthContext'
 import { 
-  theme, FormField, PrimaryButton, SecondaryButton, 
+  FormField, PrimaryButton, SecondaryButton, 
   FormAlert, FormHeader, FormButtonGroup 
 } from '../../Components/FormularioEstandarizado'
 
-const RegistrarRol = () => {
+const RegistrarRol = ({ open, onClose, onSuccess }) => {
   const { tienePermiso, registrarRol, getRoles } = useAuth()
-  const navigate = useNavigate()
   
   const [formData, setFormData] = useState({
     nombre: '',
@@ -27,25 +25,20 @@ const RegistrarRol = () => {
     }))
   }
 
-  // Obtener todos los módulos
   const modulos = Object.entries(MODULOS)
 
-  // Manejar cambio de módulo (seleccionar todos los permisos del módulo)
   const handleModuloChange = (moduloKey) => {
     const modulo = MODULOS[moduloKey]
     const permisosDelModulo = modulo.permisos
     
-    // Verificar si todos los permisos del módulo ya están seleccionados
     const todosSeleccionados = permisosDelModulo.every(p => formData.permisos.includes(p))
     
     if (todosSeleccionados) {
-      // Deseleccionar todos los permisos del módulo
       setFormData(prev => ({
         ...prev,
         permisos: prev.permisos.filter(p => !permisosDelModulo.includes(p))
       }))
     } else {
-      // Seleccionar todos los permisos del módulo
       setFormData(prev => ({
         ...prev,
         permisos: [...new Set([...prev.permisos, ...permisosDelModulo])]
@@ -53,7 +46,6 @@ const RegistrarRol = () => {
     }
   }
 
-  // Manejar cambio de permiso individual
   const handlePermisoChange = (permiso) => {
     setFormData(prev => ({
       ...prev,
@@ -63,7 +55,6 @@ const RegistrarRol = () => {
     }))
   }
 
-  // Obtener label legible para un permiso
   const getPermisoLabel = (permiso) => {
     const labels = {
       'registrar_usuario': 'Registrar',
@@ -109,13 +100,11 @@ const RegistrarRol = () => {
     return labels[permiso] || permiso
   }
 
-  // Verificar si todos los permisos de un módulo están seleccionados
   const isModuloCompleto = (moduloKey) => {
     const modulo = MODULOS[moduloKey]
     return modulo.permisos.every(p => formData.permisos.includes(p))
   }
 
-  // Verificar si algunos permisos de un módulo están seleccionados
   const isModuloParcial = (moduloKey) => {
     const modulo = MODULOS[moduloKey]
     const algunosSeleccionados = modulo.permisos.some(p => formData.permisos.includes(p))
@@ -141,35 +130,57 @@ const RegistrarRol = () => {
     setMensaje('Rol registrado correctamente')
     setError('')
     
+    setTimeout(() => {
+      handleClose()
+      if (onSuccess) onSuccess()
+    }, 1500)
+  }
+
+  const handleClose = () => {
     setFormData({
       nombre: '',
       permisos: []
     })
-    
-    setTimeout(() => setMensaje(''), 3000)
+    setError('')
+    setMensaje('')
+    setModulosExpandidos({})
+    onClose()
   }
 
   if (!tienePermiso(PERMISOS.REGISTRAR_ROL)) {
     return (
-      <Box sx={{ p: 4 }}>
-        <Paper elevation={0} sx={{ p: 4, borderRadius: 2, border: '1px solid #e2e8f0', maxWidth: 800, mx: 'auto' }}>
-          <FormAlert severity="error">
-            No tienes permisos para registrar roles.
-          </FormAlert>
-        </Paper>
-      </Box>
+      <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth
+        slotProps={{ paper: { sx: { borderRadius: 3, p: 3 } } }}>
+        <FormAlert severity="error">
+          No tienes permisos para registrar roles.
+        </FormAlert>
+      </Dialog>
     )
   }
 
   return (
-    <Box sx={{ p: 2, height: 'calc(100vh - 100px)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-      <Paper elevation={0} sx={{ p: 3, borderRadius: 2, border: '1px solid #e2e8f0', flex: 1, overflow: 'auto' }}>
-        <FormHeader 
-          icon={Security} 
-          title="Registrar Nuevo Rol" 
-          subtitle="Asigna permisos por módulos"
-        />
-
+    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth
+      slotProps={{ paper: { sx: { borderRadius: 3, p: 0, maxHeight: '90vh' } } }}>
+      <DialogTitle sx={{ m: 0, p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Box sx={{
+            width: 40,
+            height: 40,
+            borderRadius: 2,
+            background: 'linear-gradient(135deg, #CC1818 0%, #dc2626 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <Security sx={{ color: 'white', fontSize: 22 }} />
+          </Box>
+          <Typography variant="h6" fontWeight={700}>Registrar Nuevo Rol</Typography>
+        </Box>
+        <IconButton onClick={handleClose} sx={{ color: '#8A94A6' }}>
+          <Close />
+        </IconButton>
+      </DialogTitle>
+      <DialogContent sx={{ p: 3 }}>
         {error && (
           <FormAlert>
             {error}
@@ -198,7 +209,7 @@ const RegistrarRol = () => {
 
             <Grid container spacing={1}>
               {modulos.map(([moduloKey, modulo]) => {
-                const expandido = modulosExpandidos[moduloKey] !== false // Por defecto expandido
+                const expandido = modulosExpandidos[moduloKey] !== false
                 const completo = isModuloCompleto(moduloKey)
                 const parcial = isModuloParcial(moduloKey)
 
@@ -212,7 +223,6 @@ const RegistrarRol = () => {
                         overflow: 'hidden'
                       }}
                     >
-                      {/* Encabezado del módulo */}
                       <Box 
                         sx={{ 
                           p: 1.5, 
@@ -250,7 +260,6 @@ const RegistrarRol = () => {
                         </IconButton>
                       </Box>
 
-                      {/* Permisos individuales del módulo */}
                       <Collapse in={expandido}>
                         <Box sx={{ p: 1.5, pt: 1, display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                           {modulo.permisos.map((permiso) => (
@@ -295,7 +304,7 @@ const RegistrarRol = () => {
           </Box>
 
           <FormButtonGroup>
-            <SecondaryButton onClick={() => navigate('/roles')} type="button">
+            <SecondaryButton onClick={handleClose} type="button">
               Cancelar
             </SecondaryButton>
             <PrimaryButton type="submit">
@@ -303,14 +312,14 @@ const RegistrarRol = () => {
             </PrimaryButton>
           </FormButtonGroup>
         </form>
-      </Paper>
+      </DialogContent>
 
       <Snackbar open={!!mensaje} autoHideDuration={2500} onClose={() => setMensaje('')} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
         <Alert severity="success" variant="filled" sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }} onClose={() => setMensaje('')}>
           ¡Rol registrado exitosamente!
         </Alert>
       </Snackbar>
-    </Box>
+    </Dialog>
   )
 }
 

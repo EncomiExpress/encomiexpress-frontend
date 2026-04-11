@@ -19,6 +19,8 @@ import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined
 import EventOutlinedIcon from '@mui/icons-material/EventOutlined'
 import { useConductor } from '../../Context/ConductorContext'
 import { useAuth } from '../../Context/AuthContext'
+import RegistrarConductor from './RegistrarConductor'
+import ActualizarConductor from './ActualizarConductor'
 
 const COLORS = {
     primary: '#CC1818',
@@ -83,6 +85,9 @@ const ListarConductor = () => {
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
     const [filtroEstado, setFiltroEstado] = useState('todo')
     const [page, setPage] = useState(1)
+    const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
+    const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
+    const [conductorEditar, setConductorEditar] = useState(null)
 
     const { getConductores, updateEstado } = useConductor()
     const { usuario } = useAuth()
@@ -156,8 +161,7 @@ const ListarConductor = () => {
                     </Typography>
                 </Box>
                 <Button
-                    component={Link}
-                    to="/transporte/conductores/registrar"
+                    onClick={() => setModalRegistrarOpen(true)}
                     variant="contained"
                     startIcon={<AddOutlinedIcon />}
                     sx={{
@@ -380,8 +384,7 @@ const ListarConductor = () => {
                                                 <Tooltip title="Editar">
                                                     <IconButton
                                                         size="small"
-                                                        component={Link}
-                                                        to={`/transporte/conductores/actualizar/${conductor.idConductor}`}
+                                                        onClick={() => { setConductorEditar(conductor); setModalActualizarOpen(true) }}
                                                         sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}
                                                     >
                                                         <EditOutlinedIcon sx={{ fontSize: 18 }} />
@@ -478,6 +481,25 @@ const ListarConductor = () => {
                     </Box>
                 </Dialog>
             )}
+
+            <RegistrarConductor 
+                open={modalRegistrarOpen} 
+                onClose={() => setModalRegistrarOpen(false)} 
+                onSuccess={() => {
+                    setConductores(getConductores())
+                    setSnackbar({ open: true, message: 'Conductor registrado correctamente', severity: 'success' })
+                }}
+            />
+
+            <ActualizarConductor
+                open={modalActualizarOpen}
+                onClose={() => { setModalActualizarOpen(false); setConductorEditar(null) }}
+                conductor={conductorEditar}
+                onSuccess={() => {
+                    setConductores(getConductores())
+                    setSnackbar({ open: true, message: 'Conductor actualizado correctamente', severity: 'success' })
+                }}
+            />
 
             <Snackbar
                 open={snackbar.open}
