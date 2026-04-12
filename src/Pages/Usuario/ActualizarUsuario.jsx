@@ -61,6 +61,9 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
 
     useEffect(() => {
         if (open && usuarioProp) {
+            setActiveStep(0)
+            setErrores({})
+            setSinCambios(false)
             const usuario = usuarioProp
             const atIdx = usuario.email ? usuario.email.lastIndexOf('@') : -1
             const emailLocal = atIdx >= 0 ? usuario.email.slice(0, atIdx) : usuario.email || ''

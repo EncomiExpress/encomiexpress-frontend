@@ -72,6 +72,9 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
 
     useEffect(() => {
         if (!open || !anticipoProp) return
+        setActiveStep(0)
+        setErrores({})
+        setSinCambios(false)
         const anticipo = anticipos.find(a => a.idAnticipoExcedente === anticipoProp.idAnticipoExcedente) || anticipoProp
         if (anticipo) {
             setAnticipoOriginal(anticipo)

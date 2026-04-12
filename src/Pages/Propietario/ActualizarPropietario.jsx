@@ -60,6 +60,10 @@ const ActualizarPropietario = ({ open, onClose, propietario: propietarioProp, on
 
     useEffect(() => {
         if (!open || !propietarioProp) return
+        setActiveStep(0)
+        setErrores({})
+        setApiError(null)
+        setSinCambios(false)
         const propietario = propietarios.find(p => p.idPropietario === propietarioProp.idPropietario) || propietarioProp
         if (propietario) {
             const atIdx = propietario.email ? propietario.email.lastIndexOf('@') : -1

@@ -52,6 +52,9 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
 
   useEffect(() => {
     if (open && transporteProp) {
+      setActiveStep(0)
+      setSinCambios(false)
+      setError('')
       const transporte = getTransporteById(transporteProp.idVehiculo)
       if (transporte) {
         setFormData(transporte)

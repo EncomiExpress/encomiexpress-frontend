@@ -60,6 +60,9 @@ const ActualizarCliente = ({ open, onClose, cliente: clienteProp, onSuccess }) =
 
     useEffect(() => {
         if (loading || !open || !clienteProp) return
+        setActiveStep(0)
+        setErrores({})
+        setSinCambios(false)
         const cliente = clientes.find(c => c.idCliente === clienteProp.idCliente) || clienteProp
         if (cliente) {
             const atIdx = cliente.email ? cliente.email.lastIndexOf('@') : -1

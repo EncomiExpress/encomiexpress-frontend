@@ -60,6 +60,9 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
 
     useEffect(() => {
         if (open && conductorProp) {
+            setActiveStep(0)
+            setErrores({})
+            setSinCambios(false)
             const conductor = getConductorById(conductorProp.idConductor)
             if (conductor) {
                 const atIdx = conductor.email ? conductor.email.lastIndexOf('@') : -1

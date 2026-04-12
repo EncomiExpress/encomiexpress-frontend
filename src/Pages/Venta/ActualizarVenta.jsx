@@ -130,6 +130,9 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
 
     useEffect(() => {
         if (!venta) return
+        setActiveStep(0)
+        setErrores({})
+        setSinCambios(false)
         const ventaData = venta
         setVentaOriginal(ventaData)
         const destinatario = ventaData.destinatarios?.[0] || null
