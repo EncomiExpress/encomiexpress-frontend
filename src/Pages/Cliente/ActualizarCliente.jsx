@@ -301,34 +301,25 @@ const ActualizarCliente = ({ open, onClose, cliente: clienteProp, onSuccess }) =
     return (
         <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth
             slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}>
-            <DialogTitle sx={{ m: 0, p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <Box sx={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: 2,
-                        background: 'linear-gradient(135deg, #CC1818 0%, #dc2626 100%)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                    }}>
-                        <PersonOutlinedIcon sx={{ color: 'white', fontSize: 22 }} />
-                    </Box>
-                    <Typography variant="h6" fontWeight={700}>Editar Cliente</Typography>
+            <DialogTitle sx={{ m: 0, p: 2, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0' }}>
+                <Box>
+                    <Typography variant="h6" fontWeight={700}>
+                        Editar Cliente
+                    </Typography>
+                    <Typography variant="body2" color={COLORS.textMuted}>
+                        {formOriginal?.nombre && formOriginal?.apellido
+                            ? `Modificando datos de ${formOriginal.nombre} ${formOriginal.apellido}`
+                            : 'Modifica los campos que necesites.'
+                        }
+                    </Typography>
                 </Box>
                 <IconButton onClick={onClose} sx={{ color: '#8A94A6' }}>
                     <CloseIcon />
                 </IconButton>
             </DialogTitle>
-            <DialogContent sx={{ p: 3 }}>
-                <Typography variant="body2" color={COLORS.textMuted} sx={{ mb: 3 }}>
-                    {formOriginal?.nombre && formOriginal?.apellido
-                        ? `Modificando datos de ${formOriginal.nombre} ${formOriginal.apellido}`
-                        : 'Modifica los campos que necesites.'
-                    }
-                </Typography>
+            <DialogContent sx={{ p: 3, pt: 1.5 }}>
 
-                <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 3,
+                <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 3, mt: 2,
                     '& .MuiStepIcon-root': { color: '#E0E0E0' },
                     '& .MuiStepIcon-root.Mui-active': { color: COLORS.primary },
                     '& .MuiStepIcon-root.Mui-completed': { color: COLORS.primary },

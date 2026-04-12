@@ -379,7 +379,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                                 <FormField label="Dirección" name="direccionRemitente" value={form.direccionRemitente}
                                     onChange={handleChange} required error={errores.direccionRemitente}
                                     placeholder="Ej: Calle 45 #20-10"
-                                    helperText={errores.direccionRemitente || `${form.direccionRemitente.length}/200`}
+                                    helperText={errores.direccionRemitente || `${(form.direccionRemitente || '').length}/200`}
                                     icon={HomeOutlinedIcon} inputProps={{ maxLength: 200 }} />
                             </Box>
                         </Box>
@@ -400,7 +400,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                             <FormField label="Dirección de entrega" name="direccionDestinatario" value={form.direccionDestinatario}
                                 onChange={handleChange} required error={errores.direccionDestinatario}
                                 placeholder="Ej: Cra 23 #80-5"
-                                helperText={errores.direccionDestinatario || `${form.direccionDestinatario.length}/300`}
+                                helperText={errores.direccionDestinatario || `${(form.direccionDestinatario || '').length}/300`}
                                 icon={HomeOutlinedIcon} multiline rows={2} inputProps={{ maxLength: 300 }} />
                         </Box>
                     </Box>
@@ -550,33 +550,25 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
     return (
         <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth
             slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}>
-            <DialogTitle sx={{ m: 0, p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <Box sx={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: 2,
-                        background: 'linear-gradient(135deg, #CC1818 0%, #dc2626 100%)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                    }}>
-                        <AssignmentIndOutlinedIcon sx={{ color: 'white', fontSize: 22 }} />
-                    </Box>
-                    <Typography variant="h6" fontWeight={700}>Registrar Venta</Typography>
+            <DialogTitle sx={{ m: 0, p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${COLORS.border}` }}>
+                <Box>
+                    <Typography variant="h6" fontWeight={700}>
+                        Registrar Venta
+                    </Typography>
+                    <Typography variant="body2" color={COLORS.textMuted}>
+                        Complete los datos de la nueva encomienda paso a paso.
+                    </Typography>
                 </Box>
                 <IconButton onClick={handleClose} sx={{ color: '#8A94A6' }}>
                     <CloseIcon />
                 </IconButton>
             </DialogTitle>
-            <DialogContent sx={{ p: 3 }}>
-                <Typography variant="body2" color={COLORS.textMuted} sx={{ mb: 3 }}>
-                    Complete los datos de la nueva encomienda paso a paso.
-                </Typography>
+            <DialogContent sx={{ p: 3, pt: 1.5 }}>
 
                 <Box sx={{ mb: 3 }}>
                     <Stepper activeStep={activeStep} alternativeLabel
                         sx={{
+                            mb: 3, mt: 2,
                             '& .MuiStepIcon-root': { color: '#E0E0E0' },
                             '& .MuiStepIcon-root.Mui-active': { color: COLORS.primary },
                             '& .MuiStepIcon-root.Mui-completed': { color: COLORS.primary },

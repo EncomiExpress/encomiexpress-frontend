@@ -237,14 +237,10 @@ const filterMenuProps = {
 }
 
 // ── Filtros de estado (habilitado) ──
-const FILTROS = [
+const FILTROS_HABILITADO = [
     { value: 'todo', label: 'Todo' },
-    { value: 'pendiente de recogida', label: 'Pendiente' },
-    { value: 'en recogida', label: 'En Recogida' },
-    { value: 'programada', label: 'Programada' },
-    { value: 'en tránsito', label: 'En Tránsito' },
-    { value: 'entregado', label: 'Entregado' },
-    { value: 'devuelto', label: 'Devuelto' },
+    { value: 'Activo', label: 'Activo' },
+    { value: 'Inactivo', label: 'Inactivo' },
 ]
 
 // ── Componente principal ──
@@ -252,7 +248,8 @@ const ListarVenta = () => {
     const { ventas, loading, error, invalidateVenta, cambiarEstadoVenta } = useVentas()
 
     const [busqueda, setBusqueda] = useState('')
-    const [filtroEstadoEncomienda, setFiltroEstadoEncomienda] = useState('todo')
+    const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
+    const [filtroEstadoEncomienda, setFiltroEstadoEncomienda] = useState('todos')
     const [filtroPago, setFiltroPago] = useState('todos')
     const [filtroMetodoPago, setFiltroMetodoPago] = useState('todos')
     const [page, setPage] = useState(1)
@@ -272,22 +269,27 @@ const ListarVenta = () => {
             v.destinatario?.nombreDestinatario?.toLowerCase().includes(q) ||
             v.ruta?.destino?.toLowerCase().includes(q)
 
-        const coincideEstado = filtroEstadoEncomienda === 'todo' || v.estado === filtroEstadoEncomienda
+        const coincideHabilitado =
+            filtroHabilitado === 'todo' ||
+            (filtroHabilitado === 'Activo' && v.habilitado !== false) ||
+            (filtroHabilitado === 'Inactivo' && v.habilitado === false)
+        const coincideEstado = filtroEstadoEncomienda === 'todos' || v.estado === filtroEstadoEncomienda
         const coincidePago = filtroPago === 'todos' || v.estadoPago?.toLowerCase() === filtroPago.toLowerCase()
         const coincideMetodo = filtroMetodoPago === 'todos' || v.metodoPago?.toLowerCase() === filtroMetodoPago.toLowerCase()
 
-        return coincideBusqueda && coincideEstado && coincidePago && coincideMetodo
+        return coincideBusqueda && coincideHabilitado && coincideEstado && coincidePago && coincideMetodo
     })
 
     const limpiarFiltros = () => {
         setBusqueda('')
-        setFiltroEstadoEncomienda('todo')
+        setFiltroHabilitado('todo')
+        setFiltroEstadoEncomienda('todos')
         setFiltroPago('todos')
         setFiltroMetodoPago('todos')
         setPage(1)
     }
 
-    const hayFiltrosActivos = busqueda || filtroEstadoEncomienda !== 'todo' || filtroPago !== 'todos' || filtroMetodoPago !== 'todos'
+    const hayFiltrosActivos = busqueda || filtroHabilitado !== 'todo' || filtroEstadoEncomienda !== 'todos' || filtroPago !== 'todos' || filtroMetodoPago !== 'todos'
 
     const handleEstadoChange = async (id, nuevoEstado) => {
         try {
@@ -368,19 +370,19 @@ const ListarVenta = () => {
                 </Alert>
             )}
 
-            {/* ── Filtros de estado (habilitado) ── */}
+            {/* ── Filtros de habilitado ── */}
             <Box sx={{
                 display: 'inline-flex',
                 backgroundColor: '#FFECEC',
                 borderRadius: 4,
                 p: '4px',
-                mb: 2.5,
+                mb: 2,
                 gap: '5px',
             }}>
-                {FILTROS.map(f => (
+                {FILTROS_HABILITADO.map(f => (
                     <Button
                         key={f.value}
-                        onClick={() => { setFiltroEstadoEncomienda(f.value); setPage(1) }}
+                        onClick={() => { setFiltroHabilitado(f.value); setPage(1) }}
                         size="small"
                         disableElevation
                         disableRipple
@@ -391,16 +393,16 @@ const ListarVenta = () => {
                             px: 2,
                             py: 0.5,
                             minWidth: 0,
-                            fontWeight: filtroEstadoEncomienda === f.value ? 600 : 400,
-                            backgroundColor: filtroEstadoEncomienda === f.value ? 'white' : 'transparent',
-                            color: filtroEstadoEncomienda === f.value ? COLORS.text : '#B05050',
-                            boxShadow: filtroEstadoEncomienda === f.value
+                            fontWeight: filtroHabilitado === f.value ? 600 : 400,
+                            backgroundColor: filtroHabilitado === f.value ? 'white' : 'transparent',
+                            color: filtroHabilitado === f.value ? COLORS.text : '#B05050',
+                            boxShadow: filtroHabilitado === f.value
                                 ? '0 1px 4px rgba(0,0,0,0.12)'
                                 : 'none',
                             border: 'none',
                             '&:hover': {
-                                backgroundColor: filtroEstadoEncomienda === f.value ? 'white' : 'transparent',
-                                color: filtroEstadoEncomienda === f.value ? COLORS.text : '#5C3333',
+                                backgroundColor: filtroHabilitado === f.value ? 'white' : 'transparent',
+                                color: filtroHabilitado === f.value ? COLORS.text : '#5C3333',
                                 border: 'none',
                             },
                         }}
@@ -558,7 +560,9 @@ const ListarVenta = () => {
                                         <Typography color={COLORS.textMuted} variant="body2">
                                             {ventas.length === 0
                                                 ? 'No hay ventas registradas en el sistema.'
-                                                : 'No se encontraron ventas que coincidan con los filtros aplicados.'
+                                                : busqueda.trim() !== '' || filtroHabilitado !== 'todo' || filtroEstadoEncomienda !== 'todos' || filtroPago !== 'todos' || filtroMetodoPago !== 'todos'
+                                                    ? 'No se encontraron ventas que coincidan con los filtros aplicados.'
+                                                    : 'No se encontraron ventas.'
                                             }
                                         </Typography>
                                     </TableCell>
@@ -792,6 +796,26 @@ const ListarVenta = () => {
             </Box>
 
             <ModalConsultar venta={ventaConsulta} onClose={() => setVentaConsulta(null)} />
+
+            <RegistrarVenta
+                open={modalRegistrarOpen}
+                onClose={() => setModalRegistrarOpen(false)}
+                onSuccess={() => {
+                    setModalRegistrarOpen(false)
+                    setSnackbar({ open: true, message: 'Venta registrada correctamente.', severity: 'success' })
+                }}
+            />
+
+            <ActualizarVenta
+                open={modalActualizarOpen}
+                onClose={() => { setModalActualizarOpen(false); setVentaEditar(null) }}
+                venta={ventaEditar}
+                onSuccess={() => {
+                    setModalActualizarOpen(false)
+                    setVentaEditar(null)
+                    setSnackbar({ open: true, message: 'Venta actualizada correctamente.', severity: 'success' })
+                }}
+            />
 
             <Snackbar
                 open={snackbar.open}

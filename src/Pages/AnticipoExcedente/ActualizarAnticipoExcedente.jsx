@@ -408,42 +408,35 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
     return (
         <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth
             slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}>
-            <DialogTitle sx={{ m: 0, p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <Box sx={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: 2,
-                        background: 'linear-gradient(135deg, #CC1818 0%, #dc2626 100%)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                    }}>
-                        <AttachMoneyIcon sx={{ color: 'white', fontSize: 22 }} />
-                    </Box>
-                    <Typography variant="h6" fontWeight={700}>Editar Anticipo / Excedente</Typography>
+            <DialogTitle sx={{ m: 0, p: 2, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${COLORS.border}` }}>
+                <Box>
+                    <Typography variant="h6" fontWeight={700}>
+                        Editar Anticipo / Excedente
+                    </Typography>
+                    <Typography variant="body2" color={COLORS.textMuted}>
+                        Modifica los campos que necesites.
+                    </Typography>
                 </Box>
                 <IconButton onClick={onClose} sx={{ color: '#8A94A6' }}>
                     <CloseIcon />
                 </IconButton>
             </DialogTitle>
-            <DialogContent sx={{ p: 3 }}>
-                <Typography variant="body2" color={COLORS.textMuted} sx={{ mb: 3 }}>
-                    Modifica los campos que necesites.
-                </Typography>
+            <DialogContent sx={{ p: 3, pt: 1.5 }}>
 
-                <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 3,
-                    '& .MuiStepIcon-root': { color: '#E0E0E0' },
-                    '& .MuiStepIcon-root.Mui-active': { color: COLORS.primary },
-                    '& .MuiStepIcon-root.Mui-completed': { color: COLORS.primary },
-                    '& .MuiStepIcon-text': { fill: 'white', fontSize: '0.7rem', fontWeight: 700 },
-                    '& .MuiStepConnector-line': { borderColor: COLORS.border },
-                    '& .MuiStepConnector-root.Mui-active .MuiStepConnector-line': { borderColor: COLORS.primary },
-                    '& .MuiStepConnector-root.Mui-completed .MuiStepConnector-line': { borderColor: COLORS.primary },
-                    '& .MuiStepLabel-label': { fontSize: '0.8rem', color: COLORS.textMuted, mt: 0.5 },
-                    '& .MuiStepLabel-label.Mui-active': { color: COLORS.text, fontWeight: 600 },
-                    '& .MuiStepLabel-label.Mui-completed': { color: COLORS.primary, fontWeight: 500 },
-                }}>
+                <Stepper activeStep={activeStep} alternativeLabel
+                sx={{
+                        mb: 3, mt: 2,
+                        '& .MuiStepIcon-root': { color: '#E0E0E0' },
+                        '& .MuiStepIcon-root.Mui-active': { color: COLORS.primary },
+                        '& .MuiStepIcon-root.Mui-completed': { color: COLORS.primary },
+                        '& .MuiStepIcon-text': { fill: 'white', fontSize: '0.7rem', fontWeight: 700 },
+                        '& .MuiStepConnector-line': { borderColor: COLORS.border },
+                        '& .MuiStepConnector-root.Mui-active .MuiStepConnector-line': { borderColor: COLORS.primary },
+                        '& .MuiStepConnector-root.Mui-completed .MuiStepConnector-line': { borderColor: COLORS.primary },
+                        '& .MuiStepLabel-label': { fontSize: '0.8rem', color: COLORS.textMuted, mt: 0.5 },
+                        '& .MuiStepLabel-label.Mui-active': { color: COLORS.text, fontWeight: 600 },
+                        '& .MuiStepLabel-label.Mui-completed': { color: COLORS.primary, fontWeight: 500 },
+                    }}>
                     {steps.map(label => <Step key={label}><StepLabel>{label}</StepLabel></Step>)}
                 </Stepper>
 

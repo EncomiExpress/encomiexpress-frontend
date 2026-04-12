@@ -91,8 +91,8 @@ const ESTADO_COLORS = {
 
 const FILTROS_ESTADO = [
     { value: 'todo', label: 'Todo' },
-    { value: 'habilitado', label: 'Habilitado' },
-    { value: 'inhabilitado', label: 'Inhabilitado' },
+    { value: 'Activo', label: 'Activo' },
+    { value: 'Inactivo', label: 'Inactivo' },
 ]
 
 const FILTROS_ANTICIPO = [
@@ -290,8 +290,8 @@ const ListarAnticipoExcedente = () => {
 
         const coincideHabilitado =
             filtroHabilitado === 'todo' ||
-            (filtroHabilitado === 'habilitado' && a.habilitado !== false) ||
-            (filtroHabilitado === 'inhabilitado' && a.habilitado === false)
+            (filtroHabilitado === 'Activo' && a.habilitado !== false) ||
+            (filtroHabilitado === 'Inactivo' && a.habilitado === false)
 
         const coincideEstadoAnticipo = filtroEstadoAnticipo === 'todos' || a.estado === filtroEstadoAnticipo
 
@@ -604,10 +604,10 @@ const _estadoStyle = ESTADO_COLORS[anticipo.estado] || { bg: '#F5F5F5', color: '
                                                         sx={{
                                                             backgroundColor: anticipo.habilitado === false
                                                                 ? ESTADO_COLORS['inhabilitado'].bg
-                                                                : (estadoStyle.bg || '#F5F5F5'),
+                                                                : (_estadoStyle.bg || '#F5F5F5'),
                                                             color: anticipo.habilitado === false
                                                                 ? ESTADO_COLORS['inhabilitado'].color
-                                                                : (estadoStyle.color || '#757575'),
+                                                                : (_estadoStyle.color || '#757575'),
                                                             fontSize: '0.72rem',
                                                             fontWeight: 600,
                                                             height: 26,
@@ -630,7 +630,7 @@ const _estadoStyle = ESTADO_COLORS[anticipo.estado] || { bg: '#F5F5F5', color: '
                                                             '& .MuiSelect-icon': {
                                                                 color: anticipo.habilitado === false
                                                                     ? ESTADO_COLORS['inhabilitado'].color
-                                                                    : (estadoStyle.color || '#757575'),
+                                                                    : (_estadoStyle.color || '#757575'),
                                                                 fontSize: 18,
                                                             },
                                                         }}

@@ -92,7 +92,7 @@ export const AnticipoExcedenteProvider = ({ children }) => {
       estado: 'en legalización',
       habilitado: false,
       observaciones: 'Gasto adicional por desvío de vía.',
-      supports: [soportesMock[0], soportesMock[2]],
+      soportes: [soportesMock[0], soportesMock[2]],
       fechaEntrega: '2025-02-05',
       fechaLegalizacion: '',
       fechaEntregaExcedente: '',

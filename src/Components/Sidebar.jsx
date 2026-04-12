@@ -57,11 +57,7 @@ const SECTIONS = [
     label: 'Personas',
     items: [
       {
-        id: 'roles', label: 'Roles', icon: RolesIcon, path: '/roles',
-        children: [
-          { id: 'roles-registrar', label: 'Registrar', icon: PersonAddIcon, path: '/roles/registrar' },
-          { id: 'roles-listar', label: 'Listar', icon: ListIcon, path: '/roles/listar' },
-        ],
+        id: 'roles', label: 'Roles', icon: RolesIcon, path: '/roles/listar'
       },
       {
         id: 'usuarios', label: 'Usuarios', icon: GroupAddIcon, path: '/usuarios/listar',

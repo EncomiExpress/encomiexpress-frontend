@@ -429,25 +429,31 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                             <FormField label="Nombres" name="nombreRemitente" value={form.nombreRemitente}
                                 onChange={handleChange} required error={errores.nombreRemitente}
-                                helperText={errores.nombreRemitente} icon={PersonOutlinedIcon} />
+                                helperText={errores.nombreRemitente} icon={PersonOutlinedIcon}
+                                inputProps={{ maxLength: 50 }} />
                             <FormField label="Apellidos" name="apellidoRemitente" value={form.apellidoRemitente}
                                 onChange={handleChange} required error={errores.apellidoRemitente}
-                                helperText={errores.apellidoRemitente} icon={PersonOutlinedIcon} />
+                                helperText={errores.apellidoRemitente} icon={PersonOutlinedIcon}
+                                inputProps={{ maxLength: 50 }} />
                             <FormField label="Número de identificación" name="numeroIdentificacion" value={form.numeroIdentificacion}
                                 onChange={handleChange} required error={errores.numeroIdentificacion}
-                                helperText={errores.numeroIdentificacion} icon={BadgeOutlinedIcon} />
+                                helperText={errores.numeroIdentificacion} icon={BadgeOutlinedIcon}
+                                inputProps={{ maxLength: 15 }} />
                             <FormField label="Teléfono" name="telefonoRemitente" value={form.telefonoRemitente}
                                 onChange={handleChange} required error={errores.telefonoRemitente}
-                                helperText={errores.telefonoRemitente || 'Número de 10 dígitos'} icon={PhoneOutlinedIcon} />
+                                helperText={errores.telefonoRemitente || 'Número de 10 dígitos'} icon={PhoneOutlinedIcon}
+                                inputProps={{ maxLength: 10 }} />
                             <Box sx={{ gridColumn: '1 / -1' }}>
                                 <FormField label="Correo electrónico" name="emailRemitente" type="email" value={form.emailRemitente}
                                     onChange={handleChange} required error={errores.emailRemitente}
-                                    helperText={errores.emailRemitente} icon={EmailOutlinedIcon} />
+                                    helperText={errores.emailRemitente} icon={EmailOutlinedIcon}
+                                    inputProps={{ maxLength: 100 }} />
                             </Box>
                             <Box sx={{ gridColumn: '1 / -1' }}>
                                 <FormField label="Dirección" name="direccionRemitente" value={form.direccionRemitente}
                                     onChange={handleChange} required error={errores.direccionRemitente}
-                                    helperText={errores.direccionRemitente} icon={HomeOutlinedIcon} />
+                                    helperText={errores.direccionRemitente || `${(form.direccionRemitente || '').length}/200`} icon={HomeOutlinedIcon}
+                                    inputProps={{ maxLength: 200 }} />
                             </Box>
                         </Box>
                     </Box>
@@ -457,14 +463,17 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                     <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                         <FormField label="Nombre completo" name="nombreDestinatario" value={form.nombreDestinatario}
                             onChange={handleChange} required error={errores.nombreDestinatario}
-                            helperText={errores.nombreDestinatario} icon={PersonOutlinedIcon} />
+                            helperText={errores.nombreDestinatario} icon={PersonOutlinedIcon}
+                            inputProps={{ maxLength: 50 }} />
                         <FormField label="Teléfono" name="telefonoDestinatario" value={form.telefonoDestinatario}
                             onChange={handleChange} required error={errores.telefonoDestinatario}
-                            helperText={errores.telefonoDestinatario || 'Número de 10 dígitos'} icon={PhoneOutlinedIcon} />
+                            helperText={errores.telefonoDestinatario || 'Número de 10 dígitos'} icon={PhoneOutlinedIcon}
+                            inputProps={{ maxLength: 10 }} />
                         <Box sx={{ gridColumn: '1 / -1' }}>
                             <FormField label="Dirección de entrega" name="direccionDestinatario" value={form.direccionDestinatario}
                                 onChange={handleChange} required error={errores.direccionDestinatario}
-                                helperText={errores.direccionDestinatario} icon={HomeOutlinedIcon} multiline rows={2} />
+                                helperText={errores.direccionDestinatario || `${(form.direccionDestinatario || '').length}/300`} icon={HomeOutlinedIcon} multiline rows={2}
+                                inputProps={{ maxLength: 300 }} />
                         </Box>
                     </Box>
                 )
@@ -737,51 +746,41 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
     return (
         <Dialog open={open} onClose={() => onClose && onClose()} maxWidth="md" fullWidth
             slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}>
-            <DialogTitle sx={{ m: 0, p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <Box sx={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: 2,
-                        background: 'linear-gradient(135deg, #CC1818 0%, #dc2626 100%)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                    }}>
-                        <AssignmentIndOutlinedIcon sx={{ color: 'white', fontSize: 22 }} />
-                    </Box>
-                    <Typography variant="h6" fontWeight={700}>Editar Venta</Typography>
+            <DialogTitle sx={{ m: 0, p: 2, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${COLORS.border}` }}>
+                <Box>
+                    <Typography variant="h6" fontWeight={700}>
+                        Editar Venta
+                    </Typography>
+                        <Typography variant="body2" color={COLORS.textMuted}>
+                        {ventaOriginal?.numeroGuia
+                            ? `Modificando guía: ${ventaOriginal.numeroGuia}`
+                            : 'Modifica los campos que necesites.'
+                        }
+                    </Typography>
                 </Box>
                 <IconButton onClick={() => onClose && onClose()} sx={{ color: '#8A94A6' }}>
                     <CloseIcon />
                 </IconButton>
             </DialogTitle>
-            <DialogContent sx={{ p: 3 }}>
-                <Typography variant="body2" color={COLORS.textMuted} sx={{ mb: 3 }}>
-                    {ventaOriginal?.numeroGuia
-                        ? `Modificando guía: ${ventaOriginal.numeroGuia}`
-                        : 'Modifica los campos que necesites.'
-                    }
-                </Typography>
+            <DialogContent sx={{ p: 3, pt: 1.5 }}>
 
-                <Box sx={{ mb: 3 }}>
-                    <Stepper activeStep={activeStep} alternativeLabel
-                        sx={{
-                            '& .MuiStepIcon-root': { color: '#E0E0E0' },
-                            '& .MuiStepIcon-root.Mui-active': { color: COLORS.primary },
-                            '& .MuiStepIcon-root.Mui-completed': { color: COLORS.primary },
-                            '& .MuiStepIcon-text': { fill: 'white', fontSize: '0.7rem', fontWeight: 700 },
-                            '& .MuiStepConnector-line': { borderColor: COLORS.border },
-                            '& .MuiStepConnector-root.Mui-active .MuiStepConnector-line': { borderColor: COLORS.primary },
-                            '& .MuiStepConnector-root.Mui-completed .MuiStepConnector-line': { borderColor: COLORS.primary },
-                            '& .MuiStepLabel-label': { fontSize: '0.8rem', color: COLORS.textMuted, mt: 0.5 },
-                            '& .MuiStepLabel-label.Mui-active': { color: COLORS.text, fontWeight: 600 },
-                            '& .MuiStepLabel-label.Mui-completed': { color: COLORS.primary, fontWeight: 500 },
-                        }}
-                    >
-                        {steps.map(label => <Step key={label}><StepLabel>{label}</StepLabel></Step>)}
-                    </Stepper>
-                </Box>
+                <Stepper activeStep={activeStep} alternativeLabel
+                    sx={{
+                        mb: 3, mt: 2,
+                        '& .MuiStepIcon-root': { color: '#E0E0E0' },
+                        '& .MuiStepIcon-root.Mui-active': { color: COLORS.primary },
+                        '& .MuiStepIcon-root.Mui-completed': { color: COLORS.primary },
+                        '& .MuiStepIcon-text': { fill: 'white', fontSize: '0.7rem', fontWeight: 700 },
+                        '& .MuiStepConnector-line': { borderColor: COLORS.border },
+                        '& .MuiStepConnector-root.Mui-active .MuiStepConnector-line': { borderColor: COLORS.primary },
+                        '& .MuiStepConnector-root.Mui-completed .MuiStepConnector-line': { borderColor: COLORS.primary },
+                        '& .MuiStepLabel-label': { fontSize: '0.8rem', color: COLORS.textMuted, mt: 0.5 },
+                        '& .MuiStepLabel-label.Mui-active': { color: COLORS.text, fontWeight: 600 },
+                        '& .MuiStepLabel-label.Mui-completed': { color: COLORS.primary, fontWeight: 500 },
+                    }}
+                >
+                    {steps.map(label => <Step key={label}><StepLabel>{label}</StepLabel></Step>)}
+                </Stepper>
 
                 <Box sx={{ maxWidth: 760, mx: 'auto' }}>
                     {renderStepContent()}
