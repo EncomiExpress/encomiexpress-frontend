@@ -1,11 +1,21 @@
 import { useState } from 'react'
-import { Box, Typography, Paper, FormControlLabel, Checkbox, Grid, Alert, Collapse, IconButton, Snackbar, Dialog, DialogTitle, DialogContent } from '@mui/material'
-import { Security, ExpandMore, ExpandLess, Close } from '@mui/icons-material'
+import { Box, Typography, Paper, FormControlLabel, Checkbox, Grid, Alert, IconButton, Snackbar, Dialog, DialogTitle, DialogContent, Button } from '@mui/material'
+import { Security, Close } from '@mui/icons-material'
 import { useAuth, PERMISOS, MODULOS } from '../../Context/AuthContext'
 import { 
-  FormField, PrimaryButton, SecondaryButton, 
-  FormAlert, FormHeader, FormButtonGroup 
+  FormField, 
+  FormAlert 
 } from '../../Components/FormularioEstandarizado'
+
+const COLORS = {
+  primary: '#CC1818',
+  primaryLight: '#FFE8E8',
+  secondary: '#1A2E6E',
+  text: '#1a0e0c',
+  textMuted: '#8A94A6',
+  border: '#E0E0E0',
+  hoverBg: '#F9F9F9',
+}
 
 const RegistrarRol = ({ open, onClose, onSuccess }) => {
   const { tienePermiso, registrarRol, getRoles } = useAuth()
@@ -16,44 +26,8 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
   })
   const [mensaje, setMensaje] = useState('')
   const [error, setError] = useState('')
-  const [modulosExpandidos, setModulosExpandidos] = useState({})
-
-  const toggleModulo = (moduloKey) => {
-    setModulosExpandidos(prev => ({
-      ...prev,
-      [moduloKey]: !prev[moduloKey]
-    }))
-  }
 
   const modulos = Object.entries(MODULOS)
-
-  const handleModuloChange = (moduloKey) => {
-    const modulo = MODULOS[moduloKey]
-    const permisosDelModulo = modulo.permisos
-    
-    const todosSeleccionados = permisosDelModulo.every(p => formData.permisos.includes(p))
-    
-    if (todosSeleccionados) {
-      setFormData(prev => ({
-        ...prev,
-        permisos: prev.permisos.filter(p => !permisosDelModulo.includes(p))
-      }))
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        permisos: [...new Set([...prev.permisos, ...permisosDelModulo])]
-      }))
-    }
-  }
-
-  const handlePermisoChange = (permiso) => {
-    setFormData(prev => ({
-      ...prev,
-      permisos: prev.permisos.includes(permiso)
-        ? prev.permisos.filter(p => p !== permiso)
-        : [...prev.permisos, permiso]
-    }))
-  }
 
   const getPermisoLabel = (permiso) => {
     const labels = {
@@ -100,18 +74,6 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
     return labels[permiso] || permiso
   }
 
-  const isModuloCompleto = (moduloKey) => {
-    const modulo = MODULOS[moduloKey]
-    return modulo.permisos.every(p => formData.permisos.includes(p))
-  }
-
-  const isModuloParcial = (moduloKey) => {
-    const modulo = MODULOS[moduloKey]
-    const algunosSeleccionados = modulo.permisos.some(p => formData.permisos.includes(p))
-    const todosSeleccionados = modulo.permisos.every(p => formData.permisos.includes(p))
-    return algunosSeleccionados && !todosSeleccionados
-  }
-
   const handleSubmit = (e) => {
     e.preventDefault()
     
@@ -143,7 +105,6 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
     })
     setError('')
     setMensaje('')
-    setModulosExpandidos({})
     onClose()
   }
 
@@ -161,20 +122,14 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth
       slotProps={{ paper: { sx: { borderRadius: 3, p: 0, maxHeight: '90vh' } } }}>
-      <DialogTitle sx={{ m: 0, p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Box sx={{
-            width: 40,
-            height: 40,
-            borderRadius: 2,
-            background: 'linear-gradient(135deg, #CC1818 0%, #dc2626 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}>
-            <Security sx={{ color: 'white', fontSize: 22 }} />
-          </Box>
-          <Typography variant="h6" fontWeight={700}>Registrar Nuevo Rol</Typography>
+      <DialogTitle sx={{ m: 0, p: 2, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${COLORS.border}` }}>
+        <Box>
+          <Typography variant="h6" fontWeight={700}>
+            Registrar Nuevo Rol
+          </Typography>
+          <Typography variant="body2" color={COLORS.textMuted}>
+            Selecciona los permisos del nuevo rol.
+          </Typography>
         </Box>
         <IconButton onClick={handleClose} sx={{ color: '#8A94A6' }}>
           <Close />
@@ -187,7 +142,7 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
           </FormAlert>
         )}
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', paddingTop: 20 }}>
           <Box sx={{ mb: 2 }}>
             <FormField
               label="Nombre del Rol"
@@ -199,118 +154,130 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
             />
           </Box>
 
-          <Box sx={{ mt: 2, mb: 1 }}>
-            <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 600, color: '#1A2E6E' }}>
-              Permisos por Módulo
-            </Typography>
-            <Typography variant="body2" sx={{ mb: 3, color: '#64748b' }}>
-              Selecciona los módulos o permisos individuales
-            </Typography>
+          <Typography variant="subtitle1" sx={{ mt: 1, mb: 1, fontWeight: 700, color: '#1a0e0c' }}>
+            Permisos del Rol
+          </Typography>
 
-            <Grid container spacing={1}>
-              {modulos.map(([moduloKey, modulo]) => {
-                const expandido = modulosExpandidos[moduloKey] !== false
-                const completo = isModuloCompleto(moduloKey)
-                const parcial = isModuloParcial(moduloKey)
-
-                return (
-                  <Grid item xs={12} key={moduloKey}>
-                    <Paper 
-                      elevation={0} 
-                      sx={{ 
-                        border: completo ? '2px solid #CC1818' : parcial ? '2px solid #f59e0b' : '1px solid #e2e8f0',
-                        borderRadius: 2,
-                        overflow: 'hidden'
-                      }}
-                    >
-                      <Box 
-                        sx={{ 
-                          p: 1.5, 
-                          display: 'flex', 
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          backgroundColor: completo ? '#fef2f2' : parcial ? '#fffbeb' : '#f8fafc',
-                          cursor: 'pointer',
-                          '&:hover': { backgroundColor: '#f1f5f9' }
+          <Box sx={{ flex: 1, overflowY: 'auto', pr: 1 }}>
+            {modulos.map(([moduloKey, modulo]) => (
+              <Paper 
+                key={moduloKey}
+                elevation={0}
+                sx={{ 
+                  border: '1px solid #E0E0E0', 
+                  borderRadius: 2, 
+                  mb: 1.5,
+                  backgroundColor: '#F8F9FA'
+                }}
+              >
+                <Box 
+                  sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'space-between',
+                    p: 1.5,
+                    borderBottom: '1px solid #E0E0E0',
+                    backgroundColor: '#F8F9FA'
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Security sx={{ color: '#CC1818', fontSize: 20 }} />
+                    <Typography variant="subtitle2" fontWeight={600}>
+                      {modulo.nombre}
+                    </Typography>
+                  </Box>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={modulo.permisos.every(p => formData.permisos.includes(p))}
+                        indeterminate={
+                          modulo.permisos.filter(p => formData.permisos.includes(p)).length > 0 &&
+                          modulo.permisos.some(p => !formData.permisos.includes(p))
+                        }
+                        onChange={() => {
+                          const todosSeleccionados = modulo.permisos.every(p => formData.permisos.includes(p))
+                          if (todosSeleccionados) {
+                            setFormData(prev => ({
+                              ...prev,
+                              permisos: prev.permisos.filter(p => !modulo.permisos.includes(p))
+                            }))
+                          } else {
+                            setFormData(prev => ({
+                              ...prev,
+                              permisos: [...new Set([...prev.permisos, ...modulo.permisos])]
+                            }))
+                          }
                         }}
-                        onClick={() => toggleModulo(moduloKey)}
-                      >
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                          <Checkbox
-                            checked={completo}
-                            indeterminate={parcial}
-                            onChange={(e) => {
-                              e.stopPropagation()
-                              handleModuloChange(moduloKey)
-                            }}
-                            sx={{ 
-                              color: '#CC1818',
-                              '&.Mui-checked': { color: '#CC1818' }
-                            }}
-                          />
-                          <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#1A2E6E' }}>
-                            {modulo.nombre}
-                          </Typography>
-                          <Typography variant="caption" sx={{ color: '#64748b' }}>
-                            ({modulo.permisos.length} permisos)
-                          </Typography>
-                        </Box>
-                        <IconButton size="small">
-                          {expandido ? <ExpandLess /> : <ExpandMore />}
-                        </IconButton>
-                      </Box>
+                        sx={{ 
+                          color: '#CC1818',
+                          '&.Mui-checked': { color: '#CC1818' },
+                          '&.MuiCheckbox-indeterminate': { color: '#CC1818' }
+                        }}
+                      />
+                    }
+                    label={`${modulo.permisos.filter(p => formData.permisos.includes(p)).length}/${modulo.permisos.length}`}
+                  />
+                </Box>
 
-                      <Collapse in={expandido}>
-                        <Box sx={{ p: 1.5, pt: 1, display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                          {modulo.permisos.map((permiso) => (
-                            <FormControlLabel
-                              key={permiso}
-                              control={
-                                <Checkbox
-                                  checked={formData.permisos.includes(permiso)}
-                                  onChange={() => handlePermisoChange(permiso)}
-                                  size="small"
-                                  sx={{ 
-                                    color: '#64748b',
-                                    '&.Mui-checked': { color: '#CC1818' }
-                                  }}
-                                />
-                              }
-                              label={
-                                <Typography variant="body2" sx={{ color: '#374151' }}>
-                                  {getPermisoLabel(permiso)}
-                                </Typography>
-                              }
-                              sx={{ 
-                                mr: 2,
-                                mb: 0.5,
-                                '&:hover': { backgroundColor: '#f9fafb', borderRadius: 1 }
+                <Box sx={{ p: 1.5, backgroundColor: 'white' }}>
+                  <Grid container spacing={0.5}>
+                    {modulo.permisos.map((permiso) => (
+                      <Grid item xs={6} sm={4} md={3} key={permiso}>
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              checked={formData.permisos.includes(permiso)}
+                              onChange={(e) => {
+                                const newPermisos = e.target.checked
+                                  ? [...formData.permisos, permiso]
+                                  : formData.permisos.filter(p => p !== permiso)
+                                setFormData({ ...formData, permisos: newPermisos })
                               }}
+                              sx={{ 
+                                color: '#CC1818',
+                                '&.Mui-checked': { color: '#CC1818' }
+                              }}
+                              size="small"
                             />
-                          ))}
-                        </Box>
-                      </Collapse>
-                    </Paper>
+                          }
+                          label={
+                            <Typography variant="caption">
+                              {permiso.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
+                            </Typography>
+                          }
+                        />
+                      </Grid>
+                    ))}
                   </Grid>
-                )
-              })}
-            </Grid>
+                </Box>
+              </Paper>
+            ))}
           </Box>
 
-          <Box sx={{ mt: 2 }}>
-            <Typography variant="body2" sx={{ color: '#64748b', mb: 1 }}>
-              Permisos seleccionados: {formData.permisos.length}
-            </Typography>
-          </Box>
-
-          <FormButtonGroup>
-            <SecondaryButton onClick={handleClose} type="button">
-              Cancelar
-            </SecondaryButton>
-            <PrimaryButton type="submit">
-              Registrar Rol
-            </PrimaryButton>
-          </FormButtonGroup>
+          <Box sx={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              mt: 3, pt: 2, borderTop: `1px solid ${COLORS.border}`,
+            }}>
+              <Box />
+              <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                <Button onClick={handleClose} disableRipple
+                  sx={{
+                    textTransform: 'none', color: COLORS.textMuted, fontWeight: 500, borderRadius: 2,
+                    '&:hover': { backgroundColor: COLORS.hoverBg, color: COLORS.text },
+                  }}>
+                  Cancelar
+                </Button>
+                <Button type="submit" variant="contained" disableRipple
+                  sx={{
+                    textTransform: 'none', borderRadius: 2, fontWeight: 600,
+                    backgroundColor: COLORS.primary,
+                    boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
+                    '&:hover': { backgroundColor: '#b91c1c', boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
+                  }}>
+                  Registrar Rol
+                </Button>
+              </Box>
+            </Box>
         </form>
       </DialogContent>
 

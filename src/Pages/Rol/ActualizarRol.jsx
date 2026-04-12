@@ -1,11 +1,21 @@
 import { useState, useEffect } from 'react'
-import { Box, Typography, Paper, FormControlLabel, Checkbox, Grid, Alert, Snackbar, Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material'
+import { Box, Typography, Paper, FormControlLabel, Checkbox, Grid, Alert, Snackbar, Dialog, DialogTitle, DialogContent, IconButton, Button } from '@mui/material'
 import { Security, Close } from '@mui/icons-material'
 import { MODULOS, ROLES } from '../../Context/AuthContext'
 import { 
   FormField, PrimaryButton, SecondaryButton, 
   FormButtonGroup 
 } from '../../Components/FormularioEstandarizado'
+
+const COLORS = {
+  primary: '#CC1818',
+  primaryLight: '#FFE8E8',
+  secondary: '#1A2E6E',
+  text: '#1a0e0c',
+  textMuted: '#8A94A6',
+  border: '#E0E0E0',
+  hoverBg: '#F9F9F9',
+}
 
 const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
   const [formData, setFormData] = useState({
@@ -57,20 +67,14 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth
       slotProps={{ paper: { sx: { borderRadius: 3, p: 0, maxHeight: '90vh' } } }}>
-      <DialogTitle sx={{ m: 0, p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Box sx={{
-            width: 40,
-            height: 40,
-            borderRadius: 2,
-            background: 'linear-gradient(135deg, #CC1818 0%, #dc2626 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}>
-            <Security sx={{ color: 'white', fontSize: 22 }} />
-          </Box>
-          <Typography variant="h6" fontWeight={700}>Actualizar Rol</Typography>
+      <DialogTitle sx={{ m: 0, p: 2, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${COLORS.border}` }}>
+        <Box>
+          <Typography variant="h6" fontWeight={700}>
+            Actualizar Rol
+          </Typography>
+          <Typography variant="body2" color={COLORS.textMuted}>
+            Modifica los permisos del rol.
+          </Typography>
         </Box>
         <IconButton onClick={onClose} sx={{ color: '#8A94A6' }}>
           <Close />
@@ -83,7 +87,7 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
           </Alert>
         )}
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', paddingTop: 20 }}>
           <FormField
             label="Nombre del Rol"
             value={formData.nombre}
@@ -192,14 +196,30 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
             ))}
           </Box>
 
-          <FormButtonGroup sx={{ mt: 2, pt: 2, borderTop: '1px solid #E0E0E0' }}>
-            <SecondaryButton onClick={handleCancelar}>
-              Cancelar
-            </SecondaryButton>
-            <PrimaryButton type="submit">
-              Actualizar Rol
-            </PrimaryButton>
-          </FormButtonGroup>
+          <Box sx={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              mt: 3, pt: 2, borderTop: `1px solid ${COLORS.border}`,
+            }}>
+              <Box />
+              <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                <Button onClick={handleCancelar} disableRipple
+                  sx={{
+                    textTransform: 'none', color: COLORS.textMuted, fontWeight: 500, borderRadius: 2,
+                    '&:hover': { backgroundColor: COLORS.hoverBg, color: COLORS.text },
+                  }}>
+                  Cancelar
+                </Button>
+                <Button type="submit" variant="contained" disableRipple
+                  sx={{
+                    textTransform: 'none', borderRadius: 2, fontWeight: 600,
+                    backgroundColor: COLORS.primary,
+                    boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
+                    '&:hover': { backgroundColor: '#b91c1c', boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
+                  }}>
+                  Actualizar Rol
+                </Button>
+              </Box>
+            </Box>
         </form>
       </DialogContent>
 
