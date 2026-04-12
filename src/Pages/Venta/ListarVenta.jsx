@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useVentas } from '../../Context/VentaContext'
 import {
     Box, Typography, Paper, Table, TableBody, TableCell,
@@ -12,8 +11,6 @@ import {
 import SearchIcon from '@mui/icons-material/Search'
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
-import BlockOutlinedIcon from '@mui/icons-material/BlockOutlined'
-import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined'
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
@@ -26,6 +23,8 @@ import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined'
 import PaymentOutlinedIcon from '@mui/icons-material/PaymentOutlined'
 import ClearIcon from '@mui/icons-material/Clear'
 import { ESTADOS_ENCOMIENDA, METODOS_PAGO } from '../../Context/VentaContext'
+import RegistrarVenta from './RegistrarVenta'
+import ActualizarVenta from './ActualizarVenta'
 
 const COLORS = {
     primary: '#CC1818',
@@ -207,47 +206,6 @@ const ModalConsultar = ({ venta, onClose }) => {
     )
 }
 
-// ── Modal Toggle Habilitado (sirve para habilitar e inhabilitar) ──
-const ModalToggleHabilitado = ({ venta, onClose, onConfirm, loading }) => {
-    if (!venta) return null
-    const esHabilitar = !venta.habilitado
-
-    return (
-        <Dialog open onClose={onClose} maxWidth="xs" fullWidth slotProps={{ paper: { sx: { borderRadius: 3 } } }}>
-            <DialogTitle sx={{ color: esHabilitar ? '#16A34A' : COLORS.primary, fontWeight: 700 }}>
-                {esHabilitar ? '¿Habilitar venta?' : '¿Inhabilitar venta?'}
-            </DialogTitle>
-            <DialogContent>
-                <DialogContentText>
-                    Estás a punto de {esHabilitar ? 'habilitar' : 'inhabilitar'} la encomienda con guía{' '}
-                    <strong>{venta.numeroGuia}</strong>.{' '}
-                    {esHabilitar
-                        ? 'La encomienda volverá a estar disponible en el sistema.'
-                        : 'La encomienda no aparecerá en los listados activos hasta que sea habilitada nuevamente.'
-                    }
-                </DialogContentText>
-            </DialogContent>
-            <DialogActions sx={{ px: 3, py: 2, gap: 1 }}>
-                <Button onClick={onClose} disabled={loading} variant="outlined"
-                    sx={{ borderColor: COLORS.border, color: COLORS.text, borderRadius: 2, textTransform: 'none' }}>
-                    Cancelar
-                </Button>
-                <Button onClick={() => onConfirm(venta.idEncomiendaVenta)} disabled={loading} variant="contained"
-                    sx={{
-                        backgroundColor: esHabilitar ? '#16A34A' : COLORS.primary,
-                        borderRadius: 2, textTransform: 'none',
-                        '&:hover': { backgroundColor: esHabilitar ? '#15803D' : '#a01212' },
-                    }}>
-                    {loading
-                        ? (esHabilitar ? 'Habilitando...' : 'Inhabilitando...')
-                        : (esHabilitar ? 'Sí, habilitar' : 'Sí, inhabilitar')
-                    }
-                </Button>
-            </DialogActions>
-        </Dialog>
-    )
-}
-
 // ── Estilos reutilizables para los Select de filtros ──
 const filterSelectSx = {
     fontSize: '0.82rem',
@@ -281,34 +239,32 @@ const filterMenuProps = {
 // ── Filtros de estado (habilitado) ──
 const FILTROS = [
     { value: 'todo', label: 'Todo' },
-    { value: 'habilitado', label: 'Habilitado' },
-    { value: 'inhabilitado', label: 'Inhabilitado' },
+    { value: 'pendiente de recogida', label: 'Pendiente' },
+    { value: 'en recogida', label: 'En Recogida' },
+    { value: 'programada', label: 'Programada' },
+    { value: 'en tránsito', label: 'En Tránsito' },
+    { value: 'entregado', label: 'Entregado' },
+    { value: 'devuelto', label: 'Devuelto' },
 ]
 
 // ── Componente principal ──
 const ListarVenta = () => {
-    const navigate = useNavigate()
-    const { ventas, loading, error, invalidateVenta } = useVentas()
+    const { ventas, loading, error, invalidateVenta, cambiarEstadoVenta } = useVentas()
 
     const [busqueda, setBusqueda] = useState('')
-    const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
-    const [filtroEstadoEncomienda, setFiltroEstadoEncomienda] = useState('todos')
+    const [filtroEstadoEncomienda, setFiltroEstadoEncomienda] = useState('todo')
     const [filtroPago, setFiltroPago] = useState('todos')
     const [filtroMetodoPago, setFiltroMetodoPago] = useState('todos')
     const [page, setPage] = useState(1)
     const [rowsPerPage, setRowsPerPage] = useState(5)
     const [ventaConsulta, setVentaConsulta] = useState(null)
-    const [ventaToggle, setVentaToggle] = useState(null)
-    const [toggling, setToggling] = useState(false)
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
+    const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
+    const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
+    const [ventaEditar, setVentaEditar] = useState(null)
 
     // ── Filtrado ──
     const ventasFiltradas = ventas.filter(v => {
-        const coincideHabilitado =
-            filtroHabilitado === 'todo' ||
-            (filtroHabilitado === 'habilitado' && v.habilitado) ||
-            (filtroHabilitado === 'inhabilitado' && !v.habilitado)
-
         const q = busqueda.toLowerCase()
         const coincideBusqueda = !q ||
             v.numeroGuia.toLowerCase().includes(q) ||
@@ -316,46 +272,39 @@ const ListarVenta = () => {
             v.destinatario?.nombreDestinatario?.toLowerCase().includes(q) ||
             v.ruta?.destino?.toLowerCase().includes(q)
 
-        const coincideEstado = filtroEstadoEncomienda === 'todos' || v.estado === filtroEstadoEncomienda
+        const coincideEstado = filtroEstadoEncomienda === 'todo' || v.estado === filtroEstadoEncomienda
         const coincidePago = filtroPago === 'todos' || v.estadoPago?.toLowerCase() === filtroPago.toLowerCase()
         const coincideMetodo = filtroMetodoPago === 'todos' || v.metodoPago?.toLowerCase() === filtroMetodoPago.toLowerCase()
 
-        return coincideHabilitado && coincideBusqueda && coincideEstado && coincidePago && coincideMetodo
+        return coincideBusqueda && coincideEstado && coincidePago && coincideMetodo
     })
-
-    const handleToggle = async (id) => {
-        const venta = ventas.find(v => v.idEncomiendaVenta === id)
-        const esHabilitar = !venta?.habilitado
-        setToggling(true)
-        try {
-            await invalidateVenta(id)
-            setVentaToggle(null)
-            setSnackbar({
-                open: true,
-                message: esHabilitar ? 'Venta habilitada correctamente.' : 'Venta inhabilitada correctamente.',
-                severity: esHabilitar ? 'success' : 'warning',
-            })
-        } catch (err) {
-            setVentaToggle(null)
-            setSnackbar({
-                open: true,
-                message: err.message || 'Error al cambiar el estado de la venta.',
-                severity: 'error',
-            })
-        } finally {
-            setToggling(false)
-        }
-    }
 
     const limpiarFiltros = () => {
         setBusqueda('')
-        setFiltroEstadoEncomienda('todos')
+        setFiltroEstadoEncomienda('todo')
         setFiltroPago('todos')
         setFiltroMetodoPago('todos')
         setPage(1)
     }
 
-    const hayFiltrosActivos = busqueda || filtroEstadoEncomienda !== 'todos' || filtroPago !== 'todos' || filtroMetodoPago !== 'todos'
+    const hayFiltrosActivos = busqueda || filtroEstadoEncomienda !== 'todo' || filtroPago !== 'todos' || filtroMetodoPago !== 'todos'
+
+    const handleEstadoChange = async (id, nuevoEstado) => {
+        try {
+            await cambiarEstadoVenta(id, nuevoEstado)
+            setSnackbar({
+                open: true,
+                message: `Estado actualizado a ${nuevoEstado.charAt(0).toUpperCase() + nuevoEstado.slice(1)}.`,
+                severity: 'success',
+            })
+        } catch (err) {
+            setSnackbar({
+                open: true,
+                message: err.message || 'Error al cambiar el estado de la encomienda.',
+                severity: 'error',
+            })
+        }
+    }
 
     const totalPages = Math.max(1, Math.ceil(ventasFiltradas.length / rowsPerPage))
     const safePage = Math.min(page, totalPages)
@@ -393,7 +342,7 @@ const ListarVenta = () => {
                     </Typography>
                 </Box>
                 <Button
-                    onClick={() => navigate('/ventas/registrar')}
+                    onClick={() => setModalRegistrarOpen(true)}
                     variant="contained"
                     startIcon={<AddOutlinedIcon />}
                     sx={{
@@ -431,7 +380,7 @@ const ListarVenta = () => {
                 {FILTROS.map(f => (
                     <Button
                         key={f.value}
-                        onClick={() => { setFiltroHabilitado(f.value); setPage(1) }}
+                        onClick={() => { setFiltroEstadoEncomienda(f.value); setPage(1) }}
                         size="small"
                         disableElevation
                         disableRipple
@@ -442,14 +391,16 @@ const ListarVenta = () => {
                             px: 2,
                             py: 0.5,
                             minWidth: 0,
-                            fontWeight: filtroHabilitado === f.value ? 600 : 400,
-                            backgroundColor: filtroHabilitado === f.value ? 'white' : 'transparent',
-                            color: filtroHabilitado === f.value ? COLORS.text : '#B05050',
-                            boxShadow: filtroHabilitado === f.value ? '0 1px 4px rgba(0,0,0,0.12)' : 'none',
+                            fontWeight: filtroEstadoEncomienda === f.value ? 600 : 400,
+                            backgroundColor: filtroEstadoEncomienda === f.value ? 'white' : 'transparent',
+                            color: filtroEstadoEncomienda === f.value ? COLORS.text : '#B05050',
+                            boxShadow: filtroEstadoEncomienda === f.value
+                                ? '0 1px 4px rgba(0,0,0,0.12)'
+                                : 'none',
                             border: 'none',
                             '&:hover': {
-                                backgroundColor: filtroHabilitado === f.value ? 'white' : 'transparent',
-                                color: filtroHabilitado === f.value ? COLORS.text : '#5C3333',
+                                backgroundColor: filtroEstadoEncomienda === f.value ? 'white' : 'transparent',
+                                color: filtroEstadoEncomienda === f.value ? COLORS.text : '#5C3333',
                                 border: 'none',
                             },
                         }}
@@ -579,7 +530,6 @@ const ListarVenta = () => {
                                 <TableCell sx={thStyle}>Estado</TableCell>
                                 <TableCell sx={thStyle}>Pago</TableCell>
                                 <TableCell sx={thStyle}>Total</TableCell>
-                                <TableCell sx={thStyle}>Habilitado</TableCell>
                                 <TableCell sx={{ ...thStyle, width: 110 }} />
                             </TableRow>
                         </TableHead>
@@ -587,7 +537,7 @@ const ListarVenta = () => {
                         <TableBody>
                             {loading ? (
                                 <TableRow>
-                                    <TableCell colSpan={9} align="center" sx={{ py: 7 }}>
+                                    <TableCell colSpan={8} align="center" sx={{ py: 7 }}>
                                         <CircularProgress size={28} sx={{ color: COLORS.primary }} />
                                         <Typography variant="body2" color={COLORS.textMuted} mt={1.5}>
                                             Cargando ventas...
@@ -666,18 +616,27 @@ const ListarVenta = () => {
 
                                             {/* Estado encomienda */}
                                             <TableCell sx={{ py: 1.5 }}>
-                                                <Chip
-                                                    label={venta.estado ? venta.estado.charAt(0).toUpperCase() + venta.estado.slice(1) : '—'}
-                                                    size="small"
-                                                    sx={{
-                                                        backgroundColor: estadoStyles.bg,
-                                                        color: estadoStyles.color,
-                                                        fontSize: '0.7rem',
-                                                        fontWeight: 600,
-                                                        height: 22,
-                                                        borderRadius: 10,
-                                                    }}
-                                                />
+                                                <FormControl size="small" sx={{ minWidth: 140 }}>
+                                                    <Select
+                                                        value={venta.estado || ''}
+                                                        onChange={(e) => handleEstadoChange(venta.idEncomiendaVenta, e.target.value)}
+                                                        IconComponent={KeyboardArrowDownOutlinedIcon}
+                                                        sx={{
+                                                            fontSize: '0.75rem',
+                                                            py: 0.5,
+                                                            backgroundColor: getEstadoColor(venta.estado).bg,
+                                                            color: getEstadoColor(venta.estado).color,
+                                                            fontWeight: 600,
+                                                        }}
+                                                        MenuProps={filterMenuProps}
+                                                    >
+                                                        {ESTADOS_ENCOMIENDA.map(estado => (
+                                                            <MenuItem key={estado} value={estado}>
+                                                                {estado.charAt(0).toUpperCase() + estado.slice(1)}
+                                                            </MenuItem>
+                                                        ))}
+                                                    </Select>
+                                                </FormControl>
                                             </TableCell>
 
                                             {/* Estado pago */}
@@ -701,23 +660,6 @@ const ListarVenta = () => {
                                                 ${venta.total?.toLocaleString()}
                                             </TableCell>
 
-                                            {/* Habilitado */}
-                                            <TableCell sx={{ py: 1.5 }}>
-                                                <Chip
-                                                    label={venta.habilitado ? 'Habilitado' : 'Inhabilitado'}
-                                                    size="small"
-                                                    sx={{
-                                                        backgroundColor: venta.habilitado ? '#DCFCE7' : '#F3F4F6',
-                                                        color: venta.habilitado ? '#16A34A' : '#9CA3AF',
-                                                        fontWeight: 600,
-                                                        fontSize: '0.72rem',
-                                                        height: 22,
-                                                        borderRadius: 10,
-                                                        border: 'none',
-                                                    }}
-                                                />
-                                            </TableCell>
-
                                             {/* Acciones */}
                                             <TableCell sx={{ py: 1.5 }}>
                                                 <Box sx={{ display: 'flex', gap: 0.5 }}>
@@ -729,23 +671,9 @@ const ListarVenta = () => {
                                                     </Tooltip>
                                                     <Tooltip title="Editar">
                                                         <IconButton size="small"
-                                                            onClick={() => navigate(`/ventas/actualizar/${venta.idEncomiendaVenta}`)}
+                                                            onClick={() => { setVentaEditar(venta); setModalActualizarOpen(true) }}
                                                             sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}>
                                                             <EditOutlinedIcon sx={{ fontSize: 18 }} />
-                                                        </IconButton>
-                                                    </Tooltip>
-                                                    <Tooltip title={venta.habilitado ? 'Inhabilitar' : 'Habilitar'}>
-                                                        <IconButton size="small" onClick={() => setVentaToggle(venta)}
-                                                            sx={{
-                                                                color: venta.habilitado ? COLORS.primary : '#16A34A',
-                                                                '&:hover': {
-                                                                    backgroundColor: venta.habilitado ? COLORS.primaryLight : '#DCFCE7',
-                                                                },
-                                                            }}>
-                                                            {venta.habilitado
-                                                                ? <BlockOutlinedIcon sx={{ fontSize: 18 }} />
-                                                                : <CheckCircleOutlinedIcon sx={{ fontSize: 18 }} />
-                                                            }
                                                         </IconButton>
                                                     </Tooltip>
                                                 </Box>
@@ -864,22 +792,22 @@ const ListarVenta = () => {
             </Box>
 
             <ModalConsultar venta={ventaConsulta} onClose={() => setVentaConsulta(null)} />
-            <ModalToggleHabilitado
-                venta={ventaToggle}
-                onClose={() => !toggling && setVentaToggle(null)}
-                onConfirm={handleToggle}
-                loading={toggling}
-            />
 
             <Snackbar
                 open={snackbar.open}
-                autoHideDuration={2000}
+                autoHideDuration={3000}
                 onClose={() => setSnackbar(s => ({ ...s, open: false }))}
-                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
             >
                 <Alert
                     severity={snackbar.severity}
-                    sx={{ fontWeight: 600 }}
+                    variant="filled"
+                    sx={{ 
+                        fontWeight: 600,
+                        borderRadius: 2,
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                        fontSize: '0.85rem',
+                    }}
                     onClose={() => setSnackbar(s => ({ ...s, open: false }))}
                 >
                     {snackbar.message}

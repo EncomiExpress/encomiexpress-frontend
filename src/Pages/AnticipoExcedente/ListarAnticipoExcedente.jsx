@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useAnticipos, conductoresMock, rutasMock } from '../../Context/AnticipoExcedenteContext'
 import {
     Box, Typography, Paper, Table, TableBody, TableCell,
@@ -26,6 +25,8 @@ import ImageIcon from '@mui/icons-material/Image'
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile'
 import ZoomInIcon from '@mui/icons-material/ZoomIn'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
+import RegistrarAnticipoExcedente from './RegistrarAnticipoExcedente'
+import ActualizarAnticipoExcedente from './ActualizarAnticipoExcedente'
 
 const COLORS = {
     primary: '#CC1818',
@@ -263,7 +264,6 @@ const ModalConsultar = ({ anticipo, onClose }) => {
 
 // ── Componente principal ──
 const ListarAnticipoExcedente = () => {
-    const navigate = useNavigate()
     const { anticipos, toggleHabilitado, cambiarEstado } = useAnticipos()
 
     const [busqueda, setBusqueda] = useState('')
@@ -274,6 +274,9 @@ const ListarAnticipoExcedente = () => {
     const [anticipoConsulta, setAnticipoConsulta] = useState(null)
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
     const [cambiandoEstado, setCambiandoEstado] = useState(null)
+    const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
+    const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
+    const [anticipoEditar, setAnticipoEditar] = useState(null)
 
     const anticiposFiltrados = anticipos.filter(a => {
         const q = busqueda.toLowerCase().trim()
@@ -301,7 +304,7 @@ const ListarAnticipoExcedente = () => {
     const from = anticiposFiltrados.length === 0 ? 0 : (safePage - 1) * rowsPerPage + 1
     const to = Math.min(safePage * rowsPerPage, anticiposFiltrados.length)
 
-    const hayFiltrosActivos = busqueda.trim() !== '' || filtroHabilitado !== 'todo' || filtroEstadoAnticipo !== 'todos'
+
 
     const handleCambiarEstado = (id, nuevoEstado) => {
         if (nuevoEstado === '__habilitar__') {
@@ -346,7 +349,7 @@ const ListarAnticipoExcedente = () => {
                     </Typography>
                 </Box>
                 <Button
-                    onClick={() => navigate('/anticipos/registrar')}
+                    onClick={() => setModalRegistrarOpen(true)}
                     variant="contained"
                     startIcon={<AddOutlinedIcon />}
                     sx={{
@@ -496,7 +499,7 @@ const ListarAnticipoExcedente = () => {
                             ) : (
                                 paginatedAnticipos.map((anticipo) => {
                                     const excedente = parseFloat(anticipo.valorAnticipo || 0) - parseFloat(anticipo.valorGastado || 0)
-                                    const estadoStyle = ESTADO_COLORS[anticipo.estado] || { bg: '#F5F5F5', color: '#757575' }
+const _estadoStyle = ESTADO_COLORS[anticipo.estado] || { bg: '#F5F5F5', color: '#757575' }
 
                                     return (
                                         <TableRow
@@ -713,7 +716,7 @@ const ListarAnticipoExcedente = () => {
                                                     </Tooltip>
                                                     <Tooltip title="Editar">
                                                         <IconButton size="small"
-                                                            onClick={() => navigate(`/anticipos/actualizar/${anticipo.idAnticipoExcedente}`)}
+                                                            onClick={() => { setAnticipoEditar(anticipo); setModalActualizarOpen(true) }}
                                                             sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}>
                                                             <EditOutlinedIcon sx={{ fontSize: 18 }} />
                                                         </IconButton>
@@ -832,13 +835,39 @@ const ListarAnticipoExcedente = () => {
 
             <ModalConsultar anticipo={anticipoConsulta} onClose={() => setAnticipoConsulta(null)} />
 
+            <RegistrarAnticipoExcedente 
+                open={modalRegistrarOpen} 
+                onClose={() => setModalRegistrarOpen(false)} 
+                onSuccess={() => {
+                    setSnackbar({ open: true, message: 'Anticipo registrado correctamente', severity: 'success' })
+                }}
+            />
+
+            <ActualizarAnticipoExcedente
+                open={modalActualizarOpen}
+                onClose={() => { setModalActualizarOpen(false); setAnticipoEditar(null) }}
+                anticipo={anticipoEditar}
+                onSuccess={() => {
+                    setSnackbar({ open: true, message: 'Anticipo actualizado correctamente', severity: 'success' })
+                }}
+            />
+
             <Snackbar
                 open={snackbar.open}
-                autoHideDuration={2000}
+                autoHideDuration={3000}
                 onClose={() => setSnackbar({ ...snackbar, open: false })}
-                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
             >
-                <Alert severity={snackbar.severity} sx={{ fontWeight: 600 }}>
+                <Alert 
+                    severity={snackbar.severity} 
+                    variant="filled"
+                    sx={{ 
+                        fontWeight: 600,
+                        borderRadius: 2,
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                        fontSize: '0.85rem',
+                    }}
+                >
                     {snackbar.message}
                 </Alert>
             </Snackbar>

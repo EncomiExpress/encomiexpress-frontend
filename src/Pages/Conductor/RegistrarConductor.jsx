@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, Snackbar, TextField, Select, InputAdornment } from '@mui/material'
+import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, Snackbar, TextField, Select, InputAdornment, Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined'
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
@@ -11,6 +10,7 @@ import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
 import EventOutlinedIcon from '@mui/icons-material/EventOutlined'
+import CloseIcon from '@mui/icons-material/Close'
 import { useConductor } from '../../Context/ConductorContext'
 import { FormField, FormSelect, formFieldStyles } from '../../Components/FormularioEstandarizado'
 
@@ -37,9 +37,8 @@ const ConfirmRow = ({ label, value }) => (
     </Box>
 )
 
-const RegistrarConductor = () => {
+const RegistrarConductor = ({ open, onClose, onSuccess }) => {
     const { registrarConductor } = useConductor()
-    const navigate = useNavigate()
     const [errores, setErrores] = useState({})
     const [apiError, setApiError] = useState(null)
     const [activeStep, setActiveStep] = useState(0)
@@ -113,6 +112,26 @@ const RegistrarConductor = () => {
 
     const handleBack = () => setActiveStep((prev) => prev - 1)
 
+    const handleCancelar = () => handleClose()
+
+    const handleClose = () => {
+        setForm({
+            nombre: '',
+            apellido: '',
+            tipoIdentificacion: '',
+            numeroIdentificacion: '',
+            telefono: '',
+            emailLocal: '',
+            emailDominio: '@gmail.com',
+            direccion: '',
+            licenciaConduccion: '',
+            fechaVencimientoLicencia: '',
+        })
+        setErrores({})
+        setActiveStep(0)
+        onClose()
+    }
+
     const handleSubmit = async () => {
         setSubmitting(true)
         setApiError(null)
@@ -125,15 +144,16 @@ const RegistrarConductor = () => {
                 estado: 'Activo'
             })
             setExito(true)
-            setTimeout(() => navigate('/transporte/conductores'), 1500)
+            setTimeout(() => {
+                handleClose()
+                if (onSuccess) onSuccess()
+            }, 1500)
         } catch (err) {
             setApiError(err.message || 'Error al registrar el conductor')
         } finally {
             setSubmitting(false)
         }
     }
-
-    const handleCancelar = () => navigate('/transporte/conductores')
 
     const cardSx = {
         flex: 1, minWidth: 0, borderRadius: 2, p: 2.5,
@@ -267,86 +287,101 @@ const RegistrarConductor = () => {
     }
 
     return (
-        <Box sx={{ p: 3.5 }}>
-            <Box sx={{ mb: 3 }}>
-                <Typography variant="h5" fontWeight={700} color={COLORS.text}>Registrar Conductor</Typography>
-                <Typography variant="body2" color={COLORS.textMuted} mt={0.3}>
-                    Complete los datos del nuevo conductor paso a paso.
-                </Typography>
-            </Box>
-
-            <Paper elevation={0} sx={{ border: `1px solid ${COLORS.border}`, borderRadius: 3, overflow: 'hidden' }}>
-                <Box sx={{ px: 4, pt: 3.5, pb: 2.5, borderBottom: `1px solid ${COLORS.border}` }}>
-                    <Stepper activeStep={activeStep} alternativeLabel
-                        sx={{
-                            '& .MuiStepIcon-root': { color: '#E0E0E0' },
-                            '& .MuiStepIcon-root.Mui-active': { color: COLORS.primary },
-                            '& .MuiStepIcon-root.Mui-completed': { color: COLORS.primary },
-                            '& .MuiStepIcon-text': { fill: 'white', fontSize: '0.7rem', fontWeight: 700 },
-                            '& .MuiStepConnector-line': { borderColor: COLORS.border },
-                            '& .MuiStepConnector-root.Mui-active .MuiStepConnector-line': { borderColor: COLORS.primary },
-                            '& .MuiStepConnector-root.Mui-completed .MuiStepConnector-line': { borderColor: COLORS.primary },
-                            '& .MuiStepLabel-label': { fontSize: '0.8rem', color: COLORS.textMuted, mt: 0.5 },
-                            '& .MuiStepLabel-label.Mui-active': { color: COLORS.text, fontWeight: 600 },
-                            '& .MuiStepLabel-label.Mui-completed': { color: COLORS.primary, fontWeight: 500 },
-                        }}
-                    >
-                        {steps.map(label => <Step key={label}><StepLabel>{label}</StepLabel></Step>)}
-                    </Stepper>
-                </Box>
-
-                <Box sx={{ px: 4, py: 3.5 }}>
-                    <Box sx={{ maxWidth: 700, mx: 'auto' }}>
-                        {renderStepContent()}
+        <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth
+            slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}>
+            <DialogTitle sx={{ m: 0, p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <Box sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 2,
+                        background: 'linear-gradient(135deg, #CC1818 0%, #dc2626 100%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                    }}>
+                        <PersonOutlinedIcon sx={{ color: 'white', fontSize: 22 }} />
                     </Box>
+                    <Typography variant="h6" fontWeight={700}>Registrar Conductor</Typography>
                 </Box>
-
-                <Box sx={{
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    px: 4, py: 2.5, borderTop: `1px solid ${COLORS.border}`, backgroundColor: '#FAFAFA',
-                }}>
-                    <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined"
-                        startIcon={<ArrowBackOutlinedIcon />} disableRipple
-                        sx={{
-                            textTransform: 'none', borderRadius: 2, borderColor: COLORS.border,
-                            color: COLORS.text, fontWeight: 500,
-                            '&:hover': { borderColor: '#BDBDBD', backgroundColor: COLORS.hoverBg },
-                            '&.Mui-disabled': { borderColor: COLORS.border, color: COLORS.textMuted },
-                        }}>
-                        Anterior
-                    </Button>
-                    <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
-                        <Button onClick={handleCancelar} disableRipple
+                <IconButton onClick={handleClose} sx={{ color: '#8A94A6' }}>
+                    <CloseIcon />
+                </IconButton>
+            </DialogTitle>
+            <DialogContent sx={{ p: 3 }}>
+                <Paper elevation={0} sx={{ border: `1px solid ${COLORS.border}`, borderRadius: 3, overflow: 'hidden' }}>
+                    <Box sx={{ px: 4, pt: 3.5, pb: 2.5, borderBottom: `1px solid ${COLORS.border}` }}>
+                        <Stepper activeStep={activeStep} alternativeLabel
                             sx={{
-                                textTransform: 'none', color: COLORS.textMuted, fontWeight: 500, borderRadius: 2,
-                                '&:hover': { backgroundColor: COLORS.hoverBg, color: COLORS.text },
-                            }}>
-                            Cancelar
-                        </Button>
-                        <Button
-                            onClick={activeStep < steps.length - 1 ? handleNext : handleSubmit}
-                            variant="contained"
-                            disabled={submitting}
-                            endIcon={activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <CheckOutlinedIcon />}
-                            disableRipple
-                            sx={{
-                                textTransform: 'none', borderRadius: 2, fontWeight: 600,
-                                backgroundColor: COLORS.primary,
-                                boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
-                                '&:hover': { backgroundColor: '#b91c1c', boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
-                            }}>
-                            {activeStep < steps.length - 1 ? 'Siguiente' : submitting ? 'Registrando...' : 'Registrar'}
-                        </Button>
+                                '& .MuiStepIcon-root': { color: '#E0E0E0' },
+                                '& .MuiStepIcon-root.Mui-active': { color: COLORS.primary },
+                                '& .MuiStepIcon-root.Mui-completed': { color: COLORS.primary },
+                                '& .MuiStepIcon-text': { fill: 'white', fontSize: '0.7rem', fontWeight: 700 },
+                                '& .MuiStepConnector-line': { borderColor: COLORS.border },
+                                '& .MuiStepConnector-root.Mui-active .MuiStepConnector-line': { borderColor: COLORS.primary },
+                                '& .MuiStepConnector-root.Mui-completed .MuiStepConnector-line': { borderColor: COLORS.primary },
+                                '& .MuiStepLabel-label': { fontSize: '0.8rem', color: COLORS.textMuted, mt: 0.5 },
+                                '& .MuiStepLabel-label.Mui-active': { color: COLORS.text, fontWeight: 600 },
+                                '& .MuiStepLabel-label.Mui-completed': { color: COLORS.primary, fontWeight: 500 },
+                            }}
+                        >
+                            {steps.map(label => <Step key={label}><StepLabel>{label}</StepLabel></Step>)}
+                        </Stepper>
                     </Box>
-                </Box>
-            </Paper>
 
-            <Snackbar open={exito} autoHideDuration={2500} onClose={() => setExito(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-                <Alert severity="success" variant="filled" sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }} onClose={() => setExito(false)}>
-                    ¡Conductor registrado exitosamente!
-                </Alert>
-            </Snackbar>
-        </Box>
+                    <Box sx={{ px: 4, py: 3.5 }}>
+                        <Box sx={{ maxWidth: 700, mx: 'auto' }}>
+                            {renderStepContent()}
+                        </Box>
+                    </Box>
+
+                    <Box sx={{
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        px: 4, py: 2.5, borderTop: `1px solid ${COLORS.border}`, backgroundColor: '#FAFAFA',
+                    }}>
+                        <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined"
+                            startIcon={<ArrowBackOutlinedIcon />} disableRipple
+                            sx={{
+                                textTransform: 'none', borderRadius: 2, borderColor: COLORS.border,
+                                color: COLORS.text, fontWeight: 500,
+                                '&:hover': { borderColor: '#BDBDBD', backgroundColor: COLORS.hoverBg },
+                                '&.Mui-disabled': { borderColor: COLORS.border, color: COLORS.textMuted },
+                            }}>
+                            Anterior
+                        </Button>
+                        <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                            <Button onClick={handleCancelar} disableRipple
+                                sx={{
+                                    textTransform: 'none', color: COLORS.textMuted, fontWeight: 500, borderRadius: 2,
+                                    '&:hover': { backgroundColor: COLORS.hoverBg, color: COLORS.text },
+                                }}>
+                                Cancelar
+                            </Button>
+                            <Button
+                                onClick={activeStep < steps.length - 1 ? handleNext : handleSubmit}
+                                variant="contained"
+                                disabled={submitting}
+                                endIcon={activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <CheckOutlinedIcon />}
+                                disableRipple
+                                sx={{
+                                    textTransform: 'none', borderRadius: 2, fontWeight: 600,
+                                    backgroundColor: COLORS.primary,
+                                    boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
+                                    '&:hover': { backgroundColor: '#b91c1c', boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
+                                }}>
+                                {activeStep < steps.length - 1 ? 'Siguiente' : submitting ? 'Registrando...' : 'Registrar'}
+                            </Button>
+                        </Box>
+                    </Box>
+                </Paper>
+
+                <Snackbar open={exito} autoHideDuration={2500} onClose={() => setExito(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
+                    <Alert severity="success" variant="filled" sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }} onClose={() => setExito(false)}>
+                        ¡Conductor registrado exitosamente!
+                    </Alert>
+                </Snackbar>
+            </DialogContent>
+        </Dialog>
     )
 }
 

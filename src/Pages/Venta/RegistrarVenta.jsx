@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, Snackbar, TextField, Autocomplete } from '@mui/material'
+import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, Snackbar, TextField, Autocomplete, Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined'
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
@@ -12,6 +11,7 @@ import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined'
 import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined'
+import CloseIcon from '@mui/icons-material/Close'
 import { useVentas } from '../../Context/VentaContext'
 import { useClientes } from '../../Context/ClienteContext'
 import { FormField, FormSelect, formFieldStyles } from '../../Components/FormularioEstandarizado'
@@ -37,10 +37,9 @@ const ConfirmRow = ({ label, value }) => (
     </Box>
 )
 
-const RegistrarVenta = () => {
+const RegistrarVenta = ({ open, onClose, onSuccess }) => {
     const { agregarVenta } = useVentas()
     const { clientes } = useClientes()
-    const navigate = useNavigate()
     const [errores, setErrores] = useState({})
     const [apiError, setApiError] = useState(null)
     const [activeStep, setActiveStep] = useState(0)
@@ -85,6 +84,40 @@ const RegistrarVenta = () => {
         impuestos: '',
         total: '',
     })
+
+    const handleClose = () => {
+        setForm({
+            idCliente: '',
+            numeroIdentificacion: '',
+            nombreRemitente: '',
+            apellidoRemitente: '',
+            telefonoRemitente: '',
+            emailRemitente: '',
+            direccionRemitente: '',
+            nombreDestinatario: '',
+            telefonoDestinatario: '',
+            direccionDestinatario: '',
+            descripcionContenido: '',
+            peso: '',
+            alto: '',
+            ancho: '',
+            profundidad: '',
+            valorDeclarado: '',
+            idRuta: '',
+            destino: '',
+            fechaEstimadaEntrega: '',
+            observaciones: '',
+            metodoPago: '',
+            estadoPago: 'Pendiente',
+            valorServicio: '',
+            impuestos: '',
+            total: '',
+        })
+        setErrores({})
+        setApiError(null)
+        setActiveStep(0)
+        onClose()
+    }
 
     const NUMERIC_LIMITS = {
         peso: 9999, alto: 9999, ancho: 9999, profundidad: 9999,
@@ -279,7 +312,10 @@ const RegistrarVenta = () => {
             }
             await agregarVenta(payload)
             setExito(true)
-            setTimeout(() => navigate('/ventas/listar'), 1500)
+            setTimeout(() => {
+                handleClose()
+                if (onSuccess) onSuccess()
+            }, 1500)
         } catch (err) {
             setApiError(err.message || 'Error al registrar la venta.')
         } finally {
@@ -287,7 +323,7 @@ const RegistrarVenta = () => {
         }
     }
 
-    const handleCancelar = () => navigate('/ventas/listar')
+    const handleCancelar = () => handleClose()
 
     const cardSx = {
         flex: 1, minWidth: 0, borderRadius: 2, p: 2.5,
@@ -512,17 +548,33 @@ const RegistrarVenta = () => {
     }
 
     return (
-        <Box sx={{ p: 3.5 }}>
-            <Box sx={{ mb: 3 }}>
-                <Typography variant="h5" fontWeight={700} color={COLORS.text}>Registrar Venta</Typography>
-                <Typography variant="body2" color={COLORS.textMuted} mt={0.3}>
+        <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth
+            slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}>
+            <DialogTitle sx={{ m: 0, p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <Box sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 2,
+                        background: 'linear-gradient(135deg, #CC1818 0%, #dc2626 100%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                    }}>
+                        <AssignmentIndOutlinedIcon sx={{ color: 'white', fontSize: 22 }} />
+                    </Box>
+                    <Typography variant="h6" fontWeight={700}>Registrar Venta</Typography>
+                </Box>
+                <IconButton onClick={handleClose} sx={{ color: '#8A94A6' }}>
+                    <CloseIcon />
+                </IconButton>
+            </DialogTitle>
+            <DialogContent sx={{ p: 3 }}>
+                <Typography variant="body2" color={COLORS.textMuted} sx={{ mb: 3 }}>
                     Complete los datos de la nueva encomienda paso a paso.
                 </Typography>
-            </Box>
 
-            <Paper elevation={0} sx={{ border: `1px solid ${COLORS.border}`, borderRadius: 3, overflow: 'hidden' }}>
-                {/* ── Stepper ── */}
-                <Box sx={{ px: 4, pt: 3.5, pb: 2.5, borderBottom: `1px solid ${COLORS.border}` }}>
+                <Box sx={{ mb: 3 }}>
                     <Stepper activeStep={activeStep} alternativeLabel
                         sx={{
                             '& .MuiStepIcon-root': { color: '#E0E0E0' },
@@ -541,17 +593,13 @@ const RegistrarVenta = () => {
                     </Stepper>
                 </Box>
 
-                {/* ── Contenido ── */}
-                <Box sx={{ px: 4, py: 3.5 }}>
-                    <Box sx={{ maxWidth: 760, mx: 'auto' }}>
-                        {renderStepContent()}
-                    </Box>
+                <Box sx={{ maxWidth: 760, mx: 'auto' }}>
+                    {renderStepContent()}
                 </Box>
 
-                {/* ── Botones ── */}
                 <Box sx={{
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    px: 4, py: 2.5, borderTop: `1px solid ${COLORS.border}`, backgroundColor: '#FAFAFA',
+                    mt: 3, pt: 2, borderTop: `1px solid ${COLORS.border}`,
                 }}>
                     <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined"
                         startIcon={<ArrowBackOutlinedIcon />} disableRipple
@@ -590,14 +638,14 @@ const RegistrarVenta = () => {
                         </Button>
                     </Box>
                 </Box>
-            </Paper>
+            </DialogContent>
 
             <Snackbar open={exito} autoHideDuration={2500} onClose={() => setExito(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
                 <Alert severity="success" variant="filled" sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }} onClose={() => setExito(false)}>
                     ¡Venta registrada exitosamente!
                 </Alert>
             </Snackbar>
-        </Box>
+        </Dialog>
     )
 }
 

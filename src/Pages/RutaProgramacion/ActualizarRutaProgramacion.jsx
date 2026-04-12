@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
-import { Box, TextField, Typography, Paper, MenuItem, Select, FormControl, InputLabel, Snackbar, Alert } from '@mui/material'
+import { Box, TextField, Typography, Paper, MenuItem, Select, Snackbar, Alert, Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material'
 import { Route, DirectionsCar, Person, LocationOn, Event, Schedule } from '@mui/icons-material'
+import CloseIcon from '@mui/icons-material/Close'
 import { useRutaProgramacion } from '../../Context/RutaProgramacionContext'
 import { useTransporte } from '../../Context/TransporteContext'
 import { useConductor } from '../../Context/ConductorContext'
@@ -11,8 +11,15 @@ import {
   FormField, FormSelect, PrimaryButton, SecondaryButton, FormButtonGroup, FormGrid 
 } from '../../Components/FormularioEstandarizado'
 
-const ActualizarRutaProgramacion = () => {
-  const { id } = useParams()
+const COLORS = {
+  primary: '#CC1818',
+  primaryLight: '#FFE8E8',
+  text: '#1a0e0c',
+  textMuted: '#8A94A6',
+  border: '#E0E0E0',
+}
+
+const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
   const [formData, setFormData] = useState({
     nombreRuta: '',
     idVehiculo: '',
@@ -33,43 +40,33 @@ const ActualizarRutaProgramacion = () => {
   const { getConductoresHabilitados } = useConductor()
   const { getDestinosHabilitados } = useDestino()
   const { usuario } = useAuth()
-  const navigate = useNavigate()
 
   const [vehiculos, setVehiculos] = useState([])
   const [conductores, setConductores] = useState([])
   const [destinos, setDestinos] = useState([])
 
   useEffect(() => {
-    if (!usuario) {
-      navigate('/login')
-    } else {
-      setVehiculos(getTransportesHabilitados())
-      setConductores(getConductoresHabilitados())
-      setDestinos(getDestinosHabilitados())
-    }
-  }, [usuario, navigate, getTransportesHabilitados, getConductoresHabilitados, getDestinosHabilitados])
+    setVehiculos(getTransportesHabilitados())
+    setConductores(getConductoresHabilitados())
+    setDestinos(getDestinosHabilitados())
+  }, [getTransportesHabilitados, getConductoresHabilitados, getDestinosHabilitados])
 
   useEffect(() => {
-    if (id) {
-      const ruta = getRutaProgramadaById(id)
-      if (ruta) {
-        setFormData({
-          nombreRuta: ruta.nombreRuta || '',
-          idVehiculo: ruta.idVehiculo || '',
-          idConductor: ruta.idConductor || '',
-          idDestino: ruta.idDestino || '',
-          fechaSalida: ruta.fechaSalida || '',
-          horaSalida: ruta.horaSalida || '',
-          horaLlegadaEstimada: ruta.horaLlegadaEstimada || '',
-          observaciones: ruta.observaciones || '',
-          estado: ruta.estado || 'Programada'
-        })
-      } else {
-        setError('Ruta no encontrada')
-      }
+    if (ruta) {
+      setFormData({
+        nombreRuta: ruta.nombreRuta || '',
+        idVehiculo: ruta.idVehiculo || '',
+        idConductor: ruta.idConductor || '',
+        idDestino: ruta.idDestino || '',
+        fechaSalida: ruta.fechaSalida || '',
+        horaSalida: ruta.horaSalida || '',
+        horaLlegadaEstimada: ruta.horaLlegadaEstimada || '',
+        observaciones: ruta.observaciones || '',
+        estado: ruta.estado || 'Programada'
+      })
     }
     setLoading(false)
-  }, [id, getRutaProgramadaById])
+  }, [ruta, getRutaProgramadaById])
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -82,7 +79,6 @@ const ActualizarRutaProgramacion = () => {
     e.preventDefault()
     setError('')
     
-    // Validar campos requeridos
     if (!formData.nombreRuta || !formData.idVehiculo || !formData.idConductor || 
         !formData.idDestino || !formData.fechaSalida || !formData.horaSalida) {
       setError('Los campos marcados con * son requeridos')
@@ -91,7 +87,7 @@ const ActualizarRutaProgramacion = () => {
 
     try {
       actualizarRutaProgramada({
-        idRutaProgramada: parseInt(id),
+        idRutaProgramada: ruta.idRutaProgramada,
         ...formData,
         idVehiculo: parseInt(formData.idVehiculo),
         idConductor: parseInt(formData.idConductor),
@@ -101,13 +97,17 @@ const ActualizarRutaProgramacion = () => {
       })
       setSuccess('Ruta actualizada correctamente')
       
-      // Redirigir al listado después de 2 segundos
       setTimeout(() => {
-        navigate('/transporte/rutas')
-      }, 2000)
+        if (onClose) onClose()
+        if (onSuccess) onSuccess()
+      }, 1500)
     } catch (err) {
       setError('Error al actualizar ruta')
     }
+  }
+
+  const handleCancelar = () => {
+    if (onClose) onClose()
   }
 
   const estados = [
@@ -119,164 +119,173 @@ const ActualizarRutaProgramacion = () => {
 
   if (loading) {
     return (
-      <Box sx={{ p: 4, textAlign: 'center' }}>
-        <Typography>Cargando...</Typography>
-      </Box>
+      <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth
+        slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}>
+        <DialogContent sx={{ p: 4, textAlign: 'center' }}>
+          <Typography>Cargando...</Typography>
+        </DialogContent>
+      </Dialog>
     )
   }
 
   return (
-    <Box sx={{ p: 3.5 }}>
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h5" fontWeight={700} color="#1a0e0c">Actualizar Ruta Programada</Typography>
-        <Typography variant="body2" color="#8A94A6" mt={0.3}>
-          Modifica los datos de la ruta
-        </Typography>
-      </Box>
-
-      <Paper elevation={0} sx={{ border: '1px solid #E0E0E0', borderRadius: 3, overflow: 'hidden' }}>
-        {error && (
-          <Box sx={{ p: 2, borderBottom: '1px solid #E0E0E0', backgroundColor: '#FFF5F5' }}>
-            <Alert severity="error" sx={{ borderRadius: 2 }} onClose={() => setError('')}>
-              {error}
-            </Alert>
+    <Dialog open={open} onClose={handleCancelar} maxWidth="md" fullWidth
+      slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}>
+      <DialogTitle sx={{ m: 0, p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Box sx={{
+            width: 40,
+            height: 40,
+            borderRadius: 2,
+            background: 'linear-gradient(135deg, #CC1818 0%, #dc2626 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <Route sx={{ color: 'white', fontSize: 22 }} />
           </Box>
-        )}
-
-        <Box sx={{ p: 3 }}>
-          <form onSubmit={handleSubmit}>
-            <FormGrid>
-            {/* Nombre de la Ruta */}
-            <FormField
-              label="Nombre de la Ruta"
-              name="nombreRuta"
-              value={formData.nombreRuta}
-              onChange={handleChange}
-              required
-              placeholder="Ej: Ruta Medellín - Bogotá"
-              icon={Route}
-            />
-
-            {/* Vehículo */}
-            <FormSelect
-              label="Vehículo"
-              name="idVehiculo"
-              value={formData.idVehiculo}
-              onChange={handleChange}
-              required
-            >
-              {vehiculos.map((v) => (
-                <MenuItem key={v.idVehiculo} value={v.idVehiculo}>{v.placa} - {v.marca} {v.modelo}</MenuItem>
-              ))}
-            </FormSelect>
-
-            {/* Conductor */}
-            <FormSelect
-              label="Conductor"
-              name="idConductor"
-              value={formData.idConductor}
-              onChange={handleChange}
-              required
-            >
-              {conductores.map((c) => (
-                <MenuItem key={c.idConductor} value={c.idConductor}>{c.nombre} {c.apellido}</MenuItem>
-              ))}
-            </FormSelect>
-
-            {/* Destino */}
-            <FormSelect
-              label="Destino"
-              name="idDestino"
-              value={formData.idDestino}
-              onChange={handleChange}
-              required
-            >
-              {destinos.map((d) => (
-                <MenuItem key={d.idDestino} value={d.idDestino}>{d.nombre} - {d.ciudad}</MenuItem>
-              ))}
-            </FormSelect>
-
-            {/* Fecha de Salida */}
-            <FormField
-              label="Fecha de Salida"
-              name="fechaSalida"
-              type="date"
-              value={formData.fechaSalida}
-              onChange={handleChange}
-              required
-              icon={Event}
-            />
-
-            {/* Hora de Salida */}
-            <FormField
-              label="Hora de Salida"
-              name="horaSalida"
-              type="time"
-              value={formData.horaSalida}
-              onChange={handleChange}
-              required
-              icon={Schedule}
-            />
-
-            {/* Hora Estimada de Llegada */}
-            <FormField
-              label="Hora Estimada de Llegada"
-              name="horaLlegadaEstimada"
-              type="time"
-              value={formData.horaLlegadaEstimada}
-              onChange={handleChange}
-              icon={Schedule}
-            />
-
-            {/* Estado */}
-            <FormSelect
-              label="Estado"
-              name="estado"
-              value={formData.estado}
-              onChange={handleChange}
-              required
-            >
-              {estados.map((estado) => (
-                <MenuItem key={estado.value} value={estado.value}>{estado.label}</MenuItem>
-              ))}
-            </FormSelect>
-          </FormGrid>
-
-          <FormField
-            label="Observaciones"
-            name="observaciones"
-            value={formData.observaciones}
-            onChange={handleChange}
-            placeholder="Ej: Salida por puerta norte"
-            multiline
-            rows={2}
-          />
-
-          {/* Botones de navegación */}
-          <FormButtonGroup justify="space-between">
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <SecondaryButton 
-                onClick={() => navigate('/transporte/rutas')}
-                children="Cancelar"
-              />
-            </Box>
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <PrimaryButton 
-                type="submit"
-                children="Actualizar Ruta"
-              />
-            </Box>
-          </FormButtonGroup>
-        </form>
+          <Typography variant="h6" fontWeight={700}>Actualizar Ruta Programada</Typography>
         </Box>
-      </Paper>
+        <IconButton onClick={handleCancelar} sx={{ color: '#8A94A6' }}>
+          <CloseIcon />
+        </IconButton>
+      </DialogTitle>
+      <DialogContent sx={{ p: 3 }}>
+        <Paper elevation={0} sx={{ border: `1px solid ${COLORS.border}`, borderRadius: 3, overflow: 'hidden' }}>
+          {error && (
+            <Box sx={{ p: 2, borderBottom: `1px solid ${COLORS.border}`, backgroundColor: '#FFF5F5' }}>
+              <Alert severity="error" sx={{ borderRadius: 2 }} onClose={() => setError('')}>
+                {error}
+              </Alert>
+            </Box>
+          )}
 
-      <Snackbar open={!!success} autoHideDuration={2500} onClose={() => setSuccess('')} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-        <Alert severity="success" variant="filled" sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }} onClose={() => setSuccess('')}>
-          ¡Ruta programada actualizada exitosamente!
-        </Alert>
-      </Snackbar>
-    </Box>
+          <Box sx={{ p: 3 }}>
+            <form onSubmit={handleSubmit}>
+              <FormGrid>
+                <FormField
+                  label="Nombre de la Ruta"
+                  name="nombreRuta"
+                  value={formData.nombreRuta}
+                  onChange={handleChange}
+                  required
+                  placeholder="Ej: Ruta Medellín - Bogotá"
+                  icon={Route}
+                />
+
+                <FormSelect
+                  label="Vehículo"
+                  name="idVehiculo"
+                  value={formData.idVehiculo}
+                  onChange={handleChange}
+                  required
+                >
+                  {vehiculos.map((v) => (
+                    <MenuItem key={v.idVehiculo} value={v.idVehiculo}>{v.placa} - {v.marca} {v.modelo}</MenuItem>
+                  ))}
+                </FormSelect>
+
+                <FormSelect
+                  label="Conductor"
+                  name="idConductor"
+                  value={formData.idConductor}
+                  onChange={handleChange}
+                  required
+                >
+                  {conductores.map((c) => (
+                    <MenuItem key={c.idConductor} value={c.idConductor}>{c.nombre} {c.apellido}</MenuItem>
+                  ))}
+                </FormSelect>
+
+                <FormSelect
+                  label="Destino"
+                  name="idDestino"
+                  value={formData.idDestino}
+                  onChange={handleChange}
+                  required
+                >
+                  {destinos.map((d) => (
+                    <MenuItem key={d.idDestino} value={d.idDestino}>{d.nombre} - {d.ciudad}</MenuItem>
+                  ))}
+                </FormSelect>
+
+                <FormField
+                  label="Fecha de Salida"
+                  name="fechaSalida"
+                  type="date"
+                  value={formData.fechaSalida}
+                  onChange={handleChange}
+                  required
+                  icon={Event}
+                />
+
+                <FormField
+                  label="Hora de Salida"
+                  name="horaSalida"
+                  type="time"
+                  value={formData.horaSalida}
+                  onChange={handleChange}
+                  required
+                  icon={Schedule}
+                />
+
+                <FormField
+                  label="Hora Estimada de Llegada"
+                  name="horaLlegadaEstimada"
+                  type="time"
+                  value={formData.horaLlegadaEstimada}
+                  onChange={handleChange}
+                  icon={Schedule}
+                />
+
+                <FormSelect
+                  label="Estado"
+                  name="estado"
+                  value={formData.estado}
+                  onChange={handleChange}
+                  required
+                >
+                  {estados.map((estado) => (
+                    <MenuItem key={estado.value} value={estado.value}>{estado.label}</MenuItem>
+                  ))}
+                </FormSelect>
+              </FormGrid>
+
+              <FormField
+                label="Observaciones"
+                name="observaciones"
+                value={formData.observaciones}
+                onChange={handleChange}
+                placeholder="Ej: Salida por puerta norte"
+                multiline
+                rows={2}
+              />
+
+              <FormButtonGroup justify="space-between">
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                  <SecondaryButton 
+                    onClick={handleCancelar}
+                    children="Cancelar"
+                  />
+                </Box>
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                  <PrimaryButton 
+                    type="submit"
+                    children="Actualizar Ruta"
+                  />
+                </Box>
+              </FormButtonGroup>
+            </form>
+          </Box>
+        </Paper>
+
+        <Snackbar open={!!success} autoHideDuration={2500} onClose={() => setSuccess('')} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
+          <Alert severity="success" variant="filled" sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }} onClose={() => setSuccess('')}>
+            ¡Ruta programada actualizada exitosamente!
+          </Alert>
+        </Snackbar>
+      </DialogContent>
+    </Dialog>
   )
 }
 

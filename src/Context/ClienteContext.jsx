@@ -39,8 +39,14 @@ export const ClienteProvider = ({ children }) => {
         )
     }
 
+    const actualizarEstadoCliente = (id, habilitado) => {
+        setClientes(prev =>
+            prev.map(c => c.idCliente === id ? { ...c, habilitado } : c)
+        )
+    }
+
     return (
-        <ClienteContext.Provider value={{ clientes, loading, error, agregarCliente, invalidateCliente, actualizarCliente }}>
+        <ClienteContext.Provider value={{ clientes, loading, error, agregarCliente, invalidateCliente, actualizarCliente, actualizarEstadoCliente }}>
             {children}
         </ClienteContext.Provider>
     )

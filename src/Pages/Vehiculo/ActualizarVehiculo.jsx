@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
-import { Box, TextField, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Snackbar, Alert } from '@mui/material'
-import { DirectionsCar, Person, Business, Event, Speed, SaveOutlined, ArrowBackOutlined } from '@mui/icons-material'
+import { Box, TextField, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Snackbar, Alert, Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material'
+import { DirectionsCar, Person, Business, Event, Speed, SaveOutlined, ArrowBackOutlined, Close } from '@mui/icons-material'
 import { useTransporte } from '../../Context/TransporteContext'
-import { useAuth } from '../../Context/AuthContext'
 import { 
   theme, FormField, FormSelect, PrimaryButton, SecondaryButton, 
   FormAlert, FormHeader, FormFieldsContainer, FormButtonGroup 
@@ -28,11 +26,8 @@ const COLORS = {
   textMuted: '#8A94A6',
 }
 
-const ActualizarVehiculo = () => {
-  const { id } = useParams()
+const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSuccess }) => {
   const { getTransporteById, actualizarTransporte } = useTransporte()
-  const { usuario } = useAuth()
-  const navigate = useNavigate()
   
   const [formData, setFormData] = useState({
     idConductor: '',
@@ -56,18 +51,14 @@ const ActualizarVehiculo = () => {
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
-    if (!usuario) {
-      navigate('/login')
-    } else {
-      const transporte = getTransporteById(id)
+    if (open && transporteProp) {
+      const transporte = getTransporteById(transporteProp.idVehiculo)
       if (transporte) {
         setFormData(transporte)
         setFormOriginal(transporte)
-      } else {
-        navigate('/vehiculos/listar')
       }
     }
-  }, [usuario, navigate, id, getTransporteById])
+  }, [open, transporteProp, getTransporteById])
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -132,14 +123,17 @@ const ActualizarVehiculo = () => {
     
     try {
       actualizarTransporte({
-        idVehiculo: parseInt(id),
+        idVehiculo: parseInt(transporteProp?.idVehiculo),
         ...formData,
         capacidad: parseFloat(formData.capacidad),
         idConductor: parseInt(formData.idConductor),
         idPropietario: parseInt(formData.idPropietario)
       })
       setSuccess(true)
-      setTimeout(() => navigate('/vehiculos/listar'), 1500)
+      setTimeout(() => {
+        onClose()
+        if (onSuccess) onSuccess()
+      }, 1500)
     } catch (err) {
       setError('Error al actualizar el vehículo')
     } finally {
@@ -147,7 +141,9 @@ const ActualizarVehiculo = () => {
     }
   }
 
-  const handleCancelar = () => navigate('/vehiculos/listar')
+  const handleCancelar = () => {
+    onClose()
+  }
 
   const tiposVehiculo = [
     'Camioneta', 'Camión', 'Furgón', 'Semi Trayler', 'Trayler', 'Motocicleta', 'Otro'
@@ -350,46 +346,60 @@ const ActualizarVehiculo = () => {
   }
 
   return (
-    <Box sx={{ p: 3.5 }}>
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h5" fontWeight={700} color={COLORS.text}>Editar Vehículo</Typography>
-        <Typography variant="body2" color={COLORS.textMuted} mt={0.3}>
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth
+      slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}>
+      <DialogTitle sx={{ m: 0, p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Box sx={{
+            width: 40,
+            height: 40,
+            borderRadius: 2,
+            background: 'linear-gradient(135deg, #CC1818 0%, #dc2626 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <DirectionsCar sx={{ color: 'white', fontSize: 22 }} />
+          </Box>
+          <Typography variant="h6" fontWeight={700}>Editar Vehículo</Typography>
+        </Box>
+        <IconButton onClick={onClose} sx={{ color: '#8A94A6' }}>
+          <Close />
+        </IconButton>
+      </DialogTitle>
+      <DialogContent sx={{ p: 3 }}>
+        <Typography variant="body2" color={COLORS.textMuted} sx={{ mb: 3 }}>
           {formOriginal?.marca && formOriginal?.modelo
             ? `Modificando datos de ${formOriginal.marca} ${formOriginal.modelo}`
             : 'Modifica los campos que necesites.'
           }
         </Typography>
-      </Box>
 
-      <Paper elevation={0} sx={{ border: `1px solid ${COLORS.border}`, borderRadius: 3, overflow: 'hidden' }}>
-        <Box sx={{ px: 4, pt: 3.5, pb: 2.5, borderBottom: `1px solid ${COLORS.border}` }}>
-          <Stepper activeStep={activeStep} alternativeLabel
-            sx={{
-              '& .MuiStepIcon-root': { color: '#E0E0E0' },
-              '& .MuiStepIcon-root.Mui-active': { color: COLORS.primary },
-              '& .MuiStepIcon-root.Mui-completed': { color: COLORS.primary },
-              '& .MuiStepIcon-text': { fill: 'white', fontSize: '0.7rem', fontWeight: 700 },
-              '& .MuiStepConnector-line': { borderColor: COLORS.border },
-              '& .MuiStepConnector-root.Mui-active .MuiStepConnector-line': { borderColor: COLORS.primary },
-              '& .MuiStepConnector-root.Mui-completed .MuiStepConnector-line': { borderColor: COLORS.primary },
-              '& .MuiStepLabel-label': { fontSize: '0.8rem', color: COLORS.textMuted, mt: 0.5 },
-              '& .MuiStepLabel-label.Mui-active': { color: COLORS.text, fontWeight: 600 },
-              '& .MuiStepLabel-label.Mui-completed': { color: COLORS.primary, fontWeight: 500 },
-            }}
-          >
-            {steps.map(label => <Step key={label}><StepLabel>{label}</StepLabel></Step>)}
-          </Stepper>
-        </Box>
+        <Stepper activeStep={activeStep} alternativeLabel
+          sx={{
+            mb: 3,
+            '& .MuiStepIcon-root': { color: '#E0E0E0' },
+            '& .MuiStepIcon-root.Mui-active': { color: COLORS.primary },
+            '& .MuiStepIcon-root.Mui-completed': { color: COLORS.primary },
+            '& .MuiStepIcon-text': { fill: 'white', fontSize: '0.7rem', fontWeight: 700 },
+            '& .MuiStepConnector-line': { borderColor: COLORS.border },
+            '& .MuiStepConnector-root.Mui-active .MuiStepConnector-line': { borderColor: COLORS.primary },
+            '& .MuiStepConnector-root.Mui-completed .MuiStepConnector-line': { borderColor: COLORS.primary },
+            '& .MuiStepLabel-label': { fontSize: '0.8rem', color: COLORS.textMuted, mt: 0.5 },
+            '& .MuiStepLabel-label.Mui-active': { color: COLORS.text, fontWeight: 600 },
+            '& .MuiStepLabel-label.Mui-completed': { color: COLORS.primary, fontWeight: 500 },
+          }}
+        >
+          {steps.map(label => <Step key={label}><StepLabel>{label}</StepLabel></Step>)}
+        </Stepper>
 
-        <Box sx={{ px: 4, py: 3.5 }}>
-          <Box sx={{ maxWidth: 700, mx: 'auto' }}>
-            {renderStepContent()}
-          </Box>
+        <Box sx={{ maxWidth: 700, mx: 'auto' }}>
+          {renderStepContent()}
         </Box>
 
         <Box sx={{
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          px: 4, py: 2.5, borderTop: `1px solid ${COLORS.border}`, backgroundColor: '#FAFAFA',
+          mt: 3, pt: 2, borderTop: `1px solid ${COLORS.border}`,
         }}>
           <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined"
             startIcon={<ArrowBackOutlined />} disableRipple
@@ -426,14 +436,14 @@ const ActualizarVehiculo = () => {
             </Button>
           </Box>
         </Box>
-      </Paper>
+      </DialogContent>
 
       <Snackbar open={success} autoHideDuration={2500} onClose={() => setSuccess(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
         <Alert severity="success" variant="filled" sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }} onClose={() => setSuccess(false)}>
           ¡Vehículo actualizado exitosamente!
         </Alert>
       </Snackbar>
-    </Box>
+    </Dialog>
   )
 }
 

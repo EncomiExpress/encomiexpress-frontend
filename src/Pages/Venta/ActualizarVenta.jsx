@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
-import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, Snackbar, TextField, Autocomplete } from '@mui/material'
+import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, Snackbar, TextField, Autocomplete, Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined'
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
@@ -12,9 +11,9 @@ import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined'
 import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined'
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined'
 import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined'
+import CloseIcon from '@mui/icons-material/Close'
 import { useVentas } from '../../Context/VentaContext'
 import { useClientes } from '../../Context/ClienteContext'
-import * as ventaService from '../../services/ventaService'
 import { FormField, FormSelect, formFieldStyles } from '../../Components/FormularioEstandarizado'
 
 const COLORS = {
@@ -74,11 +73,9 @@ const ConfirmRowChip = ({ label, value, colors }) => (
     </Box>
 )
 
-const ActualizarVenta = () => {
+const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
     const { actualizarVenta, cambiarEstadoVenta } = useVentas()
     const { clientes } = useClientes()
-    const navigate = useNavigate()
-    const { id } = useParams()
     const [errores, setErrores] = useState({})
     const [apiError, setApiError] = useState(null)
     const [activeStep, setActiveStep] = useState(0)
@@ -132,49 +129,45 @@ const ActualizarVenta = () => {
     })
 
     useEffect(() => {
-        ventaService.getEncomiendaById(id)
-            .then(res => {
-                const venta = res.data
-                // normalizar arrays → singular
-                const destinatario = venta.destinatarios?.[0] || null
-                const paquete = venta.paquetes?.[0] || null
-                setVentaOriginal(venta)
-                setEstadoOriginal(venta.estado || '')
-                const datosForm = {
-                    idCliente: venta.cliente?.id || venta.idCliente || '',
-                    numeroIdentificacion: venta.cliente?.numeroIdentificacion || '',
-                    nombreRemitente: venta.cliente?.nombre || '',
-                    apellidoRemitente: venta.cliente?.apellido || '',
-                    telefonoRemitente: venta.cliente?.telefono || '',
-                    emailRemitente: venta.cliente?.email || '',
-                    direccionRemitente: venta.cliente?.direccion || '',
-                    nombreDestinatario: destinatario?.nombreDestinatario || '',
-                    telefonoDestinatario: destinatario?.telefonoDestinatario || '',
-                    direccionDestinatario: destinatario?.direccionDestinatario || '',
-                    descripcionContenido: paquete?.descripcionContenido || '',
-                    peso: paquete?.peso || '',
-                    alto: paquete?.alto || '',
-                    ancho: paquete?.ancho || '',
-                    profundidad: paquete?.profundidad || '',
-                    valorDeclarado: paquete?.valorDeclarado || '',
-                    idRuta: venta.idRuta || venta.ruta?.idRuta || '',
-                    destino: venta.ruta?.destino || venta.ruta?.destino?.nombre || '',
-                    fechaEstimadaEntrega: venta.fechaEstimadaEntrega
-                        ? venta.fechaEstimadaEntrega.split('T')[0]
-                        : '',
-                    observaciones: venta.observaciones || '',
-                    estado: venta.estado || 'pendiente de recogida',
-                    metodoPago: venta.metodoPago || '',
-                    valorServicio: venta.valorServicio || '',
-                    impuestos: venta.impuestos || '',
-                    total: venta.total || '',
-                    estadoPago: venta.estadoPago || 'Pendiente',
-                }
-                setForm(datosForm)
-                setFormOriginal(datosForm)
-            })
-            .catch(() => setApiError('No se pudo cargar la venta. Verifica la conexión.'))
-    }, [id])
+        if (!venta) return
+        const ventaData = venta
+        setVentaOriginal(ventaData)
+        const destinatario = ventaData.destinatarios?.[0] || null
+        const paquete = ventaData.paquetes?.[0] || null
+        setEstadoOriginal(ventaData.estado || '')
+        const datosForm = {
+            idCliente: ventaData.cliente?.id || ventaData.idCliente || '',
+            numeroIdentificacion: ventaData.cliente?.numeroIdentificacion || '',
+            nombreRemitente: ventaData.cliente?.nombre || '',
+            apellidoRemitente: ventaData.cliente?.apellido || '',
+            telefonoRemitente: ventaData.cliente?.telefono || '',
+            emailRemitente: ventaData.cliente?.email || '',
+            direccionRemitente: ventaData.cliente?.direccion || '',
+            nombreDestinatario: destinatario?.nombreDestinatario || '',
+            telefonoDestinatario: destinatario?.telefonoDestinatario || '',
+            direccionDestinatario: destinatario?.direccionDestinatario || '',
+            descripcionContenido: paquete?.descripcionContenido || '',
+            peso: paquete?.peso || '',
+            alto: paquete?.alto || '',
+            ancho: paquete?.ancho || '',
+            profundidad: paquete?.profundidad || '',
+            valorDeclarado: paquete?.valorDeclarado || '',
+            idRuta: ventaData.idRuta || ventaData.ruta?.idRuta || '',
+            destino: ventaData.ruta?.destino || ventaData.ruta?.destino?.nombre || '',
+            fechaEstimadaEntrega: ventaData.fechaEstimadaEntrega
+                ? ventaData.fechaEstimadaEntrega.split('T')[0]
+                : '',
+            observaciones: ventaData.observaciones || '',
+            estado: ventaData.estado || 'pendiente de recogida',
+            metodoPago: ventaData.metodoPago || '',
+            valorServicio: ventaData.valorServicio || '',
+            impuestos: ventaData.impuestos || '',
+            total: ventaData.total || '',
+            estadoPago: ventaData.estadoPago || 'Pendiente',
+        }
+        setForm(datosForm)
+        setFormOriginal(datosForm)
+    }, [venta])
 
     const NUMERIC_LIMITS = {
         peso: 9999, alto: 9999, ancho: 9999, profundidad: 9999,
@@ -357,7 +350,7 @@ const ActualizarVenta = () => {
         setSubmitting(true)
         setApiError(null)
         try {
-            const numId = parseInt(id)
+            const numId = venta?.idEncomiendaVenta || venta?.id
             const payload = {
                 // TODO: habilitar cuando el módulo de rutas esté implementado
                 // ...(form.idRuta && { idRuta: parseInt(form.idRuta) }),
@@ -391,7 +384,10 @@ const ActualizarVenta = () => {
             }
 
             setExito(true)
-            setTimeout(() => navigate('/ventas/listar'), 1500)
+            setTimeout(() => {
+                if (onClose) onClose()
+                if (onSuccess) onSuccess()
+            }, 1500)
         } catch (err) {
             setApiError(err.message || 'Error al actualizar la venta.')
         } finally {
@@ -399,7 +395,9 @@ const ActualizarVenta = () => {
         }
     }
 
-    const handleCancelar = () => navigate('/ventas/listar')
+    const handleCancelar = () => {
+        if (onClose) onClose()
+    }
 
     const cardSx = {
         flex: 1, minWidth: 0, borderRadius: 2, p: 2.5,
@@ -676,35 +674,97 @@ const ActualizarVenta = () => {
 
     if (!ventaOriginal && !apiError) {
         return (
-            <Box sx={{ p: 3.5, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 300 }}>
-                <Typography color={COLORS.textMuted}>Cargando datos de la venta...</Typography>
-            </Box>
+            <Dialog open={open} onClose={() => onClose && onClose()} maxWidth="md" fullWidth
+                slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}>
+                <DialogTitle sx={{ m: 0, p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <Box sx={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 2,
+                            background: 'linear-gradient(135deg, #CC1818 0%, #dc2626 100%)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}>
+                            <AssignmentIndOutlinedIcon sx={{ color: 'white', fontSize: 22 }} />
+                        </Box>
+                        <Typography variant="h6" fontWeight={700}>Editar Venta</Typography>
+                    </Box>
+                    <IconButton onClick={() => onClose && onClose()} sx={{ color: '#8A94A6' }}>
+                        <CloseIcon />
+                    </IconButton>
+                </DialogTitle>
+                <DialogContent sx={{ p: 3 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 200 }}>
+                        <Typography color={COLORS.textMuted}>Cargando datos de la venta...</Typography>
+                    </Box>
+                </DialogContent>
+            </Dialog>
         )
     }
 
     if (!ventaOriginal && apiError) {
         return (
-            <Box sx={{ p: 3.5 }}>
-                <Alert severity="error" sx={{ borderRadius: 2 }}>{apiError}</Alert>
-            </Box>
+            <Dialog open={open} onClose={() => onClose && onClose()} maxWidth="md" fullWidth
+                slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}>
+                <DialogTitle sx={{ m: 0, p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <Box sx={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 2,
+                            background: 'linear-gradient(135deg, #CC1818 0%, #dc2626 100%)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}>
+                            <AssignmentIndOutlinedIcon sx={{ color: 'white', fontSize: 22 }} />
+                        </Box>
+                        <Typography variant="h6" fontWeight={700}>Editar Venta</Typography>
+                    </Box>
+                    <IconButton onClick={() => onClose && onClose()} sx={{ color: '#8A94A6' }}>
+                        <CloseIcon />
+                    </IconButton>
+                </DialogTitle>
+                <DialogContent sx={{ p: 3 }}>
+                    <Alert severity="error" sx={{ borderRadius: 2 }}>{apiError}</Alert>
+                </DialogContent>
+            </Dialog>
         )
     }
 
     return (
-        <Box sx={{ p: 3.5 }}>
-            <Box sx={{ mb: 3 }}>
-                <Typography variant="h5" fontWeight={700} color={COLORS.text}>Editar Venta</Typography>
-                <Typography variant="body2" color={COLORS.textMuted} mt={0.3}>
+        <Dialog open={open} onClose={() => onClose && onClose()} maxWidth="md" fullWidth
+            slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}>
+            <DialogTitle sx={{ m: 0, p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <Box sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 2,
+                        background: 'linear-gradient(135deg, #CC1818 0%, #dc2626 100%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                    }}>
+                        <AssignmentIndOutlinedIcon sx={{ color: 'white', fontSize: 22 }} />
+                    </Box>
+                    <Typography variant="h6" fontWeight={700}>Editar Venta</Typography>
+                </Box>
+                <IconButton onClick={() => onClose && onClose()} sx={{ color: '#8A94A6' }}>
+                    <CloseIcon />
+                </IconButton>
+            </DialogTitle>
+            <DialogContent sx={{ p: 3 }}>
+                <Typography variant="body2" color={COLORS.textMuted} sx={{ mb: 3 }}>
                     {ventaOriginal?.numeroGuia
                         ? `Modificando guía: ${ventaOriginal.numeroGuia}`
                         : 'Modifica los campos que necesites.'
                     }
                 </Typography>
-            </Box>
 
-            <Paper elevation={0} sx={{ border: `1px solid ${COLORS.border}`, borderRadius: 3, overflow: 'hidden' }}>
-                {/* ── Stepper ── */}
-                <Box sx={{ px: 4, pt: 3.5, pb: 2.5, borderBottom: `1px solid ${COLORS.border}` }}>
+                <Box sx={{ mb: 3 }}>
                     <Stepper activeStep={activeStep} alternativeLabel
                         sx={{
                             '& .MuiStepIcon-root': { color: '#E0E0E0' },
@@ -723,17 +783,13 @@ const ActualizarVenta = () => {
                     </Stepper>
                 </Box>
 
-                {/* ── Contenido ── */}
-                <Box sx={{ px: 4, py: 3.5 }}>
-                    <Box sx={{ maxWidth: 760, mx: 'auto' }}>
-                        {renderStepContent()}
-                    </Box>
+                <Box sx={{ maxWidth: 760, mx: 'auto' }}>
+                    {renderStepContent()}
                 </Box>
 
-                {/* ── Botones ── */}
                 <Box sx={{
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    px: 4, py: 2.5, borderTop: `1px solid ${COLORS.border}`, backgroundColor: '#FAFAFA',
+                    mt: 3, pt: 2, borderTop: `1px solid ${COLORS.border}`,
                 }}>
                     <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined"
                         startIcon={<ArrowBackOutlinedIcon />} disableRipple
@@ -773,14 +829,14 @@ const ActualizarVenta = () => {
                         </Button>
                     </Box>
                 </Box>
-            </Paper>
+            </DialogContent>
 
             <Snackbar open={exito} autoHideDuration={2500} onClose={() => setExito(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
                 <Alert severity="success" variant="filled" sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }} onClose={() => setExito(false)}>
                     ¡Venta actualizada exitosamente!
                 </Alert>
             </Snackbar>
-        </Box>
+        </Dialog>
     )
 }
 

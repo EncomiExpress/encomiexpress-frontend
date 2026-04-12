@@ -1,22 +1,24 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useAuth, ROLES } from '../../Context/AuthContext'
 import {
     Box, Typography, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, TextField,
     IconButton, Tooltip, InputAdornment,
     Button, Dialog, DialogTitle, DialogContent,
-    DialogActions, Select, MenuItem, Pagination, Chip
+    DialogActions, Select, MenuItem, Pagination, Chip, Avatar, Snackbar, Alert
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
 import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined'
-import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
-import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import ClearIcon from '@mui/icons-material/Clear'
+import SecurityOutlinedIcon from '@mui/icons-material/SecurityOutlined'
+import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
+import RegistrarRol from './RegistrarRol'
+import ActualizarRol from './ActualizarRol'
 
 const COLORS = {
     primary: '#CC1818',
@@ -38,20 +40,51 @@ const thStyle = {
     whiteSpace: 'nowrap',
 }
 
-// ── Fila de campo reutilizable ──
-const CampoFila = ({ label, value }) => (
-    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
-        <Typography variant="body2" sx={{ color: '#9C4040', fontWeight: 500 }}>{label}</Typography>
-        <Typography variant="body2" fontWeight={500} color="#2D3748">
-            {String(value ?? '—')}
-        </Typography>
-    </Box>
-)
+const filterSelectSx = {
+    fontSize: '0.82rem',
+    borderRadius: 2,
+    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#E0E0E0' },
+    '&:hover': { backgroundColor: 'transparent' },
+    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#BDBDBD' },
+    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#E57373', borderWidth: '1px' },
+    '&.Mui-focused': { boxShadow: '0 0 0 3px rgba(229,115,115,0.18)' },
+    '& .MuiSelect-icon': { color: '#8A94A6', fontSize: 18 },
+    '& .MuiTouchRipple-root': { display: 'none' },
+}
 
-// ── Modal Consultar ──
+const filterMenuProps = {
+    slotProps: {
+        paper: {
+            sx: {
+                borderRadius: 2,
+                boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+                mt: 0.5,
+                '& .MuiMenuItem-root': {
+                    fontSize: '0.82rem',
+                    '&:hover': { backgroundColor: '#FFF5F5' },
+                    '&.Mui-selected': { backgroundColor: 'transparent', fontWeight: 600, color: '#1a0e0c' },
+                    '&.Mui-selected:hover': { backgroundColor: '#FFF5F5' },
+                },
+            },
+        },
+    },
+}
+
+const getRolColor = (nombre) => {
+    const colors = {
+        'Administrador': { bg: '#FFCDD2', color: '#C62828' },
+        'Gerente': { bg: '#FFEBEE', color: '#D32F2F' },
+        'Vendedor': { bg: '#FFECB3', color: '#FFA000' },
+        'Conductor': { bg: '#F8BBD9', color: '#C2185B' },
+        'Auxiliar': { bg: '#FFE0B2', color: '#E65100' },
+    }
+    return colors[nombre] || { bg: '#F5F5F5', color: '#616161' }
+}
+
 const ModalConsultar = ({ rol, onClose }) => {
     if (!rol) return null
 
+    const rolStyle = getRolColor(rol.nombre)
     const cardSx = { borderRadius: 2, p: 3, border: `1px solid ${COLORS.border}`, backgroundColor: 'white' }
     const tituloSx = { display: 'flex', alignItems: 'center', gap: 1, mb: 1 }
 
@@ -59,49 +92,122 @@ const ModalConsultar = ({ rol, onClose }) => {
         <Dialog open onClose={onClose} maxWidth="md" fullWidth
             slotProps={{ paper: { sx: { borderRadius: 3, p: 3, backgroundColor: '#FAFAFA' } } }}>
 
-            <Box sx={{ display: 'flex', gap: 2 }}>
-                <Paper elevation={0} sx={{ ...cardSx, flex: 1 }}>
-                    <Box sx={tituloSx}>
-                        <AssignmentIndOutlinedIcon sx={{ fontSize: 22, color: COLORS.text }} />
-                        <Typography fontWeight={700} fontSize="1.05rem" color={COLORS.text}>Detalles del Rol</Typography>
-                    </Box>
-                    <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2.5 }}>
+            <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pb: 1 }}>
+                <Avatar sx={{ backgroundColor: '#FFCDD2', color: '#C62828', width: 36, height: 36 }}>
+                    <AssignmentIndOutlinedIcon sx={{ fontSize: 18 }} />
+                </Avatar>
+                <Box>
+                    <Typography fontWeight={700} color={COLORS.secondary}>
+                        Rol #{rol.id}
+                    </Typography>
+                    <Typography variant="caption" color={COLORS.textMuted}>
                         Información del rol de usuario
                     </Typography>
+                </Box>
+            </DialogTitle>
 
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Box sx={{
-                            width: 50, height: 50, borderRadius: 2,
-                            backgroundColor: COLORS.primaryLight,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center'
-                        }}>
-                            <AssignmentIndOutlinedIcon sx={{ fontSize: 24, color: COLORS.primary }} />
+            <DialogContent dividers sx={{ px: 3, py: 2 }}>
+                <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+                    <Paper elevation={0} sx={{ ...cardSx, flex: 1 }}>
+                        <Box sx={tituloSx}>
+                            <SecurityOutlinedIcon sx={{ fontSize: 22, color: COLORS.text }} />
+                            <Typography fontWeight={700} fontSize="1.05rem" color={COLORS.text}>Datos del Rol</Typography>
                         </Box>
-                        <Box>
-                            <Typography fontWeight={700} color={COLORS.text}>
-                                {rol.nombre}
-                            </Typography>
-                            <Typography variant="body2" color={COLORS.textMuted} mt={0.2}>
-                                {rol.descripcion || 'Sin descripción'}
-                            </Typography>
+                        <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2 }}>
+                            Información principal del rol
+                        </Typography>
+
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                            <Box sx={{
+                                width: 50, height: 50, borderRadius: 2,
+                                backgroundColor: rolStyle.bg,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center'
+                            }}>
+                                <AssignmentIndOutlinedIcon sx={{ fontSize: 24, color: rolStyle.color }} />
+                            </Box>
+                            <Box>
+                                <Typography fontWeight={700} color={COLORS.text}>
+                                    {rol.nombre}
+                                </Typography>
+                                <Typography variant="body2" color={COLORS.textMuted} mt={0.2}>
+                                    {rol.descripcion || 'Sin descripción'}
+                                </Typography>
+                            </Box>
                         </Box>
-                    </Box>
-                </Paper>
+                    </Paper>
 
-                <Paper elevation={0} sx={{ ...cardSx, flex: 1 }}>
-                    <Box sx={tituloSx}>
-                        <AssignmentIndOutlinedIcon sx={{ fontSize: 22, color: COLORS.text }} />
-                        <Typography fontWeight={700} fontSize="1.05rem" color={COLORS.text}>Permisos</Typography>
-                    </Box>
-                    <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2 }}>
-                        Permisos asociados al rol
-                    </Typography>
+                    <Paper elevation={0} sx={{ ...cardSx, flex: 1 }}>
+                        <Box sx={tituloSx}>
+                            <SecurityOutlinedIcon sx={{ fontSize: 22, color: COLORS.text }} />
+                            <Typography fontWeight={700} fontSize="1.05rem" color={COLORS.text}>Permisos</Typography>
+                        </Box>
+                        <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2 }}>
+                            Permisos asociados al rol
+                        </Typography>
 
-                    <CampoFila label="Cantidad" value={`${rol.permisos?.length || 0} permisos`} />
-                </Paper>
-            </Box>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9, borderTop: `1px solid ${COLORS.border}`, mt: 1, pt: 1.5 }}>
+                            <Typography variant="body2" sx={{ color: '#9C4040', fontWeight: 500 }}>Total permisos</Typography>
+                            <Chip
+                                label={`${rol.permisos?.length || 0} permisos`}
+                                size="small"
+                                sx={{
+                                    backgroundColor: COLORS.primary,
+                                    color: 'white',
+                                    fontWeight: 600,
+                                    fontSize: '0.72rem',
+                                    height: 22,
+                                    borderRadius: 10,
+                                    border: 'none',
+                                }}
+                            />
+                        </Box>
 
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+                        {rol.permisos && rol.permisos.length > 0 && (
+                            <Box sx={{ mt: 2, pt: 1.5, borderTop: `1px solid ${COLORS.border}` }}>
+                                <Typography variant="caption" color={COLORS.textMuted} fontWeight={600} display="block" mb={1}>
+                                    Lista de permisos
+                                </Typography>
+                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                    {rol.permisos.slice(0, 10).map((permiso, idx) => (
+                                        <Chip
+                                            key={idx}
+                                            label={permiso.replace(/_/g, ' ')}
+                                            size="small"
+                                            sx={{
+                                                backgroundColor: '#F3F4F6',
+                                                color: COLORS.textMuted,
+                                                fontWeight: 500,
+                                                fontSize: '0.65rem',
+                                                height: 20,
+                                                borderRadius: 8,
+                                                border: 'none',
+                                                textTransform: 'capitalize',
+                                            }}
+                                        />
+                                    ))}
+                                    {rol.permisos.length > 10 && (
+                                        <Chip
+                                            label={`+${rol.permisos.length - 10} más`}
+                                            size="small"
+                                            sx={{
+                                                backgroundColor: COLORS.primaryLight,
+                                                color: COLORS.primary,
+                                                fontWeight: 600,
+                                                fontSize: '0.65rem',
+                                                height: 20,
+                                                borderRadius: 8,
+                                                border: 'none',
+                                            }}
+                                        />
+                                    )}
+                                </Box>
+                            </Box>
+                        )}
+                    </Paper>
+                </Box>
+            </DialogContent>
+
+            <DialogActions sx={{ px: 3, py: 2 }}>
                 <Button onClick={onClose} variant="contained" sx={{
                     backgroundColor: COLORS.primary, borderRadius: 2, textTransform: 'none',
                     boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
@@ -109,14 +215,12 @@ const ModalConsultar = ({ rol, onClose }) => {
                 }}>
                     Cerrar
                 </Button>
-            </Box>
+            </DialogActions>
         </Dialog>
     )
 }
 
-// ── Componente principal ──
 const ListarRol = () => {
-    const navigate = useNavigate()
     const { tienePermiso, PERMISOS } = useAuth()
     
     const roles = Object.values(ROLES)
@@ -124,14 +228,18 @@ const ListarRol = () => {
     const [page, setPage] = useState(1)
     const [rowsPerPage, setRowsPerPage] = useState(5)
     const [rolConsulta, setRolConsulta] = useState(null)
+    const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
+    const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
+    const [rolEditar, setRolEditar] = useState(null)
+    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
 
     const puedeRegistrar = tienePermiso(PERMISOS.REGISTRAR_ROL)
 
-    // ── Filtrado ──
     const rolesFiltrados = roles.filter(r => {
         const q = busqueda.toLowerCase().trim()
         if (!q) return true
-        return r.nombre.toLowerCase().includes(q)
+        return r.nombre.toLowerCase().includes(q) || 
+               (r.descripcion || '').toLowerCase().includes(q)
     })
 
     const totalPages = Math.max(1, Math.ceil(rolesFiltrados.length / rowsPerPage))
@@ -143,7 +251,6 @@ const ListarRol = () => {
     return (
         <Box sx={{ p: 3.5 }}>
 
-            {/* ── Encabezado ── */}
             <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
                 <Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -169,7 +276,7 @@ const ListarRol = () => {
                 </Box>
                 {puedeRegistrar && (
                     <Button
-                        onClick={() => navigate('/roles/registrar')}
+                        onClick={() => setModalRegistrarOpen(true)}
                         variant="contained"
                         startIcon={<AddOutlinedIcon />}
                         sx={{
@@ -189,13 +296,12 @@ const ListarRol = () => {
                 )}
             </Box>
 
-            {/* ── Barra de búsqueda ── */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
                 <TextField
                     size="small"
                     placeholder="Buscar roles..."
                     sx={{
-                        width: 280,
+                        width: 320,
                         '& .MuiOutlinedInput-root': {
                             borderRadius: 2,
                             '&.Mui-focused': {
@@ -226,42 +332,24 @@ const ListarRol = () => {
                         }
                     }}
                 />
-
-                <Button
-                    variant="outlined"
-                    size="small"
-                    startIcon={<FileDownloadOutlinedIcon />}
-                    sx={{
-                        borderRadius: 2,
-                        textTransform: 'none',
-                        fontSize: '0.85rem',
-                        borderColor: COLORS.border,
-                        color: COLORS.text,
-                        fontWeight: 500,
-                        ml: 'auto',
-                        '&:hover': { backgroundColor: COLORS.primaryLight },
-                    }}
-                >
-                    Exportar
-                </Button>
             </Box>
 
-            {/* ── Tabla ── */}
             <Paper elevation={0} sx={{ border: `1px solid ${COLORS.border}`, borderRadius: 3, overflow: 'hidden' }}>
                 <TableContainer>
                     <Table>
                         <TableHead>
                             <TableRow sx={{ backgroundColor: '#F8F9FA' }}>
-                                <TableCell sx={thStyle}>Nombre</TableCell>
-                                <TableCell sx={thStyle}>Cantidad de permisos</TableCell>
-                                <TableCell sx={{ ...thStyle, width: 110 }} />
+                                <TableCell sx={thStyle}>Rol</TableCell>
+                                <TableCell sx={thStyle}>Descripción</TableCell>
+                                <TableCell sx={thStyle}>Permisos</TableCell>
+                                <TableCell sx={{ ...thStyle, width: 110 }}>Acciones</TableCell>
                             </TableRow>
                         </TableHead>
 
                         <TableBody>
                             {paginatedRoles.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={3} align="center" sx={{ py: 7 }}>
+                                    <TableCell colSpan={4} align="center" sx={{ py: 7 }}>
                                         <Typography color={COLORS.textMuted} variant="body2">
                                             {roles.length === 0
                                                 ? 'No hay roles registrados en el sistema.'
@@ -271,74 +359,88 @@ const ListarRol = () => {
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                paginatedRoles.map(rol => (
-                                    <TableRow
-                                        key={rol.id}
-                                        sx={{
-                                            '&:hover': { backgroundColor: COLORS.hoverBg },
-                                            transition: 'background-color 0.15s',
-                                        }}
-                                    >
-                                        {/* Nombre */}
-                                        <TableCell sx={{ py: 1.5 }}>
-                                            <Typography variant="body2" fontWeight={500} color={COLORS.text}>
-                                                {rol.nombre}
-                                            </Typography>
-                                        </TableCell>
+                                paginatedRoles.map(rol => {
+                                    const rolStyle = getRolColor(rol.nombre)
+                                    return (
+                                        <TableRow
+                                            key={rol.id}
+                                            sx={{
+                                                '&:hover': { backgroundColor: COLORS.hoverBg },
+                                                transition: 'background-color 0.15s',
+                                            }}
+                                        >
+                                            <TableCell sx={{ py: 1.5 }}>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                                    <Avatar sx={{
+                                                        width: 34, height: 34,
+                                                        backgroundColor: rolStyle.bg,
+                                                        fontSize: '0.73rem',
+                                                        fontWeight: 700,
+                                                        color: rolStyle.color,
+                                                    }}>
+                                                        {rol.nombre?.split(' ').map(n => n[0]).slice(0, 2).join('')}
+                                                    </Avatar>
+                                                    <Typography variant="body2" fontWeight={600} color={COLORS.text}>
+                                                        {rol.nombre}
+                                                    </Typography>
+                                                </Box>
+                                            </TableCell>
 
-                                        {/* Permisos */}
-                                        <TableCell sx={{ py: 1.5 }}>
-                                            <Chip
-                                                label={`${rol.permisos?.length || 0} permisos`}
-                                                size="small"
-                                                sx={{
-                                                    backgroundColor: '#B91C1C',
-                                                    color: 'white',
-                                                    fontWeight: 600,
-                                                    fontSize: '0.72rem',
-                                                    height: 22,
-                                                    borderRadius: 10,
-                                                    border: 'none',
-                                                }}
-                                            />
-                                        </TableCell>
+                                            <TableCell sx={{ py: 1.5 }}>
+                                                <Typography variant="body2" color={COLORS.textMuted} sx={{ maxWidth: 250, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                    {rol.descripcion || 'Sin descripción'}
+                                                </Typography>
+                                            </TableCell>
 
-                                        {/* Acciones */}
-                                        <TableCell sx={{ py: 1.5 }}>
-                                            <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                                <Tooltip title="Ver detalle">
-                                                    <IconButton
-                                                        size="small"
-                                                        onClick={() => setRolConsulta(rol)}
-                                                        sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}
-                                                    >
-                                                        <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
-                                                    </IconButton>
-                                                </Tooltip>
-                                                <Tooltip title="Editar">
-                                                    <IconButton
-                                                        size="small"
-                                                        sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}
-                                                    >
-                                                        <EditOutlinedIcon sx={{ fontSize: 18 }} />
-                                                    </IconButton>
-                                                </Tooltip>
-                                            </Box>
-                                        </TableCell>
-                                    </TableRow>
-                                ))
+                                            <TableCell sx={{ py: 1.5 }}>
+                                                <Chip
+                                                    label={`${rol.permisos?.length || 0} permisos`}
+                                                    size="small"
+                                                    sx={{
+                                                        backgroundColor: COLORS.primary,
+                                                        color: 'white',
+                                                        fontWeight: 600,
+                                                        fontSize: '0.72rem',
+                                                        height: 22,
+                                                        borderRadius: 10,
+                                                        border: 'none',
+                                                    }}
+                                                />
+                                            </TableCell>
+
+                                            <TableCell sx={{ py: 1.5 }}>
+                                                <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                                    <Tooltip title="Ver detalle">
+                                                        <IconButton
+                                                            size="small"
+                                                            onClick={() => setRolConsulta(rol)}
+                                                            sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}
+                                                        >
+                                                            <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                    <Tooltip title="Editar">
+                                                        <IconButton
+                                                            size="small"
+                                                            onClick={() => { setRolEditar(rol); setModalActualizarOpen(true) }}
+                                                            sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}
+                                                        >
+                                                            <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                </Box>
+                                            </TableCell>
+                                        </TableRow>
+                                    )
+                                })
                             )}
                         </TableBody>
                     </Table>
                 </TableContainer>
             </Paper>
 
-            {/* ── Paginación ── */}
-            <Box sx={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                px: 0.5, pt: 1.5,
-            }}>
-                <Typography variant="body2" color={COLORS.textMuted}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
+                <Typography variant="body2" color={COLORS.textMuted} fontWeight={500}>
                     Mostrando {from}–{to} de {rolesFiltrados.length} resultado{rolesFiltrados.length !== 1 ? 's' : ''}
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -359,8 +461,7 @@ const ListarRol = () => {
                                 '& .MuiOutlinedInput-notchedOutline': { borderColor: COLORS.border },
                                 '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#BDBDBD' },
                                 '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                    borderColor: '#E57373',
-                                    borderWidth: '1px',
+                                    borderColor: '#E57373', borderWidth: '1px',
                                 },
                                 '&.Mui-focused': {
                                     boxShadow: '0 0 0 3px rgba(229,115,115,0.18)',
@@ -442,8 +543,45 @@ const ListarRol = () => {
                 </Box>
             </Box>
 
-            {/* ── Modales ── */}
             <ModalConsultar rol={rolConsulta} onClose={() => setRolConsulta(null)} />
+
+            <RegistrarRol 
+                open={modalRegistrarOpen} 
+                onClose={() => setModalRegistrarOpen(false)} 
+                onSuccess={() => {
+                    setSnackbar({ open: true, message: 'Rol registrado correctamente', severity: 'success' })
+                }}
+            />
+
+            <ActualizarRol
+                open={modalActualizarOpen}
+                onClose={() => { setModalActualizarOpen(false); setRolEditar(null) }}
+                rol={rolEditar}
+                onSuccess={() => {
+                    setSnackbar({ open: true, message: 'Rol actualizado correctamente', severity: 'success' })
+                }}
+            />
+
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={3000}
+                onClose={() => setSnackbar(s => ({ ...s, open: false }))}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            >
+                <Alert
+                    severity={snackbar.severity}
+                    variant="filled"
+                    sx={{ 
+                        fontWeight: 600,
+                        borderRadius: 2,
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                        fontSize: '0.85rem',
+                    }}
+                    onClose={() => setSnackbar(s => ({ ...s, open: false }))}
+                >
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </Box>
     )
 }

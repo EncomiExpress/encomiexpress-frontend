@@ -1,19 +1,16 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useAuth, ROLES } from '../../Context/AuthContext'
+import { useAuth } from '../../Context/AuthContext'
 import {
     Box, Typography, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, TextField,
     IconButton, Chip, Tooltip, InputAdornment,
-    Button, Dialog, DialogTitle, DialogContent, DialogContentText,
-    DialogActions, Avatar, Select, MenuItem, Pagination, Snackbar, Alert,
-    CircularProgress, FormControl, InputLabel
+    Button, Dialog, DialogTitle, DialogContent,
+    Avatar, Select, MenuItem, Pagination, Snackbar, Alert,
+    CircularProgress, FormControl
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
-import BlockOutlinedIcon from '@mui/icons-material/BlockOutlined'
-import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined'
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined'
@@ -21,6 +18,8 @@ import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import ClearIcon from '@mui/icons-material/Clear'
+import RegistrarUsuario from './RegistrarUsuario'
+import ActualizarUsuario from './ActualizarUsuario'
 
 const COLORS = {
     primary: '#CC1818',
@@ -42,7 +41,6 @@ const thStyle = {
     whiteSpace: 'nowrap',
 }
 
-// ── Fila de campo reutilizable ──
 const CampoFila = ({ label, value, esEstado, esRol }) => (
     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
         <Typography variant="body2" sx={{ color: '#9C4040', fontWeight: 500 }}>{label}</Typography>
@@ -79,7 +77,6 @@ const CampoFila = ({ label, value, esEstado, esRol }) => (
     </Box>
 )
 
-// ── Modal Consultar ──
 const ModalConsultar = ({ usuario, onClose }) => {
     if (!usuario) return null
     const estado = usuario.habilitado ? 'Habilitado' : 'Inhabilitado'
@@ -160,58 +157,14 @@ const ModalConsultar = ({ usuario, onClose }) => {
     )
 }
 
-// ── Modal Toggle Habilitado ──
-const ModalToggleHabilitado = ({ usuario, onClose, onConfirm, loading }) => {
-    if (!usuario) return null
-    const esHabilitar = !usuario.habilitado
-
-    return (
-        <Dialog open onClose={onClose} maxWidth="xs" fullWidth slotProps={{ paper: { sx: { borderRadius: 3 } } }}>
-            <DialogTitle sx={{ color: esHabilitar ? '#16A34A' : COLORS.primary, fontWeight: 700 }}>
-                {esHabilitar ? '¿Habilitar usuario?' : '¿Inhabilitar usuario?'}
-            </DialogTitle>
-            <DialogContent>
-                <DialogContentText>
-                    Estás a punto de {esHabilitar ? 'habilitar' : 'inhabilitar'} a{' '}
-                    <strong>{usuario.nombre}</strong>.{' '}
-                    {esHabilitar
-                        ? 'El usuario volverá a tener acceso al sistema.'
-                        : 'El usuario no podrá acceder al sistema hasta que sea habilitado nuevamente.'
-                    }
-                </DialogContentText>
-            </DialogContent>
-            <DialogActions sx={{ px: 3, py: 2, gap: 1 }}>
-                <Button onClick={onClose} disabled={loading} variant="outlined"
-                    sx={{ borderColor: COLORS.border, color: COLORS.text, borderRadius: 2, textTransform: 'none' }}>
-                    Cancelar
-                </Button>
-                <Button onClick={() => onConfirm(usuario.id)} disabled={loading} variant="contained"
-                    sx={{
-                        backgroundColor: esHabilitar ? '#16A34A' : COLORS.primary,
-                        borderRadius: 2, textTransform: 'none',
-                        '&:hover': { backgroundColor: esHabilitar ? '#15803D' : '#a01212' },
-                    }}>
-                    {loading
-                        ? (esHabilitar ? 'Habilitando...' : 'Inhabilitando...')
-                        : (esHabilitar ? 'Sí, habilitar' : 'Sí, inhabilitar')
-                    }
-                </Button>
-            </DialogActions>
-        </Dialog>
-    )
-}
-
-// ── Filtros de estado ──
 const FILTROS = [
     { value: 'todo', label: 'Todo' },
-    { value: 'habilitado', label: 'Habilitado' },
-    { value: 'inhabilitado', label: 'Inhabilitado' },
+    { value: 'Activo', label: 'Activo' },
+    { value: 'Inactivo', label: 'Inactivo' },
 ]
 
-// ── Componente principal ──
 const ListarUsuario = () => {
-    const navigate = useNavigate()
-    const { tienePermiso, PERMISOS, getUsuarios, habilitarInhabilitarUsuario } = useAuth()
+    const { tienePermiso, PERMISOS, getUsuarios } = useAuth()
     
     const [usuarios, setUsuarios] = useState([])
     const [loading, setLoading] = useState(true)
@@ -219,33 +172,46 @@ const ListarUsuario = () => {
 
     const [busqueda, setBusqueda] = useState('')
     const [filtroEstado, setFiltroEstado] = useState('todo')
-    const [filtroRol, setFiltroRol] = useState('todos')
     const [page, setPage] = useState(1)
     const [rowsPerPage, setRowsPerPage] = useState(5)
     const [usuarioConsulta, setUsuarioConsulta] = useState(null)
-    const [usuarioToggle, setUsuarioToggle] = useState(null)
-    const [toggling, setToggling] = useState(false)
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
+    const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
+    const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
+    const [usuarioEditar, setUsuarioEditar] = useState(null)
 
-    // Cargar usuarios
-    useEffect(() => {
-        const cargarUsuarios = async () => {
-            setLoading(true)
-            try {
-                const data = await getUsuarios()
-                setUsuarios(data)
-            } catch (err) {
-                setError(err.message)
-            } finally {
-                setLoading(false)
-            }
+    const cargarUsuarios = async () => {
+        setLoading(true)
+        try {
+            const data = await getUsuarios()
+            setUsuarios(data)
+        } catch (err) {
+            setError(err.message)
+        } finally {
+            setLoading(false)
         }
+    }
+
+    useEffect(() => {
         cargarUsuarios()
     }, [getUsuarios])
 
     const puedeRegistrar = tienePermiso(PERMISOS.REGISTRAR_USUARIO)
 
-    // ── Filtrado ──
+    const ESTADOS = ['Activo', 'Inactivo']
+
+    const handleEstadoChange = async (id, nuevoEstado) => {
+        try {
+            const nuevosUsuarios = usuarios.map(u => 
+                u.id === id ? { ...u, habilitado: nuevoEstado === 'Activo' } : u
+            )
+            setUsuarios(nuevosUsuarios)
+            setSnackbar({ open: true, message: `Estado actualizado a ${nuevoEstado}`, severity: 'success' })
+        } catch (err) {
+            setSnackbar({ open: true, message: 'Error al cambiar el estado', severity: 'error' })
+        }
+    }
+
     const usuariosFiltrados = usuarios.filter(u => {
         const q = busqueda.toLowerCase().trim()
         const coincideBusqueda = !q ||
@@ -255,48 +221,19 @@ const ListarUsuario = () => {
 
         const coincideEstado =
             filtroEstado === 'todo' ||
-            (filtroEstado === 'habilitado' && u.habilitado) ||
-            (filtroEstado === 'inhabilitado' && !u.habilitado)
+            (filtroEstado === 'Activo' && u.habilitado) ||
+            (filtroEstado === 'Inactivo' && !u.habilitado)
 
-        const coincideRol = filtroRol === 'todos' || u.rol?.nombre === filtroRol
-
-        return coincideBusqueda && coincideEstado && coincideRol
+        return coincideBusqueda && coincideEstado
     })
-
-    const handleToggle = async (id) => {
-        const usuario = usuarios.find(u => u.id === id)
-        const esHabilitar = !usuario?.habilitado
-        setToggling(true)
-        try {
-            await habilitarInhabilitarUsuario(id)
-            const data = await getUsuarios()
-            setUsuarios(data)
-            setUsuarioToggle(null)
-            setSnackbar({
-                open: true,
-                message: esHabilitar ? 'Usuario habilitado correctamente.' : 'Usuario inhabilitado correctamente.',
-                severity: esHabilitar ? 'success' : 'warning',
-            })
-        } catch (err) {
-            setUsuarioToggle(null)
-            setSnackbar({
-                open: true,
-                message: err.message || 'Error al cambiar el estado del usuario.',
-                severity: 'error',
-            })
-        } finally {
-            setToggling(false)
-        }
-    }
 
     const limpiarFiltros = () => {
         setBusqueda('')
         setFiltroEstado('todo')
-        setFiltroRol('todos')
         setPage(1)
     }
 
-    const hayFiltrosActivos = busqueda.trim() !== '' || filtroEstado !== 'todo' || filtroRol !== 'todos'
+    const hayFiltrosActivos = busqueda.trim() !== '' || filtroEstado !== 'todo'
 
     const totalPages = Math.max(1, Math.ceil(usuariosFiltrados.length / rowsPerPage))
     const safePage = Math.min(page, totalPages)
@@ -307,7 +244,6 @@ const ListarUsuario = () => {
     return (
         <Box sx={{ p: 3.5 }}>
 
-            {/* ── Encabezado ── */}
             <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
                 <Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -335,7 +271,7 @@ const ListarUsuario = () => {
                 </Box>
                 {puedeRegistrar && (
                     <Button
-                        onClick={() => navigate('/usuarios/registrar')}
+                        onClick={() => setModalRegistrarOpen(true)}
                         variant="contained"
                         startIcon={<AddOutlinedIcon />}
                         sx={{
@@ -355,14 +291,12 @@ const ListarUsuario = () => {
                 )}
             </Box>
 
-            {/* ── Alerta de error de carga ── */}
             {error && (
                 <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
                     Error al cargar los usuarios: {error}
                 </Alert>
             )}
 
-            {/* ── Filtros de estado ── */}
             <Box sx={{
                 display: 'inline-flex',
                 backgroundColor: '#FFECEC',
@@ -404,7 +338,6 @@ const ListarUsuario = () => {
                 ))}
             </Box>
 
-            {/* ── Barra de búsqueda + Filtros + Export ── */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
                 <TextField
                     size="small"
@@ -442,45 +375,6 @@ const ListarUsuario = () => {
                     }}
                 />
 
-                <FormControl size="small" sx={{ minWidth: 150 }}>
-                    <InputLabel sx={{ fontSize: '0.82rem', '&.Mui-focused': { color: '#E57373' } }}>Rol</InputLabel>
-                    <Select value={filtroRol} label="Rol"
-                        onChange={e => { setFiltroRol(e.target.value); setPage(1) }}
-                        IconComponent={KeyboardArrowDownOutlinedIcon}
-                        sx={{
-                            fontSize: '0.82rem',
-                            borderRadius: 2,
-                            '& .MuiOutlinedInput-notchedOutline': { borderColor: '#E0E0E0' },
-                            '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#CC1818' },
-                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#E57373', borderWidth: '1px' },
-                            '&.Mui-focused': { boxShadow: '0 0 0 3px rgba(229,115,115,0.18)' },
-                            '& .MuiSelect-icon': { color: '#8A94A6', fontSize: 18 },
-                            '& .MuiTouchRipple-root': { display: 'none' },
-                        }}
-                        MenuProps={{
-                            slotProps: {
-                                paper: {
-                                    sx: {
-                                        borderRadius: 2,
-                                        boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
-                                        mt: 0.5,
-                                        '& .MuiMenuItem-root': {
-                                            fontSize: '0.82rem',
-                                            '&:hover': { backgroundColor: '#FFF5F5' },
-                                            '&.Mui-selected': { backgroundColor: 'transparent', fontWeight: 600, color: '#1a0e0c' },
-                                            '&.Mui-selected:hover': { backgroundColor: '#FFF5F5' },
-                                        },
-                                    },
-                                },
-                            },
-                        }}>
-                        <MenuItem value="todos">Todos</MenuItem>
-                        {Object.values(ROLES).map(rol => (
-                            <MenuItem key={rol.id} value={rol.nombre}>{rol.nombre}</MenuItem>
-                        ))}
-                    </Select>
-                </FormControl>
-
                 {hayFiltrosActivos && (
                     <Chip
                         label="Limpiar"
@@ -510,7 +404,6 @@ const ListarUsuario = () => {
                 </Button>
             </Box>
 
-            {/* ── Tabla ── */}
             <Paper elevation={0} sx={{ border: `1px solid ${COLORS.border}`, borderRadius: 3, overflow: 'hidden' }}>
                 <TableContainer>
                     <Table>
@@ -566,7 +459,6 @@ const ListarUsuario = () => {
                                             opacity: usuario.habilitado ? 1 : 0.55,
                                         }}
                                     >
-                                        {/* Nombre */}
                                         <TableCell sx={{ py: 1.5 }}>
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                                                 <Avatar sx={{
@@ -584,27 +476,22 @@ const ListarUsuario = () => {
                                             </Box>
                                         </TableCell>
 
-                                        {/* Tipo ID */}
                                         <TableCell sx={{ fontSize: '0.85rem', color: COLORS.text, py: 1.5 }}>
                                             {usuario.tipoIdentificacion}
                                         </TableCell>
 
-                                        {/* Número ID */}
                                         <TableCell sx={{ fontSize: '0.85rem', color: COLORS.text, py: 1.5 }}>
                                             {usuario.numeroIdentificacion}
                                         </TableCell>
 
-                                        {/* Teléfono */}
                                         <TableCell sx={{ fontSize: '0.85rem', color: COLORS.text, py: 1.5 }}>
                                             {usuario.telefono || '—'}
                                         </TableCell>
 
-                                        {/* Email */}
                                         <TableCell sx={{ fontSize: '0.85rem', color: COLORS.text, py: 1.5 }}>
                                             {usuario.email}
                                         </TableCell>
 
-                                        {/* Rol */}
                                         <TableCell sx={{ py: 1.5 }}>
                                             <Chip
                                                 label={usuario.rol?.nombre}
@@ -621,24 +508,42 @@ const ListarUsuario = () => {
                                             />
                                         </TableCell>
 
-                                        {/* Estado */}
                                         <TableCell sx={{ py: 1.5 }}>
-                                            <Chip
-                                                label={usuario.habilitado ? 'Habilitado' : 'Inhabilitado'}
-                                                size="small"
-                                                sx={{
-                                                    backgroundColor: usuario.habilitado ? '#DCFCE7' : '#F3F4F6',
-                                                    color: usuario.habilitado ? '#16A34A' : '#9CA3AF',
-                                                    fontWeight: 600,
-                                                    fontSize: '0.72rem',
-                                                    height: 22,
-                                                    borderRadius: 10,
-                                                    border: 'none',
-                                                }}
-                                            />
+                                            <FormControl size="small" sx={{ minWidth: 120 }}>
+                                                <Select
+                                                    value={usuario.habilitado ? 'Activo' : 'Inactivo'}
+                                                    onChange={(e) => handleEstadoChange(usuario.id, e.target.value)}
+                                                    IconComponent={KeyboardArrowDownOutlinedIcon}
+                                                    sx={{
+                                                        fontSize: '0.75rem',
+                                                        py: 0.5,
+                                                        color: usuario.habilitado ? '#10b981' : '#dc2626',
+                                                    }}
+                                                    MenuProps={{
+                                                        slotProps: {
+                                                            paper: {
+                                                                sx: {
+                                                                    borderRadius: 2,
+                                                                    boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+                                                                    mt: 0.5,
+                                                                    '& .MuiMenuItem-root': {
+                                                                        fontSize: '0.82rem',
+                                                                        py: 0.9,
+                                                                        px: 2,
+                                                                        '&:hover': { backgroundColor: '#FFF5F5' },
+                                                                    },
+                                                                },
+                                                            },
+                                                        },
+                                                    }}
+                                                >
+                                                    {ESTADOS.map(estado => (
+                                                        <MenuItem key={estado} value={estado}>{estado}</MenuItem>
+                                                    ))}
+                                                </Select>
+                                            </FormControl>
                                         </TableCell>
 
-                                        {/* Acciones */}
                                         <TableCell sx={{ py: 1.5 }}>
                                             <Box sx={{ display: 'flex', gap: 0.5 }}>
                                                 <Tooltip title="Ver detalle">
@@ -653,27 +558,10 @@ const ListarUsuario = () => {
                                                 <Tooltip title="Editar">
                                                     <IconButton
                                                         size="small"
-                                                        onClick={() => navigate(`/usuarios/actualizar/${usuario.id}`)}
+                                                        onClick={() => { setUsuarioEditar(usuario); setModalActualizarOpen(true) }}
                                                         sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}
                                                     >
                                                         <EditOutlinedIcon sx={{ fontSize: 18 }} />
-                                                    </IconButton>
-                                                </Tooltip>
-                                                <Tooltip title={usuario.habilitado ? 'Inhabilitar' : 'Habilitar'}>
-                                                    <IconButton
-                                                        size="small"
-                                                        onClick={() => setUsuarioToggle(usuario)}
-                                                        sx={{
-                                                            color: usuario.habilitado ? COLORS.primary : '#16A34A',
-                                                            '&:hover': {
-                                                                backgroundColor: usuario.habilitado ? COLORS.primaryLight : '#DCFCE7',
-                                                            },
-                                                        }}
-                                                    >
-                                                        {usuario.habilitado
-                                                            ? <BlockOutlinedIcon sx={{ fontSize: 18 }} />
-                                                            : <CheckCircleOutlinedIcon sx={{ fontSize: 18 }} />
-                                                        }
                                                     </IconButton>
                                                 </Tooltip>
                                             </Box>
@@ -686,7 +574,6 @@ const ListarUsuario = () => {
                 </TableContainer>
             </Paper>
 
-            {/* ── Paginación ── */}
             <Box sx={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 px: 0.5, pt: 1.5,
@@ -796,22 +683,41 @@ const ListarUsuario = () => {
             </Box>
 
             <ModalConsultar usuario={usuarioConsulta} onClose={() => setUsuarioConsulta(null)} />
-            <ModalToggleHabilitado
-                usuario={usuarioToggle}
-                onClose={() => !toggling && setUsuarioToggle(null)}
-                onConfirm={handleToggle}
-                loading={toggling}
+
+            <RegistrarUsuario
+                open={modalRegistrarOpen}
+                onClose={() => setModalRegistrarOpen(false)}
+                onSuccess={() => {
+                    cargarUsuarios()
+                    setSnackbar({ open: true, message: 'Usuario registrado correctamente', severity: 'success' })
+                }}
+            />
+
+            <ActualizarUsuario
+                open={modalActualizarOpen}
+                onClose={() => { setModalActualizarOpen(false); setUsuarioEditar(null) }}
+                usuario={usuarioEditar}
+                onSuccess={() => {
+                    cargarUsuarios()
+                    setSnackbar({ open: true, message: 'Usuario actualizado correctamente', severity: 'success' })
+                }}
             />
 
             <Snackbar
                 open={snackbar.open}
-                autoHideDuration={2000}
+                autoHideDuration={3000}
                 onClose={() => setSnackbar(s => ({ ...s, open: false }))}
-                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
             >
                 <Alert
                     severity={snackbar.severity}
-                    sx={{ fontWeight: 600 }}
+                    variant="filled"
+                    sx={{ 
+                        fontWeight: 600,
+                        borderRadius: 2,
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                        fontSize: '0.85rem',
+                    }}
                     onClose={() => setSnackbar(s => ({ ...s, open: false }))}
                 >
                     {snackbar.message}
