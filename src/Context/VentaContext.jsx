@@ -12,7 +12,9 @@ export const ESTADOS_ENCOMIENDA = [
   'programada',
   'en tránsito',
   'entregado',
-  'devuelto'
+  'devuelto',
+  'activo',
+  'inactivo'
 ]
 
 export const METODOS_PAGO = ['Contraentrega', 'Efectivo', 'Transferencia', 'Nequi']

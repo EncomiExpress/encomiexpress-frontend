@@ -85,8 +85,15 @@ const ESTADO_COLORS = {
     'legalizado': { bg: '#E8F5E9', color: '#2E7D32' },
     'excedente pendiente': { bg: '#FFF3E0', color: '#E65100' },
     'cerrado': { bg: '#F3E5F5', color: '#6A1B9A' },
+    'activo': { bg: 'transparent', color: '#10b981' },
+    'inactivo': { bg: 'transparent', color: '#dc2626' },
     'habilitado': { bg: '#DCFCE7', color: '#16A34A' },
     'inhabilitado': { bg: '#F3F4F6', color: '#9CA3AF' },
+}
+
+const getEstadoColor = (estado) => {
+    if (!estado) return { bg: '#F5F5F5', color: '#757575' }
+    return ESTADO_COLORS[estado.toLowerCase()] || { bg: '#F5F5F5', color: '#757575' }
 }
 
 const FILTROS_ESTADO = [
@@ -307,16 +314,25 @@ const ListarAnticipoExcedente = () => {
 
 
     const handleCambiarEstado = (id, nuevoEstado) => {
-        if (nuevoEstado === '__habilitar__') {
-            toggleHabilitado(id)
-            setSnackbar({ open: true, message: 'Anticipo habilitado correctamente.', severity: 'success' })
+        const anticipo = anticipos.find(a => a.idAnticipoExcedente === id)
+        if (!anticipo) return
+
+        if (nuevoEstado === 'Activo') {
+            if (anticipo.habilitado === false) {
+                toggleHabilitado(id)
+                setSnackbar({ open: true, message: 'Anticipo activo correctamente.', severity: 'success' })
+            }
             return
         }
-        if (nuevoEstado === '__inhabilitar__') {
-            toggleHabilitado(id)
-            setSnackbar({ open: true, message: 'Anticipo inhabilitado correctamente.', severity: 'warning' })
+
+        if (nuevoEstado === 'Inactivo') {
+            if (anticipo.habilitado !== false) {
+                toggleHabilitado(id)
+                setSnackbar({ open: true, message: 'Anticipo inactivo correctamente.', severity: 'warning' })
+            }
             return
         }
+
         cambiarEstado(id, nuevoEstado)
         setSnackbar({ open: true, message: 'Estado actualizado correctamente.', severity: 'success' })
     }
@@ -499,7 +515,6 @@ const ListarAnticipoExcedente = () => {
                             ) : (
                                 paginatedAnticipos.map((anticipo) => {
                                     const excedente = parseFloat(anticipo.valorAnticipo || 0) - parseFloat(anticipo.valorGastado || 0)
-const _estadoStyle = ESTADO_COLORS[anticipo.estado] || { bg: '#F5F5F5', color: '#757575' }
 
                                     return (
                                         <TableRow
@@ -575,16 +590,12 @@ const _estadoStyle = ESTADO_COLORS[anticipo.estado] || { bg: '#F5F5F5', color: '
                                                     <CircularProgress size={20} sx={{ color: COLORS.primary }} />
                                                 ) : (
                                                     <Select
-                                                        value={anticipo.habilitado === false ? '__inhabilitado__' : anticipo.estado || 'entregado'}
+                                                        value={anticipo.habilitado === false ? 'Inactivo' : anticipo.estado || 'entregado'}
                                                         onChange={(e) => handleCambiarEstado(anticipo.idAnticipoExcedente, e.target.value)}
                                                         size="small"
                                                         fullWidth
                                                         renderValue={(val) => {
-                                                            const isInhabilitado = val === '__inhabilitado__'
-                                                            const style = isInhabilitado
-                                                                ? ESTADO_COLORS['inhabilitado']
-                                                                : (ESTADO_COLORS[val] || { bg: '#F5F5F5', color: '#757575' })
-                                                            const label = isInhabilitado ? 'Inhabilitado' : val
+                                                            const style = getEstadoColor(val)
                                                             return (
                                                                 <Box sx={{
                                                                     display: 'inline-flex',
@@ -597,23 +608,21 @@ const _estadoStyle = ESTADO_COLORS[anticipo.estado] || { bg: '#F5F5F5', color: '
                                                                     fontWeight: 600,
                                                                     fontSize: '0.7rem',
                                                                 }}>
-                                                                    {label.charAt(0).toUpperCase() + label.slice(1)}
+                                                                    {String(val).charAt(0).toUpperCase() + String(val).slice(1)}
                                                                 </Box>
                                                             )
                                                         }}
+                                                        IconComponent={KeyboardArrowDownOutlinedIcon}
                                                         sx={{
-                                                            backgroundColor: anticipo.habilitado === false
-                                                                ? ESTADO_COLORS['inhabilitado'].bg
-                                                                : (_estadoStyle.bg || '#F5F5F5'),
-                                                            color: anticipo.habilitado === false
-                                                                ? ESTADO_COLORS['inhabilitado'].color
-                                                                : (_estadoStyle.color || '#757575'),
+                                                            backgroundColor: '#ffffff',
+                                                            color: '#1a0e0c',
                                                             fontSize: '0.72rem',
                                                             fontWeight: 600,
                                                             height: 26,
-                                                            borderRadius: 10,
+                                                            borderRadius: 0,
+                                                            border: '1px solid #E0E0E0',
                                                             '& .MuiSelect-select': {
-                                                                py: 0.5,
+                                                                py: 0.8,
                                                                 px: 1,
                                                                 display: 'flex',
                                                                 alignItems: 'center',
@@ -628,9 +637,7 @@ const _estadoStyle = ESTADO_COLORS[anticipo.estado] || { bg: '#F5F5F5', color: '
                                                                 border: 'none',
                                                             },
                                                             '& .MuiSelect-icon': {
-                                                                color: anticipo.habilitado === false
-                                                                    ? ESTADO_COLORS['inhabilitado'].color
-                                                                    : (_estadoStyle.color || '#757575'),
+                                                                color: '#8A94A6',
                                                                 fontSize: 18,
                                                             },
                                                         }}
@@ -646,61 +653,26 @@ const _estadoStyle = ESTADO_COLORS[anticipo.estado] || { bg: '#F5F5F5', color: '
                                                             },
                                                         }}
                                                     >
-                                                        {anticipo.habilitado === false ? (
-                                                            <MenuItem value="__habilitar__" dense>
-                                                                <Box sx={{
-                                                                    display: 'inline-flex',
-                                                                    alignItems: 'center',
-                                                                    backgroundColor: ESTADO_COLORS['habilitado'].bg,
-                                                                    color: ESTADO_COLORS['habilitado'].color,
-                                                                    px: 1.2,
-                                                                    py: 0.2,
-                                                                    borderRadius: 8,
-                                                                    fontWeight: 600,
-                                                                    fontSize: '0.7rem',
-                                                                }}>
-                                                                    Habilitar
-                                                                </Box>
-                                                            </MenuItem>
-                                                        ) : (
-                                                            <>
-                                                                {FILTROS_ANTICIPO.slice(1).map(est => {
-                                                                    const estStyles = ESTADO_COLORS[est.value] || { bg: '#F5F5F5', color: '#757575' }
-                                                                    return (
-                                                                        <MenuItem key={est.value} value={est.value} dense>
-                                                                            <Box sx={{
-                                                                                display: 'inline-flex',
-                                                                                alignItems: 'center',
-                                                                                backgroundColor: estStyles.bg,
-                                                                                color: estStyles.color,
-                                                                                px: 1.2,
-                                                                                py: 0.2,
-                                                                                borderRadius: 8,
-                                                                                fontWeight: 600,
-                                                                                fontSize: '0.7rem',
-                                                                            }}>
-                                                                                {est.label}
-                                                                            </Box>
-                                                                        </MenuItem>
-                                                                    )
-                                                                })}
-                                                                <MenuItem value="__inhabilitar__" dense>
+                                                        {[...FILTROS_ANTICIPO.slice(1).map(est => est.value), 'Activo', 'Inactivo'].map(estado => {
+                                                            const style = getEstadoColor(estado)
+                                                            return (
+                                                                <MenuItem key={estado} value={estado} dense>
                                                                     <Box sx={{
                                                                         display: 'inline-flex',
                                                                         alignItems: 'center',
-                                                                        backgroundColor: ESTADO_COLORS['inhabilitado'].bg,
-                                                                        color: ESTADO_COLORS['inhabilitado'].color,
+                                                                        backgroundColor: style.bg,
+                                                                        color: style.color,
                                                                         px: 1.2,
                                                                         py: 0.2,
                                                                         borderRadius: 8,
                                                                         fontWeight: 600,
                                                                         fontSize: '0.7rem',
                                                                     }}>
-                                                                        Inhabilitar
+                                                                        {String(estado).charAt(0).toUpperCase() + String(estado).slice(1)}
                                                                     </Box>
                                                                 </MenuItem>
-                                                            </>
-                                                        )}
+                                                            )
+                                                        })}
                                                     </Select>
                                                 )}
                                             </TableCell>
@@ -835,9 +807,9 @@ const _estadoStyle = ESTADO_COLORS[anticipo.estado] || { bg: '#F5F5F5', color: '
 
             <ModalConsultar anticipo={anticipoConsulta} onClose={() => setAnticipoConsulta(null)} />
 
-            <RegistrarAnticipoExcedente 
-                open={modalRegistrarOpen} 
-                onClose={() => setModalRegistrarOpen(false)} 
+            <RegistrarAnticipoExcedente
+                open={modalRegistrarOpen}
+                onClose={() => setModalRegistrarOpen(false)}
                 onSuccess={() => {
                     setSnackbar({ open: true, message: 'Anticipo registrado correctamente', severity: 'success' })
                 }}
@@ -858,10 +830,10 @@ const _estadoStyle = ESTADO_COLORS[anticipo.estado] || { bg: '#F5F5F5', color: '
                 onClose={() => setSnackbar({ ...snackbar, open: false })}
                 anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
             >
-                <Alert 
-                    severity={snackbar.severity} 
+                <Alert
+                    severity={snackbar.severity}
                     variant="filled"
-                    sx={{ 
+                    sx={{
                         fontWeight: 600,
                         borderRadius: 2,
                         boxShadow: '0 4px 12px rgba(0,0,0,0.15)',

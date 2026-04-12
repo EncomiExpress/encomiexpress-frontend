@@ -397,11 +397,15 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
         }
     }
 
+    if (!open) return null
+
     if (!form || !anticipoOriginal) {
         return (
-            <Box sx={{ p: 3.5, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 300 }}>
-                <Typography color={COLORS.textMuted}>Cargando datos del anticipo...</Typography>
-            </Box>
+            <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+                <Box sx={{ p: 3.5, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 300 }}>
+                    <Typography color={COLORS.textMuted}>Cargando datos del anticipo...</Typography>
+                </Box>
+            </Dialog>
         )
     }
 

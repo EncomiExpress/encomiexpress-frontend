@@ -22,7 +22,7 @@ import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined'
 import PaymentOutlinedIcon from '@mui/icons-material/PaymentOutlined'
 import ClearIcon from '@mui/icons-material/Clear'
-import { ESTADOS_ENCOMIENDA, METODOS_PAGO } from '../../Context/VentaContext'
+import { ESTADOS_ENCOMIENDA, METODOS_PAGO, ESTADOS_PAGO } from '../../Context/VentaContext'
 import RegistrarVenta from './RegistrarVenta'
 import ActualizarVenta from './ActualizarVenta'
 
@@ -47,13 +47,15 @@ const thStyle = {
 }
 
 const getEstadoColor = (estado) => {
-    switch (estado) {
+    switch (estado?.toLowerCase()) {
         case 'pendiente de recogida': return { bg: '#FEF3C7', color: '#92400E' }
         case 'en recogida': return { bg: '#DBEAFE', color: '#1E40AF' }
         case 'programada': return { bg: '#E0E7FF', color: '#3730A3' }
         case 'en tránsito': return { bg: '#CFFAFE', color: '#155E75' }
-        case 'entregado': return { bg: '#D1FAE5', color: '#065F46' }
-        case 'devuelto': return { bg: '#FEE2E2', color: '#991B1B' }
+        case 'entregado': return { bg: '#E8F5E9', color: '#2E7D32' }
+        case 'devuelto': return { bg: '#FFF4E5', color: '#BF360C' }
+        case 'activo': return { bg: 'transparent', color: '#10b981' }
+        case 'inactivo': return { bg: 'transparent', color: '#dc2626' }
         default: return { bg: '#F3F4F6', color: '#6B7280' }
     }
 }
@@ -245,7 +247,7 @@ const FILTROS_HABILITADO = [
 
 // ── Componente principal ──
 const ListarVenta = () => {
-    const { ventas, loading, error, invalidateVenta, cambiarEstadoVenta } = useVentas()
+    const { ventas, loading, error, invalidateVenta, cambiarEstadoVenta, actualizarVenta } = useVentas()
 
     const [busqueda, setBusqueda] = useState('')
     const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
@@ -293,7 +295,15 @@ const ListarVenta = () => {
 
     const handleEstadoChange = async (id, nuevoEstado) => {
         try {
-            await cambiarEstadoVenta(id, nuevoEstado)
+            if (nuevoEstado.toLowerCase() === 'activo' || nuevoEstado.toLowerCase() === 'inactivo') {
+                await actualizarVenta(id, {
+                    estado: nuevoEstado.toLowerCase(),
+                    habilitado: nuevoEstado.toLowerCase() === 'activo'
+                })
+            } else {
+                await cambiarEstadoVenta(id, nuevoEstado)
+            }
+
             setSnackbar({
                 open: true,
                 message: `Estado actualizado a ${nuevoEstado.charAt(0).toUpperCase() + nuevoEstado.slice(1)}.`,
@@ -303,6 +313,23 @@ const ListarVenta = () => {
             setSnackbar({
                 open: true,
                 message: err.message || 'Error al cambiar el estado de la encomienda.',
+                severity: 'error',
+            })
+        }
+    }
+
+    const handlePagoChange = async (id, nuevoPago) => {
+        try {
+            await actualizarVenta(id, { estadoPago: nuevoPago })
+            setSnackbar({
+                open: true,
+                message: `Estado de pago actualizado a ${nuevoPago}.`,
+                severity: 'success',
+            })
+        } catch (err) {
+            setSnackbar({
+                open: true,
+                message: err.message || 'Error al cambiar el estado de pago.',
                 severity: 'error',
             })
         }
@@ -619,44 +646,163 @@ const ListarVenta = () => {
                                             </TableCell>
 
                                             {/* Estado encomienda */}
-                                            <TableCell sx={{ py: 1.5 }}>
-                                                <FormControl size="small" sx={{ minWidth: 140 }}>
-                                                    <Select
-                                                        value={venta.estado || ''}
-                                                        onChange={(e) => handleEstadoChange(venta.idEncomiendaVenta, e.target.value)}
-                                                        IconComponent={KeyboardArrowDownOutlinedIcon}
-                                                        sx={{
-                                                            fontSize: '0.75rem',
-                                                            py: 0.5,
-                                                            backgroundColor: getEstadoColor(venta.estado).bg,
-                                                            color: getEstadoColor(venta.estado).color,
-                                                            fontWeight: 600,
-                                                        }}
-                                                        MenuProps={filterMenuProps}
-                                                    >
-                                                        {ESTADOS_ENCOMIENDA.map(estado => (
-                                                            <MenuItem key={estado} value={estado}>
-                                                                {estado.charAt(0).toUpperCase() + estado.slice(1)}
+                                            <TableCell sx={{ py: 1.5, minWidth: 140 }}>
+                                                <Select
+                                                    value={venta.estado || ''}
+                                                    onChange={(e) => handleEstadoChange(venta.idEncomiendaVenta, e.target.value)}
+                                                    size="small"
+                                                    fullWidth
+                                                    renderValue={(val) => {
+                                                        const style = getEstadoColor(val)
+                                                        return (
+                                                            <Box sx={{
+                                                                display: 'inline-flex',
+                                                                alignItems: 'center',
+                                                                backgroundColor: style.bg,
+                                                                color: style.color,
+                                                                px: 1.2,
+                                                                py: 0.2,
+                                                                borderRadius: 8,
+                                                                fontWeight: 600,
+                                                                fontSize: '0.7rem',
+                                                            }}>
+                                                                {val ? val.charAt(0).toUpperCase() + val.slice(1) : '—'}
+                                                            </Box>
+                                                        )
+                                                    }}
+                                                    IconComponent={KeyboardArrowDownOutlinedIcon}
+                                                    sx={{
+                                                        backgroundColor: '#ffffff',
+                                                        color: '#1a0e0c',
+                                                        fontSize: '0.72rem',
+                                                        fontWeight: 600,
+                                                        height: 26,
+                                                        borderRadius: 0,
+                                                        border: '1px solid #E0E0E0',
+                                                        '& .MuiSelect-select': {
+                                                            py: 0.8,
+                                                            px: 1,
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                        },
+                                                        '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
+                                                        '&:hover .MuiOutlinedInput-notchedOutline': { border: 'none' },
+                                                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': { border: 'none' },
+                                                        '& .MuiSelect-icon': { color: '#8A94A6', fontSize: 18 },
+                                                    }}
+                                                    MenuProps={{
+                                                        slotProps: {
+                                                            paper: {
+                                                                sx: {
+                                                                    borderRadius: 2,
+                                                                    boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+                                                                    mt: 0.5,
+                                                                },
+                                                            },
+                                                        },
+                                                    }}
+                                                >
+                                                    {ESTADOS_ENCOMIENDA.map(estado => {
+                                                        const optionStyles = getEstadoColor(estado)
+                                                        return (
+                                                            <MenuItem key={estado} value={estado} dense>
+                                                                <Box sx={{
+                                                                    display: 'inline-flex',
+                                                                    alignItems: 'center',
+                                                                    backgroundColor: optionStyles.bg,
+                                                                    color: optionStyles.color,
+                                                                    px: 1.2,
+                                                                    py: 0.2,
+                                                                    borderRadius: 8,
+                                                                    fontWeight: 600,
+                                                                    fontSize: '0.7rem',
+                                                                }}>
+                                                                    {estado.charAt(0).toUpperCase() + estado.slice(1)}
+                                                                </Box>
                                                             </MenuItem>
-                                                        ))}
-                                                    </Select>
-                                                </FormControl>
+                                                        )
+                                                    })}
+                                                </Select>
                                             </TableCell>
 
                                             {/* Estado pago */}
-                                            <TableCell sx={{ py: 1.5 }}>
-                                                <Chip
-                                                    label={venta.estadoPago}
+                                            <TableCell sx={{ py: 1.5, minWidth: 140 }}>
+                                                <Select
+                                                    value={venta.estadoPago || ESTADOS_PAGO[0]}
+                                                    onChange={(e) => handlePagoChange(venta.idEncomiendaVenta, e.target.value)}
                                                     size="small"
-                                                    sx={{
-                                                        backgroundColor: pagoStyles.bg,
-                                                        color: pagoStyles.color,
-                                                        fontSize: '0.7rem',
-                                                        fontWeight: 600,
-                                                        height: 22,
-                                                        borderRadius: 10,
+                                                    fullWidth
+                                                    renderValue={(val) => {
+                                                        const style = getPagoColor(val)
+                                                        return (
+                                                            <Box sx={{
+                                                                display: 'inline-flex',
+                                                                alignItems: 'center',
+                                                                backgroundColor: style.bg,
+                                                                color: style.color,
+                                                                px: 1.2,
+                                                                py: 0.2,
+                                                                borderRadius: 8,
+                                                                fontWeight: 600,
+                                                                fontSize: '0.7rem',
+                                                            }}>
+                                                                {val}
+                                                            </Box>
+                                                        )
                                                     }}
-                                                />
+                                                    IconComponent={KeyboardArrowDownOutlinedIcon}
+                                                    sx={{
+                                                        backgroundColor: '#ffffff',
+                                                        color: '#1a0e0c',
+                                                        fontSize: '0.72rem',
+                                                        fontWeight: 600,
+                                                        height: 26,
+                                                        borderRadius: 0,
+                                                        border: '1px solid #E0E0E0',
+                                                        '& .MuiSelect-select': {
+                                                            py: 0.8,
+                                                            px: 1.3,
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                        },
+                                                        '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
+                                                        '&:hover .MuiOutlinedInput-notchedOutline': { border: 'none' },
+                                                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': { border: 'none' },
+                                                        '& .MuiSelect-icon': { color: '#8A94A6', fontSize: 18 },
+                                                    }}
+                                                    MenuProps={{
+                                                        slotProps: {
+                                                            paper: {
+                                                                sx: {
+                                                                    borderRadius: 2,
+                                                                    boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+                                                                    mt: 0.5,
+                                                                },
+                                                            },
+                                                        },
+                                                    }}
+                                                >
+                                                    {ESTADOS_PAGO.map(estado => {
+                                                        const optionStyles = getPagoColor(estado)
+                                                        return (
+                                                            <MenuItem key={estado} value={estado} dense>
+                                                                <Box sx={{
+                                                                    display: 'inline-flex',
+                                                                    alignItems: 'center',
+                                                                    backgroundColor: optionStyles.bg,
+                                                                    color: optionStyles.color,
+                                                                    px: 1.2,
+                                                                    py: 0.2,
+                                                                    borderRadius: 8,
+                                                                    fontWeight: 600,
+                                                                    fontSize: '0.7rem',
+                                                                }}>
+                                                                    {estado}
+                                                                </Box>
+                                                            </MenuItem>
+                                                        )
+                                                    })}
+                                                </Select>
                                             </TableCell>
 
                                             {/* Total */}
@@ -826,7 +972,7 @@ const ListarVenta = () => {
                 <Alert
                     severity={snackbar.severity}
                     variant="filled"
-                    sx={{ 
+                    sx={{
                         fontWeight: 600,
                         borderRadius: 2,
                         boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
