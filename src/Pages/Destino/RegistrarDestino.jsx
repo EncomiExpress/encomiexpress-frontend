@@ -215,16 +215,16 @@ const RegistrarDestino = ({ open, onClose, onSuccess }) => {
     return (
         <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth
             slotProps={{ paper: { sx: { borderRadius: 3, maxHeight: '90vh' } } }}>
-            <DialogTitle sx={{ m: 0, p: 2, pb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${COLORS.border}` }}>
+            <DialogTitle sx={{ m: 0, p: 2, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${COLORS.border}` }}>
                 <Box>
-                    <Typography variant="h5" fontWeight={700} color={COLORS.text}>
+                    <Typography variant="h6" fontWeight={700}>
                         Registrar Destino
                     </Typography>
-                    <Typography variant="body2" color={COLORS.textMuted}>
+                    <Typography variant="body2" color={COLORS.textMuted} sx={{ mt: 0.5, ml: 0.5 }}>
                         Complete los datos del nuevo destino paso a paso.
                     </Typography>
                 </Box>
-                <IconButton onClick={handleClose} size="small">
+                <IconButton onClick={handleClose} sx={{ color: '#8A94A6' }}>
                     <CloseIcon />
                 </IconButton>
             </DialogTitle>
@@ -248,15 +248,13 @@ const RegistrarDestino = ({ open, onClose, onSuccess }) => {
                     {steps.map(label => <Step key={label}><StepLabel>{label}</StepLabel></Step>)}
                 </Stepper>
 
-                <Box sx={{ px: 4, py: 3.5 }}>
-                    <Box sx={{ maxWidth: 700, mx: 'auto' }}>
-                        {renderStepContent()}
-                    </Box>
+                <Box sx={{ maxWidth: 700, mx: 'auto', mt: 3 }}>
+                    {renderStepContent()}
                 </Box>
 
                 <Box sx={{
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    px: 4, py: 2.5, borderTop: `1px solid ${COLORS.border}`, backgroundColor: '#FAFAFA',
+                    mt: 3, pt: 2, borderTop: `1px solid ${COLORS.border}`,
                 }}>
                     <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined"
                         startIcon={<ArrowBackOutlinedIcon />} disableRipple
@@ -287,6 +285,7 @@ const RegistrarDestino = ({ open, onClose, onSuccess }) => {
                                 backgroundColor: COLORS.primary,
                                 boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
                                 '&:hover': { backgroundColor: '#b91c1c', boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
+                                '&.Mui-disabled': { backgroundColor: '#E0E0E0', color: '#9E9E9E' },
                             }}>
                             {activeStep < steps.length - 1 ? 'Siguiente' : submitting ? 'Registrando...' : 'Registrar'}
                         </Button>

@@ -1,13 +1,17 @@
 import { useState } from 'react'
-import { Box, TextField, Typography, Paper, MenuItem, Dialog, DialogTitle, DialogContent, Stepper, Step, StepLabel, Snackbar, Alert, IconButton } from '@mui/material'
-import { DirectionsCar, Person, Business, Event, Speed, Close } from '@mui/icons-material'
+import { Box, TextField, Typography, MenuItem, Dialog, DialogTitle, DialogContent, Stepper, Step, StepLabel, Snackbar, Alert, IconButton, Button } from '@mui/material'
+import { DirectionsCar, Person, Business, Event, Speed, Close, ArrowBackOutlined, SaveOutlined } from '@mui/icons-material'
 import { useTransporte } from '../../Context/TransporteContext'
-import { 
-  theme, FormField, FormSelect, PrimaryButton, SecondaryButton, 
-  FormAlert, FormHeader, FormFieldsContainer, FormButtonGroup 
-} from '../../Components/FormularioEstandarizado'
+import { FormField, FormSelect, FormAlert, FormFieldsContainer } from '../../Components/FormularioEstandarizado'
 
 const steps = ['Datos del Vehículo', 'Documentación y Estado']
+
+const COLORS = {
+  primary: '#CC1818',
+  border: '#E0E0E0',
+  text: '#1a0e0c',
+  textMuted: '#8A94A6',
+}
 
 const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
@@ -250,74 +254,91 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth
       slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}>
-      <DialogTitle sx={{ m: 0, p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Box sx={{
-            width: 40,
-            height: 40,
-            borderRadius: 2,
-            background: 'linear-gradient(135deg, #CC1818 0%, #dc2626 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}>
-            <DirectionsCar sx={{ color: 'white', fontSize: 22 }} />
+      <DialogTitle sx={{ m: 0, p: 2, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${COLORS.border}` }}>
+        <Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Typography variant="h6" fontWeight={700}>Registrar Vehículo</Typography>
           </Box>
-          <Typography variant="h6" fontWeight={700}>Registrar Vehículo</Typography>
+          <Typography variant="body2" color={COLORS.textMuted} sx={{ mt: 0.5, ml: 0.5 }}>
+            Ingresa los datos del nuevo vehículo
+          </Typography>
         </Box>
         <IconButton onClick={handleClose} sx={{ color: '#8A94A6' }}>
           <Close />
         </IconButton>
       </DialogTitle>
-      <DialogContent sx={{ p: 3 }}>
+      <DialogContent sx={{ p: 3, pt: 1.5 }}>
         {error && (
           <FormAlert>
             {error}
           </FormAlert>
         )}
 
-        <Stepper activeStep={activeStep} sx={{ mb: 3 }} alternativeLabel>
+        <Stepper activeStep={activeStep} alternativeLabel
+          sx={{
+            mb: 3, mt: 2,
+            '& .MuiStepIcon-root': { color: '#E0E0E0' },
+            '& .MuiStepIcon-root.Mui-active': { color: COLORS.primary },
+            '& .MuiStepIcon-root.Mui-completed': { color: COLORS.primary },
+            '& .MuiStepIcon-text': { fill: 'white', fontSize: '0.7rem', fontWeight: 700 },
+            '& .MuiStepConnector-line': { borderColor: COLORS.border },
+            '& .MuiStepConnector-root.Mui-active .MuiStepConnector-line': { borderColor: COLORS.primary },
+            '& .MuiStepConnector-root.Mui-completed .MuiStepConnector-line': { borderColor: COLORS.primary },
+            '& .MuiStepLabel-label': { fontSize: '0.8rem', color: COLORS.textMuted, mt: 0.5 },
+            '& .MuiStepLabel-label.Mui-active': { color: COLORS.text, fontWeight: 600 },
+            '& .MuiStepLabel-label.Mui-completed': { color: COLORS.primary, fontWeight: 500 },
+          }}
+        >
           {steps.map((label, index) => (
             <Step key={label}>
-              <StepLabel 
-                sx={{ 
-                  '& .MuiStepLabel-label': { 
-                    fontWeight: activeStep === index ? 600 : 400,
-                    color: activeStep === index ? theme.primary : '#64748b'
-                  } 
-                }}
-              >
-                {label}
-              </StepLabel>
+              <StepLabel>{label}</StepLabel>
             </Step>
           ))}
         </Stepper>
 
         <form onSubmit={handleSubmit}>
-          {renderStepContent()}
+          <Box sx={{ maxWidth: 700, mx: 'auto' }}>
+            {renderStepContent()}
 
-          <FormButtonGroup justify="space-between">
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <SecondaryButton 
-                onClick={handleBack} 
-                disabled={activeStep === 0}
-                children="Anterior"
-              />
+            <Box sx={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              mt: 3, pt: 2, borderTop: `1px solid ${COLORS.border}`,
+            }}>
+              <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined"
+                startIcon={<ArrowBackOutlined />} disableRipple
+                sx={{
+                  textTransform: 'none', borderRadius: 2, borderColor: COLORS.border,
+                  color: COLORS.text, fontWeight: 500,
+                  '&:hover': { borderColor: '#BDBDBD', backgroundColor: '#F9F9F9' },
+                  '&.Mui-disabled': { borderColor: COLORS.border, color: COLORS.textMuted },
+                }}>
+                Anterior
+              </Button>
+              <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                <Button onClick={handleClose} disableRipple
+                  sx={{
+                    textTransform: 'none', color: COLORS.textMuted, fontWeight: 500, borderRadius: 2,
+                    '&:hover': { backgroundColor: '#F9F9F9', color: COLORS.text },
+                  }}>
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={activeStep < steps.length - 1 ? handleNext : handleSubmit}
+                  variant="contained"
+                  endIcon={activeStep < steps.length - 1 ? undefined : <SaveOutlined />}
+                  disableRipple
+                  sx={{
+                    textTransform: 'none', borderRadius: 2, fontWeight: 600,
+                    backgroundColor: COLORS.primary,
+                    boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
+                    '&:hover': { backgroundColor: '#b91c1c', boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
+                    '&.Mui-disabled': { backgroundColor: '#E0E0E0', color: '#9E9E9E' },
+                  }}>
+                  {activeStep < steps.length - 1 ? 'Siguiente' : 'Registrar'}
+                </Button>
+              </Box>
             </Box>
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              {activeStep < steps.length - 1 ? (
-                <PrimaryButton 
-                  onClick={handleNext}
-                  children="Siguiente"
-                />
-              ) : (
-                <PrimaryButton 
-                  type="submit"
-                  children="Registrar"
-                />
-              )}
-            </Box>
-          </FormButtonGroup>
+          </Box>
         </form>
       </DialogContent>
 
