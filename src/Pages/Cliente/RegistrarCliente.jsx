@@ -109,16 +109,16 @@ const RegistrarCliente = ({ open, onClose, onSuccess }) => {
         const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
         if (step === 0) {
+            if (!form.tipoIdentificacion) e.tipoIdentificacion = 'Selecciona un tipo de documento'
+
+            if (!form.numeroIdentificacion.trim()) e.numeroIdentificacion = 'El número de documento es obligatorio'
+            else if (!soloNumeros.test(form.numeroIdentificacion)) e.numeroIdentificacion = 'Solo se permiten números'
+
             if (!form.nombre.trim()) e.nombre = 'El nombre es obligatorio'
             else if (!soloLetras.test(form.nombre)) e.nombre = 'El nombre solo puede contener letras'
 
             if (!form.apellido.trim()) e.apellido = 'El apellido es obligatorio'
             else if (!soloLetras.test(form.apellido)) e.apellido = 'El apellido solo puede contener letras'
-
-            if (!form.tipoIdentificacion) e.tipoIdentificacion = 'Selecciona un tipo de documento'
-
-            if (!form.numeroIdentificacion.trim()) e.numeroIdentificacion = 'El número de documento es obligatorio'
-            else if (!soloNumeros.test(form.numeroIdentificacion)) e.numeroIdentificacion = 'Solo se permiten números'
         }
 
         if (step === 1) {
@@ -176,12 +176,6 @@ const RegistrarCliente = ({ open, onClose, onSuccess }) => {
             case 0:
                 return (
                     <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
-                        <FormField label="Nombres" name="nombre" value={form.nombre} onChange={handleChange}
-                            required error={errores.nombre} helperText={errores.nombre} icon={PersonOutlinedIcon}
-                            inputProps={{ maxLength: 50 }} />
-                        <FormField label="Apellidos" name="apellido" value={form.apellido} onChange={handleChange}
-                            required error={errores.apellido} helperText={errores.apellido} icon={PersonOutlinedIcon}
-                            inputProps={{ maxLength: 50 }} />
                         <FormSelect label="Tipo de documento" name="tipoIdentificacion" value={form.tipoIdentificacion}
                             onChange={handleChange} required error={errores.tipoIdentificacion} helperText={errores.tipoIdentificacion}>
                             <MenuItem value="CC">Cédula de Ciudadanía (CC)</MenuItem>
@@ -195,6 +189,12 @@ const RegistrarCliente = ({ open, onClose, onSuccess }) => {
                             onChange={handleChange} required error={errores.numeroIdentificacion}
                             helperText={errores.numeroIdentificacion} icon={BadgeOutlinedIcon}
                             inputProps={{ maxLength: 15 }} />
+                        <FormField label="Nombres" name="nombre" value={form.nombre} onChange={handleChange}
+                            required error={errores.nombre} helperText={errores.nombre} icon={PersonOutlinedIcon}
+                            inputProps={{ maxLength: 50 }} />
+                        <FormField label="Apellidos" name="apellido" value={form.apellido} onChange={handleChange}
+                            required error={errores.apellido} helperText={errores.apellido} icon={PersonOutlinedIcon}
+                            inputProps={{ maxLength: 50 }} />
                     </Box>
                 )
             case 1:
