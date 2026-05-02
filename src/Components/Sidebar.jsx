@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Box, Typography, Collapse } from '@mui/material'
 import {
   DashboardOutlined as DashboardIcon,
@@ -204,6 +204,7 @@ const SectionLabel = ({ label, isOpen, onClick }) => (
 // ─── Sidebar ────────────────────────────────────────────────────────────────
 const Sidebar = () => {
   const location = useLocation()
+  const navigate = useNavigate()
   const [openSections, setOpenSections] = useState(
     SECTIONS.reduce((acc, section) => ({ ...acc, [section.id]: true }), {})
   )
@@ -211,6 +212,11 @@ const Sidebar = () => {
 
   const toggleSection = (sectionId) => {
     setOpenSections(prev => ({ ...prev, [sectionId]: !prev[sectionId] }))
+  }
+
+  const handleLogout = () => {
+    logout()
+    navigate('/')
   }
 
   return (
@@ -290,7 +296,7 @@ const Sidebar = () => {
             </Typography>
           </Box>
           <Box
-            onClick={logout}
+            onClick={handleLogout}
             sx={{
               cursor: 'pointer',
               p: 0.5,

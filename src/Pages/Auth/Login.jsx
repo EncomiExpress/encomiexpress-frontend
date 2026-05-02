@@ -13,7 +13,7 @@ import {
   ArrowBack
 } from '@mui/icons-material'
 import { useAuth, ROLES } from '../../Context/AuthContext'
-import { LoadingScreen, TIPOS_CARGA } from '../LoadingScreen'
+import { LoadingScreen, TIPOS_CARGA } from '../../Components/LoadingScreen'
 import logo from '../../assets/logo.png'
 
 const Login = () => {

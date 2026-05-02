@@ -58,6 +58,9 @@ export const PERMISOS = {
   INHABILITAR_CLIENTE: 'inhabilitar_cliente',
   INHABILITAR_USUARIO: 'inhabilitar_usuario',
   INHABILITAR_VENTA: 'inhabilitar_venta',
+  
+  // Permiso general para gestión de transporte (conductores, propietarios, rutas, destinos, vehiculos)
+  GESTION_TRANSPORTE: 'gestion_transporte',
 }
 
 // Definición de módulos para asignación por módulos
