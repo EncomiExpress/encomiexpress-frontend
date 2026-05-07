@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAnticipos, conductoresMock, rutasMock } from '../../Context/AnticipoExcedenteContext'
+import { useAuth } from '../../Context/AuthContext'
 import {
     Box, Typography, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, TextField,
@@ -272,6 +273,7 @@ const ModalConsultar = ({ anticipo, onClose }) => {
 // ── Componente principal ──
 const ListarAnticipoExcedente = () => {
     const { anticipos, toggleHabilitado, cambiarEstado } = useAnticipos()
+    const { tienePermiso, PERMISOS } = useAuth()
 
     const [busqueda, setBusqueda] = useState('')
     const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
@@ -363,26 +365,28 @@ const ListarAnticipoExcedente = () => {
                     <Typography variant="body2" color={COLORS.textMuted} mt={0.3}>
                         Gestiona los anticipos y excedentes de los conductores.
                     </Typography>
-                </Box>
-                <Button
-                    onClick={() => setModalRegistrarOpen(true)}
-                    variant="contained"
-                    startIcon={<AddOutlinedIcon />}
-                    sx={{
-                        backgroundColor: COLORS.primary,
-                        borderRadius: 2,
-                        textTransform: 'none',
-                        fontWeight: 600,
-                        boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
-                        '&:hover': {
-                            backgroundColor: '#b91c1c',
-                            boxShadow: '0 6px 20px rgba(204,24,24,0.2)',
-                        },
-                    }}
-                >
-                    Nuevo anticipo
-                </Button>
-            </Box>
+                 </Box>
+                 {tienePermiso(PERMISOS.REGISTRAR_ANTICIPO) && (
+                     <Button
+                         onClick={() => setModalRegistrarOpen(true)}
+                         variant="contained"
+                         startIcon={<AddOutlinedIcon />}
+                         sx={{
+                             backgroundColor: COLORS.primary,
+                             borderRadius: 2,
+                             textTransform: 'none',
+                             fontWeight: 600,
+                             boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
+                             '&:hover': {
+                                 backgroundColor: '#b91c1c',
+                                 boxShadow: '0 6px 20px rgba(204,24,24,0.2)',
+                             },
+                         }}
+                     >
+                         Nuevo anticipo
+                     </Button>
+                 )}
+             </Box>
 
             {/* ── Filtros de estado ── */}
             <Box sx={{
@@ -680,19 +684,23 @@ const ListarAnticipoExcedente = () => {
                                             {/* Acciones */}
                                             <TableCell sx={{ py: 1.5 }}>
                                                 <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                                    <Tooltip title="Ver detalle">
-                                                        <IconButton size="small" onClick={() => setAnticipoConsulta(anticipo)}
-                                                            sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}>
-                                                            <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
-                                                        </IconButton>
-                                                    </Tooltip>
-                                                    <Tooltip title="Editar">
-                                                        <IconButton size="small"
-                                                            onClick={() => { setAnticipoEditar(anticipo); setModalActualizarOpen(true) }}
-                                                            sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}>
-                                                            <EditOutlinedIcon sx={{ fontSize: 18 }} />
-                                                        </IconButton>
-                                                    </Tooltip>
+                                                    {tienePermiso(PERMISOS.CONSULTAR_ANTICIPO) && (
+                                                        <Tooltip title="Ver detalle">
+                                                            <IconButton size="small" onClick={() => setAnticipoConsulta(anticipo)}
+                                                                sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}>
+                                                                <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                    )}
+                                                    {tienePermiso(PERMISOS.ACTUALIZAR_ANTICIPO) && (
+                                                        <Tooltip title="Editar">
+                                                            <IconButton size="small"
+                                                                onClick={() => { setAnticipoEditar(anticipo); setModalActualizarOpen(true) }}
+                                                                sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}>
+                                                                <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                    )}
                                                 </Box>
                                             </TableCell>
                                         </TableRow>

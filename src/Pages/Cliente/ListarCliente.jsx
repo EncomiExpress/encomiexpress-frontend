@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useClientes } from '../../Context/ClienteContext'
+import { useAuth } from '../../Context/AuthContext'
 import {
     Box, Typography, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, TextField,
@@ -161,6 +162,7 @@ const FILTROS = [
 // ── Componente principal ──
 const ListarCliente = () => {
     const { clientes, loading, error, actualizarEstadoCliente } = useClientes()
+    const { tienePermiso, PERMISOS } = useAuth()
     const [busqueda, setBusqueda] = useState('')
     const [filtroEstado, setFiltroEstado] = useState('todo')
     const [page, setPage] = useState(1)
@@ -244,26 +246,28 @@ const ListarCliente = () => {
                     <Typography variant="body2" color={COLORS.textMuted} mt={0.3}>
                         Gestiona los clientes registrados en el sistema.
                     </Typography>
-                </Box>
-                <Button
-                    onClick={() => setModalRegistrarOpen(true)}
-                    variant="contained"
-                    startIcon={<AddOutlinedIcon />}
-                    sx={{
-                        backgroundColor: COLORS.primary,
-                        borderRadius: 2,
-                        textTransform: 'none',
-                        fontWeight: 600,
-                        boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
-                        '&:hover': {
-                            backgroundColor: '#b91c1c',
-                            boxShadow: '0 6px 20px rgba(204,24,24,0.2)',
-                        },
-                    }}
-                >
-                    Nuevo cliente
-                </Button>
-            </Box>
+                 </Box>
+                 {tienePermiso(PERMISOS.REGISTRAR_CLIENTE) && (
+                     <Button
+                         onClick={() => setModalRegistrarOpen(true)}
+                         variant="contained"
+                         startIcon={<AddOutlinedIcon />}
+                         sx={{
+                             backgroundColor: COLORS.primary,
+                             borderRadius: 2,
+                             textTransform: 'none',
+                             fontWeight: 600,
+                             boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
+                             '&:hover': {
+                                 backgroundColor: '#b91c1c',
+                                 boxShadow: '0 6px 20px rgba(204,24,24,0.2)',
+                             },
+                         }}
+                     >
+                         Nuevo cliente
+                     </Button>
+                 )}
+             </Box>
 
             {/* ── Alerta de error de carga ── */}
             {error && (
@@ -479,62 +483,79 @@ const ListarCliente = () => {
 
                                         {/* Estado */}
                                         <TableCell sx={{ py: 1.5 }}>
-                                            <FormControl size="small" sx={{ minWidth: 120 }}>
-                                                <Select
-                                                    value={cliente.habilitado ? 'Activo' : 'Inactivo'}
-                                                    onChange={(e) => handleEstadoChange(cliente.idCliente, e.target.value)}
-                                                    IconComponent={KeyboardArrowDownOutlinedIcon}
-                                                    sx={{
-                                                        fontSize: '0.75rem',
-                                                        py: 0.5,
-                                                        color: cliente.habilitado ? '#10b981' : '#dc2626',
-                                                    }}
-                                                    MenuProps={{
-                                                        slotProps: {
-                                                            paper: {
-                                                                sx: {
-                                                                    borderRadius: 2,
-                                                                    boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
-                                                                    mt: 0.5,
-                                                                    '& .MuiMenuItem-root': {
-                                                                        fontSize: '0.82rem',
-                                                                        py: 0.9,
-                                                                        px: 2,
-                                                                        '&:hover': { backgroundColor: '#FFF5F5' },
+                                            {tienePermiso(PERMISOS.INHABILITAR_CLIENTE) ? (
+                                                <FormControl size="small" sx={{ minWidth: 120 }}>
+                                                    <Select
+                                                        value={cliente.habilitado ? 'Activo' : 'Inactivo'}
+                                                        onChange={(e) => handleEstadoChange(cliente.idCliente, e.target.value)}
+                                                        IconComponent={KeyboardArrowDownOutlinedIcon}
+                                                        sx={{
+                                                            fontSize: '0.75rem',
+                                                            py: 0.5,
+                                                            color: cliente.habilitado ? '#10b981' : '#dc2626',
+                                                        }}
+                                                        MenuProps={{
+                                                            slotProps: {
+                                                                paper: {
+                                                                    sx: {
+                                                                        borderRadius: 2,
+                                                                        boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+                                                                        mt: 0.5,
+                                                                        '& .MuiMenuItem-root': {
+                                                                            fontSize: '0.82rem',
+                                                                            py: 0.9,
+                                                                            px: 2,
+                                                                            '&:hover': { backgroundColor: '#FFF5F5' },
+                                                                        },
                                                                     },
                                                                 },
                                                             },
-                                                        },
+                                                        }}
+                                                    >
+                                                        {ESTADOS.map(estado => (
+                                                            <MenuItem key={estado} value={estado}>{estado}</MenuItem>
+                                                        ))}
+                                                    </Select>
+                                                </FormControl>
+                                            ) : (
+                                                <Chip
+                                                    label={cliente.habilitado ? 'Activo' : 'Inactivo'}
+                                                    size="small"
+                                                    sx={{
+                                                        backgroundColor: cliente.habilitado ? '#DCFCE7' : '#F3F4F6',
+                                                        color: cliente.habilitado ? '#16A34A' : '#9CA3AF',
+                                                        fontWeight: 600, fontSize: '0.72rem',
+                                                        height: 22, borderRadius: 10, border: 'none',
                                                     }}
-                                                >
-                                                    {ESTADOS.map(estado => (
-                                                        <MenuItem key={estado} value={estado}>{estado}</MenuItem>
-                                                    ))}
-                                                </Select>
-                                            </FormControl>
+                                                />
+                                            )}
                                         </TableCell>
 
                                         {/* Acciones */}
                                         <TableCell sx={{ py: 1.5 }}>
                                             <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                                <Tooltip title="Ver detalle">
-                                                    <IconButton
-                                                        size="small"
-                                                        onClick={() => setClienteConsulta(cliente)}
-                                                        sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}
-                                                    >
-                                                        <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
-                                                    </IconButton>
-                                                </Tooltip>
-                                                <Tooltip title="Editar">
-                                                    <IconButton
-                                                        size="small"
-                                                        onClick={() => { setClienteEditar(cliente); setModalActualizarOpen(true) }}
-                                                        sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}
-                                                    >
-                                                        <EditOutlinedIcon sx={{ fontSize: 18 }} />
-                                                    </IconButton>
-                                                </Tooltip>
+                                                {tienePermiso(PERMISOS.CONSULTAR_CLIENTE) && (
+                                                    <Tooltip title="Ver detalle">
+                                                        <IconButton
+                                                            size="small"
+                                                            onClick={() => setClienteConsulta(cliente)}
+                                                            sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}
+                                                        >
+                                                            <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                )}
+                                                {tienePermiso(PERMISOS.ACTUALIZAR_CLIENTE) && (
+                                                    <Tooltip title="Editar">
+                                                        <IconButton
+                                                            size="small"
+                                                            onClick={() => { setClienteEditar(cliente); setModalActualizarOpen(true) }}
+                                                            sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}
+                                                        >
+                                                            <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                )}
                                             </Box>
                                         </TableCell>
                                     </TableRow>

@@ -16,7 +16,12 @@ export const ClienteProvider = ({ children }) => {
     useEffect(() => {
         clienteService.getClientes()
             .then(res => setClientes(res.data.map(normalize)))
-            .catch(err => setError(err.message))
+            .catch(err => {
+                // Silenciar 403 — usuario sin permiso
+                if (err.status !== 403) {
+                    setError(err.message)
+                }
+            })
             .finally(() => setLoading(false))
     }, [])
 

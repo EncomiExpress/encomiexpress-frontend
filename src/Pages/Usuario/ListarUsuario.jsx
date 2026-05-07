@@ -164,7 +164,7 @@ const FILTROS = [
 ]
 
 const ListarUsuario = () => {
-    const { tienePermiso, PERMISOS, getUsuarios } = useAuth()
+    const { tienePermiso, PERMISOS, getUsuarios, habilitarInhabilitarUsuario } = useAuth()
     
     const [usuarios, setUsuarios] = useState([])
     const [loading, setLoading] = useState(true)
@@ -183,8 +183,8 @@ const ListarUsuario = () => {
     const cargarUsuarios = async () => {
         setLoading(true)
         try {
-            const data = await getUsuarios()
-            setUsuarios(data)
+            const respuesta = await getUsuarios()
+            setUsuarios(Array.isArray(respuesta.data) ? respuesta.data : [])
         } catch (err) {
             setError(err.message)
         } finally {
@@ -202,10 +202,10 @@ const ListarUsuario = () => {
 
     const handleEstadoChange = async (id, nuevoEstado) => {
         try {
-            const nuevosUsuarios = usuarios.map(u => 
-                u.id === id ? { ...u, habilitado: nuevoEstado === 'Activo' } : u
-            )
-            setUsuarios(nuevosUsuarios)
+            await habilitarInhabilitarUsuario(id)
+            setUsuarios(prev => prev.map(u => 
+                u.idUsuario === id ? { ...u, habilitado: nuevoEstado === 'Activo' } : u
+            ))
             setSnackbar({ open: true, message: `Estado actualizado a ${nuevoEstado}`, severity: 'success' })
         } catch (err) {
             setSnackbar({ open: true, message: 'Error al cambiar el estado', severity: 'error' })
@@ -452,7 +452,7 @@ const ListarUsuario = () => {
                             ) : (
                                 paginatedUsuarios.map(usuario => (
                                     <TableRow
-                                        key={usuario.id}
+                                        key={usuario.idUsuario}
                                         sx={{
                                             '&:hover': { backgroundColor: COLORS.hoverBg },
                                             transition: 'background-color 0.15s',
@@ -509,61 +509,78 @@ const ListarUsuario = () => {
                                         </TableCell>
 
                                         <TableCell sx={{ py: 1.5 }}>
-                                            <FormControl size="small" sx={{ minWidth: 120 }}>
-                                                <Select
-                                                    value={usuario.habilitado ? 'Activo' : 'Inactivo'}
-                                                    onChange={(e) => handleEstadoChange(usuario.id, e.target.value)}
-                                                    IconComponent={KeyboardArrowDownOutlinedIcon}
-                                                    sx={{
-                                                        fontSize: '0.75rem',
-                                                        py: 0.5,
-                                                        color: usuario.habilitado ? '#10b981' : '#dc2626',
-                                                    }}
-                                                    MenuProps={{
-                                                        slotProps: {
-                                                            paper: {
-                                                                sx: {
-                                                                    borderRadius: 2,
-                                                                    boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
-                                                                    mt: 0.5,
-                                                                    '& .MuiMenuItem-root': {
-                                                                        fontSize: '0.82rem',
-                                                                        py: 0.9,
-                                                                        px: 2,
-                                                                        '&:hover': { backgroundColor: '#FFF5F5' },
+                                            {tienePermiso(PERMISOS.INHABILITAR_USUARIO) ? (
+                                                <FormControl size="small" sx={{ minWidth: 120 }}>
+                                                    <Select
+                                                        value={usuario.habilitado ? 'Activo' : 'Inactivo'}
+                                                        onChange={(e) => handleEstadoChange(usuario.idUsuario, e.target.value)}
+                                                        IconComponent={KeyboardArrowDownOutlinedIcon}
+                                                        sx={{
+                                                            fontSize: '0.75rem',
+                                                            py: 0.5,
+                                                            color: usuario.habilitado ? '#10b981' : '#dc2626',
+                                                        }}
+                                                        MenuProps={{
+                                                            slotProps: {
+                                                                paper: {
+                                                                    sx: {
+                                                                        borderRadius: 2,
+                                                                        boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+                                                                        mt: 0.5,
+                                                                        '& .MuiMenuItem-root': {
+                                                                            fontSize: '0.82rem',
+                                                                            py: 0.9,
+                                                                            px: 2,
+                                                                            '&:hover': { backgroundColor: '#FFF5F5' },
+                                                                        },
                                                                     },
                                                                 },
                                                             },
-                                                        },
+                                                        }}
+                                                    >
+                                                        {ESTADOS.map(estado => (
+                                                            <MenuItem key={estado} value={estado}>{estado}</MenuItem>
+                                                        ))}
+                                                    </Select>
+                                                </FormControl>
+                                            ) : (
+                                                <Chip
+                                                    label={usuario.habilitado ? 'Activo' : 'Inactivo'}
+                                                    size="small"
+                                                    sx={{
+                                                        backgroundColor: usuario.habilitado ? '#DCFCE7' : '#F3F4F6',
+                                                        color: usuario.habilitado ? '#16A34A' : '#9CA3AF',
+                                                        fontWeight: 600, fontSize: '0.72rem',
+                                                        height: 22, borderRadius: 10, border: 'none',
                                                     }}
-                                                >
-                                                    {ESTADOS.map(estado => (
-                                                        <MenuItem key={estado} value={estado}>{estado}</MenuItem>
-                                                    ))}
-                                                </Select>
-                                            </FormControl>
+                                                />
+                                            )}
                                         </TableCell>
 
                                         <TableCell sx={{ py: 1.5 }}>
                                             <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                                <Tooltip title="Ver detalle">
-                                                    <IconButton
-                                                        size="small"
-                                                        onClick={() => setUsuarioConsulta(usuario)}
-                                                        sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}
-                                                    >
-                                                        <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
-                                                    </IconButton>
-                                                </Tooltip>
-                                                <Tooltip title="Editar">
-                                                    <IconButton
-                                                        size="small"
-                                                        onClick={() => { setUsuarioEditar(usuario); setModalActualizarOpen(true) }}
-                                                        sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}
-                                                    >
-                                                        <EditOutlinedIcon sx={{ fontSize: 18 }} />
-                                                    </IconButton>
-                                                </Tooltip>
+                                                {tienePermiso(PERMISOS.CONSULTAR_USUARIO) && (
+                                                    <Tooltip title="Ver detalle">
+                                                        <IconButton
+                                                            size="small"
+                                                            onClick={() => setUsuarioConsulta(usuario)}
+                                                            sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}
+                                                        >
+                                                            <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                )}
+                                                {tienePermiso(PERMISOS.ACTUALIZAR_USUARIO) && (
+                                                    <Tooltip title="Editar">
+                                                        <IconButton
+                                                            size="small"
+                                                            onClick={() => { setUsuarioEditar(usuario); setModalActualizarOpen(true) }}
+                                                            sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}
+                                                        >
+                                                            <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                )}
                                             </Box>
                                         </TableCell>
                                     </TableRow>

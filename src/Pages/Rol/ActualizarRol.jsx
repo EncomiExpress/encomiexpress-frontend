@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Box, Typography, Paper, FormControlLabel, Checkbox, Grid, Alert, Snackbar, Dialog, DialogTitle, DialogContent, IconButton, Button } from '@mui/material'
 import { Security, Close } from '@mui/icons-material'
-import { MODULOS, ROLES } from '../../Context/AuthContext'
+import { MODULOS, ROLES, useAuth } from '../../Context/AuthContext'
 import { 
   FormField, PrimaryButton, SecondaryButton, 
   FormButtonGroup 
@@ -24,45 +24,73 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
   })
   const [mensaje, setMensaje] = useState('')
   const [error, setError] = useState('')
+  const [permisosDisponibles, setPermisosDisponibles] = useState([])
 
-  useEffect(() => {
-    if (rolProp) {
-      setFormData({
-        nombre: rolProp.nombre || '',
-        permisos: rolProp.permisos || []
-      })
-    }
-  }, [rolProp])
+  const { getPermisosBackend, actualizarRolBackend } = useAuth()
 
   const modulos = Object.entries(MODULOS)
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    
-    if (!formData.nombre.trim()) {
-      setError('El nombre del rol es requerido')
-      return
+  // Cargar permisos disponibles desde el backend al montar
+  useEffect(() => {
+    const cargarPermisos = async () => {
+      const respuesta = await getPermisosBackend()
+      if (respuesta.success) {
+        setPermisosDisponibles(respuesta.data || [])
+      }
     }
+    cargarPermisos()
+  }, [getPermisosBackend])
 
-    if (formData.permisos.length === 0) {
-      setError('Debe seleccionar al menos un permiso')
-      return
-    }
+   useEffect(() => {
+     if (rolProp) {
+       console.log('rolProp recibido:', rolProp)
+       console.log('rolProp.permisos:', rolProp.permisos)
+       setFormData({
+         nombre: rolProp.nombre || '',
+         permisos: (rolProp.permisos || []).map(p => typeof p === 'string' ? p : p.nombre)
+       })
+     }
+   }, [rolProp])
 
-    try {
-      setMensaje('Rol actualizado exitosamente')
-      setTimeout(() => {
+    const handleSubmit = async (e) => {
+      e.preventDefault()
+      
+      if (!formData.nombre.trim()) {
+        setError('El nombre del rol es requerido')
+        return
+      }
+
+      if (formData.permisos.length === 0) {
+        setError('Debe seleccionar al menos un permiso')
+        return
+      }
+
+      setMensaje('')
+      setError('')
+
+      // Convertir nombres de permisos a IDs numéricos
+      const idsPermisos = formData.permisos
+        .map(nombrePermiso => {
+          const permiso = permisosDisponibles.find(p => p.nombre === nombrePermiso)
+          return permiso ? permiso.idPermiso || permiso.id : null
+        })
+        .filter(id => id !== null)
+
+      console.log('permisos seleccionados:', formData.permisos)
+      console.log('permisosDisponibles:', permisosDisponibles)
+      console.log('idsPermisos enviados:', idsPermisos)
+
+      console.log('Enviando actualización - rolId:', rolProp.idRol || rolProp.id, 'permisos IDs:', idsPermisos)
+
+      const respuesta = await actualizarRolBackend(rolProp.idRol || rolProp.id, formData.nombre, idsPermisos)
+      
+      if (respuesta.success) {
+        onSuccess && onSuccess()
         onClose()
-        if (onSuccess) onSuccess()
-      }, 1500)
-    } catch (err) {
-      setError(err.message || 'Error al actualizar el rol')
+      } else {
+        setError(respuesta.message || 'Error al actualizar el rol')
+      }
     }
-  }
-
-  const handleCancelar = () => {
-    onClose()
-  }
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth
@@ -202,32 +230,27 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
             }}>
               <Box />
               <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
-                <Button onClick={handleCancelar} disableRipple
+                <Button onClick={onClose} disableRipple
                   sx={{
                     textTransform: 'none', color: COLORS.textMuted, fontWeight: 500, borderRadius: 2,
                     '&:hover': { backgroundColor: COLORS.hoverBg, color: COLORS.text },
                   }}>
                   Cancelar
                 </Button>
-                <Button type="submit" variant="contained" disableRipple
+          <Button type="submit" variant="contained" disableRipple
                   sx={{
                     textTransform: 'none', borderRadius: 2, fontWeight: 600,
                     backgroundColor: COLORS.primary,
                     boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
                     '&:hover': { backgroundColor: '#b91c1c', boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
-                  }}>
+                  }}
+                >
                   Actualizar Rol
-                </Button>
+                  </Button>
+                </Box>
               </Box>
-            </Box>
-        </form>
-      </DialogContent>
-
-      <Snackbar open={!!mensaje} autoHideDuration={2500} onClose={() => setMensaje('')} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-        <Alert severity="success" variant="filled" sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }} onClose={() => setMensaje('')}>
-          ¡Rol actualizado exitosamente!
-        </Alert>
-      </Snackbar>
+             </form>
+          </DialogContent>
     </Dialog>
   )
 }

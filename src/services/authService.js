@@ -1,8 +1,8 @@
 import { API_URL } from '../config/api';
 
 // Clave para storing el token en localStorage
-const TOKEN_KEY = 'encomi_token';
-const USER_KEY = 'encomi_usuario';
+const TOKEN_KEY = 'token';
+const USER_KEY = 'usuario';
 
 // Obtener token del localStorage
 export const getToken = () => localStorage.getItem(TOKEN_KEY);
@@ -43,20 +43,32 @@ export const fetchWithAuth = async (endpoint, options = {}) => {
     headers,
   });
 
-  // Token expirado o inválido → limpiar sesión y redirigir al login
-  if (response.status === 401) {
-    clearAuthData();
-    window.location.href = '/login';
-    throw new Error('Sesión expirada. Por favor inicia sesión de nuevo.');
-  }
+   // Token expirado o inválido → limpiar sesión y redirigir al login
+   if (response.status === 401) {
+     clearAuthData();
+     window.location.href = '/login';
+     throw new Error('Sesión expirada. Por favor inicia sesión de nuevo.');
+   }
 
-  const data = await response.json();
+   // Sin permisos (403) — no redirigir, solo lanzar error para que el contexto lo maneje
+   if (response.status === 403) {
+     throw new Error('403 - No tienes permisos para esta acción');
+   }
 
-  if (!response.ok) {
-    throw new Error(data.message || 'Error en la petición');
-  }
+   const data = await response.json();
 
-  return data;
+   // Sin permisos (403) — no redirigir, lanzar error con status para identificación silenciosa
+   if (response.status === 403) {
+     const error = new Error('Sin permisos')
+     error.status = 403
+     throw error
+   }
+
+   if (!response.ok) {
+     throw new Error(data.message || 'Error en la petición')
+   }
+
+   return data;
 };
 
 // ============================================
@@ -199,6 +211,73 @@ export const habilitarInhabilitarUsuario = async (id) => {
 };
 
 // ============================================
+// FUNCIONES DE ROLES
+// ============================================
+
+/**
+ * Obtener todos los roles
+ * GET /api/roles
+ */
+export const getRoles = async () => {
+  return await fetchWithAuth('/roles', {
+    method: 'GET',
+  });
+};
+
+/**
+ * Obtener rol por ID
+ * GET /api/roles/:id
+ */
+export const getRolById = async (id) => {
+  return await fetchWithAuth(`/roles/${id}`, {
+    method: 'GET',
+  });
+};
+
+/**
+ * Obtener todos los permisos disponibles
+ * GET /api/roles/permisos
+ */
+export const getAllPermisos = async () => {
+  return await fetchWithAuth('/roles/permisos', {
+    method: 'GET',
+  });
+};
+
+/**
+ * Crear nuevo rol
+ * POST /api/roles
+ */
+export const crearRol = async (rolData) => {
+  return await fetchWithAuth('/roles', {
+    method: 'POST',
+    body: JSON.stringify(rolData),
+  });
+};
+
+/**
+ * Actualizar rol
+ * PUT /api/roles/:id
+ */
+export const actualizarRol = async (id, rolData) => {
+  return await fetchWithAuth(`/roles/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(rolData),
+  });
+};
+
+/**
+ * Eliminar (deshabilitar) rol
+ * DELETE /api/roles/:id
+ */
+export const eliminarRol = async (id) => {
+  return await fetchWithAuth(`/roles/${id}`, {
+    method: 'DELETE',
+  });
+};
+
+
+// ============================================
 // MAPEO DE ROLES
 // ============================================
 
@@ -230,4 +309,11 @@ export default {
   getUsuarios,
   actualizarUsuario,
   habilitarInhabilitarUsuario,
+  // Funciones de roles
+  getRoles,
+  getRolById,
+  getAllPermisos,
+  crearRol,
+  actualizarRol,
+  eliminarRol,
 };

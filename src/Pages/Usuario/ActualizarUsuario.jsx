@@ -59,31 +59,32 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
         confirmarPassword: '',
     })
 
-    useEffect(() => {
-        if (open && usuarioProp) {
-            setActiveStep(0)
-            setErrores({})
-            setSinCambios(false)
-            const usuario = usuarioProp
-            const atIdx = usuario.email ? usuario.email.lastIndexOf('@') : -1
-            const emailLocal = atIdx >= 0 ? usuario.email.slice(0, atIdx) : usuario.email || ''
-            const rawDominio = atIdx >= 0 ? '@' + usuario.email.slice(atIdx + 1) : ''
-            const emailDominio = DOMINIOS_EMAIL.includes(rawDominio) ? rawDominio : '@gmail.com'
+     useEffect(() => {
+         if (open && usuarioProp) {
+             setActiveStep(0)
+             setErrores({})
+             setSinCambios(false)
+             const usuario = usuarioProp
+             const atIdx = usuario.email ? usuario.email.lastIndexOf('@') : -1
+             const emailLocal = atIdx >= 0 ? usuario.email.slice(0, atIdx) : usuario.email || ''
+             const rawDominio = atIdx >= 0 ? '@' + usuario.email.slice(atIdx + 1) : ''
+             const emailDominio = DOMINIOS_EMAIL.includes(rawDominio) ? rawDominio : '@gmail.com'
 
-            const rolId = Object.values(ROLES).find(r => r.nombre === usuario.rol?.nombre)?.id || ''
+             const rolId = Object.values(ROLES).find(r => r.nombre === usuario.rol?.nombre)?.id || ''
+             console.log('ActualizarUsuario - usuario.rol:', usuario.rol, '| rolId encontrado:', rolId)
 
-            const datosForm = {
-                ...usuario,
-                emailLocal,
-                emailDominio,
-                idRol: rolId,
-                password: '',
-                confirmarPassword: '',
-            }
-            setForm(datosForm)
-            setFormOriginal(datosForm)
-        }
-    }, [open, usuarioProp])
+             const datosForm = {
+                 ...usuario,
+                 emailLocal,
+                 emailDominio,
+                 idRol: rolId,
+                 password: '',
+                 confirmarPassword: '',
+             }
+             setForm(datosForm)
+             setFormOriginal(datosForm)
+         }
+     }, [open, usuarioProp])
 
     const handleChange = (e) => {
         const { name } = e.target
@@ -189,6 +190,8 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
         setSubmitting(true)
         setApiError(null)
         try {
+            console.log('ActualizarUsuario - usuarioProp completo:', usuarioProp)
+            console.log('ActualizarUsuario - idUsuario:', usuarioProp?.idUsuario)
             const datosBackend = {
                 nombre: form.nombre,
                 apellido: form.apellido,
@@ -203,7 +206,7 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
                 datosBackend.password = form.password
             }
 
-            await actualizarUsuario(usuarioProp.id, datosBackend)
+            await actualizarUsuario(usuarioProp.idUsuario, datosBackend)
             setExito(true)
             setTimeout(() => {
                 onClose()

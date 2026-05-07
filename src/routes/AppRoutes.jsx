@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
+import { Box } from '@mui/material'
 import Layout from '../components/Layout.jsx'
 import LayoutAdmin from '../components/LayoutAdmin.jsx'
 import { useAuth } from '../Context/AuthContext.jsx'
@@ -128,25 +129,25 @@ const AppRoutes = () => {
       <Route path="/vehiculos/registrar" element={<PrivateRoute permisosRequeridos={[PERMISOS.REGISTRAR_VEHICULO]}><RegistrarVehiculo /></PrivateRoute>} />
       <Route path="/vehiculos/actualizar/:id" element={<PrivateRoute permisosRequeridos={[PERMISOS.ACTUALIZAR_VEHICULO]}><ActualizarVehiculo /></PrivateRoute>} />
 
-      {/* Transporte - Propietarios */}
-      <Route path="/transporte/propietarios" element={<PrivateRoute permisosRequeridos={[PERMISOS.GESTION_TRANSPORTE]}><ListarPropietario /></PrivateRoute>} />
-      <Route path="/transporte/propietarios/registrar" element={<PrivateRoute permisosRequeridos={[PERMISOS.GESTION_TRANSPORTE]}><RegistrarPropietario /></PrivateRoute>} />
-      <Route path="/transporte/propietarios/actualizar/:id" element={<PrivateRoute permisosRequeridos={[PERMISOS.GESTION_TRANSPORTE]}><ActualizarPropietario /></PrivateRoute>} />
+       {/* Transporte - Propietarios */}
+       <Route path="/transporte/propietarios" element={<PrivateRoute permisosRequeridos={[PERMISOS.GESTION_TRANSPORTE]}><ListarPropietario /></PrivateRoute>} />
+       <Route path="/transporte/propietarios/registrar" element={<PrivateRoute permisosRequeridos={[PERMISOS.GESTION_TRANSPORTE]}><RegistrarPropietario /></PrivateRoute>} />
+       <Route path="/transporte/propietarios/actualizar/:id" element={<PrivateRoute permisosRequeridos={[PERMISOS.GESTION_TRANSPORTE]}><ActualizarPropietario /></PrivateRoute>} />
 
-      {/* Transporte - Conductores */}
-      <Route path="/transporte/conductores" element={<PrivateRoute permisosRequeridos={[PERMISOS.GESTION_TRANSPORTE]}><ListarConductor /></PrivateRoute>} />
-      <Route path="/transporte/conductores/registrar" element={<PrivateRoute permisosRequeridos={[PERMISOS.GESTION_TRANSPORTE]}><RegistrarConductor /></PrivateRoute>} />
-      <Route path="/transporte/conductores/actualizar/:id" element={<PrivateRoute permisosRequeridos={[PERMISOS.GESTION_TRANSPORTE]}><ActualizarConductor /></PrivateRoute>} />
+       {/* Transporte - Conductores */}
+       <Route path="/transporte/conductores" element={<PrivateRoute permisosRequeridos={[PERMISOS.LISTAR_CONDUCTOR]}><ListarConductor /></PrivateRoute>} />
+       <Route path="/transporte/conductores/registrar" element={<PrivateRoute permisosRequeridos={[PERMISOS.REGISTRAR_CONDUCTOR]}><RegistrarConductor /></PrivateRoute>} />
+       <Route path="/transporte/conductores/actualizar/:id" element={<PrivateRoute permisosRequeridos={[PERMISOS.ACTUALIZAR_CONDUCTOR]}><ActualizarConductor /></PrivateRoute>} />
 
-      {/* Transporte - Destinos */}
-      <Route path="/transporte/destinos" element={<PrivateRoute permisosRequeridos={[PERMISOS.GESTION_TRANSPORTE]}><ListarDestino /></PrivateRoute>} />
-      <Route path="/transporte/destinos/registrar" element={<PrivateRoute permisosRequeridos={[PERMISOS.GESTION_TRANSPORTE]}><RegistrarDestino /></PrivateRoute>} />
-      <Route path="/transporte/destinos/actualizar/:id" element={<PrivateRoute permisosRequeridos={[PERMISOS.GESTION_TRANSPORTE]}><ActualizarDestino /></PrivateRoute>} />
+       {/* Transporte - Destinos */}
+       <Route path="/transporte/destinos" element={<PrivateRoute permisosRequeridos={[PERMISOS.LISTAR_DESTINO]}><ListarDestino /></PrivateRoute>} />
+       <Route path="/transporte/destinos/registrar" element={<PrivateRoute permisosRequeridos={[PERMISOS.REGISTRAR_DESTINO]}><RegistrarDestino /></PrivateRoute>} />
+       <Route path="/transporte/destinos/actualizar/:id" element={<PrivateRoute permisosRequeridos={[PERMISOS.ACTUALIZAR_DESTINO]}><ActualizarDestino /></PrivateRoute>} />
 
-      {/* Transporte - Rutas */}
-      <Route path="/transporte/rutas" element={<PrivateRoute permisosRequeridos={[PERMISOS.GESTION_TRANSPORTE]}><ListarRutaProgramacion /></PrivateRoute>} />
-      <Route path="/transporte/rutas/registrar" element={<PrivateRoute permisosRequeridos={[PERMISOS.GESTION_TRANSPORTE]}><RegistrarRutaProgramacion /></PrivateRoute>} />
-      <Route path="/transporte/rutas/actualizar/:id" element={<PrivateRoute permisosRequeridos={[PERMISOS.GESTION_TRANSPORTE]}><ActualizarRutaProgramacion /></PrivateRoute>} />
+       {/* Transporte - Rutas */}
+       <Route path="/transporte/rutas" element={<PrivateRoute permisosRequeridos={[PERMISOS.LISTAR_RUTA]}><ListarRutaProgramacion /></PrivateRoute>} />
+       <Route path="/transporte/rutas/registrar" element={<PrivateRoute permisosRequeridos={[PERMISOS.REGISTRAR_RUTA]}><RegistrarRutaProgramacion /></PrivateRoute>} />
+       <Route path="/transporte/rutas/actualizar/:id" element={<PrivateRoute permisosRequeridos={[PERMISOS.ACTUALIZAR_RUTA]}><ActualizarRutaProgramacion /></PrivateRoute>} />
 
       {/* Ventas */}
       <Route path="/ventas/listar" element={<PrivateRoute permisosRequeridos={[PERMISOS.LISTAR_VENTA]}><ListarVenta /></PrivateRoute>} />

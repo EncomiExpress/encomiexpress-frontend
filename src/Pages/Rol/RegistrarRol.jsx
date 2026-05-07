@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Box, Typography, Paper, FormControlLabel, Checkbox, Grid, Alert, IconButton, Snackbar, Dialog, DialogTitle, DialogContent, Button } from '@mui/material'
 import { Security, Close } from '@mui/icons-material'
 import { useAuth, PERMISOS, MODULOS } from '../../Context/AuthContext'
@@ -18,7 +18,7 @@ const COLORS = {
 }
 
 const RegistrarRol = ({ open, onClose, onSuccess }) => {
-  const { tienePermiso, registrarRol, getRoles } = useAuth()
+  const { tienePermiso, registrarRol, getPermisosBackend } = useAuth()
   
   const [formData, setFormData] = useState({
     nombre: '',
@@ -26,8 +26,66 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
   })
   const [mensaje, setMensaje] = useState('')
   const [error, setError] = useState('')
+  const [permisosDisponibles, setPermisosDisponibles] = useState([])
 
   const modulos = Object.entries(MODULOS)
+
+  // Cargar permisos disponibles desde el backend al montar
+  useEffect(() => {
+    const cargarPermisos = async () => {
+      const respuesta = await getPermisosBackend()
+      if (respuesta.success) {
+        setPermisosDisponibles(respuesta.data || [])
+      }
+    }
+    cargarPermisos()
+  }, [getPermisosBackend])
+
+   const handleSubmit = async (e) => {
+     e.preventDefault()
+     
+     if (!formData.nombre.trim()) {
+       setError('El nombre del rol es requerido')
+       return
+     }
+
+     if (formData.permisos.length === 0) {
+       setError('Debe seleccionar al menos un permiso')
+       return
+     }
+
+     setMensaje('')
+     setError('')
+
+     // Convertir nombres de permisos a IDs numéricos
+     const idsPermisos = formData.permisos
+       .map(nombrePermiso => {
+         const permiso = permisosDisponibles.find(p => p.nombre === nombrePermiso)
+         return permiso ? permiso.idPermiso || permiso.id : null
+       })
+       .filter(id => id !== null)
+
+     console.log('RegistrarRol - idsPermisos:', idsPermisos)
+
+     const respuesta = await registrarRol(formData.nombre, idsPermisos)
+     
+     if (respuesta.success) {
+       onSuccess && onSuccess()
+       handleClose()
+     } else {
+       setError(respuesta.message || 'Error al registrar el rol')
+     }
+   }
+
+  const handleClose = () => {
+    setFormData({
+      nombre: '',
+      permisos: []
+    })
+    setError('')
+    setMensaje('')
+    onClose()
+  }
 
   const getPermisoLabel = (permiso) => {
     const labels = {
@@ -72,40 +130,6 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
       'registrar_venta': 'Registrar',
     }
     return labels[permiso] || permiso
-  }
-
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    
-    if (!formData.nombre) {
-      setError('El nombre del rol es requerido')
-      return
-    }
-
-    if (formData.permisos.length === 0) {
-      setError('Debe seleccionar al menos un permiso')
-      return
-    }
-
-    registrarRol(formData)
-    
-    setMensaje('Rol registrado correctamente')
-    setError('')
-    
-    setTimeout(() => {
-      handleClose()
-      if (onSuccess) onSuccess()
-    }, 1500)
-  }
-
-  const handleClose = () => {
-    setFormData({
-      nombre: '',
-      permisos: []
-    })
-    setError('')
-    setMensaje('')
-    onClose()
   }
 
   if (!tienePermiso(PERMISOS.REGISTRAR_ROL)) {
