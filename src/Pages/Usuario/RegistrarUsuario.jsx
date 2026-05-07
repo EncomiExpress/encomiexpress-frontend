@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Dialog, DialogTitle, DialogContent, IconButton, Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, Snackbar, TextField, Select, InputAdornment, CircularProgress } from '@mui/material'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined'
@@ -38,12 +38,23 @@ const ConfirmRow = ({ label, value }) => (
 )
 
 const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
-    const { tienePermiso, registrarUsuario } = useAuth()
+    const { tienePermiso, registrarUsuario, getRolesBackend } = useAuth()
     const [errores, setErrores] = useState({})
     const [apiError, setApiError] = useState(null)
     const [activeStep, setActiveStep] = useState(0)
     const [submitting, setSubmitting] = useState(false)
     const [exito, setExito] = useState(false)
+    const [rolesDisponibles, setRolesDisponibles] = useState([])
+
+    useEffect(() => {
+        const cargarRoles = async () => {
+            const respuesta = await getRolesBackend()
+            if (respuesta.success) {
+                setRolesDisponibles(respuesta.data || [])
+            }
+        }
+        cargarRoles()
+    }, [getRolesBackend])
 
     const [form, setForm] = useState({
         nombre: '',
@@ -245,28 +256,28 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
                                 htmlInput: { maxLength: 50 }
                             }}
                             sx={formFieldStyles} />
-                        <TextField fullWidth select label="Rol" name="idRol" value={form.idRol} onChange={handleChange}
-                            error={!!errores.idRol} helperText={errores.idRol}
-                            slotProps={{ input: { startAdornment: <InputAdornment position="start"><AssignmentIndOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment> } }}
-                            sx={formFieldStyles}>
-                            {Object.values(ROLES).map((rol) => (
-                                <MenuItem key={rol.id} value={rol.id} sx={{ p: 0, justifyContent: 'flex-start', my: 0.5 }}>
-                                    <Box sx={{
-                                        backgroundColor: '#B91C1C',
-                                        color: 'white',
-                                        px: 1.5,
-                                        py: 0.3,
-                                        borderRadius: 8,
-                                        fontWeight: 600,
-                                        fontSize: '0.75rem',
-                                        display: 'inline-flex',
-                                        ml: 1,
-                                    }}>
-                                        {rol.nombre}
-                                    </Box>
-                                </MenuItem>
-                            ))}
-                        </TextField>
+<TextField fullWidth select label="Rol" name="idRol" value={form.idRol} onChange={handleChange}
+                             error={!!errores.idRol} helperText={errores.idRol}
+                             slotProps={{ input: { startAdornment: <InputAdornment position="start"><AssignmentIndOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment> } }}
+                             sx={formFieldStyles}>
+                             {rolesDisponibles.map((rol) => (
+                                 <MenuItem key={rol.idRol} value={rol.idRol} sx={{ p: 0, justifyContent: 'flex-start', my: 0.5 }}>
+                                     <Box sx={{
+                                         backgroundColor: '#B91C1C',
+                                         color: 'white',
+                                         px: 1.5,
+                                         py: 0.3,
+                                         borderRadius: 8,
+                                         fontWeight: 600,
+                                         fontSize: '0.75rem',
+                                         display: 'inline-flex',
+                                         ml: 1,
+                                     }}>
+                                         {rol.nombre}
+                                     </Box>
+                                 </MenuItem>
+                             ))}
+                         </TextField>
                         <Box sx={{ gridColumn: '1 / -1', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                             <TextField fullWidth label="Contraseña" name="password" type="password"
                                 value={form.password} onChange={handleChange}
@@ -309,7 +320,7 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
                                 <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2 }}>Verifica los datos de acceso</Typography>
                                 <ConfirmRow label="Teléfono" value={form.telefono} />
                                 <ConfirmRow label="Correo" value={form.emailLocal + form.emailDominio} />
-                                <ConfirmRow label="Rol" value={Object.values(ROLES).find(r => r.id === parseInt(form.idRol))?.nombre || form.idRol} />
+                                <ConfirmRow label="Rol" value={rolesDisponibles.find(r => r.idRol === parseInt(form.idRol))?.nombre || form.idRol} />
                             </Paper>
                         </Box>
                     </Box>

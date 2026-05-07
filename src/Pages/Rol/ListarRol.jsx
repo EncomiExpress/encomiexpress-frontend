@@ -238,19 +238,19 @@ const ListarRol = () => {
 
   const puedeRegistrar = tienePermiso(PERMISOS.REGISTRAR_ROL)
 
-  const handleEliminarRol = async (id) => {
-    try {
-      const respuesta = await eliminarRolBackend(id)
-      if (respuesta.success) {
-        setRoles(roles.filter(r => r.id !== id))
-        setSnackbar({ open: true, message: respuesta.message, severity: 'success' })
-      } else {
-        setSnackbar({ open: true, message: respuesta.message || 'Error al eliminar el rol', severity: 'error' })
-      }
-    } catch (error) {
-      setSnackbar({ open: true, message: 'Error al eliminar el rol', severity: 'error' })
-    }
-  }
+const handleInhabilitarRol = async (id) => {
+     try {
+       const respuesta = await eliminarRolBackend(id)
+       if (respuesta.success) {
+         setRoles(roles.filter(r => r.id !== id))
+         setSnackbar({ open: true, message: respuesta.message, severity: 'success' })
+       } else {
+         setSnackbar({ open: true, message: respuesta.message || 'Error al inhabilitar el rol', severity: 'error' })
+       }
+     } catch (error) {
+       setSnackbar({ open: true, message: 'Error al inhabilitar el rol', severity: 'error' })
+     }
+   }
 
   // Cargar roles desde el backend al montar
   useEffect(() => {
@@ -465,20 +465,22 @@ const ListarRol = () => {
                                                               </IconButton>
                                                           </Tooltip>
                                                       )}
-                                                      <Tooltip title="Eliminar">
-                                                         <IconButton
-                                                             size="small"
-                                                             onClick={() => {
-                                                               if (window.confirm(`¿Está seguro de que desea eliminar el rol ${rol.nombre}?`)) {
-                                                                 handleEliminarRol(rol.id)
-                                                               }
-                                                             }}
-                                                             sx={{ color: '#DC2626', '&:hover': { backgroundColor: '#FEE2E2' } }}
-                                                         >
-                                                             <DeleteOutlinedIcon sx={{ fontSize: 18 }} />
-                                                         </IconButton>
-                                                     </Tooltip>
-                                                 </Box>
+{tienePermiso(PERMISOS.INHABILITAR_ROL) && rol.id !== 1 && (
+                           <Tooltip title="Inhabilitar">
+                               <IconButton
+                                   size="small"
+                                   onClick={() => {
+                                     if (window.confirm(`¿Está seguro de que desea inhabilitar el rol ${rol.nombre}?`)) {
+                                       handleInhabilitarRol(rol.id)
+                                     }
+                                   }}
+                                   sx={{ color: '#DC2626', '&:hover': { backgroundColor: '#FEE2E2' } }}
+                                   >
+                                   <DeleteOutlinedIcon sx={{ fontSize: 18 }} />
+                               </IconButton>
+                           </Tooltip>
+                       )}
+                                                  </Box>
                                              </TableCell>
                                         </TableRow>
                                     )
