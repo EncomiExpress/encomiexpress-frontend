@@ -14,16 +14,20 @@ export const ClienteProvider = ({ children }) => {
     const [error, setError] = useState(null)
 
     useEffect(() => {
-        clienteService.getClientes()
-            .then(res => setClientes(res.data.map(normalize)))
-            .catch(err => {
-                // Silenciar 403 — usuario sin permiso
-                if (err.status !== 403) {
-                    setError(err.message)
-                }
-            })
-            .finally(() => setLoading(false))
-    }, [])
+    const token = localStorage.getItem('token')
+    if (!token) {
+        setLoading(false)
+        return
+    }
+    clienteService.getClientes()
+        .then(res => setClientes(res.data.map(normalize)))
+        .catch(err => {
+            if (err.status !== 403) {
+                setError(err.message)
+            }
+        })
+        .finally(() => setLoading(false))
+}, [])
 
     const agregarCliente = async (nuevoCliente) => {
         const res = await clienteService.createCliente(nuevoCliente)
