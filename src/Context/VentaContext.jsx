@@ -34,11 +34,16 @@ export const VentaProvider = ({ children }) => {
   const [error, setError] = useState(null)
 
   useEffect(() => {
+    const token = localStorage.getItem('token')
+    if (!token) {
+        setLoading(false)
+        return
+    }
     ventaService.getEncomiendas()
-      .then(res => setVentas(res.data.map(normalize)))
-      .catch(err => setError(err.message))
-      .finally(() => setLoading(false))
-  }, [])
+        .then(res => setVentas(res.data.map(normalize)))
+        .catch(err => setError(err.message))
+        .finally(() => setLoading(false))
+}, [])
 
   const agregarVenta = async (datos) => {
     const res = await ventaService.createEncomienda(datos)
