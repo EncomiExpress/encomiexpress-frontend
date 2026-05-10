@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { Box, TextField, Button, Typography, Paper, Alert, Grid, MenuItem, Select, FormControl, InputLabel, InputAdornment, IconButton, Divider, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material'
 import {
@@ -24,7 +24,6 @@ const Login = () => {
   const [openRegister, setOpenRegister] = useState(false)
   const [cargando, setCargando] = useState(false)
   const [tipoCarga, setTipoCarga] = useState(TIPOS_CARGA.CIRCULAR)
-  const [yaNavego, setYaNavego] = useState(false)
   const [registerData, setRegisterData] = useState({
     nombre: '',
     email: '',
@@ -38,16 +37,11 @@ const Login = () => {
   const { login, registrarUsuario, usuario } = useAuth()
   const navigate = useNavigate()
 
-  const shouldNavigate = useMemo(() => {
-    return usuario && !cargando && !yaNavego
-  }, [usuario, cargando, yaNavego])
-
   useEffect(() => {
-    if (shouldNavigate && !yaNavego) {
-      setYaNavego(true)
+    if (usuario) {
       navigate('/dashboard')
     }
-  }, [shouldNavigate, yaNavego, navigate])
+  }, [usuario, navigate])
 
   const handleSubmit = async (e) => {
     e.preventDefault()

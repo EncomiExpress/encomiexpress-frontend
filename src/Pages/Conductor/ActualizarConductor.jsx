@@ -37,7 +37,7 @@ const ConfirmRow = ({ label, value }) => (
 )
 
 const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSuccess }) => {
-    const { getConductorById, actualizarConductor } = useConductor()
+    const { getConductorById, actualizarConductorApi, fetchConductores } = useConductor()
     const [exito, setExito] = useState(false)
     const [apiError, setApiError] = useState(null)
     const [errores, setErrores] = useState({})
@@ -157,12 +157,24 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
         setSubmitting(true)
         setApiError(null)
         try {
-            const { emailLocal, emailDominio, ...resto } = form
-            actualizarConductor({
-                idConductor: parseInt(conductorProp?.idConductor),
-                ...resto,
-                email: emailLocal ? emailLocal + emailDominio : ''
-            })
+            const { emailLocal, emailDominio, licenciaConduccion, fechaVencimientoLicencia, ...resto } = form
+            
+            const result = await actualizarConductorApi(
+                parseInt(conductorProp?.idConductor),
+                {
+                    ...resto,
+                    email: emailLocal ? emailLocal + emailDominio : '',
+                    categoriaLicencia: licenciaConduccion,
+                    vencimientoLicencia: fechaVencimientoLicencia
+                }
+            )
+
+            if (result?.success === false) {
+                setApiError(result.message || 'Error al actualizar el conductor')
+                return
+            }
+
+            fetchConductores()
             setExito(true)
             setTimeout(() => {
                 onClose()

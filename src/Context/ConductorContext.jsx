@@ -148,22 +148,33 @@ export const ConductorProvider = ({ children }) => {
     return false
   }, [conductores])
 
-  // Llamadas a API (para cuando esté implementado el backend)
-  const fetchConductores = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const response = await conductorService.getConductores()
-      if (response.success) {
-        setConductores(response.data)
-      }
-    } catch (err) {
-      setError(err.message)
-      console.error('Error fetching conductores:', err)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+// Llamadas a API (para cuando esté implementado el backend)
+   const fetchConductores = useCallback(async () => {
+     setLoading(true)
+     setError(null)
+     try {
+       const response = await conductorService.getConductores()
+       if (response.success) {
+         const datos = response.data.map(c => ({
+           ...c,
+           nombre: c.usuario?.nombre || c.nombre || '',
+           apellido: c.usuario?.apellido || c.apellido || '',
+           telefono: c.usuario?.telefono || c.telefono || '',
+           email: c.usuario?.email || c.email || '',
+           tipoIdentificacion: c.usuario?.tipoIdentificacion || c.tipoIdentificacion || '',
+           numeroIdentificacion: c.usuario?.numeroIdentificacion || c.numeroIdentificacion || '',
+           licenciaConduccion: c.categoriaLicencia || c.licenciaConduccion || '',
+           fechaVencimientoLicencia: c.vencimientoLicencia || c.fechaVencimientoLicencia || '',
+         }))
+         setConductores(datos)
+       }
+     } catch (err) {
+       setError(err.message)
+       console.error('Error fetching conductores:', err)
+     } finally {
+       setLoading(false)
+     }
+   }, [])
 
   const fetchConductorById = useCallback(async (id) => {
     setLoading(true)
@@ -249,7 +260,8 @@ export const ConductorProvider = ({ children }) => {
     fetchConductorById,
     crearConductor,
     actualizarConductorApi,
-    eliminarConductor
+    eliminarConductor,
+    cargarConductores: fetchConductores,
   }
 
   return (
