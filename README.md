@@ -1,4 +1,4 @@
-# EncomiExpress - Panel Web
+# EncomiExpress - Frontend
 
 Panel web administrativo para la gestión operativa de OsvaldoC Mensajería y Logística S.A.S., empresa especializada en el transporte de encomiendas. Diseñada como una herramienta centralizada para administradores, que permite gestionar ventas, encomiendas, rutas, conductores, vehículos y anticipos, complementando la aplicación móvil orientada a la gestión y legalización de anticipos.
 
@@ -42,14 +42,18 @@ src/
 │   └── FormularioEstandarizado.jsx
 ├── Context/                 # Contextos de React (estado global)
 │   ├── AuthContext.jsx      # Autenticación y control de permisos
-│   ├── ClienteContext.jsx
-│   ├── ConductorContext.jsx
-│   ├── VentaContext.jsx
-│   ├── AnticipoExcedenteContext.jsx
-│   └── ... (otros contextos)
+│   ├── ClienteContext.jsx   # Gestión de clientes
+│   ├── ConductorContext.jsx # Gestión de conductores
+│   ├── PropietarioContext.jsx # Gestión de propietarios
+│   ├── DestinoContext.jsx   # Gestión de destinos
+│   ├── RutaProgramacionContext.jsx # Programación de rutas
+│   ├── TransporteContext.jsx # Gestión de transporte y vehículos
+│   ├── VentaContext.jsx     # Gestión de ventas y encomiendas
+│   └── AnticipoExcedenteContext.jsx # Control de anticipos
 ├── Pages/                   # Páginas de la aplicación
 │   ├── Auth/                # Login y registro
 │   ├── Dashboard/           # Panel principal
+│   ├── Home.jsx             # Página de inicio con carrusel y módulos del sistema
 │   ├── Cliente/             # Gestión de clientes
 │   ├── Conductor/           # Gestión de conductores
 │   ├── Propietario/         # Gestión de propietarios
@@ -59,7 +63,8 @@ src/
 │   ├── Usuario/             # Gestión de usuarios
 │   ├── Rol/                 # Gestión de roles y permisos
 │   ├── Venta/               # Gestión de encomiendas/ventas
-│   └── AnticipoExcedente/   # Control de anticipos
+│   ├── AnticipoExcedente/   # Control de anticipos
+│   └── MedicionDesempeno/   # Indicadores de desempeño del sistema
 ├── routes/                  # Configuración de rutas protegidas
 └── services/                # Servicios API
 ```
@@ -151,16 +156,20 @@ VITE_API_URL=http://localhost:3000/api
 ## Instalación
 
 ```bash
-# 1. Instalar dependencias
+# 1. Clonar el repositorio
+git clone https://github.com/EncomiExpress/encomiexpress-frontend.git
+cd encomiexpress-frontend
+
+# 2. Instalar dependencias
 npm install
 
-# 2. Ejecutar servidor de desarrollo
+# 3. Ejecutar servidor de desarrollo
 npm run dev
 
-# 3. Construir para producción
+# 4. Construir para producción
 npm run build
 
-# 4. Previsualizar build de producción
+# 5. Previsualizar build de producción
 npm run preview
 ```
 
