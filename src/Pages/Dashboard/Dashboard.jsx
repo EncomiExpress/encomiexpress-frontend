@@ -7,14 +7,18 @@ import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
 import Inventory2Icon from '@mui/icons-material/Inventory2'
 import { useClientes } from '../../Context/ClienteContext'
 import { useAnticipos } from '../../Context/AnticipoExcedenteContext'
+import { useVentas } from '../../Context/VentaContext'
 
 const Dashboard = () => {
   const { clientes } = useClientes()
   const { anticipos } = useAnticipos()
+  const { ventas } = useVentas()
 
+  // Clientes
   const clientesActivos = clientes.filter(c => c.habilitado !== false).length
   const clientesInactivos = clientes.length - clientesActivos
 
+  // Anticipos
   const anticiposEntregados = anticipos.filter(a => a.estado === 'entregado').length
   const anticiposLegalizados = anticipos.filter(a => a.estado === 'legalizado').length
   const anticiposEnLegalizacion = anticipos.filter(a => a.estado === 'en legalización').length
@@ -23,8 +27,17 @@ const Dashboard = () => {
   const totalGastado = anticipos.reduce((sum, a) => sum + parseFloat(a.valorGastado || 0), 0)
   const totalExcedentes = anticipos.reduce((sum, a) => sum + parseFloat(a.excedente || 0), 0)
 
-  const encomiendasRegistradas = 156
-  const ventasRealizadas = 89
+  // Encomiendas y Ventas — datos reales desde el contexto
+  const ahora = new Date()
+  const mesActual = ahora.getMonth()
+  const anioActual = ahora.getFullYear()
+
+  const encomiendasEsteMes = ventas.filter(v => {
+    const fecha = new Date(v.createdAt || v.fechaRegistro || null)
+    return fecha.getMonth() === mesActual && fecha.getFullYear() === anioActual
+  }).length
+
+  const ventasRealizadas = ventas.filter(v => v.estado === 'entregado').length
 
   const IndicatorCard = ({ title, value, subtitle, icon, color }) => (
     <Paper sx={{ p: 2.5, height: '100%', borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.08)', border: '1px solid #f0f0f0' }}>
@@ -81,7 +94,7 @@ const Dashboard = () => {
         <Grid item xs={12} sm={6} md={3}>
           <IndicatorCard
             title="Encomiendas"
-            value={encomiendasRegistradas}
+            value={encomiendasEsteMes}
             subtitle="Registradas este mes"
             icon={<Inventory2Icon sx={{ fontSize: 32, color: '#CC1818' }} />}
             color="#CC1818"
@@ -120,9 +133,9 @@ const Dashboard = () => {
           </Typography>
         </Box>
 
-        <Grid container spacing={3}>
-          <Grid item xs={12} sm={4}>
-            <Box sx={{ textAlign: 'center', p: 3, backgroundColor: '#f8fafc', borderRadius: 2 }}>
+        <Grid container spacing={3} alignItems="stretch">
+          <Grid item xs={12} sm={4} sx={{ display: 'flex' }}>
+            <Box sx={{ textAlign: 'center', p: 3, backgroundColor: '#f8fafc', borderRadius: 2, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
               <Typography variant="caption" sx={{ textTransform: 'uppercase', fontWeight: 600, color: '#6b7280', fontSize: '0.7rem' }}>
                 Total Anticipos
               </Typography>
@@ -131,8 +144,8 @@ const Dashboard = () => {
               </Typography>
             </Box>
           </Grid>
-          <Grid item xs={12} sm={4}>
-            <Box sx={{ textAlign: 'center', p: 3, backgroundColor: '#f8fafc', borderRadius: 2 }}>
+          <Grid item xs={12} sm={4} sx={{ display: 'flex' }}>
+            <Box sx={{ textAlign: 'center', p: 3, backgroundColor: '#f8fafc', borderRadius: 2, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
               <Typography variant="caption" sx={{ textTransform: 'uppercase', fontWeight: 600, color: '#6b7280', fontSize: '0.7rem' }}>
                 Total Gastado
               </Typography>
@@ -141,8 +154,8 @@ const Dashboard = () => {
               </Typography>
             </Box>
           </Grid>
-          <Grid item xs={12} sm={4}>
-            <Box sx={{ textAlign: 'center', p: 3, backgroundColor: '#f8fafc', borderRadius: 2 }}>
+          <Grid item xs={12} sm={4} sx={{ display: 'flex' }}>
+            <Box sx={{ textAlign: 'center', p: 3, backgroundColor: '#f8fafc', borderRadius: 2, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
               <Typography variant="caption" sx={{ textTransform: 'uppercase', fontWeight: 600, color: '#6b7280', fontSize: '0.7rem' }}>
                 Total Excedentes
               </Typography>

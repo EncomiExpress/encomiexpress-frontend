@@ -10,7 +10,7 @@ import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
 import EventIcon from '@mui/icons-material/Event'
 import NotesIcon from '@mui/icons-material/Notes'
 import CloseIcon from '@mui/icons-material/Close'
-import { useAnticipos, conductoresMock, rutasMock } from '../../Context/AnticipoExcedenteContext'
+import { useAnticipos } from '../../Context/AnticipoExcedenteContext'
 import { FormField, FormSelect, formFieldStyles } from '../../Components/FormularioEstandarizado'
 
 const COLORS = {
@@ -36,7 +36,7 @@ const ConfirmRow = ({ label, value }) => (
 )
 
 const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
-    const { agregarAnticipo } = useAnticipos()
+    const { agregarAnticipo, conductores, rutas } = useAnticipos()
     const [errores, setErrores] = useState({})
     const [activeStep, setActiveStep] = useState(0)
     const [submitting, setSubmitting] = useState(false)
@@ -171,7 +171,7 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
                             error={errores.idConductor}
                             helperText={errores.idConductor}
                         >
-                            {conductoresMock.map(c => (
+                            {conductores.map(c => (
                                 <MenuItem key={c.idConductor} value={c.idConductor}>
                                     {c.nombre}
                                 </MenuItem>
@@ -187,7 +187,7 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
                             error={errores.idRuta}
                             helperText={errores.idRuta}
                         >
-                            {rutasMock.map(r => (
+                            {rutas.map(r => (
                                 <MenuItem key={r.idRuta} value={r.idRuta}>
                                     {r.nombre}
                                 </MenuItem>

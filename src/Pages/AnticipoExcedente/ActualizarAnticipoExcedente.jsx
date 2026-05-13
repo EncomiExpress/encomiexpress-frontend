@@ -6,7 +6,7 @@ import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined'
 import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined'
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
 import CloseIcon from '@mui/icons-material/Close'
-import { useAnticipos, conductoresMock, rutasMock } from '../../Context/AnticipoExcedenteContext'
+import { useAnticipos } from '../../Context/AnticipoExcedenteContext'
 import { FormField, FormSelect, formFieldStyles } from '../../Components/FormularioEstandarizado'
 
 const COLORS = {
@@ -60,7 +60,7 @@ const ConfirmRowChip = ({ label, value, colors }) => (
 )
 
 const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, onSuccess }) => {
-    const { anticipos, actualizarAnticipo } = useAnticipos()
+    const { anticipos, actualizarAnticipo, conductores, rutas } = useAnticipos()
     const [errores, setErrores] = useState({})
     const [activeStep, setActiveStep] = useState(0)
     const [submitting, setSubmitting] = useState(false)
@@ -185,12 +185,12 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
     const excedente = parseFloat(form?.valorAnticipo || 0) - parseFloat(form?.valorGastado || 0)
 
     const getNombreConductor = (id) => {
-        const c = conductoresMock.find(c => c.idConductor === parseInt(id))
+        const c = conductores.find(c => c.idConductor === parseInt(id))
         return c ? c.nombre : '—'
     }
 
     const getNombreRuta = (id) => {
-        const r = rutasMock.find(r => r.idRuta === parseInt(id))
+        const r = rutas.find(r => r.idRuta === parseInt(id))
         return r ? r.nombre : '—'
     }
 
@@ -221,7 +221,7 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
                             error={errores.idConductor}
                             helperText={errores.idConductor}
                         >
-                            {conductoresMock.map(c => (
+                            {conductores.map(c => (
                                 <MenuItem key={c.idConductor} value={c.idConductor}>
                                     {c.nombre}
                                 </MenuItem>
@@ -237,7 +237,7 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
                             error={errores.idRuta}
                             helperText={errores.idRuta}
                         >
-                            {rutasMock.map(r => (
+                            {rutas.map(r => (
                                 <MenuItem key={r.idRuta} value={r.idRuta}>
                                     {r.nombre}
                                 </MenuItem>
