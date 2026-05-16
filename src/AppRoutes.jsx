@@ -41,24 +41,24 @@ import ActualizarVehiculo from './features/vehiculos/pages/ActualizarVehiculo.js
 import ListarVehiculo from './features/vehiculos/pages/ListarVehiculo.jsx'
 
 // Transporte - Propietarios
-import ListarPropietario from './features/transporte/pages/ListarPropietario.jsx'
-import RegistrarPropietario from './features/transporte/pages/RegistrarPropietario.jsx'
-import ActualizarPropietario from './features/transporte/pages/ActualizarPropietario.jsx'
+import ListarPropietario from './features/propietarios/pages/ListarPropietario.jsx'
+import RegistrarPropietario from './features/propietarios/pages/RegistrarPropietario.jsx'
+import ActualizarPropietario from './features/propietarios/pages/ActualizarPropietario.jsx'
 
 // Transporte - Conductores
-import ListarConductor from './features/transporte/pages/ListarConductor.jsx'
-import RegistrarConductor from './features/transporte/pages/RegistrarConductor.jsx'
-import ActualizarConductor from './features/transporte/pages/ActualizarConductor.jsx'
+import ListarConductor from './features/conductores/pages/ListarConductor.jsx'
+import RegistrarConductor from './features/conductores/pages/RegistrarConductor.jsx'
+import ActualizarConductor from './features/conductores/pages/ActualizarConductor.jsx'
 
 // Transporte - Destinos
-import ListarDestino from './features/transporte/pages/ListarDestino.jsx'
-import RegistrarDestino from './features/transporte/pages/RegistrarDestino.jsx'
-import ActualizarDestino from './features/transporte/pages/ActualizarDestino.jsx'
+import ListarDestino from './features/destinos/pages/ListarDestino.jsx'
+import RegistrarDestino from './features/destinos/pages/RegistrarDestino.jsx'
+import ActualizarDestino from './features/destinos/pages/ActualizarDestino.jsx'
 
 // Transporte - Rutas Programación
-import ListarRutaProgramacion from './features/transporte/pages/ListarRutaProgramacion.jsx'
-import RegistrarRutaProgramacion from './features/transporte/pages/RegistrarRutaProgramacion.jsx'
-import ActualizarRutaProgramacion from './features/transporte/pages/ActualizarRutaProgramacion.jsx'
+import ListarRutaProgramacion from './features/rutas/pages/ListarRutaProgramacion.jsx'
+import RegistrarRutaProgramacion from './features/rutas/pages/RegistrarRutaProgramacion.jsx'
+import ActualizarRutaProgramacion from './features/rutas/pages/ActualizarRutaProgramacion.jsx'
 
 // Ventas
 import RegistrarVenta from './features/ventas/pages/RegistrarVenta.jsx'
