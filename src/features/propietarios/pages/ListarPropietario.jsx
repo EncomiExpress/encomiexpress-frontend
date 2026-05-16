@@ -66,14 +66,6 @@ const filterMenuProps = {
     },
 }
 
-const getTipoIdentificacionLabel = (tipo) => {
-    const tipos = {
-        'CC': 'Cédula', 'NIT': 'NIT', 'CE': 'Cédula Extranjería',
-        'TI': 'Tarjeta Identidad', 'PAS': 'Pasaporte', 'RC': 'Registro Civil'
-    }
-    return tipos[tipo] || tipo
-}
-
 const FILTROS = [
     { value: 'todo', label: 'Todo' },
     { value: 'Activo', label: 'Activo' },
@@ -120,6 +112,7 @@ const ListarPropietario = () => {
             p.nombre.toLowerCase().includes(q) ||
             p.apellido.toLowerCase().includes(q) ||
             p.numeroIdentificacion.toLowerCase().includes(q) ||
+            p.tipoIdentificacion.toLowerCase().includes(q) ||
             p.ciudad.toLowerCase().includes(q) ||
             (p.email && p.email.toLowerCase().includes(q))
 
@@ -278,13 +271,13 @@ const ListarPropietario = () => {
                     <Table>
                         <TableHead>
                             <TableRow sx={{ backgroundColor: '#F8F9FA' }}>
-                                <TableCell sx={thStyle}>Identificación</TableCell>
                                 <TableCell sx={thStyle}>Nombre</TableCell>
+                                <TableCell sx={thStyle}>Identificación</TableCell>
                                 <TableCell sx={thStyle}>Teléfono</TableCell>
                                 <TableCell sx={thStyle}>Email</TableCell>
                                 <TableCell sx={thStyle}>Ciudad</TableCell>
                                 <TableCell sx={thStyle}>Estado</TableCell>
-                                <TableCell sx={{ ...thStyle, width: 110 }} />
+                                <TableCell sx={{ ...thStyle, width: 130 }}>Acciones</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
@@ -309,25 +302,24 @@ const ListarPropietario = () => {
                                             opacity: propietario.habilitado ? 1 : 0.55,
                                         }}
                                     >
-                                        <TableCell sx={{ py: 1.5 }}>
-                                            <Box>
-                                                <Chip
-                                                    label={getTipoIdentificacionLabel(propietario.tipoIdentificacion)}
-                                                    size="small"
-                                                    sx={{
-                                                        fontWeight: 600,
-                                                        backgroundColor: '#FEF2F2',
-                                                        color: theme.palette.primary.main,
-                                                        mb: 0.5,
-                                                        height: 20,
-                                                        fontSize: '0.7rem',
-                                                    }}
-                                                />
-                                                {propietario.numeroIdentificacion}
+                                        <TableCell>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                                <Avatar sx={{
+                                                    width: 34, height: 34,
+                                                    backgroundColor: propietario.habilitado ? '#FFCDD2' : theme.palette.divider,
+                                                    fontSize: '0.73rem',
+                                                    fontWeight: 700,
+                                                    color: propietario.habilitado ? '#C62828' : '#8E8E8E',
+                                                }}>
+                                                    {propietario.nombre?.[0] || ''}{propietario.apellido?.[0] || ''}
+                                                </Avatar>
+                                                <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary} noWrap>
+                                                    {propietario.nombre} {propietario.apellido}
+                                                </Typography>
                                             </Box>
                                         </TableCell>
-                                        <TableCell sx={{ py: 1.5, fontSize: '0.85rem' }}>
-                                            {propietario.nombre} {propietario.apellido}
+                                        <TableCell sx={{ fontSize: '0.85rem', color: theme.palette.text.primary, py: 1.5 }}>
+                                            {propietario.tipoIdentificacion} {propietario.numeroIdentificacion}
                                         </TableCell>
                                         <TableCell sx={{ py: 1.5 }}>{propietario.telefono}</TableCell>
                                         <TableCell sx={{ py: 1.5 }}>{propietario.email || '-'}</TableCell>
@@ -404,7 +396,7 @@ const ListarPropietario = () => {
                         </Typography>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5 }}>
                             <Avatar sx={{ backgroundColor: '#FFCDD2', color: '#C62828', width: 70, height: 70, fontSize: '1.5rem', fontWeight: 700 }}>
-                                {propietarioVer.nombre?.[0]}{propietarioVer.apellido?.[0]}
+                                {propietarioVer.iniciales && propietarioVer.iniciales !== 'U' ? propietarioVer.iniciales : (propietarioVer.nombre?.[0] || '') + (propietarioVer.apellido?.[0] || '') || 'P'}
                             </Avatar>
                             <Box>
                                 <Typography fontWeight={700} fontSize="1.1rem" color={theme.palette.text.primary}>
@@ -427,8 +419,7 @@ const ListarPropietario = () => {
                                 Identificación y datos personales
                             </Typography>
                             <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                                <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Tipo ID</Typography><Typography variant="body2" fontWeight={500}>{getTipoIdentificacionLabel(propietarioVer.tipoIdentificacion)}</Typography></Box>
-                                <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Número ID</Typography><Typography variant="body2" fontWeight={500}>{propietarioVer.numeroIdentificacion}</Typography></Box>
+                                <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Identificación</Typography><Typography variant="body2" fontWeight={500}>{propietarioVer.tipoIdentificacion} {propietarioVer.numeroIdentificacion}</Typography></Box>
                                 <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Nombre</Typography><Typography variant="body2" fontWeight={500}>{propietarioVer.nombre}</Typography></Box>
                                 <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Apellido</Typography><Typography variant="body2" fontWeight={500}>{propietarioVer.apellido}</Typography></Box>
                             </Box>

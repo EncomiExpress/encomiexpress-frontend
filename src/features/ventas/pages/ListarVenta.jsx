@@ -168,12 +168,12 @@ const ModalConsultar = ({ venta, onClose }) => {
                 <Paper elevation={0} sx={{ ...cardSx, flex: 1 }}>
                     <Box sx={tituloSx}>
                         <PaymentOutlinedIcon sx={{ fontSize: 22, color: theme.palette.text.primary }} />
-                        <Typography fontWeight={700} fontSize="1.05rem" color={theme.palette.text.primary}>Pago y Destino</Typography>
+                        <Typography fontWeight={700} fontSize="1.05rem" color={theme.palette.text.primary}>Pago y Ruta</Typography>
                     </Box>
                     <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
                         Información de pago y ruta de envío
                     </Typography>
-                    <CampoFila label="Destino" value={venta.ruta?.destino} />
+                    <CampoFila label="Ruta" value={venta.ruta?.destino} />
                     <CampoFila label="Método de pago" value={venta.metodoPago} />
                     <CampoFila label="Valor servicio" value={`$${venta.valorServicio?.toLocaleString()}`} />
                     <CampoFila label="Total" value={`$${venta.total?.toLocaleString()}`} />
@@ -548,11 +548,11 @@ const ListarVenta = () => {
                                 <TableCell sx={thStyle}>Remitente</TableCell>
                                 <TableCell sx={thStyle}>Guía</TableCell>
                                 <TableCell sx={thStyle}>Destinatario</TableCell>
-                                <TableCell sx={thStyle}>Destino</TableCell>
+                                <TableCell sx={thStyle}>Ruta</TableCell>
                                 <TableCell sx={thStyle}>Estado</TableCell>
                                 <TableCell sx={thStyle}>Pago</TableCell>
                                 <TableCell sx={thStyle}>Total</TableCell>
-                                <TableCell sx={{ ...thStyle, width: 110 }} />
+                                <TableCell sx={{ ...thStyle, width: 130 }}>Acciones</TableCell>
                             </TableRow>
                         </TableHead>
 

@@ -9,6 +9,7 @@ import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDown
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined'
 import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined'
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined'
+import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined'
 import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import { useClientes } from '../../../shared/contexts/ClienteContext'
@@ -361,7 +362,7 @@ const ActualizarCliente = ({ open, onClose, cliente: clienteProp, onSuccess }) =
                             onClick={activeStep < steps.length - 1 ? handleNext : handleSubmit}
                             variant="contained"
                             disabled={submitting || (activeStep === steps.length - 1 && sinCambios)}
-                            endIcon={activeStep < steps.length - 1 ? undefined : <SaveOutlinedIcon />}
+                            endIcon={activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <SaveOutlinedIcon />}
                             disableRipple
                             sx={{
                                 textTransform: 'none', borderRadius: 2, fontWeight: 600,

@@ -55,11 +55,6 @@ const filterMenuProps = {
     },
 }
 
-const getTipoIdentificacionLabel = (tipo) => {
-    const tipos = { 'CC': 'Cédula', 'NIT': 'NIT', 'CE': 'Cédula Extranjería', 'TI': 'Tarjeta Identidad', 'PAS': 'Pasaporte', 'RC': 'Registro Civil' }
-    return tipos[tipo] || tipo
-}
-
 const isVencido = (fecha) => {
     if (!fecha) return false
     return new Date(fecha) < new Date()
@@ -112,6 +107,7 @@ const ListarConductor = () => {
             c.nombre.toLowerCase().includes(q) ||
             c.apellido.toLowerCase().includes(q) ||
             c.numeroIdentificacion.toLowerCase().includes(q) ||
+            c.tipoIdentificacion.toLowerCase().includes(q) ||
             c.licenciaConduccion.toLowerCase().includes(q) ||
             (c.email && c.email.toLowerCase().includes(q))
 
@@ -272,14 +268,14 @@ const ListarConductor = () => {
                     <Table>
                         <TableHead>
                             <TableRow sx={{ backgroundColor: '#F8F9FA' }}>
-                                <TableCell sx={thStyle}>Identificación</TableCell>
                                 <TableCell sx={thStyle}>Nombre</TableCell>
+                                <TableCell sx={thStyle}>Identificación</TableCell>
                                 <TableCell sx={thStyle}>Teléfono</TableCell>
                                 <TableCell sx={thStyle}>Email</TableCell>
                                 <TableCell sx={thStyle}>Licencia</TableCell>
                                 <TableCell sx={thStyle}>Vencimiento</TableCell>
                                 <TableCell sx={thStyle}>Estado</TableCell>
-                                <TableCell sx={{ ...thStyle, width: 110 }} />
+                                <TableCell sx={{ ...thStyle, width: 130 }}>Acciones</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
@@ -304,25 +300,24 @@ const ListarConductor = () => {
                                             opacity: conductor.habilitado ? 1 : 0.55,
                                         }}
                                     >
-                                        <TableCell sx={{ py: 1.5, fontSize: '0.85rem' }}>
-                                            <Box>
-                                                <Chip
-                                                    label={getTipoIdentificacionLabel(conductor.tipoIdentificacion)}
-                                                    size="small"
-                                                    sx={{
-                                                        fontWeight: 600,
-                                                        backgroundColor: '#FEF2F2',
-                                                        color: theme.palette.primary.main,
-                                                        mb: 0.5,
-                                                        height: 20,
-                                                        fontSize: '0.7rem',
-                                                    }}
-                                                />
-                                                {conductor.numeroIdentificacion}
+                                        <TableCell>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                                <Avatar sx={{
+                                                    width: 34, height: 34,
+                                                    backgroundColor: conductor.habilitado ? '#FFCDD2' : theme.palette.divider,
+                                                    fontSize: '0.73rem',
+                                                    fontWeight: 700,
+                                                    color: conductor.habilitado ? '#C62828' : '#8E8E8E',
+                                                }}>
+                                                    {conductor.nombre?.[0] || ''}{conductor.apellido?.[0] || ''}
+                                                </Avatar>
+                                                <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary} noWrap>
+                                                    {conductor.nombre} {conductor.apellido}
+                                                </Typography>
                                             </Box>
                                         </TableCell>
-                                        <TableCell sx={{ py: 1.5, fontSize: '0.85rem' }}>
-                                            {conductor.nombre} {conductor.apellido}
+                                        <TableCell sx={{ fontSize: '0.85rem', color: theme.palette.text.primary, py: 1.5 }}>
+                                            {conductor.tipoIdentificacion} {conductor.numeroIdentificacion}
                                         </TableCell>
                                         <TableCell sx={{ py: 1.5 }}>{conductor.telefono}</TableCell>
                                         <TableCell sx={{ py: 1.5 }}>{conductor.email || '-'}</TableCell>
@@ -423,7 +418,7 @@ const ListarConductor = () => {
                         </Typography>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5 }}>
                             <Avatar sx={{ backgroundColor: '#FFCDD2', color: '#C62828', width: 70, height: 70, fontSize: '1.5rem', fontWeight: 700 }}>
-                                {conductorVer.nombre?.[0]}{conductorVer.apellido?.[0]}
+                                {conductorVer.iniciales && conductorVer.iniciales !== 'U' ? conductorVer.iniciales : (conductorVer.nombre?.[0] || '') + (conductorVer.apellido?.[0] || '') || 'C'}
                             </Avatar>
                             <Box>
                                 <Typography fontWeight={700} fontSize="1.1rem" color={theme.palette.text.primary}>
@@ -446,8 +441,7 @@ const ListarConductor = () => {
                                 Identificación y datos personales
                             </Typography>
                             <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                                <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Tipo ID</Typography><Typography variant="body2" fontWeight={500}>{getTipoIdentificacionLabel(conductorVer.tipoIdentificacion)}</Typography></Box>
-                                <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Número ID</Typography><Typography variant="body2" fontWeight={500}>{conductorVer.numeroIdentificacion}</Typography></Box>
+                                <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Identificación</Typography><Typography variant="body2" fontWeight={500}>{conductorVer.tipoIdentificacion} {conductorVer.numeroIdentificacion}</Typography></Box>
                                 <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Nombre</Typography><Typography variant="body2" fontWeight={500}>{conductorVer.nombre}</Typography></Box>
                                 <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Apellido</Typography><Typography variant="body2" fontWeight={500}>{conductorVer.apellido}</Typography></Box>
                             </Box>

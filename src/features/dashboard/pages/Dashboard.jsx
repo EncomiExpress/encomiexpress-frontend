@@ -82,7 +82,7 @@ const Dashboard = () => {
 
       {/* Indicadores principales */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <IndicatorCard
             title="Total Clientes"
             value={clientes.length}
@@ -92,7 +92,7 @@ const Dashboard = () => {
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <IndicatorCard
             title="Encomiendas"
             value={encomiendasEsteMes}
@@ -102,7 +102,7 @@ const Dashboard = () => {
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <IndicatorCard
             title="Ventas"
             value={ventasRealizadas}
@@ -112,7 +112,7 @@ const Dashboard = () => {
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <IndicatorCard
             title="Anticipos"
             value={anticipos.length}
@@ -135,7 +135,7 @@ const Dashboard = () => {
         </Box>
 
         <Grid container spacing={3} alignItems="stretch">
-          <Grid item xs={12} sm={4} sx={{ display: 'flex' }}>
+          <Grid size={{ xs: 12, sm: 4 }} sx={{ display: 'flex' }}>
             <Box sx={{ textAlign: 'center', p: 3, backgroundColor: '#f8fafc', borderRadius: 2, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
               <Typography variant="caption" sx={{ textTransform: 'uppercase', fontWeight: 600, color: '#6b7280', fontSize: '0.7rem' }}>
                 Total Anticipos
@@ -145,7 +145,7 @@ const Dashboard = () => {
               </Typography>
             </Box>
           </Grid>
-          <Grid item xs={12} sm={4} sx={{ display: 'flex' }}>
+          <Grid size={{ xs: 12, sm: 4 }} sx={{ display: 'flex' }}>
             <Box sx={{ textAlign: 'center', p: 3, backgroundColor: '#f8fafc', borderRadius: 2, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
               <Typography variant="caption" sx={{ textTransform: 'uppercase', fontWeight: 600, color: '#6b7280', fontSize: '0.7rem' }}>
                 Total Gastado
@@ -155,7 +155,7 @@ const Dashboard = () => {
               </Typography>
             </Box>
           </Grid>
-          <Grid item xs={12} sm={4} sx={{ display: 'flex' }}>
+          <Grid size={{ xs: 12, sm: 4 }} sx={{ display: 'flex' }}>
             <Box sx={{ textAlign: 'center', p: 3, backgroundColor: '#f8fafc', borderRadius: 2, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
               <Typography variant="caption" sx={{ textTransform: 'uppercase', fontWeight: 600, color: '#6b7280', fontSize: '0.7rem' }}>
                 Total Excedentes
@@ -170,7 +170,7 @@ const Dashboard = () => {
 
       {/* Estado de Anticipos */}
       <Grid container spacing={3}>
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Paper sx={{ p: 3, borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.08)', border: '1px solid #f0f0f0', height: '100%' }}>
             <Typography variant="h6" fontWeight={700} sx={{ mb: 3, color: '#1f2937' }}>
               Estado de Anticipos
@@ -201,7 +201,7 @@ const Dashboard = () => {
           </Paper>
         </Grid>
 
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Paper sx={{ p: 3, borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.08)', border: '1px solid #f0f0f0', height: '100%' }}>
             <Typography variant="h6" fontWeight={700} sx={{ mb: 3, color: '#1f2937' }}>
               Accesos Rápidos
@@ -213,7 +213,7 @@ const Dashboard = () => {
                 { icon: '📦', text: 'Registrar Encomienda', color: theme.palette.primary.main },
                 { icon: '💰', text: 'Nuevo Anticipo', color: '#dc2626' },
               ].map((item, i) => (
-                <Grid item xs={6} key={i}>
+                <Grid size={6} key={i}>
                   <Box sx={{
                     p: 2,
                     borderRadius: 2,

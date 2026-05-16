@@ -1,7 +1,7 @@
 import theme from '../../../shared/styles/theme.js'
 import { useState, useEffect } from 'react'
 import { Box, TextField, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Snackbar, Alert, Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material'
-import { DirectionsCar, Person, Business, Event, Speed, SaveOutlined, ArrowBackOutlined, Close } from '@mui/icons-material'
+import { DirectionsCar, Person, Business, Event, Speed, SaveOutlined, ArrowBackOutlined, ArrowForwardOutlined, Close } from '@mui/icons-material'
 import { useTransporte } from '../../../shared/contexts/TransporteContext'
 import { 
   FormField, FormSelect, PrimaryButton, SecondaryButton, 
@@ -413,7 +413,7 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
               onClick={activeStep < steps.length - 1 ? handleNext : handleSubmit}
               variant="contained"
               disabled={submitting || (activeStep === steps.length - 1 && sinCambios)}
-              endIcon={activeStep < steps.length - 1 ? undefined : <SaveOutlined />}
+              endIcon={activeStep < steps.length - 1 ? <ArrowForwardOutlined /> : <SaveOutlined />}
               disableRipple
               sx={{
                 textTransform: 'none', borderRadius: 2, fontWeight: 600,

@@ -82,7 +82,7 @@ const ModalConsultar = ({ cliente, onClose }) => {
 
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5 }}>
                     <Avatar sx={{ backgroundColor: '#FFCDD2', color: '#C62828', width: 70, height: 70, fontSize: '1.5rem', fontWeight: 700 }}>
-                        {cliente.nombre[0]}{cliente.apellido[0]}
+                        {cliente.iniciales && cliente.iniciales !== 'U' ? cliente.iniciales : (cliente.nombre?.[0] || '') + (cliente.apellido?.[0] || '') || 'C'}
                     </Avatar>
                     <Box>
                         <Typography fontWeight={700} fontSize="1.1rem" color={theme.palette.text.primary}>
@@ -108,8 +108,7 @@ const ModalConsultar = ({ cliente, onClose }) => {
                         Identificación y datos personales
                     </Typography>
 
-                    <CampoFila label="Tipo identificación" value={cliente.tipoIdentificacion} />
-                    <CampoFila label="Número identificación" value={cliente.numeroIdentificacion} />
+                    <CampoFila label="Identificación" value={`${cliente.tipoIdentificacion} ${cliente.numeroIdentificacion}`} />
                     <CampoFila label="Nombre" value={cliente.nombre} />
                     <CampoFila label="Apellido" value={cliente.apellido} />
                 </Paper>
@@ -125,7 +124,7 @@ const ModalConsultar = ({ cliente, onClose }) => {
                     </Typography>
 
                     <CampoFila label="Teléfono" value={cliente.telefono} />
-                    <CampoFila label="Correo" value={cliente.email} />
+                    <CampoFila label="Email" value={cliente.email} />
                     <CampoFila label="Dirección" value={cliente.direccion} />
                     <CampoFila label="Estado" value={estado} esEstado />
                 </Paper>
@@ -384,37 +383,36 @@ const ListarCliente = () => {
                         <TableHead>
                             <TableRow sx={{ backgroundColor: '#F8F9FA' }}>
                                 <TableCell sx={thStyle}>Nombre</TableCell>
-                                <TableCell sx={thStyle}>Tipo Identificación</TableCell>
-                                <TableCell sx={thStyle}>N° Identificación</TableCell>
+                                <TableCell sx={thStyle}>Identificación</TableCell>
                                 <TableCell sx={thStyle}>Teléfono</TableCell>
-                                <TableCell sx={thStyle}>Correo</TableCell>
+                                <TableCell sx={thStyle}>Email</TableCell>
                                 <TableCell sx={thStyle}>Estado</TableCell>
-                                <TableCell sx={{ ...thStyle, width: 110 }} />
+                                <TableCell sx={{ ...thStyle, width: 130 }}>Acciones</TableCell>
                             </TableRow>
                         </TableHead>
 
                         <TableBody>
                             {loading ? (
-                                <TableRow>
-                                    <TableCell colSpan={7} align="center" sx={{ py: 7 }}>
-                                        <CircularProgress size={28} sx={{ color: theme.palette.primary.main }} />
+                                    <TableRow>
+                                        <TableCell colSpan={6} align="center" sx={{ py: 7 }}>
+                                            <CircularProgress size={28} sx={{ color: theme.palette.primary.main }} />
                                         <Typography variant="body2" color={theme.palette.text.secondary} mt={1.5}>
                                             Cargando clientes...
                                         </Typography>
                                     </TableCell>
                                 </TableRow>
                             ) : error ? (
-                                <TableRow>
-                                    <TableCell colSpan={7} align="center" sx={{ py: 5 }}>
-                                        <Typography color="error" variant="body2">
+                                    <TableRow>
+                                        <TableCell colSpan={6} align="center" sx={{ py: 5 }}>
+                                            <Typography color="error" variant="body2">
                                             No se pudieron cargar los clientes. Verifica la conexión con el servidor.
                                         </Typography>
                                     </TableCell>
                                 </TableRow>
                             ) : paginatedClientes.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={7} align="center" sx={{ py: 7 }}>
-                                        <Typography color={theme.palette.text.secondary} variant="body2">
+                                    <TableRow>
+                                        <TableCell colSpan={6} align="center" sx={{ py: 7 }}>
+                                            <Typography color={theme.palette.text.secondary} variant="body2">
                                             {clientes.length === 0
                                                 ? 'No hay clientes registrados en el sistema.'
                                                 : busqueda.trim() !== ''
@@ -444,7 +442,7 @@ const ListarCliente = () => {
                                                     fontWeight: 700,
                                                     color: cliente.habilitado ? '#C62828' : '#8E8E8E',
                                                 }}>
-                                                    {cliente.nombre[0]}{cliente.apellido[0]}
+                                                    {cliente.iniciales && cliente.iniciales !== 'U' ? cliente.iniciales : (cliente.nombre?.[0] || '') + (cliente.apellido?.[0] || '') || 'C'}
                                                 </Avatar>
                                                 <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary} noWrap>
                                                     {cliente.nombre} {cliente.apellido}
@@ -452,14 +450,9 @@ const ListarCliente = () => {
                                             </Box>
                                         </TableCell>
 
-                                        {/* Tipo ID */}
+                                        {/* Identificación */}
                                         <TableCell sx={{ fontSize: '0.85rem', color: theme.palette.text.primary, py: 1.5 }}>
-                                            {cliente.tipoIdentificacion}
-                                        </TableCell>
-
-                                        {/* Número ID */}
-                                        <TableCell sx={{ fontSize: '0.85rem', color: theme.palette.text.primary, py: 1.5 }}>
-                                            {cliente.numeroIdentificacion}
+                                            {cliente.tipoIdentificacion} {cliente.numeroIdentificacion}
                                         </TableCell>
 
                                         {/* Teléfono */}

@@ -385,19 +385,19 @@ const Login = () => {
           {registerError && <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>{registerError}</Alert>}
           <Box component="form" onSubmit={handleRegister}>
             <Grid container spacing={2}>
-              <Grid item xs={12}>
+              <Grid size={12}>
                 <TextField fullWidth label="Nombre completo" name="nombre" value={registerData.nombre} onChange={handleRegisterChange} required
                   InputProps={{ startAdornment: <InputAdornment position="start"><Person sx={{ color: '#8b8382' }} /></InputAdornment> }} />
               </Grid>
-              <Grid item xs={12}>
+              <Grid size={12}>
                 <TextField fullWidth label="Correo electrónico" name="email" type="email" value={registerData.email} onChange={handleRegisterChange} required
                   InputProps={{ startAdornment: <InputAdornment position="start"><Email sx={{ color: '#8b8382' }} /></InputAdornment> }} />
               </Grid>
-              <Grid item xs={12}>
+              <Grid size={12}>
                 <TextField fullWidth label="Contraseña" name="password" type="password" value={registerData.password} onChange={handleRegisterChange} required
                   InputProps={{ startAdornment: <InputAdornment position="start"><Lock sx={{ color: '#8b8382' }} /></InputAdornment> }} />
               </Grid>
-              <Grid item xs={12}>
+              <Grid size={12}>
                 <FormControl fullWidth required>
                   <InputLabel>Rol</InputLabel>
                   <Select name="rol" value={registerData.rol} label="Rol" onChange={handleRegisterChange}>
@@ -407,7 +407,7 @@ const Login = () => {
                   </Select>
                 </FormControl>
               </Grid>
-              <Grid item xs={12}>
+              <Grid size={12}>
                 <TextField fullWidth label="Iniciales" name="iniciales" value={registerData.iniciales} onChange={handleRegisterChange} required
                   inputProps={{ maxLength: 3 }} helperText="Ej: VP, JG, MV"
                   InputProps={{ startAdornment: <InputAdornment position="start"><Badge sx={{ color: '#8b8382' }} /></InputAdornment> }} />

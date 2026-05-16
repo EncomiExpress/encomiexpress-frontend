@@ -104,7 +104,7 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
             if (!form.telefono.trim()) e.telefono = 'El teléfono es obligatorio'
             else if (!/^\d{10}$/.test(form.telefono)) e.telefono = 'El teléfono debe tener exactamente 10 dígitos'
 
-            if (!form.emailLocal.trim()) e.emailLocal = 'El correo es obligatorio'
+            if (!form.emailLocal.trim()) e.emailLocal = 'El email es obligatorio'
 
             if (!form.password) e.password = 'La contraseña es obligatoria'
             else if (form.password.length < 6) e.password = 'La contraseña debe tener al menos 6 caracteres'
@@ -225,7 +225,7 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
                             error={!!errores.telefono} helperText={errores.telefono || 'Número de 10 dígitos'}
                             slotProps={{ input: { startAdornment: <InputAdornment position="start"><PhoneOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment>, sx: { pl: 1.5 }, htmlInput: { maxLength: 10 } } }}
                             sx={formFieldStyles} />
-                        <TextField fullWidth label="Correo electrónico" name="emailLocal"
+                        <TextField fullWidth label="Email electrónico" name="emailLocal"
                             value={form.emailLocal} onChange={handleChange} required
                             error={!!errores.emailLocal} helperText={errores.emailLocal}
                             slotProps={{
@@ -313,7 +313,7 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
                                 </Box>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica los datos de acceso</Typography>
                                 <ConfirmRow label="Teléfono" value={form.telefono} />
-                                <ConfirmRow label="Correo" value={form.emailLocal + form.emailDominio} />
+                                <ConfirmRow label="Email" value={form.emailLocal + form.emailDominio} />
                                 <ConfirmRow label="Rol" value={rolesDisponibles.find(r => r.idRol === parseInt(form.idRol))?.nombre || form.idRol} />
                             </Paper>
                         </Box>

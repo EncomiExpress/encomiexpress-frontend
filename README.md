@@ -35,31 +35,17 @@ src/
 │
 ├── features/                  # Módulos funcionales de la aplicación
 │   ├── auth/                  # Autenticación y gestión de usuarios
-│   │   └── pages/             # Login, Register
 │   ├── dashboard/             # Panel principal con indicadores
-│   │   └── pages/
 │   ├── clientes/              # Gestión de clientes
-│   │   └── pages/
 │   ├── ventas/                # Gestión de ventas/encomiendas
-│   │   └── pages/
 │   ├── conductores/           # Administración de conductores
-│   │   └── pages/
 │   ├── destinos/              # Catálogo de ubicaciones
-│   │   └── pages/
 │   ├── propietarios/          # Gestión de propietarios de vehículos
-│   │   └── pages/
 │   ├── rutas/                 # Programación de rutas
-│   │   └── pages/
 │   ├── vehiculos/             # Gestión de vehículos
-│   │   └── pages/
 │   ├── usuarios/              # Gestión de usuarios
-│   │   └── pages/
 │   ├── roles/                 # Gestión de roles y permisos
-│   │   └── pages/
-│   ├── anticipos/             # Control de anticipos y excedentes
-│   │   └── pages/
-│   └── medicionDesempeno/     # Indicadores de desempeño
-│       └── pages/
+│   └── anticipos/             # Control de anticipos y excedentes
 │
 ├── shared/                    # Recursos compartidos entre features
 │   ├── styles/                # Tema centralizado (theme.js con createTheme)

@@ -258,7 +258,7 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess }) => {
             <DialogTitle sx={{ m: 0, p: 2, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${theme.palette.divider}` }}>
                 <Box>
                       <Typography variant="h6" fontWeight={700}>
-                          Programar Ruta
+                          Registrar Ruta
                       </Typography>
                     <Typography variant="body2" color={theme.palette.text.secondary} sx={{ mt: 0.5, ml: 0.5 }}>
                         Ingresa los datos de la nueva ruta paso a paso.
@@ -326,7 +326,7 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess }) => {
                                 '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
                                 '&.Mui-disabled': { backgroundColor: theme.palette.divider, color: '#9E9E9E' },
                             }}>
-                            {activeStep < steps.length - 1 ? 'Siguiente' : submitting ? 'Registrando...' : 'Programar Ruta'}
+                            {activeStep < steps.length - 1 ? 'Siguiente' : submitting ? 'Registrando...' : 'Registrar'}
                         </Button>
                     </Box>
                 </Box>

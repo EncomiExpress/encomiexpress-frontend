@@ -511,7 +511,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                 return (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
-                            <FormSelect label="Destino" name="idRuta" value={form.idRuta}
+                            <FormSelect label="Ruta" name="idRuta" value={form.idRuta}
                                 onChange={handleChange} required error={errores.idRuta}>
                                 {rutasMock.map(r => (
                                     <MenuItem key={r.idRuta} value={r.idRuta}>
@@ -662,8 +662,8 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                                     <PaymentOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
                                     <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Envío y Pago</Typography>
                                 </Box>
-                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Destino, estado y valores</Typography>
-                                <ConfirmRow label="Destino" value={form.destino} />
+                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Ruta, estado y valores</Typography>
+                                <ConfirmRow label="Ruta" value={form.destino} />
                                 <ConfirmRow label="Fecha entrega" value={form.fechaEstimadaEntrega} />
                                 <ConfirmRowChip label="Estado" value={form.estado?.charAt(0).toUpperCase() + form.estado?.slice(1)} colors={getEstadoColor(form.estado)} />
                                 <ConfirmRow label="Método de pago" value={form.metodoPago} />

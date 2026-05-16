@@ -197,7 +197,7 @@ const RegistrarCliente = ({ open, onClose, onSuccess }) => {
                         <FormField label="Teléfono" name="telefono" value={form.telefono} onChange={handleChange}
                             required error={errores.telefono} helperText={errores.telefono || 'Número de 10 dígitos'}
                             icon={PhoneOutlinedIcon} inputProps={{ maxLength: 10 }} />
-                        <TextField fullWidth label="Correo electrónico" name="emailLocal"
+                        <TextField fullWidth label="Email electrónico" name="emailLocal"
                             value={form.emailLocal} onChange={handleChange} required
                             error={!!errores.emailLocal} helperText={errores.emailLocal}
                             slotProps={{
@@ -257,7 +257,7 @@ const RegistrarCliente = ({ open, onClose, onSuccess }) => {
                                 </Box>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica los datos de contacto</Typography>
                                 <ConfirmRow label="Teléfono" value={form.telefono} />
-                                <ConfirmRow label="Correo" value={form.emailLocal + form.emailDominio} />
+                                <ConfirmRow label="Email" value={form.emailLocal + form.emailDominio} />
                                 <ConfirmRow label="Dirección" value={form.direccion} />
                             </Paper>
                         </Box>

@@ -256,6 +256,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
         }
 
         if (step === 3) {
+            if (!form.idRuta) e.idRuta = 'Selecciona una ruta'
             if (!form.fechaEstimadaEntrega) e.fechaEstimadaEntrega = 'La fecha es obligatoria'
         }
 
@@ -283,7 +284,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
         try {
             const payload = {
                 idCliente: parseInt(form.idCliente),
-                // idRuta: pendiente de conectar cuando el módulo de rutas esté listo
+                idRuta: parseInt(form.idRuta),
                 destinatario: {
                     nombreDestinatario: form.nombreDestinatario,
                     telefonoDestinatario: form.telefonoDestinatario,
@@ -436,7 +437,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                 return (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
-                            <FormSelect label="Destino" name="idRuta" value={form.idRuta}
+                            <FormSelect label="Ruta" name="idRuta" value={form.idRuta}
                                 onChange={handleChange} required error={errores.idRuta}>
                                 {rutasMock.map(r => (
                                     <MenuItem key={r.idRuta} value={r.idRuta}>
@@ -527,8 +528,8 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                                     <PaymentOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
                                     <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Envío y Pago</Typography>
                                 </Box>
-                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Destino, fechas y valores</Typography>
-                                <ConfirmRow label="Destino" value={form.destino} />
+                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Ruta, fechas y valores</Typography>
+                                <ConfirmRow label="Ruta" value={form.destino} />
                                 <ConfirmRow label="Fecha entrega" value={form.fechaEstimadaEntrega} />
                                 <ConfirmRow label="Método de pago" value={form.metodoPago} />
                                 <ConfirmRow label="Total" value={form.total ? `$${parseFloat(form.total).toLocaleString()}` : null} />

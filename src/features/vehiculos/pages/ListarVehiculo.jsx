@@ -272,7 +272,7 @@ const ListarTransporte = () => {
                                 <TableCell sx={thStyle}>Capacidad</TableCell>
                                 <TableCell sx={thStyle}>Estado</TableCell>
                                 <TableCell sx={thStyle}>SOAT</TableCell>
-                                <TableCell sx={{ ...thStyle, width: 110 }} />
+                                <TableCell sx={{ ...thStyle, width: 130 }}>Acciones</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>

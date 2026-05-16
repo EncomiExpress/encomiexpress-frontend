@@ -53,7 +53,7 @@ const Home = () => {
 
           <Grid container spacing={8} alignItems="center">
             {/* Texto izquierdo */}
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <Typography sx={{
                 fontWeight: 700, fontSize: { xs: '2.8rem', md: '4rem' }, fontFamily: 'Cambria',
                 lineHeight: 1.08, letterSpacing: '-2px', mb: 3, color: 'rgb(26, 46, 110, 0.95)',
@@ -76,7 +76,7 @@ const Home = () => {
             </Grid>
 
             {/* Carrusel derecho */}
-            <Grid item xs={12} md={6} sx={{ position: { xs: 'static', md: 'relative' } }}>
+            <Grid size={{ xs: 12, md: 6 }} sx={{ position: { xs: 'static', md: 'relative' } }}>
               <Box sx={{
                 position: { xs: 'relative', md: 'absolute' }, top: { md: '-275px' }, right: { md: '-520px' },
                 width: { xs: '100%', md: '580px' }, height: { xs: 300, md: 530 }, overflow: 'hidden',
@@ -93,7 +93,7 @@ const Home = () => {
             </Grid>
 
             {/* Módulos card */}
-            <Grid item xs={12} md={6} mt={10}>
+            <Grid size={{ xs: 12, md: 6 }} mt={10}>
               <Box sx={{
                 backgroundColor: 'white', borderRadius: '24px', border: '1px solid rgba(26,46,110,0.12)',
                 p: 3.5, boxShadow: '0 8px 40px rgba(26,46,110,0.1)',
@@ -108,7 +108,7 @@ const Home = () => {
                 </Box>
                 <Grid container spacing={1.5}>
                   {modules.map((mod, i) => (
-                    <Grid item xs={6} key={i}>
+                    <Grid size={6} key={i}>
                       <Box sx={{
                         p: 2.5, borderRadius: '16px', backgroundColor: '#f5f5f5', border: '1px solid rgba(26,46,110,0.08)',
                         display: 'flex', alignItems: 'center', gap: 1.5, transition: 'all 0.25s ease', cursor: 'default',

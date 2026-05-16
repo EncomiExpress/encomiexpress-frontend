@@ -92,7 +92,7 @@ const ModalConsultar = ({ usuario, onClose }) => {
 
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5 }}>
                     <Avatar sx={{ backgroundColor: '#FFCDD2', color: '#C62828', width: 70, height: 70, fontSize: '1.5rem', fontWeight: 700 }}>
-                        {usuario.iniciales || 'U'}
+                        {usuario.iniciales && usuario.iniciales !== 'U' ? usuario.iniciales : (usuario.nombre?.[0] || '') + (usuario.apellido?.[0] || '') || 'U'}
                     </Avatar>
                     <Box>
                         <Typography fontWeight={700} fontSize="1.1rem" color={theme.palette.text.primary}>
@@ -115,8 +115,7 @@ const ModalConsultar = ({ usuario, onClose }) => {
                         Identificación y datos personales
                     </Typography>
 
-                    <CampoFila label="Tipo identificación" value={usuario.tipoIdentificacion} />
-                    <CampoFila label="Número identificación" value={usuario.numeroIdentificacion} />
+                    <CampoFila label="Identificación" value={`${usuario.tipoIdentificacion} ${usuario.numeroIdentificacion}`} />
                     <CampoFila label="Nombre" value={usuario.nombre} />
                     <CampoFila label="Apellido" value={usuario.apellido} />
                 </Paper>
@@ -131,7 +130,7 @@ const ModalConsultar = ({ usuario, onClose }) => {
                     </Typography>
 
                     <CampoFila label="Teléfono" value={usuario.telefono || '—'} />
-                    <CampoFila label="Correo" value={usuario.email} />
+                    <CampoFila label="Email" value={usuario.email} />
                     <CampoFila label="Rol" value={usuario.rol?.nombre} esRol />
                     <CampoFila label="Estado" value={estado} esEstado />
                 </Paper>
@@ -209,8 +208,12 @@ const ListarUsuario = () => {
         const q = busqueda.toLowerCase().trim()
         const coincideBusqueda = !q ||
             u.nombre.toLowerCase().includes(q) ||
+            u.apellido.toLowerCase().includes(q) ||
+            (`${u.nombre} ${u.apellido}`).toLowerCase().includes(q) ||
             u.email.toLowerCase().includes(q) ||
-            u.iniciales?.toLowerCase().includes(q)
+            u.telefono?.includes(q) ||
+            u.numeroIdentificacion?.includes(q) ||
+            u.tipoIdentificacion?.toLowerCase().includes(q)
 
         const coincideEstado =
             filtroEstado === 'todo' ||
@@ -403,20 +406,19 @@ const ListarUsuario = () => {
                         <TableHead>
                             <TableRow sx={{ backgroundColor: '#F8F9FA' }}>
                                 <TableCell sx={thStyle}>Nombre</TableCell>
-                                <TableCell sx={thStyle}>Tipo Identificación</TableCell>
-                                <TableCell sx={thStyle}>N° Identificación</TableCell>
+                                <TableCell sx={thStyle}>Identificación</TableCell>
                                 <TableCell sx={thStyle}>Teléfono</TableCell>
-                                <TableCell sx={thStyle}>Correo</TableCell>
+                                <TableCell sx={thStyle}>Email</TableCell>
                                 <TableCell sx={thStyle}>Rol</TableCell>
                                 <TableCell sx={thStyle}>Estado</TableCell>
-                                <TableCell sx={{ ...thStyle, width: 110 }} />
+                                <TableCell sx={{ ...thStyle, width: 130 }}>Acciones</TableCell>
                             </TableRow>
                         </TableHead>
 
                         <TableBody>
                             {loading ? (
                                 <TableRow>
-                                    <TableCell colSpan={8} align="center" sx={{ py: 7 }}>
+                                    <TableCell colSpan={7} align="center" sx={{ py: 7 }}>
                                         <CircularProgress size={28} sx={{ color: theme.palette.primary.main }} />
                                         <Typography variant="body2" color={theme.palette.text.secondary} mt={1.5}>
                                             Cargando usuarios...
@@ -425,7 +427,7 @@ const ListarUsuario = () => {
                                 </TableRow>
                             ) : error ? (
                                 <TableRow>
-                                    <TableCell colSpan={8} align="center" sx={{ py: 5 }}>
+                                    <TableCell colSpan={7} align="center" sx={{ py: 5 }}>
                                         <Typography color="error" variant="body2">
                                             No se pudieron cargar los usuarios. Verifica la conexión con el servidor.
                                         </Typography>
@@ -433,7 +435,7 @@ const ListarUsuario = () => {
                                 </TableRow>
                             ) : paginatedUsuarios.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={8} align="center" sx={{ py: 7 }}>
+                                    <TableCell colSpan={7} align="center" sx={{ py: 7 }}>
                                         <Typography color={theme.palette.text.secondary} variant="body2">
                                             {usuarios.length === 0
                                                 ? 'No hay usuarios registrados en el sistema.'
@@ -460,8 +462,9 @@ const ListarUsuario = () => {
                                                     fontSize: '0.73rem',
                                                     fontWeight: 700,
                                                     color: usuario.habilitado ? '#C62828' : '#8E8E8E',
-                                                }}>
-                                                    {usuario.iniciales || 'U'}
+                                                }}
+                                                >
+                                                    {usuario.iniciales && usuario.iniciales !== 'U' ? usuario.iniciales : (usuario.nombre?.[0] || '') + (usuario.apellido?.[0] || '') || 'U'}
                                                 </Avatar>
                                                 <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary} noWrap>
                                                     {usuario.nombre} {usuario.apellido}
@@ -470,11 +473,7 @@ const ListarUsuario = () => {
                                         </TableCell>
 
                                         <TableCell sx={{ fontSize: '0.85rem', color: theme.palette.text.primary, py: 1.5 }}>
-                                            {usuario.tipoIdentificacion}
-                                        </TableCell>
-
-                                        <TableCell sx={{ fontSize: '0.85rem', color: theme.palette.text.primary, py: 1.5 }}>
-                                            {usuario.numeroIdentificacion}
+                                            {usuario.tipoIdentificacion} {usuario.numeroIdentificacion}
                                         </TableCell>
 
                                         <TableCell sx={{ fontSize: '0.85rem', color: theme.palette.text.primary, py: 1.5 }}>

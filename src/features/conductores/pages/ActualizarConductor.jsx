@@ -8,6 +8,7 @@ import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined'
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined'
+import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined'
 import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
 import EventOutlinedIcon from '@mui/icons-material/EventOutlined'
 import CloseIcon from '@mui/icons-material/Close'
@@ -388,7 +389,7 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
                             onClick={activeStep < steps.length - 1 ? handleNext : handleSubmit}
                             variant="contained"
                             disabled={submitting || (activeStep === steps.length - 1 && sinCambios)}
-                            endIcon={activeStep < steps.length - 1 ? undefined : <SaveOutlinedIcon />}
+                            endIcon={activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <SaveOutlinedIcon />}
                             disableRipple
                             sx={{
                                 textTransform: 'none', borderRadius: 2, fontWeight: 600,

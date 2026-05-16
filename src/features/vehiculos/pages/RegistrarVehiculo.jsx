@@ -1,13 +1,23 @@
 import theme from '../../../shared/styles/theme.js'
 import { useState } from 'react'
-import { Box, TextField, Typography, MenuItem, Dialog, DialogTitle, DialogContent, Stepper, Step, StepLabel, Snackbar, Alert, IconButton, Button } from '@mui/material'
-import { DirectionsCar, Person, Business, Event, Speed, Close, ArrowBackOutlined, SaveOutlined } from '@mui/icons-material'
+import { Box, Paper, TextField, Typography, MenuItem, Dialog, DialogTitle, DialogContent, Stepper, Step, StepLabel, Snackbar, Alert, IconButton, Button } from '@mui/material'
+import { DirectionsCar, Person, Business, Event, Speed, Close, ArrowBackOutlined, ArrowForwardOutlined, CheckOutlined } from '@mui/icons-material'
 import { useTransporte } from '../../../shared/contexts/TransporteContext'
 import { FormField, FormSelect, FormAlert, FormFieldsContainer } from '../../../shared/components/FormularioEstandarizado'
 
-const steps = ['Datos del Vehículo', 'Documentación y Estado']
+const steps = ['Datos del Vehículo', 'Documentación y Estado', 'Confirmación']
 
 const COLORS = theme.palette
+
+const ConfirmRow = ({ label, value }) => (
+  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, py: 0.9, overflow: 'hidden' }}>
+    <Typography variant="body2" sx={{ color: '#9C4040', fontWeight: 500, flexShrink: 0 }}>{label}</Typography>
+    <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary}
+      sx={{ textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
+      {value || '—'}
+    </Typography>
+  </Box>
+)
 
 const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
@@ -26,6 +36,7 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
   })
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [submitting, setSubmitting] = useState(false)
   const [activeStep, setActiveStep] = useState(0)
    
   const { registrarTransporte } = useTransporte()
@@ -37,32 +48,8 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
     setSuccess('')
   }
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    setError('')
-    
-    if (!formData.placa || !formData.marca || !formData.modelo || !formData.color || 
-        !formData.tipo || !formData.capacidad || !formData.idConductor || !formData.idPropietario) {
-      setError('Todos los campos son requeridos')
-      return
-    }
-
-    try {
-      registrarTransporte({
-        ...formData,
-        capacidad: parseFloat(formData.capacidad),
-        idConductor: parseInt(formData.idConductor),
-        idPropietario: parseInt(formData.idPropietario)
-      })
-      setSuccess('Transporte registrado correctamente')
-      
-      setTimeout(() => {
-        handleClose()
-        if (onSuccess) onSuccess()
-      }, 1500)
-    } catch (err) {
-      setError('Error al registrar transporte')
-    }
+  const handleBack = () => {
+    setActiveStep((prev) => prev - 1)
   }
 
   const handleClose = () => {
@@ -86,18 +73,43 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
     onClose()
   }
 
+  const handleSubmit = async () => {
+    setSubmitting(true)
+    setError('')
+    try {
+      registrarTransporte({
+        ...formData,
+        capacidad: parseFloat(formData.capacidad),
+        idConductor: parseInt(formData.idConductor),
+        idPropietario: parseInt(formData.idPropietario)
+      })
+      setSuccess('Transporte registrado correctamente')
+      setTimeout(() => {
+        handleClose()
+        if (onSuccess) onSuccess()
+      }, 1500)
+    } catch (err) {
+      setError('Error al registrar transporte')
+    } finally {
+      setSubmitting(false)
+    }
+   }
+
   const handleNext = () => {
-    // Validar campos del paso 1
-    if (!formData.placa || !formData.marca || !formData.modelo || !formData.color || !formData.tipo || !formData.capacidad) {
-      setError('Todos los campos del vehículo son requeridos')
-      return
+    if (activeStep === 0) {
+      if (!formData.placa || !formData.marca || !formData.modelo || !formData.color || !formData.tipo || !formData.capacidad) {
+        setError('Todos los campos del vehículo son requeridos')
+        return
+      }
+    }
+    if (activeStep === 1) {
+      if (!formData.idConductor || !formData.idPropietario) {
+        setError('Debes asignar un conductor y un propietario')
+        return
+      }
     }
     setError('')
     setActiveStep((prev) => prev + 1)
-  }
-
-  const handleBack = () => {
-    setActiveStep((prev) => prev - 1)
   }
 
   const tiposVehiculo = [
@@ -242,6 +254,47 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
             />
           </FormFieldsContainer>
         )
+      case 2:
+        return (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Paper elevation={0} sx={{
+                flex: 1, minWidth: 0, borderRadius: 2, p: 2.5,
+                border: `1px solid ${theme.palette.divider}`,
+                backgroundColor: 'white', overflow: 'hidden',
+              }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                  <DirectionsCar sx={{ fontSize: 20, color: theme.palette.text.primary }} />
+                  <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Datos del Vehículo</Typography>
+                </Box>
+                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la información del vehículo</Typography>
+                <ConfirmRow label="Placa" value={formData.placa} />
+                <ConfirmRow label="Marca" value={formData.marca} />
+                <ConfirmRow label="Modelo" value={formData.modelo} />
+                <ConfirmRow label="Color" value={formData.color} />
+                <ConfirmRow label="Tipo" value={formData.tipo} />
+                <ConfirmRow label="Capacidad" value={`${formData.capacidad} kg`} />
+                <ConfirmRow label="Estado" value={formData.estado} />
+              </Paper>
+              <Paper elevation={0} sx={{
+                flex: 1, minWidth: 0, borderRadius: 2, p: 2.5,
+                border: `1px solid ${theme.palette.divider}`,
+                backgroundColor: 'white', overflow: 'hidden',
+              }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                  <Person sx={{ fontSize: 20, color: theme.palette.text.primary }} />
+                  <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Asignación y Estado</Typography>
+                </Box>
+                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica conductor, propietario y fechas</Typography>
+                <ConfirmRow label="Conductor" value={`ID: ${formData.idConductor}`} />
+                <ConfirmRow label="Propietario" value={`ID: ${formData.idPropietario}`} />
+                <ConfirmRow label="SOAT" value={formData.vencimientoSOAT || '—'} />
+                <ConfirmRow label="Revisión Técnica" value={formData.vencimientoRevisionTecnica || '—'} />
+                <ConfirmRow label="Seguro de Terceros" value={formData.vencimientoSeguroTerceros || '—'} />
+              </Paper>
+            </Box>
+          </Box>
+        )
       default:
         return null
     }
@@ -321,16 +374,16 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
                 <Button
                   onClick={activeStep < steps.length - 1 ? handleNext : handleSubmit}
                   variant="contained"
-                  endIcon={activeStep < steps.length - 1 ? undefined : <SaveOutlined />}
+                  disabled={submitting}
+                  endIcon={submitting ? undefined : (activeStep < steps.length - 1 ? <ArrowForwardOutlined /> : <CheckOutlined />)}
                   disableRipple
                   sx={{
                     textTransform: 'none', borderRadius: 2, fontWeight: 600,
                     backgroundColor: theme.palette.primary.main,
                     boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
                     '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
-                    '&.Mui-disabled': { backgroundColor: theme.palette.divider, color: '#9E9E9E' },
                   }}>
-                  {activeStep < steps.length - 1 ? 'Siguiente' : 'Registrar'}
+                  {activeStep < steps.length - 1 ? 'Siguiente' : submitting ? 'Registrando...' : 'Registrar'}
                 </Button>
               </Box>
             </Box>

@@ -9,6 +9,7 @@ import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDown
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined'
 import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined'
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined'
+import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined'
 import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import { usePropietario } from '../../../shared/contexts/PropietarioContext'
@@ -392,7 +393,7 @@ const ActualizarPropietario = ({ open, onClose, propietario: propietarioProp, on
                             onClick={activeStep < steps.length - 1 ? handleNext : handleSubmit}
                             variant="contained"
                             disabled={submitting || (activeStep === steps.length - 1 && sinCambios)}
-                            endIcon={activeStep < steps.length - 1 ? undefined : <SaveOutlinedIcon />}
+                            endIcon={activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <SaveOutlinedIcon />}
                             disableRipple
                             sx={{
                                 textTransform: 'none', borderRadius: 2, fontWeight: 600,

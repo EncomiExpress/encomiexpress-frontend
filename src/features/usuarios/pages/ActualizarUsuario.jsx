@@ -10,6 +10,7 @@ import LockOutlinedIcon from '@mui/icons-material/LockOutlined'
 import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined'
 import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined'
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined'
+import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import { useAuth, ROLES } from '../../../shared/contexts/AuthContext'
 import { formFieldStyles } from '../../../shared/components/FormularioEstandarizado'
@@ -446,7 +447,7 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
                             onClick={activeStep < steps.length - 1 ? handleNext : handleSubmit}
                             variant="contained"
                             disabled={submitting || (activeStep === steps.length - 1 && sinCambios)}
-                            endIcon={submitting ? <CircularProgress size={18} color="inherit" /> : (activeStep < steps.length - 1 ? undefined : <SaveOutlinedIcon />)}
+                            endIcon={submitting ? <CircularProgress size={18} color="inherit" /> : (activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <SaveOutlinedIcon />)}
                             disableRipple
                             sx={{
                                 textTransform: 'none', borderRadius: 2, fontWeight: 600,

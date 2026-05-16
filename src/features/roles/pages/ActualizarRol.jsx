@@ -1,7 +1,7 @@
 import theme from '../../../shared/styles/theme.js'
 import { useState, useEffect } from 'react'
 import { Box, Typography, Paper, FormControlLabel, Checkbox, Grid, Alert, Snackbar, Dialog, DialogTitle, DialogContent, IconButton, Button } from '@mui/material'
-import { Security, Close } from '@mui/icons-material'
+import { Security, Close, SaveOutlined } from '@mui/icons-material'
 import { MODULOS, ROLES, useAuth } from '../../../shared/contexts/AuthContext'
 import { 
   FormField, PrimaryButton, SecondaryButton, 
@@ -17,6 +17,10 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
   })
   const [mensaje, setMensaje] = useState('')
   const [error, setError] = useState('')
+  const [enviando, setEnviando] = useState(false)
+  const [sinCambios, setSinCambios] = useState(false)
+  const [intentoGuardar, setIntentoGuardar] = useState(false)
+  const [formOriginal, setFormOriginal] = useState(null)
   const [permisosDisponibles, setPermisosDisponibles] = useState([])
 
   const { getPermisosBackend, actualizarRolBackend } = useAuth()
@@ -32,35 +36,53 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
       }
     }
     cargarPermisos()
-  }, [getPermisosBackend])
+    }, [getPermisosBackend])
 
    useEffect(() => {
      if (rolProp) {
-       console.log('rolProp recibido:', rolProp)
-       console.log('rolProp.permisos:', rolProp.permisos)
-       setFormData({
+       const nuevoForm = {
          nombre: rolProp.nombre || '',
          permisos: (rolProp.permisos || []).map(p => typeof p === 'string' ? p : p.nombre)
-       })
+       }
+       setFormData(nuevoForm)
+       setFormOriginal(nuevoForm)
+       setSinCambios(false)
+       setIntentoGuardar(false)
      }
    }, [rolProp])
 
-    const handleSubmit = async (e) => {
-      e.preventDefault()
-      
-      if (!formData.nombre.trim()) {
-        setError('El nombre del rol es requerido')
-        return
-      }
+   useEffect(() => {
+     if (formOriginal) {
+       setSinCambios(
+         formData.nombre === formOriginal.nombre &&
+         JSON.stringify(formData.permisos.sort()) === JSON.stringify(formOriginal.permisos.sort())
+       )
+     }
+   }, [formData, formOriginal])
 
-      if (formData.permisos.length === 0) {
-        setError('Debe seleccionar al menos un permiso')
-        return
-      }
+   const handleSubmit = async (e) => {
+    e.preventDefault()
+    setIntentoGuardar(true)
 
-      setMensaje('')
+    if (!formData.nombre.trim() && !sinCambios) {
+      setError('El nombre del rol es requerido')
+      return
+    }
+
+    if (formData.permisos.length === 0 && !sinCambios) {
+      setError('Debe seleccionar al menos un permiso')
+      return
+    }
+
+    if (sinCambios) {
       setError('')
+      return
+    }
 
+    setMensaje('')
+    setError('')
+    setEnviando(true)
+    try {
       // Convertir nombres de permisos a IDs numéricos
       const idsPermisos = formData.permisos
         .map(nombrePermiso => {
@@ -69,21 +91,20 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
         })
         .filter(id => id !== null)
 
-      console.log('permisos seleccionados:', formData.permisos)
-      console.log('permisosDisponibles:', permisosDisponibles)
-      console.log('idsPermisos enviados:', idsPermisos)
-
-      console.log('Enviando actualización - rolId:', rolProp.idRol || rolProp.id, 'permisos IDs:', idsPermisos)
-
       const respuesta = await actualizarRolBackend(rolProp.idRol || rolProp.id, formData.nombre, idsPermisos)
-      
+
       if (respuesta.success) {
         onSuccess && onSuccess()
         onClose()
       } else {
         setError(respuesta.message || 'Error al actualizar el rol')
       }
+    } catch (err) {
+      setError('Error al actualizar el rol')
+    } finally {
+      setEnviando(false)
     }
+  }
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth
@@ -102,7 +123,12 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
         </IconButton>
       </DialogTitle>
       <DialogContent sx={{ p: 3 }}>
-        {error && (
+        {intentoGuardar && sinCambios && !error && (
+          <Alert severity="warning" sx={{ mb: 2, borderRadius: 2 }} onClose={() => setIntentoGuardar(false)}>
+            No has realizado ningún cambio. Los permisos del rol ya están actualizados.
+          </Alert>
+        )}
+        {error && !(intentoGuardar && sinCambios) && (
           <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
             {error}
           </Alert>
@@ -185,7 +211,7 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
                 <Box sx={{ p: 1.5, backgroundColor: 'white' }}>
                   <Grid container spacing={0.5}>
                     {modulo.permisos.map((permiso) => (
-                      <Grid item xs={6} sm={4} md={3} key={permiso}>
+                      <Grid size={{ xs: 6, sm: 4, md: 3 }} key={permiso}>
                         <FormControlLabel
                           control={
                             <Checkbox
@@ -230,16 +256,19 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
                   }}>
                   Cancelar
                 </Button>
-          <Button type="submit" variant="contained" disableRipple
+                 <Button type="submit" variant="contained" disableRipple
+                  disabled={enviando}
+                  endIcon={enviando ? undefined : <SaveOutlined />}
                   sx={{
                     textTransform: 'none', borderRadius: 2, fontWeight: 600,
                     backgroundColor: theme.palette.primary.main,
                     boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
                     '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
+                    '&.Mui-disabled': { backgroundColor: theme.palette.divider, color: '#9E9E9E' },
                   }}
                 >
-                  Actualizar Rol
-                  </Button>
+                  {enviando ? 'Guardando...' : 'Guardar Cambios'}
+                </Button>
                 </Box>
               </Box>
              </form>

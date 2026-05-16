@@ -1,7 +1,7 @@
 import theme from '../../../shared/styles/theme.js'
 import { useState, useEffect } from 'react'
 import { Box, Typography, Paper, FormControlLabel, Checkbox, Grid, Alert, IconButton, Snackbar, Dialog, DialogTitle, DialogContent, Button } from '@mui/material'
-import { Security, Close } from '@mui/icons-material'
+import { Security, Close, CheckOutlined } from '@mui/icons-material'
 import { useAuth, PERMISOS, MODULOS } from '../../../shared/contexts/AuthContext'
 import { 
   FormField, 
@@ -18,6 +18,7 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
     permisos: []
   })
   const [mensaje, setMensaje] = useState('')
+  const [enviando, setEnviando] = useState(false)
   const [error, setError] = useState('')
   const [permisosDisponibles, setPermisosDisponibles] = useState([])
 
@@ -35,40 +36,45 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
   }, [getPermisosBackend])
 
    const handleSubmit = async (e) => {
-     e.preventDefault()
-     
-     if (!formData.nombre.trim()) {
-       setError('El nombre del rol es requerido')
-       return
-     }
+    e.preventDefault()
 
-     if (formData.permisos.length === 0) {
-       setError('Debe seleccionar al menos un permiso')
-       return
-     }
+    if (!formData.nombre.trim()) {
+      setError('El nombre del rol es requerido')
+      return
+    }
 
-     setMensaje('')
-     setError('')
+    if (formData.permisos.length === 0) {
+      setError('Debe seleccionar al menos un permiso')
+      return
+    }
 
-     // Convertir nombres de permisos a IDs numéricos
-     const idsPermisos = formData.permisos
-       .map(nombrePermiso => {
-         const permiso = permisosDisponibles.find(p => p.nombre === nombrePermiso)
-         return permiso ? permiso.idPermiso || permiso.id : null
-       })
-       .filter(id => id !== null)
+    setMensaje('')
+    setError('')
+    setEnviando(true)
+    try {
+      // Convertir nombres de permisos a IDs numéricos
+      const idsPermisos = formData.permisos
+        .map(nombrePermiso => {
+          const permiso = permisosDisponibles.find(p => p.nombre === nombrePermiso)
+          return permiso ? permiso.idPermiso || permiso.id : null
+        })
+        .filter(id => id !== null)
 
-     console.log('RegistrarRol - idsPermisos:', idsPermisos)
+      const respuesta = await registrarRol(formData.nombre, idsPermisos)
 
-     const respuesta = await registrarRol(formData.nombre, idsPermisos)
-     
-     if (respuesta.success) {
-       onSuccess && onSuccess()
-       handleClose()
-     } else {
-       setError(respuesta.message || 'Error al registrar el rol')
-     }
-   }
+      if (respuesta.success) {
+        onSuccess && onSuccess()
+        handleClose()
+        setMensaje('Rol registrado exitosamente')
+      } else {
+        setError(respuesta.message || 'Error al registrar el rol')
+      }
+    } catch (err) {
+      setError('Error al registrar el rol')
+    } finally {
+      setEnviando(false)
+    }
+  }
 
   const handleClose = () => {
     setFormData({
@@ -239,7 +245,7 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
                 <Box sx={{ p: 1.5, backgroundColor: 'white' }}>
                   <Grid container spacing={0.5}>
                     {modulo.permisos.map((permiso) => (
-                      <Grid item xs={6} sm={4} md={3} key={permiso}>
+                      <Grid size={{ xs: 6, sm: 4, md: 3 }} key={permiso}>
                         <FormControlLabel
                           control={
                             <Checkbox
@@ -285,13 +291,16 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
                   Cancelar
                 </Button>
                 <Button type="submit" variant="contained" disableRipple
+                  disabled={enviando}
+                  endIcon={enviando ? undefined : <CheckOutlined />}
                   sx={{
                     textTransform: 'none', borderRadius: 2, fontWeight: 600,
                     backgroundColor: theme.palette.primary.main,
                     boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
                     '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
+                    '&.Mui-disabled': { backgroundColor: theme.palette.divider, color: '#9E9E9E' },
                   }}>
-                  Registrar Rol
+                  {enviando ? 'Registrando...' : 'Registrar'}
                 </Button>
               </Box>
             </Box>

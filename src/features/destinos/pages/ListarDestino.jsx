@@ -265,7 +265,7 @@ const ListarDestino = () => {
                                 <TableCell sx={thStyle}>Teléfono</TableCell>
                                 <TableCell sx={thStyle}>Contacto</TableCell>
                                 <TableCell sx={thStyle}>Estado</TableCell>
-                                <TableCell sx={{ ...thStyle, width: 110 }} />
+                                <TableCell sx={{ ...thStyle, width: 130 }}>Acciones</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
