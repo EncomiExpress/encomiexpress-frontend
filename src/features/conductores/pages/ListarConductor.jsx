@@ -1,3 +1,4 @@
+import theme from '../../../shared/styles/theme.js'
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import {
@@ -22,19 +23,12 @@ import { useAuth } from '../../../shared/contexts/AuthContext'
 import RegistrarConductor from './RegistrarConductor'
 import ActualizarConductor from './ActualizarConductor'
 
-const COLORS = {
-    primary: '#CC1818',
-    primaryLight: '#FFE8E8',
-    text: '#1a0e0c',
-    textMuted: '#8A94A6',
-    border: '#E0E0E0',
-    hoverBg: '#F9F9F9',
-}
+const COLORS = theme.palette
 
 const thStyle = {
     fontWeight: 700,
     fontSize: '0.80rem',
-    color: '#1a0e0c',
+    color: theme.palette.text.primary,
     letterSpacing: 0.5,
     py: 1.5,
     borderBottom: `1px solid #E0E0E0`,
@@ -53,7 +47,7 @@ const filterMenuProps = {
                 '& .MuiMenuItem-root': {
                     fontSize: '0.82rem',
                     '&:hover': { backgroundColor: '#FFF5F5' },
-                    '&.Mui-selected': { backgroundColor: 'transparent', fontWeight: 600, color: '#1a0e0c' },
+                    '&.Mui-selected': { backgroundColor: 'transparent', fontWeight: 600, color: theme.palette.text.primary },
                     '&.Mui-selected:hover': { backgroundColor: '#FFF5F5' },
                 },
             },
@@ -141,7 +135,7 @@ const ListarConductor = () => {
             <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
                 <Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <Typography variant="h5" fontWeight={700} color={COLORS.text}>
+                        <Typography variant="h5" fontWeight={700} color={theme.palette.text.primary}>
                             Conductores
                         </Typography>
                         <Chip
@@ -149,7 +143,7 @@ const ListarConductor = () => {
                             size="small"
                             sx={{
                                 backgroundColor: '#F3F4F6',
-                                color: COLORS.textMuted,
+                                color: theme.palette.text.secondary,
                                 fontWeight: 500,
                                 fontSize: '0.72rem',
                                 height: 22,
@@ -157,7 +151,7 @@ const ListarConductor = () => {
                             }}
                         />
                     </Box>
-                    <Typography variant="body2" color={COLORS.textMuted} mt={0.3}>
+                    <Typography variant="body2" color={theme.palette.text.secondary} mt={0.3}>
                         Gestiona los conductores registrados en el sistema.
                     </Typography>
                  </Box>
@@ -167,13 +161,13 @@ const ListarConductor = () => {
                          variant="contained"
                          startIcon={<AddOutlinedIcon />}
                          sx={{
-                             backgroundColor: COLORS.primary,
+                             backgroundColor: theme.palette.primary.main,
                              borderRadius: 2,
                              textTransform: 'none',
                              fontWeight: 600,
                              boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
                              '&:hover': {
-                                 backgroundColor: '#b91c1c',
+                                 backgroundColor: theme.palette.primary.dark,
                                  boxShadow: '0 6px 20px rgba(204,24,24,0.2)',
                              },
                          }}
@@ -211,14 +205,14 @@ const ListarConductor = () => {
                             minWidth: 0,
                             fontWeight: filtroEstado === f.value ? 600 : 400,
                             backgroundColor: filtroEstado === f.value ? 'white' : 'transparent',
-                            color: filtroEstado === f.value ? COLORS.text : '#B05050',
+                            color: filtroEstado === f.value ? theme.palette.text.primary : '#B05050',
                             boxShadow: filtroEstado === f.value
                                 ? '0 1px 4px rgba(0,0,0,0.12)'
                                 : 'none',
                             border: 'none',
                             '&:hover': {
                                 backgroundColor: filtroEstado === f.value ? 'white' : 'transparent',
-                                color: filtroEstado === f.value ? COLORS.text : '#5C3333',
+                                color: filtroEstado === f.value ? theme.palette.text.primary : '#5C3333',
                                 border: 'none',
                             },
                         }}
@@ -238,7 +232,7 @@ const ListarConductor = () => {
                             borderRadius: 2,
                             '&.Mui-focused': { boxShadow: '0 0 0 3px rgba(229,115,115,0.18)' },
                             '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                borderColor: '#CC1818', borderWidth: '1px',
+                                borderColor: theme.palette.primary.main, borderWidth: '1px',
                             },
                         },
                     }}
@@ -248,7 +242,7 @@ const ListarConductor = () => {
                         input: {
                             startAdornment: (
                                 <InputAdornment position="start">
-                                    <SearchIcon sx={{ color: COLORS.textMuted, fontSize: 20 }} />
+                                    <SearchIcon sx={{ color: theme.palette.text.secondary, fontSize: 20 }} />
                                 </InputAdornment>
                             ),
                             endAdornment: searchTerm && (
@@ -268,12 +262,12 @@ const ListarConductor = () => {
                         size="small"
                         icon={<ClearIcon sx={{ fontSize: '14px !important' }} />}
                         onClick={limpiarFiltros}
-                        sx={{ fontSize: '0.72rem', height: 28, cursor: 'pointer', backgroundColor: COLORS.primaryLight, color: COLORS.primary }}
+                        sx={{ fontSize: '0.72rem', height: 28, cursor: 'pointer', backgroundColor: theme.palette.primary.light, color: theme.palette.primary.main }}
                     />
                 )}
             </Box>
 
-            <Paper elevation={0} sx={{ border: `1px solid ${COLORS.border}`, borderRadius: 3, overflow: 'hidden' }}>
+            <Paper elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 3, overflow: 'hidden' }}>
                 <TableContainer>
                     <Table>
                         <TableHead>
@@ -292,7 +286,7 @@ const ListarConductor = () => {
                             {filteredConductores.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={8} align="center" sx={{ py: 7 }}>
-                                        <Typography color={COLORS.textMuted} variant="body2">
+                                        <Typography color={theme.palette.text.secondary} variant="body2">
                                             {conductores.length === 0
                                                 ? 'No hay conductores registrados en el sistema.'
                                                 : 'No se encontraron conductores que coincidan con la búsqueda.'
@@ -305,7 +299,7 @@ const ListarConductor = () => {
                                     <TableRow
                                         key={conductor.idConductor}
                                         sx={{
-                                            '&:hover': { backgroundColor: COLORS.hoverBg },
+                                            '&:hover': { backgroundColor: theme.palette.background.subtle },
                                             transition: 'background-color 0.15s',
                                             opacity: conductor.habilitado ? 1 : 0.55,
                                         }}
@@ -318,7 +312,7 @@ const ListarConductor = () => {
                                                     sx={{
                                                         fontWeight: 600,
                                                         backgroundColor: '#FEF2F2',
-                                                        color: '#CC1818',
+                                                        color: theme.palette.primary.main,
                                                         mb: 0.5,
                                                         height: 20,
                                                         fontSize: '0.7rem',
@@ -339,7 +333,7 @@ const ListarConductor = () => {
                                                 sx={{
                                                     fontWeight: 600,
                                                     backgroundColor: '#FEF2F2',
-                                                    color: '#CC1818',
+                                                    color: theme.palette.primary.main,
                                                     fontSize: '0.7rem',
                                                 }}
                                             />
@@ -380,7 +374,7 @@ const ListarConductor = () => {
                                                         <IconButton
                                                             size="small"
                                                             onClick={() => setConductorVer(conductor)}
-                                                            sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}
+                                                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
                                                         >
                                                             <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
                                                         </IconButton>
@@ -391,7 +385,7 @@ const ListarConductor = () => {
                                                         <IconButton
                                                             size="small"
                                                             onClick={() => { setConductorEditar(conductor); setModalActualizarOpen(true) }}
-                                                            sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}
+                                                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
                                                         >
                                                             <EditOutlinedIcon sx={{ fontSize: 18 }} />
                                                         </IconButton>
@@ -411,7 +405,7 @@ const ListarConductor = () => {
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 px: 0.5, pt: 1.5,
             }}>
-                <Typography variant="body2" color={COLORS.textMuted}>
+                <Typography variant="body2" color={theme.palette.text.secondary}>
                     Total de conductores: {filteredConductores.length}
                 </Typography>
             </Box>
@@ -419,12 +413,12 @@ const ListarConductor = () => {
             {conductorVer && (
                 <Dialog open onClose={() => setConductorVer(null)} maxWidth="md" fullWidth
                     slotProps={{ paper: { sx: { borderRadius: 3, p: 3, backgroundColor: '#FAFAFA' } } }}>
-                    <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${COLORS.border}`, backgroundColor: 'white', mb: 2 }}>
+                    <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white', mb: 2 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                            <PersonOutlinedIcon sx={{ fontSize: 22, color: COLORS.text }} />
-                            <Typography fontWeight={700} fontSize="1.05rem" color={COLORS.text}>Detalles del Conductor</Typography>
+                            <PersonOutlinedIcon sx={{ fontSize: 22, color: theme.palette.text.primary }} />
+                            <Typography fontWeight={700} fontSize="1.05rem" color={theme.palette.text.primary}>Detalles del Conductor</Typography>
                         </Box>
-                        <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2.5 }}>
+                        <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2.5 }}>
                             Información del perfil del conductor
                         </Typography>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5 }}>
@@ -432,10 +426,10 @@ const ListarConductor = () => {
                                 {conductorVer.nombre?.[0]}{conductorVer.apellido?.[0]}
                             </Avatar>
                             <Box>
-                                <Typography fontWeight={700} fontSize="1.1rem" color={COLORS.text}>
+                                <Typography fontWeight={700} fontSize="1.1rem" color={theme.palette.text.primary}>
                                     {conductorVer.nombre} {conductorVer.apellido}
                                 </Typography>
-                                <Typography variant="body2" color={COLORS.textMuted} mt={0.4}>
+                                <Typography variant="body2" color={theme.palette.text.secondary} mt={0.4}>
                                     {conductorVer.email || 'Sin email'}
                                 </Typography>
                             </Box>
@@ -443,45 +437,45 @@ const ListarConductor = () => {
                     </Paper>
 
                     <Box sx={{ display: 'flex', gap: 2 }}>
-                        <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${COLORS.border}`, backgroundColor: 'white', flex: 1 }}>
+                        <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white', flex: 1 }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                <AssignmentIndOutlinedIcon sx={{ fontSize: 22, color: COLORS.text }} />
-                                <Typography fontWeight={700} fontSize="1.05rem" color={COLORS.text}>Detalles del Conductor</Typography>
+                                <AssignmentIndOutlinedIcon sx={{ fontSize: 22, color: theme.palette.text.primary }} />
+                                <Typography fontWeight={700} fontSize="1.05rem" color={theme.palette.text.primary}>Detalles del Conductor</Typography>
                             </Box>
-                            <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2 }}>
+                            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
                                 Identificación y datos personales
                             </Typography>
                             <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                                <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Tipo ID</Typography><Typography variant="body2" fontWeight={500}>{getTipoIdentificacionLabel(conductorVer.tipoIdentificacion)}</Typography></Box>
-                                <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Número ID</Typography><Typography variant="body2" fontWeight={500}>{conductorVer.numeroIdentificacion}</Typography></Box>
-                                <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Nombre</Typography><Typography variant="body2" fontWeight={500}>{conductorVer.nombre}</Typography></Box>
-                                <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Apellido</Typography><Typography variant="body2" fontWeight={500}>{conductorVer.apellido}</Typography></Box>
+                                <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Tipo ID</Typography><Typography variant="body2" fontWeight={500}>{getTipoIdentificacionLabel(conductorVer.tipoIdentificacion)}</Typography></Box>
+                                <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Número ID</Typography><Typography variant="body2" fontWeight={500}>{conductorVer.numeroIdentificacion}</Typography></Box>
+                                <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Nombre</Typography><Typography variant="body2" fontWeight={500}>{conductorVer.nombre}</Typography></Box>
+                                <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Apellido</Typography><Typography variant="body2" fontWeight={500}>{conductorVer.apellido}</Typography></Box>
                             </Box>
                         </Paper>
 
-                        <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${COLORS.border}`, backgroundColor: 'white', flex: 1 }}>
+                        <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white', flex: 1 }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                <DirectionsCarOutlinedIcon sx={{ fontSize: 22, color: COLORS.text }} />
-                                <Typography fontWeight={700} fontSize="1.05rem" color={COLORS.text}>Licencia de Conducción</Typography>
+                                <DirectionsCarOutlinedIcon sx={{ fontSize: 22, color: theme.palette.text.primary }} />
+                                <Typography fontWeight={700} fontSize="1.05rem" color={theme.palette.text.primary}>Licencia de Conducción</Typography>
                             </Box>
-                            <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2 }}>
+                            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
                                 Datos de licencia y contacto
                             </Typography>
                             <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                                <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Teléfono</Typography><Typography variant="body2" fontWeight={500}>{conductorVer.telefono}</Typography></Box>
-                                <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Email</Typography><Typography variant="body2" fontWeight={500}>{conductorVer.email || '—'}</Typography></Box>
-                                <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Licencia</Typography><Typography variant="body2" fontWeight={500}>{conductorVer.licenciaConduccion}</Typography></Box>
-                                <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Vencimiento</Typography><Typography variant="body2" fontWeight={500} color={isVencido(conductorVer.fechaVencimientoLicencia) ? '#ef4444' : '#2E7D32'}>{conductorVer.fechaVencimientoLicencia ? new Date(conductorVer.fechaVencimientoLicencia).toLocaleDateString() : 'N/A'}</Typography></Box>
-                                <Box sx={{ gridColumn: '1 / -1' }}><Typography variant="caption" color="#8A94A6" fontWeight={600}>Estado</Typography><Typography variant="body2" fontWeight={500} color={conductorVer.estado === 'Activo' ? '#2E7D32' : '#ef4444'}>{conductorVer.estado}</Typography></Box>
+                                <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Teléfono</Typography><Typography variant="body2" fontWeight={500}>{conductorVer.telefono}</Typography></Box>
+                                <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Email</Typography><Typography variant="body2" fontWeight={500}>{conductorVer.email || '—'}</Typography></Box>
+                                <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Licencia</Typography><Typography variant="body2" fontWeight={500}>{conductorVer.licenciaConduccion}</Typography></Box>
+                                <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Vencimiento</Typography><Typography variant="body2" fontWeight={500} color={isVencido(conductorVer.fechaVencimientoLicencia) ? '#ef4444' : '#2E7D32'}>{conductorVer.fechaVencimientoLicencia ? new Date(conductorVer.fechaVencimientoLicencia).toLocaleDateString() : 'N/A'}</Typography></Box>
+                                <Box sx={{ gridColumn: '1 / -1' }}><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Estado</Typography><Typography variant="body2" fontWeight={500} color={conductorVer.estado === 'Activo' ? '#2E7D32' : '#ef4444'}>{conductorVer.estado}</Typography></Box>
                             </Box>
                         </Paper>
                     </Box>
 
                     <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
                         <Button onClick={() => setConductorVer(null)} variant="contained" sx={{
-                            backgroundColor: COLORS.primary, borderRadius: 2, textTransform: 'none',
+                            backgroundColor: theme.palette.primary.main, borderRadius: 2, textTransform: 'none',
                             boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
-                            '&:hover': { backgroundColor: '#b91c1c', boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
+                            '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
                         }}>
                             Cerrar
                         </Button>

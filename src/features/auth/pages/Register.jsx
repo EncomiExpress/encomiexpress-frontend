@@ -13,6 +13,7 @@ import {
   PersonAdd
 } from '@mui/icons-material'
 import { useAuth, ROLES } from '../../../shared/contexts/AuthContext'
+import theme from '../../../shared/styles/theme.js'
 import logo from '../../../assets/logo.png'
 
 const TIPOS_IDENTIFICACION = [
@@ -123,7 +124,7 @@ const Register = () => {
       {/* Barra superior roja */}
       <Box sx={{
         position: 'absolute', top: 0, left: 0, right: 0, height: 4,
-        background: 'linear-gradient(90deg, #1a2e6e, #CC1818, #1a2e6e)',
+        background: theme.palette.gradient.navbar,
         zIndex: 20,
       }} />
 
@@ -131,23 +132,11 @@ const Register = () => {
       <Box sx={{ position: 'absolute', bottom: -80, left: -80, zIndex: 0, opacity: 0.12, transform: 'rotate(-5deg)' }}>
         <svg width="520" height="520" viewBox="0 0 300 300" fill="none" xmlns="http://www.w3.org/2000/svg">
           <polygon points="150,20 280,90 150,160 20,90" fill="#e84040" />
-          <polygon points="20,90 150,160 150,280 20,210" fill="#CC1818" />
+          <polygon points="20,90 150,160 150,280 20,210" fill={theme.palette.primary.main} />
           <polygon points="280,90 150,160 150,280 280,210" fill="#9b1010" />
-          <polygon points="150,20 280,90 150,160 20,90" fill="none" stroke="#CC1818" strokeWidth="2.5" />
-          <polygon points="20,90 150,160 150,280 20,210" fill="none" stroke="#CC1818" strokeWidth="2.5" />
-          <polygon points="280,90 150,160 150,280 280,210" fill="none" stroke="#CC1818" strokeWidth="2.5" />
-        </svg>
-      </Box>
-
-      {/* Cubo decorativo — arriba derecha */}
-      <Box sx={{ position: 'absolute', top: -80, right: -80, zIndex: 0, opacity: 0.09, transform: 'rotate(8deg)' }}>
-        <svg width="580" height="580" viewBox="0 0 300 300" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <polygon points="150,20 280,90 150,160 20,90" fill="#2a3f8f" />
-          <polygon points="20,90 150,160 150,280 20,210" fill="#1a2e6e" />
-          <polygon points="280,90 150,160 150,280 280,210" fill="#0f1c45" />
-          <polygon points="150,20 280,90 150,160 20,90" fill="none" stroke="#1a2e6e" strokeWidth="2.5" />
-          <polygon points="20,90 150,160 150,280 20,210" fill="none" stroke="#1a2e6e" strokeWidth="2.5" />
-          <polygon points="280,90 150,160 150,280 280,210" fill="none" stroke="#1a2e6e" strokeWidth="2.5" />
+          <polygon points="150,20 280,90 150,160 20,90" fill="none" stroke={theme.palette.primary.main} strokeWidth="2.5" />
+          <polygon points="20,90 150,160 150,280 20,210" fill="none" stroke={theme.palette.primary.main} strokeWidth="2.5" />
+          <polygon points="280,90 150,160 150,280 280,210" fill="none" stroke={theme.palette.primary.main} strokeWidth="2.5" />
         </svg>
       </Box>
 
@@ -157,6 +146,7 @@ const Register = () => {
         to="/"
         startIcon={<ArrowBack />}
         sx={{
+
           position: 'absolute',
           top: 20,
           left: 24,
@@ -173,7 +163,7 @@ const Register = () => {
           '&:hover': {
             backgroundColor: '#f5f5f5',
             borderColor: 'rgba(26,46,110,0.2)',
-            color: '#CC1818',
+            color: theme.palette.primary.main,
           },
           transition: 'all 0.2s ease',
         }}
@@ -219,7 +209,7 @@ const Register = () => {
             <img src={logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </Box>
           <Box sx={{ textAlign: 'center' }}>
-            <Typography sx={{ color: '#212121', fontWeight: 700, fontSize: '1.5rem', mb: 0.5, lineHeight: 1.2, fontFamily: 'Cambria, Georgia, serif' }}>
+            <Typography sx={{ color: theme.palette.text.dark, fontWeight: 700, fontSize: '1.5rem', mb: 0.5, lineHeight: 1.2, fontFamily: 'Cambria, Georgia, serif' }}>
               Crear Cuenta
             </Typography>
             <Typography sx={{ color: 'rgba(33,33,33,0.45)', fontSize: '0.875rem' }}>
@@ -247,7 +237,7 @@ const Register = () => {
               {/* Columna izquierda */}
               <Box sx={{ flex: 1 }}>
                 <FormControl fullWidth required sx={{ mb: 2.5 }}>
-                  <InputLabel sx={{ '&.Mui-focused': { color: '#CC1818' } }}>
+                  <InputLabel sx={{ '&.Mui-focused': { color: theme.palette.primary.main } }}>
                     Tipo de Identificación
                   </InputLabel>
                   <Select
@@ -281,8 +271,8 @@ const Register = () => {
                   }}
                   sx={{
                     mb: 2.5,
-                    '& .MuiOutlinedInput-root': { '&.Mui-focused fieldset': { borderColor: '#CC1818' } },
-                    '& .MuiInputLabel-root.Mui-focused': { color: '#CC1818' },
+                    '& .MuiOutlinedInput-root': { '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main } },
+                    '& .MuiInputLabel-root.Mui-focused': { color: theme.palette.primary.main },
                   }}
                 />
 
@@ -303,8 +293,8 @@ const Register = () => {
                   }}
                   sx={{
                     mb: 2.5,
-                    '& .MuiOutlinedInput-root': { '&.Mui-focused fieldset': { borderColor: '#CC1818' } },
-                    '& .MuiInputLabel-root.Mui-focused': { color: '#CC1818' },
+                    '& .MuiOutlinedInput-root': { '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main } },
+                    '& .MuiInputLabel-root.Mui-focused': { color: theme.palette.primary.main },
                   }}
                 />
 
@@ -325,8 +315,8 @@ const Register = () => {
                   }}
                   sx={{
                     mb: 2.5,
-                    '& .MuiOutlinedInput-root': { '&.Mui-focused fieldset': { borderColor: '#CC1818' } },
-                    '& .MuiInputLabel-root.Mui-focused': { color: '#CC1818' },
+                    '& .MuiOutlinedInput-root': { '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main } },
+                    '& .MuiInputLabel-root.Mui-focused': { color: theme.palette.primary.main },
                   }}
                 />
               </Box>
@@ -349,8 +339,8 @@ const Register = () => {
                   }}
                   sx={{
                     mb: 2.5,
-                    '& .MuiOutlinedInput-root': { '&.Mui-focused fieldset': { borderColor: '#CC1818' } },
-                    '& .MuiInputLabel-root.Mui-focused': { color: '#CC1818' },
+                    '& .MuiOutlinedInput-root': { '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main } },
+                    '& .MuiInputLabel-root.Mui-focused': { color: theme.palette.primary.main },
                   }}
                 />
 
@@ -372,8 +362,8 @@ const Register = () => {
                   }}
                   sx={{
                     mb: 2.5,
-                    '& .MuiOutlinedInput-root': { '&.Mui-focused fieldset': { borderColor: '#CC1818' } },
-                    '& .MuiInputLabel-root.Mui-focused': { color: '#CC1818' },
+                    '& .MuiOutlinedInput-root': { '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main } },
+                    '& .MuiInputLabel-root.Mui-focused': { color: theme.palette.primary.main },
                   }}
                 />
 
@@ -406,13 +396,13 @@ const Register = () => {
                   }}
                   sx={{
                     mb: 2.5,
-                    '& .MuiOutlinedInput-root': { '&.Mui-focused fieldset': { borderColor: '#CC1818' } },
-                    '& .MuiInputLabel-root.Mui-focused': { color: '#CC1818' },
+                    '& .MuiOutlinedInput-root': { '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main } },
+                    '& .MuiInputLabel-root.Mui-focused': { color: theme.palette.primary.main },
                   }}
                 />
 
                 <FormControl fullWidth required sx={{ mb: 2.5 }}>
-                  <InputLabel sx={{ '&.Mui-focused': { color: '#CC1818' } }}>
+                  <InputLabel sx={{ '&.Mui-focused': { color: theme.palette.primary.main } }}>
                     Rol
                   </InputLabel>
                   <Select
@@ -446,7 +436,7 @@ const Register = () => {
               <Typography sx={{ color: 'rgba(33,33,33,0.7)', fontSize: '0.9rem' }}>
                 Iniciales:
               </Typography>
-              <Typography sx={{ color: '#CC1818', fontWeight: 700, fontSize: '1rem' }}>
+              <Typography sx={{ color: theme.palette.primary.main, fontWeight: 700, fontSize: '1rem' }}>
                 {getIniciales() || '---'}
               </Typography>
             </Box>
@@ -459,7 +449,7 @@ const Register = () => {
               disabled={loading}
               startIcon={<PersonAdd />}
               sx={{
-                backgroundColor: '#CC1818',
+                backgroundColor: theme.palette.primary.main,
                 borderRadius: 2,
                 py: 1.5,
                 fontWeight: 700,
@@ -467,7 +457,7 @@ const Register = () => {
                 textTransform: 'none',
                 boxShadow: '0 4px 14px rgba(204, 24, 24, 0.3)',
                 '&:hover': {
-                  backgroundColor: '#b91c1c',
+                  backgroundColor: theme.palette.primary.dark,
                   boxShadow: '0 6px 20px rgba(204, 24, 24, 0.4)',
                 },
                 '&:disabled': {
@@ -488,7 +478,7 @@ const Register = () => {
                 to="/login"
                 variant="text"
                 sx={{
-                  color: '#CC1818',
+                  color: theme.palette.primary.main,
                   fontWeight: 600,
                   p: 0,
                   minWidth: 'auto',

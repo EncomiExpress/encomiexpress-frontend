@@ -1,44 +1,34 @@
+import theme from '../styles/theme.js'
 import { TextField, Button, Box, Typography, Select, MenuItem, FormControl, InputLabel, InputAdornment, IconButton, Alert, FormHelperText } from '@mui/material'
 import { SaveOutlined, VisibilityOutlined, VisibilityOffOutlined } from '@mui/icons-material'
 import { useState } from 'react'
-
-// Colores del tema — alineados con COLORS usado en las páginas
-export const theme = {
-  primary: '#CC1818',
-  primaryLight: '#FFE8E8',
-  secondary: '#1A2E6E',
-  text: '#1a0e0c',
-  textMuted: '#8A94A6',
-  border: '#E0E0E0',
-  hoverBg: '#F9F9F9',
-}
 
 // Estilos estándar para TextField
 export const formFieldStyles = {
   '& .MuiOutlinedInput-root': {
     borderRadius: 2,
-    '& fieldset': { borderColor: theme.border },
-    '&:hover fieldset': { borderColor: theme.primary },
+    '& fieldset': { borderColor: theme.palette.divider },
+    '&:hover fieldset': { borderColor: theme.palette.primary.main },
     '&.Mui-focused': { boxShadow: '0 0 0 3px rgba(229,115,115,0.18)' },
-    '&.Mui-focused fieldset': { borderColor: theme.primary, borderWidth: '1px' },
+    '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
     '& input:-webkit-autofill': {
       WebkitBoxShadow: '0 0 0 1000px #FFF5F5 inset',
-      WebkitTextFillColor: '#1a0e0c',
+      WebkitTextFillColor: theme.palette.text.primary,
     },
   },
-  '& .MuiInputLabel-root.Mui-focused': { color: theme.primary },
+  '& .MuiInputLabel-root.Mui-focused': { color: theme.palette.primary.main },
 }
 
 // Estilos estándar para Select/FormControl
 export const formSelectStyles = {
   '& .MuiOutlinedInput-root': {
     borderRadius: 2,
-    '& fieldset': { borderColor: theme.border },
-    '&:hover fieldset': { borderColor: theme.primary, borderWidth: '1px' },
+    '& fieldset': { borderColor: theme.palette.divider },
+    '&:hover fieldset': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
     '&.Mui-focused': { boxShadow: '0 0 0 3px rgba(229,115,115,0.18)' },
-    '&.Mui-focused fieldset': { borderColor: theme.primary, borderWidth: '1px' },
+    '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
   },
-  '& .MuiInputLabel-root.Mui-focused': { color: theme.primary },
+  '& .MuiInputLabel-root.Mui-focused': { color: theme.palette.primary.main },
 }
 
 // Componente de campo de texto estándar
@@ -108,7 +98,7 @@ export const FormSelect = ({
 }) => {
   return (
     <FormControl fullWidth required={required} error={!!error} sx={formSelectStyles}>
-      <InputLabel sx={{ '&.Mui-focused': { color: theme.primary } }}>{label}</InputLabel>
+      <InputLabel sx={{ '&.Mui-focused': { color: theme.palette.primary.main } }}>{label}</InputLabel>
       <Select
         name={name}
         value={value}
@@ -188,7 +178,7 @@ export const PrimaryButton = ({ children, onClick, type = 'submit', fullWidth = 
       onClick={onClick}
       startIcon={Icon ? <Icon /> : <SaveOutlined />}
       sx={{
-        backgroundColor: theme.primary,
+        backgroundColor: theme.palette.primary.main,
         borderRadius: 2,
         py: 1.5,
         px: 3,
@@ -196,7 +186,7 @@ export const PrimaryButton = ({ children, onClick, type = 'submit', fullWidth = 
         textTransform: 'none',
         boxShadow: '0 4px 14px rgba(204, 24, 24, 0.3)',
         '&:hover': {
-          backgroundColor: '#b91c1c',
+          backgroundColor: theme.palette.primary.dark,
           boxShadow: '0 6px 20px rgba(204, 24, 24, 0.4)'
         },
       }}
@@ -218,8 +208,8 @@ export const SecondaryButton = ({ children, onClick, type = 'button', fullWidth 
       href={href}
       startIcon={Icon ? <Icon /> : undefined}
       sx={{
-        borderColor: theme.border,
-        color: theme.textMuted,
+        borderColor: theme.palette.divider,
+        color: theme.palette.text.secondary,
         borderRadius: 2,
         py: 1.5,
         px: 3,
@@ -275,7 +265,7 @@ export const FormHeader = ({ icon: Icon, title, subtitle }) => {
         width: 48,
         height: 48,
         borderRadius: 2,
-        background: 'linear-gradient(135deg, #CC1818 0%, #dc2626 100%)',
+        background: theme.palette.gradient.primary,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center'
@@ -287,7 +277,7 @@ export const FormHeader = ({ icon: Icon, title, subtitle }) => {
           {title}
         </Typography>
         {subtitle && (
-          <Typography sx={{ color: theme.textMuted, fontSize: '0.875rem' }}>
+          <Typography sx={{ color: theme.palette.text.secondary, fontSize: '0.875rem' }}>
             {subtitle}
           </Typography>
         )}
@@ -305,7 +295,7 @@ export const FormContainer = ({ children, maxWidth = 900 }) => {
         mx: 'auto',
         backgroundColor: '#fff',
         borderRadius: 2,
-        border: `1px solid ${theme.border}`,
+        border: `1px solid ${theme.palette.divider}`,
         p: 4
       }}>
         {children}

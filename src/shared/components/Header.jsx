@@ -5,14 +5,15 @@ import {
   PaletteOutlined as PaletteIcon,
 } from '@mui/icons-material'
 import { useAuth } from '../contexts/AuthContext'
+import theme from '../styles/theme.js'
 
 //────────────────────────────────────────────────
 const C = {
-  red: '#CC1818',
-  navy: '#1a2e6e',
+  red: theme.palette.primary.main,
+  navy: theme.palette.secondary.main,
   white: '#ffffff',
   textMuted: 'rgba(33,33,33,0.45)',
-  textBase: '#212121',
+  textBase: theme.palette.text.dark,
   textIcon: '#8b8382',
   textIconHover: '#483c3a',
   bg: '#f5f5f5',

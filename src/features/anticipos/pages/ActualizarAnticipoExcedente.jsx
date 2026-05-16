@@ -1,3 +1,4 @@
+import theme from '../../../shared/styles/theme.js'
 import { useState, useEffect } from 'react'
 import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, Snackbar, TextField, Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material'
 import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined'
@@ -9,15 +10,7 @@ import CloseIcon from '@mui/icons-material/Close'
 import { useAnticipos } from '../../../shared/contexts/AnticipoExcedenteContext'
 import { FormField, FormSelect, formFieldStyles } from '../../../shared/components/FormularioEstandarizado'
 
-const COLORS = {
-    primary: '#CC1818',
-    primaryLight: '#FFE8E8',
-    secondary: '#1A2E6E',
-    text: '#1a0e0c',
-    textMuted: '#8A94A6',
-    border: '#E0E0E0',
-    hoverBg: '#F9F9F9',
-}
+const COLORS = theme.palette
 
 const ESTADO_COLORS = {
     'entregado': { bg: '#E3F2FD', color: '#1565C0' },
@@ -32,7 +25,7 @@ const steps = ['Asignación', 'Estado y Fechas']
 const ConfirmRow = ({ label, value }) => (
     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, py: 0.9, overflow: 'hidden' }}>
         <Typography variant="body2" sx={{ color: '#9C4040', fontWeight: 500, flexShrink: 0 }}>{label}</Typography>
-        <Typography variant="body2" fontWeight={500} color={COLORS.text}
+        <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary}
             sx={{ textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
             {value || '—'}
         </Typography>
@@ -202,7 +195,7 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
 
     const cardSx = {
         flex: 1, minWidth: 0, borderRadius: 2, p: 2.5,
-        border: `1px solid ${COLORS.border}`,
+        border: `1px solid ${theme.palette.divider}`,
         backgroundColor: 'white',
         overflow: 'hidden',
     }
@@ -279,12 +272,12 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
                                 gap: 2,
                             }}
                         >
-                            <AttachMoneyIcon sx={{ color: excedente >= 0 ? '#2E7D32' : COLORS.primary, fontSize: 32 }} />
+                            <AttachMoneyIcon sx={{ color: excedente >= 0 ? '#2E7D32' : theme.palette.primary.main, fontSize: 32 }} />
                             <Box>
-                                <Typography variant="caption" fontWeight={700} color={excedente >= 0 ? '#2E7D32' : COLORS.primary} textTransform="uppercase" letterSpacing={0.8}>
+                                <Typography variant="caption" fontWeight={700} color={excedente >= 0 ? '#2E7D32' : theme.palette.primary.main} textTransform="uppercase" letterSpacing={0.8}>
                                     {excedente >= 0 ? 'Excedente a devolver' : 'Faltante (gasto mayor al anticipo)'}
                                 </Typography>
-                                <Typography variant="h5" fontWeight={800} color={excedente >= 0 ? '#2E7D32' : COLORS.primary}>
+                                <Typography variant="h5" fontWeight={800} color={excedente >= 0 ? '#2E7D32' : theme.palette.primary.main}>
                                     {formatMoney(Math.abs(excedente))}
                                 </Typography>
                             </Box>
@@ -370,10 +363,10 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
                         <Box sx={{ display: 'flex', gap: 2 }}>
                             <Paper elevation={0} sx={cardSx}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                                    <AssignmentIndOutlinedIcon sx={{ fontSize: 20, color: COLORS.text }} />
-                                    <Typography fontWeight={700} fontSize="0.95rem" color={COLORS.text}>Asignación</Typography>
+                                    <AssignmentIndOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
+                                    <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Asignación</Typography>
                                 </Box>
-                                <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2 }}>Verifica la asignación del anticipo</Typography>
+                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la asignación del anticipo</Typography>
                                 <ConfirmRow label="Conductor" value={getNombreConductor(form?.idConductor)} />
                                 <ConfirmRow label="Ruta" value={getNombreRuta(form?.idRuta)} />
                                 <ConfirmRow label="Anticipo" value={formatMoney(form?.valorAnticipo)} />
@@ -382,10 +375,10 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
                             </Paper>
                             <Paper elevation={0} sx={cardSx}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                                    <AttachMoneyIcon sx={{ fontSize: 20, color: COLORS.text }} />
-                                    <Typography fontWeight={700} fontSize="0.95rem" color={COLORS.text}>Estado y Fechas</Typography>
+                                    <AttachMoneyIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
+                                    <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Estado y Fechas</Typography>
                                 </Box>
-                                <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2 }}>Verifica el estado y las fechas</Typography>
+                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica el estado y las fechas</Typography>
                                 <ConfirmRowChip label="Estado" value={form?.estado} colors={ESTADO_COLORS[form?.estado]} />
                                 <ConfirmRow label="F. Entrega" value={formatFecha(form?.fechaEntrega)} />
                                 <ConfirmRow label="F. Legalización" value={formatFecha(form?.fechaLegalizacion)} />
@@ -406,7 +399,7 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
         return (
             <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
                 <Box sx={{ p: 3.5, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 300 }}>
-                    <Typography color={COLORS.textMuted}>Cargando datos del anticipo...</Typography>
+                    <Typography color={theme.palette.text.secondary}>Cargando datos del anticipo...</Typography>
                 </Box>
             </Dialog>
         )
@@ -415,16 +408,16 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
     return (
         <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth
             slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}>
-            <DialogTitle sx={{ m: 0, p: 2, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${COLORS.border}` }}>
+            <DialogTitle sx={{ m: 0, p: 2, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${theme.palette.divider}` }}>
                 <Box>
                     <Typography variant="h6" fontWeight={700}>
                         Editar Anticipo / Excedente
                     </Typography>
-                    <Typography variant="body2" color={COLORS.textMuted}>
+                    <Typography variant="body2" color={theme.palette.text.secondary}>
                         Modifica los campos que necesites.
                     </Typography>
                 </Box>
-                <IconButton onClick={onClose} sx={{ color: '#8A94A6' }}>
+                <IconButton onClick={onClose} sx={{ color: theme.palette.text.secondary }}>
                     <CloseIcon />
                 </IconButton>
             </DialogTitle>
@@ -433,16 +426,16 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
                 <Stepper activeStep={activeStep} alternativeLabel
                 sx={{
                         mb: 3, mt: 2,
-                        '& .MuiStepIcon-root': { color: '#E0E0E0' },
-                        '& .MuiStepIcon-root.Mui-active': { color: COLORS.primary },
-                        '& .MuiStepIcon-root.Mui-completed': { color: COLORS.primary },
+                        '& .MuiStepIcon-root': { color: theme.palette.divider },
+                        '& .MuiStepIcon-root.Mui-active': { color: theme.palette.primary.main },
+                        '& .MuiStepIcon-root.Mui-completed': { color: theme.palette.primary.main },
                         '& .MuiStepIcon-text': { fill: 'white', fontSize: '0.7rem', fontWeight: 700 },
-                        '& .MuiStepConnector-line': { borderColor: COLORS.border },
-                        '& .MuiStepConnector-root.Mui-active .MuiStepConnector-line': { borderColor: COLORS.primary },
-                        '& .MuiStepConnector-root.Mui-completed .MuiStepConnector-line': { borderColor: COLORS.primary },
-                        '& .MuiStepLabel-label': { fontSize: '0.8rem', color: COLORS.textMuted, mt: 0.5 },
-                        '& .MuiStepLabel-label.Mui-active': { color: COLORS.text, fontWeight: 600 },
-                        '& .MuiStepLabel-label.Mui-completed': { color: COLORS.primary, fontWeight: 500 },
+                        '& .MuiStepConnector-line': { borderColor: theme.palette.divider },
+                        '& .MuiStepConnector-root.Mui-active .MuiStepConnector-line': { borderColor: theme.palette.primary.main },
+                        '& .MuiStepConnector-root.Mui-completed .MuiStepConnector-line': { borderColor: theme.palette.primary.main },
+                        '& .MuiStepLabel-label': { fontSize: '0.8rem', color: theme.palette.text.secondary, mt: 0.5 },
+                        '& .MuiStepLabel-label.Mui-active': { color: theme.palette.text.primary, fontWeight: 600 },
+                        '& .MuiStepLabel-label.Mui-completed': { color: theme.palette.primary.main, fontWeight: 500 },
                     }}>
                     {steps.map(label => <Step key={label}><StepLabel>{label}</StepLabel></Step>)}
                 </Stepper>
@@ -453,23 +446,23 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
 
                 <Box sx={{
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    mt: 3, pt: 2, borderTop: `1px solid ${COLORS.border}`,
+                    mt: 3, pt: 2, borderTop: `1px solid ${theme.palette.divider}`,
                 }}>
                     <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined"
                         startIcon={<ArrowBackOutlinedIcon />} disableRipple
                         sx={{
-                            textTransform: 'none', borderRadius: 2, borderColor: COLORS.border,
-                            color: COLORS.text, fontWeight: 500,
-                            '&:hover': { borderColor: '#BDBDBD', backgroundColor: COLORS.hoverBg },
-                            '&.Mui-disabled': { borderColor: COLORS.border, color: COLORS.textMuted },
+                            textTransform: 'none', borderRadius: 2, borderColor: theme.palette.divider,
+                            color: theme.palette.text.primary, fontWeight: 500,
+                            '&:hover': { borderColor: '#BDBDBD', backgroundColor: theme.palette.background.subtle },
+                            '&.Mui-disabled': { borderColor: theme.palette.divider, color: theme.palette.text.secondary },
                         }}>
                         Anterior
                     </Button>
                     <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
                         <Button onClick={handleCancelar} disableRipple
                             sx={{
-                                textTransform: 'none', color: COLORS.textMuted, fontWeight: 500, borderRadius: 2,
-                                '&:hover': { backgroundColor: COLORS.hoverBg, color: COLORS.text },
+                                textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 2,
+                                '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary },
                             }}>
                             Cancelar
                         </Button>
@@ -481,10 +474,10 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
                             disableRipple
                             sx={{
                                 textTransform: 'none', borderRadius: 2, fontWeight: 600,
-                                backgroundColor: COLORS.primary,
+                                backgroundColor: theme.palette.primary.main,
                                 boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
-                                '&:hover': { backgroundColor: '#b91c1c', boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
-                                '&.Mui-disabled': { backgroundColor: '#E0E0E0', color: '#9E9E9E' },
+                                '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
+                                '&.Mui-disabled': { backgroundColor: theme.palette.divider, color: '#9E9E9E' },
                             }}>
                             {activeStep < steps.length - 1
                                 ? 'Siguiente'

@@ -4,6 +4,7 @@ import slide1 from '../../assets/box.png'
 import slide2 from '../../assets/camion.png'
 import slide3 from '../../assets/customers.png'
 import slide4 from '../../assets/cashbag.png'
+import theme from '../styles/theme.js'
 
 const slides = [slide1, slide2, slide3, slide4]
 
@@ -44,8 +45,8 @@ const Home = () => {
             border: '1px solid rgba(26,46,110,0.18)',
             px: 2.5, py: 0.8, borderRadius: '30px', mb: 4,
           }}>
-            <Box sx={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#1a2e6e' }} />
-            <Typography sx={{ color: '#1a2e6e', fontWeight: 600, fontSize: '0.8rem', letterSpacing: '0.5px' }}>
+            <Box sx={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: theme.palette.secondary.main }} />
+            <Typography sx={{ color: theme.palette.secondary.main, fontWeight: 600, fontSize: '0.8rem', letterSpacing: '0.5px' }}>
               Gestión de Módulos
             </Typography>
           </Box>
@@ -68,7 +69,7 @@ const Home = () => {
                 {stats.map((s, i) => (
                   <Box key={i} sx={{ borderLeft: '3px solid rgb(204, 24, 24, 0.8)', pl: 2 }}>
                     <Typography sx={{ color: 'rgb(204, 24, 24, 0.95)', fontWeight: 600, fontSize: '1.2rem' }}>{s.value}</Typography>
-                    <Typography sx={{ color: '#212121', fontWeight: 600, fontSize: '0.78rem' }}>{s.label}</Typography>
+                    <Typography sx={{ color: theme.palette.text.dark, fontWeight: 600, fontSize: '0.78rem' }}>{s.label}</Typography>
                   </Box>
                 ))}
               </Box>
@@ -120,7 +121,7 @@ const Home = () => {
                           <i className={mod.iconClass}></i>
                         </Box>
                         <Box>
-                          <Typography sx={{ color: '#212121', fontWeight: 700, fontSize: '0.82rem' }}>{mod.name}</Typography>
+                          <Typography sx={{ color: theme.palette.text.dark, fontWeight: 700, fontSize: '0.82rem' }}>{mod.name}</Typography>
                           <Typography sx={{ color: 'rgba(33,33,33,0.45)', fontSize: '0.68rem' }}>{mod.desc}</Typography>
                         </Box>
                       </Box>
@@ -148,10 +149,10 @@ const Home = () => {
           </Typography>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2.5, justifyContent: 'center', textAlign: 'center' }}>
             {[
-              { iconClass: 'fi fi-ss-boxes', title: 'Registro de encomiendas', desc: 'Envíos, guías PDF, estados y métodos de pago. Reportes de ventas.', accent: '#CC1818' },
-              { iconClass: 'fi fi-ss-shipping-fast', title: 'Logística de transporte', desc: 'Vehículos, conductores, rutas, destinos y propietarios. Control documental y reportes.', accent: '#1a2e6e' },
-              { iconClass: 'fi fi-ss-users', title: 'Gestión de clientes', desc: 'Registro y datos de contacto.', accent: '#CC1818' },
-              { iconClass: 'fi fi-ss-money-bill-wave', title: 'Control financiero', desc: 'Anticipos, legalización, excedentes y pagos de ventas. Reportes contables.', accent: '#1a2e6e' },
+              { iconClass: 'fi fi-ss-boxes', title: 'Registro de encomiendas', desc: 'Envíos, guías PDF, estados y métodos de pago. Reportes de ventas.', accent: theme.palette.primary.main },
+              { iconClass: 'fi fi-ss-shipping-fast', title: 'Logística de transporte', desc: 'Vehículos, conductores, rutas, destinos y propietarios. Control documental y reportes.', accent: theme.palette.secondary.main },
+              { iconClass: 'fi fi-ss-users', title: 'Gestión de clientes', desc: 'Registro y datos de contacto.', accent: theme.palette.primary.main },
+              { iconClass: 'fi fi-ss-money-bill-wave', title: 'Control financiero', desc: 'Anticipos, legalización, excedentes y pagos de ventas. Reportes contables.', accent: theme.palette.secondary.main },
             ].map((item, i) => (
               <Box key={i} sx={{
                 flex: '1 1 220px', maxWidth: 260, p: 3.5, borderRadius: '20px', backgroundColor: '#f5f5f5',

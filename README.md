@@ -17,8 +17,9 @@ Panel web administrativo para la gestión operativa de OsvaldoC Mensajería y Lo
 
 - React 19 + JavaScript (ES6+)
 - Vite — Herramienta de construcción rápida
-- Material UI (MUI) — Componentes de React para Material Design
-- @emotion/react & @emotion/styled — Styling para MUI
+- Material UI (MUI) v7 — Componentes de React para Material Design
+  - `@mui/material/styles` — `ThemeProvider` + `createTheme` para sistema de theming centralizado
+  - `@emotion/react` & `@emotion/styled` — Styling engine de MUI
 - React Router v7 — Enrutamiento de aplicaciones
 - React Context — Gestión de estado global
 - Fetch API — Cliente HTTP nativo para peticiones al backend
@@ -61,10 +62,10 @@ src/
 │       └── pages/
 │
 ├── shared/                    # Recursos compartidos entre features
+│   ├── styles/                # Tema centralizado (theme.js con createTheme)
 │   ├── contexts/              # Contextos globales (estado con React Context)
 │   ├── components/            # Componentes reutilizables
 │   ├── services/              # Servicios API (auth, ventas, clientes, etc.)
-│   ├── styles/                # Estilos globales
 │   └── config/                # Configuración (API URL, constantes)
 │
 ├── App.jsx                    # Providers anidados y configuración
@@ -113,13 +114,23 @@ La navegación se implementa utilizando `react-router-dom` v7 con rutas program�
 
 ## Paleta de Colores
 
+Todos los colores se definen de forma centralizada en `src/shared/styles/theme.js` mediante `createTheme()` de MUI y se consumen a través del `ThemeProvider`.
+
 | Nombre | Color | Uso |
-|---|---|---|
-| `primary` | `#CC1818` | Rojo principal - acciones y elementos destacados |
-| `secondary` | `#1A2E6E` | Azul oscuro - elementos secundarios y navegación |
-| `bgGray` | `#F5F6FA` | Fondo general de la aplicación |
-| `cardBg` | `#FFFFFF` | Tarjetas y superficies |
-| `textMain` | `#1E293B` | Texto principal |
+|-------|-------|-----|
+| `primary.main` | `#CC1818` | Rojo principal — acciones destacadas, botones primarios, acentos |
+| `primary.light` | `#FFE8E8` | Rojo claro — fondos sutiles, chips |
+| `primary.dark` | `#b91c1c` | Rojo oscuro — hover de botones |
+| `secondary.main` | `#1A2E6E` | Azul oscuro — navegación, encabezados, elementos secundarios |
+| `secondary.light` | `#2a3f8f` | Azul claro |
+| `text.primary` | `#1a0e0c` | Texto principal |
+| `text.secondary` | `#8A94A6` | Texto secundario / muted |
+| `text.dark` | `#212121` | Texto oscuro (headings) |
+| `background.default` | `#F5F6FA` | Fondo general |
+| `background.subtle` | `#F9F9F9` | Hover de filas |
+| `divider` | `#E0E0E0` | Bordes y divisores |
+| `gradient.navbar` | `linear-gradient(90deg, #1a2e6e, #CC1818, #1a2e6e)` | Barra superior decorativa |
+| `gradient.primary` | `linear-gradient(135deg, #CC1818, #dc2626)` | Fondos de encabezado de formulario |
 
 ---
 
@@ -127,10 +138,12 @@ La navegación se implementa utilizando `react-router-dom` v7 con rutas program�
 
 | Componente | Descripción | Características |
 |------------|-------------|-----------------|
+| **Header** | Barra superior de la app administrador | Título de la sección activa, colores del tema |
+| **Sidebar** | Navegación principal con secciones colapsables | Avatar con iniciales, logout integrado, secciones: General, Personas, Transporte, Finanzas, Paquetes |
+| **Layout** | Layout de la pantalla de autenticación | Fondo decorativo con gradiente hero, colores del tema |
+| **LayoutAdmin** | Layout principal con barra decorativa | Barra superior `linear-gradient(90deg, #1a2e6e, #CC1818, #1a2e6e)` |
 | **LoadingScreen** | Pantalla de carga con identidad de marca | Logo centrado, animación de spinner, fondo con colores primarios del sistema |
 | **FormularioEstandarizado** | Librería de componentes de formulario | FormField, FormSelect, PasswordField, PrimaryButton, SecondaryButton, FormHeader con gradiente |
-| **Sidebar** | Navegación principal con secciones colapsables | Avatar con iniciales, logout integrado, secciones: General, Personas, Transporte, Finanzas, Paquetes |
-| **LayoutAdmin** | Layout principal con barra decorativa | Barra superior `linear-gradient(90deg, #1a2e6e, #CC1818, #1a2e6e)` |
 
 ---
 
@@ -138,6 +151,7 @@ La navegación se implementa utilizando `react-router-dom` v7 con rutas program�
 
 | Decisión | Justificación |
 |----------|---------------|
+| **ThemeProvider + createTheme (MUI)** | Sistema de theming centralizado en `theme.js`; preparado para dark mode y cambio de paleta sin tocar componentes |
 | **Context API vs Redux** | React Context es suficiente para este tamaño de aplicación; evita complejidad adicional |
 | **fetchWithAuth centralizado** | Single source of truth para manejo de errores (401 auto-logout, 403 manejo silencioso) |
 | **fetch nativo vs Axios** | fetch API es nativo del browser; evita dependencia adicional para el scope actual |

@@ -1,3 +1,4 @@
+import theme from '../../../shared/styles/theme.js'
 import { useState, useEffect } from 'react'
 import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, Snackbar, TextField, Autocomplete, Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
@@ -16,14 +17,7 @@ import { useVentas } from '../../../shared/contexts/VentaContext'
 import { useClientes } from '../../../shared/contexts/ClienteContext'
 import { FormField, FormSelect, formFieldStyles } from '../../../shared/components/FormularioEstandarizado'
 
-const COLORS = {
-    primary: '#CC1818',
-    primaryLight: '#FFE8E8',
-    text: '#1a0e0c',
-    textMuted: '#8A94A6',
-    border: '#E0E0E0',
-    hoverBg: '#F9F9F9',
-}
+const COLORS = theme.palette
 
 const getEstadoColor = (estado) => {
     switch (estado) {
@@ -47,7 +41,7 @@ const steps = ['Remitente', 'Destinatario', 'Paquete', 'Envío', 'Pago', 'Confir
 const ConfirmRow = ({ label, value }) => (
     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, py: 0.9, overflow: 'hidden' }}>
         <Typography variant="body2" sx={{ color: '#9C4040', fontWeight: 500, flexShrink: 0 }}>{label}</Typography>
-        <Typography variant="body2" fontWeight={500} color={COLORS.text}
+        <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary}
             sx={{ textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
             {value || '—'}
         </Typography>
@@ -404,7 +398,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
 
     const cardSx = {
         flex: 1, minWidth: 0, borderRadius: 2, p: 2.5,
-        border: `1px solid ${COLORS.border}`,
+        border: `1px solid ${theme.palette.divider}`,
         backgroundColor: 'white',
         overflow: 'hidden',
     }
@@ -632,20 +626,20 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                         <Box sx={{ display: 'flex', gap: 2 }}>
                             <Paper elevation={0} sx={cardSx}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                                    <AssignmentIndOutlinedIcon sx={{ fontSize: 20, color: COLORS.text }} />
-                                    <Typography fontWeight={700} fontSize="0.95rem" color={COLORS.text}>Remitente</Typography>
+                                    <AssignmentIndOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
+                                    <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Remitente</Typography>
                                 </Box>
-                                <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2 }}>Verifica la información del remitente</Typography>
+                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la información del remitente</Typography>
                                 <ConfirmRow label="Nombre" value={`${form.nombreRemitente} ${form.apellidoRemitente}`} />
                                 <ConfirmRow label="Identificación" value={form.numeroIdentificacion} />
                                 <ConfirmRow label="Teléfono" value={form.telefonoRemitente} />
                             </Paper>
                             <Paper elevation={0} sx={cardSx}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                                    <PersonOutlinedIcon sx={{ fontSize: 20, color: COLORS.text }} />
-                                    <Typography fontWeight={700} fontSize="0.95rem" color={COLORS.text}>Destinatario</Typography>
+                                    <PersonOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
+                                    <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Destinatario</Typography>
                                 </Box>
-                                <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2 }}>Verifica la información del destinatario</Typography>
+                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la información del destinatario</Typography>
                                 <ConfirmRow label="Nombre" value={form.nombreDestinatario} />
                                 <ConfirmRow label="Teléfono" value={form.telefonoDestinatario} />
                                 <ConfirmRow label="Dirección" value={form.direccionDestinatario} />
@@ -654,10 +648,10 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                         <Box sx={{ display: 'flex', gap: 2 }}>
                             <Paper elevation={0} sx={cardSx}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                                    <Inventory2OutlinedIcon sx={{ fontSize: 20, color: COLORS.text }} />
-                                    <Typography fontWeight={700} fontSize="0.95rem" color={COLORS.text}>Paquete</Typography>
+                                    <Inventory2OutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
+                                    <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Paquete</Typography>
                                 </Box>
-                                <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2 }}>Verifica los datos del paquete</Typography>
+                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica los datos del paquete</Typography>
                                 <ConfirmRow label="Contenido" value={form.descripcionContenido} />
                                 <ConfirmRow label="Peso" value={form.peso ? `${form.peso} kg` : null} />
                                 <ConfirmRow label="Dimensiones" value={form.alto ? `${form.alto}×${form.ancho}×${form.profundidad} cm` : null} />
@@ -665,10 +659,10 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                             </Paper>
                             <Paper elevation={0} sx={cardSx}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                                    <PaymentOutlinedIcon sx={{ fontSize: 20, color: COLORS.text }} />
-                                    <Typography fontWeight={700} fontSize="0.95rem" color={COLORS.text}>Envío y Pago</Typography>
+                                    <PaymentOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
+                                    <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Envío y Pago</Typography>
                                 </Box>
-                                <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2 }}>Destino, estado y valores</Typography>
+                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Destino, estado y valores</Typography>
                                 <ConfirmRow label="Destino" value={form.destino} />
                                 <ConfirmRow label="Fecha entrega" value={form.fechaEstimadaEntrega} />
                                 <ConfirmRowChip label="Estado" value={form.estado?.charAt(0).toUpperCase() + form.estado?.slice(1)} colors={getEstadoColor(form.estado)} />
@@ -694,7 +688,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                             width: 40,
                             height: 40,
                             borderRadius: 2,
-                            background: 'linear-gradient(135deg, #CC1818 0%, #dc2626 100%)',
+                            background: theme.palette.gradient.primary,
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center'
@@ -703,13 +697,13 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                         </Box>
                         <Typography variant="h6" fontWeight={700}>Editar Venta</Typography>
                     </Box>
-                    <IconButton onClick={() => onClose && onClose()} sx={{ color: '#8A94A6' }}>
+                    <IconButton onClick={() => onClose && onClose()} sx={{ color: theme.palette.text.secondary }}>
                         <CloseIcon />
                     </IconButton>
                 </DialogTitle>
                 <DialogContent sx={{ p: 3 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 200 }}>
-                        <Typography color={COLORS.textMuted}>Cargando datos de la venta...</Typography>
+                        <Typography color={theme.palette.text.secondary}>Cargando datos de la venta...</Typography>
                     </Box>
                 </DialogContent>
             </Dialog>
@@ -726,7 +720,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                             width: 40,
                             height: 40,
                             borderRadius: 2,
-                            background: 'linear-gradient(135deg, #CC1818 0%, #dc2626 100%)',
+                            background: theme.palette.gradient.primary,
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center'
@@ -735,7 +729,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                         </Box>
                         <Typography variant="h6" fontWeight={700}>Editar Venta</Typography>
                     </Box>
-                    <IconButton onClick={() => onClose && onClose()} sx={{ color: '#8A94A6' }}>
+                    <IconButton onClick={() => onClose && onClose()} sx={{ color: theme.palette.text.secondary }}>
                         <CloseIcon />
                     </IconButton>
                 </DialogTitle>
@@ -749,19 +743,19 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
     return (
         <Dialog open={open} onClose={() => onClose && onClose()} maxWidth="md" fullWidth
             slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}>
-            <DialogTitle sx={{ m: 0, p: 2, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${COLORS.border}` }}>
+            <DialogTitle sx={{ m: 0, p: 2, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${theme.palette.divider}` }}>
                 <Box>
                     <Typography variant="h6" fontWeight={700}>
                         Editar Venta
                     </Typography>
-                        <Typography variant="body2" color={COLORS.textMuted}>
+                        <Typography variant="body2" color={theme.palette.text.secondary}>
                         {ventaOriginal?.numeroGuia
                             ? `Modificando guía: ${ventaOriginal.numeroGuia}`
                             : 'Modifica los campos que necesites.'
                         }
                     </Typography>
                 </Box>
-                <IconButton onClick={() => onClose && onClose()} sx={{ color: '#8A94A6' }}>
+                <IconButton onClick={() => onClose && onClose()} sx={{ color: theme.palette.text.secondary }}>
                     <CloseIcon />
                 </IconButton>
             </DialogTitle>
@@ -770,16 +764,16 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                 <Stepper activeStep={activeStep} alternativeLabel
                     sx={{
                         mb: 3, mt: 2,
-                        '& .MuiStepIcon-root': { color: '#E0E0E0' },
-                        '& .MuiStepIcon-root.Mui-active': { color: COLORS.primary },
-                        '& .MuiStepIcon-root.Mui-completed': { color: COLORS.primary },
+                        '& .MuiStepIcon-root': { color: theme.palette.divider },
+                        '& .MuiStepIcon-root.Mui-active': { color: theme.palette.primary.main },
+                        '& .MuiStepIcon-root.Mui-completed': { color: theme.palette.primary.main },
                         '& .MuiStepIcon-text': { fill: 'white', fontSize: '0.7rem', fontWeight: 700 },
-                        '& .MuiStepConnector-line': { borderColor: COLORS.border },
-                        '& .MuiStepConnector-root.Mui-active .MuiStepConnector-line': { borderColor: COLORS.primary },
-                        '& .MuiStepConnector-root.Mui-completed .MuiStepConnector-line': { borderColor: COLORS.primary },
-                        '& .MuiStepLabel-label': { fontSize: '0.8rem', color: COLORS.textMuted, mt: 0.5 },
-                        '& .MuiStepLabel-label.Mui-active': { color: COLORS.text, fontWeight: 600 },
-                        '& .MuiStepLabel-label.Mui-completed': { color: COLORS.primary, fontWeight: 500 },
+                        '& .MuiStepConnector-line': { borderColor: theme.palette.divider },
+                        '& .MuiStepConnector-root.Mui-active .MuiStepConnector-line': { borderColor: theme.palette.primary.main },
+                        '& .MuiStepConnector-root.Mui-completed .MuiStepConnector-line': { borderColor: theme.palette.primary.main },
+                        '& .MuiStepLabel-label': { fontSize: '0.8rem', color: theme.palette.text.secondary, mt: 0.5 },
+                        '& .MuiStepLabel-label.Mui-active': { color: theme.palette.text.primary, fontWeight: 600 },
+                        '& .MuiStepLabel-label.Mui-completed': { color: theme.palette.primary.main, fontWeight: 500 },
                     }}
                 >
                     {steps.map(label => <Step key={label}><StepLabel>{label}</StepLabel></Step>)}
@@ -791,23 +785,23 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
 
                 <Box sx={{
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    mt: 3, pt: 2, borderTop: `1px solid ${COLORS.border}`,
+                    mt: 3, pt: 2, borderTop: `1px solid ${theme.palette.divider}`,
                 }}>
                     <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined"
                         startIcon={<ArrowBackOutlinedIcon />} disableRipple
                         sx={{
-                            textTransform: 'none', borderRadius: 2, borderColor: COLORS.border,
-                            color: COLORS.text, fontWeight: 500,
-                            '&:hover': { borderColor: '#BDBDBD', backgroundColor: COLORS.hoverBg },
-                            '&.Mui-disabled': { borderColor: COLORS.border, color: COLORS.textMuted },
+                            textTransform: 'none', borderRadius: 2, borderColor: theme.palette.divider,
+                            color: theme.palette.text.primary, fontWeight: 500,
+                            '&:hover': { borderColor: '#BDBDBD', backgroundColor: theme.palette.background.subtle },
+                            '&.Mui-disabled': { borderColor: theme.palette.divider, color: theme.palette.text.secondary },
                         }}>
                         Anterior
                     </Button>
                     <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
                         <Button onClick={handleCancelar} disableRipple
                             sx={{
-                                textTransform: 'none', color: COLORS.textMuted, fontWeight: 500, borderRadius: 2,
-                                '&:hover': { backgroundColor: COLORS.hoverBg, color: COLORS.text },
+                                textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 2,
+                                '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary },
                             }}>
                             Cancelar
                         </Button>
@@ -819,10 +813,10 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                             disableRipple
                             sx={{
                                 textTransform: 'none', borderRadius: 2, fontWeight: 600,
-                                backgroundColor: COLORS.primary,
+                                backgroundColor: theme.palette.primary.main,
                                 boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
-                                '&:hover': { backgroundColor: '#b91c1c', boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
-                                '&.Mui-disabled': { backgroundColor: '#E0E0E0', color: '#9E9E9E' },
+                                '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
+                                '&.Mui-disabled': { backgroundColor: theme.palette.divider, color: '#9E9E9E' },
                             }}>
                             {activeStep < steps.length - 1
                                 ? 'Siguiente'

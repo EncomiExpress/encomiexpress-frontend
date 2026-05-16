@@ -1,3 +1,4 @@
+import theme from '../../../shared/styles/theme.js'
 import { useState } from 'react'
 import { Box, TextField, Typography, MenuItem, Dialog, DialogTitle, DialogContent, Stepper, Step, StepLabel, Snackbar, Alert, IconButton, Button } from '@mui/material'
 import { DirectionsCar, Person, Business, Event, Speed, Close, ArrowBackOutlined, SaveOutlined } from '@mui/icons-material'
@@ -6,12 +7,7 @@ import { FormField, FormSelect, FormAlert, FormFieldsContainer } from '../../../
 
 const steps = ['Datos del Vehículo', 'Documentación y Estado']
 
-const COLORS = {
-  primary: '#CC1818',
-  border: '#E0E0E0',
-  text: '#1a0e0c',
-  textMuted: '#8A94A6',
-}
+const COLORS = theme.palette
 
 const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
@@ -254,16 +250,16 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth
       slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}>
-      <DialogTitle sx={{ m: 0, p: 2, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${COLORS.border}` }}>
+      <DialogTitle sx={{ m: 0, p: 2, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${theme.palette.divider}` }}>
         <Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
             <Typography variant="h6" fontWeight={700}>Registrar Vehículo</Typography>
           </Box>
-          <Typography variant="body2" color={COLORS.textMuted} sx={{ mt: 0.5, ml: 0.5 }}>
+          <Typography variant="body2" color={theme.palette.text.secondary} sx={{ mt: 0.5, ml: 0.5 }}>
             Ingresa los datos del nuevo vehículo
           </Typography>
         </Box>
-        <IconButton onClick={handleClose} sx={{ color: '#8A94A6' }}>
+        <IconButton onClick={handleClose} sx={{ color: theme.palette.text.secondary }}>
           <Close />
         </IconButton>
       </DialogTitle>
@@ -277,16 +273,16 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
         <Stepper activeStep={activeStep} alternativeLabel
           sx={{
             mb: 3, mt: 2,
-            '& .MuiStepIcon-root': { color: '#E0E0E0' },
-            '& .MuiStepIcon-root.Mui-active': { color: COLORS.primary },
-            '& .MuiStepIcon-root.Mui-completed': { color: COLORS.primary },
+            '& .MuiStepIcon-root': { color: theme.palette.divider },
+            '& .MuiStepIcon-root.Mui-active': { color: theme.palette.primary.main },
+            '& .MuiStepIcon-root.Mui-completed': { color: theme.palette.primary.main },
             '& .MuiStepIcon-text': { fill: 'white', fontSize: '0.7rem', fontWeight: 700 },
-            '& .MuiStepConnector-line': { borderColor: COLORS.border },
-            '& .MuiStepConnector-root.Mui-active .MuiStepConnector-line': { borderColor: COLORS.primary },
-            '& .MuiStepConnector-root.Mui-completed .MuiStepConnector-line': { borderColor: COLORS.primary },
-            '& .MuiStepLabel-label': { fontSize: '0.8rem', color: COLORS.textMuted, mt: 0.5 },
-            '& .MuiStepLabel-label.Mui-active': { color: COLORS.text, fontWeight: 600 },
-            '& .MuiStepLabel-label.Mui-completed': { color: COLORS.primary, fontWeight: 500 },
+            '& .MuiStepConnector-line': { borderColor: theme.palette.divider },
+            '& .MuiStepConnector-root.Mui-active .MuiStepConnector-line': { borderColor: theme.palette.primary.main },
+            '& .MuiStepConnector-root.Mui-completed .MuiStepConnector-line': { borderColor: theme.palette.primary.main },
+            '& .MuiStepLabel-label': { fontSize: '0.8rem', color: theme.palette.text.secondary, mt: 0.5 },
+            '& .MuiStepLabel-label.Mui-active': { color: theme.palette.text.primary, fontWeight: 600 },
+            '& .MuiStepLabel-label.Mui-completed': { color: theme.palette.primary.main, fontWeight: 500 },
           }}
         >
           {steps.map((label, index) => (
@@ -302,23 +298,23 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
 
             <Box sx={{
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              mt: 3, pt: 2, borderTop: `1px solid ${COLORS.border}`,
+              mt: 3, pt: 2, borderTop: `1px solid ${theme.palette.divider}`,
             }}>
               <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined"
                 startIcon={<ArrowBackOutlined />} disableRipple
                 sx={{
-                  textTransform: 'none', borderRadius: 2, borderColor: COLORS.border,
-                  color: COLORS.text, fontWeight: 500,
-                  '&:hover': { borderColor: '#BDBDBD', backgroundColor: '#F9F9F9' },
-                  '&.Mui-disabled': { borderColor: COLORS.border, color: COLORS.textMuted },
+                  textTransform: 'none', borderRadius: 2, borderColor: theme.palette.divider,
+                  color: theme.palette.text.primary, fontWeight: 500,
+                  '&:hover': { borderColor: '#BDBDBD', backgroundColor: theme.palette.background.subtle },
+                  '&.Mui-disabled': { borderColor: theme.palette.divider, color: theme.palette.text.secondary },
                 }}>
                 Anterior
               </Button>
               <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
                 <Button onClick={handleClose} disableRipple
                   sx={{
-                    textTransform: 'none', color: COLORS.textMuted, fontWeight: 500, borderRadius: 2,
-                    '&:hover': { backgroundColor: '#F9F9F9', color: COLORS.text },
+                    textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 2,
+                    '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary },
                   }}>
                   Cancelar
                 </Button>
@@ -329,10 +325,10 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
                   disableRipple
                   sx={{
                     textTransform: 'none', borderRadius: 2, fontWeight: 600,
-                    backgroundColor: COLORS.primary,
+                    backgroundColor: theme.palette.primary.main,
                     boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
-                    '&:hover': { backgroundColor: '#b91c1c', boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
-                    '&.Mui-disabled': { backgroundColor: '#E0E0E0', color: '#9E9E9E' },
+                    '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
+                    '&.Mui-disabled': { backgroundColor: theme.palette.divider, color: '#9E9E9E' },
                   }}>
                   {activeStep < steps.length - 1 ? 'Siguiente' : 'Registrar'}
                 </Button>

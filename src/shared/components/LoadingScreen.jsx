@@ -1,3 +1,4 @@
+import theme from '../styles/theme.js'
 import { Box, Typography, CircularProgress } from '@mui/material'
 import { LocalShipping } from '@mui/icons-material'
 import logo from '../../assets/logo.png'
@@ -24,7 +25,7 @@ const LoadingScreen = ({ tipo = 'circular', mensaje = 'Cargando...' }) => {
                 '100%': { transform: 'translateX(30px)', opacity: 0 }
               }
             }}>
-              <LocalShipping sx={{ fontSize: 60, color: '#CC1818' }} />
+              <LocalShipping sx={{ fontSize: 60, color: theme.palette.primary.main }} />
             </Box>
           </Box>
         )
@@ -36,7 +37,7 @@ const LoadingScreen = ({ tipo = 'circular', mensaje = 'Cargando...' }) => {
                 width: 12,
                 height: 12,
                 borderRadius: '50%',
-                backgroundColor: '#CC1818',
+                backgroundColor: theme.palette.primary.main,
                 animation: `pulse 1s ease-in-out ${i * 0.2}s infinite`,
                 '@keyframes pulse': {
                   '0%, 100%': { transform: 'scale(1)', opacity: 1 },
@@ -52,7 +53,7 @@ const LoadingScreen = ({ tipo = 'circular', mensaje = 'Cargando...' }) => {
             width: 60,
             height: 60,
             border: '4px solid rgba(204, 24, 24, 0.2)',
-            borderTop: '4px solid #CC1818',
+            borderTop: `4px solid ${theme.palette.primary.main}`,
             borderRadius: '50%',
             animation: 'spin 1s linear infinite',
             '@keyframes spin': {
@@ -68,7 +69,7 @@ const LoadingScreen = ({ tipo = 'circular', mensaje = 'Cargando...' }) => {
             size={60}
             thickness={4}
             sx={{
-              color: '#CC1818',
+              color: theme.palette.primary.main,
               '& .MuiCircularProgress-circle': {
                 strokeLinecap: 'round'
               }
@@ -109,7 +110,7 @@ const LoadingScreen = ({ tipo = 'circular', mensaje = 'Cargando...' }) => {
         </Box>
         {renderLoading()}
         <Typography sx={{
-          color: '#212121',
+          color: theme.palette.text.dark,
           fontWeight: 600,
           fontSize: '1rem',
           textAlign: 'center'

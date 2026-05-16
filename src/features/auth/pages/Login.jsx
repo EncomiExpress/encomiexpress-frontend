@@ -13,6 +13,7 @@ import {
   ArrowBack
 } from '@mui/icons-material'
 import { useAuth, ROLES } from '../../../shared/contexts/AuthContext'
+import theme from '../../../shared/styles/theme.js'
 import { LoadingScreen, TIPOS_CARGA } from '../../../shared/components/LoadingScreen'
 import logo from '../../../assets/logo.png'
 
@@ -138,7 +139,7 @@ const Login = () => {
       {/* Barra superior roja */}
       <Box sx={{
         position: 'absolute', top: 0, left: 0, right: 0, height: 4,
-        background: 'linear-gradient(90deg, #1a2e6e, #CC1818, #1a2e6e)',
+        background: theme.palette.gradient.navbar,
         zIndex: 20,
       }} />
 
@@ -148,13 +149,13 @@ const Login = () => {
           {/* Cara superior */}
           <polygon points="150,20 280,90 150,160 20,90" fill="#e84040" />
           {/* Cara izquierda */}
-          <polygon points="20,90 150,160 150,280 20,210" fill="#CC1818" />
+          <polygon points="20,90 150,160 150,280 20,210" fill={theme.palette.primary.main} />
           {/* Cara derecha */}
           <polygon points="280,90 150,160 150,280 280,210" fill="#9b1010" />
           {/* Bordes */}
-          <polygon points="150,20 280,90 150,160 20,90" fill="none" stroke="#CC1818" strokeWidth="2.5" />
-          <polygon points="20,90 150,160 150,280 20,210" fill="none" stroke="#CC1818" strokeWidth="2.5" />
-          <polygon points="280,90 150,160 150,280 280,210" fill="none" stroke="#CC1818" strokeWidth="2.5" />
+          <polygon points="150,20 280,90 150,160 20,90" fill="none" stroke={theme.palette.primary.main} strokeWidth="2.5" />
+          <polygon points="20,90 150,160 150,280 20,210" fill="none" stroke={theme.palette.primary.main} strokeWidth="2.5" />
+          <polygon points="280,90 150,160 150,280 280,210" fill="none" stroke={theme.palette.primary.main} strokeWidth="2.5" />
         </svg>
       </Box>
 
@@ -164,13 +165,13 @@ const Login = () => {
           {/* Cara superior */}
           <polygon points="150,20 280,90 150,160 20,90" fill="#2a3f8f" />
           {/* Cara izquierda */}
-          <polygon points="20,90 150,160 150,280 20,210" fill="#1a2e6e" />
+          <polygon points="20,90 150,160 150,280 20,210" fill={theme.palette.secondary.main} />
           {/* Cara derecha */}
           <polygon points="280,90 150,160 150,280 280,210" fill="#0f1c45" />
           {/* Bordes */}
-          <polygon points="150,20 280,90 150,160 20,90" fill="none" stroke="#1a2e6e" strokeWidth="2.5" />
-          <polygon points="20,90 150,160 150,280 20,210" fill="none" stroke="#1a2e6e" strokeWidth="2.5" />
-          <polygon points="280,90 150,160 150,280 280,210" fill="none" stroke="#1a2e6e" strokeWidth="2.5" />
+          <polygon points="150,20 280,90 150,160 20,90" fill="none" stroke={theme.palette.secondary.main} strokeWidth="2.5" />
+          <polygon points="20,90 150,160 150,280 20,210" fill="none" stroke={theme.palette.secondary.main} strokeWidth="2.5" />
+          <polygon points="280,90 150,160 150,280 280,210" fill="none" stroke={theme.palette.secondary.main} strokeWidth="2.5" />
         </svg>
       </Box>
 
@@ -196,7 +197,7 @@ const Login = () => {
           '&:hover': {
             backgroundColor: '#f5f5f5',
             borderColor: 'rgba(26,46,110,0.2)',
-            color: '#CC1818',
+            color: theme.palette.primary.main,
           },
           transition: 'all 0.2s ease',
         }}
@@ -242,7 +243,7 @@ const Login = () => {
             <img src={logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </Box>
           <Box sx={{ textAlign: 'center' }}>
-            <Typography sx={{ color: '#212121', fontWeight: 700, fontSize: '1.5rem', mb: 0.5, lineHeight: 1.2, fontFamily: 'Cambria, Georgia, serif' }}>
+            <Typography sx={{ color: theme.palette.text.dark, fontWeight: 700, fontSize: '1.5rem', mb: 0.5, lineHeight: 1.2, fontFamily: 'Cambria, Georgia, serif' }}>
               Bienvenido
             </Typography>
             <Typography sx={{ color: 'rgba(33,33,33,0.45)', fontSize: '0.875rem' }}>
@@ -279,11 +280,11 @@ const Login = () => {
                 mb: 3,
                 '& .MuiOutlinedInput-root': {
                   '&.Mui-focused fieldset': {
-                    borderColor: '#CC1818',
+                    borderColor: theme.palette.primary.main,
                   },
                 },
                 '& .MuiInputLabel-root.Mui-focused': {
-                  color: '#CC1818',
+                  color: theme.palette.primary.main,
                 },
               }}
             />
@@ -317,11 +318,11 @@ const Login = () => {
                 mb: 4,
                 '& .MuiOutlinedInput-root': {
                   '&.Mui-focused fieldset': {
-                    borderColor: '#CC1818',
+                    borderColor: theme.palette.primary.main,
                   },
                 },
                 '& .MuiInputLabel-root.Mui-focused': {
-                  color: '#CC1818',
+                  color: theme.palette.primary.main,
                 },
               }}
             />
@@ -333,7 +334,7 @@ const Login = () => {
               endIcon={<LoginIcon />}
               disabled={cargando}
               sx={{
-                backgroundColor: '#CC1818',
+                backgroundColor: theme.palette.primary.main,
                 borderRadius: 2,
                 py: 1.5,
                 fontWeight: 700,
@@ -341,7 +342,7 @@ const Login = () => {
                 textTransform: 'none',
                 boxShadow: '0 4px 14px rgba(204, 24, 24, 0.3)',
                 '&:hover': {
-                  backgroundColor: '#b91c1c',
+                  backgroundColor: theme.palette.primary.dark,
                   boxShadow: '0 6px 20px rgba(204, 24, 24, 0.4)',
                 },
               }}
@@ -358,7 +359,7 @@ const Login = () => {
             <Typography sx={{ color: 'rgba(33,33,33,0.45)', fontSize: '0.7rem', letterSpacing: '1px', mb: 1.5, fontWeight: 600 }}>
               USUARIO ADMINISTRADOR
             </Typography>
-            <Typography sx={{ color: '#212121', fontSize: '0.75rem', fontFamily: 'monospace', display: 'block', mb: 0.5 }}>
+            <Typography sx={{ color: theme.palette.text.dark, fontSize: '0.75rem', fontFamily: 'monospace', display: 'block', mb: 0.5 }}>
               • admin@encomiexpress.com
             </Typography>
             <Typography sx={{ color: 'rgba(33,33,33,0.45)', fontSize: '0.7rem', fontFamily: 'monospace', borderTop: '1px solid rgba(26,46,110,0.08)', pt: 1.5, display: 'block' }}>
@@ -375,7 +376,7 @@ const Login = () => {
           backgroundColor: '#ffffff',
           borderBottom: '1px solid rgba(26,46,110,0.08)',
         }}>
-          <Typography sx={{ color: '#212121', fontWeight: 700, fontSize: '1.1rem' }}>
+          <Typography sx={{ color: theme.palette.text.dark, fontWeight: 700, fontSize: '1.1rem' }}>
             Crear Cuenta
           </Typography>
         </DialogTitle>
@@ -417,7 +418,7 @@ const Login = () => {
         <DialogActions sx={{ px: 3, pb: 3 }}>
           <Button onClick={() => setOpenRegister(false)} sx={{ color: 'rgba(33,33,33,0.45)' }}>Cancelar</Button>
           <Button onClick={handleRegister} variant="contained" startIcon={<PersonAdd />}
-            sx={{ backgroundColor: '#CC1818', borderRadius: 2, px: 3, '&:hover': { backgroundColor: '#b91c1c' } }}>
+            sx={{ backgroundColor: theme.palette.primary.main, borderRadius: 2, px: 3, '&:hover': { backgroundColor: theme.palette.primary.dark } }}>
             Registrarse
           </Button>
         </DialogActions>

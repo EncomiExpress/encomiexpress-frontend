@@ -1,3 +1,4 @@
+import theme from '../../../shared/styles/theme.js'
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth, ROLES } from '../../../shared/contexts/AuthContext'
@@ -22,20 +23,12 @@ import ActualizarRol from './ActualizarRol'
 
 import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined'
 
-const COLORS = {
-    primary: '#CC1818',
-    primaryLight: '#FFE8E8',
-    secondary: '#1A2E6E',
-    text: '#1a0e0c',
-    textMuted: '#8A94A6',
-    border: '#E0E0E0',
-    hoverBg: '#F9F9F9',
-}
+const COLORS = theme.palette
 
 const thStyle = {
     fontWeight: 700,
     fontSize: '0.80rem',
-    color: '#1a0e0c',
+    color: theme.palette.text.primary,
     letterSpacing: 0.5,
     py: 1.5,
     borderBottom: `1px solid #E0E0E0`,
@@ -45,12 +38,12 @@ const thStyle = {
 const filterSelectSx = {
     fontSize: '0.82rem',
     borderRadius: 2,
-    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#E0E0E0' },
+    '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
     '&:hover': { backgroundColor: 'transparent' },
     '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#BDBDBD' },
     '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#E57373', borderWidth: '1px' },
     '&.Mui-focused': { boxShadow: '0 0 0 3px rgba(229,115,115,0.18)' },
-    '& .MuiSelect-icon': { color: '#8A94A6', fontSize: 18 },
+    '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
     '& .MuiTouchRipple-root': { display: 'none' },
 }
 
@@ -64,7 +57,7 @@ const filterMenuProps = {
                 '& .MuiMenuItem-root': {
                     fontSize: '0.82rem',
                     '&:hover': { backgroundColor: '#FFF5F5' },
-                    '&.Mui-selected': { backgroundColor: 'transparent', fontWeight: 600, color: '#1a0e0c' },
+                    '&.Mui-selected': { backgroundColor: 'transparent', fontWeight: 600, color: theme.palette.text.primary },
                     '&.Mui-selected:hover': { backgroundColor: '#FFF5F5' },
                 },
             },
@@ -87,7 +80,7 @@ const ModalConsultar = ({ rol, onClose }) => {
     if (!rol) return null
 
     const rolStyle = getRolColor(rol.nombre)
-    const cardSx = { borderRadius: 2, p: 3, border: `1px solid ${COLORS.border}`, backgroundColor: 'white' }
+    const cardSx = { borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white' }
     const tituloSx = { display: 'flex', alignItems: 'center', gap: 1, mb: 1 }
 
     return (
@@ -99,10 +92,10 @@ const ModalConsultar = ({ rol, onClose }) => {
                     <AssignmentIndOutlinedIcon sx={{ fontSize: 18 }} />
                 </Avatar>
                 <Box>
-                    <Typography fontWeight={700} color={COLORS.secondary}>
+                    <Typography fontWeight={700} color={theme.palette.secondary.main}>
                         Rol #{rol.id}
                     </Typography>
-                    <Typography variant="caption" color={COLORS.textMuted}>
+                    <Typography variant="caption" color={theme.palette.text.secondary}>
                         Información del rol de usuario
                     </Typography>
                 </Box>
@@ -112,10 +105,10 @@ const ModalConsultar = ({ rol, onClose }) => {
                 <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
                     <Paper elevation={0} sx={{ ...cardSx, flex: 1 }}>
                         <Box sx={tituloSx}>
-                            <SecurityOutlinedIcon sx={{ fontSize: 22, color: COLORS.text }} />
-                            <Typography fontWeight={700} fontSize="1.05rem" color={COLORS.text}>Datos del Rol</Typography>
+                            <SecurityOutlinedIcon sx={{ fontSize: 22, color: theme.palette.text.primary }} />
+                            <Typography fontWeight={700} fontSize="1.05rem" color={theme.palette.text.primary}>Datos del Rol</Typography>
                         </Box>
-                        <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2 }}>
+                        <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
                             Información principal del rol
                         </Typography>
 
@@ -128,10 +121,10 @@ const ModalConsultar = ({ rol, onClose }) => {
                                 <AssignmentIndOutlinedIcon sx={{ fontSize: 24, color: rolStyle.color }} />
                             </Box>
                             <Box>
-                                <Typography fontWeight={700} color={COLORS.text}>
+                                <Typography fontWeight={700} color={theme.palette.text.primary}>
                                     {rol.nombre}
                                 </Typography>
-                                <Typography variant="body2" color={COLORS.textMuted} mt={0.2}>
+                                <Typography variant="body2" color={theme.palette.text.secondary} mt={0.2}>
                                     {rol.descripcion || 'Sin descripción'}
                                 </Typography>
                             </Box>
@@ -140,20 +133,20 @@ const ModalConsultar = ({ rol, onClose }) => {
 
                     <Paper elevation={0} sx={{ ...cardSx, flex: 1 }}>
                         <Box sx={tituloSx}>
-                            <SecurityOutlinedIcon sx={{ fontSize: 22, color: COLORS.text }} />
-                            <Typography fontWeight={700} fontSize="1.05rem" color={COLORS.text}>Permisos</Typography>
+                            <SecurityOutlinedIcon sx={{ fontSize: 22, color: theme.palette.text.primary }} />
+                            <Typography fontWeight={700} fontSize="1.05rem" color={theme.palette.text.primary}>Permisos</Typography>
                         </Box>
-                        <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2 }}>
+                        <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
                             Permisos asociados al rol
                         </Typography>
 
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9, borderTop: `1px solid ${COLORS.border}`, mt: 1, pt: 1.5 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9, borderTop: `1px solid ${theme.palette.divider}`, mt: 1, pt: 1.5 }}>
                             <Typography variant="body2" sx={{ color: '#9C4040', fontWeight: 500 }}>Total permisos</Typography>
                             <Chip
                                 label={`${rol.permisos?.length || 0} permisos`}
                                 size="small"
                                 sx={{
-                                    backgroundColor: COLORS.primary,
+                                    backgroundColor: theme.palette.primary.main,
                                     color: 'white',
                                     fontWeight: 600,
                                     fontSize: '0.72rem',
@@ -165,8 +158,8 @@ const ModalConsultar = ({ rol, onClose }) => {
                         </Box>
 
                         {rol.permisos && rol.permisos.length > 0 && (
-                            <Box sx={{ mt: 2, pt: 1.5, borderTop: `1px solid ${COLORS.border}` }}>
-                                <Typography variant="caption" color={COLORS.textMuted} fontWeight={600} display="block" mb={1}>
+                            <Box sx={{ mt: 2, pt: 1.5, borderTop: `1px solid ${theme.palette.divider}` }}>
+                                <Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600} display="block" mb={1}>
                                     Lista de permisos
                                 </Typography>
                                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
@@ -177,7 +170,7 @@ const ModalConsultar = ({ rol, onClose }) => {
                                             size="small"
                                             sx={{
                                                 backgroundColor: '#F3F4F6',
-                                                color: COLORS.textMuted,
+                                                color: theme.palette.text.secondary,
                                                 fontWeight: 500,
                                                 fontSize: '0.65rem',
                                                 height: 20,
@@ -192,8 +185,8 @@ const ModalConsultar = ({ rol, onClose }) => {
                                             label={`+${rol.permisos.length - 10} más`}
                                             size="small"
                                             sx={{
-                                                backgroundColor: COLORS.primaryLight,
-                                                color: COLORS.primary,
+                                                backgroundColor: theme.palette.primary.light,
+                                                color: theme.palette.primary.main,
                                                 fontWeight: 600,
                                                 fontSize: '0.65rem',
                                                 height: 20,
@@ -211,9 +204,9 @@ const ModalConsultar = ({ rol, onClose }) => {
 
             <DialogActions sx={{ px: 3, py: 2 }}>
                 <Button onClick={onClose} variant="contained" sx={{
-                    backgroundColor: COLORS.primary, borderRadius: 2, textTransform: 'none',
+                    backgroundColor: theme.palette.primary.main, borderRadius: 2, textTransform: 'none',
                     boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
-                    '&:hover': { backgroundColor: '#b91c1c', boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
+                    '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
                 }}>
                     Cerrar
                 </Button>
@@ -287,7 +280,7 @@ const handleInhabilitarRol = async (id) => {
             <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
                 <Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <Typography variant="h5" fontWeight={700} color={COLORS.text}>
+                        <Typography variant="h5" fontWeight={700} color={theme.palette.text.primary}>
                             Roles
                         </Typography>
                         <Chip
@@ -295,7 +288,7 @@ const handleInhabilitarRol = async (id) => {
                             size="small"
                             sx={{
                                 backgroundColor: '#F3F4F6',
-                                color: COLORS.textMuted,
+                                color: theme.palette.text.secondary,
                                 fontWeight: 500,
                                 fontSize: '0.72rem',
                                 height: 22,
@@ -303,7 +296,7 @@ const handleInhabilitarRol = async (id) => {
                             }}
                         />
                     </Box>
-                    <Typography variant="body2" color={COLORS.textMuted} mt={0.3}>
+                    <Typography variant="body2" color={theme.palette.text.secondary} mt={0.3}>
                         Gestiona los roles de usuario en el sistema.
                     </Typography>
                 </Box>
@@ -313,13 +306,13 @@ const handleInhabilitarRol = async (id) => {
                         variant="contained"
                         startIcon={<AddOutlinedIcon />}
                         sx={{
-                            backgroundColor: COLORS.primary,
+                            backgroundColor: theme.palette.primary.main,
                             borderRadius: 2,
                             textTransform: 'none',
                             fontWeight: 600,
                             boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
                             '&:hover': {
-                                backgroundColor: '#b91c1c',
+                                backgroundColor: theme.palette.primary.dark,
                                 boxShadow: '0 6px 20px rgba(204,24,24,0.2)',
                             },
                         }}
@@ -341,7 +334,7 @@ const handleInhabilitarRol = async (id) => {
                                 boxShadow: '0 0 0 3px rgba(229,115,115,0.18)',
                             },
                             '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                borderColor: '#CC1818',
+                                borderColor: theme.palette.primary.main,
                                 borderWidth: '1px',
                             },
                         },
@@ -352,7 +345,7 @@ const handleInhabilitarRol = async (id) => {
                         input: {
                             startAdornment: (
                                 <InputAdornment position="start">
-                                    <SearchIcon sx={{ color: COLORS.textMuted, fontSize: 20 }} />
+                                    <SearchIcon sx={{ color: theme.palette.text.secondary, fontSize: 20 }} />
                                 </InputAdornment>
                             ),
                             endAdornment: busqueda && (
@@ -367,7 +360,7 @@ const handleInhabilitarRol = async (id) => {
                 />
             </Box>
 
-            <Paper elevation={0} sx={{ border: `1px solid ${COLORS.border}`, borderRadius: 3, overflow: 'hidden' }}>
+            <Paper elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 3, overflow: 'hidden' }}>
                 <TableContainer>
                     <Table>
                         <TableHead>
@@ -383,7 +376,7 @@ const handleInhabilitarRol = async (id) => {
                             {paginatedRoles.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={4} align="center" sx={{ py: 7 }}>
-                                        <Typography color={COLORS.textMuted} variant="body2">
+                                        <Typography color={theme.palette.text.secondary} variant="body2">
                                             {roles.length === 0
                                                 ? 'No hay roles registrados en el sistema.'
                                                 : 'No se encontraron roles que coincidan con la búsqueda.'
@@ -398,7 +391,7 @@ const handleInhabilitarRol = async (id) => {
                                         <TableRow
                                             key={rol.id}
                                             sx={{
-                                                '&:hover': { backgroundColor: COLORS.hoverBg },
+                                                '&:hover': { backgroundColor: theme.palette.background.subtle },
                                                 transition: 'background-color 0.15s',
                                             }}
                                         >
@@ -413,14 +406,14 @@ const handleInhabilitarRol = async (id) => {
                                                     }}>
                                                         {rol.nombre?.split(' ').map(n => n[0]).slice(0, 2).join('')}
                                                     </Avatar>
-                                                    <Typography variant="body2" fontWeight={600} color={COLORS.text}>
+                                                    <Typography variant="body2" fontWeight={600} color={theme.palette.text.primary}>
                                                         {rol.nombre}
                                                     </Typography>
                                                 </Box>
                                             </TableCell>
 
                                             <TableCell sx={{ py: 1.5 }}>
-                                                <Typography variant="body2" color={COLORS.textMuted} sx={{ maxWidth: 250, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                <Typography variant="body2" color={theme.palette.text.secondary} sx={{ maxWidth: 250, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                                     {rol.descripcion || 'Sin descripción'}
                                                 </Typography>
                                             </TableCell>
@@ -430,7 +423,7 @@ const handleInhabilitarRol = async (id) => {
                                                     label={`${rol.permisos?.length || 0} permisos`}
                                                     size="small"
                                                     sx={{
-                                                        backgroundColor: COLORS.primary,
+                                                        backgroundColor: theme.palette.primary.main,
                                                         color: 'white',
                                                         fontWeight: 600,
                                                         fontSize: '0.72rem',
@@ -448,7 +441,7 @@ const handleInhabilitarRol = async (id) => {
                                                               <IconButton
                                                                   size="small"
                                                                   onClick={() => setRolConsulta(rol)}
-                                                                  sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}
+                                                                  sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
                                                               >
                                                                   <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
                                                               </IconButton>
@@ -459,7 +452,7 @@ const handleInhabilitarRol = async (id) => {
                                                               <IconButton
                                                                   size="small"
                                                                   onClick={() => { setRolEditar(rol); setModalActualizarOpen(true) }}
-                                                                  sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}
+                                                                  sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
                                                               >
                                                                   <EditOutlinedIcon sx={{ fontSize: 18 }} />
                                                               </IconButton>
@@ -492,12 +485,12 @@ const handleInhabilitarRol = async (id) => {
             </Paper>
 
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
-                <Typography variant="body2" color={COLORS.textMuted} fontWeight={500}>
+                <Typography variant="body2" color={theme.palette.text.secondary} fontWeight={500}>
                     Mostrando {from}–{to} de {rolesFiltrados.length} resultado{rolesFiltrados.length !== 1 ? 's' : ''}
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography variant="body2" color={COLORS.textMuted} fontWeight={500}>
+                        <Typography variant="body2" color={theme.palette.text.secondary} fontWeight={500}>
                             Filas
                         </Typography>
                         <Select
@@ -510,7 +503,7 @@ const handleInhabilitarRol = async (id) => {
                                 fontSize: '0.82rem',
                                 borderRadius: 2,
                                 '& .MuiSelect-select': { py: 0.6, pl: 1.5, pr: '28px !important' },
-                                '& .MuiOutlinedInput-notchedOutline': { borderColor: COLORS.border },
+                                '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
                                 '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#BDBDBD' },
                                 '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                                     borderColor: '#E57373', borderWidth: '1px',
@@ -518,7 +511,7 @@ const handleInhabilitarRol = async (id) => {
                                 '&.Mui-focused': {
                                     boxShadow: '0 0 0 3px rgba(229,115,115,0.18)',
                                 },
-                                '& .MuiSelect-icon': { color: COLORS.textMuted, fontSize: 18 },
+                                '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
                                 '& .MuiTouchRipple-root': { display: 'none' },
                             }}
                             MenuProps={{
@@ -540,7 +533,7 @@ const handleInhabilitarRol = async (id) => {
                                                 '&.Mui-selected': {
                                                     backgroundColor: 'transparent',
                                                     fontWeight: 600,
-                                                    color: COLORS.text,
+                                                    color: theme.palette.text.primary,
                                                 },
                                                 '&.Mui-selected:hover': { backgroundColor: '#FFF5F5' },
                                             },
@@ -553,7 +546,7 @@ const handleInhabilitarRol = async (id) => {
                                 <MenuItem key={n} value={n}>
                                     {n}
                                     {rowsPerPage === n && (
-                                        <CheckOutlinedIcon sx={{ fontSize: 14, color: COLORS.textMuted }} />
+                                        <CheckOutlinedIcon sx={{ fontSize: 14, color: theme.palette.text.secondary }} />
                                     )}
                                 </MenuItem>
                             ))}
@@ -572,22 +565,22 @@ const handleInhabilitarRol = async (id) => {
                                 minWidth: 34,
                                 height: 34,
                                 mx: 0.2,
-                                color: COLORS.text,
-                                border: `1px solid ${COLORS.border}`,
+                                color: theme.palette.text.primary,
+                                border: `1px solid ${theme.palette.divider}`,
                                 '& .MuiTouchRipple-root': { display: 'none' },
                             },
                             '& .MuiPaginationItem-ellipsis': {
                                 border: 'none',
                             },
                             '& .MuiPaginationItem-root.Mui-selected': {
-                                backgroundColor: COLORS.primary,
-                                borderColor: COLORS.primary,
+                                backgroundColor: theme.palette.primary.main,
+                                borderColor: theme.palette.primary.main,
                                 color: 'white',
                                 fontWeight: 600,
-                                '&:hover': { backgroundColor: '#a01212' },
+                                '&:hover': { backgroundColor: theme.palette.primary.darker },
                             },
                             '& .MuiPaginationItem-root:hover:not(.Mui-selected)': {
-                                backgroundColor: COLORS.hoverBg,
+                                backgroundColor: theme.palette.background.subtle,
                                 borderColor: '#BDBDBD',
                             },
                         }}

@@ -23,20 +23,21 @@ import {
 } from '@mui/icons-material'
 import logo from '../../assets/logo.png'
 import { useAuth } from '../contexts/AuthContext'
+import theme from '../styles/theme.js'
 
 // ─── Paleta ────────────────────────────────────────────────────────────────
 const C = {
-  red: '#CC1818',
-  navy: '#1a2e6e',
+  red: theme.palette.primary.main,
+  navy: theme.palette.secondary.main,
   bg: '#f5f5f5',
   white: '#ffffff',
   label: 'rgba(26,46,110,0.38)',
   textMuted: 'rgba(33,33,33,0.45)',
-  textBase: '#212121',
+  textBase: theme.palette.text.dark,
   textIcon: '#8b8382',
   textIconHover: '#483c3a',
   textNav: '#4a3f3c',
-  textNavHover: '#1a0e0c',
+  textNavHover: theme.palette.text.primary,
   activeBg: 'rgba(204,24,24,0.08)',
   hoverBg: 'rgba(26,46,110,0.05)',
   border: 'rgba(26,46,110,0.1)',

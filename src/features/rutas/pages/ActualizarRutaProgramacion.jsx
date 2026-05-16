@@ -1,3 +1,4 @@
+import theme from '../../../shared/styles/theme.js'
 import { useState, useEffect } from 'react'
 import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, Snackbar, Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material'
 import RouteOutlinedIcon from '@mui/icons-material/RouteOutlined'
@@ -16,21 +17,14 @@ import { useConductor } from '../../../shared/contexts/ConductorContext'
 import { useDestino } from '../../../shared/contexts/DestinoContext'
 import { FormField, FormSelect, formFieldStyles } from '../../../shared/components/FormularioEstandarizado'
 
-const COLORS = {
-    primary: '#CC1818',
-    primaryLight: '#FFE8E8',
-    text: '#1a0e0c',
-    textMuted: '#8A94A6',
-    border: '#E0E0E0',
-    hoverBg: '#F9F9F9',
-}
+const COLORS = theme.palette
 
 const steps = ['Datos de la Ruta', 'Horario y Vehículo', 'Confirmación']
 
 const ConfirmRow = ({ label, value }) => (
     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, py: 0.9, overflow: 'hidden' }}>
         <Typography variant="body2" sx={{ color: '#9C4040', fontWeight: 500, flexShrink: 0 }}>{label}</Typography>
-        <Typography variant="body2" fontWeight={500} color={COLORS.text}
+        <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary}
             sx={{ textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
             {value || '—'}
         </Typography>
@@ -193,7 +187,7 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
 
     const cardSx = {
         flex: 1, minWidth: 0, borderRadius: 2, p: 2.5,
-        border: `1px solid ${COLORS.border}`,
+        border: `1px solid ${theme.palette.divider}`,
         backgroundColor: 'white', elevation: 0,
         overflow: 'hidden',
     }
@@ -274,10 +268,10 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
                         <Box sx={{ display: 'flex', gap: 2 }}>
                             <Paper elevation={0} sx={cardSx}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                                    <RouteOutlinedIcon sx={{ fontSize: 20, color: COLORS.text }} />
-                                    <Typography fontWeight={700} fontSize="0.95rem" color={COLORS.text}>Datos de la Ruta</Typography>
+                                    <RouteOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
+                                    <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Datos de la Ruta</Typography>
                                 </Box>
-                                <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2 }}>Verifica la información de la ruta</Typography>
+                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la información de la ruta</Typography>
                                 <ConfirmRow label="Nombre" value={form.nombreRuta} />
                                 <ConfirmRow label="Vehículo" value={getVehiculoLabel(form.idVehiculo)} />
                                 <ConfirmRow label="Conductor" value={getConductorLabel(form.idConductor)} />
@@ -285,10 +279,10 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
                             </Paper>
                             <Paper elevation={0} sx={cardSx}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                                    <ScheduleOutlinedIcon sx={{ fontSize: 20, color: COLORS.text }} />
-                                    <Typography fontWeight={700} fontSize="0.95rem" color={COLORS.text}>Horario</Typography>
+                                    <ScheduleOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
+                                    <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Horario</Typography>
                                 </Box>
-                                <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2 }}>Verifica el horario</Typography>
+                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica el horario</Typography>
                                 <ConfirmRow label="Fecha" value={form.fechaSalida} />
                                 <ConfirmRow label="Hora Salida" value={form.horaSalida} />
                                 <ConfirmRow label="Hora Llegada" value={form.horaLlegadaEstimada || 'N/A'} />
@@ -304,16 +298,16 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
     return (
         <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth
             slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}>
-            <DialogTitle sx={{ m: 0, p: 2, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${COLORS.border}` }}>
+            <DialogTitle sx={{ m: 0, p: 2, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${theme.palette.divider}` }}>
                 <Box>
                     <Typography variant="h6" fontWeight={700}>
                         Editar Ruta
                     </Typography>
-                    <Typography variant="body2" color={COLORS.textMuted} sx={{ mt: 0.5, ml: 0.5 }}>
+                    <Typography variant="body2" color={theme.palette.text.secondary} sx={{ mt: 0.5, ml: 0.5 }}>
                         {originalData?.nombreRuta ? `Modificando datos de ${originalData.nombreRuta}` : 'Modifica los campos que necesites.'}
                     </Typography>
                 </Box>
-                <IconButton onClick={handleClose} sx={{ color: '#8A94A6' }}>
+                <IconButton onClick={handleClose} sx={{ color: theme.palette.text.secondary }}>
                     <CloseIcon />
                 </IconButton>
             </DialogTitle>
@@ -321,16 +315,16 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
 
                 <Stepper activeStep={activeStep} alternativeLabel
                     sx={{ mb: 3, mt: 2,
-                        '& .MuiStepIcon-root': { color: '#E0E0E0' },
-                        '& .MuiStepIcon-root.Mui-active': { color: COLORS.primary },
-                        '& .MuiStepIcon-root.Mui-completed': { color: COLORS.primary },
+                        '& .MuiStepIcon-root': { color: theme.palette.divider },
+                        '& .MuiStepIcon-root.Mui-active': { color: theme.palette.primary.main },
+                        '& .MuiStepIcon-root.Mui-completed': { color: theme.palette.primary.main },
                         '& .MuiStepIcon-text': { fill: 'white', fontSize: '0.7rem', fontWeight: 700 },
-                        '& .MuiStepConnector-line': { borderColor: COLORS.border },
-                        '& .MuiStepConnector-root.Mui-active .MuiStepConnector-line': { borderColor: COLORS.primary },
-                        '& .MuiStepConnector-root.Mui-completed .MuiStepConnector-line': { borderColor: COLORS.primary },
-                        '& .MuiStepLabel-label': { fontSize: '0.8rem', color: COLORS.textMuted, mt: 0.5 },
-                        '& .MuiStepLabel-label.Mui-active': { color: COLORS.text, fontWeight: 600 },
-                        '& .MuiStepLabel-label.Mui-completed': { color: COLORS.primary, fontWeight: 500 },
+                        '& .MuiStepConnector-line': { borderColor: theme.palette.divider },
+                        '& .MuiStepConnector-root.Mui-active .MuiStepConnector-line': { borderColor: theme.palette.primary.main },
+                        '& .MuiStepConnector-root.Mui-completed .MuiStepConnector-line': { borderColor: theme.palette.primary.main },
+                        '& .MuiStepLabel-label': { fontSize: '0.8rem', color: theme.palette.text.secondary, mt: 0.5 },
+                        '& .MuiStepLabel-label.Mui-active': { color: theme.palette.text.primary, fontWeight: 600 },
+                        '& .MuiStepLabel-label.Mui-completed': { color: theme.palette.primary.main, fontWeight: 500 },
                     }}
                 >
                     {steps.map(label => <Step key={label}><StepLabel>{label}</StepLabel></Step>)}
@@ -342,23 +336,23 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
 
                 <Box sx={{
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    mt: 3, pt: 2, borderTop: `1px solid ${COLORS.border}`,
+                    mt: 3, pt: 2, borderTop: `1px solid ${theme.palette.divider}`,
                 }}>
                     <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined"
                         startIcon={<ArrowBackOutlinedIcon />} disableRipple
                         sx={{
-                            textTransform: 'none', borderRadius: 2, borderColor: COLORS.border,
-                            color: COLORS.text, fontWeight: 500,
-                            '&:hover': { borderColor: '#BDBDBD', backgroundColor: COLORS.hoverBg },
-                            '&.Mui-disabled': { borderColor: COLORS.border, color: COLORS.textMuted },
+                            textTransform: 'none', borderRadius: 2, borderColor: theme.palette.divider,
+                            color: theme.palette.text.primary, fontWeight: 500,
+                            '&:hover': { borderColor: '#BDBDBD', backgroundColor: theme.palette.background.subtle },
+                            '&.Mui-disabled': { borderColor: theme.palette.divider, color: theme.palette.text.secondary },
                         }}>
                         Anterior
                     </Button>
                     <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
                         <Button onClick={handleCancelar} disableRipple
                             sx={{
-                                textTransform: 'none', color: COLORS.textMuted, fontWeight: 500, borderRadius: 2,
-                                '&:hover': { backgroundColor: COLORS.hoverBg, color: COLORS.text },
+                                textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 2,
+                                '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary },
                             }}>
                             Cancelar
                         </Button>
@@ -370,10 +364,10 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
                             disableRipple
                             sx={{
                                 textTransform: 'none', borderRadius: 2, fontWeight: 600,
-                                backgroundColor: COLORS.primary,
+                                backgroundColor: theme.palette.primary.main,
                                 boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
-                                '&:hover': { backgroundColor: '#b91c1c', boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
-                                '&.Mui-disabled': { backgroundColor: '#E0E0E0', color: '#9E9E9E' },
+                                '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
+                                '&.Mui-disabled': { backgroundColor: theme.palette.divider, color: '#9E9E9E' },
                             }}>
                             {activeStep < steps.length - 1 ? 'Siguiente' : submitting ? 'Guardando...' : sinCambios ? 'Sin cambios' : 'Guardar cambios'}
                         </Button>

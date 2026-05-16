@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { Box, Button, Typography } from '@mui/material'
 import { Login as LoginIcon } from '@mui/icons-material'
 import logo from '../../assets/logo.png'
+import theme from '../styles/theme.js'
 
 const Layout = ({ children }) => {
   return (
@@ -11,7 +12,7 @@ const Layout = ({ children }) => {
       fontFamily: '"DM Sans", system-ui, sans-serif',
       position: 'relative',
       overflow: 'hidden',
-      color: '#212121',
+      color: theme.palette.text.dark,
     }}>
       {/* Fondos decorativos (grid, glows) */}
       <Box sx={{
@@ -36,7 +37,7 @@ const Layout = ({ children }) => {
       }} />
 
       {/* Barra superior roja */}
-      <Box sx={{ height: 4, background: 'linear-gradient(90deg, #1a2e6e, #CC1818, #1a2e6e)', width: '100%', position: 'relative', zIndex: 10 }} />
+      <Box sx={{ height: 4, background: theme.palette.gradient.navbar, width: '100%', position: 'relative', zIndex: 10 }} />
 
       {/* Header */}
       <Box sx={{
@@ -66,11 +67,11 @@ const Layout = ({ children }) => {
             variant="contained"
             endIcon={<LoginIcon />}
             sx={{
-              background: 'linear-gradient(135deg, #CC1818 0%, #a81212 100%)',
+              background: theme.palette.gradient.primary,
               borderRadius: '10px', px: 3.5, py: 1.2,
               fontWeight: 700, fontSize: '0.9rem', textTransform: 'none',
               color: 'white',
-              '&:hover': { background: 'linear-gradient(135deg, #a81212 0%, #CC1818 100%)', transform: 'translateY(-1px)' },
+              '&:hover': { background: theme.palette.gradient.primaryHover, transform: 'translateY(-1px)' },
               transition: 'all 0.25s ease',
             }}
           >
@@ -87,7 +88,7 @@ const Layout = ({ children }) => {
       {/* Footer */}
       <Box sx={{
         position: 'relative', zIndex: 10,
-        background: 'linear-gradient(135deg, #f5f5f5 0%, #1a2e6e 50%)',
+        background: theme.palette.gradient.hero,
         px: { xs: 4, md: 10 }, py: 1.5,
         display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2,
       }}>

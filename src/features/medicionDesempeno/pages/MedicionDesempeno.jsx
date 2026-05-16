@@ -7,6 +7,7 @@ import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
 import Inventory2Icon from '@mui/icons-material/Inventory2'
 import { useClientes } from '../../../shared/contexts/ClienteContext'
 import { useAnticipos } from '../../../shared/contexts/AnticipoExcedenteContext'
+import theme from '../../../shared/styles/theme.js'
 
 const MedicionDesempeno = () => {
   const { clientes } = useClientes()
@@ -56,7 +57,7 @@ const MedicionDesempeno = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h5" fontWeight={700} sx={{ mb: 3, color: '#1A2E6E' }}>
+      <Typography variant="h5" fontWeight={700} sx={{ mb: 3, color: theme.palette.secondary.main }}>
         Medición y Desempeño
       </Typography>
 
@@ -66,8 +67,8 @@ const MedicionDesempeno = () => {
             title="Total Clientes" 
             value={clientes.length}
             subtitle={`${clientesActivos} activos, ${clientesInactivos} inactivos`}
-            icon={<PeopleIcon sx={{ fontSize: 30, color: '#1A2E6E' }} />}
-            color="#1A2E6E"
+            icon={<PeopleIcon sx={{ fontSize: 30, color: theme.palette.secondary.main }} />}
+            color={theme.palette.secondary.main}
           />
         </Grid>
 
@@ -76,8 +77,8 @@ const MedicionDesempeno = () => {
             title="Encomiendas" 
             value={encomiendasRegistradas}
             subtitle="Registradas este mes"
-            icon={<Inventory2Icon sx={{ fontSize: 30, color: '#CC1818' }} />}
-            color="#CC1818"
+            icon={<Inventory2Icon sx={{ fontSize: 30, color: theme.palette.primary.main }} />}
+            color={theme.palette.primary.main}
           />
         </Grid>
 
@@ -103,7 +104,7 @@ const MedicionDesempeno = () => {
 
         <Grid item xs={12}>
           <Paper sx={{ p: 2, borderRadius: 2 }}>
-            <Typography variant="h6" fontWeight={600} sx={{ mb: 2, color: '#1A2E6E' }}>
+            <Typography variant="h6" fontWeight={600} sx={{ mb: 2, color: theme.palette.secondary.main }}>
               Valores de Anticipos y Excedentes
             </Typography>
             <Grid container spacing={3}>
@@ -112,7 +113,7 @@ const MedicionDesempeno = () => {
                   <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase' }}>
                     Total Anticipos
                   </Typography>
-                  <Typography variant="h5" fontWeight={700} color="#1A2E6E">
+                  <Typography variant="h5" fontWeight={700} color={theme.palette.secondary.main}>
                     ${totalAnticipos.toLocaleString('es-CO')}
                   </Typography>
                 </Box>
@@ -122,7 +123,7 @@ const MedicionDesempeno = () => {
                   <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase' }}>
                     Total Gastado
                   </Typography>
-                  <Typography variant="h5" fontWeight={700} color="#CC1818">
+                  <Typography variant="h5" fontWeight={700} color={theme.palette.primary.main}>
                     ${totalGastado.toLocaleString('es-CO')}
                   </Typography>
                 </Box>
@@ -143,7 +144,7 @@ const MedicionDesempeno = () => {
 
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 2, borderRadius: 2, height: '100%' }}>
-            <Typography variant="h6" fontWeight={600} sx={{ mb: 2, color: '#1A2E6E' }}>
+            <Typography variant="h6" fontWeight={600} sx={{ mb: 2, color: theme.palette.secondary.main }}>
               Estado de Anticipos
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -165,7 +166,7 @@ const MedicionDesempeno = () => {
 
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 2, borderRadius: 2, height: '100%' }}>
-            <Typography variant="h6" fontWeight={600} sx={{ mb: 2, color: '#1A2E6E' }}>
+            <Typography variant="h6" fontWeight={600} sx={{ mb: 2, color: theme.palette.secondary.main }}>
               Accesos Rápidos
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>

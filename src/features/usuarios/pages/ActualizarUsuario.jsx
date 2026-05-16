@@ -1,3 +1,4 @@
+import theme from '../../../shared/styles/theme.js'
 import { useState, useEffect } from 'react'
 import { Dialog, DialogTitle, DialogContent, IconButton, Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Snackbar, Alert, TextField, Select, InputAdornment, CircularProgress } from '@mui/material'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
@@ -15,21 +16,14 @@ import { formFieldStyles } from '../../../shared/components/FormularioEstandariz
 
 const DOMINIOS_EMAIL = ['@gmail.com', '@hotmail.com', '@outlook.com', '@yahoo.com', '@icloud.com', '@live.com']
 
-const COLORS = {
-    primary: '#CC1818',
-    primaryLight: '#FFE8E8',
-    text: '#1a0e0c',
-    textMuted: '#8A94A6',
-    border: '#E0E0E0',
-    hoverBg: '#F9F9F9',
-}
+const COLORS = theme.palette
 
 const steps = ['Datos Personales', 'Credenciales', 'Confirmación']
 
 const ConfirmRow = ({ label, value }) => (
     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, py: 0.9, overflow: 'hidden' }}>
         <Typography variant="body2" sx={{ color: '#9C4040', fontWeight: 500, flexShrink: 0 }}>{label}</Typography>
-        <Typography variant="body2" fontWeight={500} color={COLORS.text}
+        <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary}
             sx={{ textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
             {value || '—'}
         </Typography>
@@ -234,7 +228,7 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
 
     const cardSx = {
         flex: 1, minWidth: 0, borderRadius: 2, p: 2.5,
-        border: `1px solid ${COLORS.border}`,
+        border: `1px solid ${theme.palette.divider}`,
         backgroundColor: 'white', elevation: 0,
         overflow: 'hidden',
     }
@@ -293,7 +287,7 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
                                                 onChange={handleChange} variant="standard" disableUnderline
                                                 IconComponent={KeyboardArrowDownOutlinedIcon}
                                                 sx={{
-                                                    fontSize: '1rem', color: '#8A94A6',
+                                                    fontSize: '1rem', color: theme.palette.text.secondary,
                                                     '& .MuiSelect-select': { py: 0, pl: 0.5, pr: '22px !important' }
                                                 }}>
                                                 {DOMINIOS_EMAIL.map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
@@ -356,10 +350,10 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
                         <Box sx={{ display: 'flex', gap: 2 }}>
                             <Paper elevation={0} sx={cardSx}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                                    <AssignmentIndOutlinedIcon sx={{ fontSize: 20, color: COLORS.text }} />
-                                    <Typography fontWeight={700} fontSize="0.95rem" color={COLORS.text}>Datos Personales</Typography>
+                                    <AssignmentIndOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
+                                    <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Datos Personales</Typography>
                                 </Box>
-                                <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2 }}>Verifica la información personal</Typography>
+                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la información personal</Typography>
                                 <ConfirmRow label="Tipo de documento" value={form.tipoIdentificacion} />
                                 <ConfirmRow label="N° de documento" value={form.numeroIdentificacion} />
                                 <ConfirmRow label="Nombre" value={form.nombre} />
@@ -367,10 +361,10 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
                             </Paper>
                             <Paper elevation={0} sx={cardSx}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                                    <LockOutlinedIcon sx={{ fontSize: 20, color: COLORS.text }} />
-                                    <Typography fontWeight={700} fontSize="0.95rem" color={COLORS.text}>Credenciales</Typography>
+                                    <LockOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
+                                    <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Credenciales</Typography>
                                 </Box>
-                                <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2 }}>Verifica los datos de acceso</Typography>
+                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica los datos de acceso</Typography>
                                 <ConfirmRow label="Teléfono" value={form.telefono} />
 <ConfirmRow label="Correo" value={form.emailLocal + form.emailDominio} />
                                  <ConfirmRow label="Rol" value={rolesDisponibles.find(r => r.idRol === parseInt(form.idRol))?.nombre || form.idRol} />
@@ -387,19 +381,19 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
     return (
         <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth
             slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}>
-            <DialogTitle sx={{ m: 0, p: 2, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${COLORS.border}` }}>
+            <DialogTitle sx={{ m: 0, p: 2, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${theme.palette.divider}` }}>
                 <Box>
                     <Typography variant="h6" fontWeight={700}>
                         Editar Usuario
                     </Typography>
-                    <Typography variant="body2" color={COLORS.textMuted}>
+                    <Typography variant="body2" color={theme.palette.text.secondary}>
                         {formOriginal?.nombre && formOriginal?.apellido
                             ? `Modificando datos de ${formOriginal.nombre} ${formOriginal.apellido}`
                             : 'Modifica los campos que necesites.'
                         }
                     </Typography>
                 </Box>
-                <IconButton onClick={onClose} sx={{ color: '#8A94A6' }}>
+                <IconButton onClick={onClose} sx={{ color: theme.palette.text.secondary }}>
                     <CloseIcon />
                 </IconButton>
             </DialogTitle>
@@ -408,16 +402,16 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
                 <Stepper activeStep={activeStep} alternativeLabel
                     sx={{
                         mb: 3, mt: 2,
-                        '& .MuiStepIcon-root': { color: '#E0E0E0' },
-                        '& .MuiStepIcon-root.Mui-active': { color: COLORS.primary },
-                        '& .MuiStepIcon-root.Mui-completed': { color: COLORS.primary },
+                        '& .MuiStepIcon-root': { color: theme.palette.divider },
+                        '& .MuiStepIcon-root.Mui-active': { color: theme.palette.primary.main },
+                        '& .MuiStepIcon-root.Mui-completed': { color: theme.palette.primary.main },
                         '& .MuiStepIcon-text': { fill: 'white', fontSize: '0.7rem', fontWeight: 700 },
-                        '& .MuiStepConnector-line': { borderColor: COLORS.border },
-                        '& .MuiStepConnector-root.Mui-active .MuiStepConnector-line': { borderColor: COLORS.primary },
-                        '& .MuiStepConnector-root.Mui-completed .MuiStepConnector-line': { borderColor: COLORS.primary },
-                        '& .MuiStepLabel-label': { fontSize: '0.8rem', color: COLORS.textMuted, mt: 0.5 },
-                        '& .MuiStepLabel-label.Mui-active': { color: COLORS.text, fontWeight: 600 },
-                        '& .MuiStepLabel-label.Mui-completed': { color: COLORS.primary, fontWeight: 500 },
+                        '& .MuiStepConnector-line': { borderColor: theme.palette.divider },
+                        '& .MuiStepConnector-root.Mui-active .MuiStepConnector-line': { borderColor: theme.palette.primary.main },
+                        '& .MuiStepConnector-root.Mui-completed .MuiStepConnector-line': { borderColor: theme.palette.primary.main },
+                        '& .MuiStepLabel-label': { fontSize: '0.8rem', color: theme.palette.text.secondary, mt: 0.5 },
+                        '& .MuiStepLabel-label.Mui-active': { color: theme.palette.text.primary, fontWeight: 600 },
+                        '& .MuiStepLabel-label.Mui-completed': { color: theme.palette.primary.main, fontWeight: 500 },
                     }}>
                     {steps.map(label => <Step key={label}><StepLabel>{label}</StepLabel></Step>)}
                 </Stepper>
@@ -428,23 +422,23 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
 
                 <Box sx={{
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    px: 4, py: 2.5, borderTop: `1px solid ${COLORS.border}`, backgroundColor: '#FAFAFA',
+                    px: 4, py: 2.5, borderTop: `1px solid ${theme.palette.divider}`, backgroundColor: '#FAFAFA',
                 }}>
                     <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined"
                         startIcon={<ArrowBackOutlinedIcon />} disableRipple
                         sx={{
-                            textTransform: 'none', borderRadius: 2, borderColor: COLORS.border,
-                            color: COLORS.text, fontWeight: 500,
-                            '&:hover': { borderColor: '#BDBDBD', backgroundColor: COLORS.hoverBg },
-                            '&.Mui-disabled': { borderColor: COLORS.border, color: COLORS.textMuted },
+                            textTransform: 'none', borderRadius: 2, borderColor: theme.palette.divider,
+                            color: theme.palette.text.primary, fontWeight: 500,
+                            '&:hover': { borderColor: '#BDBDBD', backgroundColor: theme.palette.background.subtle },
+                            '&.Mui-disabled': { borderColor: theme.palette.divider, color: theme.palette.text.secondary },
                         }}>
                         Anterior
                     </Button>
                     <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
                         <Button onClick={handleCancelar} disableRipple
                             sx={{
-                                textTransform: 'none', color: COLORS.textMuted, fontWeight: 500, borderRadius: 2,
-                                '&:hover': { backgroundColor: COLORS.hoverBg, color: COLORS.text },
+                                textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 2,
+                                '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary },
                             }}>
                             Cancelar
                         </Button>
@@ -456,9 +450,9 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
                             disableRipple
                             sx={{
                                 textTransform: 'none', borderRadius: 2, fontWeight: 600,
-                                backgroundColor: COLORS.primary,
+                                backgroundColor: theme.palette.primary.main,
                                 boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
-                                '&:hover': { backgroundColor: '#b91c1c', boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
+                                '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
                                 '&.Mui-disabled': { backgroundColor: '#e0e0e0', color: '#9e9e9e' },
                             }}>
                             {activeStep < steps.length - 1 ? 'Siguiente' : submitting ? 'Guardando...' : sinCambios ? 'Sin cambios' : 'Guardar cambios'}

@@ -1,3 +1,4 @@
+import theme from '../../../shared/styles/theme.js'
 import { useState } from 'react'
 import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, Snackbar, TextField, Select, InputAdornment, Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
@@ -16,21 +17,14 @@ import { FormField, FormSelect, formFieldStyles } from '../../../shared/componen
 
 const DOMINIOS_EMAIL = ['@gmail.com', '@hotmail.com', '@outlook.com', '@yahoo.com', '@icloud.com', '@live.com']
 
-const COLORS = {
-    primary: '#CC1818',
-    primaryLight: '#FFE8E8',
-    text: '#1a0e0c',
-    textMuted: '#8A94A6',
-    border: '#E0E0E0',
-    hoverBg: '#F9F9F9',
-}
+const COLORS = theme.palette
 
 const steps = ['Datos Personales', 'Información de Contacto', 'Confirmación']
 
 const ConfirmRow = ({ label, value }) => (
     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, py: 0.9, overflow: 'hidden' }}>
         <Typography variant="body2" sx={{ color: '#9C4040', fontWeight: 500, flexShrink: 0 }}>{label}</Typography>
-        <Typography variant="body2" fontWeight={500} color={COLORS.text}
+        <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary}
             sx={{ textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
             {value || '—'}
         </Typography>
@@ -159,7 +153,7 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
 
     const cardSx = {
         flex: 1, minWidth: 0, borderRadius: 2, p: 2.5,
-        border: `1px solid ${COLORS.border}`,
+        border: `1px solid ${theme.palette.divider}`,
         backgroundColor: 'white', elevation: 0,
         overflow: 'hidden',
     }
@@ -218,7 +212,7 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
                                             <Select name="emailDominio" value={form.emailDominio}
                                                 onChange={handleChange} variant="standard" disableUnderline
                                                 IconComponent={KeyboardArrowDownOutlinedIcon}
-                                                sx={{ fontSize: '1rem', color: '#8A94A6',
+                                                sx={{ fontSize: '1rem', color: theme.palette.text.secondary,
                                                     '& .MuiSelect-select': { py: 0, pl: 0.5, pr: '22px !important' } }}>
                                                 {DOMINIOS_EMAIL.map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
                                             </Select>
@@ -258,10 +252,10 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
                         <Box sx={{ display: 'flex', gap: 2 }}>
                             <Paper elevation={0} sx={cardSx}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                                    <BusinessOutlinedIcon sx={{ fontSize: 20, color: COLORS.text }} />
-                                    <Typography fontWeight={700} fontSize="0.95rem" color={COLORS.text}>Datos Personales</Typography>
+                                    <BusinessOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
+                                    <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Datos Personales</Typography>
                                 </Box>
-                                <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2 }}>Verifica la información personal</Typography>
+                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la información personal</Typography>
                                 <ConfirmRow label="Tipo de documento" value={getTipoLabel(form.tipoIdentificacion)} />
                                 <ConfirmRow label="N° de documento" value={form.numeroIdentificacion} />
                                 <ConfirmRow label="Nombre" value={form.nombre} />
@@ -269,10 +263,10 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
                             </Paper>
                             <Paper elevation={0} sx={cardSx}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                                    <PhoneOutlinedIcon sx={{ fontSize: 20, color: COLORS.text }} />
-                                    <Typography fontWeight={700} fontSize="0.95rem" color={COLORS.text}>Información de Contacto</Typography>
+                                    <PhoneOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
+                                    <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Información de Contacto</Typography>
                                 </Box>
-                                <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2 }}>Verifica los datos de contacto</Typography>
+                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica los datos de contacto</Typography>
                                 <ConfirmRow label="Teléfono" value={form.telefono} />
                                 <ConfirmRow label="Correo" value={form.emailLocal + form.emailDominio} />
                                 <ConfirmRow label="Ciudad" value={form.ciudad} />
@@ -289,14 +283,14 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
     return (
         <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth
             slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}>
-            <DialogTitle sx={{ m: 0, p: 2, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${COLORS.border}` }}>
+            <DialogTitle sx={{ m: 0, p: 2, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${theme.palette.divider}` }}>
                 <Box>
                     <Typography variant="h6" fontWeight={700}>Registrar Propietario</Typography>
-                    <Typography variant="body2" color={COLORS.textMuted} sx={{ mt: 0.5, ml: 0.5 }}>
+                    <Typography variant="body2" color={theme.palette.text.secondary} sx={{ mt: 0.5, ml: 0.5 }}>
                         Complete los datos del nuevo propietario paso a paso.
                     </Typography>
                 </Box>
-                <IconButton onClick={handleClose} sx={{ color: '#8A94A6' }}>
+                <IconButton onClick={handleClose} sx={{ color: theme.palette.text.secondary }}>
                     <CloseIcon />
                 </IconButton>
             </DialogTitle>
@@ -304,16 +298,16 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
 
                 <Stepper activeStep={activeStep} alternativeLabel
                     sx={{ mb: 3, mt: 2,
-                        '& .MuiStepIcon-root': { color: '#E0E0E0' },
-                        '& .MuiStepIcon-root.Mui-active': { color: COLORS.primary },
-                        '& .MuiStepIcon-root.Mui-completed': { color: COLORS.primary },
+                        '& .MuiStepIcon-root': { color: theme.palette.divider },
+                        '& .MuiStepIcon-root.Mui-active': { color: theme.palette.primary.main },
+                        '& .MuiStepIcon-root.Mui-completed': { color: theme.palette.primary.main },
                         '& .MuiStepIcon-text': { fill: 'white', fontSize: '0.7rem', fontWeight: 700 },
-                        '& .MuiStepConnector-line': { borderColor: COLORS.border },
-                        '& .MuiStepConnector-root.Mui-active .MuiStepConnector-line': { borderColor: COLORS.primary },
-                        '& .MuiStepConnector-root.Mui-completed .MuiStepConnector-line': { borderColor: COLORS.primary },
-                        '& .MuiStepLabel-label': { fontSize: '0.8rem', color: COLORS.textMuted, mt: 0.5 },
-                        '& .MuiStepLabel-label.Mui-active': { color: COLORS.text, fontWeight: 600 },
-                        '& .MuiStepLabel-label.Mui-completed': { color: COLORS.primary, fontWeight: 500 },
+                        '& .MuiStepConnector-line': { borderColor: theme.palette.divider },
+                        '& .MuiStepConnector-root.Mui-active .MuiStepConnector-line': { borderColor: theme.palette.primary.main },
+                        '& .MuiStepConnector-root.Mui-completed .MuiStepConnector-line': { borderColor: theme.palette.primary.main },
+                        '& .MuiStepLabel-label': { fontSize: '0.8rem', color: theme.palette.text.secondary, mt: 0.5 },
+                        '& .MuiStepLabel-label.Mui-active': { color: theme.palette.text.primary, fontWeight: 600 },
+                        '& .MuiStepLabel-label.Mui-completed': { color: theme.palette.primary.main, fontWeight: 500 },
                     }}
                 >
                     {steps.map(label => <Step key={label}><StepLabel>{label}</StepLabel></Step>)}
@@ -325,23 +319,23 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
 
                 <Box sx={{
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    mt: 3, pt: 2, borderTop: `1px solid ${COLORS.border}`,
+                    mt: 3, pt: 2, borderTop: `1px solid ${theme.palette.divider}`,
                 }}>
                     <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined"
                         startIcon={<ArrowBackOutlinedIcon />} disableRipple
                         sx={{
-                            textTransform: 'none', borderRadius: 2, borderColor: COLORS.border,
-                            color: COLORS.text, fontWeight: 500,
-                            '&:hover': { borderColor: '#BDBDBD', backgroundColor: COLORS.hoverBg },
-                            '&.Mui-disabled': { borderColor: COLORS.border, color: COLORS.textMuted },
+                            textTransform: 'none', borderRadius: 2, borderColor: theme.palette.divider,
+                            color: theme.palette.text.primary, fontWeight: 500,
+                            '&:hover': { borderColor: '#BDBDBD', backgroundColor: theme.palette.background.subtle },
+                            '&.Mui-disabled': { borderColor: theme.palette.divider, color: theme.palette.text.secondary },
                         }}>
                         Anterior
                     </Button>
                     <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
                         <Button onClick={handleCancelar} disableRipple
                             sx={{
-                                textTransform: 'none', color: COLORS.textMuted, fontWeight: 500, borderRadius: 2,
-                                '&:hover': { backgroundColor: COLORS.hoverBg, color: COLORS.text },
+                                textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 2,
+                                '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary },
                             }}>
                             Cancelar
                         </Button>
@@ -353,10 +347,10 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
                             disableRipple
                             sx={{
                                 textTransform: 'none', borderRadius: 2, fontWeight: 600,
-                                backgroundColor: COLORS.primary,
+                                backgroundColor: theme.palette.primary.main,
                                 boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
-                                '&:hover': { backgroundColor: '#b91c1c', boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
-                                '&.Mui-disabled': { backgroundColor: '#E0E0E0', color: '#9E9E9E' },
+                                '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
+                                '&.Mui-disabled': { backgroundColor: theme.palette.divider, color: '#9E9E9E' },
                             }}>
                             {activeStep < steps.length - 1 ? 'Siguiente' : submitting ? 'Registrando...' : 'Registrar'}
                         </Button>

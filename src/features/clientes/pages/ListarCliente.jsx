@@ -1,3 +1,4 @@
+import theme from '../../../shared/styles/theme.js'
 import { useState } from 'react'
 import { useClientes } from '../../../shared/contexts/ClienteContext'
 import { useAuth } from '../../../shared/contexts/AuthContext'
@@ -22,20 +23,12 @@ import ClearIcon from '@mui/icons-material/Clear'
 import RegistrarCliente from './RegistrarCliente'
 import ActualizarCliente from './ActualizarCliente'
 
-const COLORS = {
-    primary: '#CC1818',
-    primaryLight: '#FFE8E8',
-    secondary: '#1A2E6E',
-    text: '#1a0e0c',
-    textMuted: '#8A94A6',
-    border: '#E0E0E0',
-    hoverBg: '#F9F9F9',
-}
+const COLORS = theme.palette
 
 const thStyle = {
     fontWeight: 700,
     fontSize: '0.80rem',
-    color: '#1a0e0c',
+    color: theme.palette.text.primary,
     letterSpacing: 0.5,
     py: 1.5,
     borderBottom: `1px solid #E0E0E0`,
@@ -70,7 +63,7 @@ const ModalConsultar = ({ cliente, onClose }) => {
     if (!cliente) return null
     const estado = cliente.habilitado ? 'Habilitado' : 'Inhabilitado'
 
-    const cardSx = { borderRadius: 2, p: 3, border: `1px solid ${COLORS.border}`, backgroundColor: 'white' }
+    const cardSx = { borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white' }
     const tituloSx = { display: 'flex', alignItems: 'center', gap: 1, mb: 1 }
 
     return (
@@ -80,10 +73,10 @@ const ModalConsultar = ({ cliente, onClose }) => {
             {/* ── Fila superior: Perfil (ancho completo) ── */}
             <Paper elevation={0} sx={{ ...cardSx, mb: 2 }}>
                 <Box sx={tituloSx}>
-                    <PersonOutlinedIcon sx={{ fontSize: 22, color: COLORS.text }} />
-                    <Typography fontWeight={700} fontSize="1.05rem" color={COLORS.text}>Perfil</Typography>
+                    <PersonOutlinedIcon sx={{ fontSize: 22, color: theme.palette.text.primary }} />
+                    <Typography fontWeight={700} fontSize="1.05rem" color={theme.palette.text.primary}>Perfil</Typography>
                 </Box>
-                <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2.5 }}>
+                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2.5 }}>
                     Información del perfil del cliente
                 </Typography>
 
@@ -92,10 +85,10 @@ const ModalConsultar = ({ cliente, onClose }) => {
                         {cliente.nombre[0]}{cliente.apellido[0]}
                     </Avatar>
                     <Box>
-                        <Typography fontWeight={700} fontSize="1.1rem" color={COLORS.text}>
+                        <Typography fontWeight={700} fontSize="1.1rem" color={theme.palette.text.primary}>
                             {cliente.nombre} {cliente.apellido}
                         </Typography>
-                        <Typography variant="body2" color={COLORS.textMuted} mt={0.4}>
+                        <Typography variant="body2" color={theme.palette.text.secondary} mt={0.4}>
                             {cliente.email}
                         </Typography>
                     </Box>
@@ -108,10 +101,10 @@ const ModalConsultar = ({ cliente, onClose }) => {
                 {/* Detalles del Cliente */}
                 <Paper elevation={0} sx={{ ...cardSx, flex: 1 }}>
                     <Box sx={tituloSx}>
-                        <AssignmentIndOutlinedIcon sx={{ fontSize: 22, color: COLORS.text }} />
-                        <Typography fontWeight={700} fontSize="1.05rem" color={COLORS.text}>Detalles del Cliente</Typography>
+                        <AssignmentIndOutlinedIcon sx={{ fontSize: 22, color: theme.palette.text.primary }} />
+                        <Typography fontWeight={700} fontSize="1.05rem" color={theme.palette.text.primary}>Detalles del Cliente</Typography>
                     </Box>
-                    <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2 }}>
+                    <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
                         Identificación y datos personales
                     </Typography>
 
@@ -124,10 +117,10 @@ const ModalConsultar = ({ cliente, onClose }) => {
                 {/* Información de Contacto */}
                 <Paper elevation={0} sx={{ ...cardSx, flex: 1 }}>
                     <Box sx={tituloSx}>
-                        <AssignmentIndOutlinedIcon sx={{ fontSize: 22, color: COLORS.text }} />
-                        <Typography fontWeight={700} fontSize="1.05rem" color={COLORS.text}>Información de Contacto</Typography>
+                        <AssignmentIndOutlinedIcon sx={{ fontSize: 22, color: theme.palette.text.primary }} />
+                        <Typography fontWeight={700} fontSize="1.05rem" color={theme.palette.text.primary}>Información de Contacto</Typography>
                     </Box>
-                    <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2 }}>
+                    <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
                         Datos de contacto y estado de la cuenta
                     </Typography>
 
@@ -141,9 +134,9 @@ const ModalConsultar = ({ cliente, onClose }) => {
             {/* Botón cerrar */}
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
                 <Button onClick={onClose} variant="contained" sx={{
-                    backgroundColor: COLORS.primary, borderRadius: 2, textTransform: 'none',
+                    backgroundColor: theme.palette.primary.main, borderRadius: 2, textTransform: 'none',
                     boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
-                    '&:hover': { backgroundColor: '#b91c1c', boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
+                    '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
                 }}>
                     Cerrar
                 </Button>
@@ -225,7 +218,7 @@ const ListarCliente = () => {
             <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
                 <Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <Typography variant="h5" fontWeight={700} color={COLORS.text}>
+                        <Typography variant="h5" fontWeight={700} color={theme.palette.text.primary}>
                             Clientes
                         </Typography>
                         {!loading && !error && (
@@ -234,7 +227,7 @@ const ListarCliente = () => {
                                 size="small"
                                 sx={{
                                     backgroundColor: '#F3F4F6',
-                                    color: COLORS.textMuted,
+                                    color: theme.palette.text.secondary,
                                     fontWeight: 500,
                                     fontSize: '0.72rem',
                                     height: 22,
@@ -243,7 +236,7 @@ const ListarCliente = () => {
                             />
                         )}
                     </Box>
-                    <Typography variant="body2" color={COLORS.textMuted} mt={0.3}>
+                    <Typography variant="body2" color={theme.palette.text.secondary} mt={0.3}>
                         Gestiona los clientes registrados en el sistema.
                     </Typography>
                  </Box>
@@ -253,13 +246,13 @@ const ListarCliente = () => {
                          variant="contained"
                          startIcon={<AddOutlinedIcon />}
                          sx={{
-                             backgroundColor: COLORS.primary,
+                             backgroundColor: theme.palette.primary.main,
                              borderRadius: 2,
                              textTransform: 'none',
                              fontWeight: 600,
                              boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
                              '&:hover': {
-                                 backgroundColor: '#b91c1c',
+                                 backgroundColor: theme.palette.primary.dark,
                                  boxShadow: '0 6px 20px rgba(204,24,24,0.2)',
                              },
                          }}
@@ -301,14 +294,14 @@ const ListarCliente = () => {
                             minWidth: 0,
                             fontWeight: filtroEstado === f.value ? 600 : 400,
                             backgroundColor: filtroEstado === f.value ? 'white' : 'transparent',
-                            color: filtroEstado === f.value ? COLORS.text : '#B05050',
+                            color: filtroEstado === f.value ? theme.palette.text.primary : '#B05050',
                             boxShadow: filtroEstado === f.value
                                 ? '0 1px 4px rgba(0,0,0,0.12)'
                                 : 'none',
                             border: 'none',
                             '&:hover': {
                                 backgroundColor: filtroEstado === f.value ? 'white' : 'transparent',
-                                color: filtroEstado === f.value ? COLORS.text : '#5C3333',
+                                color: filtroEstado === f.value ? theme.palette.text.primary : '#5C3333',
                                 border: 'none',
                             },
                         }}
@@ -331,7 +324,7 @@ const ListarCliente = () => {
                                 boxShadow: '0 0 0 3px rgba(229,115,115,0.18)',
                             },
                             '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                borderColor: '#CC1818',
+                                borderColor: theme.palette.primary.main,
                                 borderWidth: '1px',
                             },
                         },
@@ -342,7 +335,7 @@ const ListarCliente = () => {
                         input: {
                             startAdornment: (
                                 <InputAdornment position="start">
-                                    <SearchIcon sx={{ color: COLORS.textMuted, fontSize: 20 }} />
+                                    <SearchIcon sx={{ color: theme.palette.text.secondary, fontSize: 20 }} />
                                 </InputAdornment>
                             ),
                             endAdornment: busqueda && (
@@ -362,7 +355,7 @@ const ListarCliente = () => {
                         size="small"
                         icon={<ClearIcon sx={{ fontSize: '14px !important' }} />}
                         onClick={limpiarFiltros}
-                        sx={{ fontSize: '0.72rem', height: 28, cursor: 'pointer', backgroundColor: COLORS.primaryLight, color: COLORS.primary }}
+                        sx={{ fontSize: '0.72rem', height: 28, cursor: 'pointer', backgroundColor: theme.palette.primary.light, color: theme.palette.primary.main }}
                     />
                 )}
 
@@ -374,10 +367,10 @@ const ListarCliente = () => {
                         borderRadius: 2,
                         textTransform: 'none',
                         fontSize: '0.85rem',
-                        borderColor: COLORS.border,
-                        color: COLORS.text,
+                        borderColor: theme.palette.divider,
+                        color: theme.palette.text.primary,
                         fontWeight: 500,
-                        '&:hover': { backgroundColor: COLORS.primaryLight },
+                        '&:hover': { backgroundColor: theme.palette.primary.light },
                     }}
                 >
                     Exportar
@@ -385,7 +378,7 @@ const ListarCliente = () => {
             </Box>
 
             {/* ── Tabla ── */}
-            <Paper elevation={0} sx={{ border: `1px solid ${COLORS.border}`, borderRadius: 3, overflow: 'hidden' }}>
+            <Paper elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 3, overflow: 'hidden' }}>
                 <TableContainer>
                     <Table>
                         <TableHead>
@@ -404,8 +397,8 @@ const ListarCliente = () => {
                             {loading ? (
                                 <TableRow>
                                     <TableCell colSpan={7} align="center" sx={{ py: 7 }}>
-                                        <CircularProgress size={28} sx={{ color: COLORS.primary }} />
-                                        <Typography variant="body2" color={COLORS.textMuted} mt={1.5}>
+                                        <CircularProgress size={28} sx={{ color: theme.palette.primary.main }} />
+                                        <Typography variant="body2" color={theme.palette.text.secondary} mt={1.5}>
                                             Cargando clientes...
                                         </Typography>
                                     </TableCell>
@@ -421,7 +414,7 @@ const ListarCliente = () => {
                             ) : paginatedClientes.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={7} align="center" sx={{ py: 7 }}>
-                                        <Typography color={COLORS.textMuted} variant="body2">
+                                        <Typography color={theme.palette.text.secondary} variant="body2">
                                             {clientes.length === 0
                                                 ? 'No hay clientes registrados en el sistema.'
                                                 : busqueda.trim() !== ''
@@ -436,7 +429,7 @@ const ListarCliente = () => {
                                     <TableRow
                                         key={cliente.idCliente}
                                         sx={{
-                                            '&:hover': { backgroundColor: COLORS.hoverBg },
+                                            '&:hover': { backgroundColor: theme.palette.background.subtle },
                                             transition: 'background-color 0.15s',
                                             opacity: cliente.habilitado ? 1 : 0.55,
                                         }}
@@ -446,37 +439,37 @@ const ListarCliente = () => {
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                                                 <Avatar sx={{
                                                     width: 34, height: 34,
-                                                    backgroundColor: cliente.habilitado ? '#FFCDD2' : '#E0E0E0',
+                                                    backgroundColor: cliente.habilitado ? '#FFCDD2' : theme.palette.divider,
                                                     fontSize: '0.73rem',
                                                     fontWeight: 700,
                                                     color: cliente.habilitado ? '#C62828' : '#8E8E8E',
                                                 }}>
                                                     {cliente.nombre[0]}{cliente.apellido[0]}
                                                 </Avatar>
-                                                <Typography variant="body2" fontWeight={500} color={COLORS.text} noWrap>
+                                                <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary} noWrap>
                                                     {cliente.nombre} {cliente.apellido}
                                                 </Typography>
                                             </Box>
                                         </TableCell>
 
                                         {/* Tipo ID */}
-                                        <TableCell sx={{ fontSize: '0.85rem', color: COLORS.text, py: 1.5 }}>
+                                        <TableCell sx={{ fontSize: '0.85rem', color: theme.palette.text.primary, py: 1.5 }}>
                                             {cliente.tipoIdentificacion}
                                         </TableCell>
 
                                         {/* Número ID */}
-                                        <TableCell sx={{ fontSize: '0.85rem', color: COLORS.text, py: 1.5 }}>
+                                        <TableCell sx={{ fontSize: '0.85rem', color: theme.palette.text.primary, py: 1.5 }}>
                                             {cliente.numeroIdentificacion}
                                         </TableCell>
 
                                         {/* Teléfono */}
-                                        <TableCell sx={{ fontSize: '0.85rem', color: COLORS.text, py: 1.5 }}>
+                                        <TableCell sx={{ fontSize: '0.85rem', color: theme.palette.text.primary, py: 1.5 }}>
                                             {cliente.telefono}
                                         </TableCell>
 
                                         {/* Correo */}
-                                        <TableCell sx={{ fontSize: '0.85rem', color: COLORS.text, py: 1.5, maxWidth: 200 }}>
-                                            <Typography variant="body2" color={COLORS.text} noWrap>
+                                        <TableCell sx={{ fontSize: '0.85rem', color: theme.palette.text.primary, py: 1.5, maxWidth: 200 }}>
+                                            <Typography variant="body2" color={theme.palette.text.primary} noWrap>
                                                 {cliente.email}
                                             </Typography>
                                         </TableCell>
@@ -539,7 +532,7 @@ const ListarCliente = () => {
                                                         <IconButton
                                                             size="small"
                                                             onClick={() => setClienteConsulta(cliente)}
-                                                            sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}
+                                                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
                                                         >
                                                             <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
                                                         </IconButton>
@@ -550,7 +543,7 @@ const ListarCliente = () => {
                                                         <IconButton
                                                             size="small"
                                                             onClick={() => { setClienteEditar(cliente); setModalActualizarOpen(true) }}
-                                                            sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}
+                                                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
                                                         >
                                                             <EditOutlinedIcon sx={{ fontSize: 18 }} />
                                                         </IconButton>
@@ -571,12 +564,12 @@ const ListarCliente = () => {
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 px: 0.5, pt: 1.5,
             }}>
-                <Typography variant="body2" color={COLORS.textMuted}>
+                <Typography variant="body2" color={theme.palette.text.secondary}>
                     Mostrando {from}–{to} de {clientesFiltrados.length} resultado{clientesFiltrados.length !== 1 ? 's' : ''}
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography variant="body2" color={COLORS.textMuted} fontWeight={500}>
+                        <Typography variant="body2" color={theme.palette.text.secondary} fontWeight={500}>
                             Filas
                         </Typography>
                         <Select
@@ -589,7 +582,7 @@ const ListarCliente = () => {
                                 fontSize: '0.82rem',
                                 borderRadius: 2,
                                 '& .MuiSelect-select': { py: 0.6, pl: 1.5, pr: '28px !important' },
-                                '& .MuiOutlinedInput-notchedOutline': { borderColor: COLORS.border },
+                                '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
                                 '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#BDBDBD' },
                                 '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                                     borderColor: '#E57373',
@@ -598,7 +591,7 @@ const ListarCliente = () => {
                                 '&.Mui-focused': {
                                     boxShadow: '0 0 0 3px rgba(229,115,115,0.18)',
                                 },
-                                '& .MuiSelect-icon': { color: COLORS.textMuted, fontSize: 18 },
+                                '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
                                 '& .MuiTouchRipple-root': { display: 'none' },
                             }}
                             MenuProps={{
@@ -620,7 +613,7 @@ const ListarCliente = () => {
                                                 '&.Mui-selected': {
                                                     backgroundColor: 'transparent',
                                                     fontWeight: 600,
-                                                    color: COLORS.text,
+                                                    color: theme.palette.text.primary,
                                                 },
                                                 '&.Mui-selected:hover': { backgroundColor: '#FFF5F5' },
                                             },
@@ -633,7 +626,7 @@ const ListarCliente = () => {
                                 <MenuItem key={n} value={n}>
                                     {n}
                                     {rowsPerPage === n && (
-                                        <CheckOutlinedIcon sx={{ fontSize: 14, color: COLORS.textMuted }} />
+                                        <CheckOutlinedIcon sx={{ fontSize: 14, color: theme.palette.text.secondary }} />
                                     )}
                                 </MenuItem>
                             ))}
@@ -652,22 +645,22 @@ const ListarCliente = () => {
                                 minWidth: 34,
                                 height: 34,
                                 mx: 0.2,
-                                color: COLORS.text,
-                                border: `1px solid ${COLORS.border}`,
+                                color: theme.palette.text.primary,
+                                border: `1px solid ${theme.palette.divider}`,
                                 '& .MuiTouchRipple-root': { display: 'none' },
                             },
                             '& .MuiPaginationItem-ellipsis': {
                                 border: 'none',
                             },
                             '& .MuiPaginationItem-root.Mui-selected': {
-                                backgroundColor: COLORS.primary,
-                                borderColor: COLORS.primary,
+                                backgroundColor: theme.palette.primary.main,
+                                borderColor: theme.palette.primary.main,
                                 color: 'white',
                                 fontWeight: 600,
-                                '&:hover': { backgroundColor: '#a01212' },
+                                '&:hover': { backgroundColor: theme.palette.primary.darker },
                             },
                             '& .MuiPaginationItem-root:hover:not(.Mui-selected)': {
-                                backgroundColor: COLORS.hoverBg,
+                                backgroundColor: theme.palette.background.subtle,
                                 borderColor: '#BDBDBD',
                             },
                         }}

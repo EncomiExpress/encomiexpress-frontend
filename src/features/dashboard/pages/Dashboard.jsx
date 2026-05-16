@@ -1,3 +1,4 @@
+import theme from '../../../shared/styles/theme.js'
 import { Box, Typography, Paper, Grid } from '@mui/material'
 import TrendingUpIcon from '@mui/icons-material/TrendingUp'
 import PeopleIcon from '@mui/icons-material/People'
@@ -86,8 +87,8 @@ const Dashboard = () => {
             title="Total Clientes"
             value={clientes.length}
             subtitle={`${clientesActivos} activos, ${clientesInactivos} inactivos`}
-            icon={<PeopleIcon sx={{ fontSize: 32, color: '#1A2E6E' }} />}
-            color="#1A2E6E"
+            icon={<PeopleIcon sx={{ fontSize: 32, color: theme.palette.secondary.main }} />}
+            color={theme.palette.secondary.main}
           />
         </Grid>
 
@@ -96,8 +97,8 @@ const Dashboard = () => {
             title="Encomiendas"
             value={encomiendasEsteMes}
             subtitle="Registradas este mes"
-            icon={<Inventory2Icon sx={{ fontSize: 32, color: '#CC1818' }} />}
-            color="#CC1818"
+            icon={<Inventory2Icon sx={{ fontSize: 32, color: theme.palette.primary.main }} />}
+            color={theme.palette.primary.main}
           />
         </Grid>
 
@@ -125,8 +126,8 @@ const Dashboard = () => {
       {/* Sección de Métricas */}
       <Paper sx={{ p: 3.5, borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.08)', border: '1px solid #f0f0f0', mb: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-          <Box sx={{ p: 1, borderRadius: 2, backgroundColor: '#CC181810' }}>
-            <TrendingUpIcon sx={{ color: '#CC1818', fontSize: 24 }} />
+          <Box sx={{ p: 1, borderRadius: 2, backgroundColor: `${theme.palette.primary.main}10` }}>
+            <TrendingUpIcon sx={{ color: theme.palette.primary.main, fontSize: 24 }} />
           </Box>
           <Typography variant="h6" fontWeight={700} sx={{ color: '#1f2937' }}>
             Medición y Desempeño
@@ -139,7 +140,7 @@ const Dashboard = () => {
               <Typography variant="caption" sx={{ textTransform: 'uppercase', fontWeight: 600, color: '#6b7280', fontSize: '0.7rem' }}>
                 Total Anticipos
               </Typography>
-              <Typography variant="h4" fontWeight={800} sx={{ color: '#1A2E6E', mt: 1 }}>
+              <Typography variant="h4" fontWeight={800} sx={{ color: theme.palette.secondary.main, mt: 1 }}>
                 ${totalAnticipos.toLocaleString('es-CO')}
               </Typography>
             </Box>
@@ -149,7 +150,7 @@ const Dashboard = () => {
               <Typography variant="caption" sx={{ textTransform: 'uppercase', fontWeight: 600, color: '#6b7280', fontSize: '0.7rem' }}>
                 Total Gastado
               </Typography>
-              <Typography variant="h4" fontWeight={800} sx={{ color: '#CC1818', mt: 1 }}>
+              <Typography variant="h4" fontWeight={800} sx={{ color: theme.palette.primary.main, mt: 1 }}>
                 ${totalGastado.toLocaleString('es-CO')}
               </Typography>
             </Box>
@@ -207,9 +208,9 @@ const Dashboard = () => {
             </Typography>
             <Grid container spacing={2}>
               {[
-                { icon: '👥', text: 'Registrar Cliente', color: '#1A2E6E' },
-                { icon: '📋', text: 'Listar Clientes', color: '#1A2E6E' },
-                { icon: '📦', text: 'Registrar Encomienda', color: '#CC1818' },
+                { icon: '👥', text: 'Registrar Cliente', color: theme.palette.secondary.main },
+                { icon: '📋', text: 'Listar Clientes', color: theme.palette.secondary.main },
+                { icon: '📦', text: 'Registrar Encomienda', color: theme.palette.primary.main },
                 { icon: '💰', text: 'Nuevo Anticipo', color: '#dc2626' },
               ].map((item, i) => (
                 <Grid item xs={6} key={i}>

@@ -1,3 +1,4 @@
+import theme from '../../../shared/styles/theme.js'
 import { useState } from 'react'
 import { useVentas } from '../../../shared/contexts/VentaContext'
 import {
@@ -26,20 +27,12 @@ import { ESTADOS_ENCOMIENDA, METODOS_PAGO, ESTADOS_PAGO } from '../../../shared/
 import RegistrarVenta from './RegistrarVenta'
 import ActualizarVenta from './ActualizarVenta'
 
-const COLORS = {
-    primary: '#CC1818',
-    primaryLight: '#FFE8E8',
-    secondary: '#1A2E6E',
-    text: '#1a0e0c',
-    textMuted: '#8A94A6',
-    border: '#E0E0E0',
-    hoverBg: '#F9F9F9',
-}
+const COLORS = theme.palette
 
 const thStyle = {
     fontWeight: 700,
     fontSize: '0.80rem',
-    color: '#1a0e0c',
+    color: theme.palette.text.primary,
     letterSpacing: 0.5,
     py: 1.5,
     borderBottom: `1px solid #E0E0E0`,
@@ -81,7 +74,7 @@ const ModalConsultar = ({ venta, onClose }) => {
     const estadoStyles = getEstadoColor(venta.estado)
     const pagoStyles = getPagoColor(venta.estadoPago)
 
-    const cardSx = { borderRadius: 2, p: 3, border: `1px solid ${COLORS.border}`, backgroundColor: 'white' }
+    const cardSx = { borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white' }
     const tituloSx = { display: 'flex', alignItems: 'center', gap: 1, mb: 1 }
 
     return (
@@ -91,25 +84,25 @@ const ModalConsultar = ({ venta, onClose }) => {
             {/* ── Tarjeta superior: encomienda ── */}
             <Paper elevation={0} sx={{ ...cardSx, mb: 2 }}>
                 <Box sx={tituloSx}>
-                    <LocalShippingOutlinedIcon sx={{ fontSize: 22, color: COLORS.text }} />
-                    <Typography fontWeight={700} fontSize="1.05rem" color={COLORS.text}>Encomienda</Typography>
+                    <LocalShippingOutlinedIcon sx={{ fontSize: 22, color: theme.palette.text.primary }} />
+                    <Typography fontWeight={700} fontSize="1.05rem" color={theme.palette.text.primary}>Encomienda</Typography>
                 </Box>
-                <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2.5 }}>
+                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2.5 }}>
                     Información general de la guía de envío
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5 }}>
                     <Box sx={{
                         width: 64, height: 64, borderRadius: 2,
-                        backgroundColor: COLORS.primaryLight,
+                        backgroundColor: theme.palette.primary.light,
                         display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                     }}>
-                        <ArticleOutlinedIcon sx={{ fontSize: 45, color: COLORS.primary }} />
+                        <ArticleOutlinedIcon sx={{ fontSize: 45, color: theme.palette.primary.main }} />
                     </Box>
                     <Box sx={{ flex: 1 }}>
-                        <Typography fontWeight={700} fontSize="1.1rem" color={COLORS.text}>
+                        <Typography fontWeight={700} fontSize="1.1rem" color={theme.palette.text.primary}>
                             {venta.numeroGuia}
                         </Typography>
-                        <Typography variant="body2" color={COLORS.textMuted} mt={0.3}>
+                        <Typography variant="body2" color={theme.palette.text.secondary} mt={0.3}>
                             Factura: {venta.numeroFactura}
                         </Typography>
                         <Box sx={{ display: 'flex', gap: 1, mt: 0.8 }}>
@@ -120,9 +113,9 @@ const ModalConsultar = ({ venta, onClose }) => {
                         </Box>
                     </Box>
                     <Box sx={{ textAlign: 'right' }}>
-                        <Typography variant="caption" color={COLORS.textMuted}>Fecha de registro</Typography>
+                        <Typography variant="caption" color={theme.palette.text.secondary}>Fecha de registro</Typography>
                         <Typography variant="body2" fontWeight={600} display="block">{venta.fechaRegistro}</Typography>
-                        <Typography variant="caption" color={COLORS.textMuted} display="block" mt={0.8}>Fecha estimada</Typography>
+                        <Typography variant="caption" color={theme.palette.text.secondary} display="block" mt={0.8}>Fecha estimada</Typography>
                         <Typography variant="body2" fontWeight={600} display="block">{venta.fechaEstimadaEntrega}</Typography>
                     </Box>
                 </Box>
@@ -132,10 +125,10 @@ const ModalConsultar = ({ venta, onClose }) => {
             <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
                 <Paper elevation={0} sx={{ ...cardSx, flex: 1 }}>
                     <Box sx={tituloSx}>
-                        <PersonOutlinedIcon sx={{ fontSize: 22, color: COLORS.text }} />
-                        <Typography fontWeight={700} fontSize="1.05rem" color={COLORS.text}>Remitente</Typography>
+                        <PersonOutlinedIcon sx={{ fontSize: 22, color: theme.palette.text.primary }} />
+                        <Typography fontWeight={700} fontSize="1.05rem" color={theme.palette.text.primary}>Remitente</Typography>
                     </Box>
-                    <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2 }}>
+                    <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
                         Datos del cliente que envía
                     </Typography>
                     <CampoFila label="Nombre" value={`${venta.cliente?.nombre} ${venta.cliente?.apellido}`} />
@@ -145,10 +138,10 @@ const ModalConsultar = ({ venta, onClose }) => {
                 </Paper>
                 <Paper elevation={0} sx={{ ...cardSx, flex: 1 }}>
                     <Box sx={tituloSx}>
-                        <AssignmentIndOutlinedIcon sx={{ fontSize: 22, color: COLORS.text }} />
-                        <Typography fontWeight={700} fontSize="1.05rem" color={COLORS.text}>Destinatario</Typography>
+                        <AssignmentIndOutlinedIcon sx={{ fontSize: 22, color: theme.palette.text.primary }} />
+                        <Typography fontWeight={700} fontSize="1.05rem" color={theme.palette.text.primary}>Destinatario</Typography>
                     </Box>
-                    <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2 }}>
+                    <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
                         Datos de quien recibe el paquete
                     </Typography>
                     <CampoFila label="Nombre" value={venta.destinatario?.nombreDestinatario} />
@@ -161,10 +154,10 @@ const ModalConsultar = ({ venta, onClose }) => {
             <Box sx={{ display: 'flex', gap: 2 }}>
                 <Paper elevation={0} sx={{ ...cardSx, flex: 1 }}>
                     <Box sx={tituloSx}>
-                        <Inventory2OutlinedIcon sx={{ fontSize: 22, color: COLORS.text }} />
-                        <Typography fontWeight={700} fontSize="1.05rem" color={COLORS.text}>Paquete</Typography>
+                        <Inventory2OutlinedIcon sx={{ fontSize: 22, color: theme.palette.text.primary }} />
+                        <Typography fontWeight={700} fontSize="1.05rem" color={theme.palette.text.primary}>Paquete</Typography>
                     </Box>
-                    <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2 }}>
+                    <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
                         Características del paquete enviado
                     </Typography>
                     <CampoFila label="Contenido" value={venta.paquete?.descripcionContenido} />
@@ -174,10 +167,10 @@ const ModalConsultar = ({ venta, onClose }) => {
                 </Paper>
                 <Paper elevation={0} sx={{ ...cardSx, flex: 1 }}>
                     <Box sx={tituloSx}>
-                        <PaymentOutlinedIcon sx={{ fontSize: 22, color: COLORS.text }} />
-                        <Typography fontWeight={700} fontSize="1.05rem" color={COLORS.text}>Pago y Destino</Typography>
+                        <PaymentOutlinedIcon sx={{ fontSize: 22, color: theme.palette.text.primary }} />
+                        <Typography fontWeight={700} fontSize="1.05rem" color={theme.palette.text.primary}>Pago y Destino</Typography>
                     </Box>
-                    <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2 }}>
+                    <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
                         Información de pago y ruta de envío
                     </Typography>
                     <CampoFila label="Destino" value={venta.ruta?.destino} />
@@ -189,7 +182,7 @@ const ModalConsultar = ({ venta, onClose }) => {
 
             {venta.observaciones && (
                 <Paper elevation={0} sx={{ ...cardSx, mt: 2 }}>
-                    <Typography variant="subtitle2" color={COLORS.textMuted} mb={0.5}>Observaciones</Typography>
+                    <Typography variant="subtitle2" color={theme.palette.text.secondary} mb={0.5}>Observaciones</Typography>
                     <Typography variant="body2">{venta.observaciones}</Typography>
                 </Paper>
             )}
@@ -197,9 +190,9 @@ const ModalConsultar = ({ venta, onClose }) => {
             {/* Botón cerrar */}
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
                 <Button onClick={onClose} variant="contained" sx={{
-                    backgroundColor: COLORS.primary, borderRadius: 2, textTransform: 'none',
+                    backgroundColor: theme.palette.primary.main, borderRadius: 2, textTransform: 'none',
                     boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
-                    '&:hover': { backgroundColor: '#b91c1c', boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
+                    '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
                 }}>
                     Cerrar
                 </Button>
@@ -212,11 +205,11 @@ const ModalConsultar = ({ venta, onClose }) => {
 const filterSelectSx = {
     fontSize: '0.82rem',
     borderRadius: 2,
-    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#E0E0E0' },
+    '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
     '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#BDBDBD' },
     '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#E57373', borderWidth: '1px' },
     '&.Mui-focused': { boxShadow: '0 0 0 3px rgba(229,115,115,0.18)' },
-    '& .MuiSelect-icon': { color: '#8A94A6', fontSize: 18 },
+    '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
     '& .MuiTouchRipple-root': { display: 'none' },
 }
 
@@ -230,7 +223,7 @@ const filterMenuProps = {
                 '& .MuiMenuItem-root': {
                     fontSize: '0.82rem',
                     '&:hover': { backgroundColor: '#FFF5F5' },
-                    '&.Mui-selected': { backgroundColor: 'transparent', fontWeight: 600, color: '#1a0e0c' },
+                    '&.Mui-selected': { backgroundColor: 'transparent', fontWeight: 600, color: theme.palette.text.primary },
                     '&.Mui-selected:hover': { backgroundColor: '#FFF5F5' },
                 },
             },
@@ -348,7 +341,7 @@ const ListarVenta = () => {
             <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
                 <Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <Typography variant="h5" fontWeight={700} color={COLORS.text}>
+                        <Typography variant="h5" fontWeight={700} color={theme.palette.text.primary}>
                             Ventas
                         </Typography>
                         {!loading && !error && (
@@ -357,7 +350,7 @@ const ListarVenta = () => {
                                 size="small"
                                 sx={{
                                     backgroundColor: '#F3F4F6',
-                                    color: COLORS.textMuted,
+                                    color: theme.palette.text.secondary,
                                     fontWeight: 500,
                                     fontSize: '0.72rem',
                                     height: 22,
@@ -366,7 +359,7 @@ const ListarVenta = () => {
                             />
                         )}
                     </Box>
-                    <Typography variant="body2" color={COLORS.textMuted} mt={0.3}>
+                    <Typography variant="body2" color={theme.palette.text.secondary} mt={0.3}>
                         Gestiona las ventas y encomiendas registradas en el sistema.
                     </Typography>
                 </Box>
@@ -375,13 +368,13 @@ const ListarVenta = () => {
                     variant="contained"
                     startIcon={<AddOutlinedIcon />}
                     sx={{
-                        backgroundColor: COLORS.primary,
+                        backgroundColor: theme.palette.primary.main,
                         borderRadius: 2,
                         textTransform: 'none',
                         fontWeight: 600,
                         boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
                         '&:hover': {
-                            backgroundColor: '#b91c1c',
+                            backgroundColor: theme.palette.primary.dark,
                             boxShadow: '0 6px 20px rgba(204,24,24,0.2)',
                         },
                     }}
@@ -422,14 +415,14 @@ const ListarVenta = () => {
                             minWidth: 0,
                             fontWeight: filtroHabilitado === f.value ? 600 : 400,
                             backgroundColor: filtroHabilitado === f.value ? 'white' : 'transparent',
-                            color: filtroHabilitado === f.value ? COLORS.text : '#B05050',
+                            color: filtroHabilitado === f.value ? theme.palette.text.primary : '#B05050',
                             boxShadow: filtroHabilitado === f.value
                                 ? '0 1px 4px rgba(0,0,0,0.12)'
                                 : 'none',
                             border: 'none',
                             '&:hover': {
                                 backgroundColor: filtroHabilitado === f.value ? 'white' : 'transparent',
-                                color: filtroHabilitado === f.value ? COLORS.text : '#5C3333',
+                                color: filtroHabilitado === f.value ? theme.palette.text.primary : '#5C3333',
                                 border: 'none',
                             },
                         }}
@@ -450,7 +443,7 @@ const ListarVenta = () => {
                             borderRadius: 2,
                             '&.Mui-focused': { boxShadow: '0 0 0 3px rgba(229,115,115,0.18)' },
                             '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                borderColor: '#CC1818', borderWidth: '1px',
+                                borderColor: theme.palette.primary.main, borderWidth: '1px',
                             },
                         },
                     }}
@@ -460,7 +453,7 @@ const ListarVenta = () => {
                         input: {
                             startAdornment: (
                                 <InputAdornment position="start">
-                                    <SearchIcon sx={{ color: COLORS.textMuted, fontSize: 20 }} />
+                                    <SearchIcon sx={{ color: theme.palette.text.secondary, fontSize: 20 }} />
                                 </InputAdornment>
                             ),
                             endAdornment: busqueda && (
@@ -523,7 +516,7 @@ const ListarVenta = () => {
                         size="small"
                         icon={<ClearIcon sx={{ fontSize: '14px !important' }} />}
                         onClick={limpiarFiltros}
-                        sx={{ fontSize: '0.72rem', height: 28, cursor: 'pointer', backgroundColor: COLORS.primaryLight, color: COLORS.primary }}
+                        sx={{ fontSize: '0.72rem', height: 28, cursor: 'pointer', backgroundColor: theme.palette.primary.light, color: theme.palette.primary.main }}
                     />
                 )}
 
@@ -535,11 +528,11 @@ const ListarVenta = () => {
                         borderRadius: 2,
                         textTransform: 'none',
                         fontSize: '0.85rem',
-                        borderColor: COLORS.border,
-                        color: COLORS.text,
+                        borderColor: theme.palette.divider,
+                        color: theme.palette.text.primary,
                         fontWeight: 500,
                         ml: 'auto',
-                        '&:hover': { backgroundColor: COLORS.primaryLight },
+                        '&:hover': { backgroundColor: theme.palette.primary.light },
                     }}
                 >
                     Exportar
@@ -547,7 +540,7 @@ const ListarVenta = () => {
             </Box>
 
             {/* ── Tabla ── */}
-            <Paper elevation={0} sx={{ border: `1px solid ${COLORS.border}`, borderRadius: 3, overflow: 'hidden' }}>
+            <Paper elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 3, overflow: 'hidden' }}>
                 <TableContainer>
                     <Table>
                         <TableHead>
@@ -567,8 +560,8 @@ const ListarVenta = () => {
                             {loading ? (
                                 <TableRow>
                                     <TableCell colSpan={8} align="center" sx={{ py: 7 }}>
-                                        <CircularProgress size={28} sx={{ color: COLORS.primary }} />
-                                        <Typography variant="body2" color={COLORS.textMuted} mt={1.5}>
+                                        <CircularProgress size={28} sx={{ color: theme.palette.primary.main }} />
+                                        <Typography variant="body2" color={theme.palette.text.secondary} mt={1.5}>
                                             Cargando ventas...
                                         </Typography>
                                     </TableCell>
@@ -584,7 +577,7 @@ const ListarVenta = () => {
                             ) : paginatedVentas.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={9} align="center" sx={{ py: 7 }}>
-                                        <Typography color={COLORS.textMuted} variant="body2">
+                                        <Typography color={theme.palette.text.secondary} variant="body2">
                                             {ventas.length === 0
                                                 ? 'No hay ventas registradas en el sistema.'
                                                 : busqueda.trim() !== '' || filtroHabilitado !== 'todo' || filtroEstadoEncomienda !== 'todos' || filtroPago !== 'todos' || filtroMetodoPago !== 'todos'
@@ -602,7 +595,7 @@ const ListarVenta = () => {
                                         <TableRow
                                             key={venta.idEncomiendaVenta}
                                             sx={{
-                                                '&:hover': { backgroundColor: COLORS.hoverBg },
+                                                '&:hover': { backgroundColor: theme.palette.background.subtle },
                                                 transition: 'background-color 0.15s',
                                                 opacity: venta.habilitado ? 1 : 0.55,
                                             }}
@@ -612,14 +605,14 @@ const ListarVenta = () => {
                                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                                                     <Avatar sx={{
                                                         width: 34, height: 34,
-                                                        backgroundColor: venta.habilitado ? '#FFCDD2' : '#E0E0E0',
+                                                        backgroundColor: venta.habilitado ? '#FFCDD2' : theme.palette.divider,
                                                         fontSize: '0.73rem',
                                                         fontWeight: 700,
                                                         color: venta.habilitado ? '#C62828' : '#8E8E8E',
                                                     }}>
                                                         {venta.cliente?.nombre?.[0]}{venta.cliente?.apellido?.[0]}
                                                     </Avatar>
-                                                    <Typography variant="body2" fontWeight={500} color={COLORS.text} noWrap>
+                                                    <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary} noWrap>
                                                         {venta.cliente?.nombre} {venta.cliente?.apellido}
                                                     </Typography>
                                                 </Box>
@@ -627,21 +620,21 @@ const ListarVenta = () => {
 
                                             {/* Guía */}
                                             <TableCell sx={{ py: 1.5 }}>
-                                                <Typography variant="body2" fontWeight={600} color={COLORS.secondary}>
+                                                <Typography variant="body2" fontWeight={600} color={theme.palette.secondary.main}>
                                                     {venta.numeroGuia}
                                                 </Typography>
-                                                <Typography variant="caption" color={COLORS.textMuted}>
+                                                <Typography variant="caption" color={theme.palette.text.secondary}>
                                                     {venta.fechaRegistro}
                                                 </Typography>
                                             </TableCell>
 
                                             {/* Destinatario */}
-                                            <TableCell sx={{ fontSize: '0.85rem', color: COLORS.text, py: 1.5 }}>
+                                            <TableCell sx={{ fontSize: '0.85rem', color: theme.palette.text.primary, py: 1.5 }}>
                                                 {venta.destinatario?.nombreDestinatario}
                                             </TableCell>
 
                                             {/* Destino */}
-                                            <TableCell sx={{ fontSize: '0.85rem', color: COLORS.text, py: 1.5 }}>
+                                            <TableCell sx={{ fontSize: '0.85rem', color: theme.palette.text.primary, py: 1.5 }}>
                                                 {venta.ruta?.destino}
                                             </TableCell>
 
@@ -673,7 +666,7 @@ const ListarVenta = () => {
                                                     IconComponent={KeyboardArrowDownOutlinedIcon}
                                                     sx={{
                                                         backgroundColor: '#ffffff',
-                                                        color: '#1a0e0c',
+                                                        color: theme.palette.text.primary,
                                                         fontSize: '0.72rem',
                                                         fontWeight: 600,
                                                         height: 26,
@@ -688,7 +681,7 @@ const ListarVenta = () => {
                                                         '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
                                                         '&:hover .MuiOutlinedInput-notchedOutline': { border: 'none' },
                                                         '&.Mui-focused .MuiOutlinedInput-notchedOutline': { border: 'none' },
-                                                        '& .MuiSelect-icon': { color: '#8A94A6', fontSize: 18 },
+                                                        '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
                                                     }}
                                                     MenuProps={{
                                                         slotProps: {
@@ -753,7 +746,7 @@ const ListarVenta = () => {
                                                     IconComponent={KeyboardArrowDownOutlinedIcon}
                                                     sx={{
                                                         backgroundColor: '#ffffff',
-                                                        color: '#1a0e0c',
+                                                        color: theme.palette.text.primary,
                                                         fontSize: '0.72rem',
                                                         fontWeight: 600,
                                                         height: 26,
@@ -768,7 +761,7 @@ const ListarVenta = () => {
                                                         '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
                                                         '&:hover .MuiOutlinedInput-notchedOutline': { border: 'none' },
                                                         '&.Mui-focused .MuiOutlinedInput-notchedOutline': { border: 'none' },
-                                                        '& .MuiSelect-icon': { color: '#8A94A6', fontSize: 18 },
+                                                        '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
                                                     }}
                                                     MenuProps={{
                                                         slotProps: {
@@ -806,7 +799,7 @@ const ListarVenta = () => {
                                             </TableCell>
 
                                             {/* Total */}
-                                            <TableCell sx={{ fontSize: '0.85rem', fontWeight: 600, color: COLORS.primary, py: 1.5 }}>
+                                            <TableCell sx={{ fontSize: '0.85rem', fontWeight: 600, color: theme.palette.primary.main, py: 1.5 }}>
                                                 ${venta.total?.toLocaleString()}
                                             </TableCell>
 
@@ -815,14 +808,14 @@ const ListarVenta = () => {
                                                 <Box sx={{ display: 'flex', gap: 0.5 }}>
                                                     <Tooltip title="Ver detalle">
                                                         <IconButton size="small" onClick={() => setVentaConsulta(venta)}
-                                                            sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}>
+                                                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}>
                                                             <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
                                                         </IconButton>
                                                     </Tooltip>
                                                     <Tooltip title="Editar">
                                                         <IconButton size="small"
                                                             onClick={() => { setVentaEditar(venta); setModalActualizarOpen(true) }}
-                                                            sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}>
+                                                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}>
                                                             <EditOutlinedIcon sx={{ fontSize: 18 }} />
                                                         </IconButton>
                                                     </Tooltip>
@@ -842,12 +835,12 @@ const ListarVenta = () => {
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 px: 0.5, pt: 1.5,
             }}>
-                <Typography variant="body2" color={COLORS.textMuted}>
+                <Typography variant="body2" color={theme.palette.text.secondary}>
                     Mostrando {from}–{to} de {ventasFiltradas.length} resultado{ventasFiltradas.length !== 1 ? 's' : ''}
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography variant="body2" color={COLORS.textMuted} fontWeight={500}>
+                        <Typography variant="body2" color={theme.palette.text.secondary} fontWeight={500}>
                             Filas
                         </Typography>
                         <Select
@@ -860,13 +853,13 @@ const ListarVenta = () => {
                                 fontSize: '0.82rem',
                                 borderRadius: 2,
                                 '& .MuiSelect-select': { py: 0.6, pl: 1.5, pr: '28px !important' },
-                                '& .MuiOutlinedInput-notchedOutline': { borderColor: COLORS.border },
+                                '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
                                 '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#BDBDBD' },
                                 '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                                     borderColor: '#E57373', borderWidth: '1px',
                                 },
                                 '&.Mui-focused': { boxShadow: '0 0 0 3px rgba(229,115,115,0.18)' },
-                                '& .MuiSelect-icon': { color: COLORS.textMuted, fontSize: 18 },
+                                '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
                                 '& .MuiTouchRipple-root': { display: 'none' },
                             }}
                             MenuProps={{
@@ -888,7 +881,7 @@ const ListarVenta = () => {
                                                 '&.Mui-selected': {
                                                     backgroundColor: 'transparent',
                                                     fontWeight: 600,
-                                                    color: COLORS.text,
+                                                    color: theme.palette.text.primary,
                                                 },
                                                 '&.Mui-selected:hover': { backgroundColor: '#FFF5F5' },
                                             },
@@ -901,7 +894,7 @@ const ListarVenta = () => {
                                 <MenuItem key={n} value={n}>
                                     {n}
                                     {rowsPerPage === n && (
-                                        <CheckOutlinedIcon sx={{ fontSize: 14, color: COLORS.textMuted }} />
+                                        <CheckOutlinedIcon sx={{ fontSize: 14, color: theme.palette.text.secondary }} />
                                     )}
                                 </MenuItem>
                             ))}
@@ -920,20 +913,20 @@ const ListarVenta = () => {
                                 minWidth: 34,
                                 height: 34,
                                 mx: 0.2,
-                                color: COLORS.text,
-                                border: `1px solid ${COLORS.border}`,
+                                color: theme.palette.text.primary,
+                                border: `1px solid ${theme.palette.divider}`,
                                 '& .MuiTouchRipple-root': { display: 'none' },
                             },
                             '& .MuiPaginationItem-ellipsis': { border: 'none' },
                             '& .MuiPaginationItem-root.Mui-selected': {
-                                backgroundColor: COLORS.primary,
-                                borderColor: COLORS.primary,
+                                backgroundColor: theme.palette.primary.main,
+                                borderColor: theme.palette.primary.main,
                                 color: 'white',
                                 fontWeight: 600,
-                                '&:hover': { backgroundColor: '#a01212' },
+                                '&:hover': { backgroundColor: theme.palette.primary.darker },
                             },
                             '& .MuiPaginationItem-root:hover:not(.Mui-selected)': {
-                                backgroundColor: COLORS.hoverBg,
+                                backgroundColor: theme.palette.background.subtle,
                                 borderColor: '#BDBDBD',
                             },
                         }}

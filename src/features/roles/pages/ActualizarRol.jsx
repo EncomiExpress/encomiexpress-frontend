@@ -1,3 +1,4 @@
+import theme from '../../../shared/styles/theme.js'
 import { useState, useEffect } from 'react'
 import { Box, Typography, Paper, FormControlLabel, Checkbox, Grid, Alert, Snackbar, Dialog, DialogTitle, DialogContent, IconButton, Button } from '@mui/material'
 import { Security, Close } from '@mui/icons-material'
@@ -7,15 +8,7 @@ import {
   FormButtonGroup 
 } from '../../../shared/components/FormularioEstandarizado'
 
-const COLORS = {
-  primary: '#CC1818',
-  primaryLight: '#FFE8E8',
-  secondary: '#1A2E6E',
-  text: '#1a0e0c',
-  textMuted: '#8A94A6',
-  border: '#E0E0E0',
-  hoverBg: '#F9F9F9',
-}
+const COLORS = theme.palette
 
 const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
   const [formData, setFormData] = useState({
@@ -95,16 +88,16 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth
       slotProps={{ paper: { sx: { borderRadius: 3, p: 0, maxHeight: '90vh' } } }}>
-      <DialogTitle sx={{ m: 0, p: 2, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${COLORS.border}` }}>
+      <DialogTitle sx={{ m: 0, p: 2, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${theme.palette.divider}` }}>
         <Box>
           <Typography variant="h6" fontWeight={700}>
             Actualizar Rol
           </Typography>
-          <Typography variant="body2" color={COLORS.textMuted}>
+          <Typography variant="body2" color={theme.palette.text.secondary}>
             Modifica los permisos del rol.
           </Typography>
         </Box>
-        <IconButton onClick={onClose} sx={{ color: '#8A94A6' }}>
+        <IconButton onClick={onClose} sx={{ color: theme.palette.text.secondary }}>
           <Close />
         </IconButton>
       </DialogTitle>
@@ -124,7 +117,7 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
             disabled
           />
 
-          <Typography variant="subtitle1" sx={{ mt: 2, mb: 1, fontWeight: 700, color: '#1a0e0c' }}>
+          <Typography variant="subtitle1" sx={{ mt: 2, mb: 1, fontWeight: 700, color: theme.palette.text.primary }}>
             Permisos del Rol
           </Typography>
 
@@ -151,7 +144,7 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
                   }}
                 >
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Security sx={{ color: '#CC1818', fontSize: 20 }} />
+                    <Security sx={{ color: theme.palette.primary.main, fontSize: 20 }} />
                     <Typography variant="subtitle2" fontWeight={600}>
                       {modulo.nombre}
                     </Typography>
@@ -179,9 +172,9 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
                           }
                         }}
                         sx={{ 
-                          color: '#CC1818',
-                          '&.Mui-checked': { color: '#CC1818' },
-                          '&.MuiCheckbox-indeterminate': { color: '#CC1818' }
+                          color: theme.palette.primary.main,
+                          '&.Mui-checked': { color: theme.palette.primary.main },
+                          '&.MuiCheckbox-indeterminate': { color: theme.palette.primary.main }
                         }}
                       />
                     }
@@ -204,8 +197,8 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
                                 setFormData({ ...formData, permisos: newPermisos })
                               }}
                               sx={{ 
-                                color: '#CC1818',
-                                '&.Mui-checked': { color: '#CC1818' }
+                                color: theme.palette.primary.main,
+                                '&.Mui-checked': { color: theme.palette.primary.main }
                               }}
                               size="small"
                             />
@@ -226,23 +219,23 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
 
           <Box sx={{
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              mt: 3, pt: 2, borderTop: `1px solid ${COLORS.border}`,
+              mt: 3, pt: 2, borderTop: `1px solid ${theme.palette.divider}`,
             }}>
               <Box />
               <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
                 <Button onClick={onClose} disableRipple
                   sx={{
-                    textTransform: 'none', color: COLORS.textMuted, fontWeight: 500, borderRadius: 2,
-                    '&:hover': { backgroundColor: COLORS.hoverBg, color: COLORS.text },
+                    textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 2,
+                    '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary },
                   }}>
                   Cancelar
                 </Button>
           <Button type="submit" variant="contained" disableRipple
                   sx={{
                     textTransform: 'none', borderRadius: 2, fontWeight: 600,
-                    backgroundColor: COLORS.primary,
+                    backgroundColor: theme.palette.primary.main,
                     boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
-                    '&:hover': { backgroundColor: '#b91c1c', boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
+                    '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
                   }}
                 >
                   Actualizar Rol

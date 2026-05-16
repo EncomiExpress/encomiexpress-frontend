@@ -1,3 +1,4 @@
+import theme from '../../../shared/styles/theme.js'
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import {
@@ -25,19 +26,12 @@ import { useAuth } from '../../../shared/contexts/AuthContext'
 import RegistrarRutaProgramacion from './RegistrarRutaProgramacion'
 import ActualizarRutaProgramacion from './ActualizarRutaProgramacion'
 
-const COLORS = {
-    primary: '#CC1818',
-    primaryLight: '#FFE8E8',
-    text: '#1a0e0c',
-    textMuted: '#8A94A6',
-    border: '#E0E0E0',
-    hoverBg: '#F9F9F9',
-}
+const COLORS = theme.palette
 
 const thStyle = {
     fontWeight: 700,
     fontSize: '0.80rem',
-    color: '#1a0e0c',
+    color: theme.palette.text.primary,
     letterSpacing: 0.5,
     py: 1.5,
     borderBottom: `1px solid #E0E0E0`,
@@ -56,7 +50,7 @@ const filterMenuProps = {
                 '& .MuiMenuItem-root': {
                     fontSize: '0.82rem',
                     '&:hover': { backgroundColor: '#FFF5F5' },
-                    '&.Mui-selected': { backgroundColor: 'transparent', fontWeight: 600, color: '#1a0e0c' },
+                    '&.Mui-selected': { backgroundColor: 'transparent', fontWeight: 600, color: theme.palette.text.primary },
                     '&.Mui-selected:hover': { backgroundColor: '#FFF5F5' },
                 },
             },
@@ -183,7 +177,7 @@ const ListarRutaProgramacion = () => {
             <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
                 <Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <Typography variant="h5" fontWeight={700} color={COLORS.text}>
+                        <Typography variant="h5" fontWeight={700} color={theme.palette.text.primary}>
                             Programación de Rutas
                         </Typography>
                         <Chip
@@ -191,7 +185,7 @@ const ListarRutaProgramacion = () => {
                             size="small"
                             sx={{
                                 backgroundColor: '#F3F4F6',
-                                color: COLORS.textMuted,
+                                color: theme.palette.text.secondary,
                                 fontWeight: 500,
                                 fontSize: '0.72rem',
                                 height: 22,
@@ -199,7 +193,7 @@ const ListarRutaProgramacion = () => {
                             }}
                         />
                     </Box>
-                    <Typography variant="body2" color={COLORS.textMuted} mt={0.3}>
+                    <Typography variant="body2" color={theme.palette.text.secondary} mt={0.3}>
                         Gestiona las rutas programadas en el sistema.
                     </Typography>
                  </Box>
@@ -209,13 +203,13 @@ const ListarRutaProgramacion = () => {
                          variant="contained"
                          startIcon={<AddOutlinedIcon />}
                          sx={{
-                             backgroundColor: COLORS.primary,
+                             backgroundColor: theme.palette.primary.main,
                              borderRadius: 2,
                              textTransform: 'none',
                              fontWeight: 600,
                              boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
                              '&:hover': {
-                                 backgroundColor: '#b91c1c',
+                                 backgroundColor: theme.palette.primary.dark,
                                  boxShadow: '0 6px 20px rgba(204,24,24,0.2)',
                              },
                          }}
@@ -253,14 +247,14 @@ const ListarRutaProgramacion = () => {
                             minWidth: 0,
                             fontWeight: filtroEstado === f.value ? 600 : 400,
                             backgroundColor: filtroEstado === f.value ? 'white' : 'transparent',
-                            color: filtroEstado === f.value ? COLORS.text : '#B05050',
+                            color: filtroEstado === f.value ? theme.palette.text.primary : '#B05050',
                             boxShadow: filtroEstado === f.value
                                 ? '0 1px 4px rgba(0,0,0,0.12)'
                                 : 'none',
                             border: 'none',
                             '&:hover': {
                                 backgroundColor: filtroEstado === f.value ? 'white' : 'transparent',
-                                color: filtroEstado === f.value ? COLORS.text : '#5C3333',
+                                color: filtroEstado === f.value ? theme.palette.text.primary : '#5C3333',
                                 border: 'none',
                             },
                         }}
@@ -280,7 +274,7 @@ const ListarRutaProgramacion = () => {
                             borderRadius: 2,
                             '&.Mui-focused': { boxShadow: '0 0 0 3px rgba(229,115,115,0.18)' },
                             '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                borderColor: '#CC1818', borderWidth: '1px',
+                                borderColor: theme.palette.primary.main, borderWidth: '1px',
                             },
                         },
                     }}
@@ -290,7 +284,7 @@ const ListarRutaProgramacion = () => {
                         input: {
                             startAdornment: (
                                 <InputAdornment position="start">
-                                    <SearchIcon sx={{ color: COLORS.textMuted, fontSize: 20 }} />
+                                    <SearchIcon sx={{ color: theme.palette.text.secondary, fontSize: 20 }} />
                                 </InputAdornment>
                             ),
                             endAdornment: searchTerm && (
@@ -310,12 +304,12 @@ const ListarRutaProgramacion = () => {
                         size="small"
                         icon={<ClearIcon sx={{ fontSize: '14px !important' }} />}
                         onClick={limpiarFiltros}
-                        sx={{ fontSize: '0.72rem', height: 28, cursor: 'pointer', backgroundColor: COLORS.primaryLight, color: COLORS.primary }}
+                        sx={{ fontSize: '0.72rem', height: 28, cursor: 'pointer', backgroundColor: theme.palette.primary.light, color: theme.palette.primary.main }}
                     />
                 )}
             </Box>
 
-            <Paper elevation={0} sx={{ border: `1px solid ${COLORS.border}`, borderRadius: 3, overflow: 'hidden' }}>
+            <Paper elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 3, overflow: 'hidden' }}>
                 <TableContainer>
                     <Table>
                         <TableHead>
@@ -334,7 +328,7 @@ const ListarRutaProgramacion = () => {
                             {filteredRutas.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={8} align="center" sx={{ py: 7 }}>
-                                        <Typography color={COLORS.textMuted} variant="body2">
+                                        <Typography color={theme.palette.text.secondary} variant="body2">
                                             {rutasProgramadas.length === 0
                                                 ? 'No hay rutas programadas en el sistema.'
                                                 : 'No se encontraron rutas que coincidan con la búsqueda.'}
@@ -348,7 +342,7 @@ const ListarRutaProgramacion = () => {
                                         <TableRow
                                             key={ruta.idRutaProgramada}
                                             sx={{
-                                                '&:hover': { backgroundColor: COLORS.hoverBg },
+                                                '&:hover': { backgroundColor: theme.palette.background.subtle },
                                                 transition: 'background-color 0.15s',
                                                 opacity: ruta.habilitado !== false ? 1 : 0.55,
                                             }}
@@ -365,7 +359,7 @@ const ListarRutaProgramacion = () => {
                                                     sx={{
                                                         fontWeight: 600,
                                                         backgroundColor: '#FEF2F2',
-                                                        color: '#CC1818',
+                                                        color: theme.palette.primary.main,
                                                         fontSize: '0.75rem',
                                                     }}
                                                 />
@@ -401,7 +395,7 @@ const ListarRutaProgramacion = () => {
                                                             <IconButton
                                                                 size="small"
                                                                 onClick={() => setRutaVer(ruta)}
-                                                                sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}
+                                                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
                                                             >
                                                                 <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
                                                             </IconButton>
@@ -415,7 +409,7 @@ const ListarRutaProgramacion = () => {
                                                                     setRutaEditar(ruta)
                                                                     setModalActualizarOpen(true)
                                                                 }}
-                                                                sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}
+                                                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
                                                             >
                                                                 <EditOutlinedIcon sx={{ fontSize: 18 }} />
                                                             </IconButton>
@@ -436,7 +430,7 @@ const ListarRutaProgramacion = () => {
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 px: 0.5, pt: 1.5,
             }}>
-                <Typography variant="body2" color={COLORS.textMuted}>
+                <Typography variant="body2" color={theme.palette.text.secondary}>
                     Total de rutas: {filteredRutas.length}
                 </Typography>
             </Box>
@@ -444,12 +438,12 @@ const ListarRutaProgramacion = () => {
             {rutaVer && (
                 <Dialog open onClose={() => setRutaVer(null)} maxWidth="md" fullWidth
                     slotProps={{ paper: { sx: { borderRadius: 3, p: 3, backgroundColor: '#FAFAFA' } } }}>
-                    <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${COLORS.border}`, backgroundColor: 'white', mb: 2 }}>
+                    <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white', mb: 2 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                            <RouteIcon sx={{ fontSize: 22, color: COLORS.text }} />
-                            <Typography fontWeight={700} fontSize="1.05rem" color={COLORS.text}>Detalles de la Ruta</Typography>
+                            <RouteIcon sx={{ fontSize: 22, color: theme.palette.text.primary }} />
+                            <Typography fontWeight={700} fontSize="1.05rem" color={theme.palette.text.primary}>Detalles de la Ruta</Typography>
                         </Box>
-                        <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2.5 }}>
+                        <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2.5 }}>
                             Información de la ruta programada
                         </Typography>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5 }}>
@@ -457,10 +451,10 @@ const ListarRutaProgramacion = () => {
                                 {rutaVer.nombreRuta?.[0] || 'R'}
                             </Avatar>
                             <Box>
-                                <Typography fontWeight={700} fontSize="1.1rem" color={COLORS.text}>
+                                <Typography fontWeight={700} fontSize="1.1rem" color={theme.palette.text.primary}>
                                     {rutaVer.nombreRuta || 'Ruta Programada'}
                                 </Typography>
-                                <Typography variant="body2" color={COLORS.textMuted} mt={0.4}>
+                                <Typography variant="body2" color={theme.palette.text.secondary} mt={0.4}>
                                     {rutaVer.fechaSalida}
                                 </Typography>
                             </Box>
@@ -468,42 +462,42 @@ const ListarRutaProgramacion = () => {
                     </Paper>
 
                     <Box sx={{ display: 'flex', gap: 2 }}>
-                        <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${COLORS.border}`, backgroundColor: 'white', flex: 1 }}>
+                        <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white', flex: 1 }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                <DirectionsCarOutlinedIcon sx={{ fontSize: 22, color: COLORS.text }} />
-                                <Typography fontWeight={700} fontSize="1.05rem" color={COLORS.text}>Vehículo y Conductor</Typography>
+                                <DirectionsCarOutlinedIcon sx={{ fontSize: 22, color: theme.palette.text.primary }} />
+                                <Typography fontWeight={700} fontSize="1.05rem" color={theme.palette.text.primary}>Vehículo y Conductor</Typography>
                             </Box>
-                            <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2 }}>
+                            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
                                 Datos del vehículo y conductor asignados
                             </Typography>
                             <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                                <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Vehículo</Typography><Typography variant="body2" fontWeight={500}>{getVehiculoPlaca(rutaVer.idVehiculo)}</Typography></Box>
-                                <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Conductor</Typography><Typography variant="body2" fontWeight={500}>{getConductorNombre(rutaVer.idConductor)}</Typography></Box>
+                                <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Vehículo</Typography><Typography variant="body2" fontWeight={500}>{getVehiculoPlaca(rutaVer.idVehiculo)}</Typography></Box>
+                                <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Conductor</Typography><Typography variant="body2" fontWeight={500}>{getConductorNombre(rutaVer.idConductor)}</Typography></Box>
                             </Box>
                         </Paper>
 
-                        <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${COLORS.border}`, backgroundColor: 'white', flex: 1 }}>
+                        <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white', flex: 1 }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                <LocationOnOutlinedIcon sx={{ fontSize: 22, color: COLORS.text }} />
-                                <Typography fontWeight={700} fontSize="1.05rem" color={COLORS.text}>Ruta y Horarios</Typography>
+                                <LocationOnOutlinedIcon sx={{ fontSize: 22, color: theme.palette.text.primary }} />
+                                <Typography fontWeight={700} fontSize="1.05rem" color={theme.palette.text.primary}>Ruta y Horarios</Typography>
                             </Box>
-                            <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2 }}>
+                            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
                                 Destino y programación de la ruta
                             </Typography>
                             <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                                <Box sx={{ gridColumn: '1 / -1' }}><Typography variant="caption" color="#8A94A6" fontWeight={600}>Destino</Typography><Typography variant="body2" fontWeight={500}>{getDestinoNombre(rutaVer.idDestino)}</Typography></Box>
-                                <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Fecha Salida</Typography><Typography variant="body2" fontWeight={500}>{rutaVer.fechaSalida}</Typography></Box>
-                                <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Hora Salida</Typography><Typography variant="body2" fontWeight={500}>{rutaVer.horaSalida || '—'}</Typography></Box>
-                                <Box sx={{ gridColumn: '1 / -1' }}><Typography variant="caption" color="#8A94A6" fontWeight={600}>Estado</Typography><Typography variant="body2" fontWeight={500} color={rutaVer.estado === 'Programada' ? '#3730A3' : rutaVer.estado === 'En Curso' ? '#1E40AF' : rutaVer.estado === 'Completada' ? '#065F46' : '#991B1B'}>{rutaVer.estado}</Typography></Box>
+                                <Box sx={{ gridColumn: '1 / -1' }}><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Destino</Typography><Typography variant="body2" fontWeight={500}>{getDestinoNombre(rutaVer.idDestino)}</Typography></Box>
+                                <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Fecha Salida</Typography><Typography variant="body2" fontWeight={500}>{rutaVer.fechaSalida}</Typography></Box>
+                                <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Hora Salida</Typography><Typography variant="body2" fontWeight={500}>{rutaVer.horaSalida || '—'}</Typography></Box>
+                                <Box sx={{ gridColumn: '1 / -1' }}><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Estado</Typography><Typography variant="body2" fontWeight={500} color={rutaVer.estado === 'Programada' ? '#3730A3' : rutaVer.estado === 'En Curso' ? '#1E40AF' : rutaVer.estado === 'Completada' ? '#065F46' : '#991B1B'}>{rutaVer.estado}</Typography></Box>
                             </Box>
                         </Paper>
                     </Box>
 
                     <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
                         <Button onClick={() => setRutaVer(null)} variant="contained" sx={{
-                            backgroundColor: COLORS.primary, borderRadius: 2, textTransform: 'none',
+                            backgroundColor: theme.palette.primary.main, borderRadius: 2, textTransform: 'none',
                             boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
-                            '&:hover': { backgroundColor: '#b91c1c', boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
+                            '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
                         }}>
                             Cerrar
                         </Button>

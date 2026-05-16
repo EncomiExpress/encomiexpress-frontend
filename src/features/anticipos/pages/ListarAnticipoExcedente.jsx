@@ -1,3 +1,4 @@
+import theme from '../../../shared/styles/theme.js'
 import { useState } from 'react'
 import { useAnticipos, conductoresMock, rutasMock } from '../../../shared/contexts/AnticipoExcedenteContext'
 import { useAuth } from '../../../shared/contexts/AuthContext'
@@ -29,20 +30,12 @@ import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import RegistrarAnticipoExcedente from './RegistrarAnticipoExcedente'
 import ActualizarAnticipoExcedente from './ActualizarAnticipoExcedente'
 
-const COLORS = {
-    primary: '#CC1818',
-    primaryLight: '#FFE8E8',
-    secondary: '#1A2E6E',
-    text: '#1a0e0c',
-    textMuted: '#8A94A6',
-    border: '#E0E0E0',
-    hoverBg: '#F9F9F9',
-}
+const COLORS = theme.palette
 
 const thStyle = {
     fontWeight: 700,
     fontSize: '0.80rem',
-    color: '#1a0e0c',
+    color: theme.palette.text.primary,
     letterSpacing: 0.5,
     py: 1.5,
     borderBottom: `1px solid #E0E0E0`,
@@ -53,12 +46,12 @@ const thStyle = {
 const filterSelectSx = {
     fontSize: '0.82rem',
     borderRadius: 2,
-    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#E0E0E0' },
+    '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
     '&:hover': { backgroundColor: 'transparent' },
     '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#BDBDBD' },
     '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#E57373', borderWidth: '1px' },
     '&.Mui-focused': { boxShadow: '0 0 0 3px rgba(229,115,115,0.18)' },
-    '& .MuiSelect-icon': { color: '#8A94A6', fontSize: 18 },
+    '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
     '& .MuiTouchRipple-root': { display: 'none' },
 }
 
@@ -72,7 +65,7 @@ const filterMenuProps = {
                 '& .MuiMenuItem-root': {
                     fontSize: '0.82rem',
                     '&:hover': { backgroundColor: '#FFF5F5' },
-                    '&.Mui-selected': { backgroundColor: 'transparent', fontWeight: 600, color: '#1a0e0c' },
+                    '&.Mui-selected': { backgroundColor: 'transparent', fontWeight: 600, color: theme.palette.text.primary },
                     '&.Mui-selected:hover': { backgroundColor: '#FFF5F5' },
                 },
             },
@@ -170,7 +163,7 @@ const ModalConsultar = ({ anticipo, onClose }) => {
     const estadoStyle = ESTADO_COLORS[anticipo.estado] || { bg: '#F5F5F5', color: '#757575' }
     const soportes = anticipo.soportes || []
 
-    const cardSx = { borderRadius: 2, p: 3, border: `1px solid ${COLORS.border}`, backgroundColor: 'white' }
+    const cardSx = { borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white' }
     const tituloSx = { display: 'flex', alignItems: 'center', gap: 1, mb: 1 }
 
     return (
@@ -182,10 +175,10 @@ const ModalConsultar = ({ anticipo, onClose }) => {
                     <RouteIcon sx={{ fontSize: 18 }} />
                 </Avatar>
                 <Box>
-                    <Typography fontWeight={700} color={COLORS.secondary}>
+                    <Typography fontWeight={700} color={theme.palette.secondary.main}>
                         Anticipo #{anticipo.idAnticipoExcedente}
                     </Typography>
-                    <Typography variant="caption" color={COLORS.textMuted}>
+                    <Typography variant="caption" color={theme.palette.text.secondary}>
                         {getNombreConductor(anticipo.idConductor)} · {getNombreRuta(anticipo.idRuta)}
                     </Typography>
                 </Box>
@@ -195,10 +188,10 @@ const ModalConsultar = ({ anticipo, onClose }) => {
                 <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
                     <Paper elevation={0} sx={{ ...cardSx, flex: 1 }}>
                         <Box sx={tituloSx}>
-                            <PersonOutlinedIcon sx={{ fontSize: 22, color: COLORS.text }} />
-                            <Typography fontWeight={700} fontSize="1.05rem" color={COLORS.text}>Datos del Anticipo</Typography>
+                            <PersonOutlinedIcon sx={{ fontSize: 22, color: theme.palette.text.primary }} />
+                            <Typography fontWeight={700} fontSize="1.05rem" color={theme.palette.text.primary}>Datos del Anticipo</Typography>
                         </Box>
-                        <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2 }}>
+                        <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
                             Información principal del anticipo
                         </Typography>
                         <CampoFila label="Conductor" value={getNombreConductor(anticipo.idConductor)} />
@@ -214,10 +207,10 @@ const ModalConsultar = ({ anticipo, onClose }) => {
 
                     <Paper elevation={0} sx={{ ...cardSx, flex: 1 }}>
                         <Box sx={tituloSx}>
-                            <AssignmentIndOutlinedIcon sx={{ fontSize: 22, color: COLORS.text }} />
-                            <Typography fontWeight={700} fontSize="1.05rem" color={COLORS.text}>Fechas</Typography>
+                            <AssignmentIndOutlinedIcon sx={{ fontSize: 22, color: theme.palette.text.primary }} />
+                            <Typography fontWeight={700} fontSize="1.05rem" color={theme.palette.text.primary}>Fechas</Typography>
                         </Box>
-                        <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2 }}>
+                        <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
                             Fechas relacionadas al anticipo
                         </Typography>
                         <CampoFila label="F. Entrega" value={formatFecha(anticipo.fechaEntrega)} />
@@ -226,8 +219,8 @@ const ModalConsultar = ({ anticipo, onClose }) => {
                         {anticipo.observaciones && (
                             <>
                                 <Box sx={{ pt: 1 }}>
-                                    <Typography variant="caption" color={COLORS.textMuted} fontWeight={600} display="block">Observaciones</Typography>
-                                    <Typography variant="body2" color={COLORS.text}>{anticipo.observaciones}</Typography>
+                                    <Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600} display="block">Observaciones</Typography>
+                                    <Typography variant="body2" color={theme.palette.text.primary}>{anticipo.observaciones}</Typography>
                                 </Box>
                             </>
                         )}
@@ -237,21 +230,21 @@ const ModalConsultar = ({ anticipo, onClose }) => {
                 {soportes.length > 0 && (
                     <Paper elevation={0} sx={{ ...cardSx }}>
                         <Box sx={tituloSx}>
-                            <ImageIcon sx={{ fontSize: 22, color: COLORS.text }} />
-                            <Typography fontWeight={700} fontSize="1.05rem" color={COLORS.text}>Soportes de pago</Typography>
+                            <ImageIcon sx={{ fontSize: 22, color: theme.palette.text.primary }} />
+                            <Typography fontWeight={700} fontSize="1.05rem" color={theme.palette.text.primary}>Soportes de pago</Typography>
                             <Chip label={`${soportes.length} archivo${soportes.length !== 1 ? 's' : ''}`} size="small" sx={{ ml: 'auto', fontSize: '0.68rem', height: 20, backgroundColor: '#E8F5E9', color: '#2E7D32', fontWeight: 600 }} />
                         </Box>
                         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 1.5 }}>
                             {soportes.map((s, idx) => (
-                                <Box key={idx} sx={{ width: 80, borderRadius: 1, overflow: 'hidden', border: `1px solid ${COLORS.border}` }}>
+                                <Box key={idx} sx={{ width: 80, borderRadius: 1, overflow: 'hidden', border: `1px solid ${theme.palette.divider}` }}>
                                     {s.tipo === 'image' ? (
                                         <Box component="img" src={s.url} alt={s.nombre} sx={{ width: '100%', height: 60, objectFit: 'cover' }} />
                                     ) : (
                                         <Box sx={{ height: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F8F9FA' }}>
-                                            <InsertDriveFileIcon sx={{ color: COLORS.textMuted }} />
+                                            <InsertDriveFileIcon sx={{ color: theme.palette.text.secondary }} />
                                         </Box>
                                     )}
-                                    <Typography variant="caption" sx={{ display: 'block', p: 0.5, fontSize: '0.6rem', color: COLORS.textMuted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    <Typography variant="caption" sx={{ display: 'block', p: 0.5, fontSize: '0.6rem', color: theme.palette.text.secondary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                         {s.nombre}
                                     </Typography>
                                 </Box>
@@ -262,7 +255,7 @@ const ModalConsultar = ({ anticipo, onClose }) => {
             </DialogContent>
 
             <DialogActions sx={{ px: 3, py: 2 }}>
-                <Button onClick={onClose} variant="contained" sx={{ backgroundColor: COLORS.primary, borderRadius: 2, textTransform: 'none' }}>
+                <Button onClick={onClose} variant="contained" sx={{ backgroundColor: theme.palette.primary.main, borderRadius: 2, textTransform: 'none' }}>
                     Cerrar
                 </Button>
             </DialogActions>
@@ -346,7 +339,7 @@ const ListarAnticipoExcedente = () => {
             <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
                 <Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <Typography variant="h5" fontWeight={700} color={COLORS.text}>
+                        <Typography variant="h5" fontWeight={700} color={theme.palette.text.primary}>
                             Anticipos y Excedentes
                         </Typography>
                         <Chip
@@ -354,7 +347,7 @@ const ListarAnticipoExcedente = () => {
                             size="small"
                             sx={{
                                 backgroundColor: '#F3F4F6',
-                                color: COLORS.textMuted,
+                                color: theme.palette.text.secondary,
                                 fontWeight: 500,
                                 fontSize: '0.72rem',
                                 height: 22,
@@ -362,7 +355,7 @@ const ListarAnticipoExcedente = () => {
                             }}
                         />
                     </Box>
-                    <Typography variant="body2" color={COLORS.textMuted} mt={0.3}>
+                    <Typography variant="body2" color={theme.palette.text.secondary} mt={0.3}>
                         Gestiona los anticipos y excedentes de los conductores.
                     </Typography>
                  </Box>
@@ -372,13 +365,13 @@ const ListarAnticipoExcedente = () => {
                          variant="contained"
                          startIcon={<AddOutlinedIcon />}
                          sx={{
-                             backgroundColor: COLORS.primary,
+                             backgroundColor: theme.palette.primary.main,
                              borderRadius: 2,
                              textTransform: 'none',
                              fontWeight: 600,
                              boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
                              '&:hover': {
-                                 backgroundColor: '#b91c1c',
+                                 backgroundColor: theme.palette.primary.dark,
                                  boxShadow: '0 6px 20px rgba(204,24,24,0.2)',
                              },
                          }}
@@ -413,14 +406,14 @@ const ListarAnticipoExcedente = () => {
                             minWidth: 0,
                             fontWeight: filtroHabilitado === f.value ? 600 : 400,
                             backgroundColor: filtroHabilitado === f.value ? 'white' : 'transparent',
-                            color: filtroHabilitado === f.value ? COLORS.text : '#B05050',
+                            color: filtroHabilitado === f.value ? theme.palette.text.primary : '#B05050',
                             boxShadow: filtroHabilitado === f.value
                                 ? '0 1px 4px rgba(0,0,0,0.12)'
                                 : 'none',
                             border: 'none',
                             '&:hover': {
                                 backgroundColor: filtroHabilitado === f.value ? 'white' : 'transparent',
-                                color: filtroHabilitado === f.value ? COLORS.text : '#5C3333',
+                                color: filtroHabilitado === f.value ? theme.palette.text.primary : '#5C3333',
                                 border: 'none',
                             },
                         }}
@@ -443,7 +436,7 @@ const ListarAnticipoExcedente = () => {
                                 boxShadow: '0 0 0 3px rgba(229,115,115,0.18)',
                             },
                             '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                borderColor: '#CC1818',
+                                borderColor: theme.palette.primary.main,
                                 borderWidth: '1px',
                             },
                         },
@@ -454,7 +447,7 @@ const ListarAnticipoExcedente = () => {
                         input: {
                             startAdornment: (
                                 <InputAdornment position="start">
-                                    <SearchIcon sx={{ color: COLORS.textMuted, fontSize: 20 }} />
+                                    <SearchIcon sx={{ color: theme.palette.text.secondary, fontSize: 20 }} />
                                 </InputAdornment>
                             ),
                             endAdornment: busqueda && (
@@ -486,7 +479,7 @@ const ListarAnticipoExcedente = () => {
             </Box>
 
             {/* ── Tabla ── */}
-            <Paper elevation={0} sx={{ border: `1px solid ${COLORS.border}`, borderRadius: 3, overflow: 'hidden' }}>
+            <Paper elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 3, overflow: 'hidden' }}>
                 <TableContainer>
                     <Table>
                         <TableHead>
@@ -506,7 +499,7 @@ const ListarAnticipoExcedente = () => {
                             {paginatedAnticipos.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={9} align="center" sx={{ py: 7 }}>
-                                        <Typography color={COLORS.textMuted} variant="body2">
+                                        <Typography color={theme.palette.text.secondary} variant="body2">
                                             {anticipos.length === 0
                                                 ? 'No hay anticipos registrados en el sistema.'
                                                 : busqueda.trim() !== '' || filtroHabilitado !== 'todo' || filtroEstadoAnticipo !== 'todos'
@@ -524,7 +517,7 @@ const ListarAnticipoExcedente = () => {
                                         <TableRow
                                             key={anticipo.idAnticipoExcedente}
                                             sx={{
-                                                '&:hover': { backgroundColor: COLORS.hoverBg },
+                                                '&:hover': { backgroundColor: theme.palette.background.subtle },
                                                 transition: 'background-color 0.15s',
                                                 opacity: anticipo.habilitado !== false ? 1 : 0.55,
                                             }}
@@ -534,14 +527,14 @@ const ListarAnticipoExcedente = () => {
                                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                                                     <Avatar sx={{
                                                         width: 34, height: 34,
-                                                        backgroundColor: anticipo.habilitado !== false ? '#FFCDD2' : '#E0E0E0',
+                                                        backgroundColor: anticipo.habilitado !== false ? '#FFCDD2' : theme.palette.divider,
                                                         fontSize: '0.73rem',
                                                         fontWeight: 700,
                                                         color: anticipo.habilitado !== false ? '#C62828' : '#9CA3AF',
                                                     }}>
                                                         {getNombreConductor(anticipo.idConductor).split(' ').map(n => n[0]).slice(0, 2).join('')}
                                                     </Avatar>
-                                                    <Typography variant="body2" fontWeight={500} color={COLORS.text} noWrap>
+                                                    <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary} noWrap>
                                                         {getNombreConductor(anticipo.idConductor)}
                                                     </Typography>
                                                 </Box>
@@ -549,24 +542,24 @@ const ListarAnticipoExcedente = () => {
 
                                             {/* Ruta */}
                                             <TableCell sx={{ py: 1.5 }}>
-                                                <Typography variant="body2" color={COLORS.textMuted} fontSize="0.75rem">
+                                                <Typography variant="body2" color={theme.palette.text.secondary} fontSize="0.75rem">
                                                     Ruta {anticipo.idRuta}
                                                 </Typography>
-                                                <Typography variant="body2" fontWeight={500} color={COLORS.text} fontSize="0.8rem" noWrap>
+                                                <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary} fontSize="0.8rem" noWrap>
                                                     {getNombreRuta(anticipo.idRuta).split(' - ')[1] || '—'}
                                                 </Typography>
                                             </TableCell>
 
                                             {/* Anticipo */}
                                             <TableCell sx={{ py: 1.5 }}>
-                                                <Typography variant="body2" fontWeight={600} color={COLORS.secondary} fontSize="0.82rem">
+                                                <Typography variant="body2" fontWeight={600} color={theme.palette.secondary.main} fontSize="0.82rem">
                                                     {formatMoney(anticipo.valorAnticipo)}
                                                 </Typography>
                                             </TableCell>
 
                                             {/* Gastado */}
                                             <TableCell sx={{ py: 1.5 }}>
-                                                <Typography variant="body2" color={anticipo.valorGastado ? COLORS.text : COLORS.textMuted} fontSize="0.82rem">
+                                                <Typography variant="body2" color={anticipo.valorGastado ? theme.palette.text.primary : theme.palette.text.secondary} fontSize="0.82rem">
                                                     {anticipo.valorGastado ? formatMoney(anticipo.valorGastado) : '—'}
                                                 </Typography>
                                             </TableCell>
@@ -575,23 +568,23 @@ const ListarAnticipoExcedente = () => {
                                             <TableCell sx={{ py: 1.5 }}>
                                                 {anticipo.valorGastado ? (
                                                     <Typography variant="body2" fontWeight={600} fontSize="0.82rem"
-                                                        color={excedente >= 0 ? '#2E7D32' : COLORS.primary}>
+                                                        color={excedente >= 0 ? '#2E7D32' : theme.palette.primary.main}>
                                                         {excedente >= 0 ? '+' : '-'}{formatMoney(Math.abs(excedente))}
                                                     </Typography>
                                                 ) : (
-                                                    <Typography variant="body2" color={COLORS.textMuted} fontSize="0.82rem">—</Typography>
+                                                    <Typography variant="body2" color={theme.palette.text.secondary} fontSize="0.82rem">—</Typography>
                                                 )}
                                             </TableCell>
 
                                             {/* Fecha */}
-                                            <TableCell sx={{ fontSize: '0.8rem', color: COLORS.text, py: 1.5 }}>
+                                            <TableCell sx={{ fontSize: '0.8rem', color: theme.palette.text.primary, py: 1.5 }}>
                                                 {formatFecha(anticipo.fechaEntrega)}
                                             </TableCell>
 
                                             {/* Estado */}
                                             <TableCell sx={{ py: 1.5, minWidth: 140 }}>
                                                 {cambiandoEstado === anticipo.idAnticipoExcedente ? (
-                                                    <CircularProgress size={20} sx={{ color: COLORS.primary }} />
+                                                    <CircularProgress size={20} sx={{ color: theme.palette.primary.main }} />
                                                 ) : (
                                                     <Select
                                                         value={anticipo.habilitado === false ? 'Inactivo' : anticipo.estado || 'entregado'}
@@ -619,7 +612,7 @@ const ListarAnticipoExcedente = () => {
                                                         IconComponent={KeyboardArrowDownOutlinedIcon}
                                                         sx={{
                                                             backgroundColor: '#ffffff',
-                                                            color: '#1a0e0c',
+                                                            color: theme.palette.text.primary,
                                                             fontSize: '0.72rem',
                                                             fontWeight: 600,
                                                             height: 26,
@@ -641,7 +634,7 @@ const ListarAnticipoExcedente = () => {
                                                                 border: 'none',
                                                             },
                                                             '& .MuiSelect-icon': {
-                                                                color: '#8A94A6',
+                                                                color: theme.palette.text.secondary,
                                                                 fontSize: 18,
                                                             },
                                                         }}
@@ -687,7 +680,7 @@ const ListarAnticipoExcedente = () => {
                                                     {tienePermiso(PERMISOS.CONSULTAR_ANTICIPO) && (
                                                         <Tooltip title="Ver detalle">
                                                             <IconButton size="small" onClick={() => setAnticipoConsulta(anticipo)}
-                                                                sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}>
+                                                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}>
                                                                 <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
                                                             </IconButton>
                                                         </Tooltip>
@@ -696,7 +689,7 @@ const ListarAnticipoExcedente = () => {
                                                         <Tooltip title="Editar">
                                                             <IconButton size="small"
                                                                 onClick={() => { setAnticipoEditar(anticipo); setModalActualizarOpen(true) }}
-                                                                sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}>
+                                                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}>
                                                                 <EditOutlinedIcon sx={{ fontSize: 18 }} />
                                                             </IconButton>
                                                         </Tooltip>
@@ -714,12 +707,12 @@ const ListarAnticipoExcedente = () => {
 
             {/* ── Paginación ── */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
-                <Typography variant="body2" color={COLORS.textMuted} fontWeight={500}>
+                <Typography variant="body2" color={theme.palette.text.secondary} fontWeight={500}>
                     Mostrando {from}–{to} de {anticiposFiltrados.length} resultado{anticiposFiltrados.length !== 1 ? 's' : ''}
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography variant="body2" color={COLORS.textMuted} fontWeight={500}>
+                        <Typography variant="body2" color={theme.palette.text.secondary} fontWeight={500}>
                             Filas
                         </Typography>
                         <Select
@@ -732,13 +725,13 @@ const ListarAnticipoExcedente = () => {
                                 fontSize: '0.82rem',
                                 borderRadius: 2,
                                 '& .MuiSelect-select': { py: 0.6, pl: 1.5, pr: '28px !important' },
-                                '& .MuiOutlinedInput-notchedOutline': { borderColor: COLORS.border },
+                                '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
                                 '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#BDBDBD' },
                                 '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                                     borderColor: '#E57373', borderWidth: '1px',
                                 },
                                 '&.Mui-focused': { boxShadow: '0 0 0 3px rgba(229,115,115,0.18)' },
-                                '& .MuiSelect-icon': { color: COLORS.textMuted, fontSize: 18 },
+                                '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
                                 '& .MuiTouchRipple-root': { display: 'none' },
                             }}
                             MenuProps={{
@@ -760,7 +753,7 @@ const ListarAnticipoExcedente = () => {
                                                 '&.Mui-selected': {
                                                     backgroundColor: 'transparent',
                                                     fontWeight: 600,
-                                                    color: COLORS.text,
+                                                    color: theme.palette.text.primary,
                                                 },
                                                 '&.Mui-selected:hover': { backgroundColor: '#FFF5F5' },
                                             },
@@ -773,7 +766,7 @@ const ListarAnticipoExcedente = () => {
                                 <MenuItem key={n} value={n}>
                                     {n}
                                     {rowsPerPage === n && (
-                                        <CheckOutlinedIcon sx={{ fontSize: 14, color: COLORS.textMuted }} />
+                                        <CheckOutlinedIcon sx={{ fontSize: 14, color: theme.palette.text.secondary }} />
                                     )}
                                 </MenuItem>
                             ))}
@@ -792,20 +785,20 @@ const ListarAnticipoExcedente = () => {
                                 minWidth: 34,
                                 height: 34,
                                 mx: 0.2,
-                                color: COLORS.text,
-                                border: `1px solid ${COLORS.border}`,
+                                color: theme.palette.text.primary,
+                                border: `1px solid ${theme.palette.divider}`,
                                 '& .MuiTouchRipple-root': { display: 'none' },
                             },
                             '& .MuiPaginationItem-ellipsis': { border: 'none' },
                             '& .MuiPaginationItem-root.Mui-selected': {
-                                backgroundColor: COLORS.primary,
-                                borderColor: COLORS.primary,
+                                backgroundColor: theme.palette.primary.main,
+                                borderColor: theme.palette.primary.main,
                                 color: 'white',
                                 fontWeight: 600,
-                                '&:hover': { backgroundColor: '#a01212' },
+                                '&:hover': { backgroundColor: theme.palette.primary.darker },
                             },
                             '& .MuiPaginationItem-root:hover:not(.Mui-selected)': {
-                                backgroundColor: COLORS.hoverBg,
+                                backgroundColor: theme.palette.background.subtle,
                                 borderColor: '#BDBDBD',
                             },
                         }}

@@ -1,3 +1,4 @@
+import theme from '../../../shared/styles/theme.js'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -21,19 +22,12 @@ import { useAuth } from '../../../shared/contexts/AuthContext'
 import RegistrarDestino from './RegistrarDestino'
 import ActualizarDestino from './ActualizarDestino'
 
-const COLORS = {
-    primary: '#CC1818',
-    primaryLight: '#FFE8E8',
-    text: '#1a0e0c',
-    textMuted: '#8A94A6',
-    border: '#E0E0E0',
-    hoverBg: '#F9F9F9',
-}
+const COLORS = theme.palette
 
 const thStyle = {
     fontWeight: 700,
     fontSize: '0.80rem',
-    color: '#1a0e0c',
+    color: theme.palette.text.primary,
     letterSpacing: 0.5,
     py: 1.5,
     borderBottom: `1px solid #E0E0E0`,
@@ -52,7 +46,7 @@ const filterMenuProps = {
                 '& .MuiMenuItem-root': {
                     fontSize: '0.82rem',
                     '&:hover': { backgroundColor: '#FFF5F5' },
-                    '&.Mui-selected': { backgroundColor: 'transparent', fontWeight: 600, color: '#1a0e0c' },
+                    '&.Mui-selected': { backgroundColor: 'transparent', fontWeight: 600, color: theme.palette.text.primary },
                     '&.Mui-selected:hover': { backgroundColor: '#FFF5F5' },
                 },
             },
@@ -128,7 +122,7 @@ const ListarDestino = () => {
             <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
                 <Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <Typography variant="h5" fontWeight={700} color={COLORS.text}>
+                        <Typography variant="h5" fontWeight={700} color={theme.palette.text.primary}>
                             Destinos
                         </Typography>
                         <Chip
@@ -136,7 +130,7 @@ const ListarDestino = () => {
                             size="small"
                             sx={{
                                 backgroundColor: '#F3F4F6',
-                                color: COLORS.textMuted,
+                                color: theme.palette.text.secondary,
                                 fontWeight: 500,
                                 fontSize: '0.72rem',
                                 height: 22,
@@ -144,7 +138,7 @@ const ListarDestino = () => {
                             }}
                         />
                     </Box>
-                    <Typography variant="body2" color={COLORS.textMuted} mt={0.3}>
+                    <Typography variant="body2" color={theme.palette.text.secondary} mt={0.3}>
                         Gestiona los destinos de entrega registrados en el sistema.
                     </Typography>
                  </Box>
@@ -154,13 +148,13 @@ const ListarDestino = () => {
                          variant="contained"
                          startIcon={<AddOutlinedIcon />}
                          sx={{
-                             backgroundColor: COLORS.primary,
+                             backgroundColor: theme.palette.primary.main,
                              borderRadius: 2,
                              textTransform: 'none',
                              fontWeight: 600,
                              boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
                              '&:hover': {
-                                 backgroundColor: '#b91c1c',
+                                 backgroundColor: theme.palette.primary.dark,
                                  boxShadow: '0 6px 20px rgba(204,24,24,0.2)',
                              },
                          }}
@@ -197,14 +191,14 @@ const ListarDestino = () => {
                             minWidth: 0,
                             fontWeight: filtroEstado === f.value ? 600 : 400,
                             backgroundColor: filtroEstado === f.value ? 'white' : 'transparent',
-                            color: filtroEstado === f.value ? COLORS.text : '#B05050',
+                            color: filtroEstado === f.value ? theme.palette.text.primary : '#B05050',
                             boxShadow: filtroEstado === f.value
                                 ? '0 1px 4px rgba(0,0,0,0.12)'
                                 : 'none',
                             border: 'none',
                             '&:hover': {
                                 backgroundColor: filtroEstado === f.value ? 'white' : 'transparent',
-                                color: filtroEstado === f.value ? COLORS.text : '#5C3333',
+                                color: filtroEstado === f.value ? theme.palette.text.primary : '#5C3333',
                                 border: 'none',
                             },
                         }}
@@ -224,7 +218,7 @@ const ListarDestino = () => {
                             borderRadius: 2,
                             '&.Mui-focused': { boxShadow: '0 0 0 3px rgba(229,115,115,0.18)' },
                             '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                borderColor: '#CC1818', borderWidth: '1px',
+                                borderColor: theme.palette.primary.main, borderWidth: '1px',
                             },
                         },
                     }}
@@ -234,7 +228,7 @@ const ListarDestino = () => {
                         input: {
                             startAdornment: (
                                 <InputAdornment position="start">
-                                    <SearchIcon sx={{ color: COLORS.textMuted, fontSize: 20 }} />
+                                    <SearchIcon sx={{ color: theme.palette.text.secondary, fontSize: 20 }} />
                                 </InputAdornment>
                             ),
                             endAdornment: searchTerm && (
@@ -254,12 +248,12 @@ const ListarDestino = () => {
                         size="small"
                         icon={<ClearIcon sx={{ fontSize: '14px !important' }} />}
                         onClick={limpiarFiltros}
-                        sx={{ fontSize: '0.72rem', height: 28, cursor: 'pointer', backgroundColor: COLORS.primaryLight, color: COLORS.primary }}
+                        sx={{ fontSize: '0.72rem', height: 28, cursor: 'pointer', backgroundColor: theme.palette.primary.light, color: theme.palette.primary.main }}
                     />
                 )}
             </Box>
 
-            <Paper elevation={0} sx={{ border: `1px solid ${COLORS.border}`, borderRadius: 3, overflow: 'hidden' }}>
+            <Paper elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 3, overflow: 'hidden' }}>
                 <TableContainer>
                     <Table>
                         <TableHead>
@@ -278,7 +272,7 @@ const ListarDestino = () => {
                             {filteredDestinos.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={8} align="center" sx={{ py: 7 }}>
-                                        <Typography color={COLORS.textMuted} variant="body2">
+                                        <Typography color={theme.palette.text.secondary} variant="body2">
                                             {destinos.length === 0
                                                 ? 'No hay destinos registrados en el sistema.'
                                                 : 'No se encontraron destinos que coincidan con la búsqueda.'
@@ -291,7 +285,7 @@ const ListarDestino = () => {
                                     <TableRow
                                         key={destino.idDestino}
                                         sx={{
-                                            '&:hover': { backgroundColor: COLORS.hoverBg },
+                                            '&:hover': { backgroundColor: theme.palette.background.subtle },
                                             transition: 'background-color 0.15s',
                                             opacity: destino.habilitado ? 1 : 0.55,
                                         }}
@@ -331,7 +325,7 @@ const ListarDestino = () => {
                                                         <IconButton
                                                             size="small"
                                                             onClick={() => setDestinoVer(destino)}
-                                                            sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}
+                                                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
                                                         >
                                                             <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
                                                         </IconButton>
@@ -342,7 +336,7 @@ const ListarDestino = () => {
                                                         <IconButton
                                                             size="small"
                                                             onClick={() => { setDestinoEditar(destino); setModalActualizarOpen(true) }}
-                                                            sx={{ color: COLORS.text, '&:hover': { backgroundColor: COLORS.primaryLight } }}
+                                                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
                                                         >
                                                             <EditOutlinedIcon sx={{ fontSize: 18 }} />
                                                         </IconButton>
@@ -362,7 +356,7 @@ const ListarDestino = () => {
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 px: 0.5, pt: 1.5,
             }}>
-                <Typography variant="body2" color={COLORS.textMuted}>
+                <Typography variant="body2" color={theme.palette.text.secondary}>
                     Total de destinos: {filteredDestinos.length}
                 </Typography>
             </Box>
@@ -370,12 +364,12 @@ const ListarDestino = () => {
             {destinoVer && (
                 <Dialog open onClose={() => setDestinoVer(null)} maxWidth="md" fullWidth
                     slotProps={{ paper: { sx: { borderRadius: 3, p: 3, backgroundColor: '#FAFAFA' } } }}>
-                    <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${COLORS.border}`, backgroundColor: 'white', mb: 2 }}>
+                    <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white', mb: 2 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                            <LocationOnOutlinedIcon sx={{ fontSize: 22, color: COLORS.text }} />
-                            <Typography fontWeight={700} fontSize="1.05rem" color={COLORS.text}>Detalles del Destino</Typography>
+                            <LocationOnOutlinedIcon sx={{ fontSize: 22, color: theme.palette.text.primary }} />
+                            <Typography fontWeight={700} fontSize="1.05rem" color={theme.palette.text.primary}>Detalles del Destino</Typography>
                         </Box>
-                        <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2.5 }}>
+                        <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2.5 }}>
                             Información del destino
                         </Typography>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5 }}>
@@ -383,10 +377,10 @@ const ListarDestino = () => {
                                 {destinoVer.nombre?.[0]}
                             </Avatar>
                             <Box>
-                                <Typography fontWeight={700} fontSize="1.1rem" color={COLORS.text}>
+                                <Typography fontWeight={700} fontSize="1.1rem" color={theme.palette.text.primary}>
                                     {destinoVer.nombre}
                                 </Typography>
-                                <Typography variant="body2" color={COLORS.textMuted} mt={0.4}>
+                                <Typography variant="body2" color={theme.palette.text.secondary} mt={0.4}>
                                     {destinoVer.direccion}
                                 </Typography>
                             </Box>
@@ -394,42 +388,42 @@ const ListarDestino = () => {
                     </Paper>
 
                     <Box sx={{ display: 'flex', gap: 2 }}>
-                        <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${COLORS.border}`, backgroundColor: 'white', flex: 1 }}>
+                        <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white', flex: 1 }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                <BusinessOutlinedIcon sx={{ fontSize: 22, color: COLORS.text }} />
-                                <Typography fontWeight={700} fontSize="1.05rem" color={COLORS.text}>Ubicación</Typography>
+                                <BusinessOutlinedIcon sx={{ fontSize: 22, color: theme.palette.text.primary }} />
+                                <Typography fontWeight={700} fontSize="1.05rem" color={theme.palette.text.primary}>Ubicación</Typography>
                             </Box>
-                            <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2 }}>
+                            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
                                 Datos de ubicación del destino
                             </Typography>
                             <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                                <Box sx={{ gridColumn: '1 / -1' }}><Typography variant="caption" color="#8A94A6" fontWeight={600}>Dirección</Typography><Typography variant="body2" fontWeight={500}>{destinoVer.direccion}</Typography></Box>
-                                <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Ciudad</Typography><Typography variant="body2" fontWeight={500}>{destinoVer.ciudad}</Typography></Box>
-                                <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Departamento</Typography><Typography variant="body2" fontWeight={500}>{destinoVer.departamento}</Typography></Box>
+                                <Box sx={{ gridColumn: '1 / -1' }}><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Dirección</Typography><Typography variant="body2" fontWeight={500}>{destinoVer.direccion}</Typography></Box>
+                                <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Ciudad</Typography><Typography variant="body2" fontWeight={500}>{destinoVer.ciudad}</Typography></Box>
+                                <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Departamento</Typography><Typography variant="body2" fontWeight={500}>{destinoVer.departamento}</Typography></Box>
                             </Box>
                         </Paper>
 
-                        <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${COLORS.border}`, backgroundColor: 'white', flex: 1 }}>
+                        <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white', flex: 1 }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                <PhoneOutlinedIcon sx={{ fontSize: 22, color: COLORS.text }} />
-                                <Typography fontWeight={700} fontSize="1.05rem" color={COLORS.text}>Información de Contacto</Typography>
+                                <PhoneOutlinedIcon sx={{ fontSize: 22, color: theme.palette.text.primary }} />
+                                <Typography fontWeight={700} fontSize="1.05rem" color={theme.palette.text.primary}>Información de Contacto</Typography>
                             </Box>
-                            <Typography variant="body2" sx={{ color: COLORS.textMuted, mb: 2 }}>
+                            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
                                 Datos de contacto del destino
                             </Typography>
                             <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                                <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Teléfono</Typography><Typography variant="body2" fontWeight={500}>{destinoVer.telefono}</Typography></Box>
-                                <Box><Typography variant="caption" color="#8A94A6" fontWeight={600}>Contacto</Typography><Typography variant="body2" fontWeight={500}>{destinoVer.contacto}</Typography></Box>
-                                <Box sx={{ gridColumn: '1 / -1' }}><Typography variant="caption" color="#8A94A6" fontWeight={600}>Estado</Typography><Typography variant="body2" fontWeight={500} color={destinoVer.estado === 'Activo' ? '#2E7D32' : '#ef4444'}>{destinoVer.estado}</Typography></Box>
+                                <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Teléfono</Typography><Typography variant="body2" fontWeight={500}>{destinoVer.telefono}</Typography></Box>
+                                <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Contacto</Typography><Typography variant="body2" fontWeight={500}>{destinoVer.contacto}</Typography></Box>
+                                <Box sx={{ gridColumn: '1 / -1' }}><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Estado</Typography><Typography variant="body2" fontWeight={500} color={destinoVer.estado === 'Activo' ? '#2E7D32' : '#ef4444'}>{destinoVer.estado}</Typography></Box>
                             </Box>
                         </Paper>
                     </Box>
 
                     <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
                         <Button onClick={() => setDestinoVer(null)} variant="contained" sx={{
-                            backgroundColor: COLORS.primary, borderRadius: 2, textTransform: 'none',
+                            backgroundColor: theme.palette.primary.main, borderRadius: 2, textTransform: 'none',
                             boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
-                            '&:hover': { backgroundColor: '#b91c1c', boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
+                            '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
                         }}>
                             Cerrar
                         </Button>

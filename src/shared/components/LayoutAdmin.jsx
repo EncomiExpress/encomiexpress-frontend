@@ -1,15 +1,16 @@
 import { Box } from '@mui/material'
 import Sidebar from './Sidebar.jsx'
 import Header from './Header.jsx'
+import theme from '../styles/theme.js'
 
 const Layout = ({ children }) => {
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F5F6FA' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: theme.palette.background.default }}>
 
       {/* Barra superior roja */}
       <Box sx={{
         position: 'fixed', top: 0, left: 0, right: 0, height: 4,
-        background: 'linear-gradient(90deg, #1a2e6e, #CC1818, #1a2e6e)',
+        background: theme.palette.gradient.navbar,
         zIndex: 30,
       }} />
 
