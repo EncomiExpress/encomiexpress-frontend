@@ -38,16 +38,9 @@ const CampoFila = ({ label, value, esEstado, esRol }) => (
     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
         <Typography variant="body2" sx={{ color: '#9C4040', fontWeight: 500 }}>{label}</Typography>
         {esEstado ? (
-            <Chip
-                label={value}
-                size="small"
-                sx={{
-                    backgroundColor: value === 'Habilitado' ? '#DCFCE7' : '#F3F4F6',
-                    color: value === 'Habilitado' ? '#16A34A' : '#9CA3AF',
-                    fontWeight: 600, fontSize: '0.72rem',
-                    height: 22, borderRadius: 10, border: 'none',
-                }}
-            />
+            <Typography variant="body2" fontWeight={500} color={value === 'Activo' ? '#2E7D32' : '#ef4444'}>
+                {String(value ?? '-')}
+            </Typography>
         ) : esRol ? (
             <Chip
                 label={value}
@@ -72,7 +65,7 @@ const CampoFila = ({ label, value, esEstado, esRol }) => (
 
 const ModalConsultar = ({ usuario, onClose }) => {
     if (!usuario) return null
-    const estado = usuario.habilitado ? 'Habilitado' : 'Inhabilitado'
+    const estado = usuario.habilitado ? 'Activo' : 'Inactivo'
 
     const cardSx = { borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white' }
     const tituloSx = { display: 'flex', alignItems: 'center', gap: 1, mb: 1 }

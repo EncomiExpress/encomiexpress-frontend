@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { Box, Typography, Collapse } from '@mui/material'
+import { Box, Typography, Collapse, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button } from '@mui/material'
 import {
   DashboardOutlined as DashboardIcon,
   PersonAdd as PersonAddIcon,
@@ -209,6 +209,7 @@ const Sidebar = () => {
   const [openSections, setOpenSections] = useState(
     SECTIONS.reduce((acc, section) => ({ ...acc, [section.id]: true }), {})
   )
+  const [openLogoutDialog, setOpenLogoutDialog] = useState(false)
   const { usuario, logout } = useAuth()
 
   const toggleSection = (sectionId) => {
@@ -297,7 +298,7 @@ const Sidebar = () => {
             </Typography>
           </Box>
           <Box
-            onClick={handleLogout}
+            onClick={() => setOpenLogoutDialog(true)}
             sx={{
               cursor: 'pointer',
               p: 0.5,
@@ -317,6 +318,48 @@ const Sidebar = () => {
           </Box>
         </Box>
       </Box>
+
+      {/* Dialog de confirmación de cierre de sesión */}
+      <Dialog
+        open={openLogoutDialog}
+        onClose={() => setOpenLogoutDialog(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.1rem', color: C.textBase }}>
+          ¿Cerrar sesión?
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ color: C.textMuted, fontSize: '0.88rem' }}>
+            Estás a punto de salir del sistema. ¿Estás seguro de que deseas cerrar sesión?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2.5, pt: 1, gap: 1.5 }}>
+          <Button
+            onClick={() => setOpenLogoutDialog(false)}
+            disableRipple
+            sx={{
+              textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 1.5,
+              '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary },
+            }}
+          >
+            Cancelar
+          </Button>
+          <Button
+            onClick={() => { logout(); navigate('/'); setOpenLogoutDialog(false) }}
+            variant="contained"
+            disableRipple
+            sx={{
+              textTransform: 'none', borderRadius: 1.5, fontWeight: 600,
+              backgroundColor: theme.palette.primary.main,
+              boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
+              '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
+            }}
+          >
+            Sí, cerrar sesión
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   )
 }

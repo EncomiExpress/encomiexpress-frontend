@@ -35,7 +35,7 @@ const thStyle = {
     whiteSpace: 'nowrap',
 }
 
-const ESTADOS = ['Activo', 'Inactivo', 'En revisión']
+const ESTADOS = ['Activo', 'Inactivo', 'En ruta']
 
 const filterMenuProps = {
     slotProps: {
@@ -64,7 +64,7 @@ const FILTROS = [
     { value: 'todo', label: 'Todo' },
     { value: 'Activo', label: 'Activo' },
     { value: 'Inactivo', label: 'Inactivo' },
-    { value: 'En revisión', label: 'En revisión' },
+    { value: 'En ruta', label: 'En ruta' },
 ]
 
 const ListarConductor = () => {
