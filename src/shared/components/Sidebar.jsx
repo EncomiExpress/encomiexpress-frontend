@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { Box, Typography, Collapse, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button } from '@mui/material'
+import { Box, Typography, Collapse } from '@mui/material'
 import {
   DashboardOutlined as DashboardIcon,
   PersonAdd as PersonAddIcon,
@@ -23,29 +23,28 @@ import {
 } from '@mui/icons-material'
 import logo from '../../assets/logo.png'
 import { useAuth } from '../contexts/AuthContext'
-import theme from '../styles/theme.js'
 
 // ─── Paleta ────────────────────────────────────────────────────────────────
 const C = {
-  red: theme.palette.primary.main,
-  navy: theme.palette.secondary.main,
+  red: '#CC1818',
+  navy: '#1a2e6e',
   bg: '#f5f5f5',
   white: '#ffffff',
   label: 'rgba(26,46,110,0.38)',
   textMuted: 'rgba(33,33,33,0.45)',
-  textBase: theme.palette.text.dark,
+  textBase: '#212121',
   textIcon: '#8b8382',
   textIconHover: '#483c3a',
   textNav: '#4a3f3c',
-  textNavHover: theme.palette.text.primary,
+  textNavHover: '#1a0e0c',
   activeBg: 'rgba(204,24,24,0.08)',
   hoverBg: 'rgba(26,46,110,0.05)',
   border: 'rgba(26,46,110,0.1)',
   divider: 'rgba(26,46,110,0.08)',
 }
 
-// ─── Estructura del menú ────────────────────────────────────────────────────
-const SECTIONS = [
+// ─── Estructura del menú por rol ───────────────────────────────────────────
+const SECTIONS_ADMIN = [
   {
     id: 'general',
     label: 'General',
@@ -57,12 +56,8 @@ const SECTIONS = [
     id: 'personas',
     label: 'Personas',
     items: [
-      {
-        id: 'roles', label: 'Roles', icon: RolesIcon, path: '/roles/listar'
-      },
-      {
-        id: 'usuarios', label: 'Usuarios', icon: GroupAddIcon, path: '/usuarios/listar',
-      },
+      { id: 'roles', label: 'Roles', icon: RolesIcon, path: '/roles/listar' },
+      { id: 'usuarios', label: 'Usuarios', icon: GroupAddIcon, path: '/usuarios/listar' },
       { id: 'clientes', label: 'Clientes', icon: PeopleIcon, path: '/clientes/listar' },
     ],
   },
@@ -92,6 +87,26 @@ const SECTIONS = [
     ],
   },
 ]
+
+const SECTIONS_CONDUCTOR = [
+  {
+    id: 'general',
+    label: 'General',
+    items: [
+      { id: 'dashboard', label: 'Dashboard', icon: DashboardIcon, path: '/dashboard' },
+    ],
+  },
+  {
+    id: 'finanzas',
+    label: 'Finanzas',
+    items: [
+      { id: 'anticipos', label: 'Mis Anticipos', icon: MoneyIcon, path: '/anticipos/listar' },
+    ],
+  },
+]
+
+// Mantener SECTIONS por compatibilidad
+const SECTIONS = SECTIONS_ADMIN
 
 // ─── NavItem ────────────────────────────────────────────────────────────────
 const NavItem = ({ item, depth = 0, location }) => {
@@ -209,8 +224,11 @@ const Sidebar = () => {
   const [openSections, setOpenSections] = useState(
     SECTIONS.reduce((acc, section) => ({ ...acc, [section.id]: true }), {})
   )
-  const [openLogoutDialog, setOpenLogoutDialog] = useState(false)
   const { usuario, logout } = useAuth()
+  const rol = usuario?.rol?.nombre
+
+  // Seleccionar menú según rol
+  const sections = rol === 'conductor' ? SECTIONS_CONDUCTOR : SECTIONS_ADMIN
 
   const toggleSection = (sectionId) => {
     setOpenSections(prev => ({ ...prev, [sectionId]: !prev[sectionId] }))
@@ -253,7 +271,7 @@ const Sidebar = () => {
         '&::-webkit-scrollbar': { width: 4 },
         '&::-webkit-scrollbar-thumb': { background: C.divider, borderRadius: 2 },
       }}>
-        {SECTIONS.map((section, idx) => (
+        {sections.map((section, idx) => (
           <Box key={section.id}>
             {idx !== 0 && (
               <Box sx={{ mx: 3, my: 1, height: '1px', backgroundColor: C.divider }} />
@@ -298,7 +316,7 @@ const Sidebar = () => {
             </Typography>
           </Box>
           <Box
-            onClick={() => setOpenLogoutDialog(true)}
+            onClick={handleLogout}
             sx={{
               cursor: 'pointer',
               p: 0.5,
@@ -318,48 +336,6 @@ const Sidebar = () => {
           </Box>
         </Box>
       </Box>
-
-      {/* Dialog de confirmación de cierre de sesión */}
-      <Dialog
-        open={openLogoutDialog}
-        onClose={() => setOpenLogoutDialog(false)}
-        maxWidth="xs"
-        fullWidth
-      >
-        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.1rem', color: C.textBase }}>
-          ¿Cerrar sesión?
-        </DialogTitle>
-        <DialogContent>
-          <DialogContentText sx={{ color: C.textMuted, fontSize: '0.88rem' }}>
-            Estás a punto de salir del sistema. ¿Estás seguro de que deseas cerrar sesión?
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2.5, pt: 1, gap: 1.5 }}>
-          <Button
-            onClick={() => setOpenLogoutDialog(false)}
-            disableRipple
-            sx={{
-              textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 1.5,
-              '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary },
-            }}
-          >
-            Cancelar
-          </Button>
-          <Button
-            onClick={() => { logout(); navigate('/'); setOpenLogoutDialog(false) }}
-            variant="contained"
-            disableRipple
-            sx={{
-              textTransform: 'none', borderRadius: 1.5, fontWeight: 600,
-              backgroundColor: theme.palette.primary.main,
-              boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
-              '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
-            }}
-          >
-            Sí, cerrar sesión
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   )
 }

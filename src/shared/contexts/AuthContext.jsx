@@ -108,10 +108,14 @@ export const AuthProvider = ({ children }) => {
 
       const { token, usuario } = data.data
 
-      // Normalizar rol: backend devuelve string, frontend espera objeto { nombre }
+      // Normalizar rol: el backend puede devolver string u objeto { nombre, idRol }
+      const rolNombre = typeof usuario.rol === 'string'
+        ? usuario.rol
+        : usuario.rol?.nombre || null
+
       const usuarioNormalizado = {
         ...usuario,
-        rol: usuario.rol ? { nombre: usuario.rol } : null
+        rol: rolNombre ? { nombre: rolNombre } : null
       }
 
       localStorage.setItem('token', token)
@@ -142,9 +146,10 @@ export const AuthProvider = ({ children }) => {
 
   const registrarUsuario = async (usuarioData) => {
     try {
-      const res = await fetch(`${API_URL}/auth/register`, {
+      const token = localStorage.getItem('token')
+      const res = await fetch(`${API_URL}/usuarios`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(usuarioData)
       })
       const data = await res.json()
