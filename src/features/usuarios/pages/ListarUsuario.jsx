@@ -6,7 +6,7 @@ import {
     TableContainer, TableHead, TableRow, TextField,
     IconButton, Chip, Tooltip, InputAdornment,
     Button, Dialog, DialogTitle, DialogContent,
-    Avatar, Select, MenuItem, Pagination, Snackbar, Alert,
+    Avatar, Select, MenuItem, Switch, Pagination, Snackbar, Alert,
     CircularProgress, FormControl
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
@@ -493,54 +493,28 @@ const ListarUsuario = () => {
                                             />
                                         </TableCell>
 
-                                        <TableCell sx={{ py: 1.5 }}>
-                                            {tienePermiso(PERMISOS.INHABILITAR_USUARIO) ? (
-                                                <FormControl size="small" sx={{ minWidth: 120 }}>
-                                                    <Select
-                                                        value={usuario.habilitado ? 'Activo' : 'Inactivo'}
-                                                        onChange={(e) => handleEstadoChange(usuario.idUsuario, e.target.value)}
-                                                        IconComponent={KeyboardArrowDownOutlinedIcon}
-                                                        sx={{
-                                                            fontSize: '0.75rem',
-                                                            py: 0.5,
-                                                            color: usuario.habilitado ? '#10b981' : '#dc2626',
-                                                        }}
-                                                        MenuProps={{
-                                                            slotProps: {
-                                                                paper: {
-                                                                    sx: {
-                                                                        borderRadius: 2,
-                                                                        boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
-                                                                        mt: 0.5,
-                                                                        '& .MuiMenuItem-root': {
-                                                                            fontSize: '0.82rem',
-                                                                            py: 0.9,
-                                                                            px: 2,
-                                                                            '&:hover': { backgroundColor: '#FFF5F5' },
-                                                                        },
-                                                                    },
-                                                                },
-                                                            },
-                                                        }}
-                                                    >
-                                                        {ESTADOS.map(estado => (
-                                                            <MenuItem key={estado} value={estado}>{estado}</MenuItem>
-                                                        ))}
-                                                    </Select>
-                                                </FormControl>
-                                            ) : (
-                                                <Chip
-                                                    label={usuario.habilitado ? 'Activo' : 'Inactivo'}
-                                                    size="small"
-                                                    sx={{
-                                                        backgroundColor: usuario.habilitado ? '#DCFCE7' : '#F3F4F6',
-                                                        color: usuario.habilitado ? '#16A34A' : '#9CA3AF',
-                                                        fontWeight: 600, fontSize: '0.72rem',
-                                                        height: 22, borderRadius: 10, border: 'none',
-                                                    }}
-                                                />
-                                            )}
-                                        </TableCell>
+                                        <TableCell sx={{ py: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                             {tienePermiso(PERMISOS.INHABILITAR_USUARIO) ? (
+                                                  <Switch
+                                                      checked={usuario.habilitado}
+                                                      onChange={(e) => handleEstadoChange(usuario.idUsuario, e.target.checked ? 'Activo' : 'Inactivo')}
+                                                      size="small"
+                                                      sx={{ track: { backgroundColor: (usuario.habilitado ? '#10b981' : '#dc2626'), opacity: 1, '&:hover': { backgroundColor: (usuario.habilitado ? '#059669' : '#b91c1c') } }, thumb: { color: '#fff', width: 16, height: 16 } }}
+                                                      color="success"
+                                                  />
+                                             ) : (
+                                                 <Chip
+                                                     label={usuario.habilitado ? 'Activo' : 'Inactivo'}
+                                                     size="small"
+                                                     sx={{
+                                                         backgroundColor: usuario.habilitado ? '#DCFCE7' : '#F3F4F6',
+                                                         color: usuario.habilitado ? '#16A34A' : '#9CA3AF',
+                                                         fontWeight: 600, fontSize: '0.72rem',
+                                                         height: 22, borderRadius: 10, border: 'none',
+                                                     }}
+                                                 />
+                                             )}
+                                         </TableCell>
 
                                         <TableCell sx={{ py: 1.5 }}>
                                             <Box sx={{ display: 'flex', gap: 0.5 }}>
