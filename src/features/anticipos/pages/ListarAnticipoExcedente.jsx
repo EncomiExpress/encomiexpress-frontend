@@ -27,6 +27,8 @@ import ImageIcon from '@mui/icons-material/Image'
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile'
 import ZoomInIcon from '@mui/icons-material/ZoomIn'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
+import BlockOutlinedIcon from '@mui/icons-material/BlockOutlined'
+import BlockOutlinedIcon from '@mui/icons-material/BlockOutlined'
 import RegistrarAnticipoExcedente from './RegistrarAnticipoExcedente'
 import ActualizarAnticipoExcedente from './ActualizarAnticipoExcedente'
 
@@ -674,28 +676,37 @@ const ListarAnticipoExcedente = () => {
                                                 )}
                                             </TableCell>
 
-                                            {/* Acciones */}
-                                            <TableCell sx={{ py: 1.5 }}>
-                                                <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                                    {tienePermiso(PERMISOS.CONSULTAR_ANTICIPO) && (
-                                                        <Tooltip title="Ver detalle">
-                                                            <IconButton size="small" onClick={() => setAnticipoConsulta(anticipo)}
-                                                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}>
-                                                                <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
-                                                            </IconButton>
-                                                        </Tooltip>
-                                                    )}
-                                                    {tienePermiso(PERMISOS.ACTUALIZAR_ANTICIPO) && (
-                                                        <Tooltip title="Editar">
-                                                            <IconButton size="small"
-                                                                onClick={() => { setAnticipoEditar(anticipo); setModalActualizarOpen(true) }}
-                                                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}>
-                                                                <EditOutlinedIcon sx={{ fontSize: 18 }} />
-                                                            </IconButton>
-                                                        </Tooltip>
-                                                    )}
-                                                </Box>
-                                            </TableCell>
+                                             {/* Acciones */}
+                                             <TableCell sx={{ py: 1.5 }}>
+                                                 <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                                     {tienePermiso(PERMISOS.CONSULTAR_ANTICIPO) && (
+                                                         <Tooltip title="Ver detalle">
+                                                             <IconButton size="small" onClick={() => setAnticipoConsulta(anticipo)}
+                                                                 sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}>
+                                                                 <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
+                                                             </IconButton>
+                                                         </Tooltip>
+                                                     )}
+                                                     {tienePermiso(PERMISOS.ACTUALIZAR_ANTICIPO) && (
+                                                         <Tooltip title="Editar">
+                                                             <IconButton size="small"
+                                                                 onClick={() => { setAnticipoEditar(anticipo); setModalActualizarOpen(true) }}
+                                                                 sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}>
+                                                                 <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                                                             </IconButton>
+                                                         </Tooltip>
+                                                     )}
+                                                     {tienePermiso(PERMISOS.INHABILITAR_ANTICIPO) && (
+                                                         <Tooltip title={anticipo.habilitado !== false ? 'Inhabilitar' : 'Habilitar'}>
+                                                             <IconButton size="small"
+                                                                 onClick={() => toggleHabilitado(anticipo.idAnticipoExcedente)}
+                                                                 sx={{ color: anticipo.habilitado !== false ? '#ef4444' : '#10b981', '&:hover': { backgroundColor: theme.palette.primary.light } }}>
+                                                                 <BlockOutlinedIcon sx={{ fontSize: 18, color: anticipo.habilitado !== false ? '#ef4444' : '#10b981' }} />
+                                                             </IconButton>
+                                                         </Tooltip>
+                                                     )}
+                                                 </Box>
+                                             </TableCell>
                                         </TableRow>
                                     )
                                 })

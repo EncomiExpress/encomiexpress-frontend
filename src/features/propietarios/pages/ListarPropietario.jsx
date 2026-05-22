@@ -4,7 +4,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import {
     Box, Typography, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, Chip, IconButton,
-    TextField, InputAdornment, Select, MenuItem, FormControl,
+    TextField, InputAdornment, Select, MenuItem, FormControl, Switch,
     Snackbar, Alert, Tooltip, Button, Dialog, Avatar
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
@@ -18,6 +18,7 @@ import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined'
 import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined'
+import BlockOutlinedIcon from '@mui/icons-material/BlockOutlined'
 import { usePropietario } from '../../../shared/contexts/PropietarioContext'
 import { useAuth } from '../../../shared/contexts/AuthContext'
 import RegistrarPropietario from './RegistrarPropietario'
@@ -343,28 +344,37 @@ const ListarPropietario = () => {
                                                 </Select>
                                             </FormControl>
                                         </TableCell>
-                                        <TableCell sx={{ py: 1.5 }}>
-                                            <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                                <Tooltip title="Ver detalle">
-                                                    <IconButton
-                                                        size="small"
-                                                        onClick={() => setPropietarioVer(propietario)}
-                                                        sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
-                                                    >
-                                                        <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
-                                                    </IconButton>
-                                                </Tooltip>
-                                                <Tooltip title="Editar">
-                                                    <IconButton
-                                                        size="small"
-                                                        onClick={() => { setPropietarioEditar(propietario); setModalActualizarOpen(true) }}
-                                                        sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
-                                                    >
-                                                        <EditOutlinedIcon sx={{ fontSize: 18 }} />
-                                                    </IconButton>
-                                                </Tooltip>
-                                            </Box>
-                                        </TableCell>
+                                         <TableCell sx={{ py: 1.5 }}>
+                                             <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                                 <Tooltip title="Ver detalle">
+                                                     <IconButton
+                                                         size="small"
+                                                         onClick={() => setPropietarioVer(propietario)}
+                                                         sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
+                                                     >
+                                                         <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
+                                                     </IconButton>
+                                                 </Tooltip>
+                                                 <Tooltip title="Editar">
+                                                     <IconButton
+                                                         size="small"
+                                                         onClick={() => { setPropietarioEditar(propietario); setModalActualizarOpen(true) }}
+                                                         sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
+                                                     >
+                                                         <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                                                     </IconButton>
+                                                 </Tooltip>
+                                                 <Tooltip title={propietario.habilitado ? 'Inhabilitar' : 'Habilitar'}>
+                                                     <IconButton
+                                                         size="small"
+                                                         onClick={() => handleEstadoChange(propietario.idPropietario, !propietario.habilitado ? 'Activo' : 'Inactivo')}
+                                                         sx={{ color: propietario.habilitado ? '#ef4444' : '#10b981', '&:hover': { backgroundColor: theme.palette.primary.light } }}
+                                                     >
+                                                         <BlockOutlinedIcon sx={{ fontSize: 18, color: propietario.habilitado ? '#ef4444' : '#10b981' }} />
+                                                     </IconButton>
+                                                 </Tooltip>
+                                             </Box>
+                                         </TableCell>
                                     </TableRow>
                                 ))
                             )}

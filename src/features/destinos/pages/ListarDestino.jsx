@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import {
     Box, Typography, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, Chip, IconButton,
-    TextField, InputAdornment, Select, MenuItem, FormControl,
+    TextField, InputAdornment, Select, MenuItem, FormControl, Switch,
     Snackbar, Alert, Tooltip, Button, Dialog, Avatar
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
@@ -17,6 +17,7 @@ import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined'
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined'
+import BlockOutlinedIcon from '@mui/icons-material/BlockOutlined'
 import { useDestino } from '../../../shared/contexts/DestinoContext'
 import { useAuth } from '../../../shared/contexts/AuthContext'
 import RegistrarDestino from './RegistrarDestino'
@@ -317,32 +318,43 @@ const ListarDestino = () => {
                                                 </Select>
                                             </FormControl>
                                         </TableCell>
-                                        <TableCell sx={{ py: 1.5 }}>
-                                            <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                                {tienePermiso(PERMISOS.CONSULTAR_DESTINO) && (
-                                                    <Tooltip title="Ver detalle">
-                                                        <IconButton
-                                                            size="small"
-                                                            onClick={() => setDestinoVer(destino)}
-                                                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
-                                                        >
-                                                            <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
-                                                        </IconButton>
-                                                    </Tooltip>
-                                                )}
-                                                {tienePermiso(PERMISOS.ACTUALIZAR_DESTINO) && (
-                                                    <Tooltip title="Editar">
-                                                        <IconButton
-                                                            size="small"
-                                                            onClick={() => { setDestinoEditar(destino); setModalActualizarOpen(true) }}
-                                                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
-                                                        >
-                                                            <EditOutlinedIcon sx={{ fontSize: 18 }} />
-                                                        </IconButton>
-                                                    </Tooltip>
-                                                )}
-                                            </Box>
-                                        </TableCell>
+                                         <TableCell sx={{ py: 1.5 }}>
+                                             <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                                 {tienePermiso(PERMISOS.CONSULTAR_DESTINO) && (
+                                                     <Tooltip title="Ver detalle">
+                                                         <IconButton
+                                                             size="small"
+                                                             onClick={() => setDestinoVer(destino)}
+                                                             sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
+                                                         >
+                                                             <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
+                                                         </IconButton>
+                                                     </Tooltip>
+                                                 )}
+                                                 {tienePermiso(PERMISOS.ACTUALIZAR_DESTINO) && (
+                                                     <Tooltip title="Editar">
+                                                         <IconButton
+                                                             size="small"
+                                                             onClick={() => { setDestinoEditar(destino); setModalActualizarOpen(true) }}
+                                                             sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
+                                                         >
+                                                             <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                                                         </IconButton>
+                                                     </Tooltip>
+                                                 )}
+                                                 {tienePermiso(PERMISOS.INHABILITAR_DESTINO) && (
+                                                     <Tooltip title={destino.habilitado ? 'Inhabilitar' : 'Habilitar'}>
+                                                         <IconButton
+                                                             size="small"
+                                                             onClick={() => handleEstadoChange(destino.idDestino, !destino.habilitado ? 'Activo' : 'Inactivo')}
+                                                             sx={{ color: destino.habilitado ? '#ef4444' : '#10b981', '&:hover': { backgroundColor: theme.palette.primary.light } }}
+                                                         >
+                                                             <BlockOutlinedIcon sx={{ fontSize: 18, color: destino.habilitado ? '#ef4444' : '#10b981' }} />
+                                                         </IconButton>
+                                                     </Tooltip>
+                                                 )}
+                                             </Box>
+                                         </TableCell>
                                     </TableRow>
                                 ))
                             )}

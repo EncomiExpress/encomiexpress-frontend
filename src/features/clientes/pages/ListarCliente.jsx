@@ -8,7 +8,7 @@ import {
     IconButton, Chip, Tooltip, InputAdornment,
     Button, Dialog, DialogTitle, DialogContent,
     DialogActions, Avatar, Select, MenuItem, Pagination, Snackbar, Alert,
-    CircularProgress, FormControl
+    CircularProgress, FormControl, Switch
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
@@ -20,6 +20,7 @@ import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import ClearIcon from '@mui/icons-material/Clear'
+import BlockOutlinedIcon from '@mui/icons-material/BlockOutlined' // Ícono para inhabilitar
 import RegistrarCliente from './RegistrarCliente'
 import ActualizarCliente from './ActualizarCliente'
 
@@ -510,33 +511,44 @@ const ListarCliente = () => {
                                             )}
                                         </TableCell>
 
-                                        {/* Acciones */}
-                                        <TableCell sx={{ py: 1.5 }}>
-                                            <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                                {tienePermiso(PERMISOS.CONSULTAR_CLIENTE) && (
-                                                    <Tooltip title="Ver detalle">
-                                                        <IconButton
-                                                            size="small"
-                                                            onClick={() => setClienteConsulta(cliente)}
-                                                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
-                                                        >
-                                                            <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
-                                                        </IconButton>
-                                                    </Tooltip>
-                                                )}
-                                                {tienePermiso(PERMISOS.ACTUALIZAR_CLIENTE) && (
-                                                    <Tooltip title="Editar">
-                                                        <IconButton
-                                                            size="small"
-                                                            onClick={() => { setClienteEditar(cliente); setModalActualizarOpen(true) }}
-                                                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
-                                                        >
-                                                            <EditOutlinedIcon sx={{ fontSize: 18 }} />
-                                                        </IconButton>
-                                                    </Tooltip>
-                                                )}
-                                            </Box>
-                                        </TableCell>
+                                         {/* Acciones */}
+                                         <TableCell sx={{ py: 1.5 }}>
+                                             <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                                 {tienePermiso(PERMISOS.CONSULTAR_CLIENTE) && (
+                                                     <Tooltip title="Ver detalle">
+                                                         <IconButton
+                                                             size="small"
+                                                             onClick={() => setClienteConsulta(cliente)}
+                                                             sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
+                                                         >
+                                                             <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
+                                                         </IconButton>
+                                                     </Tooltip>
+                                                 )}
+                                                 {tienePermiso(PERMISOS.ACTUALIZAR_CLIENTE) && (
+                                                     <Tooltip title="Editar">
+                                                         <IconButton
+                                                             size="small"
+                                                             onClick={() => { setClienteEditar(cliente); setModalActualizarOpen(true) }}
+                                                             sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
+                                                         >
+                                                             <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                                                         </IconButton>
+                                                     </Tooltip>
+                                                 )}
+                                                 {tienePermiso(PERMISOS.INHABILITAR_CLIENTE) && (
+                                                     <Tooltip title={cliente.habilitado ? 'Inhabilitar' : 'Habilitar'}>
+                                                         <IconButton
+                                                             size="small"
+                                                             onClick={() => handleEstadoChange(cliente.idCliente, !cliente.habilitado ? 'Activo' : 'Inactivo')}
+                                                             sx={{ color: cliente.habilitado ? '#ef4444' : '#10b981', '&:hover': { backgroundColor: theme.palette.primary.light } }}
+                                                         >
+                                                             <BlockOutlinedIcon sx={{ fontSize: 18, color: cliente.habilitado ? '#ef4444' : '#10b981' }} />
+                                                         </IconButton>
+                                                     </Tooltip>
+                                                 )}
+                                             </Box>
+                                         </TableCell>
                                     </TableRow>
                                 ))
                             )}

@@ -18,6 +18,7 @@ import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
 import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
 import EventOutlinedIcon from '@mui/icons-material/EventOutlined'
+import BlockOutlinedIcon from '@mui/icons-material/BlockOutlined'
 import { useConductor } from '../../../shared/contexts/ConductorContext'
 import { useAuth } from '../../../shared/contexts/AuthContext'
 import RegistrarConductor from './RegistrarConductor'
@@ -362,32 +363,43 @@ const ListarConductor = () => {
                                                 </Select>
                                             </FormControl>
                                         </TableCell>
-                                        <TableCell sx={{ py: 1.5 }}>
-                                            <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                                {tienePermiso(PERMISOS.CONSULTAR_CONDUCTOR) && (
-                                                    <Tooltip title="Ver detalle">
-                                                        <IconButton
-                                                            size="small"
-                                                            onClick={() => setConductorVer(conductor)}
-                                                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
-                                                        >
-                                                            <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
-                                                        </IconButton>
-                                                    </Tooltip>
-                                                )}
-                                                {tienePermiso(PERMISOS.ACTUALIZAR_CONDUCTOR) && (
-                                                    <Tooltip title="Editar">
-                                                        <IconButton
-                                                            size="small"
-                                                            onClick={() => { setConductorEditar(conductor); setModalActualizarOpen(true) }}
-                                                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
-                                                        >
-                                                            <EditOutlinedIcon sx={{ fontSize: 18 }} />
-                                                        </IconButton>
-                                                    </Tooltip>
-                                                )}
-                                            </Box>
-                                        </TableCell>
+                                         <TableCell sx={{ py: 1.5 }}>
+                                             <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                                 {tienePermiso(PERMISOS.CONSULTAR_CONDUCTOR) && (
+                                                     <Tooltip title="Ver detalle">
+                                                         <IconButton
+                                                             size="small"
+                                                             onClick={() => setConductorVer(conductor)}
+                                                             sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
+                                                         >
+                                                             <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
+                                                         </IconButton>
+                                                     </Tooltip>
+                                                 )}
+                                                 {tienePermiso(PERMISOS.ACTUALIZAR_CONDUCTOR) && (
+                                                     <Tooltip title="Editar">
+                                                         <IconButton
+                                                             size="small"
+                                                             onClick={() => { setConductorEditar(conductor); setModalActualizarOpen(true) }}
+                                                             sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
+                                                         >
+                                                             <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                                                         </IconButton>
+                                                     </Tooltip>
+                                                 )}
+                                                 {tienePermiso(PERMISOS.INHABILITAR_CONDUCTOR) && (
+                                                     <Tooltip title={conductor.habilitado ? 'Inhabilitar' : 'Habilitar'}>
+                                                         <IconButton
+                                                             size="small"
+                                                             onClick={() => handleEstadoChange(conductor.idConductor, !conductor.habilitado ? 'Activo' : 'Inactivo')}
+                                                             sx={{ color: conductor.habilitado ? '#ef4444' : '#10b981', '&:hover': { backgroundColor: theme.palette.primary.light } }}
+                                                         >
+                                                             <BlockOutlinedIcon sx={{ fontSize: 18, color: conductor.habilitado ? '#ef4444' : '#10b981' }} />
+                                                         </IconButton>
+                                                     </Tooltip>
+                                                 )}
+                                             </Box>
+                                         </TableCell>
                                     </TableRow>
                                 ))
                             )}

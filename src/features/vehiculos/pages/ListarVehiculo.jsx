@@ -16,6 +16,7 @@ import ClearIcon from '@mui/icons-material/Clear'
 import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
 import SpeedOutlinedIcon from '@mui/icons-material/SpeedOutlined'
 import EventOutlinedIcon from '@mui/icons-material/EventOutlined'
+import BlockOutlinedIcon from '@mui/icons-material/BlockOutlined'
 import { useTransporte } from '../../../shared/contexts/TransporteContext'
 import { useAuth } from '../../../shared/contexts/AuthContext'
 import RegistrarVehiculo from './RegistrarVehiculo'
@@ -344,32 +345,43 @@ const ListarTransporte = () => {
                                                 sx={{ fontSize: '0.7rem' }}
                                             />
                                         </TableCell>
-                                        <TableCell sx={{ py: 1.5 }}>
-                                            <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                                {tienePermiso(PERMISOS.CONSULTAR_VEHICULO) && (
-                                                    <Tooltip title="Ver detalle">
-                                                        <IconButton
-                                                            size="small"
-                                                            onClick={() => setVehiculoVer(transporte)}
-                                                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
-                                                        >
-                                                            <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
-                                                        </IconButton>
-                                                    </Tooltip>
-                                                )}
-                                                {tienePermiso(PERMISOS.ACTUALIZAR_VEHICULO) && (
-                                                    <Tooltip title="Editar">
-                                                        <IconButton
-                                                            size="small"
-                                                            onClick={() => { setVehiculoEditar(transporte); setModalActualizarOpen(true) }}
-                                                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
-                                                        >
-                                                            <EditOutlinedIcon sx={{ fontSize: 18 }} />
-                                                        </IconButton>
-                                                    </Tooltip>
-                                                )}
-                                            </Box>
-                                        </TableCell>
+                                         <TableCell sx={{ py: 1.5 }}>
+                                             <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                                 {tienePermiso(PERMISOS.CONSULTAR_VEHICULO) && (
+                                                     <Tooltip title="Ver detalle">
+                                                         <IconButton
+                                                             size="small"
+                                                             onClick={() => setVehiculoVer(transporte)}
+                                                             sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
+                                                         >
+                                                             <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
+                                                         </IconButton>
+                                                     </Tooltip>
+                                                 )}
+                                                 {tienePermiso(PERMISOS.ACTUALIZAR_VEHICULO) && (
+                                                     <Tooltip title="Editar">
+                                                         <IconButton
+                                                             size="small"
+                                                             onClick={() => { setVehiculoEditar(transporte); setModalActualizarOpen(true) }}
+                                                             sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
+                                                         >
+                                                             <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                                                         </IconButton>
+                                                     </Tooltip>
+                                                 )}
+                                                 {tienePermiso(PERMISOS.INHABILITAR_VEHICULO) && (
+                                                     <Tooltip title={transporte.habilitado ? 'Inhabilitar' : 'Habilitar'}>
+                                                         <IconButton
+                                                             size="small"
+                                                             onClick={() => handleEstadoChange(transporte.idVehiculo, !transporte.habilitado ? 'Activo' : 'Inactivo')}
+                                                             sx={{ color: transporte.habilitado ? '#ef4444' : '#10b981', '&:hover': { backgroundColor: theme.palette.primary.light } }}
+                                                         >
+                                                             <BlockOutlinedIcon sx={{ fontSize: 18, color: transporte.habilitado ? '#ef4444' : '#10b981' }} />
+                                                         </IconButton>
+                                                     </Tooltip>
+                                                 )}
+                                             </Box>
+                                         </TableCell>
                                     </TableRow>
                                 ))
                             )}

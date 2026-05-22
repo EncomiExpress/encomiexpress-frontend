@@ -18,6 +18,7 @@ import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
+import BlockOutlinedIcon from '@mui/icons-material/BlockOutlined'
 import ClearIcon from '@mui/icons-material/Clear'
 import RegistrarUsuario from './RegistrarUsuario'
 import ActualizarUsuario from './ActualizarUsuario'
@@ -516,32 +517,43 @@ const ListarUsuario = () => {
                                              )}
                                          </TableCell>
 
-                                        <TableCell sx={{ py: 1.5 }}>
-                                            <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                                {tienePermiso(PERMISOS.CONSULTAR_USUARIO) && (
-                                                    <Tooltip title="Ver detalle">
-                                                        <IconButton
-                                                            size="small"
-                                                            onClick={() => setUsuarioConsulta(usuario)}
-                                                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
-                                                        >
-                                                            <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
-                                                        </IconButton>
-                                                    </Tooltip>
-                                                )}
-                                                {tienePermiso(PERMISOS.ACTUALIZAR_USUARIO) && (
-                                                    <Tooltip title="Editar">
-                                                        <IconButton
-                                                            size="small"
-                                                            onClick={() => { setUsuarioEditar(usuario); setModalActualizarOpen(true) }}
-                                                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
-                                                        >
-                                                            <EditOutlinedIcon sx={{ fontSize: 18 }} />
-                                                        </IconButton>
-                                                    </Tooltip>
-                                                )}
-                                            </Box>
-                                        </TableCell>
+                                         <TableCell sx={{ py: 1.5 }}>
+                                             <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                                 {tienePermiso(PERMISOS.CONSULTAR_USUARIO) && (
+                                                     <Tooltip title="Ver detalle">
+                                                         <IconButton
+                                                             size="small"
+                                                             onClick={() => setUsuarioConsulta(usuario)}
+                                                             sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
+                                                         >
+                                                             <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
+                                                         </IconButton>
+                                                     </Tooltip>
+                                                 )}
+                                                 {tienePermiso(PERMISOS.ACTUALIZAR_USUARIO) && (
+                                                     <Tooltip title="Editar">
+                                                         <IconButton
+                                                             size="small"
+                                                             onClick={() => { setUsuarioEditar(usuario); setModalActualizarOpen(true) }}
+                                                             sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
+                                                         >
+                                                             <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                                                         </IconButton>
+                                                     </Tooltip>
+                                                 )}
+                                                 {tienePermiso(PERMISOS.INHABILITAR_USUARIO) && (
+                                                     <Tooltip title={usuario.habilitado ? 'Inhabilitar' : 'Habilitar'}>
+                                                         <IconButton
+                                                             size="small"
+                                                             onClick={() => handleEstadoChange(usuario.idUsuario, !usuario.habilitado ? 'Activo' : 'Inactivo')}
+                                                             sx={{ color: usuario.habilitado ? '#ef4444' : '#10b981', '&:hover': { backgroundColor: theme.palette.primary.light } }}
+                                                         >
+                                                             <BlockOutlinedIcon sx={{ fontSize: 18, color: usuario.habilitado ? '#ef4444' : '#10b981' }} />
+                                                         </IconButton>
+                                                     </Tooltip>
+                                                 )}
+                                             </Box>
+                                         </TableCell>
                                     </TableRow>
                                 ))
                             )}
