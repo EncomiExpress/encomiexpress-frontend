@@ -1,6 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { Box } from '@mui/material'
-import Layout from './shared/components/Layout.jsx'
 import LayoutAdmin from './shared/components/LayoutAdmin.jsx'
 import { useAuth } from './shared/contexts/AuthContext.jsx'
 import { PERMISOS } from './shared/contexts/AuthContext.jsx'
@@ -13,7 +12,7 @@ import Login from './features/auth/pages/Login.jsx'
 import Register from './features/auth/pages/Register.jsx'
 
 // Dashboard
-import Dashboard from './features/dashboard/pages/Dashboard.jsx'
+import Dashboard from './features/dashboard/Dashboard.jsx'
 
 // Cliente
 import RegistrarCliente from './features/clientes/pages/RegistrarCliente.jsx'
@@ -96,8 +95,8 @@ const PrivateRoute = ({ children, permisosRequeridos = [] }) => {
 const AppRoutes = () => {
   return (
     <Routes>
-      {/* Ruta raíz con layout público (Home) */}
-      <Route path="/" element={<Layout><Home /></Layout>} />
+      {/* Ruta raíz con Home directamente */}
+      <Route path="/" element={<Home />} />
 
       {/* Login y Register sin layout público */}
       <Route path="/login" element={<Login />} />

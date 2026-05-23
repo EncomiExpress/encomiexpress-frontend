@@ -28,7 +28,6 @@ import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile'
 import ZoomInIcon from '@mui/icons-material/ZoomIn'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import BlockOutlinedIcon from '@mui/icons-material/BlockOutlined'
-import BlockOutlinedIcon from '@mui/icons-material/BlockOutlined'
 import RegistrarAnticipoExcedente from './RegistrarAnticipoExcedente'
 import ActualizarAnticipoExcedente from './ActualizarAnticipoExcedente'
 
