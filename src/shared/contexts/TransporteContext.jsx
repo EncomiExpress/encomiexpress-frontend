@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback } from 'react'
 import * as vehiculoService from '../services/vehiculoService'
+import { useAuth } from './AuthContext'
 
 const TransporteContext = createContext()
 
@@ -8,59 +9,27 @@ export const useTransporte = () => useContext(TransporteContext)
 // Mock data para vehículos
 let transportesMock = [
   { 
-    idVehiculo: 1, 
-    idConductor: 4, 
-    idPropietario: 6, 
-    placa: 'ABC-123', 
-    marca: 'Toyota', 
-    modelo: 'Hilux', 
-    color: 'Blanco', 
-    tipo: 'Camioneta', 
-    capacidad: 1500, 
-    estado: 'Activo', 
-    habilitado: true, 
-    fechaRegistro: '2024-01-15', 
-    vencimientoSOAT: '2025-06-20', 
-    vencimientoRevisionTecnica: '2025-08-15', 
-    vencimientoSeguroTerceros: '2025-12-01' 
+    idVehiculo: 1, idConductor: 4, idPropietario: 6, placa: 'ABC-123',
+    marca: 'Toyota', modelo: 'Hilux', color: 'Blanco', tipo: 'Camioneta',
+    capacidad: 1500, estado: 'Activo', habilitado: true, fechaRegistro: '2024-01-15',
+    vencimientoSOAT: '2025-06-20', vencimientoRevisionTecnica: '2025-08-15', vencimientoSeguroTerceros: '2025-12-01'
   },
   { 
-    idVehiculo: 2, 
-    idConductor: 7, 
-    idPropietario: 8, 
-    placa: 'XYZ-789', 
-    marca: 'Ford', 
-    modelo: 'Ranger', 
-    color: 'Negro', 
-    tipo: 'Camioneta', 
-    capacidad: 1200, 
-    estado: 'Activo', 
-    habilitado: true, 
-    fechaRegistro: '2024-02-20', 
-    vencimientoSOAT: '2025-07-10', 
-    vencimientoRevisionTecnica: '2025-09-01', 
-    vencimientoSeguroTerceros: '2025-11-15' 
+    idVehiculo: 2, idConductor: 7, idPropietario: 8, placa: 'XYZ-789',
+    marca: 'Ford', modelo: 'Ranger', color: 'Negro', tipo: 'Camioneta',
+    capacidad: 1200, estado: 'Activo', habilitado: true, fechaRegistro: '2024-02-20',
+    vencimientoSOAT: '2025-07-10', vencimientoRevisionTecnica: '2025-09-01', vencimientoSeguroTerceros: '2025-11-15'
   },
   { 
-    idVehiculo: 3, 
-    idConductor: 9, 
-    idPropietario: 10, 
-    placa: 'DEF-456', 
-    marca: 'Nissan', 
-    modelo: 'Navara', 
-    color: 'Gris', 
-    tipo: 'Camioneta', 
-    capacidad: 1100, 
-    estado: 'Mantenimiento', 
-    habilitado: true, 
-    fechaRegistro: '2024-03-10', 
-    vencimientoSOAT: '2025-05-25', 
-    vencimientoRevisionTecnica: '2025-07-20', 
-    vencimientoSeguroTerceros: '2025-10-30' 
+    idVehiculo: 3, idConductor: 9, idPropietario: 10, placa: 'DEF-456',
+    marca: 'Nissan', modelo: 'Navara', color: 'Gris', tipo: 'Camioneta',
+    capacidad: 1100, estado: 'Mantenimiento', habilitado: true, fechaRegistro: '2024-03-10',
+    vencimientoSOAT: '2025-05-25', vencimientoRevisionTecnica: '2025-07-20', vencimientoSeguroTerceros: '2025-10-30'
   },
 ]
 
 export const TransporteProvider = ({ children }) => {
+  const { token } = useAuth()
   const [transportes, setTransportes] = useState(transportesMock)
 
   // Obtener todos los transportes
@@ -92,8 +61,6 @@ export const TransporteProvider = ({ children }) => {
 
   // Habilitar/Inhabilitar transporte (intenta backend y notifica a propietarios)
   const toggleHabilitado = useCallback(async (id) => {
-    // Primero intentar llamada al backend si hay token
-    const token = localStorage.getItem('token')
     if (token) {
       try {
         const res = await vehiculoService.toggleHabilitadoVehiculo(id)
@@ -119,11 +86,7 @@ export const TransporteProvider = ({ children }) => {
       const index = prevTransportes.findIndex(t => t.idVehiculo === id)
       if (index !== -1) {
         const updated = [...prevTransportes]
-        updated[index] = { 
-          ...updated[index], 
-          habilitado: !updated[index].habilitado 
-        }
-        // Notificar a propietarios localmente
+        updated[index] = { ...updated[index], habilitado: !updated[index].habilitado }
         try {
           window.dispatchEvent(new CustomEvent('vehiculo:toggled', { detail: { idPropietario: updated[index].idPropietario } }))
         } catch (e) {
@@ -134,7 +97,7 @@ export const TransporteProvider = ({ children }) => {
       return prevTransportes
     })
     return true
-  }, [])
+  }, [token])
 
   // Actualizar estado del transporte (Activo, Inactivo, Mantenimiento, En Reparación)
   const updateEstado = useCallback((id, nuevoEstado) => {
@@ -142,10 +105,7 @@ export const TransporteProvider = ({ children }) => {
       const index = prevTransportes.findIndex(t => t.idVehiculo === id)
       if (index !== -1) {
         const updated = [...prevTransportes]
-        updated[index] = { 
-          ...updated[index], 
-          estado: nuevoEstado 
-        }
+        updated[index] = { ...updated[index], estado: nuevoEstado }
         return updated
       }
       return prevTransportes
@@ -174,16 +134,10 @@ export const TransporteProvider = ({ children }) => {
 
   return (
     <TransporteContext.Provider value={{
-      getTransportes,
-      getTransporteById,
-      registrarTransporte,
-      actualizarTransporte,
-      toggleHabilitado,
-      updateEstado,
-      getTransportesHabilitados,
+      getTransportes, getTransporteById, registrarTransporte,
+      actualizarTransporte, toggleHabilitado, updateEstado, getTransportesHabilitados,
     }}>
       {children}
     </TransporteContext.Provider>
   )
 }
-

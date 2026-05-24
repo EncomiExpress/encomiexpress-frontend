@@ -22,7 +22,7 @@ export const MODULOS = {
   RUTAS: { nombre: 'Rutas', permisos: ['listar_ruta', 'registrar_ruta', 'consultar_ruta', 'actualizar_ruta'] },
   RUTAS_PROGRAMACION: { nombre: 'Rutas Programación', permisos: ['listar_ruta_programacion', 'registrar_ruta_programacion', 'consultar_ruta_programacion', 'actualizar_ruta_programacion'] },
   ANTICIPOS: { nombre: 'Anticipos', permisos: ['listar_anticipo', 'registrar_anticipo', 'consultar_anticipo', 'actualizar_anticipo'] },
-  VENTAS: { nombre: 'Ventas', permisos: ['listar_venta', 'registrar_venta', 'consultar_venta', 'actualizar_venta'] },
+  VENTAS: { nombre: 'Ventas', permisos: ['listar_encomienda', 'registrar_encomienda', 'consultar_encomienda', 'actualizar_encomienda'] },
   ENCOMIENDAS: { nombre: 'Encomiendas', permisos: ['listar_encomienda', 'registrar_encomienda', 'consultar_encomienda', 'actualizar_encomienda'] },
   TRANSPORTE: { nombre: 'Transporte', permisos: ['gestion_transporte'] },
 }
@@ -52,10 +52,10 @@ export const PERMISOS = {
   ACTUALIZAR_VEHICULO: 'actualizar_vehiculo',
   CONSULTAR_VEHICULO: 'consultar_vehiculo',
   GESTION_TRANSPORTE: 'gestion_transporte',
-  LISTAR_VENTA: 'listar_venta',
-  REGISTRAR_VENTA: 'registrar_venta',
-  ACTUALIZAR_VENTA: 'actualizar_venta',
-  CONSULTAR_VENTA: 'consultar_venta',
+  LISTAR_VENTA: 'listar_encomienda',
+  REGISTRAR_VENTA: 'registrar_encomienda',
+  ACTUALIZAR_VENTA: 'actualizar_encomienda',
+  CONSULTAR_VENTA: 'consultar_encomienda',
   LISTAR_ENCOMIENDA: 'listar_encomienda',
   REGISTRAR_ENCOMIENDA: 'registrar_encomienda',
   ACTUALIZAR_ENCOMIENDA: 'actualizar_encomienda',
@@ -80,15 +80,19 @@ export const PERMISOS = {
 
 export const AuthProvider = ({ children }) => {
   const [usuario, setUsuario] = useState(null)
+  const [token, setToken] = useState(null)
   const [loading, setLoading] = useState(true)
 
   // Al iniciar, restaurar sesión desde localStorage
   useEffect(() => {
-    const token = localStorage.getItem('token')
+    const tokenGuardado = localStorage.getItem('token')
     const usuarioGuardado = localStorage.getItem('usuario')
-    if (token && usuarioGuardado) {
+
+    if (tokenGuardado && usuarioGuardado) {
+      setToken(tokenGuardado)
       setUsuario(JSON.parse(usuarioGuardado))
     }
+
     setLoading(false)
   }, [])
 
@@ -103,18 +107,23 @@ export const AuthProvider = ({ children }) => {
       const data = await res.json()
 
       if (!res.ok || !data.success) {
-        return { success: false, mensaje: data.message || 'Correo o contraseña incorrecta' }
+        return { success: false, mensaje: data.message || 'Credenciales inválidas' }
       }
 
-      const { token, usuario } = data.data
+      const { token: tokenNuevo, usuario } = data.data
 
-      // Normalizar rol: backend devuelve string, frontend espera objeto { nombre }
+      // Normalizar rol: el backend puede devolver string u objeto { nombre, idRol }
+      const rolNombre = typeof usuario.rol === 'string'
+        ? usuario.rol
+        : usuario.rol?.nombre || null
+
       const usuarioNormalizado = {
         ...usuario,
-        rol: usuario.rol ? { nombre: usuario.rol } : null
+        rol: rolNombre ? { nombre: rolNombre } : null
       }
 
-      localStorage.setItem('token', token)
+      setToken(tokenNuevo)
+      localStorage.setItem('token', tokenNuevo)
       localStorage.setItem('usuario', JSON.stringify(usuarioNormalizado))
       setUsuario(usuarioNormalizado)
 
@@ -126,6 +135,7 @@ export const AuthProvider = ({ children }) => {
   }
 
   const logout = () => {
+    setToken(null)
     localStorage.removeItem('token')
     localStorage.removeItem('usuario')
     setUsuario(null)
@@ -142,9 +152,9 @@ export const AuthProvider = ({ children }) => {
 
   const registrarUsuario = async (usuarioData) => {
     try {
-      const res = await fetch(`${API_URL}/auth/register`, {
+      const res = await fetch(`${API_URL}/usuarios`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(usuarioData)
       })
       const data = await res.json()
@@ -159,7 +169,6 @@ export const AuthProvider = ({ children }) => {
   // Backend real
   const getUsuarios = async () => {
     try {
-      const token = localStorage.getItem('token')
       const res = await fetch(`${API_URL}/usuarios`, {
         headers: { Authorization: `Bearer ${token}` }
       })
@@ -172,7 +181,6 @@ export const AuthProvider = ({ children }) => {
 
   const getRolesBackend = async () => {
     try {
-      const token = localStorage.getItem('token')
       const res = await fetch(`${API_URL}/roles`, {
         headers: { Authorization: `Bearer ${token}` }
       })
@@ -190,7 +198,6 @@ export const AuthProvider = ({ children }) => {
 
   const getPermisosBackend = async () => {
     try {
-      const token = localStorage.getItem('token')
       const res = await fetch(`${API_URL}/permisos`, {
         headers: { Authorization: `Bearer ${token}` }
       })
@@ -203,7 +210,6 @@ export const AuthProvider = ({ children }) => {
 
   const registrarRol = async (nombre, permisos) => {
     try {
-      const token = localStorage.getItem('token')
       const res = await fetch(`${API_URL}/roles`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -218,7 +224,6 @@ export const AuthProvider = ({ children }) => {
 
   const actualizarRolBackend = async (id, nombre, permisos) => {
     try {
-      const token = localStorage.getItem('token')
       const res = await fetch(`${API_URL}/roles/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -233,7 +238,6 @@ export const AuthProvider = ({ children }) => {
 
   const eliminarRolBackend = async (id) => {
     try {
-      const token = localStorage.getItem('token')
       const res = await fetch(`${API_URL}/roles/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
@@ -247,7 +251,6 @@ export const AuthProvider = ({ children }) => {
 
   const actualizarUsuario = async (id, usuarioData) => {
     try {
-      const token = localStorage.getItem('token')
       const res = await fetch(`${API_URL}/usuarios/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -262,7 +265,6 @@ export const AuthProvider = ({ children }) => {
 
   const habilitarInhabilitarUsuario = async (id) => {
     try {
-      const token = localStorage.getItem('token')
       const res = await fetch(`${API_URL}/usuarios/${id}/toggle-habilitado`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` }
@@ -277,6 +279,7 @@ export const AuthProvider = ({ children }) => {
   return (
     <AuthContext.Provider value={{
       usuario,
+      token,
       loading,
       login,
       logout,
@@ -301,4 +304,3 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   )
 }
-

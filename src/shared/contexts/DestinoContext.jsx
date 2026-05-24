@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback } from 'react'
+import { useAuth } from './AuthContext'
 
 const DestinoContext = createContext()
 
@@ -7,56 +8,29 @@ export const useDestino = () => useContext(DestinoContext)
 // Mock data inicial para destinos
 const destinosMock = [
   { 
-    idDestino: 1, 
-    nombre: 'Terminal de Medellín', 
-    direccion: 'Cra 50 #30-25',
-    ciudad: 'Medellín',
-    departamento: 'Antioquia',
-    telefono: '6041234567',
-    contacto: 'Juan Pérez',
-    estado: 'Activo',
-    habilitado: true,
-    fechaRegistro: '2024-01-15'
+    idDestino: 1, nombre: 'Terminal de Medellín', direccion: 'Cra 50 #30-25',
+    ciudad: 'Medellín', departamento: 'Antioquia', telefono: '6041234567',
+    contacto: 'Juan Pérez', estado: 'Activo', habilitado: true, fechaRegistro: '2024-01-15'
   },
   { 
-    idDestino: 2, 
-    nombre: 'Terminal de Bogotá', 
-    direccion: 'Av El Dorado #100-10',
-    ciudad: 'Bogotá',
-    departamento: 'Cundinamarca',
-    telefono: '6017894561',
-    contacto: 'María López',
-    estado: 'Activo',
-    habilitado: true,
-    fechaRegistro: '2024-02-20'
+    idDestino: 2, nombre: 'Terminal de Bogotá', direccion: 'Av El Dorado #100-10',
+    ciudad: 'Bogotá', departamento: 'Cundinamarca', telefono: '6017894561',
+    contacto: 'María López', estado: 'Activo', habilitado: true, fechaRegistro: '2024-02-20'
   },
   { 
-    idDestino: 3, 
-    nombre: 'Punto Cali Norte', 
-    direccion: 'Cll 5 #50-30',
-    ciudad: 'Cali',
-    departamento: 'Valle del Cauca',
-    telefono: '6023456789',
-    contacto: 'Carlos Rodríguez',
-    estado: 'Activo',
-    habilitado: true,
-    fechaRegistro: '2024-03-10'
+    idDestino: 3, nombre: 'Punto Cali Norte', direccion: 'Cll 5 #50-30',
+    ciudad: 'Cali', departamento: 'Valle del Cauca', telefono: '6023456789',
+    contacto: 'Carlos Rodríguez', estado: 'Activo', habilitado: true, fechaRegistro: '2024-03-10'
   },
   { 
-    idDestino: 4, 
-    nombre: 'Oficina Barranquilla', 
-    direccion: 'Cra 50 #70-20',
-    ciudad: 'Barranquilla',
-    departamento: 'Atlántico',
-    telefono: '6054567890',
-    contacto: 'Ana Martínez',
-    estado: 'Inactivo',
-    habilitado: false,
-    fechaRegistro: '2024-04-05'
+    idDestino: 4, nombre: 'Oficina Barranquilla', direccion: 'Cra 50 #70-20',
+    ciudad: 'Barranquilla', departamento: 'Atlántico', telefono: '6054567890',
+    contacto: 'Ana Martínez', estado: 'Inactivo', habilitado: false, fechaRegistro: '2024-04-05'
   },
 ]
 
 export const DestinoProvider = ({ children }) => {
+  const { token } = useAuth()
   const [destinos, setDestinos] = useState(destinosMock)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -106,7 +80,6 @@ export const DestinoProvider = ({ children }) => {
 
   // Habilitar/Inhabilitar destino
   const toggleHabilitado = useCallback(async (id) => {
-    const token = localStorage.getItem('token')
     if (token) {
       try {
         const destinoService = await import('../services/destinoService')
@@ -135,7 +108,7 @@ export const DestinoProvider = ({ children }) => {
       return true
     }
     return false
-  }, [destinos])
+  }, [destinos, token])
 
   // Cambiar estado del destino
   const updateEstado = useCallback((id, nuevoEstado) => {
@@ -143,10 +116,7 @@ export const DestinoProvider = ({ children }) => {
     if (index !== -1) {
       setDestinos(prev => {
         const newDestinos = [...prev]
-        newDestinos[index] = { 
-          ...newDestinos[index], 
-          estado: nuevoEstado
-        }
+        newDestinos[index] = { ...newDestinos[index], estado: nuevoEstado }
         return newDestinos
       })
       return true
@@ -155,16 +125,9 @@ export const DestinoProvider = ({ children }) => {
   }, [destinos])
 
   const value = {
-    destinos,
-    loading,
-    error,
-    getDestinos,
-    getDestinoById,
-    getDestinosHabilitados,
-    registrarDestino,
-    actualizarDestino,
-    toggleHabilitado,
-    updateEstado
+    destinos, loading, error,
+    getDestinos, getDestinoById, getDestinosHabilitados,
+    registrarDestino, actualizarDestino, toggleHabilitado, updateEstado
   }
 
   return (
@@ -173,4 +136,3 @@ export const DestinoProvider = ({ children }) => {
     </DestinoContext.Provider>
   )
 }
-

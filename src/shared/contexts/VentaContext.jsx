@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import * as ventaService from '../services/ventaService'
+import { useAuth } from './AuthContext'
 
 const VentaContext = createContext()
 
@@ -29,21 +30,21 @@ const normalize = (e) => ({
 })
 
 export const VentaProvider = ({ children }) => {
+  const { token } = useAuth()
   const [ventas, setVentas] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    const token = localStorage.getItem('token')
     if (!token) {
-        setLoading(false)
-        return
+      setLoading(false)
+      return
     }
     ventaService.getEncomiendas()
-        .then(res => setVentas(res.data.map(normalize)))
-        .catch(err => setError(err.message))
-        .finally(() => setLoading(false))
-}, [])
+      .then(res => setVentas(res.data.map(normalize)))
+      .catch(err => setError(err.message))
+      .finally(() => setLoading(false))
+  }, [token])
 
   const agregarVenta = async (datos) => {
     const res = await ventaService.createEncomienda(datos)
@@ -74,16 +75,9 @@ export const VentaProvider = ({ children }) => {
 
   return (
     <VentaContext.Provider value={{
-      ventas,
-      loading,
-      error,
-      agregarVenta,
-      actualizarVenta,
-      cambiarEstadoVenta,
-      invalidateVenta,
-      ESTADOS_ENCOMIENDA,
-      METODOS_PAGO,
-      ESTADOS_PAGO
+      ventas, loading, error,
+      agregarVenta, actualizarVenta, cambiarEstadoVenta, invalidateVenta,
+      ESTADOS_ENCOMIENDA, METODOS_PAGO, ESTADOS_PAGO
     }}>
       {children}
     </VentaContext.Provider>
@@ -91,4 +85,3 @@ export const VentaProvider = ({ children }) => {
 }
 
 export default VentaContext
-

@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import * as clienteService from '../services/clienteService.js'
+import { useAuth } from './AuthContext'
 
 const ClienteContext = createContext()
 
@@ -9,25 +10,25 @@ export const useClientes = () => useContext(ClienteContext)
 const normalize = (c) => ({ ...c, idCliente: c.id })
 
 export const ClienteProvider = ({ children }) => {
+    const { token } = useAuth()
     const [clientes, setClientes] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
 
     useEffect(() => {
-    const token = localStorage.getItem('token')
-    if (!token) {
-        setLoading(false)
-        return
-    }
-    clienteService.getClientes()
-        .then(res => setClientes(res.data.map(normalize)))
-        .catch(err => {
-            if (err.status !== 403) {
-                setError(err.message)
-            }
-        })
-        .finally(() => setLoading(false))
-}, [])
+        if (!token) {
+            setLoading(false)
+            return
+        }
+        clienteService.getClientes()
+            .then(res => setClientes(res.data.map(normalize)))
+            .catch(err => {
+                if (err.status !== 403) {
+                    setError(err.message)
+                }
+            })
+            .finally(() => setLoading(false))
+    }, [token])
 
     const agregarCliente = async (nuevoCliente) => {
         const res = await clienteService.createCliente(nuevoCliente)
@@ -60,4 +61,3 @@ export const ClienteProvider = ({ children }) => {
         </ClienteContext.Provider>
     )
 }
-

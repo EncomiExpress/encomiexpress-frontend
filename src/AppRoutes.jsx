@@ -1,6 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { Box } from '@mui/material'
-import Layout from './shared/components/Layout.jsx'
 import LayoutAdmin from './shared/components/LayoutAdmin.jsx'
 import { useAuth } from './shared/contexts/AuthContext.jsx'
 import { PERMISOS } from './shared/contexts/AuthContext.jsx'
@@ -97,7 +96,7 @@ const AppRoutes = () => {
   return (
     <Routes>
       {/* Ruta raíz con Home directamente */}
-      <Route path="/" element={<Layout><Home /></Layout>} />
+      <Route path="/" element={<Home />} />
 
       {/* Login y Register sin layout público */}
       <Route path="/login" element={<Login />} />

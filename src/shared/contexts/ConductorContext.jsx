@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback } from 'react'
 import * as conductorService from '../services/conductorService'
+import { useAuth } from './AuthContext'
 
 const ConductorContext = createContext()
 
@@ -8,64 +9,33 @@ export const useConductor = () => useContext(ConductorContext)
 // Mock data inicial para conductores
 const conductoresMock = [
   { 
-    idConductor: 1, 
-    tipoIdentificacion: 'CC', 
-    numeroIdentificacion: '1038648135', 
-    nombre: 'Juan', 
-    apellido: 'Gómez López', 
-    telefono: '3104776919', 
-    email: 'juan.gomez@gmail.com',
-    licenciaConduccion: 'A2',
-    fechaVencimientoLicencia: '2026-12-31',
-    estado: 'Activo',
-    habilitado: true,
-    fechaRegistro: '2024-01-15'
+    idConductor: 1, tipoIdentificacion: 'CC', numeroIdentificacion: '1038648135', 
+    nombre: 'Juan', apellido: 'Gómez López', telefono: '3104776919', 
+    email: 'juan.gomez@gmail.com', licenciaConduccion: 'A2',
+    fechaVencimientoLicencia: '2026-12-31', estado: 'Activo', habilitado: true, fechaRegistro: '2024-01-15'
   },
   { 
-    idConductor: 2, 
-    tipoIdentificacion: 'CC', 
-    numeroIdentificacion: '71234567', 
-    nombre: 'Pedro', 
-    apellido: 'Martínez Díaz', 
-    telefono: '3154321098', 
-    email: 'pedro.martinez@gmail.com',
-    licenciaConduccion: 'B2',
-    fechaVencimientoLicencia: '2025-06-30',
-    estado: 'Activo',
-    habilitado: true,
-    fechaRegistro: '2024-02-20'
+    idConductor: 2, tipoIdentificacion: 'CC', numeroIdentificacion: '71234567', 
+    nombre: 'Pedro', apellido: 'Martínez Díaz', telefono: '3154321098', 
+    email: 'pedro.martinez@gmail.com', licenciaConduccion: 'B2',
+    fechaVencimientoLicencia: '2025-06-30', estado: 'Activo', habilitado: true, fechaRegistro: '2024-02-20'
   },
   { 
-    idConductor: 3, 
-    tipoIdentificacion: 'CC', 
-    numeroIdentificacion: '43210987', 
-    nombre: 'María', 
-    apellido: 'Torres Ruiz', 
-    telefono: '3209876543', 
-    email: 'maria.torres@gmail.com',
-    licenciaConduccion: 'C1',
-    fechaVencimientoLicencia: '2025-03-15',
-    estado: 'Inactivo',
-    habilitado: false,
-    fechaRegistro: '2024-03-10'
+    idConductor: 3, tipoIdentificacion: 'CC', numeroIdentificacion: '43210987', 
+    nombre: 'María', apellido: 'Torres Ruiz', telefono: '3209876543', 
+    email: 'maria.torres@gmail.com', licenciaConduccion: 'C1',
+    fechaVencimientoLicencia: '2025-03-15', estado: 'Inactivo', habilitado: false, fechaRegistro: '2024-03-10'
   },
   { 
-    idConductor: 4, 
-    tipoIdentificacion: 'CE', 
-    numeroIdentificacion: '987654321', 
-    nombre: 'Carlos', 
-    apellido: 'Rodríguez Smith', 
-    telefono: '3001234567', 
-    email: 'carlos.rodriguez@gmail.com',
-    licenciaConduccion: 'A1',
-    fechaVencimientoLicencia: '2026-08-20',
-    estado: 'Activo',
-    habilitado: true,
-    fechaRegistro: '2024-04-05'
+    idConductor: 4, tipoIdentificacion: 'CE', numeroIdentificacion: '987654321', 
+    nombre: 'Carlos', apellido: 'Rodríguez Smith', telefono: '3001234567', 
+    email: 'carlos.rodriguez@gmail.com', licenciaConduccion: 'A1',
+    fechaVencimientoLicencia: '2026-08-20', estado: 'Activo', habilitado: true, fechaRegistro: '2024-04-05'
   },
 ]
 
 export const ConductorProvider = ({ children }) => {
+  const { token } = useAuth()
   const [conductores, setConductores] = useState(conductoresMock)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -115,7 +85,6 @@ export const ConductorProvider = ({ children }) => {
 
   // Habilitar/Inhabilitar conductor
   const toggleHabilitado = useCallback(async (id) => {
-    const token = localStorage.getItem('token')
     if (token) {
       try {
         const res = await conductorService.toggleHabilitadoConductor(id)
@@ -143,7 +112,7 @@ export const ConductorProvider = ({ children }) => {
       return true
     }
     return false
-  }, [conductores])
+  }, [conductores, token])
 
   // Cambiar estado del conductor
   const updateEstado = useCallback((id, nuevoEstado) => {
@@ -151,10 +120,7 @@ export const ConductorProvider = ({ children }) => {
     if (index !== -1) {
       setConductores(prev => {
         const newConductores = [...prev]
-        newConductores[index] = { 
-          ...newConductores[index], 
-          estado: nuevoEstado
-        }
+        newConductores[index] = { ...newConductores[index], estado: nuevoEstado }
         return newConductores
       })
       return true
@@ -284,4 +250,3 @@ export const ConductorProvider = ({ children }) => {
     </ConductorContext.Provider>
   )
 }
-

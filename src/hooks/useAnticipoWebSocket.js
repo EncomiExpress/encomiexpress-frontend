@@ -1,11 +1,12 @@
 import { useEffect, useRef } from 'react'
 import { io } from 'socket.io-client'
+import { useAuth } from '../shared/contexts/AuthContext'
 
 const useAnticipoWebSocket = ({ agregarAnticipo, actualizarAnticipo }) => {
+  const { token } = useAuth()
   const socketRef = useRef(null)
 
   useEffect(() => {
-    const token = localStorage.getItem('token')
     if (!token) return
 
     socketRef.current = io(import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000', {
@@ -27,10 +28,9 @@ const useAnticipoWebSocket = ({ agregarAnticipo, actualizarAnticipo }) => {
     return () => {
       socketRef.current?.disconnect()
     }
-  }, [agregarAnticipo, actualizarAnticipo])
+  }, [token, agregarAnticipo, actualizarAnticipo])
 
   return socketRef.current
 }
 
 export default useAnticipoWebSocket
-

@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react'
 import * as propietarioService from '../services/propietarioService'
+import { useAuth } from './AuthContext'
 
 const PropietarioContext = createContext()
 
@@ -8,64 +9,33 @@ export const usePropietario = () => useContext(PropietarioContext)
 // Mock data inicial para propietarios
 const propietariosMock = [
   { 
-    idPropietario: 1, 
-    tipoIdentificacion: 'CC', 
-    numeroIdentificacion: '1038648135', 
-    nombre: 'Carlos', 
-    apellido: 'Gómez López', 
-    telefono: '3104776919', 
-    email: 'carlos.gomez@gmail.com',
-    direccion: 'Cll 45 #20-10',
-    ciudad: 'Medellín',
-    estado: 'Activo',
-    habilitado: true,
-    fechaRegistro: '2024-01-15'
+    idPropietario: 1, tipoIdentificacion: 'CC', numeroIdentificacion: '1038648135',
+    nombre: 'Carlos', apellido: 'Gómez López', telefono: '3104776919',
+    email: 'carlos.gomez@gmail.com', direccion: 'Cll 45 #20-10',
+    ciudad: 'Medellín', estado: 'Activo', habilitado: true, fechaRegistro: '2024-01-15'
   },
   { 
-    idPropietario: 2, 
-    tipoIdentificacion: 'NIT', 
-    numeroIdentificacion: '900123456', 
-    nombre: 'Transportes Express SAS', 
-    apellido: '',
-    telefono: '3001234567', 
-    email: 'contacto@transportesexpress.com',
-    direccion: 'Cll 10 #5-40',
-    ciudad: 'Bogotá',
-    estado: 'Activo',
-    habilitado: true,
-    fechaRegistro: '2024-02-20'
+    idPropietario: 2, tipoIdentificacion: 'NIT', numeroIdentificacion: '900123456',
+    nombre: 'Transportes Express SAS', apellido: '', telefono: '3001234567',
+    email: 'contacto@transportesexpress.com', direccion: 'Cll 10 #5-40',
+    ciudad: 'Bogotá', estado: 'Activo', habilitado: true, fechaRegistro: '2024-02-20'
   },
   { 
-    idPropietario: 3, 
-    tipoIdentificacion: 'CC', 
-    numeroIdentificacion: '71234567', 
-    nombre: 'Andrés', 
-    apellido: 'Martínez Díaz', 
-    telefono: '3154321098', 
-    email: 'andres.martinez@gmail.com',
-    direccion: 'Cll 70 #45-20',
-    ciudad: 'Barranquilla',
-    estado: 'Inactivo',
-    habilitado: false,
-    fechaRegistro: '2024-03-10'
+    idPropietario: 3, tipoIdentificacion: 'CC', numeroIdentificacion: '71234567',
+    nombre: 'Andrés', apellido: 'Martínez Díaz', telefono: '3154321098',
+    email: 'andres.martinez@gmail.com', direccion: 'Cll 70 #45-20',
+    ciudad: 'Barranquilla', estado: 'Inactivo', habilitado: false, fechaRegistro: '2024-03-10'
   },
   { 
-    idPropietario: 4, 
-    tipoIdentificacion: 'CC', 
-    numeroIdentificacion: '43210987', 
-    nombre: 'María', 
-    apellido: 'Torres Ruiz', 
-    telefono: '3209876543', 
-    email: 'maria.torres@gmail.com',
-    direccion: 'Cra 50 #30-15',
-    ciudad: 'Cali',
-    estado: 'Activo',
-    habilitado: true,
-    fechaRegistro: '2024-04-05'
+    idPropietario: 4, tipoIdentificacion: 'CC', numeroIdentificacion: '43210987',
+    nombre: 'María', apellido: 'Torres Ruiz', telefono: '3209876543',
+    email: 'maria.torres@gmail.com', direccion: 'Cra 50 #30-15',
+    ciudad: 'Cali', estado: 'Activo', habilitado: true, fechaRegistro: '2024-04-05'
   },
 ]
 
 export const PropietarioProvider = ({ children }) => {
+  const { token } = useAuth()
   const [propietarios, setPropietarios] = useState(propietariosMock)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -115,7 +85,6 @@ export const PropietarioProvider = ({ children }) => {
 
   // Habilitar/Inhabilitar propietario
   const toggleHabilitado = useCallback(async (id) => {
-    const token = localStorage.getItem('token')
     if (token) {
       try {
         const res = await propietarioService.toggleHabilitadoPropietario(id)
@@ -143,7 +112,7 @@ export const PropietarioProvider = ({ children }) => {
       return true
     }
     return false
-  }, [propietarios])
+  }, [propietarios, token])
 
   // Cambiar estado del propietario
   const updateEstado = useCallback((id, nuevoEstado) => {
@@ -151,10 +120,7 @@ export const PropietarioProvider = ({ children }) => {
     if (index !== -1) {
       setPropietarios(prev => {
         const newPropietarios = [...prev]
-        newPropietarios[index] = { 
-          ...newPropietarios[index], 
-          estado: nuevoEstado
-        }
+        newPropietarios[index] = { ...newPropietarios[index], estado: nuevoEstado }
         return newPropietarios
       })
       return true
@@ -179,8 +145,6 @@ export const PropietarioProvider = ({ children }) => {
     }
   }, [])
 
-  // Escuchar eventos globales cuando un vehículo cambia su habilitado
-  // para refrescar la lista de propietarios (sincronización con backend)
   useEffect(() => {
     const handler = (e) => {
       // Si se provee idPropietario, podemos opcionalmente optimizar, pero
@@ -261,21 +225,11 @@ export const PropietarioProvider = ({ children }) => {
   }, [])
 
   const value = {
-    propietarios,
-    loading,
-    error,
-    getPropietarios,
-    getPropietarioById,
-    getPropietariosHabilitados,
-    registrarPropietario,
-    actualizarPropietario,
-    toggleHabilitado,
-    updateEstado,
-    fetchPropietarios,
-    fetchPropietarioById,
-    crearPropietario,
-    actualizarPropietarioApi,
-    eliminarPropietario
+    propietarios, loading, error,
+    getPropietarios, getPropietarioById, getPropietariosHabilitados,
+    registrarPropietario, actualizarPropietario, toggleHabilitado, updateEstado,
+    fetchPropietarios, fetchPropietarioById, crearPropietario,
+    actualizarPropietarioApi, eliminarPropietario
   }
 
   return (
@@ -284,4 +238,3 @@ export const PropietarioProvider = ({ children }) => {
     </PropietarioContext.Provider>
   )
 }
-

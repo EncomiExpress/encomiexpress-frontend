@@ -2,12 +2,14 @@ import { createContext, useContext, useState, useEffect } from 'react'
 import * as anticipoService from '../services/anticipoService'
 import { fetchWithAuth } from '../services/authService'
 import useAnticipoWebSocket from '../../hooks/useAnticipoWebSocket'
+import { useAuth } from './AuthContext'
 
 const AnticipoExcedenteContext = createContext()
 
 export const useAnticipos = () => useContext(AnticipoExcedenteContext)
 
 export const AnticipoExcedenteProvider = ({ children }) => {
+  const { token } = useAuth()
   const [anticipos, setAnticipos] = useState([])
   const [conductores, setConductores] = useState([])
   const [rutas, setRutas] = useState([])
@@ -15,7 +17,6 @@ export const AnticipoExcedenteProvider = ({ children }) => {
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    const token = localStorage.getItem('token')
     if (!token) {
       setLoading(false)
       return
@@ -50,7 +51,7 @@ export const AnticipoExcedenteProvider = ({ children }) => {
         }
       })
       .finally(() => setLoading(false))
-  }, [])
+  }, [token])
 
   const agregarAnticipo = async (nuevo) => {
     const res = await anticipoService.createAnticipo(nuevo)
@@ -117,4 +118,3 @@ export const conductoresMock = []
 export const rutasMock = []
 
 export default AnticipoExcedenteProvider
-
