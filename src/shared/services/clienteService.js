@@ -14,3 +14,4 @@ export const updateCliente = (id, datos) =>
 
 export const toggleHabilitadoCliente = (id) =>
   fetchWithAuth(`/clientes/${id}/toggle-habilitado`, { method: 'PATCH' })
+

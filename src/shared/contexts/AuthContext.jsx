@@ -22,7 +22,7 @@ export const MODULOS = {
   RUTAS: { nombre: 'Rutas', permisos: ['listar_ruta', 'registrar_ruta', 'consultar_ruta', 'actualizar_ruta'] },
   RUTAS_PROGRAMACION: { nombre: 'Rutas Programación', permisos: ['listar_ruta_programacion', 'registrar_ruta_programacion', 'consultar_ruta_programacion', 'actualizar_ruta_programacion'] },
   ANTICIPOS: { nombre: 'Anticipos', permisos: ['listar_anticipo', 'registrar_anticipo', 'consultar_anticipo', 'actualizar_anticipo'] },
-  VENTAS: { nombre: 'Ventas', permisos: ['listar_encomienda', 'registrar_encomienda', 'consultar_encomienda', 'actualizar_encomienda'] },
+  VENTAS: { nombre: 'Ventas', permisos: ['listar_venta', 'registrar_venta', 'consultar_venta', 'actualizar_venta'] },
   ENCOMIENDAS: { nombre: 'Encomiendas', permisos: ['listar_encomienda', 'registrar_encomienda', 'consultar_encomienda', 'actualizar_encomienda'] },
   TRANSPORTE: { nombre: 'Transporte', permisos: ['gestion_transporte'] },
 }
@@ -46,16 +46,16 @@ export const PERMISOS = {
   REGISTRAR_ROL: 'registrar_rol',
   ACTUALIZAR_ROL: 'actualizar_rol',
   CONSULTAR_ROL: 'consultar_rol',
-  INHABILITAR_ROL: 'actualizar_rol',
+  INHABILITAR_ROL: 'inhabilitar_rol',
   LISTAR_VEHICULO: 'listar_vehiculo',
   REGISTRAR_VEHICULO: 'registrar_vehiculo',
   ACTUALIZAR_VEHICULO: 'actualizar_vehiculo',
   CONSULTAR_VEHICULO: 'consultar_vehiculo',
   GESTION_TRANSPORTE: 'gestion_transporte',
-  LISTAR_VENTA: 'listar_encomienda',
-  REGISTRAR_VENTA: 'registrar_encomienda',
-  ACTUALIZAR_VENTA: 'actualizar_encomienda',
-  CONSULTAR_VENTA: 'consultar_encomienda',
+  LISTAR_VENTA: 'listar_venta',
+  REGISTRAR_VENTA: 'registrar_venta',
+  ACTUALIZAR_VENTA: 'actualizar_venta',
+  CONSULTAR_VENTA: 'consultar_venta',
   LISTAR_ENCOMIENDA: 'listar_encomienda',
   REGISTRAR_ENCOMIENDA: 'registrar_encomienda',
   ACTUALIZAR_ENCOMIENDA: 'actualizar_encomienda',
@@ -103,7 +103,7 @@ export const AuthProvider = ({ children }) => {
       const data = await res.json()
 
       if (!res.ok || !data.success) {
-        return { success: false, mensaje: data.message || 'Credenciales inválidas' }
+        return { success: false, mensaje: data.message || 'Correo o contraseña incorrecta' }
       }
 
       const { token, usuario } = data.data
@@ -301,3 +301,4 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   )
 }
+

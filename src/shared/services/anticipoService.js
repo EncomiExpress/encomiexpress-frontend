@@ -17,3 +17,4 @@ export const cambiarEstadoAnticipo = (id, estado) =>
 
 export const toggleHabilitadoAnticipo = (id) =>
   fetchWithAuth(`/anticipos/${id}/toggle-habilitado`, { method: 'PATCH' })
+

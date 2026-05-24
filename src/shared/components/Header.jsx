@@ -5,7 +5,7 @@ import {
   PaletteOutlined as PaletteIcon,
   Logout as LogoutIcon,
 } from '@mui/icons-material'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../contexts/AuthContext.jsx'
 import { useNavigate } from 'react-router-dom'
 import theme from '../styles/theme.js'
 
@@ -215,3 +215,4 @@ const Header = () => {
 }
 
 export default Header
+

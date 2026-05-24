@@ -114,7 +114,21 @@ export const ConductorProvider = ({ children }) => {
   }, [conductores])
 
   // Habilitar/Inhabilitar conductor
-  const toggleHabilitado = useCallback((id) => {
+  const toggleHabilitado = useCallback(async (id) => {
+    const token = localStorage.getItem('token')
+    if (token) {
+      try {
+        const res = await conductorService.toggleHabilitadoConductor(id)
+        if (res.success) {
+          setConductores(prev => prev.map(c => c.idConductor === id ? res.data : c))
+          return true
+        }
+      } catch (e) {
+        console.error('Error toggling conductor:', e)
+        return false
+      }
+    }
+
     const index = conductores.findIndex(c => c.idConductor === id)
     if (index !== -1) {
       setConductores(prev => {
@@ -270,3 +284,4 @@ export const ConductorProvider = ({ children }) => {
     </ConductorContext.Provider>
   )
 }
+

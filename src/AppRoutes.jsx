@@ -9,61 +9,61 @@ import { PERMISOS } from './shared/contexts/AuthContext.jsx'
 import Home from './shared/components/Home.jsx'
 
 // Auth
-import Login from './features/auth/pages/Login.jsx'
-import Register from './features/auth/pages/Register.jsx'
+import Login from './features/auth/Login.jsx'
+import Register from './features/auth/Register.jsx'
 
 // Dashboard
-import Dashboard from './features/dashboard/pages/Dashboard.jsx'
+import Dashboard from './features/dashboard/Dashboard.jsx'
 
 // Cliente
-import RegistrarCliente from './features/clientes/pages/RegistrarCliente.jsx'
-import ListarCliente from './features/clientes/pages/ListarCliente.jsx'
-import ActualizarCliente from './features/clientes/pages/ActualizarCliente.jsx'
+import RegistrarCliente from './features/clientes/RegistrarCliente.jsx'
+import ListarCliente from './features/clientes/ListarCliente.jsx'
+import ActualizarCliente from './features/clientes/ActualizarCliente.jsx'
 
 // Anticipos
-import RegistrarAnticipoExcedente from './features/anticipos/pages/RegistrarAnticipoExcedente.jsx'
-import ListarAnticipoExcedente from './features/anticipos/pages/ListarAnticipoExcedente.jsx'
-import ActualizarAnticipoExcedente from './features/anticipos/pages/ActualizarAnticipoExcedente.jsx'
+import RegistrarAnticipoExcedente from './features/anticipos/RegistrarAnticipoExcedente.jsx'
+import ListarAnticipoExcedente from './features/anticipos/ListarAnticipoExcedente.jsx'
+import ActualizarAnticipoExcedente from './features/anticipos/ActualizarAnticipoExcedente.jsx'
 
 // Usuarios
-import ListarUsuario from './features/usuarios/pages/ListarUsuario.jsx'
-import RegistrarUsuario from './features/usuarios/pages/RegistrarUsuario.jsx'
-import ActualizarUsuario from './features/usuarios/pages/ActualizarUsuario.jsx'
+import ListarUsuario from './features/usuarios/ListarUsuario.jsx'
+import RegistrarUsuario from './features/usuarios/RegistrarUsuario.jsx'
+import ActualizarUsuario from './features/usuarios/ActualizarUsuario.jsx'
 
 // Roles
-import RegistrarRol from './features/roles/pages/RegistrarRol.jsx'
-import ActualizarRol from './features/roles/pages/ActualizarRol.jsx'
-import ListarRol from './features/roles/pages/ListarRol.jsx'
+import RegistrarRol from './features/roles/RegistrarRol.jsx'
+import ActualizarRol from './features/roles/ActualizarRol.jsx'
+import ListarRol from './features/roles/ListarRol.jsx'
 
 // Vehículos
-import RegistrarVehiculo from './features/vehiculos/pages/RegistrarVehiculo.jsx'
-import ActualizarVehiculo from './features/vehiculos/pages/ActualizarVehiculo.jsx'
-import ListarVehiculo from './features/vehiculos/pages/ListarVehiculo.jsx'
+import RegistrarVehiculo from './features/vehiculos/RegistrarVehiculo.jsx'
+import ActualizarVehiculo from './features/vehiculos/ActualizarVehiculo.jsx'
+import ListarVehiculo from './features/vehiculos/ListarVehiculo.jsx'
 
 // Transporte - Propietarios
-import ListarPropietario from './features/propietarios/pages/ListarPropietario.jsx'
-import RegistrarPropietario from './features/propietarios/pages/RegistrarPropietario.jsx'
-import ActualizarPropietario from './features/propietarios/pages/ActualizarPropietario.jsx'
+import ListarPropietario from './features/propietarios/ListarPropietario.jsx'
+import RegistrarPropietario from './features/propietarios/RegistrarPropietario.jsx'
+import ActualizarPropietario from './features/propietarios/ActualizarPropietario.jsx'
 
 // Transporte - Conductores
-import ListarConductor from './features/conductores/pages/ListarConductor.jsx'
-import RegistrarConductor from './features/conductores/pages/RegistrarConductor.jsx'
-import ActualizarConductor from './features/conductores/pages/ActualizarConductor.jsx'
+import ListarConductor from './features/conductores/ListarConductor.jsx'
+import RegistrarConductor from './features/conductores/RegistrarConductor.jsx'
+import ActualizarConductor from './features/conductores/ActualizarConductor.jsx'
 
 // Transporte - Destinos
-import ListarDestino from './features/destinos/pages/ListarDestino.jsx'
-import RegistrarDestino from './features/destinos/pages/RegistrarDestino.jsx'
-import ActualizarDestino from './features/destinos/pages/ActualizarDestino.jsx'
+import ListarDestino from './features/destinos/ListarDestino.jsx'
+import RegistrarDestino from './features/destinos/RegistrarDestino.jsx'
+import ActualizarDestino from './features/destinos/ActualizarDestino.jsx'
 
 // Transporte - Rutas Programación
-import ListarRutaProgramacion from './features/rutas/pages/ListarRutaProgramacion.jsx'
-import RegistrarRutaProgramacion from './features/rutas/pages/RegistrarRutaProgramacion.jsx'
-import ActualizarRutaProgramacion from './features/rutas/pages/ActualizarRutaProgramacion.jsx'
+import ListarRutaProgramacion from './features/rutas/ListarRutaProgramacion.jsx'
+import RegistrarRutaProgramacion from './features/rutas/RegistrarRutaProgramacion.jsx'
+import ActualizarRutaProgramacion from './features/rutas/ActualizarRutaProgramacion.jsx'
 
 // Ventas
-import RegistrarVenta from './features/ventas/pages/RegistrarVenta.jsx'
-import ListarVenta from './features/ventas/pages/ListarVenta.jsx'
-import ActualizarVenta from './features/ventas/pages/ActualizarVenta.jsx'
+import RegistrarVenta from './features/ventas/RegistrarVenta.jsx'
+import ListarVenta from './features/ventas/ListarVenta.jsx'
+import ActualizarVenta from './features/ventas/ActualizarVenta.jsx'
 
 // Componente wrapper para rutas privadas con LayoutAdmin
 const PrivateRoute = ({ children, permisosRequeridos = [] }) => {
@@ -96,7 +96,7 @@ const PrivateRoute = ({ children, permisosRequeridos = [] }) => {
 const AppRoutes = () => {
   return (
     <Routes>
-      {/* Ruta raíz con layout público (Home) */}
+      {/* Ruta raíz con Home directamente */}
       <Route path="/" element={<Layout><Home /></Layout>} />
 
       {/* Login y Register sin layout público */}

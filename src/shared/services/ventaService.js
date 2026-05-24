@@ -17,3 +17,4 @@ export const toggleHabilitadoEncomienda = (id) =>
 
 export const cambiarEstadoEncomienda = (id, estado) =>
   fetchWithAuth(`/encomiendas/${id}/estado`, { method: 'PATCH', body: JSON.stringify({ estado }) })
+

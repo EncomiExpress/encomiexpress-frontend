@@ -14,12 +14,11 @@ const modules = [
   { iconClass: 'fi fi-ss-users', name: 'Clientes', desc: 'Datos y contacto', color: '#3b82f6' },
   { iconClass: 'fi fi-ss-boxes', name: 'Encomiendas', desc: 'Registro y control', color: '#ef4444' },
   { iconClass: 'fi fi-rs-chat-arrow-grow', name: 'Ventas', desc: 'Control de ingresos', color: '#10b981' },
-  { iconClass: 'fi fi-ss-chart-mixed', name: 'Dashboard', desc: 'Métricas claves', color: '#06b6d4' },
 ]
 
 const stats = [
   { label: 'Cobertura departamental', value: 'Bajo Cauca' },
-  { label: 'Integrados en un sistema', value: '6 Módulos' },
+  { label: 'Integrados en un sistema', value: '5 Módulos' },
   { label: 'Solo personal autorizado', value: 'Acceso Seguro' },
 ]
 

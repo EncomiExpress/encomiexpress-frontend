@@ -122,6 +122,11 @@ export const RutaProgramacionProvider = ({ children }) => {
   const updateEstado = useCallback((id, nuevoEstado) => {
     const index = rutasProgramadas.findIndex(r => r.idRutaProgramada === id)
     if (index !== -1) {
+      // No permitir cambios si la ruta ya está completada
+      if (rutasProgramadas[index].estado === 'Completada') {
+        console.warn('No se puede cambiar el estado de una ruta completada')
+        return false
+      }
       setRutasProgramadas(prev => {
         const newRutas = [...prev]
         newRutas[index] = { 

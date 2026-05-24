@@ -130,3 +130,4 @@ const LoadingScreen = ({ tipo = 'circular', mensaje = 'Cargando...' }) => {
 
 export { LoadingScreen, TIPOS_CARGA }
 export default LoadingScreen
+

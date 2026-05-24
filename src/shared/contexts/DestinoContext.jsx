@@ -105,7 +105,22 @@ export const DestinoProvider = ({ children }) => {
   }, [destinos])
 
   // Habilitar/Inhabilitar destino
-  const toggleHabilitado = useCallback((id) => {
+  const toggleHabilitado = useCallback(async (id) => {
+    const token = localStorage.getItem('token')
+    if (token) {
+      try {
+        const destinoService = await import('../services/destinoService')
+        const res = await destinoService.toggleHabilitadoDestino(id)
+        if (res.success) {
+          setDestinos(prev => prev.map(d => d.idDestino === id ? res.data : d))
+          return true
+        }
+      } catch (e) {
+        console.error('Error toggling destino:', e)
+        return false
+      }
+    }
+
     const index = destinos.findIndex(d => d.idDestino === id)
     if (index !== -1) {
       setDestinos(prev => {
@@ -158,3 +173,4 @@ export const DestinoProvider = ({ children }) => {
     </DestinoContext.Provider>
   )
 }
+

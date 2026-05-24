@@ -317,3 +317,4 @@ export default {
   actualizarRol,
   eliminarRol,
 };
+

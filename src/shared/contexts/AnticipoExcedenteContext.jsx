@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import * as anticipoService from '../services/anticipoService'
 import { fetchWithAuth } from '../services/authService'
+import useAnticipoWebSocket from '../../hooks/useAnticipoWebSocket'
 
 const AnticipoExcedenteContext = createContext()
 
@@ -65,6 +66,10 @@ export const AnticipoExcedenteProvider = ({ children }) => {
     )
   }
 
+  const actualizarAnticipoEnLista = (actualizado) => {
+    setAnticipos(prev => prev.map(a => (a.idAnticipoExcedente === (actualizado.idAnticipoExcedente || actualizado.idAnticipo) ? { ...a, ...actualizado } : a)))
+  }
+
   const cambiarEstado = async (id, nuevoEstado) => {
     await anticipoService.cambiarEstadoAnticipo(id, nuevoEstado)
     setAnticipos(prev =>
@@ -82,6 +87,9 @@ export const AnticipoExcedenteProvider = ({ children }) => {
       )
     )
   }
+
+  // Inicializar WebSocket para actualizaciones en tiempo real
+  useAnticipoWebSocket({ agregarAnticipo, actualizarAnticipo: actualizarAnticipoEnLista })
 
   return (
     <AnticipoExcedenteContext.Provider
@@ -109,3 +117,4 @@ export const conductoresMock = []
 export const rutasMock = []
 
 export default AnticipoExcedenteProvider
+

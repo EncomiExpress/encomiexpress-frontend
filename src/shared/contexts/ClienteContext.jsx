@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react'
-import * as clienteService from '../services/clienteService'
+import * as clienteService from '../services/clienteService.js'
 
 const ClienteContext = createContext()
 
@@ -60,3 +60,4 @@ export const ClienteProvider = ({ children }) => {
         </ClienteContext.Provider>
     )
 }
+

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect } from 'react'
 import * as propietarioService from '../services/propietarioService'
 
 const PropietarioContext = createContext()
@@ -114,7 +114,21 @@ export const PropietarioProvider = ({ children }) => {
   }, [propietarios])
 
   // Habilitar/Inhabilitar propietario
-  const toggleHabilitado = useCallback((id) => {
+  const toggleHabilitado = useCallback(async (id) => {
+    const token = localStorage.getItem('token')
+    if (token) {
+      try {
+        const res = await propietarioService.toggleHabilitadoPropietario(id)
+        if (res.success) {
+          setPropietarios(prev => prev.map(p => p.idPropietario === id ? res.data : p))
+          return true
+        }
+      } catch (e) {
+        console.error('Error toggling propietario:', e)
+        return false
+      }
+    }
+
     const index = propietarios.findIndex(p => p.idPropietario === id)
     if (index !== -1) {
       setPropietarios(prev => {
@@ -164,6 +178,18 @@ export const PropietarioProvider = ({ children }) => {
       setLoading(false)
     }
   }, [])
+
+  // Escuchar eventos globales cuando un vehículo cambia su habilitado
+  // para refrescar la lista de propietarios (sincronización con backend)
+  useEffect(() => {
+    const handler = (e) => {
+      // Si se provee idPropietario, podemos opcionalmente optimizar, pero
+      // por simplicidad refrescamos toda la lista desde el backend
+      fetchPropietarios()
+    }
+    window.addEventListener('vehiculo:toggled', handler)
+    return () => window.removeEventListener('vehiculo:toggled', handler)
+  }, [fetchPropietarios])
 
   const fetchPropietarioById = useCallback(async (id) => {
     setLoading(true)
@@ -258,3 +284,4 @@ export const PropietarioProvider = ({ children }) => {
     </PropietarioContext.Provider>
   )
 }
+

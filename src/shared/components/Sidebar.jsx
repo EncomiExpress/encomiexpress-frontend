@@ -22,7 +22,7 @@ import {
   Logout as LogoutIcon,
 } from '@mui/icons-material'
 import logo from '../../assets/logo.png'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../contexts/AuthContext.jsx'
 import theme from '../styles/theme.js'
 
 // ─── Paleta ────────────────────────────────────────────────────────────────
@@ -47,23 +47,12 @@ const C = {
 // ─── Estructura del menú ────────────────────────────────────────────────────
 const SECTIONS = [
   {
-    id: 'general',
-    label: 'General',
+    id: 'gestion',
+    label: 'Gestión',
     items: [
       { id: 'dashboard', label: 'Dashboard', icon: DashboardIcon, path: '/dashboard' },
-    ],
-  },
-  {
-    id: 'personas',
-    label: 'Personas',
-    items: [
-      {
-        id: 'roles', label: 'Roles', icon: RolesIcon, path: '/roles/listar'
-      },
-      {
-        id: 'usuarios', label: 'Usuarios', icon: GroupAddIcon, path: '/usuarios/listar',
-      },
-      { id: 'clientes', label: 'Clientes', icon: PeopleIcon, path: '/clientes/listar' },
+      { id: 'roles', label: 'Roles', icon: RolesIcon, path: '/roles/listar' },
+      { id: 'usuarios', label: 'Usuarios', icon: GroupAddIcon, path: '/usuarios/listar' },
     ],
   },
   {
@@ -75,19 +64,14 @@ const SECTIONS = [
       { id: 'conductores', label: 'Conductores', icon: DriverIcon, path: '/transporte/conductores' },
       { id: 'destinos', label: 'Destinos', icon: DestIcon, path: '/transporte/destinos' },
       { id: 'rutas', label: 'Programación de rutas', icon: RouteIcon, path: '/transporte/rutas' },
-    ],
-  },
-  {
-    id: 'finanzas',
-    label: 'Finanzas',
-    items: [
       { id: 'anticipos', label: 'Anticipos y Excedentes', icon: MoneyIcon, path: '/anticipos/listar' },
     ],
   },
   {
     id: 'paquetes',
-    label: 'Paquetes',
+    label: 'Encomienda',
     items: [
+      { id: 'clientes', label: 'Clientes', icon: PeopleIcon, path: '/clientes/listar' },
       { id: 'ventas', label: 'Ventas', icon: SalesIcon, path: '/ventas/listar' },
     ],
   },
@@ -255,9 +239,6 @@ const Sidebar = () => {
       }}>
         {SECTIONS.map((section, idx) => (
           <Box key={section.id}>
-            {idx !== 0 && (
-              <Box sx={{ mx: 3, my: 1, height: '1px', backgroundColor: C.divider }} />
-            )}
             <SectionLabel
               label={section.label}
               isOpen={openSections[section.id]}
@@ -365,3 +346,4 @@ const Sidebar = () => {
 }
 
 export default Sidebar
+

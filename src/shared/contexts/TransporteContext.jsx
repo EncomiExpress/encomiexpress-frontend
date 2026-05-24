@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback } from 'react'
+import * as vehiculoService from '../services/vehiculoService'
 
 const TransporteContext = createContext()
 
@@ -89,8 +90,31 @@ export const TransporteProvider = ({ children }) => {
     return nuevoTransporte
   }, [])
 
-  // Habilitar/Inhabilitar transporte
-  const toggleHabilitado = useCallback((id) => {
+  // Habilitar/Inhabilitar transporte (intenta backend y notifica a propietarios)
+  const toggleHabilitado = useCallback(async (id) => {
+    // Primero intentar llamada al backend si hay token
+    const token = localStorage.getItem('token')
+    if (token) {
+      try {
+        const res = await vehiculoService.toggleHabilitadoVehiculo(id)
+        if (res && res.success) {
+          const updatedVehiculo = res.data
+          setTransportes(prevTransportes => prevTransportes.map(t => t.idVehiculo === id ? updatedVehiculo : t))
+          // Disparar evento global para que los propietarios se sincronicen
+          try {
+            window.dispatchEvent(new CustomEvent('vehiculo:toggled', { detail: { idPropietario: updatedVehiculo.idPropietario } }))
+          } catch (e) {
+            console.error('Error dispatching vehiculo:toggled', e)
+          }
+          return true
+        }
+      } catch (err) {
+        console.error('Error toggling vehiculo via API:', err)
+        // continuar con fallback local
+      }
+    }
+
+    // Fallback local
     setTransportes(prevTransportes => {
       const index = prevTransportes.findIndex(t => t.idVehiculo === id)
       if (index !== -1) {
@@ -98,6 +122,12 @@ export const TransporteProvider = ({ children }) => {
         updated[index] = { 
           ...updated[index], 
           habilitado: !updated[index].habilitado 
+        }
+        // Notificar a propietarios localmente
+        try {
+          window.dispatchEvent(new CustomEvent('vehiculo:toggled', { detail: { idPropietario: updated[index].idPropietario } }))
+        } catch (e) {
+          console.error('Error dispatching vehiculo:toggled (local)', e)
         }
         return updated
       }
@@ -156,3 +186,4 @@ export const TransporteProvider = ({ children }) => {
     </TransporteContext.Provider>
   )
 }
+
