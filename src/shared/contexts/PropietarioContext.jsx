@@ -35,7 +35,8 @@ const propietariosMock = [
 ]
 
 export const PropietarioProvider = ({ children }) => {
-  const { token } = useAuth()
+  const auth = useAuth() || {}
+  const token = auth?.token || null
   const [propietarios, setPropietarios] = useState(propietariosMock)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)

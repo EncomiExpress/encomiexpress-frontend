@@ -91,7 +91,7 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
         })
         .filter(id => id !== null)
 
-      const respuesta = await actualizarRolBackend(rolProp.idRol || rolProp.id, formData.nombre, idsPermisos)
+      const respuesta = await actualizarRolBackend(rolProp.idRol || rolProp.id, formData.nombre, idsPermisos, rolProp.habilitado)
 
       if (respuesta.success) {
         onSuccess && onSuccess()
@@ -140,7 +140,6 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
             value={formData.nombre}
             onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
             placeholder="Ej: Administrador"
-            disabled
           />
 
           <Typography variant="subtitle1" sx={{ mt: 2, mb: 1, fontWeight: 700, color: theme.palette.text.primary }}>
@@ -257,7 +256,7 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
             }}>
             Cancelar
           </Button>
-          <Button type="submit" variant="contained" disableRipple
+          <Button onClick={handleSubmit} variant="contained" disableRipple
             disabled={enviando}
             endIcon={enviando ? undefined : <SaveOutlined />}
             sx={{

@@ -15,6 +15,7 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
 
   const [formData, setFormData] = useState({
     nombre: '',
+    descripcion: '',
     permisos: []
   })
   const [mensaje, setMensaje] = useState('')
@@ -60,7 +61,7 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
         })
         .filter(id => id !== null)
 
-      const respuesta = await registrarRol(formData.nombre, idsPermisos)
+      const respuesta = await registrarRol(formData.nombre, idsPermisos, formData.descripcion)
 
       if (respuesta.success) {
         onSuccess && onSuccess()
@@ -79,6 +80,7 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
   const handleClose = () => {
     setFormData({
       nombre: '',
+      descripcion: '',
       permisos: []
     })
     setError('')
@@ -174,6 +176,18 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
               onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
               placeholder="Ej: Gerente, Vendedor, Conductor"
               required
+            />
+          </Box>
+
+          <Box sx={{ mb: 2 }}>
+            <FormField
+              label="Descripción (opcional)"
+              name="descripcion"
+              value={formData.descripcion}
+              onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
+              placeholder="Descripción del rol"
+              multiline
+              rows={2}
             />
           </Box>
 
@@ -292,7 +306,7 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
             }}>
             Cancelar
           </Button>
-          <Button type="submit" variant="contained" disableRipple
+          <Button onClick={handleSubmit} variant="contained" disableRipple
             disabled={enviando}
             endIcon={enviando ? undefined : <CheckOutlined />}
             sx={{

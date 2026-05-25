@@ -29,7 +29,8 @@ let transportesMock = [
 ]
 
 export const TransporteProvider = ({ children }) => {
-  const { token } = useAuth()
+  const auth = useAuth() || {}
+  const token = auth?.token || null
   const [transportes, setTransportes] = useState(transportesMock)
 
   // Obtener todos los transportes

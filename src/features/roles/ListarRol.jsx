@@ -236,7 +236,7 @@ const ListarRol = () => {
         try {
             const respuesta = await toggleHabilitadoRol(id)
             if (respuesta.success) {
-                setRoles(roles.map(r => r.id === id ? { ...r, habilitado: !habilitadoActual } : r))
+                setRoles(prev => prev.map(r => r.id === id ? { ...r, habilitado: !habilitadoActual } : r))
                 setSnackbar({ open: true, message: `Rol ${!habilitadoActual ? 'habilitado' : 'inhabilitado'} correctamente`, severity: 'success' })
             } else {
                 setSnackbar({ open: true, message: respuesta.message || 'Error al cambiar estado', severity: 'error' })

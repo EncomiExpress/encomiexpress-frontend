@@ -83,6 +83,8 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null)
   const [loading, setLoading] = useState(true)
 
+  console.log('✅ AuthProvider montado')
+
   // Al iniciar, restaurar sesión desde localStorage
   useEffect(() => {
     const tokenGuardado = localStorage.getItem('token')
@@ -185,10 +187,10 @@ export const AuthProvider = ({ children }) => {
         headers: { Authorization: `Bearer ${token}` }
       })
       const data = await res.json()
-      // Normalizar: asegurar que cada rol tenga `id` (usar idRol si viene)
       const roles = (data.data || []).map(rol => ({
         ...rol,
-        id: rol.id ?? rol.idRol
+        id: rol.id ?? rol.idRol,
+        permisosIds: (rol.permisosIds || rol.permisos || []).map(id => Number(id))
       }))
       return { success: res.ok, data: roles }
     } catch {
@@ -208,12 +210,12 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
-  const registrarRol = async (nombre, permisos) => {
+  const registrarRol = async (nombre, permisos, descripcion) => {
     try {
       const res = await fetch(`${API_URL}/roles`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ nombre, permisos })
+        body: JSON.stringify({ nombre, descripcion, permisos })
       })
       const data = await res.json()
       return { success: res.ok, data: data.data, message: data.message }
@@ -222,16 +224,29 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
-  const actualizarRolBackend = async (id, nombre, permisos) => {
+  const actualizarRolBackend = async (id, nombre, permisos, habilitado) => {
     try {
       const res = await fetch(`${API_URL}/roles/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ nombre, permisos })
+        body: JSON.stringify({ nombre, permisos, habilitado })
       })
       const data = await res.json()
       return { success: res.ok, data: data.data, message: data.message }
     } catch {
+      return { success: false, message: 'Error de conexión' }
+    }
+  }
+
+  const toggleHabilitadoRol = async (id) => {
+    try {
+      const res = await fetch(`${API_URL}/roles/${id}/toggle-habilitado`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      const data = await res.json()
+      return { success: res.ok, message: data.message, data: data.data }
+    } catch (error) {
       return { success: false, message: 'Error de conexión' }
     }
   }
@@ -293,6 +308,7 @@ export const AuthProvider = ({ children }) => {
       getUsuarios,
       registrarRol,
       actualizarRolBackend,
+      toggleHabilitadoRol,
       eliminarRolBackend,
       actualizarUsuario,
       habilitarInhabilitarUsuario,
