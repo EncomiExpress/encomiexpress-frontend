@@ -139,9 +139,9 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
                 password,
                 email: emailLocal + emailDominio,
             }
-            
+
             const result = await registrarUsuario(datosBackend, false)
-            
+
             if (result.success) {
                 setExito(true)
                 setTimeout(() => {
@@ -240,8 +240,10 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
                                             <Select name="emailDominio" value={form.emailDominio}
                                                 onChange={handleChange} variant="standard" disableUnderline
                                                 IconComponent={KeyboardArrowDownOutlinedIcon}
-                                                sx={{ fontSize: '1rem', color: theme.palette.text.secondary,
-                                                    '& .MuiSelect-select': { py: 0, pl: 0.5, pr: '22px !important' } }}>
+                                                sx={{
+                                                    fontSize: '1rem', color: theme.palette.text.secondary,
+                                                    '& .MuiSelect-select': { py: 0, pl: 0.5, pr: '22px !important' }
+                                                }}>
                                                 {DOMINIOS_EMAIL.map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
                                             </Select>
                                         </InputAdornment>
@@ -250,28 +252,28 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
                                 htmlInput: { maxLength: 50 }
                             }}
                             sx={formFieldStyles} />
-<TextField fullWidth select label="Rol" name="idRol" value={form.idRol} onChange={handleChange}
-                             error={!!errores.idRol} helperText={errores.idRol}
-                             slotProps={{ input: { startAdornment: <InputAdornment position="start"><AssignmentIndOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment> } }}
-                             sx={formFieldStyles}>
-                             {rolesDisponibles.map((rol) => (
-                                 <MenuItem key={rol.idRol} value={rol.idRol} sx={{ p: 0, justifyContent: 'flex-start', my: 0.5 }}>
-                                     <Box sx={{
-                                         backgroundColor: '#B91C1C',
-                                         color: 'white',
-                                         px: 1.5,
-                                         py: 0.3,
-                                         borderRadius: 8,
-                                         fontWeight: 600,
-                                         fontSize: '0.75rem',
-                                         display: 'inline-flex',
-                                         ml: 1,
-                                     }}>
-                                         {rol.nombre}
-                                     </Box>
-                                 </MenuItem>
-                             ))}
-                         </TextField>
+                        <TextField fullWidth select label="Rol" name="idRol" value={form.idRol} onChange={handleChange}
+                            error={!!errores.idRol} helperText={errores.idRol}
+                            slotProps={{ input: { startAdornment: <InputAdornment position="start"><AssignmentIndOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment> } }}
+                            sx={formFieldStyles}>
+                            {rolesDisponibles.map((rol) => (
+                                <MenuItem key={rol.idRol} value={rol.idRol} sx={{ p: 0, justifyContent: 'flex-start', my: 0.5 }}>
+                                    <Box sx={{
+                                        backgroundColor: '#B91C1C',
+                                        color: 'white',
+                                        px: 1.5,
+                                        py: 0.3,
+                                        borderRadius: 8,
+                                        fontWeight: 600,
+                                        fontSize: '0.75rem',
+                                        display: 'inline-flex',
+                                        ml: 1,
+                                    }}>
+                                        {rol.nombre}
+                                    </Box>
+                                </MenuItem>
+                            ))}
+                        </TextField>
                         <Box sx={{ gridColumn: '1 / -1', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                             <TextField fullWidth label="Contraseña" name="password" type="password"
                                 value={form.password} onChange={handleChange}
@@ -331,7 +333,7 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
     return (
         <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth
             slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}>
-            <DialogTitle sx={{ m: 0, p: 2, pb:2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${theme.palette.divider}` }}>
+            <DialogTitle sx={{ m: 0, p: 2, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${theme.palette.divider}` }}>
                 <Box>
                     <Typography variant="h6" fontWeight={700}>
                         Registrar Usuario
@@ -345,7 +347,7 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
                 </IconButton>
             </DialogTitle>
             <DialogContent sx={{ p: 3, pt: 1.5 }}>
-                
+
                 <Stepper activeStep={activeStep} alternativeLabel
                     sx={{
                         mb: 3, mt: 2,
@@ -370,46 +372,47 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
                     </Box>
                 </Box>
 
-                <Box sx={{
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    px: 4, py: 2.5, borderTop: `1px solid ${theme.palette.divider}`, backgroundColor: '#FAFAFA',
-                }}>
-                    <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined"
-                        startIcon={<ArrowBackOutlinedIcon />} disableRipple
-                        sx={{
-                            textTransform: 'none', borderRadius: 2, borderColor: theme.palette.divider,
-                            color: theme.palette.text.primary, fontWeight: 500,
-                            '&:hover': { borderColor: '#BDBDBD', backgroundColor: theme.palette.background.subtle },
-                            '&.Mui-disabled': { borderColor: theme.palette.divider, color: theme.palette.text.secondary },
-                        }}>
-                        Anterior
-                    </Button>
-                    <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
-                        <Button onClick={handleCancelar} disableRipple
-                            sx={{
-                                textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 2,
-                                '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary },
-                            }}>
-                            Cancelar
-                        </Button>
-                        <Button
-                            onClick={activeStep < steps.length - 1 ? handleNext : handleSubmit}
-                            variant="contained"
-                            disabled={submitting}
-                            endIcon={submitting ? <CircularProgress size={18} color="inherit" /> : (activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <CheckOutlinedIcon />)}
-                            disableRipple
-                            sx={{
-                                textTransform: 'none', borderRadius: 2, fontWeight: 600,
-                                backgroundColor: theme.palette.primary.main,
-                                boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
-                                '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
-                                '&.Mui-disabled': { backgroundColor: '#e0e0e0', color: '#9e9e9e' },
-                            }}>
-                            {activeStep < steps.length - 1 ? 'Siguiente' : submitting ? 'Registrando...' : 'Registrar'}
-                        </Button>
-                    </Box>
-                </Box>
             </DialogContent>
+
+            <Box sx={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                px: 4, py: 2.5, borderTop: `1px solid ${theme.palette.divider}`, backgroundColor: '#FAFAFA',
+            }}>
+                <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined"
+                    startIcon={<ArrowBackOutlinedIcon />} disableRipple
+                    sx={{
+                        textTransform: 'none', borderRadius: 2, borderColor: theme.palette.divider,
+                        color: theme.palette.text.primary, fontWeight: 500,
+                        '&:hover': { borderColor: '#BDBDBD', backgroundColor: theme.palette.background.subtle },
+                        '&.Mui-disabled': { borderColor: theme.palette.divider, color: theme.palette.text.secondary },
+                    }}>
+                    Anterior
+                </Button>
+                <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                    <Button onClick={handleCancelar} disableRipple
+                        sx={{
+                            textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 2,
+                            '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary },
+                        }}>
+                        Cancelar
+                    </Button>
+                    <Button
+                        onClick={activeStep < steps.length - 1 ? handleNext : handleSubmit}
+                        variant="contained"
+                        disabled={submitting}
+                        endIcon={submitting ? <CircularProgress size={18} color="inherit" /> : (activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <CheckOutlinedIcon />)}
+                        disableRipple
+                        sx={{
+                            textTransform: 'none', borderRadius: 2, fontWeight: 600,
+                            backgroundColor: theme.palette.primary.main,
+                            boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
+                            '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
+                            '&.Mui-disabled': { backgroundColor: '#e0e0e0', color: '#9e9e9e' },
+                        }}>
+                        {activeStep < steps.length - 1 ? 'Siguiente' : submitting ? 'Registrando...' : 'Registrar'}
+                    </Button>
+                </Box>
+            </Box>
 
             <Snackbar open={exito} autoHideDuration={2500} onClose={() => setExito(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
                 <Alert severity="success" variant="filled" sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }} onClose={() => setExito(false)}>

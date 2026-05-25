@@ -409,9 +409,9 @@ const ListarPropietario = () => {
                 </Dialog>
             )}
 
-            <RegistrarPropietario 
-                open={modalRegistrarOpen} 
-                onClose={() => setModalRegistrarOpen(false)} 
+            <RegistrarPropietario
+                open={modalRegistrarOpen}
+                onClose={() => setModalRegistrarOpen(false)}
                 onSuccess={() => {
                     setPropietarios(getPropietarios())
                     setSnackbar({ open: true, message: 'Propietario registrado correctamente', severity: 'success' })
@@ -437,7 +437,7 @@ const ListarPropietario = () => {
                 <Alert
                     severity={snackbar.severity}
                     variant="filled"
-                    sx={{ 
+                    sx={{
                         fontWeight: 600,
                         borderRadius: 2,
                         boxShadow: '0 4px 12px rgba(0,0,0,0.15)',

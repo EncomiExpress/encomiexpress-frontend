@@ -166,28 +166,28 @@ const ListarConductor = () => {
                     <Typography variant="body2" color={theme.palette.text.secondary} mt={0.3}>
                         Gestiona los conductores registrados en el sistema.
                     </Typography>
-                 </Box>
-                 {tienePermiso(PERMISOS.REGISTRAR_CONDUCTOR) && (
-                     <Button
-                         onClick={() => setModalRegistrarOpen(true)}
-                         variant="contained"
-                         startIcon={<AddOutlinedIcon />}
-                         sx={{
-                             backgroundColor: theme.palette.primary.main,
-                             borderRadius: 2,
-                             textTransform: 'none',
-                             fontWeight: 600,
-                             boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
-                             '&:hover': {
-                                 backgroundColor: theme.palette.primary.dark,
-                                 boxShadow: '0 6px 20px rgba(204,24,24,0.2)',
-                             },
-                         }}
-                     >
-                         Nuevo conductor
-                     </Button>
-                 )}
-             </Box>
+                </Box>
+                {tienePermiso(PERMISOS.REGISTRAR_CONDUCTOR) && (
+                    <Button
+                        onClick={() => setModalRegistrarOpen(true)}
+                        variant="contained"
+                        startIcon={<AddOutlinedIcon />}
+                        sx={{
+                            backgroundColor: theme.palette.primary.main,
+                            borderRadius: 2,
+                            textTransform: 'none',
+                            fontWeight: 600,
+                            boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
+                            '&:hover': {
+                                backgroundColor: theme.palette.primary.dark,
+                                boxShadow: '0 6px 20px rgba(204,24,24,0.2)',
+                            },
+                        }}
+                    >
+                        Nuevo conductor
+                    </Button>
+                )}
+            </Box>
 
             <Box sx={{
                 display: 'inline-flex',
@@ -364,7 +364,7 @@ const ListarConductor = () => {
                                                         fontSize: '0.75rem',
                                                         py: 0.5,
                                                         color: conductor.estado === 'Activo' ? '#10b981' :
-                                                               conductor.estado === 'Inactivo' ? '#dc2626' : '#f59e0b',
+                                                            conductor.estado === 'Inactivo' ? '#dc2626' : '#f59e0b',
                                                     }}
                                                     MenuProps={filterMenuProps}
                                                 >
@@ -500,9 +500,9 @@ const ListarConductor = () => {
                 </Dialog>
             )}
 
-            <RegistrarConductor 
-                open={modalRegistrarOpen} 
-                onClose={() => setModalRegistrarOpen(false)} 
+            <RegistrarConductor
+                open={modalRegistrarOpen}
+                onClose={() => setModalRegistrarOpen(false)}
                 onSuccess={() => {
                     setConductores(getConductores())
                     setSnackbar({ open: true, message: 'Conductor registrado correctamente', severity: 'success' })
@@ -528,7 +528,7 @@ const ListarConductor = () => {
                 <Alert
                     severity={snackbar.severity}
                     variant="filled"
-                    sx={{ 
+                    sx={{
                         fontWeight: 600,
                         borderRadius: 2,
                         boxShadow: '0 4px 12px rgba(0,0,0,0.15)',

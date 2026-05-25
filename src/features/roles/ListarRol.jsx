@@ -217,69 +217,69 @@ const ModalConsultar = ({ rol, onClose }) => {
 }
 
 const ListarRol = () => {
-  const { tienePermiso, PERMISOS, getRolesBackend, toggleHabilitadoRol, eliminarRolBackend } = useAuth()
+    const { tienePermiso, PERMISOS, getRolesBackend, toggleHabilitadoRol, eliminarRolBackend } = useAuth()
 
-  const [roles, setRoles] = useState([])
-  const [busqueda, setBusqueda] = useState('')
-  const [page, setPage] = useState(1)
-  const [rowsPerPage, setRowsPerPage] = useState(10)
-  const [cargando, setCargando] = useState(false)
-  const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
-  const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
-  const [rolEditar, setRolEditar] = useState(null)
-  const [rolConsulta, setRolConsulta] = useState(null)
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' })
+    const [roles, setRoles] = useState([])
+    const [busqueda, setBusqueda] = useState('')
+    const [page, setPage] = useState(1)
+    const [rowsPerPage, setRowsPerPage] = useState(10)
+    const [cargando, setCargando] = useState(false)
+    const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
+    const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
+    const [rolEditar, setRolEditar] = useState(null)
+    const [rolConsulta, setRolConsulta] = useState(null)
+    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' })
 
-  const puedeRegistrar = tienePermiso(PERMISOS.REGISTRAR_ROL)
+    const puedeRegistrar = tienePermiso(PERMISOS.REGISTRAR_ROL)
 
-  const handleToggleHabilitado = async (id, habilitadoActual) => {
-     try {
-       const respuesta = await toggleHabilitadoRol(id)
-       if (respuesta.success) {
-         setRoles(roles.map(r => r.id === id ? { ...r, habilitado: !habilitadoActual } : r))
-         setSnackbar({ open: true, message: `Rol ${!habilitadoActual ? 'habilitado' : 'inhabilitado'} correctamente`, severity: 'success' })
-       } else {
-         setSnackbar({ open: true, message: respuesta.message || 'Error al cambiar estado', severity: 'error' })
-       }
-     } catch (error) {
-       setSnackbar({ open: true, message: 'Error al cambiar estado', severity: 'error' })
-     }
-   }
-
-  const handleEliminarRol = async (id) => {
-     try {
-       const respuesta = await eliminarRolBackend(id)
-       if (respuesta.success) {
-         setRoles(roles.filter(r => r.id !== id))
-         setSnackbar({ open: true, message: respuesta.message, severity: 'success' })
-       } else {
-         setSnackbar({ open: true, message: respuesta.message || 'Error al eliminar el rol', severity: 'error' })
-       }
-     } catch (error) {
-       setSnackbar({ open: true, message: 'Error al eliminar el rol', severity: 'error' })
-     }
-   }
-
-  useEffect(() => {
-    const cargarRoles = async () => {
-      setCargando(true)
-      const respuesta = await getRolesBackend()
-      if (respuesta.success) {
-        setRoles(respuesta.data || [])
-      } else {
-        console.error('Error al cargar roles:', respuesta.message)
-        setRoles([])
-      }
-      setCargando(false)
+    const handleToggleHabilitado = async (id, habilitadoActual) => {
+        try {
+            const respuesta = await toggleHabilitadoRol(id)
+            if (respuesta.success) {
+                setRoles(roles.map(r => r.id === id ? { ...r, habilitado: !habilitadoActual } : r))
+                setSnackbar({ open: true, message: `Rol ${!habilitadoActual ? 'habilitado' : 'inhabilitado'} correctamente`, severity: 'success' })
+            } else {
+                setSnackbar({ open: true, message: respuesta.message || 'Error al cambiar estado', severity: 'error' })
+            }
+        } catch (error) {
+            setSnackbar({ open: true, message: 'Error al cambiar estado', severity: 'error' })
+        }
     }
-    cargarRoles()
-  }, [getRolesBackend])
+
+    const handleEliminarRol = async (id) => {
+        try {
+            const respuesta = await eliminarRolBackend(id)
+            if (respuesta.success) {
+                setRoles(roles.filter(r => r.id !== id))
+                setSnackbar({ open: true, message: respuesta.message, severity: 'success' })
+            } else {
+                setSnackbar({ open: true, message: respuesta.message || 'Error al eliminar el rol', severity: 'error' })
+            }
+        } catch (error) {
+            setSnackbar({ open: true, message: 'Error al eliminar el rol', severity: 'error' })
+        }
+    }
+
+    useEffect(() => {
+        const cargarRoles = async () => {
+            setCargando(true)
+            const respuesta = await getRolesBackend()
+            if (respuesta.success) {
+                setRoles(respuesta.data || [])
+            } else {
+                console.error('Error al cargar roles:', respuesta.message)
+                setRoles([])
+            }
+            setCargando(false)
+        }
+        cargarRoles()
+    }, [getRolesBackend])
 
     const rolesFiltrados = roles.filter(r => {
         const q = busqueda.toLowerCase().trim()
         if (!q) return true
-        return r.nombre.toLowerCase().includes(q) || 
-               (r.descripcion || '').toLowerCase().includes(q)
+        return r.nombre.toLowerCase().includes(q) ||
+            (r.descripcion || '').toLowerCase().includes(q)
     })
 
     const totalPages = Math.max(1, Math.ceil(rolesFiltrados.length / rowsPerPage))
@@ -449,57 +449,57 @@ const ListarRol = () => {
                                             </TableCell>
 
                                             <TableCell sx={{ py: 1.5 }}>
-                                                  <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                                      {tienePermiso(PERMISOS.CONSULTAR_ROL) && (
-                                                          <Tooltip title="Ver detalle">
-                                                              <IconButton
-                                                                  size="small"
-                                                                  onClick={() => setRolConsulta(rol)}
-                                                                  sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
-                                                              >
-                                                                  <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
-                                                              </IconButton>
-                                                          </Tooltip>
-                                                      )}
-                                                      {tienePermiso(PERMISOS.ACTUALIZAR_ROL) && (
-                                                          <Tooltip title="Editar">
-                                                              <IconButton
-                                                                  size="small"
-                                                                  onClick={() => { setRolEditar(rol); setModalActualizarOpen(true) }}
-                                                                  sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
-                                                              >
-                                                                  <EditOutlinedIcon sx={{ fontSize: 18 }} />
-                                                              </IconButton>
-                                                          </Tooltip>
-                                                      )}
-                                                      {tienePermiso(PERMISOS.INHABILITAR_ROL) && rol.id !== 1 && (
-                                                          <Tooltip title={rol.habilitado ? 'Inhabilitar' : 'Habilitar'}>
-                                                              <IconButton
-                                                                  size="small"
-                                                                  onClick={() => handleToggleHabilitado(rol.id, rol.habilitado)}
-                                                                  sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
-                                                              >
-                                                                  {rol.habilitado ? <CheckBoxIcon sx={{ fontSize: 18, color: theme.palette.primary.main }} /> : <CheckBoxOutlineBlankIcon sx={{ fontSize: 18, color: theme.palette.status.disabled2.color }} />}
-                                                              </IconButton>
-                                                          </Tooltip>
-                                                      )}
-                                                      {tienePermiso(PERMISOS.INHABILITAR_ROL) && rol.id !== 1 && (
-                                                          <Tooltip title="Eliminar">
-                                                              <IconButton
-                                                                  size="small"
-                                                                  onClick={() => {
+                                                <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                                    {tienePermiso(PERMISOS.CONSULTAR_ROL) && (
+                                                        <Tooltip title="Ver detalle">
+                                                            <IconButton
+                                                                size="small"
+                                                                onClick={() => setRolConsulta(rol)}
+                                                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
+                                                            >
+                                                                <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                    )}
+                                                    {tienePermiso(PERMISOS.ACTUALIZAR_ROL) && (
+                                                        <Tooltip title="Editar">
+                                                            <IconButton
+                                                                size="small"
+                                                                onClick={() => { setRolEditar(rol); setModalActualizarOpen(true) }}
+                                                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
+                                                            >
+                                                                <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                    )}
+                                                    {tienePermiso(PERMISOS.INHABILITAR_ROL) && rol.id !== 1 && (
+                                                        <Tooltip title={rol.habilitado ? 'Inhabilitar' : 'Habilitar'}>
+                                                            <IconButton
+                                                                size="small"
+                                                                onClick={() => handleToggleHabilitado(rol.id, rol.habilitado)}
+                                                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
+                                                            >
+                                                                {rol.habilitado ? <CheckBoxIcon sx={{ fontSize: 18, color: theme.palette.primary.main }} /> : <CheckBoxOutlineBlankIcon sx={{ fontSize: 18, color: theme.palette.status.disabled2.color }} />}
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                    )}
+                                                    {tienePermiso(PERMISOS.INHABILITAR_ROL) && rol.id !== 1 && (
+                                                        <Tooltip title="Eliminar">
+                                                            <IconButton
+                                                                size="small"
+                                                                onClick={() => {
                                                                     if (window.confirm(`¿Está seguro de que desea eliminar el rol ${rol.nombre}?`)) {
-                                                                      handleEliminarRol(rol.id)
+                                                                        handleEliminarRol(rol.id)
                                                                     }
-                                                                  }}
-                                                                  sx={{ color: '#DC2626', '&:hover': { backgroundColor: '#FEE2E2' } }}
-                                                              >
-                                                                  <DeleteOutlinedIcon sx={{ fontSize: 18 }} />
-                                                              </IconButton>
-                                                          </Tooltip>
-                                                      )}
-                                                  </Box>
-                                             </TableCell>
+                                                                }}
+                                                                sx={{ color: '#DC2626', '&:hover': { backgroundColor: '#FEE2E2' } }}
+                                                            >
+                                                                <DeleteOutlinedIcon sx={{ fontSize: 18 }} />
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                    )}
+                                                </Box>
+                                            </TableCell>
                                         </TableRow>
                                     )
                                 })
@@ -589,16 +589,16 @@ const ListarRol = () => {
 
             <ModalConsultar rol={rolConsulta} onClose={() => setRolConsulta(null)} />
 
-            <RegistrarRol 
-              open={modalRegistrarOpen} 
-              onClose={() => setModalRegistrarOpen(false)} 
-              onSuccess={async () => {
-                const respuesta = await getRolesBackend()
-                if (respuesta.success) {
-                  setRoles(respuesta.data || [])
-                }
-                setSnackbar({ open: true, message: respuesta.success ? 'Rol registrado correctamente' : respuesta.message, severity: respuesta.success ? 'success' : 'error' })
-              }}
+            <RegistrarRol
+                open={modalRegistrarOpen}
+                onClose={() => setModalRegistrarOpen(false)}
+                onSuccess={async () => {
+                    const respuesta = await getRolesBackend()
+                    if (respuesta.success) {
+                        setRoles(respuesta.data || [])
+                    }
+                    setSnackbar({ open: true, message: respuesta.success ? 'Rol registrado correctamente' : respuesta.message, severity: respuesta.success ? 'success' : 'error' })
+                }}
             />
 
             <ActualizarRol
@@ -606,13 +606,13 @@ const ListarRol = () => {
                 onClose={() => { setModalActualizarOpen(false); setRolEditar(null) }}
                 rol={rolEditar}
                 onSuccess={async () => {
-                  const respuesta = await getRolesBackend()
-                  if (respuesta.success) {
-                    setRoles(respuesta.data || [])
-                  }
-                  setSnackbar({ open: true, message: respuesta.success ? 'Rol actualizado correctamente' : respuesta.message, severity: respuesta.success ? 'success' : 'error' })
+                    const respuesta = await getRolesBackend()
+                    if (respuesta.success) {
+                        setRoles(respuesta.data || [])
+                    }
+                    setSnackbar({ open: true, message: respuesta.success ? 'Rol actualizado correctamente' : respuesta.message, severity: respuesta.success ? 'success' : 'error' })
                 }}
-              />
+            />
 
             <Snackbar
                 open={snackbar.open}
@@ -623,7 +623,7 @@ const ListarRol = () => {
                 <Alert
                     severity={snackbar.severity}
                     variant="filled"
-                    sx={{ 
+                    sx={{
                         fontWeight: 600,
                         borderRadius: 2,
                         boxShadow: '0 4px 12px rgba(0,0,0,0.15)',

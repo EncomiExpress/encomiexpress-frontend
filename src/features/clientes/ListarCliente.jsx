@@ -212,28 +212,28 @@ const ListarCliente = () => {
                     <Typography variant="body2" color={theme.palette.text.secondary} mt={0.3}>
                         Gestiona los clientes registrados en el sistema.
                     </Typography>
-                 </Box>
-                 {tienePermiso(PERMISOS.REGISTRAR_CLIENTE) && (
-                     <Button
-                         onClick={() => setModalRegistrarOpen(true)}
-                         variant="contained"
-                         startIcon={<AddOutlinedIcon />}
-                         sx={{
-                             backgroundColor: theme.palette.primary.main,
-                             borderRadius: 2,
-                             textTransform: 'none',
-                             fontWeight: 600,
-                             boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
-                             '&:hover': {
-                                 backgroundColor: theme.palette.primary.dark,
-                                 boxShadow: '0 6px 20px rgba(204,24,24,0.2)',
-                             },
-                         }}
-                     >
-                         Nuevo cliente
-                     </Button>
-                 )}
-             </Box>
+                </Box>
+                {tienePermiso(PERMISOS.REGISTRAR_CLIENTE) && (
+                    <Button
+                        onClick={() => setModalRegistrarOpen(true)}
+                        variant="contained"
+                        startIcon={<AddOutlinedIcon />}
+                        sx={{
+                            backgroundColor: theme.palette.primary.main,
+                            borderRadius: 2,
+                            textTransform: 'none',
+                            fontWeight: 600,
+                            boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
+                            '&:hover': {
+                                backgroundColor: theme.palette.primary.dark,
+                                boxShadow: '0 6px 20px rgba(204,24,24,0.2)',
+                            },
+                        }}
+                    >
+                        Nuevo cliente
+                    </Button>
+                )}
+            </Box>
 
             {error && (
                 <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
@@ -362,31 +362,31 @@ const ListarCliente = () => {
 
                         <TableBody>
                             {loading ? (
-                                    <TableRow>
-                                        <TableCell colSpan={5} align="center" sx={{ py: 7 }}>
-                                            <CircularProgress size={28} sx={{ color: theme.palette.primary.main }} />
+                                <TableRow>
+                                    <TableCell colSpan={5} align="center" sx={{ py: 7 }}>
+                                        <CircularProgress size={28} sx={{ color: theme.palette.primary.main }} />
                                         <Typography variant="body2" color={theme.palette.text.secondary} mt={1.5}>
                                             Cargando clientes...
                                         </Typography>
                                     </TableCell>
                                 </TableRow>
                             ) : error ? (
-                                    <TableRow>
-                                        <TableCell colSpan={5} align="center" sx={{ py: 5 }}>
-                                            <Typography color="error" variant="body2">
+                                <TableRow>
+                                    <TableCell colSpan={5} align="center" sx={{ py: 5 }}>
+                                        <Typography color="error" variant="body2">
                                             No se pudieron cargar los clientes. Verifica la conexión con el servidor.
                                         </Typography>
                                     </TableCell>
                                 </TableRow>
                             ) : paginatedClientes.length === 0 ? (
-                                    <TableRow>
-                                        <TableCell colSpan={5} align="center" sx={{ py: 7 }}>
-                                            <Typography color={theme.palette.text.secondary} variant="body2">
+                                <TableRow>
+                                    <TableCell colSpan={5} align="center" sx={{ py: 7 }}>
+                                        <Typography color={theme.palette.text.secondary} variant="body2">
                                             {clientes.length === 0
                                                 ? 'No hay clientes registrados en el sistema.'
                                                 : busqueda.trim() !== ''
                                                     ? 'No se encontraron clientes que coincidan con la búsqueda.'
-                                                        : 'No se encontraron clientes en este estado.'
+                                                    : 'No se encontraron clientes en este estado.'
                                             }
                                         </Typography>
                                     </TableCell>
@@ -588,9 +588,9 @@ const ListarCliente = () => {
 
             <ModalConsultar cliente={clienteConsulta} onClose={() => setClienteConsulta(null)} />
 
-            <RegistrarCliente 
-                open={modalRegistrarOpen} 
-                onClose={() => setModalRegistrarOpen(false)} 
+            <RegistrarCliente
+                open={modalRegistrarOpen}
+                onClose={() => setModalRegistrarOpen(false)}
                 onSuccess={() => {
                     setSnackbar({ open: true, message: 'Cliente registrado correctamente', severity: 'success' })
                 }}
@@ -614,7 +614,7 @@ const ListarCliente = () => {
                 <Alert
                     severity={snackbar.severity}
                     variant="filled"
-                    sx={{ 
+                    sx={{
                         fontWeight: 600,
                         borderRadius: 2,
                         boxShadow: '0 4px 12px rgba(0,0,0,0.15)',

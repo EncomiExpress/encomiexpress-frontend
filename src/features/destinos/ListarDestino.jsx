@@ -124,28 +124,28 @@ const ListarDestino = () => {
                     <Typography variant="body2" color={theme.palette.text.secondary} mt={0.3}>
                         Gestiona los destinos de entrega registrados en el sistema.
                     </Typography>
-                 </Box>
-                 {tienePermiso(PERMISOS.REGISTRAR_DESTINO) && (
-                     <Button
-                         onClick={() => setModalRegistrarOpen(true)}
-                         variant="contained"
-                         startIcon={<AddOutlinedIcon />}
-                         sx={{
-                             backgroundColor: theme.palette.primary.main,
-                             borderRadius: 2,
-                             textTransform: 'none',
-                             fontWeight: 600,
-                             boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
-                             '&:hover': {
-                                 backgroundColor: theme.palette.primary.dark,
-                                 boxShadow: '0 6px 20px rgba(204,24,24,0.2)',
-                             },
-                         }}
-                     >
-                         Nuevo destino
-                     </Button>
-                 )}
-             </Box>
+                </Box>
+                {tienePermiso(PERMISOS.REGISTRAR_DESTINO) && (
+                    <Button
+                        onClick={() => setModalRegistrarOpen(true)}
+                        variant="contained"
+                        startIcon={<AddOutlinedIcon />}
+                        sx={{
+                            backgroundColor: theme.palette.primary.main,
+                            borderRadius: 2,
+                            textTransform: 'none',
+                            fontWeight: 600,
+                            boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
+                            '&:hover': {
+                                backgroundColor: theme.palette.primary.dark,
+                                boxShadow: '0 6px 20px rgba(204,24,24,0.2)',
+                            },
+                        }}
+                    >
+                        Nuevo destino
+                    </Button>
+                )}
+            </Box>
 
             <Box sx={{
                 display: 'inline-flex',
@@ -401,9 +401,9 @@ const ListarDestino = () => {
                 </Dialog>
             )}
 
-            <RegistrarDestino 
-                open={modalRegistrarOpen} 
-                onClose={() => setModalRegistrarOpen(false)} 
+            <RegistrarDestino
+                open={modalRegistrarOpen}
+                onClose={() => setModalRegistrarOpen(false)}
                 onSuccess={() => {
                     setDestinos(getDestinos())
                     setSnackbar({ open: true, message: 'Destino registrado correctamente', severity: 'success' })
@@ -429,7 +429,7 @@ const ListarDestino = () => {
                 <Alert
                     severity={snackbar.severity}
                     variant="filled"
-                    sx={{ 
+                    sx={{
                         fontWeight: 600,
                         borderRadius: 2,
                         boxShadow: '0 4px 12px rgba(0,0,0,0.15)',

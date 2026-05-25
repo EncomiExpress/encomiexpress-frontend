@@ -324,28 +324,28 @@ const ListarAnticipoExcedente = () => {
                     <Typography variant="body2" color={theme.palette.text.secondary} mt={0.3}>
                         Gestiona los anticipos y excedentes de los conductores.
                     </Typography>
-                 </Box>
-                 {tienePermiso(PERMISOS.REGISTRAR_ANTICIPO) && (
-                     <Button
-                         onClick={() => setModalRegistrarOpen(true)}
-                         variant="contained"
-                         startIcon={<AddOutlinedIcon />}
-                         sx={{
-                             backgroundColor: theme.palette.primary.main,
-                             borderRadius: 2,
-                             textTransform: 'none',
-                             fontWeight: 600,
-                             boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
-                             '&:hover': {
-                                 backgroundColor: theme.palette.primary.dark,
-                                 boxShadow: '0 6px 20px rgba(204,24,24,0.2)',
-                             },
-                         }}
-                     >
-                         Nuevo anticipo
-                     </Button>
-                 )}
-             </Box>
+                </Box>
+                {tienePermiso(PERMISOS.REGISTRAR_ANTICIPO) && (
+                    <Button
+                        onClick={() => setModalRegistrarOpen(true)}
+                        variant="contained"
+                        startIcon={<AddOutlinedIcon />}
+                        sx={{
+                            backgroundColor: theme.palette.primary.main,
+                            borderRadius: 2,
+                            textTransform: 'none',
+                            fontWeight: 600,
+                            boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
+                            '&:hover': {
+                                backgroundColor: theme.palette.primary.dark,
+                                boxShadow: '0 6px 20px rgba(204,24,24,0.2)',
+                            },
+                        }}
+                    >
+                        Nuevo anticipo
+                    </Button>
+                )}
+            </Box>
 
             {/* Filtros de habilitado */}
             <Box sx={{

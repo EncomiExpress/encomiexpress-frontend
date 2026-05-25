@@ -151,7 +151,7 @@ const ActualizarCliente = ({ open, onClose, cliente: clienteProp, onSuccess }) =
                 const actual = form[key] !== undefined ? String(form[key]) : ''
                 return original !== actual
             })
-            
+
             if (!hayCambios) {
                 setSinCambios(true)
                 return
@@ -233,8 +233,10 @@ const ActualizarCliente = ({ open, onClose, cliente: clienteProp, onSuccess }) =
                                                 <Select name="emailDominio" value={form.emailDominio}
                                                     onChange={handleChange} variant="standard" disableUnderline
                                                     IconComponent={KeyboardArrowDownOutlinedIcon}
-                                                    sx={{ fontSize: '0.8rem', color: theme.palette.text.secondary,
-                                                        '& .MuiSelect-select': { py: 0, pl: 0.5, pr: '22px !important' } }}>
+                                                    sx={{
+                                                        fontSize: '0.8rem', color: theme.palette.text.secondary,
+                                                        '& .MuiSelect-select': { py: 0, pl: 0.5, pr: '22px !important' }
+                                                    }}>
                                                     {DOMINIOS_EMAIL.map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
                                                 </Select>
                                             </InputAdornment>
@@ -317,7 +319,8 @@ const ActualizarCliente = ({ open, onClose, cliente: clienteProp, onSuccess }) =
             </DialogTitle>
             <DialogContent sx={{ p: 3, pt: 1.5 }}>
 
-                <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 3, mt: 2,
+                <Stepper activeStep={activeStep} alternativeLabel sx={{
+                    mb: 3, mt: 2,
                     '& .MuiStepIcon-root': { color: theme.palette.divider },
                     '& .MuiStepIcon-root.Mui-active': { color: theme.palette.primary.main },
                     '& .MuiStepIcon-root.Mui-completed': { color: theme.palette.primary.main },
@@ -335,47 +338,47 @@ const ActualizarCliente = ({ open, onClose, cliente: clienteProp, onSuccess }) =
                 <Box sx={{ maxWidth: 700, mx: 'auto' }}>
                     {renderStepContent()}
                 </Box>
-
-                <Box sx={{
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    mt: 3, pt: 2, borderTop: `1px solid ${theme.palette.divider}`,
-                }}>
-                    <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined"
-                        startIcon={<ArrowBackOutlinedIcon />} disableRipple
-                        sx={{
-                            textTransform: 'none', borderRadius: 2, borderColor: theme.palette.divider,
-                            color: theme.palette.text.primary, fontWeight: 500,
-                            '&:hover': { borderColor: '#BDBDBD', backgroundColor: theme.palette.background.subtle },
-                            '&.Mui-disabled': { borderColor: theme.palette.divider, color: theme.palette.text.secondary },
-                        }}>
-                        Anterior
-                    </Button>
-                    <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
-                        <Button onClick={handleCancelar} disableRipple
-                            sx={{
-                                textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 2,
-                                '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary },
-                            }}>
-                            Cancelar
-                        </Button>
-                        <Button
-                            onClick={activeStep < steps.length - 1 ? handleNext : handleSubmit}
-                            variant="contained"
-                            disabled={submitting || (activeStep === steps.length - 1 && sinCambios)}
-                            endIcon={activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <SaveOutlinedIcon />}
-                            disableRipple
-                            sx={{
-                                textTransform: 'none', borderRadius: 2, fontWeight: 600,
-                                backgroundColor: theme.palette.primary.main,
-                                boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
-                                '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
-                                '&.Mui-disabled': { backgroundColor: theme.palette.divider, color: '#9E9E9E' },
-                            }}>
-                            {activeStep < steps.length - 1 ? 'Siguiente' : submitting ? 'Guardando...' : sinCambios ? 'Sin cambios' : 'Guardar cambios'}
-                        </Button>
-                    </Box>
-                </Box>
             </DialogContent>
+
+            <Box sx={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                px: 4, py: 2.5, borderTop: `1px solid ${theme.palette.divider}`,
+            }}>
+                <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined"
+                    startIcon={<ArrowBackOutlinedIcon />} disableRipple
+                    sx={{
+                        textTransform: 'none', borderRadius: 2, borderColor: theme.palette.divider,
+                        color: theme.palette.text.primary, fontWeight: 500,
+                        '&:hover': { borderColor: '#BDBDBD', backgroundColor: theme.palette.background.subtle },
+                        '&.Mui-disabled': { borderColor: theme.palette.divider, color: theme.palette.text.secondary },
+                    }}>
+                    Anterior
+                </Button>
+                <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                    <Button onClick={handleCancelar} disableRipple
+                        sx={{
+                            textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 2,
+                            '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary },
+                        }}>
+                        Cancelar
+                    </Button>
+                    <Button
+                        onClick={activeStep < steps.length - 1 ? handleNext : handleSubmit}
+                        variant="contained"
+                        disabled={submitting || (activeStep === steps.length - 1 && sinCambios)}
+                        endIcon={activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <SaveOutlinedIcon />}
+                        disableRipple
+                        sx={{
+                            textTransform: 'none', borderRadius: 2, fontWeight: 600,
+                            backgroundColor: theme.palette.primary.main,
+                            boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
+                            '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
+                            '&.Mui-disabled': { backgroundColor: theme.palette.divider, color: '#9E9E9E' },
+                        }}>
+                        {activeStep < steps.length - 1 ? 'Siguiente' : submitting ? 'Guardando...' : sinCambios ? 'Sin cambios' : 'Guardar cambios'}
+                    </Button>
+                </Box>
+            </Box>
 
             <Snackbar open={exito} autoHideDuration={2500} onClose={() => setExito(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
                 <Alert severity="success" variant="filled" sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }} onClose={() => setExito(false)}>

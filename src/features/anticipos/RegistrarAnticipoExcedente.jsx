@@ -345,48 +345,6 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
                 <Box sx={{ maxWidth: 760, mx: 'auto' }}>
                     {renderStepContent()}
                 </Box>
-
-                <Box sx={{
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    mt: 3, pt: 2, borderTop: `1px solid ${theme.palette.divider}`,
-                }}>
-                    <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined"
-                        startIcon={<ArrowBackOutlinedIcon />} disableRipple
-                        sx={{
-                            textTransform: 'none', borderRadius: 2, borderColor: theme.palette.divider,
-                            color: theme.palette.text.primary, fontWeight: 500,
-                            '&:hover': { borderColor: '#BDBDBD', backgroundColor: theme.palette.background.subtle },
-                            '&.Mui-disabled': { borderColor: theme.palette.divider, color: theme.palette.text.secondary },
-                        }}>
-                        Anterior
-                    </Button>
-                    <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
-                        <Button onClick={handleCancelar} disableRipple
-                            sx={{
-                                textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 2,
-                                '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary },
-                            }}>
-                            Cancelar
-                        </Button>
-                        <Button
-                            onClick={activeStep < steps.length - 1 ? handleNext : handleSubmit}
-                            variant="contained"
-                            disabled={submitting}
-                            endIcon={activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <CheckOutlinedIcon />}
-                            disableRipple
-                            sx={{
-                                textTransform: 'none', borderRadius: 2, fontWeight: 600,
-                                backgroundColor: theme.palette.primary.main,
-                                boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
-                                '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
-                            }}>
-                            {activeStep < steps.length - 1
-                                ? 'Siguiente'
-                                : submitting ? 'Registrando...' : 'Registrar'
-                            }
-                        </Button>
-                    </Box>
-                </Box>
             </DialogContent>
 
             <Snackbar open={exito} autoHideDuration={2500} onClose={() => setExito(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
@@ -394,6 +352,48 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
                     ¡Anticipo registrado exitosamente!
                 </Alert>
             </Snackbar>
+
+            <Box sx={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                px: 4, py: 2.5, borderTop: `1px solid ${theme.palette.divider}`,
+            }}>
+                <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined"
+                    startIcon={<ArrowBackOutlinedIcon />} disableRipple
+                    sx={{
+                        textTransform: 'none', borderRadius: 2, borderColor: theme.palette.divider,
+                        color: theme.palette.text.primary, fontWeight: 500,
+                        '&:hover': { borderColor: '#BDBDBD', backgroundColor: theme.palette.background.subtle },
+                        '&.Mui-disabled': { borderColor: theme.palette.divider, color: theme.palette.text.secondary },
+                    }}>
+                    Anterior
+                </Button>
+                <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                    <Button onClick={handleCancelar} disableRipple
+                        sx={{
+                            textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 2,
+                            '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary },
+                        }}>
+                        Cancelar
+                    </Button>
+                    <Button
+                        onClick={activeStep < steps.length - 1 ? handleNext : handleSubmit}
+                        variant="contained"
+                        disabled={submitting}
+                        endIcon={activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <CheckOutlinedIcon />}
+                        disableRipple
+                        sx={{
+                            textTransform: 'none', borderRadius: 2, fontWeight: 600,
+                            backgroundColor: theme.palette.primary.main,
+                            boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
+                            '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
+                        }}>
+                        {activeStep < steps.length - 1
+                            ? 'Siguiente'
+                            : submitting ? 'Registrando...' : 'Registrar'
+                        }
+                    </Button>
+                </Box>
+            </Box>
         </Dialog>
     )
 }

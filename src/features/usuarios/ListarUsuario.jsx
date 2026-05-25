@@ -148,7 +148,7 @@ const FILTROS = [
 
 const ListarUsuario = () => {
     const { tienePermiso, PERMISOS, getUsuarios, habilitarInhabilitarUsuario } = useAuth()
-    
+
     const [usuarios, setUsuarios] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
@@ -184,7 +184,7 @@ const ListarUsuario = () => {
     const handleToggleHabilitado = async (id) => {
         try {
             await habilitarInhabilitarUsuario(id)
-            setUsuarios(prev => prev.map(u => 
+            setUsuarios(prev => prev.map(u =>
                 u.idUsuario === id ? { ...u, habilitado: !u.habilitado } : u
             ))
             setSnackbar({ open: true, message: `Usuario ${usuarios.find(u => u.idUsuario === id)?.habilitado ? 'inhabilitado' : 'habilitado'} correctamente`, severity: 'success' })
@@ -670,7 +670,7 @@ const ListarUsuario = () => {
                 <Alert
                     severity={snackbar.severity}
                     variant="filled"
-                    sx={{ 
+                    sx={{
                         fontWeight: 600,
                         borderRadius: 2,
                         boxShadow: '0 4px 12px rgba(0,0,0,0.15)',

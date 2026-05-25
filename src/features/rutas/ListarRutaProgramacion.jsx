@@ -101,18 +101,18 @@ const ListarRutaProgramacion = () => {
     const anioActual = ahora.getFullYear()
 
     const MESES = [
-      { value: '1', label: 'Enero' },
-      { value: '2', label: 'Febrero' },
-      { value: '3', label: 'Marzo' },
-      { value: '4', label: 'Abril' },
-      { value: '5', label: 'Mayo' },
-      { value: '6', label: 'Junio' },
-      { value: '7', label: 'Julio' },
-      { value: '8', label: 'Agosto' },
-      { value: '9', label: 'Septiembre' },
-      { value: '10', label: 'Octubre' },
-      { value: '11', label: 'Noviembre' },
-      { value: '12', label: 'Diciembre' },
+        { value: '1', label: 'Enero' },
+        { value: '2', label: 'Febrero' },
+        { value: '3', label: 'Marzo' },
+        { value: '4', label: 'Abril' },
+        { value: '5', label: 'Mayo' },
+        { value: '6', label: 'Junio' },
+        { value: '7', label: 'Julio' },
+        { value: '8', label: 'Agosto' },
+        { value: '9', label: 'Septiembre' },
+        { value: '10', label: 'Octubre' },
+        { value: '11', label: 'Noviembre' },
+        { value: '12', label: 'Diciembre' },
     ]
 
     useEffect(() => {
@@ -307,28 +307,28 @@ const ListarRutaProgramacion = () => {
                     <Typography variant="body2" color={theme.palette.text.secondary} mt={0.3}>
                         Gestiona las rutas programadas en el sistema.
                     </Typography>
-                 </Box>
-                 {tienePermiso(PERMISOS.REGISTRAR_RUTA_PROGRAMACION) && (
-                     <Button
-                         onClick={() => setModalRegistrarOpen(true)}
-                         variant="contained"
-                         startIcon={<AddOutlinedIcon />}
-                         sx={{
-                             backgroundColor: theme.palette.primary.main,
-                             borderRadius: 2,
-                             textTransform: 'none',
-                             fontWeight: 600,
-                             boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
-                             '&:hover': {
-                                 backgroundColor: theme.palette.primary.dark,
-                                 boxShadow: '0 6px 20px rgba(204,24,24,0.2)',
-                             },
-                         }}
-                     >
-                         Nueva ruta
-                     </Button>
-                 )}
-             </Box>
+                </Box>
+                {tienePermiso(PERMISOS.REGISTRAR_RUTA_PROGRAMACION) && (
+                    <Button
+                        onClick={() => setModalRegistrarOpen(true)}
+                        variant="contained"
+                        startIcon={<AddOutlinedIcon />}
+                        sx={{
+                            backgroundColor: theme.palette.primary.main,
+                            borderRadius: 2,
+                            textTransform: 'none',
+                            fontWeight: 600,
+                            boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
+                            '&:hover': {
+                                backgroundColor: theme.palette.primary.dark,
+                                boxShadow: '0 6px 20px rgba(204,24,24,0.2)',
+                            },
+                        }}
+                    >
+                        Nueva ruta
+                    </Button>
+                )}
+            </Box>
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1.5, flexWrap: 'wrap' }}>
                 <TextField
@@ -471,8 +471,8 @@ const ListarRutaProgramacion = () => {
                                                             fontSize: '0.75rem',
                                                             py: 0.5,
                                                             color: ruta.estado === 'Programada' ? '#3730A3' :
-                                                                   ruta.estado === 'En Curso' ? '#1E40AF' :
-                                                                   ruta.estado === 'Completada' ? '#065F46' : '#991B1B',
+                                                                ruta.estado === 'En Curso' ? '#1E40AF' :
+                                                                    ruta.estado === 'Completada' ? '#065F46' : '#991B1B',
                                                             fontWeight: 600,
                                                         }}
                                                         MenuProps={filterMenuProps}
@@ -633,7 +633,7 @@ const ListarRutaProgramacion = () => {
                 <Alert
                     severity={snackbar.severity}
                     variant="filled"
-                    sx={{ 
+                    sx={{
                         fontWeight: 600,
                         borderRadius: 2,
                         boxShadow: '0 4px 12px rgba(0,0,0,0.15)',

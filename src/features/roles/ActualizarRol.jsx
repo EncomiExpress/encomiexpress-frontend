@@ -3,9 +3,9 @@ import { useState, useEffect } from 'react'
 import { Box, Typography, Paper, FormControlLabel, Checkbox, Grid, Alert, Snackbar, Dialog, DialogTitle, DialogContent, IconButton, Button } from '@mui/material'
 import { Security, Close, SaveOutlined } from '@mui/icons-material'
 import { MODULOS, ROLES, useAuth } from '../../shared/contexts/AuthContext.jsx'
-import { 
-  FormField, PrimaryButton, SecondaryButton, 
-  FormButtonGroup 
+import {
+  FormField, PrimaryButton, SecondaryButton,
+  FormButtonGroup
 } from '../../shared/components/FormularioEstandarizado.jsx'
 
 const COLORS = theme.palette
@@ -36,31 +36,31 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
       }
     }
     cargarPermisos()
-    }, [getPermisosBackend])
+  }, [getPermisosBackend])
 
-   useEffect(() => {
-     if (rolProp) {
-       const nuevoForm = {
-         nombre: rolProp.nombre || '',
-         permisos: (rolProp.permisos || []).map(p => typeof p === 'string' ? p : p.nombre)
-       }
-       setFormData(nuevoForm)
-       setFormOriginal(nuevoForm)
-       setSinCambios(false)
-       setIntentoGuardar(false)
-     }
-   }, [rolProp])
+  useEffect(() => {
+    if (rolProp) {
+      const nuevoForm = {
+        nombre: rolProp.nombre || '',
+        permisos: (rolProp.permisos || []).map(p => typeof p === 'string' ? p : p.nombre)
+      }
+      setFormData(nuevoForm)
+      setFormOriginal(nuevoForm)
+      setSinCambios(false)
+      setIntentoGuardar(false)
+    }
+  }, [rolProp])
 
-   useEffect(() => {
-     if (formOriginal) {
-       setSinCambios(
-         formData.nombre === formOriginal.nombre &&
-         JSON.stringify(formData.permisos.sort()) === JSON.stringify(formOriginal.permisos.sort())
-       )
-     }
-   }, [formData, formOriginal])
+  useEffect(() => {
+    if (formOriginal) {
+      setSinCambios(
+        formData.nombre === formOriginal.nombre &&
+        JSON.stringify(formData.permisos.sort()) === JSON.stringify(formOriginal.permisos.sort())
+      )
+    }
+  }, [formData, formOriginal])
 
-   const handleSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     setIntentoGuardar(true)
 
@@ -149,20 +149,20 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
 
           <Box sx={{ flex: 1, overflowY: 'auto', pr: 1 }}>
             {modulos.map(([moduloKey, modulo]) => (
-              <Paper 
+              <Paper
                 key={moduloKey}
                 elevation={0}
-                sx={{ 
-                  border: '1px solid #E0E0E0', 
-                  borderRadius: 2, 
+                sx={{
+                  border: '1px solid #E0E0E0',
+                  borderRadius: 2,
                   mb: 1.5,
                   backgroundColor: '#F8F9FA'
                 }}
               >
-                <Box 
-                  sx={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
                     justifyContent: 'space-between',
                     p: 1.5,
                     borderBottom: '1px solid #E0E0E0',
@@ -197,7 +197,7 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
                             }))
                           }
                         }}
-                        sx={{ 
+                        sx={{
                           color: theme.palette.primary.main,
                           '&.Mui-checked': { color: theme.palette.primary.main },
                           '&.MuiCheckbox-indeterminate': { color: theme.palette.primary.main }
@@ -222,7 +222,7 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
                                   : formData.permisos.filter(p => p !== permiso)
                                 setFormData({ ...formData, permisos: newPermisos })
                               }}
-                              sx={{ 
+                              sx={{
                                 color: theme.palette.primary.main,
                                 '&.Mui-checked': { color: theme.palette.primary.main }
                               }}
@@ -242,37 +242,36 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
               </Paper>
             ))}
           </Box>
-
-          <Box sx={{
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              mt: 3, pt: 2, borderTop: `1px solid ${theme.palette.divider}`,
+        </form>
+      </DialogContent>
+      <Box sx={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        mb: 2, pt: 2, pr: 3, borderTop: `1px solid ${theme.palette.divider}`,
+      }}>
+        <Box />
+        <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+          <Button onClick={onClose} disableRipple
+            sx={{
+              textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 2,
+              '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary },
             }}>
-              <Box />
-              <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
-                <Button onClick={onClose} disableRipple
-                  sx={{
-                    textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 2,
-                    '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary },
-                  }}>
-                  Cancelar
-                </Button>
-                 <Button type="submit" variant="contained" disableRipple
-                  disabled={enviando}
-                  endIcon={enviando ? undefined : <SaveOutlined />}
-                  sx={{
-                    textTransform: 'none', borderRadius: 2, fontWeight: 600,
-                    backgroundColor: theme.palette.primary.main,
-                    boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
-                    '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
-                    '&.Mui-disabled': { backgroundColor: theme.palette.divider, color: '#9E9E9E' },
-                  }}
-                >
-                  {enviando ? 'Guardando...' : 'Guardar Cambios'}
-                </Button>
-                </Box>
-              </Box>
-             </form>
-          </DialogContent>
+            Cancelar
+          </Button>
+          <Button type="submit" variant="contained" disableRipple
+            disabled={enviando}
+            endIcon={enviando ? undefined : <SaveOutlined />}
+            sx={{
+              textTransform: 'none', borderRadius: 2, fontWeight: 600,
+              backgroundColor: theme.palette.primary.main,
+              boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
+              '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
+              '&.Mui-disabled': { backgroundColor: theme.palette.divider, color: '#9E9E9E' },
+            }}
+          >
+            {enviando ? 'Guardando...' : 'Guardar Cambios'}
+          </Button>
+        </Box>
+      </Box>
     </Dialog>
   )
 }

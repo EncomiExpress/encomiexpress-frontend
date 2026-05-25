@@ -21,15 +21,40 @@ const COLORS = theme.palette
 
 const steps = ['Datos Personales', 'Credenciales', 'Confirmación']
 
-const ConfirmRow = ({ label, value }) => (
-    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, py: 0.9, overflow: 'hidden' }}>
-        <Typography variant="body2" sx={{ color: '#9C4040', fontWeight: 500, flexShrink: 0 }}>{label}</Typography>
-        <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary}
-            sx={{ textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
-            {value || '—'}
-        </Typography>
-    </Box>
-)
+const HighlightText = ({ original, actual, color = theme.palette.primary.main }) => {
+    if (original === actual) {
+        return <>{actual || '—'}</>
+    }
+
+    const maxLen = Math.max(original?.length || 0, actual?.length || 0)
+    const parts = []
+
+    for (let i = 0; i < maxLen; i++) {
+        const origChar = original?.[i] || ''
+        const actChar = actual?.[i] || ''
+
+        if (origChar !== actChar) {
+            parts.push(<span key={i} style={{ backgroundColor: color, fontWeight: 700 }}>{actChar}</span>)
+        } else {
+            parts.push(<span key={i}>{actChar}</span>)
+        }
+    }
+
+    return <>{parts}</>
+}
+
+const ConfirmRow = ({ label, valueOriginal, valueActual }) => {
+    const changed = valueOriginal !== valueActual
+    return (
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, py: 0.9, overflow: 'hidden' }}>
+            <Typography variant="body2" sx={{ color: '#9C4040', fontWeight: 500, flexShrink: 0 }}>{label}</Typography>
+            <Typography variant="body2" fontWeight={changed ? 700 : 500} color={changed ? theme.palette.primary.main : theme.palette.text.primary}
+                sx={{ textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0, backgroundColor: changed ? theme.palette.primary.light + '22' : 'transparent', px: changed ? 1 : 0, borderRadius: changed ? 1 : 0 }}>
+                <HighlightText original={valueOriginal} actual={valueActual} />
+            </Typography>
+        </Box>
+    )
+}
 
 const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) => {
     const { actualizarUsuario, getRolesBackend } = useAuth()
@@ -65,32 +90,56 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
         confirmarPassword: '',
     })
 
-     useEffect(() => {
-         if (open && usuarioProp) {
-             setActiveStep(0)
-             setErrores({})
-             setSinCambios(false)
-             const usuario = usuarioProp
-             const atIdx = usuario.email ? usuario.email.lastIndexOf('@') : -1
-             const emailLocal = atIdx >= 0 ? usuario.email.slice(0, atIdx) : usuario.email || ''
-             const rawDominio = atIdx >= 0 ? '@' + usuario.email.slice(atIdx + 1) : ''
-             const emailDominio = DOMINIOS_EMAIL.includes(rawDominio) ? rawDominio : '@gmail.com'
+    const getCamposCambiados = () => {
+        if (!formOriginal) return {}
+        const keysToCompare = ['nombre', 'apellido', 'tipoIdentificacion', 'numeroIdentificacion', 'telefono', 'idRol']
+        const cambios = {}
 
-             const rolId = Object.values(ROLES).find(r => r.nombre === usuario.rol?.nombre)?.id || ''
-             console.log('ActualizarUsuario - usuario.rol:', usuario.rol, '| rolId encontrado:', rolId)
+        keysToCompare.forEach(key => {
+            const original = formOriginal[key] !== undefined ? String(formOriginal[key]) : ''
+            const actual = form[key] !== undefined ? String(form[key]) : ''
+            cambios[key] = original !== actual
+        })
 
-             const datosForm = {
-                 ...usuario,
-                 emailLocal,
-                 emailDominio,
-                 idRol: rolId,
-                 password: '',
-                 confirmarPassword: '',
-             }
-             setForm(datosForm)
-             setFormOriginal(datosForm)
-         }
-     }, [open, usuarioProp])
+        if (form.emailLocal && form.emailDominio) {
+            const originalEmail = (formOriginal.emailLocal || '') + (formOriginal.emailDominio || '')
+            const actualEmail = form.emailLocal + form.emailDominio
+            cambios.email = originalEmail !== actualEmail
+        }
+
+        if (form.password) {
+            cambios.password = true
+        }
+
+        return cambios
+    }
+
+    useEffect(() => {
+        if (open && usuarioProp) {
+            setActiveStep(0)
+            setErrores({})
+            setSinCambios(false)
+            const usuario = usuarioProp
+            const atIdx = usuario.email ? usuario.email.lastIndexOf('@') : -1
+            const emailLocal = atIdx >= 0 ? usuario.email.slice(0, atIdx) : usuario.email || ''
+            const rawDominio = atIdx >= 0 ? '@' + usuario.email.slice(atIdx + 1) : ''
+            const emailDominio = DOMINIOS_EMAIL.includes(rawDominio) ? rawDominio : '@gmail.com'
+
+            const rolId = Object.values(ROLES).find(r => r.nombre === usuario.rol?.nombre)?.id || ''
+            console.log('ActualizarUsuario - usuario.rol:', usuario.rol, '| rolId encontrado:', rolId)
+
+            const datosForm = {
+                ...usuario,
+                emailLocal,
+                emailDominio,
+                idRol: rolId,
+                password: '',
+                confirmarPassword: '',
+            }
+            setForm(datosForm)
+            setFormOriginal(datosForm)
+        }
+    }, [open, usuarioProp])
 
     const handleChange = (e) => {
         const { name } = e.target
@@ -167,29 +216,12 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
             return
         }
 
-        if (formOriginal) {
-            const keysToCompare = ['nombre', 'apellido', 'tipoIdentificacion', 'numeroIdentificacion', 'telefono', 'idRol']
-            if (form.emailLocal && form.emailDominio) {
-                keysToCompare.push('email')
-            }
-            if (form.password) {
-                keysToCompare.push('password')
-            }
+        const cambios = getCamposCambiados()
+        const hayCambios = Object.values(cambios).some(Boolean)
 
-            const hayCambios = keysToCompare.some(key => {
-                let original = formOriginal[key] !== undefined ? String(formOriginal[key]) : ''
-                let actual = form[key] !== undefined ? String(form[key]) : ''
-                if (key === 'email') {
-                    original = formOriginal.emailLocal + formOriginal.emailDominio
-                    actual = form.emailLocal + form.emailDominio
-                }
-                return original !== actual
-            })
-
-            if (!hayCambios && !form.password) {
-                setSinCambios(true)
-                return
-            }
+        if (!hayCambios) {
+            setSinCambios(true)
+            return
         }
 
         setSinCambios(false)
@@ -299,28 +331,28 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
                                 htmlInput: { maxLength: 50 }
                             }}
                             sx={formFieldStyles} />
-<TextField fullWidth select label="Rol" name="idRol" value={form.idRol} onChange={handleChange}
-                             error={!!errores.idRol} helperText={errores.idRol}
-                             slotProps={{ input: { startAdornment: <InputAdornment position="start"><AssignmentIndOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment> } }}
-                             sx={formFieldStyles}>
-                             {rolesDisponibles.map((rol) => (
-                                 <MenuItem key={rol.idRol} value={rol.idRol} sx={{ p: 0, justifyContent: 'flex-start', my: 0.5 }}>
-                                     <Box sx={{
-                                         backgroundColor: '#B91C1C',
-                                         color: 'white',
-                                         px: 1.5,
-                                         py: 0.3,
-                                         borderRadius: 8,
-                                         fontWeight: 600,
-                                         fontSize: '0.75rem',
-                                         display: 'inline-flex',
-                                         ml: 1,
-                                     }}>
-                                         {rol.nombre}
-                                     </Box>
-                                 </MenuItem>
-                             ))}
-                         </TextField>
+                        <TextField fullWidth select label="Rol" name="idRol" value={form.idRol} onChange={handleChange}
+                            error={!!errores.idRol} helperText={errores.idRol}
+                            slotProps={{ input: { startAdornment: <InputAdornment position="start"><AssignmentIndOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment> } }}
+                            sx={formFieldStyles}>
+                            {rolesDisponibles.map((rol) => (
+                                <MenuItem key={rol.idRol} value={rol.idRol} sx={{ p: 0, justifyContent: 'flex-start', my: 0.5 }}>
+                                    <Box sx={{
+                                        backgroundColor: '#B91C1C',
+                                        color: 'white',
+                                        px: 1.5,
+                                        py: 0.3,
+                                        borderRadius: 8,
+                                        fontWeight: 600,
+                                        fontSize: '0.75rem',
+                                        display: 'inline-flex',
+                                        ml: 1,
+                                    }}>
+                                        {rol.nombre}
+                                    </Box>
+                                </MenuItem>
+                            ))}
+                        </TextField>
                         <Box sx={{ gridColumn: '1 / -1', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                             <TextField fullWidth label="Nueva contraseña" name="password" type="password"
                                 value={form.password} onChange={handleChange}
@@ -336,6 +368,8 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
                     </Box>
                 )
             case 2:
+                const cambios = getCamposCambiados()
+                const hayCambiosVisuales = Object.values(cambios).some(Boolean)
                 return (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                         {sinCambios && (
@@ -348,30 +382,32 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
                                 {apiError}
                             </Alert>
                         )}
-                        <Box sx={{ display: 'flex', gap: 2 }}>
-                            <Paper elevation={0} sx={cardSx}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                                    <AssignmentIndOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
-                                    <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Datos Personales</Typography>
-                                </Box>
-                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la información personal</Typography>
-                                <ConfirmRow label="Tipo de documento" value={form.tipoIdentificacion} />
-                                <ConfirmRow label="N° de documento" value={form.numeroIdentificacion} />
-                                <ConfirmRow label="Nombre" value={form.nombre} />
-                                <ConfirmRow label="Apellido" value={form.apellido} />
-                            </Paper>
-                            <Paper elevation={0} sx={cardSx}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                                    <LockOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
-                                    <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Credenciales</Typography>
-                                </Box>
-                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica los datos de acceso</Typography>
-                                <ConfirmRow label="Teléfono" value={form.telefono} />
-<ConfirmRow label="Correo" value={form.emailLocal + form.emailDominio} />
-                                 <ConfirmRow label="Rol" value={rolesDisponibles.find(r => r.idRol === parseInt(form.idRol))?.nombre || form.idRol} />
-                                <ConfirmRow label="Contraseña" value={form.password ? '••••••••' : 'Sin cambiar'} />
-                            </Paper>
-                        </Box>
+                        {formOriginal && (
+                            <Box sx={{ display: 'flex', gap: 2 }}>
+                                <Paper elevation={0} sx={cardSx}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                                        <AssignmentIndOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
+                                        <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Datos Personales</Typography>
+                                    </Box>
+                                    <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la información personal</Typography>
+                                    <ConfirmRow label="Tipo de documento" valueOriginal={formOriginal.tipoIdentificacion} valueActual={form.tipoIdentificacion} />
+                                    <ConfirmRow label="N° de documento" valueOriginal={formOriginal.numeroIdentificacion} valueActual={form.numeroIdentificacion} />
+                                    <ConfirmRow label="Nombre" valueOriginal={formOriginal.nombre} valueActual={form.nombre} />
+                                    <ConfirmRow label="Apellido" valueOriginal={formOriginal.apellido} valueActual={form.apellido} />
+                                </Paper>
+                                <Paper elevation={0} sx={cardSx}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                                        <LockOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
+                                        <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Credenciales</Typography>
+                                    </Box>
+                                    <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica los datos de acceso</Typography>
+                                    <ConfirmRow label="Teléfono" valueOriginal={formOriginal.telefono} valueActual={form.telefono} />
+                                    <ConfirmRow label="Correo" valueOriginal={(formOriginal.emailLocal || '') + (formOriginal.emailDominio || '')} valueActual={form.emailLocal + form.emailDominio} />
+                                    <ConfirmRow label="Rol" valueOriginal={rolesDisponibles.find(r => r.idRol === parseInt(formOriginal.idRol))?.nombre || formOriginal.idRol} valueActual={rolesDisponibles.find(r => r.idRol === parseInt(form.idRol))?.nombre || form.idRol} />
+                                    <ConfirmRow label="Contraseña" valueOriginal="Sin cambiar" valueActual={form.password ? '••••••••' : 'Sin cambiar'} />
+                                </Paper>
+                            </Box>
+                        )}
                     </Box>
                 )
             default:
@@ -421,46 +457,47 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
                     {renderStepContent()}
                 </Box>
 
-                <Box sx={{
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    px: 4, py: 2.5, borderTop: `1px solid ${theme.palette.divider}`, backgroundColor: '#FAFAFA',
-                }}>
-                    <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined"
-                        startIcon={<ArrowBackOutlinedIcon />} disableRipple
-                        sx={{
-                            textTransform: 'none', borderRadius: 2, borderColor: theme.palette.divider,
-                            color: theme.palette.text.primary, fontWeight: 500,
-                            '&:hover': { borderColor: '#BDBDBD', backgroundColor: theme.palette.background.subtle },
-                            '&.Mui-disabled': { borderColor: theme.palette.divider, color: theme.palette.text.secondary },
-                        }}>
-                        Anterior
-                    </Button>
-                    <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
-                        <Button onClick={handleCancelar} disableRipple
-                            sx={{
-                                textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 2,
-                                '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary },
-                            }}>
-                            Cancelar
-                        </Button>
-                        <Button
-                            onClick={activeStep < steps.length - 1 ? handleNext : handleSubmit}
-                            variant="contained"
-                            disabled={submitting || (activeStep === steps.length - 1 && sinCambios)}
-                            endIcon={submitting ? <CircularProgress size={18} color="inherit" /> : (activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <SaveOutlinedIcon />)}
-                            disableRipple
-                            sx={{
-                                textTransform: 'none', borderRadius: 2, fontWeight: 600,
-                                backgroundColor: theme.palette.primary.main,
-                                boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
-                                '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
-                                '&.Mui-disabled': { backgroundColor: '#e0e0e0', color: '#9e9e9e' },
-                            }}>
-                            {activeStep < steps.length - 1 ? 'Siguiente' : submitting ? 'Guardando...' : sinCambios ? 'Sin cambios' : 'Guardar cambios'}
-                        </Button>
-                    </Box>
-                </Box>
             </DialogContent>
+
+            <Box sx={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                px: 4, py: 2.5, borderTop: `1px solid ${theme.palette.divider}`, backgroundColor: '#FAFAFA',
+            }}>
+                <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined"
+                    startIcon={<ArrowBackOutlinedIcon />} disableRipple
+                    sx={{
+                        textTransform: 'none', borderRadius: 2, borderColor: theme.palette.divider,
+                        color: theme.palette.text.primary, fontWeight: 500,
+                        '&:hover': { borderColor: '#BDBDBD', backgroundColor: theme.palette.background.subtle },
+                        '&.Mui-disabled': { borderColor: theme.palette.divider, color: theme.palette.text.secondary },
+                    }}>
+                    Anterior
+                </Button>
+                <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                    <Button onClick={handleCancelar} disableRipple
+                        sx={{
+                            textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 2,
+                            '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary },
+                        }}>
+                        Cancelar
+                    </Button>
+                    <Button
+                        onClick={activeStep < steps.length - 1 ? handleNext : handleSubmit}
+                        variant="contained"
+                        disabled={submitting || (activeStep === steps.length - 1 && !Object.values(getCamposCambiados()).some(Boolean))}
+                        endIcon={submitting ? <CircularProgress size={18} color="inherit" /> : (activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <SaveOutlinedIcon />)}
+                        disableRipple
+                        sx={{
+                            textTransform: 'none', borderRadius: 2, fontWeight: 600,
+                            backgroundColor: theme.palette.primary.main,
+                            boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
+                            '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
+                            '&.Mui-disabled': { backgroundColor: '#e0e0e0', color: '#9e9e9e' },
+                        }}>
+                        {activeStep < steps.length - 1 ? 'Siguiente' : submitting ? 'Guardando...' : !Object.values(getCamposCambiados()).some(Boolean) ? 'Sin cambios' : 'Guardar cambios'}
+                    </Button>
+                </Box>
+            </Box>
 
             <Snackbar open={exito} autoHideDuration={2500} onClose={() => setExito(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
                 <Alert severity="success" variant="filled" sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }} onClose={() => setExito(false)}>

@@ -51,13 +51,13 @@ const ConfirmRow = ({ label, value }) => (
 const ConfirmRowChip = ({ label, value, colors }) => (
     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, py: 0.9, overflow: 'hidden' }}>
         <Typography variant="body2" sx={{ color: '#9C4040', fontWeight: 500, flexShrink: 0 }}>{label}</Typography>
-        <Box sx={{ 
-            display: 'inline-flex', 
+        <Box sx={{
+            display: 'inline-flex',
             alignItems: 'center',
-            backgroundColor: colors?.bg || '#F3F4F6', 
-            color: colors?.color || '#6B7280', 
-            px: 1.5, 
-            py: 0.3, 
+            backgroundColor: colors?.bg || '#F3F4F6',
+            color: colors?.color || '#6B7280',
+            px: 1.5,
+            py: 0.3,
             borderRadius: 10,
             fontWeight: 600,
             fontSize: '0.75rem',
@@ -335,14 +335,14 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                 const actual = form[key] !== undefined ? String(form[key]) : ''
                 return original !== actual
             })
-            
+
             if (!hayCambios) {
                 setSinCambios(true)
                 setActiveStep(5) // Ir al paso de confirmación para mostrar la alerta
                 return
             }
         }
-        
+
         setSinCambios(false)
         setSubmitting(true)
         setApiError(null)
@@ -529,13 +529,13 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                                     const styles = getEstadoColor(e)
                                     return (
                                         <MenuItem key={e} value={e}>
-                                            <Box sx={{ 
-                                                display: 'inline-flex', 
+                                            <Box sx={{
+                                                display: 'inline-flex',
                                                 alignItems: 'center',
-                                                backgroundColor: styles.bg, 
-                                                color: styles.color, 
-                                                px: 1.5, 
-                                                py: 0.3, 
+                                                backgroundColor: styles.bg,
+                                                color: styles.color,
+                                                px: 1.5,
+                                                py: 0.3,
                                                 borderRadius: 10,
                                                 fontWeight: 600,
                                                 fontSize: '0.75rem',
@@ -567,13 +567,13 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                             </FormSelect>
                             <FormSelect label="Estado de pago" name="estadoPago" value={form.estadoPago} onChange={handleChange}>
                                 <MenuItem value="Pendiente">
-                                    <Box sx={{ 
-                                        display: 'inline-flex', 
+                                    <Box sx={{
+                                        display: 'inline-flex',
                                         alignItems: 'center',
-                                        backgroundColor: '#FEE2E2', 
-                                        color: '#991B1B', 
-                                        px: 1.5, 
-                                        py: 0.3, 
+                                        backgroundColor: '#FEE2E2',
+                                        color: '#991B1B',
+                                        px: 1.5,
+                                        py: 0.3,
                                         borderRadius: 10,
                                         fontWeight: 600,
                                         fontSize: '0.75rem',
@@ -582,13 +582,13 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                                     </Box>
                                 </MenuItem>
                                 <MenuItem value="Pagado">
-                                    <Box sx={{ 
-                                        display: 'inline-flex', 
+                                    <Box sx={{
+                                        display: 'inline-flex',
                                         alignItems: 'center',
-                                        backgroundColor: '#D1FAE5', 
-                                        color: '#065F46', 
-                                        px: 1.5, 
-                                        py: 0.3, 
+                                        backgroundColor: '#D1FAE5',
+                                        color: '#065F46',
+                                        px: 1.5,
+                                        py: 0.3,
                                         borderRadius: 10,
                                         fontWeight: 600,
                                         fontSize: '0.75rem',
@@ -748,7 +748,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                     <Typography variant="h6" fontWeight={700}>
                         Editar Venta
                     </Typography>
-                        <Typography variant="body2" color={theme.palette.text.secondary}>
+                    <Typography variant="body2" color={theme.palette.text.secondary}>
                         {ventaOriginal?.numeroGuia
                             ? `Modificando guía: ${ventaOriginal.numeroGuia}`
                             : 'Modifica los campos que necesites.'
@@ -782,50 +782,50 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                 <Box sx={{ maxWidth: 760, mx: 'auto' }}>
                     {renderStepContent()}
                 </Box>
-
-                <Box sx={{
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    mt: 3, pt: 2, borderTop: `1px solid ${theme.palette.divider}`,
-                }}>
-                    <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined"
-                        startIcon={<ArrowBackOutlinedIcon />} disableRipple
-                        sx={{
-                            textTransform: 'none', borderRadius: 2, borderColor: theme.palette.divider,
-                            color: theme.palette.text.primary, fontWeight: 500,
-                            '&:hover': { borderColor: '#BDBDBD', backgroundColor: theme.palette.background.subtle },
-                            '&.Mui-disabled': { borderColor: theme.palette.divider, color: theme.palette.text.secondary },
-                        }}>
-                        Anterior
-                    </Button>
-                    <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
-                        <Button onClick={handleCancelar} disableRipple
-                            sx={{
-                                textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 2,
-                                '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary },
-                            }}>
-                            Cancelar
-                        </Button>
-                        <Button
-                            onClick={activeStep < steps.length - 1 ? handleNext : handleSubmit}
-                            variant="contained"
-                            disabled={submitting || (activeStep === steps.length - 1 && sinCambios)}
-                            endIcon={activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <SaveOutlinedIcon />}
-                            disableRipple
-                            sx={{
-                                textTransform: 'none', borderRadius: 2, fontWeight: 600,
-                                backgroundColor: theme.palette.primary.main,
-                                boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
-                                '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
-                                '&.Mui-disabled': { backgroundColor: theme.palette.divider, color: '#9E9E9E' },
-                            }}>
-                            {activeStep < steps.length - 1
-                                ? 'Siguiente'
-                                : submitting ? 'Guardando...' : sinCambios ? 'Sin cambios' : 'Guardar cambios'
-                            }
-                        </Button>
-                    </Box>
-                </Box>
             </DialogContent>
+
+            <Box sx={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                px: 4, py: 2.5, borderTop: `1px solid ${theme.palette.divider}`,
+            }}>
+                <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined"
+                    startIcon={<ArrowBackOutlinedIcon />} disableRipple
+                    sx={{
+                        textTransform: 'none', borderRadius: 2, borderColor: theme.palette.divider,
+                        color: theme.palette.text.primary, fontWeight: 500,
+                        '&:hover': { borderColor: '#BDBDBD', backgroundColor: theme.palette.background.subtle },
+                        '&.Mui-disabled': { borderColor: theme.palette.divider, color: theme.palette.text.secondary },
+                    }}>
+                    Anterior
+                </Button>
+                <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                    <Button onClick={handleCancelar} disableRipple
+                        sx={{
+                            textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 2,
+                            '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary },
+                        }}>
+                        Cancelar
+                    </Button>
+                    <Button
+                        onClick={activeStep < steps.length - 1 ? handleNext : handleSubmit}
+                        variant="contained"
+                        disabled={submitting || (activeStep === steps.length - 1 && sinCambios)}
+                        endIcon={activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <SaveOutlinedIcon />}
+                        disableRipple
+                        sx={{
+                            textTransform: 'none', borderRadius: 2, fontWeight: 600,
+                            backgroundColor: theme.palette.primary.main,
+                            boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
+                            '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
+                            '&.Mui-disabled': { backgroundColor: theme.palette.divider, color: '#9E9E9E' },
+                        }}>
+                        {activeStep < steps.length - 1
+                            ? 'Siguiente'
+                            : submitting ? 'Guardando...' : sinCambios ? 'Sin cambios' : 'Guardar cambios'
+                        }
+                    </Button>
+                </Box>
+            </Box>
 
             <Snackbar open={exito} autoHideDuration={2500} onClose={() => setExito(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
                 <Alert severity="success" variant="filled" sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }} onClose={() => setExito(false)}>
