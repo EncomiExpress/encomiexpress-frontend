@@ -580,8 +580,10 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                     </Stepper>
                 </Box>
 
-                <Box sx={{ maxWidth: 760, mx: 'auto' }}>
-                    {renderStepContent()}
+                <Box sx={{ px: 4, py: 2 }}>
+                    <Box sx={{ maxWidth: 700, mx: 'auto' }}>
+                        {renderStepContent()}
+                    </Box>
                 </Box>
             </DialogContent>
 

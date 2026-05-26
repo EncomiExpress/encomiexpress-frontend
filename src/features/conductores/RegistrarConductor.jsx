@@ -318,7 +318,7 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
                     {steps.map(label => <Step key={label}><StepLabel>{label}</StepLabel></Step>)}
                 </Stepper>
 
-                <Box sx={{ px: 4, py: 3.5 }}>
+                <Box sx={{ px: 4, py: 2 }}>
                     <Box sx={{ maxWidth: 700, mx: 'auto' }}>
                         {renderStepContent()}
                     </Box>

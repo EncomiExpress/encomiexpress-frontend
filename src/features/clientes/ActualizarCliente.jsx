@@ -335,8 +335,10 @@ const ActualizarCliente = ({ open, onClose, cliente: clienteProp, onSuccess }) =
                     {steps.map(label => <Step key={label}><StepLabel>{label}</StepLabel></Step>)}
                 </Stepper>
 
-                <Box sx={{ maxWidth: 700, mx: 'auto' }}>
-                    {renderStepContent()}
+                <Box sx={{ px: 4, py: 2 }}>
+                    <Box sx={{ maxWidth: 700, mx: 'auto' }}>
+                        {renderStepContent()}
+                    </Box>
                 </Box>
             </DialogContent>
 

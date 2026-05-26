@@ -39,6 +39,7 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
     vencimientoRevisionTecnica: '',
     vencimientoSeguroTerceros: ''
   })
+  const [errores, setErrores] = useState({})
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const [activeStep, setActiveStep] = useState(0)
@@ -50,6 +51,7 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
     if (open && transporteProp) {
       setActiveStep(0)
       setSinCambios(false)
+      setErrores({})
       setError('')
       const transporte = getTransporteById(transporteProp.idVehiculo)
       if (transporte) {
@@ -62,6 +64,7 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
   const handleChange = (e) => {
     const { name, value } = e.target
     setFormData({ ...formData, [name]: value })
+    setErrores({})
     setError('')
     setSinCambios(false)
   }
@@ -86,10 +89,10 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
   const handleNext = () => {
     const erroresEncontrados = validarPaso(activeStep)
     if (Object.keys(erroresEncontrados).length > 0) {
-      setError(erroresEncontrados)
+      setErrores(erroresEncontrados)
       return
     }
-    setError('')
+    setErrores({})
     setActiveStep((prev) => prev + 1)
   }
 
@@ -97,13 +100,7 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
     setActiveStep((prev) => prev - 1)
   }
 
-  const handleSubmit = () => {
-    const erroresEncontrados = validarPaso(activeStep)
-    if (Object.keys(erroresEncontrados).length > 0) {
-      setError(erroresEncontrados)
-      return
-    }
-
+  const handleSubmit = async () => {
     if (formOriginal) {
       const hayCambios = Object.keys(formData).some(key => {
         const original = formOriginal[key] !== undefined ? String(formOriginal[key]) : ''
@@ -165,8 +162,8 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
               required
               placeholder="Ej: ABC-123"
               icon={DirectionsCar}
-              error={error.placa}
-              helperText={error.placa}
+              error={errores.placa}
+              helperText={errores.placa}
             />
             <FormField
               label="Marca"
@@ -176,8 +173,8 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
               required
               placeholder="Ej: Toyota"
               icon={Business}
-              error={error.marca}
-              helperText={error.marca}
+              error={errores.marca}
+              helperText={errores.marca}
             />
             <FormField
               label="Modelo"
@@ -187,8 +184,8 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
               required
               placeholder="Ej: Hilux"
               icon={DirectionsCar}
-              error={error.modelo}
-              helperText={error.modelo}
+              error={errores.modelo}
+              helperText={errores.modelo}
             />
             <FormField
               label="Color"
@@ -198,8 +195,8 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
               required
               placeholder="Ej: Blanco"
               icon={DirectionsCar}
-              error={error.color}
-              helperText={error.color}
+              error={errores.color}
+              helperText={errores.color}
             />
             <FormSelect
               label="Tipo de Vehículo"
@@ -207,8 +204,8 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
               value={formData.tipo}
               onChange={handleChange}
               required
-              error={error.tipo}
-              helperText={error.tipo}
+              error={errores.tipo}
+              helperText={errores.tipo}
             >
               {tiposVehiculo.map((tipo) => (
                 <MenuItem key={tipo} value={tipo}>{tipo}</MenuItem>
@@ -223,8 +220,8 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
               required
               placeholder="Ej: 1500"
               icon={Speed}
-              error={error.capacidad}
-              helperText={error.capacidad}
+              error={errores.capacidad}
+              helperText={errores.capacidad}
             />
           </FormFieldsContainer>
         )
@@ -240,8 +237,8 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
               required
               placeholder="Ej: 4"
               icon={Person}
-              error={error.idConductor}
-              helperText={error.idConductor}
+              error={errores.idConductor}
+              helperText={errores.idConductor}
             />
             <FormField
               label="ID Propietario"
@@ -252,8 +249,8 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
               required
               placeholder="Ej: 6"
               icon={Business}
-              error={error.idPropietario}
-              helperText={error.idPropietario}
+              error={errores.idPropietario}
+              helperText={errores.idPropietario}
             />
             <FormSelect
               label="Estado"
@@ -303,6 +300,11 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
                 No has realizado ningún cambio. Los datos ya están actualizados.
               </Alert>
             )}
+            {error && (
+              <Alert severity="error" sx={{ borderRadius: 2 }} onClose={() => setError('')}>
+                {error}
+              </Alert>
+            )}
             <Box sx={{ display: 'flex', gap: 2 }}>
               <Paper elevation={0} sx={{ flex: 1, minWidth: 0, borderRadius: 2, p: 2.5, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
@@ -348,11 +350,11 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth
       slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}>
       <DialogTitle sx={{ m: 0, p: 2, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${theme.palette.divider}` }}>
-         <Box>
-            <Typography variant="h6" fontWeight={700}>
-              Editar Vehículo
-            </Typography>
-            <Typography variant="body2" color={theme.palette.text.secondary}>
+        <Box>
+          <Typography variant="h6" fontWeight={700}>
+            Editar Vehículo
+          </Typography>
+          <Typography variant="body2" color={theme.palette.text.secondary}>
             {formOriginal?.marca && formOriginal?.modelo
               ? `Modificando datos de ${formOriginal.marca} ${formOriginal.modelo}`
               : 'Modifica los campos que necesites.'
@@ -364,7 +366,6 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
         </IconButton>
       </DialogTitle>
       <DialogContent sx={{ p: 3, pt: 1.5 }}>
-
         <Stepper activeStep={activeStep} alternativeLabel
           sx={{
             mb: 3, mt: 2,
@@ -383,50 +384,52 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
           {steps.map(label => <Step key={label}><StepLabel>{label}</StepLabel></Step>)}
         </Stepper>
 
-        <Box sx={{ maxWidth: 700, mx: 'auto' }}>
-          {renderStepContent()}
-        </Box>
-
-        <Box sx={{
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          mt: 3, pt: 2, borderTop: `1px solid ${theme.palette.divider}`,
-        }}>
-          <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined"
-            startIcon={<ArrowBackOutlined />} disableRipple
-            sx={{
-              textTransform: 'none', borderRadius: 2, borderColor: theme.palette.divider,
-              color: theme.palette.text.primary, fontWeight: 500,
-              '&:hover': { borderColor: '#BDBDBD', backgroundColor: theme.palette.background.subtle },
-              '&.Mui-disabled': { borderColor: theme.palette.divider, color: theme.palette.text.secondary },
-            }}>
-            Anterior
-          </Button>
-          <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
-            <Button onClick={handleCancelar} disableRipple
-              sx={{
-                textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 2,
-                '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary },
-              }}>
-              Cancelar
-            </Button>
-            <Button
-              onClick={activeStep < steps.length - 1 ? handleNext : handleSubmit}
-              variant="contained"
-              disabled={submitting || (activeStep === steps.length - 1 && sinCambios)}
-              endIcon={activeStep < steps.length - 1 ? <ArrowForwardOutlined /> : <SaveOutlined />}
-              disableRipple
-              sx={{
-                textTransform: 'none', borderRadius: 2, fontWeight: 600,
-                backgroundColor: theme.palette.primary.main,
-                boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
-                '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
-                '&.Mui-disabled': { backgroundColor: theme.palette.divider, color: '#9E9E9E' },
-              }}>
-              {activeStep < steps.length - 1 ? 'Siguiente' : submitting ? 'Guardando...' : sinCambios ? 'Sin cambios' : 'Guardar cambios'}
-            </Button>
+        <Box sx={{ px: 4, py: 2 }}>
+          <Box sx={{ maxWidth: 700, mx: 'auto' }}>
+            {renderStepContent()}
           </Box>
         </Box>
       </DialogContent>
+
+      <Box sx={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        px: 4, py: 2.5, borderTop: `1px solid ${theme.palette.divider}`,
+      }}>
+        <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined"
+          startIcon={<ArrowBackOutlined />} disableRipple
+          sx={{
+            textTransform: 'none', borderRadius: 2, borderColor: theme.palette.divider,
+            color: theme.palette.text.primary, fontWeight: 500,
+            '&:hover': { borderColor: '#BDBDBD', backgroundColor: theme.palette.background.subtle },
+            '&.Mui-disabled': { borderColor: theme.palette.divider, color: theme.palette.text.secondary },
+          }}>
+          Anterior
+        </Button>
+        <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+          <Button onClick={handleCancelar} disableRipple
+            sx={{
+              textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 2,
+              '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary },
+            }}>
+            Cancelar
+          </Button>
+          <Button
+            onClick={activeStep < steps.length - 1 ? handleNext : handleSubmit}
+            variant="contained"
+            disabled={submitting || (activeStep === steps.length - 1 && sinCambios)}
+            endIcon={activeStep < steps.length - 1 ? <ArrowForwardOutlined /> : <SaveOutlined />}
+            disableRipple
+            sx={{
+              textTransform: 'none', borderRadius: 2, fontWeight: 600,
+              backgroundColor: theme.palette.primary.main,
+              boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
+              '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
+              '&.Mui-disabled': { backgroundColor: theme.palette.divider, color: '#9E9E9E' },
+            }}>
+            {activeStep < steps.length - 1 ? 'Siguiente' : submitting ? 'Guardando...' : sinCambios ? 'Sin cambios' : 'Guardar cambios'}
+          </Button>
+        </Box>
+      </Box>
 
       <Snackbar open={success} autoHideDuration={2500} onClose={() => setSuccess(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
         <Alert severity="success" variant="filled" sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }} onClose={() => setSuccess(false)}>

@@ -242,8 +242,10 @@ const RegistrarDestino = ({ open, onClose, onSuccess }) => {
                     {steps.map(label => <Step key={label}><StepLabel>{label}</StepLabel></Step>)}
                 </Stepper>
 
-                <Box sx={{ maxWidth: 700, mx: 'auto', mt: 3 }}>
-                    {renderStepContent()}
+                <Box sx={{ px: 4, py: 2 }}>
+                    <Box sx={{ maxWidth: 700, mx: 'auto' }}>
+                        {renderStepContent()}
+                    </Box>
                 </Box>
             </DialogContent>
 
