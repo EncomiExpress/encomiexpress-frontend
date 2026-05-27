@@ -7,10 +7,10 @@ const DestinoContext = createContext()
 export const useDestino = () => useContext(DestinoContext)
 
 export const DestinoProvider = ({ children }) => {
-  const { token } = useAuth()
-  const [destinos, setDestinos] = useState([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
+  const { token } = useAuth(); // obtener token
+  const [destinos, setDestinos] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   // Cargar todos los destinos desde la API
   const fetchDestinos = useCallback(async () => {
@@ -39,6 +39,11 @@ export const DestinoProvider = ({ children }) => {
   const getDestinosHabilitados = useCallback(() => {
     return destinos.filter(d => d.habilitado)
   }, [destinos])
+
+  // ⬇️ NUEVO: cargar destinos cuando haya token
+  useEffect(() => {
+    if (token) fetchDestinos();
+  }, [token, fetchDestinos]);
 
   // Registrar destino vía API
   const registrarDestino = useCallback(async (nuevoDestino) => {

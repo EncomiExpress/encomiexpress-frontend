@@ -1,10 +1,10 @@
 import theme from '../../shared/styles/theme.js'
 import { useState, useEffect } from 'react'
-import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, Snackbar, Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material'
+import {
+    Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel,
+    Button, Alert, Snackbar, Dialog, DialogTitle, DialogContent, IconButton
+} from '@mui/material'
 import RouteOutlinedIcon from '@mui/icons-material/RouteOutlined'
-import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
-import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
-import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined'
 import EventOutlinedIcon from '@mui/icons-material/EventOutlined'
 import ScheduleOutlinedIcon from '@mui/icons-material/ScheduleOutlined'
 import CloseIcon from '@mui/icons-material/Close'
@@ -15,9 +15,7 @@ import { useRutaProgramacion } from '../../shared/contexts/RutaProgramacionConte
 import { useTransporte } from '../../shared/contexts/TransporteContext.jsx'
 import { useConductor } from '../../shared/contexts/ConductorContext.jsx'
 import { useDestino } from '../../shared/contexts/DestinoContext.jsx'
-import { FormField, FormSelect, formFieldStyles } from '../../shared/components/FormularioEstandarizado.jsx'
-
-const COLORS = theme.palette
+import { FormField, FormSelect } from '../../shared/components/FormularioEstandarizado.jsx'
 
 const steps = ['Datos de la Ruta', 'Horario y Vehículo', 'Confirmación']
 
@@ -35,29 +33,23 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
     const { actualizarRutaProgramada } = useRutaProgramacion()
     const { getTransportesHabilitados } = useTransporte()
     const { getConductoresHabilitados } = useConductor()
-    const { getDestinosHabilitados } = useDestino()
+    const { getDestinosHabilitados }    = useDestino()
 
-    const [errores, setErrores] = useState({})
-    const [apiError, setApiError] = useState(null)
-    const [activeStep, setActiveStep] = useState(0)
-    const [submitting, setSubmitting] = useState(false)
-    const [exito, setExito] = useState(false)
+    const [errores, setErrores]         = useState({})
+    const [apiError, setApiError]       = useState(null)
+    const [activeStep, setActiveStep]   = useState(0)
+    const [submitting, setSubmitting]   = useState(false)
+    const [exito, setExito]             = useState(false)
     const [originalData, setOriginalData] = useState(null)
-    const [sinCambios, setSinCambios] = useState(false)
+    const [sinCambios, setSinCambios]   = useState(false)
 
-    const [vehiculos, setVehiculos] = useState([])
+    const [vehiculos, setVehiculos]     = useState([])
     const [conductores, setConductores] = useState([])
-    const [destinos, setDestinos] = useState([])
+    const [destinos, setDestinos]       = useState([])
 
     const [form, setForm] = useState({
-        nombreRuta: '',
-        idVehiculo: '',
-        idConductor: '',
-        idDestino: '',
-        fechaSalida: '',
-        horaSalida: '',
-        horaLlegadaEstimada: '',
-        observaciones: ''
+        nombreRuta: '', idVehiculo: '', idConductor: '', idDestino: '',
+        fechaSalida: '', horaSalida: '', horaLlegadaEstimada: '', observaciones: ''
     })
 
     useEffect(() => {
@@ -72,17 +64,18 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
             setErrores({})
             setApiError(null)
             setSinCambios(false)
-            setForm({
-                nombreRuta: ruta.nombreRuta || '',
-                idVehiculo: ruta.idVehiculo || '',
-                idConductor: ruta.idConductor || '',
-                idDestino: ruta.idDestino || '',
-                fechaSalida: ruta.fechaSalida || '',
-                horaSalida: ruta.horaSalida || '',
+            const datos = {
+                nombreRuta:          ruta.nombreRuta          || '',
+                idVehiculo:          ruta.idVehiculo          || '',
+                idConductor:         ruta.idConductor         || '',
+                idDestino:           ruta.idDestino           || '',
+                fechaSalida:         ruta.fechaSalida         || '',
+                horaSalida:          ruta.horaSalida          || '',
                 horaLlegadaEstimada: ruta.horaLlegadaEstimada || '',
-                observaciones: ruta.observaciones || ''
-            })
-            setOriginalData(ruta)
+                observaciones:       ruta.observaciones       || ''
+            }
+            setForm(datos)
+            setOriginalData(datos)
         }
     }, [ruta, open])
 
@@ -97,66 +90,55 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
     const validarPaso = (step) => {
         const e = {}
         if (step === 0) {
-            if (!form.nombreRuta?.trim()) e.nombreRuta = 'El nombre de la ruta es obligatorio'
-            if (!form.idVehiculo) e.idVehiculo = 'Selecciona un vehículo'
-            if (!form.idConductor) e.idConductor = 'Selecciona un conductor'
-            if (!form.idDestino) e.idDestino = 'Selecciona un destino'
+            if (!form.nombreRuta?.trim()) e.nombreRuta  = 'El nombre de la ruta es obligatorio'
+            if (!form.idVehiculo)         e.idVehiculo  = 'Selecciona un vehículo'
+            if (!form.idConductor)        e.idConductor = 'Selecciona un conductor'
+            if (!form.idDestino)          e.idDestino   = 'Selecciona un destino'
         }
         if (step === 1) {
             if (!form.fechaSalida) e.fechaSalida = 'La fecha de salida es obligatoria'
-            if (!form.horaSalida) e.horaSalida = 'La hora de salida es obligatoria'
+            if (!form.horaSalida)  e.horaSalida  = 'La hora de salida es obligatoria'
         }
         return e
     }
 
     const handleNext = () => {
         const erroresEncontrados = validarPaso(activeStep)
-        if (Object.keys(erroresEncontrados).length > 0) {
-            setErrores(erroresEncontrados)
-            return
-        }
-        setActiveStep((prev) => prev + 1)
+        if (Object.keys(erroresEncontrados).length > 0) { setErrores(erroresEncontrados); return }
+        setActiveStep(prev => prev + 1)
     }
 
-    const handleBack = () => setActiveStep((prev) => prev - 1)
+    const handleBack = () => setActiveStep(prev => prev - 1)
 
     const handleSubmit = async () => {
         const erroresEncontrados = validarPaso(activeStep)
-        if (Object.keys(erroresEncontrados).length > 0) {
-            setErrores(erroresEncontrados)
-            return
-        }
+        if (Object.keys(erroresEncontrados).length > 0) { setErrores(erroresEncontrados); return }
 
         if (originalData) {
             const hayCambios = Object.keys(form).some(key => {
-                const original = originalData[key] !== undefined ? String(originalData[key]) : ''
-                const actual = form[key] !== undefined ? String(form[key]) : ''
-                return original !== actual
+                const orig = originalData[key] !== undefined ? String(originalData[key]) : ''
+                const act  = form[key]         !== undefined ? String(form[key])         : ''
+                return orig !== act
             })
-
-            if (!hayCambios) {
-                setSinCambios(true)
-                return
-            }
+            if (!hayCambios) { setSinCambios(true); return }
         }
 
         setSinCambios(false)
         setSubmitting(true)
         setApiError(null)
         try {
-            actualizarRutaProgramada({
-                idRutaProgramada: ruta.idRutaProgramada,
+            // El id puede estar como idRuta (API) o idRutaProgramada (legacy)
+            const id = ruta.idRuta ?? ruta.idRutaProgramada
+            await actualizarRutaProgramada({
+                idRuta: id,
                 ...form,
-                idVehiculo: parseInt(form.idVehiculo),
+                idVehiculo:  parseInt(form.idVehiculo),
                 idConductor: parseInt(form.idConductor),
-                idDestino: parseInt(form.idDestino),
+                idDestino:   parseInt(form.idDestino),
                 observaciones: form.observaciones || ''
             })
             setExito(true)
-            setTimeout(() => {
-                handleClose()
-                onSuccess?.()
-            }, 1500)
+            setTimeout(() => { handleClose(); onSuccess?.() }, 1500)
         } catch (err) {
             setApiError(err.message || 'Error al actualizar la ruta')
         } finally {
@@ -165,46 +147,32 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
     }
 
     const handleClose = () => {
-        setForm({
-            nombreRuta: '',
-            idVehiculo: '',
-            idConductor: '',
-            idDestino: '',
-            fechaSalida: '',
-            horaSalida: '',
-            horaLlegadaEstimada: '',
-            observaciones: ''
-        })
+        setForm({ nombreRuta: '', idVehiculo: '', idConductor: '', idDestino: '', fechaSalida: '', horaSalida: '', horaLlegadaEstimada: '', observaciones: '' })
         setErrores({})
         setApiError(null)
         setActiveStep(0)
         setOriginalData(null)
         setSinCambios(false)
-        if (onClose) onClose()
+        onClose?.()
     }
-
-    const handleCancelar = () => handleClose()
 
     const cardSx = {
         flex: 1, minWidth: 0, borderRadius: 2, p: 2.5,
         border: `1px solid ${theme.palette.divider}`,
-        backgroundColor: 'white', elevation: 0,
-        overflow: 'hidden',
+        backgroundColor: 'white', elevation: 0, overflow: 'hidden',
     }
 
     const getVehiculoLabel = (id) => {
         const v = vehiculos.find(x => x.idVehiculo === parseInt(id))
         return v ? `${v.placa} - ${v.marca} ${v.modelo}` : id
     }
-
     const getConductorLabel = (id) => {
         const c = conductores.find(x => x.idConductor === parseInt(id))
         return c ? `${c.nombre} ${c.apellido}` : id
     }
-
     const getDestinoLabel = (id) => {
         const d = destinos.find(x => x.idDestino === parseInt(id))
-        return d ? `${d.nombre} - ${d.ciudad}` : id
+        return d ? (d.nombre ? `${d.nombre} - ${d.ciudad}` : `${d.departamento} - ${d.ciudad}`) : id
     }
 
     const renderStepContent = () => {
@@ -230,7 +198,9 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
                         <FormSelect label="Destino" name="idDestino" value={form.idDestino}
                             onChange={handleChange} required error={errores.idDestino} helperText={errores.idDestino}>
                             {destinos.map((d) => (
-                                <MenuItem key={d.idDestino} value={d.idDestino}>{d.nombre} - {d.ciudad}</MenuItem>
+                                <MenuItem key={d.idDestino} value={d.idDestino}>
+                                    {d.nombre ? `${d.nombre} - ${d.ciudad}` : `${d.departamento} - ${d.ciudad}`}
+                                </MenuItem>
                             ))}
                         </FormSelect>
                     </Box>
@@ -272,10 +242,10 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
                                     <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Datos de la Ruta</Typography>
                                 </Box>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la información de la ruta</Typography>
-                                <ConfirmRow label="Nombre" value={form.nombreRuta} />
-                                <ConfirmRow label="Vehículo" value={getVehiculoLabel(form.idVehiculo)} />
+                                <ConfirmRow label="Nombre"    value={form.nombreRuta} />
+                                <ConfirmRow label="Vehículo"  value={getVehiculoLabel(form.idVehiculo)} />
                                 <ConfirmRow label="Conductor" value={getConductorLabel(form.idConductor)} />
-                                <ConfirmRow label="Destino" value={getDestinoLabel(form.idDestino)} />
+                                <ConfirmRow label="Destino"   value={getDestinoLabel(form.idDestino)} />
                             </Paper>
                             <Paper elevation={0} sx={cardSx}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
@@ -283,15 +253,14 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
                                     <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Horario</Typography>
                                 </Box>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica el horario</Typography>
-                                <ConfirmRow label="Fecha" value={form.fechaSalida} />
-                                <ConfirmRow label="Hora Salida" value={form.horaSalida} />
+                                <ConfirmRow label="Fecha"        value={form.fechaSalida} />
+                                <ConfirmRow label="Hora Salida"  value={form.horaSalida} />
                                 <ConfirmRow label="Hora Llegada" value={form.horaLlegadaEstimada || 'N/A'} />
                             </Paper>
                         </Box>
                     </Box>
                 )
-            default:
-                return null
+            default: return null
         }
     }
 
@@ -300,11 +269,9 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
             slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}>
             <DialogTitle sx={{ m: 0, p: 2, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${theme.palette.divider}` }}>
                 <Box>
-                    <Typography variant="h6" fontWeight={700}>
-                        Editar Ruta
-                    </Typography>
+                    <Typography variant="h6" fontWeight={700}>Editar Ruta</Typography>
                     <Typography variant="body2" color={theme.palette.text.secondary} sx={{ mt: 0.5, ml: 0.5 }}>
-                        {originalData?.nombreRuta ? `Modificando datos de ${originalData.nombreRuta}` : 'Modifica los campos que necesites.'}
+                        {originalData?.nombreRuta ? `Modificando datos de ${form.nombreRuta}` : 'Modifica los campos que necesites.'}
                     </Typography>
                 </Box>
                 <IconButton onClick={handleClose} sx={{ color: theme.palette.text.secondary }}>
@@ -312,7 +279,6 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
                 </IconButton>
             </DialogTitle>
             <DialogContent sx={{ p: 3, pt: 1.5 }}>
-
                 <Stepper activeStep={activeStep} alternativeLabel
                     sx={{
                         mb: 3, mt: 2,
@@ -344,10 +310,7 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
                 </Alert>
             </Snackbar>
 
-            <Box sx={{
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                px: 4, py: 2.5, borderTop: `1px solid ${theme.palette.divider}`,
-            }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 4, py: 2.5, borderTop: `1px solid ${theme.palette.divider}` }}>
                 <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined"
                     startIcon={<ArrowBackOutlinedIcon />} disableRipple
                     sx={{
@@ -359,7 +322,7 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
                     Anterior
                 </Button>
                 <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
-                    <Button onClick={handleCancelar} disableRipple
+                    <Button onClick={handleClose} disableRipple
                         sx={{
                             textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 2,
                             '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary },
