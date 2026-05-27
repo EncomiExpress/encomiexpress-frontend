@@ -1,133 +1,86 @@
 import { createContext, useContext, useState, useCallback } from 'react'
 import { useAuth } from './AuthContext'
+import * as destinoService from '../services/destinoService'
 
 const DestinoContext = createContext()
 
 export const useDestino = () => useContext(DestinoContext)
 
-// Mock data inicial para destinos
-const destinosMock = [
-  { 
-    idDestino: 1, nombre: 'Terminal de Medellín', direccion: 'Cra 50 #30-25',
-    ciudad: 'Medellín', departamento: 'Antioquia', telefono: '6041234567',
-    contacto: 'Juan Pérez', estado: 'Activo', habilitado: true, fechaRegistro: '2024-01-15'
-  },
-  { 
-    idDestino: 2, nombre: 'Terminal de Bogotá', direccion: 'Av El Dorado #100-10',
-    ciudad: 'Bogotá', departamento: 'Cundinamarca', telefono: '6017894561',
-    contacto: 'María López', estado: 'Activo', habilitado: true, fechaRegistro: '2024-02-20'
-  },
-  { 
-    idDestino: 3, nombre: 'Punto Cali Norte', direccion: 'Cll 5 #50-30',
-    ciudad: 'Cali', departamento: 'Valle del Cauca', telefono: '6023456789',
-    contacto: 'Carlos Rodríguez', estado: 'Activo', habilitado: true, fechaRegistro: '2024-03-10'
-  },
-  { 
-    idDestino: 4, nombre: 'Oficina Barranquilla', direccion: 'Cra 50 #70-20',
-    ciudad: 'Barranquilla', departamento: 'Atlántico', telefono: '6054567890',
-    contacto: 'Ana Martínez', estado: 'Inactivo', habilitado: false, fechaRegistro: '2024-04-05'
-  },
-]
-
 export const DestinoProvider = ({ children }) => {
   const { token } = useAuth()
-  const [destinos, setDestinos] = useState(destinosMock)
+  const [destinos, setDestinos] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  // Obtener todos los destinos
-  const getDestinos = useCallback(() => {
-    return destinos
-  }, [destinos])
+  // Cargar todos los destinos desde la API
+  const fetchDestinos = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await destinoService.getDestinos()
+      if (res.success) {
+        setDestinos(res.data)
+      } else {
+        setError('Error al cargar destinos')
+      }
+    } catch (e) {
+      setError(e.message || 'Error al cargar destinos')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
-  // Obtener destino por ID
+  // Obtener destino por ID (desde el estado local)
   const getDestinoById = useCallback((id) => {
     return destinos.find(d => d.idDestino === parseInt(id))
   }, [destinos])
 
-  // Obtener destinos habilitados
+  // Obtener destinos habilitados (desde el estado local)
   const getDestinosHabilitados = useCallback(() => {
     return destinos.filter(d => d.habilitado)
   }, [destinos])
 
-  // Registrar destino
-  const registrarDestino = useCallback((nuevoDestino) => {
-    const maxId = Math.max(...destinos.map(d => d.idDestino))
-    const nuevo = {
-      ...nuevoDestino,
-      idDestino: maxId + 1,
-      habilitado: true,
-      estado: 'Activo',
-      fechaRegistro: new Date().toISOString().split('T')[0]
+  // Registrar destino vía API
+  const registrarDestino = useCallback(async (nuevoDestino) => {
+    const res = await destinoService.createDestino(nuevoDestino)
+    if (res.success) {
+      setDestinos(prev => [...prev, res.data])
+      return res.data
     }
-    setDestinos(prev => [...prev, nuevo])
-    return nuevo
-  }, [destinos])
+    throw new Error(res.message || 'Error al registrar el destino')
+  }, [])
 
-  // Actualizar destino
-  const actualizarDestino = useCallback((destinoActualizado) => {
-    const index = destinos.findIndex(d => d.idDestino === destinoActualizado.idDestino)
-    if (index !== -1) {
-      setDestinos(prev => {
-        const newDestinos = [...prev]
-        newDestinos[index] = { ...newDestinos[index], ...destinoActualizado }
-        return newDestinos
-      })
-      return true
+  // Actualizar destino vía API
+  const actualizarDestino = useCallback(async (destinoActualizado) => {
+    const { idDestino, ...datos } = destinoActualizado
+    const res = await destinoService.updateDestino(idDestino, datos)
+    if (res.success) {
+      setDestinos(prev => prev.map(d => d.idDestino === idDestino ? res.data : d))
+      return res.data
     }
-    return false
-  }, [destinos])
+    throw new Error(res.message || 'Error al actualizar el destino')
+  }, [])
 
-  // Habilitar/Inhabilitar destino
+  // Habilitar/Inhabilitar destino vía API
   const toggleHabilitado = useCallback(async (id) => {
-    if (token) {
-      try {
-        const destinoService = await import('../services/destinoService')
-        const res = await destinoService.toggleHabilitadoDestino(id)
-        if (res.success) {
-          setDestinos(prev => prev.map(d => d.idDestino === id ? res.data : d))
-          return true
-        }
-      } catch (e) {
-        console.error('Error toggling destino:', e)
-        return false
-      }
+    const res = await destinoService.toggleHabilitadoDestino(id)
+    if (res.success) {
+      setDestinos(prev => prev.map(d => d.idDestino === id ? res.data : d))
+      return res.data
     }
-
-    const index = destinos.findIndex(d => d.idDestino === id)
-    if (index !== -1) {
-      setDestinos(prev => {
-        const newDestinos = [...prev]
-        newDestinos[index] = { 
-          ...newDestinos[index], 
-          habilitado: !newDestinos[index].habilitado,
-          estado: !newDestinos[index].habilitado ? 'Activo' : 'Inactivo'
-        }
-        return newDestinos
-      })
-      return true
-    }
-    return false
-  }, [destinos, token])
-
-  // Cambiar estado del destino
-  const updateEstado = useCallback((id, nuevoEstado) => {
-    const index = destinos.findIndex(d => d.idDestino === id)
-    if (index !== -1) {
-      setDestinos(prev => {
-        const newDestinos = [...prev]
-        newDestinos[index] = { ...newDestinos[index], estado: nuevoEstado }
-        return newDestinos
-      })
-      return true
-    }
-    return false
-  }, [destinos])
+    throw new Error(res.message || 'Error al cambiar el estado del destino')
+  }, [])
 
   const value = {
-    destinos, loading, error,
-    getDestinos, getDestinoById, getDestinosHabilitados,
-    registrarDestino, actualizarDestino, toggleHabilitado, updateEstado
+    destinos,
+    loading,
+    error,
+    fetchDestinos,
+    getDestinoById,
+    getDestinosHabilitados,
+    registrarDestino,
+    actualizarDestino,
+    toggleHabilitado,
   }
 
   return (

@@ -1,23 +1,22 @@
 import theme from '../../shared/styles/theme.js'
 import { useState } from 'react'
-import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, Snackbar, TextField, Select, InputAdornment, Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material'
+import {
+    Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel,
+    Button, Alert, Snackbar, Dialog, DialogTitle, DialogContent, IconButton
+} from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined'
-import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
-import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined'
 import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
-import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined'
+import AttachMoneyOutlinedIcon from '@mui/icons-material/AttachMoneyOutlined'
 import { useDestino } from '../../shared/contexts/DestinoContext.jsx'
-import { FormField, FormSelect, formFieldStyles } from '../../shared/components/FormularioEstandarizado.jsx'
+import { FormField, FormSelect } from '../../shared/components/FormularioEstandarizado.jsx'
 
-const COLORS = theme.palette
-
-const steps = ['Información del Destino', 'Datos de Contacto', 'Confirmación']
+const steps = ['Ubicación', 'Tarifa', 'Confirmación']
 
 const ConfirmRow = ({ label, value }) => (
-    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, py: 0.9, overflow: 'hidden' }}>
+    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, py: 0.9 }}>
         <Typography variant="body2" sx={{ color: '#9C4040', fontWeight: 500, flexShrink: 0 }}>{label}</Typography>
         <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary}
             sx={{ textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
@@ -25,6 +24,14 @@ const ConfirmRow = ({ label, value }) => (
         </Typography>
     </Box>
 )
+
+const departamentos = [
+    'Antioquia', 'Atlántico', 'Bogotá D.C.', 'Bolívar', 'Boyacá',
+    'Caldas', 'Caquetá', 'Casanare', 'Cauca', 'Cundinamarca',
+    'Chocó', 'Huila', 'La Guajira', 'Magdalena', 'Meta',
+    'Nariño', 'Norte de Santander', 'Quindío', 'Risaralda',
+    'Santander', 'Sucre', 'Tolima', 'Valle del Cauca'
+]
 
 const RegistrarDestino = ({ open, onClose, onSuccess }) => {
     const { registrarDestino } = useDestino()
@@ -35,19 +42,16 @@ const RegistrarDestino = ({ open, onClose, onSuccess }) => {
     const [exito, setExito] = useState(false)
 
     const [form, setForm] = useState({
-        nombre: '',
-        direccion: '',
-        ciudad: '',
         departamento: '',
-        telefono: '',
-        contacto: ''
+        ciudad: '',
+        tarifaBase: '',
     })
 
     const handleChange = (e) => {
         const { name, value } = e.target
-
-        if (name === 'telefono') {
-            const filtered = value.replace(/[^0-9]/g, '')
+        if (name === 'tarifaBase') {
+            // Solo números y punto decimal
+            const filtered = value.replace(/[^0-9.]/g, '')
             setForm(prev => ({ ...prev, [name]: filtered }))
         } else {
             setForm(prev => ({ ...prev, [name]: value }))
@@ -58,19 +62,17 @@ const RegistrarDestino = ({ open, onClose, onSuccess }) => {
 
     const validarPaso = (step) => {
         const e = {}
-
         if (step === 0) {
-            if (!form.nombre?.trim()) e.nombre = 'El nombre del destino es obligatorio'
-            if (!form.direccion?.trim()) e.direccion = 'La dirección es obligatoria'
             if (!form.departamento) e.departamento = 'Selecciona un departamento'
             if (!form.ciudad?.trim()) e.ciudad = 'La ciudad es obligatoria'
         }
-
         if (step === 1) {
-            if (!form.telefono?.trim()) e.telefono = 'El teléfono es obligatorio'
-            else if (!/^\d{10}$/.test(form.telefono)) e.telefono = 'El teléfono debe tener 10 dígitos'
+            if (form.tarifaBase === '' || form.tarifaBase === undefined) {
+                e.tarifaBase = 'La tarifa base es obligatoria'
+            } else if (isNaN(Number(form.tarifaBase)) || Number(form.tarifaBase) < 0) {
+                e.tarifaBase = 'La tarifa base debe ser un número positivo'
+            }
         }
-
         return e
     }
 
@@ -80,19 +82,19 @@ const RegistrarDestino = ({ open, onClose, onSuccess }) => {
             setErrores(erroresEncontrados)
             return
         }
-        setActiveStep((prev) => prev + 1)
+        setActiveStep(prev => prev + 1)
     }
 
-    const handleBack = () => setActiveStep((prev) => prev - 1)
+    const handleBack = () => setActiveStep(prev => prev - 1)
 
     const handleSubmit = async () => {
         setSubmitting(true)
         setApiError(null)
         try {
-            registrarDestino({
-                ...form,
-                habilitado: true,
-                estado: 'Activo'
+            await registrarDestino({
+                departamento: form.departamento,
+                ciudad: form.ciudad,
+                tarifaBase: Number(form.tarifaBase) || 0,
             })
             setExito(true)
             setTimeout(() => {
@@ -107,14 +109,7 @@ const RegistrarDestino = ({ open, onClose, onSuccess }) => {
     }
 
     const handleClose = () => {
-        setForm({
-            nombre: '',
-            direccion: '',
-            ciudad: '',
-            departamento: '',
-            telefono: '',
-            contacto: ''
-        })
+        setForm({ departamento: '', ciudad: '', tarifaBase: '' })
         setErrores({})
         setApiError(null)
         setActiveStep(0)
@@ -122,51 +117,40 @@ const RegistrarDestino = ({ open, onClose, onSuccess }) => {
         onClose()
     }
 
-    const handleCancelar = () => handleClose()
-
     const cardSx = {
         flex: 1, minWidth: 0, borderRadius: 2, p: 2.5,
         border: `1px solid ${theme.palette.divider}`,
         backgroundColor: 'white', elevation: 0,
-        overflow: 'hidden',
     }
-
-    const departamentos = [
-        'Antioquia', 'Atlántico', 'Bogotá D.C.', 'Bolívar', 'Boyacá',
-        'Caldas', 'Caquetá', 'Casanare', 'Cauca', 'Cundinamarca',
-        'Chocó', 'Huila', 'La Guajira', 'Magdalena', 'Meta',
-        'Nariño', 'Norte de Santander', 'Quindío', 'Risaralda',
-        'Santander', 'Sucre', 'Tolima', 'Valle del Cauca'
-    ]
 
     const renderStepContent = () => {
         switch (activeStep) {
             case 0:
                 return (
                     <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
-                        <FormField label="Nombre del Destino" name="nombre" value={form.nombre} onChange={handleChange}
-                            required error={errores.nombre} helperText={errores.nombre} icon={LocationOnOutlinedIcon}
-                            inputProps={{ maxLength: 100 }} placeholder="Ej: Terminal de Medellín" />
-                        <FormField label="Dirección" name="direccion" value={form.direccion} onChange={handleChange}
-                            required error={errores.direccion} helperText={errores.direccion} icon={BusinessOutlinedIcon}
-                            inputProps={{ maxLength: 200 }} placeholder="Ej: Cra 50 #30-25" />
-                        <FormSelect label="Departamento" name="departamento" value={form.departamento}
-                            onChange={handleChange} required error={errores.departamento} helperText={errores.departamento}>
-                            {departamentos.map(dept => <MenuItem key={dept} value={dept}>{dept}</MenuItem>)}
+                        <FormSelect
+                            label="Departamento" name="departamento" value={form.departamento}
+                            onChange={handleChange} required error={errores.departamento} helperText={errores.departamento}
+                        >
+                            {departamentos.map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
                         </FormSelect>
-                        <FormField label="Ciudad" name="ciudad" value={form.ciudad} onChange={handleChange}
-                            required error={errores.ciudad} helperText={errores.ciudad} icon={LocationOnOutlinedIcon}
-                            inputProps={{ maxLength: 50 }} placeholder="Ej: Medellín" />
+                        <FormField
+                            label="Ciudad" name="ciudad" value={form.ciudad} onChange={handleChange}
+                            required error={errores.ciudad} helperText={errores.ciudad}
+                            icon={LocationOnOutlinedIcon} inputProps={{ maxLength: 60 }}
+                            placeholder="Ej: Medellín"
+                        />
                     </Box>
                 )
             case 1:
                 return (
-                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
-                        <FormField label="Teléfono" name="telefono" value={form.telefono} onChange={handleChange}
-                            required error={errores.telefono} helperText={errores.telefono || 'Número de 10 dígitos'}
-                            icon={PhoneOutlinedIcon} inputProps={{ maxLength: 10 }} placeholder="Ej: 6041234567" />
-                        <FormField label="Persona de Contacto" name="contacto" value={form.contacto} onChange={handleChange}
-                            icon={PersonOutlinedIcon} inputProps={{ maxLength: 100 }} placeholder="Ej: Juan Pérez" />
+                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 2.5 }}>
+                        <FormField
+                            label="Tarifa Base (COP)" name="tarifaBase" value={form.tarifaBase} onChange={handleChange}
+                            required error={errores.tarifaBase} helperText={errores.tarifaBase || 'Valor en pesos colombianos'}
+                            icon={AttachMoneyOutlinedIcon} inputProps={{ maxLength: 12 }}
+                            placeholder="Ej: 25000"
+                        />
                     </Box>
                 )
             case 2:
@@ -177,28 +161,18 @@ const RegistrarDestino = ({ open, onClose, onSuccess }) => {
                                 {apiError}
                             </Alert>
                         )}
-                        <Box sx={{ display: 'flex', gap: 2 }}>
-                            <Paper elevation={0} sx={cardSx}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                                    <LocationOnOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
-                                    <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Información del Destino</Typography>
-                                </Box>
-                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la información del destino</Typography>
-                                <ConfirmRow label="Nombre" value={form.nombre} />
-                                <ConfirmRow label="Dirección" value={form.direccion} />
-                                <ConfirmRow label="Departamento" value={form.departamento} />
-                                <ConfirmRow label="Ciudad" value={form.ciudad} />
-                            </Paper>
-                            <Paper elevation={0} sx={cardSx}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                                    <PersonOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
-                                    <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Datos de Contacto</Typography>
-                                </Box>
-                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica los datos de contacto</Typography>
-                                <ConfirmRow label="Teléfono" value={form.telefono} />
-                                <ConfirmRow label="Contacto" value={form.contacto || 'N/A'} />
-                            </Paper>
-                        </Box>
+                        <Paper elevation={0} sx={cardSx}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                                <LocationOnOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
+                                <Typography fontWeight={700} fontSize="0.95rem">Resumen del Destino</Typography>
+                            </Box>
+                            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
+                                Verifica los datos antes de registrar
+                            </Typography>
+                            <ConfirmRow label="Departamento" value={form.departamento} />
+                            <ConfirmRow label="Ciudad" value={form.ciudad} />
+                            <ConfirmRow label="Tarifa Base" value={form.tarifaBase ? `$${Number(form.tarifaBase).toLocaleString('es-CO')}` : '—'} />
+                        </Paper>
                     </Box>
                 )
             default:
@@ -211,9 +185,7 @@ const RegistrarDestino = ({ open, onClose, onSuccess }) => {
             slotProps={{ paper: { sx: { borderRadius: 3, maxHeight: '90vh' } } }}>
             <DialogTitle sx={{ m: 0, p: 2, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${theme.palette.divider}` }}>
                 <Box>
-                    <Typography variant="h6" fontWeight={700}>
-                        Registrar Destino
-                    </Typography>
+                    <Typography variant="h6" fontWeight={700}>Registrar Destino</Typography>
                     <Typography variant="body2" color={theme.palette.text.secondary} sx={{ mt: 0.5, ml: 0.5 }}>
                         Complete los datos del nuevo destino paso a paso.
                     </Typography>
@@ -222,8 +194,8 @@ const RegistrarDestino = ({ open, onClose, onSuccess }) => {
                     <CloseIcon />
                 </IconButton>
             </DialogTitle>
-            <DialogContent sx={{ p: 3, pt: 1.5 }}>
 
+            <DialogContent sx={{ p: 3, pt: 1.5 }}>
                 <Stepper activeStep={activeStep} alternativeLabel
                     sx={{
                         mb: 3, mt: 2,
@@ -250,15 +222,12 @@ const RegistrarDestino = ({ open, onClose, onSuccess }) => {
             </DialogContent>
 
             <Snackbar open={exito} autoHideDuration={2500} onClose={() => setExito(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-                <Alert severity="success" variant="filled" sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }} onClose={() => setExito(false)}>
+                <Alert severity="success" variant="filled" sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }}>
                     ¡Destino registrado exitosamente!
                 </Alert>
             </Snackbar>
 
-            <Box sx={{
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                px: 4, py: 2.5, borderTop: `1px solid ${theme.palette.divider}`,
-            }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 4, py: 2.5, borderTop: `1px solid ${theme.palette.divider}` }}>
                 <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined"
                     startIcon={<ArrowBackOutlinedIcon />} disableRipple
                     sx={{
@@ -270,11 +239,8 @@ const RegistrarDestino = ({ open, onClose, onSuccess }) => {
                     Anterior
                 </Button>
                 <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
-                    <Button onClick={handleCancelar} disableRipple
-                        sx={{
-                            textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 2,
-                            '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary },
-                        }}>
+                    <Button onClick={handleClose} disableRipple
+                        sx={{ textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 2 }}>
                         Cancelar
                     </Button>
                     <Button
