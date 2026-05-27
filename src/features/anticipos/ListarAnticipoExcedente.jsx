@@ -1,6 +1,6 @@
 import theme from '../../shared/styles/theme.js'
 import { useState } from 'react'
-import { useAnticipos, conductoresMock, rutasMock } from '../../shared/contexts/AnticipoExcedenteContext.jsx'
+import { useAnticipos } from '../../shared/contexts/AnticipoExcedenteContext.jsx'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
 import {
     Box, Typography, Paper, Table, TableBody, TableCell,
@@ -25,8 +25,6 @@ import ImageIcon from '@mui/icons-material/Image'
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile'
 import RegistrarAnticipoExcedente from './RegistrarAnticipoExcedente'
 import ActualizarAnticipoExcedente from './ActualizarAnticipoExcedente'
-
-const COLORS = theme.palette
 
 const thStyle = {
     fontWeight: 700,
@@ -108,16 +106,6 @@ const formatFecha = (fecha) => {
     return `${d}/${m}/${y}`
 }
 
-const getNombreConductor = (id) => {
-    const c = conductoresMock.find(c => c.idConductor === parseInt(id))
-    return c ? c.nombre : '—'
-}
-
-const getNombreRuta = (id) => {
-    const r = rutasMock.find(r => r.idRuta === parseInt(id))
-    return r ? `${r.idRuta} - ${r.nombre}` : '—'
-}
-
 const CampoFila = ({ label, value, esEstado, estadoValue }) => (
     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
         <Typography variant="body2" sx={{ color: '#9C4040', fontWeight: 500 }}>{label}</Typography>
@@ -140,12 +128,23 @@ const CampoFila = ({ label, value, esEstado, estadoValue }) => (
     </Box>
 )
 
-const ModalConsultar = ({ anticipo, onClose }) => {
+// ── Modal de consulta ────────────────────────────────────────────────────────
+const ModalConsultar = ({ anticipo, conductores, rutas, onClose }) => {
     if (!anticipo) return null
 
     const excedente = parseFloat(anticipo.valorAnticipo || 0) - parseFloat(anticipo.valorGastado || 0)
     const estadoStyle = ESTADO_ANTICIPO_COLORS[anticipo.estado] || { bg: '#F5F5F5', color: '#757575' }
     const soportes = anticipo.soportes || []
+
+    const getNombreConductor = (id) => {
+        const c = conductores.find(c => c.idConductor === parseInt(id))
+        return c ? c.nombre : '—'
+    }
+
+    const getNombreRuta = (id) => {
+        const r = rutas.find(r => r.idRuta === parseInt(id))
+        return r ? r.nombre : '—'
+    }
 
     const cardSx = { borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white' }
     const tituloSx = { display: 'flex', alignItems: 'center', gap: 1, mb: 1 }
@@ -201,12 +200,10 @@ const ModalConsultar = ({ anticipo, onClose }) => {
                         <CampoFila label="F. Legalización" value={formatFecha(anticipo.fechaLegalizacion)} />
                         <CampoFila label="F. Excedente" value={formatFecha(anticipo.fechaEntregaExcedente)} />
                         {anticipo.observaciones && (
-                            <>
-                                <Box sx={{ pt: 1 }}>
-                                    <Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600} display="block">Observaciones</Typography>
-                                    <Typography variant="body2" color={theme.palette.text.primary}>{anticipo.observaciones}</Typography>
-                                </Box>
-                            </>
+                            <Box sx={{ pt: 1 }}>
+                                <Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600} display="block">Observaciones</Typography>
+                                <Typography variant="body2" color={theme.palette.text.primary}>{anticipo.observaciones}</Typography>
+                            </Box>
                         )}
                     </Paper>
                 </Box>
@@ -216,7 +213,8 @@ const ModalConsultar = ({ anticipo, onClose }) => {
                         <Box sx={tituloSx}>
                             <ImageIcon sx={{ fontSize: 22, color: theme.palette.text.primary }} />
                             <Typography fontWeight={700} fontSize="1.05rem" color={theme.palette.text.primary}>Soportes de pago</Typography>
-                            <Chip label={`${soportes.length} archivo${soportes.length !== 1 ? 's' : ''}`} size="small" sx={{ ml: 'auto', fontSize: '0.68rem', height: 20, backgroundColor: '#E8F5E9', color: '#2E7D32', fontWeight: 600 }} />
+                            <Chip label={`${soportes.length} archivo${soportes.length !== 1 ? 's' : ''}`} size="small"
+                                sx={{ ml: 'auto', fontSize: '0.68rem', height: 20, backgroundColor: '#E8F5E9', color: '#2E7D32', fontWeight: 600 }} />
                         </Box>
                         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 1.5 }}>
                             {soportes.map((s, idx) => (
@@ -239,7 +237,8 @@ const ModalConsultar = ({ anticipo, onClose }) => {
             </DialogContent>
 
             <DialogActions sx={{ px: 3, py: 2 }}>
-                <Button onClick={onClose} variant="contained" sx={{ backgroundColor: theme.palette.primary.main, borderRadius: 2, textTransform: 'none' }}>
+                <Button onClick={onClose} variant="contained"
+                    sx={{ backgroundColor: theme.palette.primary.main, borderRadius: 2, textTransform: 'none' }}>
                     Cerrar
                 </Button>
             </DialogActions>
@@ -247,8 +246,9 @@ const ModalConsultar = ({ anticipo, onClose }) => {
     )
 }
 
+// ── Componente principal ─────────────────────────────────────────────────────
 const ListarAnticipoExcedente = () => {
-    const { anticipos, toggleHabilitado, cambiarEstado } = useAnticipos()
+    const { anticipos, conductores, rutas, loading, toggleHabilitado, cambiarEstado } = useAnticipos()
     const { tienePermiso, PERMISOS } = useAuth()
 
     const [busqueda, setBusqueda] = useState('')
@@ -258,10 +258,20 @@ const ListarAnticipoExcedente = () => {
     const [rowsPerPage, setRowsPerPage] = useState(5)
     const [anticipoConsulta, setAnticipoConsulta] = useState(null)
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
-    const [cambiandoEstado, setCambiandoEstado] = useState(null)
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [anticipoEditar, setAnticipoEditar] = useState(null)
+
+    // Helpers para resolver nombres desde los arrays del contexto
+    const getNombreConductor = (id) => {
+        const c = conductores.find(c => c.idConductor === parseInt(id))
+        return c ? c.nombre : '—'
+    }
+
+    const getNombreRuta = (id) => {
+        const r = rutas.find(r => r.idRuta === parseInt(id))
+        return r ? r.nombre : '—'
+    }
 
     const anticiposFiltrados = anticipos.filter(a => {
         const q = busqueda.toLowerCase().trim()
@@ -271,11 +281,12 @@ const ListarAnticipoExcedente = () => {
         const coincideBusqueda = !q ||
             nombreConductor.includes(q) ||
             nombreRuta.includes(q) ||
-            (a.observaciones || '').toLowerCase().includes(q)
+            (a.observaciones || '').toLowerCase().includes(q) ||
+            String(a.idAnticipoExcedente).includes(q)
 
         const coincideHabilitado =
             filtroHabilitado === 'todo' ||
-            (filtroHabilitado === 'habilitado' && a.habilitado === true) ||
+            (filtroHabilitado === 'habilitado' && a.habilitado !== false) ||
             (filtroHabilitado === 'inhabilitado' && a.habilitado === false)
 
         const coincideEstadoAnticipo = filtroEstadoAnticipo === 'todos' || a.estado === filtroEstadoAnticipo
@@ -289,14 +300,22 @@ const ListarAnticipoExcedente = () => {
     const from = anticiposFiltrados.length === 0 ? 0 : (safePage - 1) * rowsPerPage + 1
     const to = Math.min(safePage * rowsPerPage, anticiposFiltrados.length)
 
-    const handleToggleHabilitado = (id) => {
-        toggleHabilitado(id)
+    const handleToggleHabilitado = async (id) => {
+        await toggleHabilitado(id)
         setSnackbar({ open: true, message: 'Estado de habilitación actualizado', severity: 'success' })
     }
 
-    const handleCambiarEstadoAnticipo = (id, nuevoEstado) => {
-        cambiarEstado(id, nuevoEstado)
+    const handleCambiarEstadoAnticipo = async (id, nuevoEstado) => {
+        await cambiarEstado(id, nuevoEstado)
         setSnackbar({ open: true, message: 'Estado del anticipo actualizado', severity: 'success' })
+    }
+
+    if (loading) {
+        return (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 300 }}>
+                <CircularProgress color="primary" />
+            </Box>
+        )
     }
 
     return (
@@ -311,14 +330,7 @@ const ListarAnticipoExcedente = () => {
                         <Chip
                             label={`${anticipos.length} registrado${anticipos.length !== 1 ? 's' : ''}`}
                             size="small"
-                            sx={{
-                                backgroundColor: '#F3F4F6',
-                                color: theme.palette.text.secondary,
-                                fontWeight: 500,
-                                fontSize: '0.72rem',
-                                height: 22,
-                                borderRadius: 10,
-                            }}
+                            sx={{ backgroundColor: '#F3F4F6', color: theme.palette.text.secondary, fontWeight: 500, fontSize: '0.72rem', height: 22, borderRadius: 10 }}
                         />
                     </Box>
                     <Typography variant="body2" color={theme.palette.text.secondary} mt={0.3}>
@@ -336,10 +348,7 @@ const ListarAnticipoExcedente = () => {
                             textTransform: 'none',
                             fontWeight: 600,
                             boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
-                            '&:hover': {
-                                backgroundColor: theme.palette.primary.dark,
-                                boxShadow: '0 6px 20px rgba(204,24,24,0.2)',
-                            },
+                            '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
                         }}
                     >
                         Nuevo anticipo
@@ -348,14 +357,7 @@ const ListarAnticipoExcedente = () => {
             </Box>
 
             {/* Filtros de habilitado */}
-            <Box sx={{
-                display: 'inline-flex',
-                backgroundColor: '#FFECEC',
-                borderRadius: 4,
-                p: '4px',
-                mb: 2.5,
-                gap: '5px',
-            }}>
+            <Box sx={{ display: 'inline-flex', backgroundColor: '#FFECEC', borderRadius: 4, p: '4px', mb: 2.5, gap: '5px' }}>
                 {FILTROS_HABILITADO.map(f => (
                     <Button
                         key={f.value}
@@ -367,15 +369,12 @@ const ListarAnticipoExcedente = () => {
                             borderRadius: 3,
                             textTransform: 'none',
                             fontSize: '0.75rem',
-                            px: 2,
-                            py: 0.5,
+                            px: 2, py: 0.5,
                             minWidth: 0,
                             fontWeight: filtroHabilitado === f.value ? 600 : 400,
                             backgroundColor: filtroHabilitado === f.value ? 'white' : 'transparent',
                             color: filtroHabilitado === f.value ? theme.palette.text.primary : '#B05050',
-                            boxShadow: filtroHabilitado === f.value
-                                ? '0 1px 4px rgba(0,0,0,0.12)'
-                                : 'none',
+                            boxShadow: filtroHabilitado === f.value ? '0 1px 4px rgba(0,0,0,0.12)' : 'none',
                             border: 'none',
                             '&:hover': {
                                 backgroundColor: filtroHabilitado === f.value ? 'white' : 'transparent',
@@ -389,7 +388,7 @@ const ListarAnticipoExcedente = () => {
                 ))}
             </Box>
 
-            {/* Búsqueda + filtro estado anticipo */}
+            {/* Búsqueda + filtro estado */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
                 <TextField
                     size="small"
@@ -398,13 +397,8 @@ const ListarAnticipoExcedente = () => {
                         width: 320,
                         '& .MuiOutlinedInput-root': {
                             borderRadius: 2,
-                            '&.Mui-focused': {
-                                boxShadow: '0 0 0 3px rgba(229,115,115,0.18)',
-                            },
-                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                borderColor: theme.palette.primary.main,
-                                borderWidth: '1px',
-                            },
+                            '&.Mui-focused': { boxShadow: '0 0 0 3px rgba(229,115,115,0.18)' },
+                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
                         },
                     }}
                     value={busqueda}
@@ -429,7 +423,9 @@ const ListarAnticipoExcedente = () => {
 
                 <FormControl size="small" sx={{ minWidth: 180 }}>
                     <InputLabel sx={{ fontSize: '0.82rem', '&.Mui-focused': { color: '#E57373' } }}>Estado del anticipo</InputLabel>
-                    <Select value={filtroEstadoAnticipo} label="Estado del anticipo"
+                    <Select
+                        value={filtroEstadoAnticipo}
+                        label="Estado del anticipo"
                         onChange={e => { setFiltroEstadoAnticipo(e.target.value); setPage(1) }}
                         IconComponent={KeyboardArrowDownOutlinedIcon}
                         sx={filterSelectSx}
@@ -468,9 +464,7 @@ const ListarAnticipoExcedente = () => {
                                         <Typography color={theme.palette.text.secondary} variant="body2">
                                             {anticipos.length === 0
                                                 ? 'No hay anticipos registrados en el sistema.'
-                                                : busqueda.trim() !== '' || filtroHabilitado !== 'todo' || filtroEstadoAnticipo !== 'todos'
-                                                    ? 'No se encontraron resultados con la búsqueda y los filtros aplicados.'
-                                                    : 'No se encontraron anticipos.'
+                                                : 'No se encontraron resultados con los filtros aplicados.'
                                             }
                                         </Typography>
                                     </TableCell>
@@ -478,6 +472,8 @@ const ListarAnticipoExcedente = () => {
                             ) : (
                                 paginatedAnticipos.map((anticipo) => {
                                     const excedente = parseFloat(anticipo.valorAnticipo || 0) - parseFloat(anticipo.valorGastado || 0)
+                                    const nombreConductor = getNombreConductor(anticipo.idConductor)
+                                    const nombreRuta = getNombreRuta(anticipo.idRuta)
 
                                     return (
                                         <TableRow
@@ -488,44 +484,50 @@ const ListarAnticipoExcedente = () => {
                                                 opacity: anticipo.habilitado !== false ? 1 : 0.55,
                                             }}
                                         >
+                                            {/* Conductor */}
                                             <TableCell sx={{ py: 1.5 }}>
                                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                                                     <Avatar sx={{
                                                         width: 34, height: 34,
                                                         backgroundColor: anticipo.habilitado !== false ? '#FFCDD2' : theme.palette.divider,
-                                                        fontSize: '0.73rem',
-                                                        fontWeight: 700,
+                                                        fontSize: '0.73rem', fontWeight: 700,
                                                         color: anticipo.habilitado !== false ? '#C62828' : '#9CA3AF',
                                                     }}>
-                                                        {getNombreConductor(anticipo.idConductor).split(' ').map(n => n[0]).slice(0, 2).join('')}
+                                                        {nombreConductor.split(' ').map(n => n[0]).slice(0, 2).join('')}
                                                     </Avatar>
                                                     <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary} noWrap>
-                                                        {getNombreConductor(anticipo.idConductor)}
+                                                        {nombreConductor}
                                                     </Typography>
                                                 </Box>
                                             </TableCell>
 
+                                            {/* Ruta */}
                                             <TableCell sx={{ py: 1.5 }}>
                                                 <Typography variant="body2" color={theme.palette.text.secondary} fontSize="0.75rem">
                                                     Ruta {anticipo.idRuta}
                                                 </Typography>
                                                 <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary} fontSize="0.8rem" noWrap>
-                                                    {getNombreRuta(anticipo.idRuta).split(' - ')[1] || '—'}
+                                                    {nombreRuta}
                                                 </Typography>
                                             </TableCell>
 
+                                            {/* Anticipo */}
                                             <TableCell sx={{ py: 1.5 }}>
                                                 <Typography variant="body2" fontWeight={600} color={theme.palette.secondary.main} fontSize="0.82rem">
                                                     {formatMoney(anticipo.valorAnticipo)}
                                                 </Typography>
                                             </TableCell>
 
+                                            {/* Gastado */}
                                             <TableCell sx={{ py: 1.5 }}>
-                                                <Typography variant="body2" color={anticipo.valorGastado ? theme.palette.text.primary : theme.palette.text.secondary} fontSize="0.82rem">
+                                                <Typography variant="body2"
+                                                    color={anticipo.valorGastado ? theme.palette.text.primary : theme.palette.text.secondary}
+                                                    fontSize="0.82rem">
                                                     {anticipo.valorGastado ? formatMoney(anticipo.valorGastado) : '—'}
                                                 </Typography>
                                             </TableCell>
 
+                                            {/* Excedente / Faltante */}
                                             <TableCell sx={{ py: 1.5 }}>
                                                 {anticipo.valorGastado ? (
                                                     <Typography variant="body2" fontWeight={600} fontSize="0.82rem"
@@ -537,11 +539,12 @@ const ListarAnticipoExcedente = () => {
                                                 )}
                                             </TableCell>
 
+                                            {/* Fecha entrega */}
                                             <TableCell sx={{ fontSize: '0.8rem', color: theme.palette.text.primary, py: 1.5 }}>
                                                 {formatFecha(anticipo.fechaEntrega)}
                                             </TableCell>
 
-                                            {/* Estado del anticipo (con Select) */}
+                                            {/* Estado (select inline) */}
                                             <TableCell sx={{ py: 1.5, minWidth: 160 }}>
                                                 <Select
                                                     value={anticipo.estado || 'entregado'}
@@ -552,15 +555,9 @@ const ListarAnticipoExcedente = () => {
                                                         const style = getEstadoColor(val)
                                                         return (
                                                             <Box sx={{
-                                                                display: 'inline-flex',
-                                                                alignItems: 'center',
-                                                                backgroundColor: style.bg,
-                                                                color: style.color,
-                                                                px: 1.2,
-                                                                py: 0.2,
-                                                                borderRadius: 8,
-                                                                fontWeight: 600,
-                                                                fontSize: '0.7rem',
+                                                                display: 'inline-flex', alignItems: 'center',
+                                                                backgroundColor: style.bg, color: style.color,
+                                                                px: 1.2, py: 0.2, borderRadius: 8, fontWeight: 600, fontSize: '0.7rem',
                                                             }}>
                                                                 {String(val).charAt(0).toUpperCase() + String(val).slice(1)}
                                                             </Box>
@@ -570,17 +567,10 @@ const ListarAnticipoExcedente = () => {
                                                     sx={{
                                                         backgroundColor: '#ffffff',
                                                         color: theme.palette.text.primary,
-                                                        fontSize: '0.72rem',
-                                                        fontWeight: 600,
-                                                        height: 32,
-                                                        borderRadius: 1,
+                                                        fontSize: '0.72rem', fontWeight: 600,
+                                                        height: 32, borderRadius: 1,
                                                         border: '1px solid #E0E0E0',
-                                                        '& .MuiSelect-select': {
-                                                            py: 0.8,
-                                                            px: 1,
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                        },
+                                                        '& .MuiSelect-select': { py: 0.8, px: 1, display: 'flex', alignItems: 'center' },
                                                         '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
                                                         '&:hover .MuiOutlinedInput-notchedOutline': { border: 'none' },
                                                         '&.Mui-focused .MuiOutlinedInput-notchedOutline': { border: 'none' },
@@ -593,15 +583,9 @@ const ListarAnticipoExcedente = () => {
                                                         return (
                                                             <MenuItem key={estado.value} value={estado.value} dense>
                                                                 <Box sx={{
-                                                                    display: 'inline-flex',
-                                                                    alignItems: 'center',
-                                                                    backgroundColor: style.bg,
-                                                                    color: style.color,
-                                                                    px: 1.2,
-                                                                    py: 0.2,
-                                                                    borderRadius: 8,
-                                                                    fontWeight: 600,
-                                                                    fontSize: '0.7rem',
+                                                                    display: 'inline-flex', alignItems: 'center',
+                                                                    backgroundColor: style.bg, color: style.color,
+                                                                    px: 1.2, py: 0.2, borderRadius: 8, fontWeight: 600, fontSize: '0.7rem',
                                                                 }}>
                                                                     {estado.label}
                                                                 </Box>
@@ -611,7 +595,7 @@ const ListarAnticipoExcedente = () => {
                                                 </Select>
                                             </TableCell>
 
-                                            {/* Acciones: Ver, Editar, Checkbox habilitado */}
+                                            {/* Acciones */}
                                             <TableCell sx={{ py: 1.5 }}>
                                                 <Box sx={{ display: 'flex', gap: 0.5 }}>
                                                     {tienePermiso(PERMISOS.CONSULTAR_ANTICIPO) && (
@@ -632,13 +616,14 @@ const ListarAnticipoExcedente = () => {
                                                         </Tooltip>
                                                     )}
                                                     {tienePermiso(PERMISOS.ACTUALIZAR_ANTICIPO) && (
-                                                        <Tooltip title={anticipo.habilitado ? 'Inhabilitar' : 'Habilitar'}>
-                                                            <IconButton
-                                                                size="small"
+                                                        <Tooltip title={anticipo.habilitado !== false ? 'Inhabilitar' : 'Habilitar'}>
+                                                            <IconButton size="small"
                                                                 onClick={() => handleToggleHabilitado(anticipo.idAnticipoExcedente)}
-                                                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
-                                                            >
-                                                                {anticipo.habilitado ? <CheckBoxIcon sx={{ fontSize: 18, color: theme.palette.primary.main }} /> : <CheckBoxOutlineBlankIcon sx={{ fontSize: 18, color: theme.palette.status.disabled2.color }} />}
+                                                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}>
+                                                                {anticipo.habilitado !== false
+                                                                    ? <CheckBoxIcon sx={{ fontSize: 18, color: theme.palette.primary.main }} />
+                                                                    : <CheckBoxOutlineBlankIcon sx={{ fontSize: 18, color: theme.palette.status?.disabled2?.color || '#9CA3AF' }} />
+                                                                }
                                                             </IconButton>
                                                         </Tooltip>
                                                     )}
@@ -660,9 +645,7 @@ const ListarAnticipoExcedente = () => {
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography variant="body2" color={theme.palette.text.secondary} fontWeight={500}>
-                            Filas
-                        </Typography>
+                        <Typography variant="body2" color={theme.palette.text.secondary} fontWeight={500}>Filas</Typography>
                         <Select
                             value={rowsPerPage}
                             onChange={e => { setRowsPerPage(Number(e.target.value)); setPage(1) }}
@@ -670,14 +653,11 @@ const ListarAnticipoExcedente = () => {
                             renderValue={(value) => value}
                             IconComponent={KeyboardArrowDownOutlinedIcon}
                             sx={{
-                                fontSize: '0.82rem',
-                                borderRadius: 2,
+                                fontSize: '0.82rem', borderRadius: 2,
                                 '& .MuiSelect-select': { py: 0.6, pl: 1.5, pr: '28px !important' },
                                 '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
                                 '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#BDBDBD' },
-                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                    borderColor: '#E57373', borderWidth: '1px',
-                                },
+                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#E57373', borderWidth: '1px' },
                                 '&.Mui-focused': { boxShadow: '0 0 0 3px rgba(229,115,115,0.18)' },
                                 '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
                                 '& .MuiTouchRipple-root': { display: 'none' },
@@ -700,49 +680,43 @@ const ListarAnticipoExcedente = () => {
                         shape="rounded"
                         sx={{
                             '& .MuiPaginationItem-root': {
-                                fontSize: '0.82rem',
-                                borderRadius: '8px',
-                                minWidth: 34,
-                                height: 34,
-                                mx: 0.2,
-                                color: theme.palette.text.primary,
-                                border: `1px solid ${theme.palette.divider}`,
+                                fontSize: '0.82rem', borderRadius: '8px', minWidth: 34, height: 34, mx: 0.2,
+                                color: theme.palette.text.primary, border: `1px solid ${theme.palette.divider}`,
                                 '& .MuiTouchRipple-root': { display: 'none' },
                             },
                             '& .MuiPaginationItem-ellipsis': { border: 'none' },
                             '& .MuiPaginationItem-root.Mui-selected': {
-                                backgroundColor: theme.palette.primary.main,
-                                borderColor: theme.palette.primary.main,
-                                color: 'white',
-                                fontWeight: 600,
+                                backgroundColor: theme.palette.primary.main, borderColor: theme.palette.primary.main,
+                                color: 'white', fontWeight: 600,
                                 '&:hover': { backgroundColor: theme.palette.primary.darker },
                             },
                             '& .MuiPaginationItem-root:hover:not(.Mui-selected)': {
-                                backgroundColor: theme.palette.background.subtle,
-                                borderColor: '#BDBDBD',
+                                backgroundColor: theme.palette.background.subtle, borderColor: '#BDBDBD',
                             },
                         }}
                     />
                 </Box>
             </Box>
 
-            <ModalConsultar anticipo={anticipoConsulta} onClose={() => setAnticipoConsulta(null)} />
+            {/* Modales */}
+            <ModalConsultar
+                anticipo={anticipoConsulta}
+                conductores={conductores}
+                rutas={rutas}
+                onClose={() => setAnticipoConsulta(null)}
+            />
 
             <RegistrarAnticipoExcedente
                 open={modalRegistrarOpen}
                 onClose={() => setModalRegistrarOpen(false)}
-                onSuccess={() => {
-                    setSnackbar({ open: true, message: 'Anticipo registrado correctamente', severity: 'success' })
-                }}
+                onSuccess={() => setSnackbar({ open: true, message: 'Anticipo registrado correctamente', severity: 'success' })}
             />
 
             <ActualizarAnticipoExcedente
                 open={modalActualizarOpen}
                 onClose={() => { setModalActualizarOpen(false); setAnticipoEditar(null) }}
                 anticipo={anticipoEditar}
-                onSuccess={() => {
-                    setSnackbar({ open: true, message: 'Anticipo actualizado correctamente', severity: 'success' })
-                }}
+                onSuccess={() => setSnackbar({ open: true, message: 'Anticipo actualizado correctamente', severity: 'success' })}
             />
 
             <Snackbar
@@ -751,16 +725,8 @@ const ListarAnticipoExcedente = () => {
                 onClose={() => setSnackbar({ ...snackbar, open: false })}
                 anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
             >
-                <Alert
-                    severity={snackbar.severity}
-                    variant="filled"
-                    sx={{
-                        fontWeight: 600,
-                        borderRadius: 2,
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                        fontSize: '0.85rem',
-                    }}
-                >
+                <Alert severity={snackbar.severity} variant="filled"
+                    sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }}>
                     {snackbar.message}
                 </Alert>
             </Snackbar>

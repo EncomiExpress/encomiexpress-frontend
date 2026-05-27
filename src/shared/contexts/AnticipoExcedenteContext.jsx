@@ -1,8 +1,8 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import * as anticipoService from '../services/anticipoService'
-import { fetchWithAuth } from '../services/authService'
-import useAnticipoWebSocket from '../../hooks/useAnticipoWebSocket'
 import { useAuth } from './AuthContext'
+import { useConductor } from './ConductorContext'
+import { useRutaProgramacion } from './RutaProgramacionContext'
 
 const AnticipoExcedenteContext = createContext()
 
@@ -10,94 +10,96 @@ export const useAnticipos = () => useContext(AnticipoExcedenteContext)
 
 export const AnticipoExcedenteProvider = ({ children }) => {
   const { token } = useAuth()
+  const { conductores } = useConductor()
+  const { rutasProgramadas, fetchRutasProgramadas } = useRutaProgramacion()
+
   const [anticipos, setAnticipos] = useState([])
-  const [conductores, setConductores] = useState([])
-  const [rutas, setRutas] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
+  // Cargar anticipos cuando hay token
   useEffect(() => {
     if (!token) {
       setLoading(false)
       return
     }
-
-    Promise.all([
-      anticipoService.getAnticipos(),
-      fetchWithAuth('/conductores'),
-      fetchWithAuth('/rutas'),
-    ])
-      .then(([anticiposRes, conductoresRes, rutasRes]) => {
-        setAnticipos(anticiposRes.data || [])
-        // Normalizar conductores: nombre completo desde usuario asociado
-        setConductores(
-          (conductoresRes.data || []).map(c => ({
-            idConductor: c.idConductor,
-            nombre: c.usuario
-              ? `${c.usuario.nombre} ${c.usuario.apellido}`
-              : `Conductor ${c.idConductor}`,
-          }))
-        )
-        setRutas(
-          (rutasRes.data || []).map(r => ({
-            idRuta: r.idRuta,
-            nombre: r.nombre,
-          }))
-        )
-      })
-      .catch(err => {
-        if (err.status !== 403) {
-          setError(err.message)
-        }
+    anticipoService
+      .getAnticipos()
+      .then((res) => setAnticipos(res.data || []))
+      .catch((err) => {
+        if (err.status !== 403) setError(err.message)
       })
       .finally(() => setLoading(false))
   }, [token])
 
-  const agregarAnticipo = async (nuevo) => {
-    const res = await anticipoService.createAnticipo(nuevo)
-    setAnticipos(prev => [...prev, res.data])
-  }
+  // Cargar rutas al montar siempre que haya token,
+  // independientemente de si el array ya tiene datos en el contexto padre
+  useEffect(() => {
+    if (token) {
+      fetchRutasProgramadas()
+    }
+  }, [token]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const actualizarAnticipo = async (actualizado) => {
-    const res = await anticipoService.updateAnticipo(actualizado.idAnticipoExcedente, actualizado)
-    setAnticipos(prev =>
-      prev.map(a =>
-        a.idAnticipoExcedente === actualizado.idAnticipoExcedente ? res.data : a
+  // Normalizar conductores para el selector: { idConductor, nombre }
+  const conductoresNormalizados = conductores.map((c) => ({
+    idConductor: c.idConductor,
+    nombre:
+      c.nombre && c.apellido
+        ? `${c.nombre} ${c.apellido}`
+        : c.nombre || `Conductor ${c.idConductor}`,
+  }))
+
+  // Normalizar rutas para el selector: { idRuta, nombre }
+  const rutasNormalizadas = rutasProgramadas.map((r) => ({
+    idRuta: r.idRuta,
+    nombre: r.nombreRuta || r.nombre || `Ruta ${r.idRuta}`,
+  }))
+
+  // ── CRUD ────────────────────────────────────────────────────────────────────
+
+  const agregarAnticipo = useCallback(async (datos) => {
+    const res = await anticipoService.createAnticipo(datos)
+    const nuevo = res.data
+    if (nuevo) setAnticipos((prev) => [...prev, nuevo])
+    return nuevo
+  }, [])
+
+  const actualizarAnticipo = useCallback(async (datosActualizados) => {
+    const id = datosActualizados.idAnticipoExcedente
+    const res = await anticipoService.updateAnticipo(id, datosActualizados)
+    const actualizado = res.data
+    if (actualizado) {
+      setAnticipos((prev) =>
+        prev.map((a) => (a.idAnticipoExcedente === id ? actualizado : a))
       )
-    )
-  }
+    }
+    return actualizado
+  }, [])
 
-  const actualizarAnticipoEnLista = (actualizado) => {
-    setAnticipos(prev => prev.map(a => (a.idAnticipoExcedente === (actualizado.idAnticipoExcedente || actualizado.idAnticipo) ? { ...a, ...actualizado } : a)))
-  }
-
-  const cambiarEstado = async (id, nuevoEstado) => {
+  const cambiarEstado = useCallback(async (id, nuevoEstado) => {
     await anticipoService.cambiarEstadoAnticipo(id, nuevoEstado)
-    setAnticipos(prev =>
-      prev.map(a =>
+    setAnticipos((prev) =>
+      prev.map((a) =>
         a.idAnticipoExcedente === id ? { ...a, estado: nuevoEstado } : a
       )
     )
-  }
+  }, [])
 
-  const toggleHabilitado = async (id) => {
+  const toggleHabilitado = useCallback(async (id) => {
     await anticipoService.toggleHabilitadoAnticipo(id)
-    setAnticipos(prev =>
-      prev.map(a =>
+    setAnticipos((prev) =>
+      prev.map((a) =>
         a.idAnticipoExcedente === id ? { ...a, habilitado: !a.habilitado } : a
       )
     )
-  }
-
-  // Inicializar WebSocket para actualizaciones en tiempo real
-  useAnticipoWebSocket({ agregarAnticipo, actualizarAnticipo: actualizarAnticipoEnLista })
+  }, [])
 
   return (
     <AnticipoExcedenteContext.Provider
       value={{
         anticipos,
-        conductores,
-        rutas,
+        conductores: conductoresNormalizados,
+        rutas: rutasNormalizadas,
         loading,
         error,
         agregarAnticipo,
@@ -110,11 +112,5 @@ export const AnticipoExcedenteProvider = ({ children }) => {
     </AnticipoExcedenteContext.Provider>
   )
 }
-
-// Exports de compatibilidad — ahora son arrays vacíos, los datos reales
-// vienen del contexto (conductores, rutas). Se mantienen para no romper
-// otros imports que aún los referencien.
-export const conductoresMock = []
-export const rutasMock = []
 
 export default AnticipoExcedenteProvider

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect } from 'react'
 import {
   getRutas,
   getRutaById,
@@ -7,6 +7,8 @@ import {
   toggleHabilitadoRuta,
   updateEstadoRuta
 } from '../services/rutaService'
+import { useDestino } from './DestinoContext'
+import { useTransporte } from './TransporteContext'
 
 const RutaProgramacionContext = createContext()
 
@@ -16,6 +18,16 @@ export const RutaProgramacionProvider = ({ children }) => {
   const [rutasProgramadas, setRutasProgramadas] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const { destinos, fetchDestinos } = useDestino()
+  const { getTransportes, fetchVehiculos } = useTransporte()
+
+  // Pre-carga destinos y vehículos al montar, para que los selectores
+  // de RegistrarRuta / ActualizarRuta tengan datos sin depender del
+  // orden de navegación del usuario.
+  useEffect(() => {
+    if (destinos.length === 0) fetchDestinos()
+    if (getTransportes().length === 0) fetchVehiculos()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Obtener todas las rutas desde la API
   const fetchRutasProgramadas = useCallback(async () => {

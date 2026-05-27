@@ -90,13 +90,12 @@ const ListarTransporte = () => {
     const [vehiculoEditar, setVehiculoEditar] = useState(null)
 
     const { getTransportes, updateEstado, toggleHabilitado, fetchVehiculos } = useTransporte()
-    const { getRutasProgramadas } = useRutaProgramacion()
+    const { rutasProgramadas, fetchRutasProgramadas } = useRutaProgramacion()
     const { usuario, tienePermiso, PERMISOS } = useAuth()
     const navigate = useNavigate()
 
-    const rutas = getRutasProgramadas()
     const vehiculosOcupadosIds = new Set(
-        rutas
+        rutasProgramadas
             .filter(r => r.estado === 'En Curso' && r.habilitado !== false)
             .map(r => r.idVehiculo)
     )
@@ -115,6 +114,7 @@ const ListarTransporte = () => {
             navigate('/login')
         } else {
             fetchVehiculos()
+            if (rutasProgramadas.length === 0) fetchRutasProgramadas()
         }
     }, [usuario, navigate, fetchVehiculos])
 
