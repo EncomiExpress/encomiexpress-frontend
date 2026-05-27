@@ -1,5 +1,7 @@
 import { fetchWithAuth } from './authService'
 
+// ── Encomiendas / Ventas ──────────────────────────────────────────────────────
+
 export const getEncomiendas = () =>
   fetchWithAuth('/encomiendas')
 
@@ -18,3 +20,7 @@ export const toggleHabilitadoEncomienda = (id) =>
 export const cambiarEstadoEncomienda = (id, estado) =>
   fetchWithAuth(`/encomiendas/${id}/estado`, { method: 'PATCH', body: JSON.stringify({ estado }) })
 
+// ── Rutas (para el selector de ruta en Registrar/Actualizar) ─────────────────
+
+export const getRutas = () =>
+  fetchWithAuth('/rutas')

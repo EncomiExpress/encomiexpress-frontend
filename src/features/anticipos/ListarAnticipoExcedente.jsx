@@ -67,6 +67,7 @@ const filterMenuProps = {
 }
 
 const ESTADO_ANTICIPO_COLORS = {
+    'pendiente': { bg: '#F3F4F6', color: '#6B7280' },
     'entregado': { bg: '#E3F2FD', color: '#1565C0' },
     'en legalización': { bg: '#FFF8E1', color: '#F57F17' },
     'legalizado': { bg: '#E8F5E9', color: '#2E7D32' },
@@ -87,6 +88,7 @@ const FILTROS_HABILITADO = [
 
 const FILTROS_ANTICIPO = [
     { value: 'todos', label: 'Todos los estados' },
+    { value: 'pendiente', label: 'Pendiente' },
     { value: 'entregado', label: 'Entregado' },
     { value: 'en legalización', label: 'En legalización' },
     { value: 'legalizado', label: 'Legalizado' },
@@ -301,13 +303,21 @@ const ListarAnticipoExcedente = () => {
     const to = Math.min(safePage * rowsPerPage, anticiposFiltrados.length)
 
     const handleToggleHabilitado = async (id) => {
-        await toggleHabilitado(id)
-        setSnackbar({ open: true, message: 'Estado de habilitación actualizado', severity: 'success' })
+        try {
+            await toggleHabilitado(id)
+            setSnackbar({ open: true, message: 'Estado de habilitación actualizado', severity: 'success' })
+        } catch (err) {
+            setSnackbar({ open: true, message: err.message || 'No se pudo cambiar el estado', severity: 'error' })
+        }
     }
 
     const handleCambiarEstadoAnticipo = async (id, nuevoEstado) => {
-        await cambiarEstado(id, nuevoEstado)
-        setSnackbar({ open: true, message: 'Estado del anticipo actualizado', severity: 'success' })
+        try {
+            await cambiarEstado(id, nuevoEstado)
+            setSnackbar({ open: true, message: 'Estado del anticipo actualizado', severity: 'success' })
+        } catch (err) {
+            setSnackbar({ open: true, message: err.message || 'No se pudo cambiar el estado', severity: 'error' })
+        }
     }
 
     if (loading) {

@@ -58,6 +58,16 @@ const getPagoColor = (estadoPago) =>
         ? { bg: '#D1FAE5', color: '#065F46' }
         : { bg: '#FEE2E2', color: '#991B1B' }
 
+const formatRutaDestino = (destino) => {
+    if (!destino) return '—'
+    if (typeof destino === 'string') return destino
+    if (typeof destino === 'object') {
+        if (destino.ciudad) return `${destino.ciudad} — ${destino.departamento}`
+        return destino.nombre || String(destino.idDestino ?? destino.id ?? '')
+    }
+    return String(destino)
+}
+
 const CampoFila = ({ label, value }) => (
     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
         <Typography variant="body2" sx={{ color: '#9C4040', fontWeight: 500 }}>{label}</Typography>
@@ -168,7 +178,7 @@ const ModalConsultar = ({ venta, onClose }) => {
                     <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
                         Información de pago y ruta de envío
                     </Typography>
-                    <CampoFila label="Ruta" value={venta.ruta?.destino} />
+                    <CampoFila label="Ruta" value={formatRutaDestino(venta.ruta?.destino)} />
                     <CampoFila label="Método de pago" value={venta.metodoPago} />
                     <CampoFila label="Valor servicio" value={`$${venta.valorServicio?.toLocaleString()}`} />
                     <CampoFila label="Total" value={`$${venta.total?.toLocaleString()}`} />
@@ -252,7 +262,7 @@ const ListarVenta = () => {
             v.numeroGuia.toLowerCase().includes(q) ||
             `${v.cliente?.nombre} ${v.cliente?.apellido}`.toLowerCase().includes(q) ||
             v.destinatario?.nombreDestinatario?.toLowerCase().includes(q) ||
-            v.ruta?.destino?.toLowerCase().includes(q)
+            formatRutaDestino(v.ruta?.destino).toLowerCase().includes(q)
 
         const coincideHabilitado =
             filtroHabilitado === 'todo' ||
@@ -312,10 +322,12 @@ const ListarVenta = () => {
 
     const handleToggleHabilitado = async (id) => {
         try {
-            await toggleHabilitadoVenta(id)
+            // ⚠️ FIX: usar el resultado de la operación para saber el nuevo estado
+            const resultado = await toggleHabilitadoVenta(id)
+            const nuevoEstado = resultado?.habilitado
             setSnackbar({
                 open: true,
-                message: `Venta ${toggleHabilitadoVenta ? 'habilitada' : 'inhabilitada'} correctamente.`,
+                message: `Venta ${nuevoEstado ? 'habilitada' : 'inhabilitada'} correctamente.`,
                 severity: 'success',
             })
         } catch (err) {
@@ -623,7 +635,7 @@ const ListarVenta = () => {
                                             </TableCell>
 
                                             <TableCell sx={{ fontSize: '0.85rem', color: theme.palette.text.primary, py: 1.5 }}>
-                                                {venta.ruta?.destino}
+                                                {formatRutaDestino(venta.ruta?.destino)}
                                             </TableCell>
 
                                             <TableCell sx={{ py: 1.5, minWidth: 160 }}>

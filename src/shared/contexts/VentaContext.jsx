@@ -6,7 +6,7 @@ const VentaContext = createContext()
 
 export const useVentas = () => useContext(VentaContext)
 
-// Valores deben coincidir con lo que el backend almacena (lowercase)
+// Valores en minúsculas — deben coincidir con lo que el backend almacena
 export const ESTADOS_ENCOMIENDA = [
   'pendiente de recogida',
   'en recogida',
@@ -15,7 +15,7 @@ export const ESTADOS_ENCOMIENDA = [
   'entregado',
   'devuelto',
   'activo',
-  'inactivo'
+  'inactivo',
 ]
 
 export const METODOS_PAGO = ['Contraentrega', 'Efectivo', 'Transferencia', 'Nequi']
@@ -67,17 +67,25 @@ export const VentaProvider = ({ children }) => {
     )
   }
 
-  const invalidateVenta = async (id) => {
+  // ⚠️ FIX: renombrado de invalidateVenta → toggleHabilitadoVenta
+  // para que ListarVenta pueda llamarlo con el nombre correcto
+  const toggleHabilitadoVenta = async (id) => {
     const res = await ventaService.toggleHabilitadoEncomienda(id)
     const normalizada = normalize(res.data)
     setVentas(prev => prev.map(v => v.idEncomiendaVenta === id ? normalizada : v))
+    return normalizada
   }
 
   return (
     <VentaContext.Provider value={{
       ventas, loading, error,
-      agregarVenta, actualizarVenta, cambiarEstadoVenta, invalidateVenta,
-      ESTADOS_ENCOMIENDA, METODOS_PAGO, ESTADOS_PAGO
+      agregarVenta,
+      actualizarVenta,
+      cambiarEstadoVenta,
+      toggleHabilitadoVenta,   // ⚠️ nombre correcto expuesto al contexto
+      ESTADOS_ENCOMIENDA,
+      METODOS_PAGO,
+      ESTADOS_PAGO,
     }}>
       {children}
     </VentaContext.Provider>
