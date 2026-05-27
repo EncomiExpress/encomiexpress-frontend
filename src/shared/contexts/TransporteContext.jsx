@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect } from 'react'
 import * as vehiculoService from '../services/vehiculoService'
 import { useAuth } from './AuthContext'
 
@@ -6,32 +6,10 @@ const TransporteContext = createContext()
 
 export const useTransporte = () => useContext(TransporteContext)
 
-// Mock data para vehículos
-let transportesMock = [
-  { 
-    idVehiculo: 1, idConductor: 4, idPropietario: 6, placa: 'ABC-123',
-    marca: 'Toyota', modelo: 'Hilux', color: 'Blanco', tipo: 'Camioneta',
-    capacidad: 1500, estado: 'Activo', habilitado: true, fechaRegistro: '2024-01-15',
-    vencimientoSOAT: '2025-06-20', vencimientoRevisionTecnica: '2025-08-15', vencimientoSeguroTerceros: '2025-12-01'
-  },
-  { 
-    idVehiculo: 2, idConductor: 7, idPropietario: 8, placa: 'XYZ-789',
-    marca: 'Ford', modelo: 'Ranger', color: 'Negro', tipo: 'Camioneta',
-    capacidad: 1200, estado: 'Activo', habilitado: true, fechaRegistro: '2024-02-20',
-    vencimientoSOAT: '2025-07-10', vencimientoRevisionTecnica: '2025-09-01', vencimientoSeguroTerceros: '2025-11-15'
-  },
-  { 
-    idVehiculo: 3, idConductor: 9, idPropietario: 10, placa: 'DEF-456',
-    marca: 'Nissan', modelo: 'Navara', color: 'Gris', tipo: 'Camioneta',
-    capacidad: 1100, estado: 'Mantenimiento', habilitado: true, fechaRegistro: '2024-03-10',
-    vencimientoSOAT: '2025-05-25', vencimientoRevisionTecnica: '2025-07-20', vencimientoSeguroTerceros: '2025-10-30'
-  },
-]
-
 export const TransporteProvider = ({ children }) => {
   const auth = useAuth() || {}
   const token = auth?.token || null
-  const [transportes, setTransportes] = useState(transportesMock)
+  const [transportes, setTransportes] = useState([])
 
   // Obtener todos los transportes
   const getTransportes = useCallback(() => {
@@ -44,89 +22,83 @@ export const TransporteProvider = ({ children }) => {
   }, [transportes])
 
   // Registrar transporte
-  const registrarTransporte = useCallback((nuevoTransporte) => {
-    setTransportes(prevTransportes => {
-      const maxId = prevTransportes.length > 0 
-        ? Math.max(...prevTransportes.map(t => t.idVehiculo)) 
-        : 0
-      const nuevo = {
-        ...nuevoTransporte,
-        idVehiculo: maxId + 1,
-        habilitado: true,
-        fechaRegistro: new Date().toISOString().split('T')[0]
+  const fetchVehiculos = useCallback(async () => {
+    setTransportes([])
+    try {
+      const response = await vehiculoService.getVehiculos()
+      if (response.success) {
+        setTransportes(response.data)
       }
-      return [...prevTransportes, nuevo]
-    })
-    return nuevoTransporte
-  }, [])
-
-  // Habilitar/Inhabilitar transporte (intenta backend y notifica a propietarios)
-  const toggleHabilitado = useCallback(async (id) => {
-    if (token) {
-      try {
-        const res = await vehiculoService.toggleHabilitadoVehiculo(id)
-        if (res && res.success) {
-          const updatedVehiculo = res.data
-          setTransportes(prevTransportes => prevTransportes.map(t => t.idVehiculo === id ? updatedVehiculo : t))
-          // Disparar evento global para que los propietarios se sincronicen
-          try {
-            window.dispatchEvent(new CustomEvent('vehiculo:toggled', { detail: { idPropietario: updatedVehiculo.idPropietario } }))
-          } catch (e) {
-            console.error('Error dispatching vehiculo:toggled', e)
-          }
-          return true
-        }
-      } catch (err) {
-        console.error('Error toggling vehiculo via API:', err)
-        // continuar con fallback local
-      }
+    } catch (err) {
+      console.error('Error fetching vehiculos:', err)
     }
-
-    // Fallback local
-    setTransportes(prevTransportes => {
-      const index = prevTransportes.findIndex(t => t.idVehiculo === id)
-      if (index !== -1) {
-        const updated = [...prevTransportes]
-        updated[index] = { ...updated[index], habilitado: !updated[index].habilitado }
-        try {
-          window.dispatchEvent(new CustomEvent('vehiculo:toggled', { detail: { idPropietario: updated[index].idPropietario } }))
-        } catch (e) {
-          console.error('Error dispatching vehiculo:toggled (local)', e)
-        }
-        return updated
-      }
-      return prevTransportes
-    })
-    return true
-  }, [token])
-
-  // Actualizar estado del transporte (Activo, Inactivo, Mantenimiento, En Reparación)
-  const updateEstado = useCallback((id, nuevoEstado) => {
-    setTransportes(prevTransportes => {
-      const index = prevTransportes.findIndex(t => t.idVehiculo === id)
-      if (index !== -1) {
-        const updated = [...prevTransportes]
-        updated[index] = { ...updated[index], estado: nuevoEstado }
-        return updated
-      }
-      return prevTransportes
-    })
-    return true
   }, [])
 
-  // Actualizar transporte
-  const actualizarTransporte = useCallback((transporteActualizado) => {
-    setTransportes(prevTransportes => {
-      const index = prevTransportes.findIndex(t => t.idVehiculo === transporteActualizado.idVehiculo)
-      if (index !== -1) {
-        const updated = [...prevTransportes]
-        updated[index] = { ...updated[index], ...transporteActualizado }
-        return updated
+  useEffect(() => {
+    if (token) {
+      fetchVehiculos()
+    }
+  }, [fetchVehiculos, token])
+
+  const registrarTransporte = useCallback(async (nuevoTransporte) => {
+    try {
+      const response = await vehiculoService.createVehiculo(nuevoTransporte)
+      if (response.success) {
+        await fetchVehiculos()
+        return response.data
       }
-      return prevTransportes
-    })
-    return true
-  }, [])
+      throw new Error(response.message || 'Error al registrar vehículo')
+    } catch (err) {
+      console.error('Error creating transporte:', err)
+      throw err
+    }
+  }, [fetchVehiculos])
+
+  // Habilitar/Inhabilitar transporte usando API
+  const toggleHabilitado = useCallback(async (id) => {
+    try {
+      const res = await vehiculoService.toggleHabilitadoVehiculo(id)
+      if (res && res.success) {
+        await fetchVehiculos()
+        return true
+      }
+      return false
+    } catch (err) {
+      console.error('Error toggling vehiculo via API:', err)
+      return false
+    }
+  }, [fetchVehiculos])
+
+  // Actualizar estado del transporte usando API
+  const updateEstado = useCallback(async (id, nuevoEstado) => {
+    try {
+      const estadoBackend = nuevoEstado.toLowerCase()
+      const response = await vehiculoService.cambiarEstadoVehiculo(id, estadoBackend)
+      if (response.success) {
+        await fetchVehiculos()
+        return true
+      }
+      return false
+    } catch (err) {
+      console.error('Error updating vehiculo estado:', err)
+      return false
+    }
+  }, [fetchVehiculos])
+
+  // Actualizar transporte usando API
+  const actualizarTransporte = useCallback(async (transporteActualizado) => {
+    try {
+      const response = await vehiculoService.updateVehiculo(transporteActualizado.idVehiculo, transporteActualizado)
+      if (response.success) {
+        await fetchVehiculos()
+        return response.data
+      }
+      throw new Error(response.message || 'Error al actualizar vehículo')
+    } catch (err) {
+      console.error('Error updating transporte:', err)
+      throw err
+    }
+  }, [fetchVehiculos])
 
   // Obtener transportes habilitados
   const getTransportesHabilitados = useCallback(() => {
@@ -137,6 +109,7 @@ export const TransporteProvider = ({ children }) => {
     <TransporteContext.Provider value={{
       getTransportes, getTransporteById, registrarTransporte,
       actualizarTransporte, toggleHabilitado, updateEstado, getTransportesHabilitados,
+      fetchVehiculos,
     }}>
       {children}
     </TransporteContext.Provider>

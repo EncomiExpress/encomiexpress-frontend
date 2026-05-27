@@ -3,7 +3,9 @@ import { useState } from 'react'
 import { Box, Paper, TextField, Typography, MenuItem, Dialog, DialogTitle, DialogContent, Stepper, Step, StepLabel, Snackbar, Alert, IconButton, Button } from '@mui/material'
 import { DirectionsCar, Person, Business, Event, Speed, Close, ArrowBackOutlined, ArrowForwardOutlined, CheckOutlined } from '@mui/icons-material'
 import { useTransporte } from '../../shared/contexts/TransporteContext.jsx'
-import { FormField, FormSelect, FormAlert, FormFieldsContainer } from '../../shared/components/FormularioEstandarizado.jsx'
+import { useConductor } from '../../shared/contexts/ConductorContext.jsx'
+import { usePropietario } from '../../shared/contexts/PropietarioContext.jsx'
+import { FormField, FormSelect, FormAlert } from '../../shared/components/FormularioEstandarizado.jsx'
 
 const steps = ['Datos del Vehículo', 'Documentación y Estado', 'Confirmación']
 
@@ -40,6 +42,8 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
   const [activeStep, setActiveStep] = useState(0)
    
   const { registrarTransporte } = useTransporte()
+  const { conductores } = useConductor()
+  const { propietarios } = usePropietario()
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -77,12 +81,21 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
     setSubmitting(true)
     setError('')
     try {
-      registrarTransporte({
-        ...formData,
-        capacidad: parseFloat(formData.capacidad),
-        idConductor: parseInt(formData.idConductor),
-        idPropietario: parseInt(formData.idPropietario)
-      })
+      const payload = {
+        idConductor: formData.idConductor ? parseInt(formData.idConductor, 10) : null,
+        idPropietario: formData.idPropietario ? parseInt(formData.idPropietario, 10) : null,
+        placa: formData.placa.trim(),
+        marca: formData.marca.trim(),
+        modelo: formData.modelo.trim(),
+        color: formData.color.trim(),
+        tipo: formData.tipo,
+        capacidad: formData.capacidad ? parseFloat(formData.capacidad) : null,
+        estado: formData.estado,
+        vencimientoSOAT: formData.vencimientoSOAT || null,
+        vencimientoRevisionTecnica: formData.vencimientoRevisionTecnica || null,
+        vencimientoSeguroTerceros: formData.vencimientoSeguroTerceros || null,
+      }
+      await registrarTransporte(payload)
       setSuccess('Transporte registrado correctamente')
       setTimeout(() => {
         handleClose()
@@ -134,7 +147,7 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
     switch (activeStep) {
       case 0:
         return (
-          <FormFieldsContainer>
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
             <FormField
               label="Placa"
               name="placa"
@@ -192,31 +205,41 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
               placeholder="Ej: 1500"
               icon={Speed}
             />
-          </FormFieldsContainer>
+          </Box>
         )
       case 1:
         return (
-          <FormFieldsContainer>
-            <FormField
-              label="ID Conductor"
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
+            <FormSelect
+              label="Conductor"
               name="idConductor"
-              type="number"
               value={formData.idConductor}
               onChange={handleChange}
               required
-              placeholder="Ej: 4"
-              icon={Person}
-            />
-            <FormField
-              label="ID Propietario"
+            >
+              {conductores
+                .filter(c => c.habilitado !== false)
+                .map((c) => (
+                  <MenuItem key={c.idConductor} value={c.idConductor}>
+                    {c.nombre} {c.apellido}
+                  </MenuItem>
+                ))}
+            </FormSelect>
+            <FormSelect
+              label="Propietario"
               name="idPropietario"
-              type="number"
               value={formData.idPropietario}
               onChange={handleChange}
               required
-              placeholder="Ej: 6"
-              icon={Business}
-            />
+            >
+              {propietarios
+                .filter(p => p.habilitado !== false)
+                .map((p) => (
+                  <MenuItem key={p.idPropietario} value={p.idPropietario}>
+                    {p.nombre} {p.apellido}
+                  </MenuItem>
+                ))}
+            </FormSelect>
             <FormSelect
               label="Estado"
               name="estado"
@@ -252,7 +275,7 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
               onChange={handleChange}
               icon={Event}
             />
-          </FormFieldsContainer>
+          </Box>
         )
       case 2:
         return (
@@ -286,8 +309,8 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
                   <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Asignación y Estado</Typography>
                 </Box>
                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica conductor, propietario y fechas</Typography>
-                <ConfirmRow label="Conductor" value={`ID: ${formData.idConductor}`} />
-                <ConfirmRow label="Propietario" value={`ID: ${formData.idPropietario}`} />
+                <ConfirmRow label="Conductor" value={(() => { const c = conductores.find(c => c.idConductor === formData.idConductor); return c ? `${c.nombre} ${c.apellido}` : '—' })()} />
+                <ConfirmRow label="Propietario" value={(() => { const p = propietarios.find(p => p.idPropietario === formData.idPropietario); return p ? `${p.nombre} ${p.apellido}` : '—' })()} />
                 <ConfirmRow label="SOAT" value={formData.vencimientoSOAT || '—'} />
                 <ConfirmRow label="Revisión Técnica" value={formData.vencimientoRevisionTecnica || '—'} />
                 <ConfirmRow label="Seguro de Terceros" value={formData.vencimientoSeguroTerceros || '—'} />

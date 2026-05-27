@@ -1,6 +1,10 @@
 import theme from '../../shared/styles/theme.js'
 import { useState, useEffect } from 'react'
-import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Snackbar, Alert, TextField, Select, InputAdornment, Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material'
+import {
+    Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel,
+    Button, Snackbar, Alert, TextField, Select, InputAdornment,
+    Dialog, DialogTitle, DialogContent, IconButton
+} from '@mui/material'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined'
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
@@ -17,8 +21,6 @@ import { FormField, FormSelect, formFieldStyles } from '../../shared/components/
 
 const DOMINIOS_EMAIL = ['@gmail.com', '@hotmail.com', '@outlook.com', '@yahoo.com', '@icloud.com', '@live.com']
 
-const COLORS = theme.palette
-
 const steps = ['Datos Personales', 'Licencia de Conducción', 'Confirmación']
 
 const ConfirmRow = ({ label, value }) => (
@@ -31,6 +33,34 @@ const ConfirmRow = ({ label, value }) => (
     </Box>
 )
 
+const cardSx = {
+    flex: 1, minWidth: 0, borderRadius: 2, p: 2.5,
+    border: `1px solid ${theme.palette.divider}`,
+    backgroundColor: 'white', elevation: 0, overflow: 'hidden',
+}
+
+const getTipoLabel = (tipo) => {
+    const tipos = { 'CC': 'Cédula', 'NIT': 'NIT', 'CE': 'Cédula Extranjería', 'TI': 'Tarjeta Identidad', 'PAS': 'Pasaporte', 'RC': 'Registro Civil' }
+    return tipos[tipo] || tipo
+}
+
+const getLicenciaLabel = (lic) => {
+    const licencias = { 'A1': 'A1 - Motocicleta', 'A2': 'A2 - Motocicleta alta cilindrada', 'B1': 'B1 - Automóvil', 'B2': 'B2 - Camioneta', 'C1': 'C1 - Camión pequeño', 'C2': 'C2 - Camión grande', 'C3': 'C3 - Tractocamión', 'D1': 'D1 - Bus pequeño', 'D2': 'D2 - Bus grande', 'E': 'E - Remolque' }
+    return licencias[lic] || lic || '—'
+}
+
+const FORM_INICIAL = {
+    tipoIdentificacion: '',
+    numeroIdentificacion: '',
+    nombre: '',
+    apellido: '',
+    telefono: '',
+    emailLocal: '',
+    emailDominio: '@gmail.com',
+    licenciaConduccion: '',
+    fechaVencimientoLicencia: ''
+}
+
 const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSuccess }) => {
     const { getConductorById, actualizarConductorApi, fetchConductores } = useConductor()
     const [exito, setExito] = useState(false)
@@ -40,34 +70,38 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
     const [submitting, setSubmitting] = useState(false)
     const [formOriginal, setFormOriginal] = useState(null)
     const [sinCambios, setSinCambios] = useState(false)
-
-    const [form, setForm] = useState({
-        tipoIdentificacion: '',
-        numeroIdentificacion: '',
-        nombre: '',
-        apellido: '',
-        telefono: '',
-        emailLocal: '',
-        emailDominio: '@gmail.com',
-        licenciaConduccion: '',
-        fechaVencimientoLicencia: ''
-    })
+    const [form, setForm] = useState(FORM_INICIAL)
 
     useEffect(() => {
         if (open && conductorProp) {
             setActiveStep(0)
             setErrores({})
             setSinCambios(false)
-            const conductor = getConductorById(conductorProp.idConductor)
-            if (conductor) {
-                const atIdx = conductor.email ? conductor.email.lastIndexOf('@') : -1
-                const emailLocal = atIdx >= 0 ? conductor.email.slice(0, atIdx) : conductor.email || ''
-                const rawDominio = atIdx >= 0 ? '@' + conductor.email.slice(atIdx + 1) : ''
-                const emailDominio = DOMINIOS_EMAIL.includes(rawDominio) ? rawDominio : '@gmail.com'
-                const datosForm = { ...conductor, emailLocal, emailDominio }
-                setForm(datosForm)
-                setFormOriginal(datosForm)
+            setApiError(null)
+
+            // Buscar en el store local (datos ya aplanados por fetchConductores)
+            const conductor = getConductorById(conductorProp.idConductor) || conductorProp
+
+            const email = conductor.email || ''
+            const atIdx = email.lastIndexOf('@')
+            const emailLocal = atIdx >= 0 ? email.slice(0, atIdx) : email
+            const rawDominio = atIdx >= 0 ? '@' + email.slice(atIdx + 1) : '@gmail.com'
+            const emailDominio = DOMINIOS_EMAIL.includes(rawDominio) ? rawDominio : '@gmail.com'
+
+            // El store ya mapea categoriaLicencia → licenciaConduccion y vencimientoLicencia → fechaVencimientoLicencia
+            const datosForm = {
+                tipoIdentificacion: conductor.tipoIdentificacion || '',
+                numeroIdentificacion: conductor.numeroIdentificacion || '',
+                nombre: conductor.nombre || '',
+                apellido: conductor.apellido || '',
+                telefono: conductor.telefono || '',
+                emailLocal,
+                emailDominio,
+                licenciaConduccion: conductor.licenciaConduccion || conductor.categoriaLicencia || '',
+                fechaVencimientoLicencia: conductor.fechaVencimientoLicencia || conductor.vencimientoLicencia || '',
             }
+            setForm(datosForm)
+            setFormOriginal(datosForm)
         }
     }, [open, conductorProp, getConductorById])
 
@@ -75,15 +109,9 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
         const { name } = e.target
         let { value } = e.target
 
-        if (name === 'nombre' || name === 'apellido') {
-            value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
-        }
-        if (name === 'numeroIdentificacion' || name === 'telefono') {
-            value = value.replace(/[^0-9]/g, '')
-        }
-        if (name === 'emailLocal') {
-            value = value.replace(/[^a-zA-Z0-9._-]/g, '')
-        }
+        if (name === 'nombre' || name === 'apellido') value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
+        if (name === 'numeroIdentificacion' || name === 'telefono') value = value.replace(/[^0-9]/g, '')
+        if (name === 'emailLocal') value = value.replace(/[^a-zA-Z0-9._-]/g, '')
 
         setForm(prev => ({ ...prev, [name]: value }))
         setErrores(prev => ({ ...prev, [name]: '' }))
@@ -93,17 +121,13 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
 
     const validarPaso = (step) => {
         const e = {}
-        const soloLetras = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/
-        const soloNumeros = /^\d+$/
-
         if (step === 0) {
             if (!form.tipoIdentificacion) e.tipoIdentificacion = 'Selecciona un tipo de documento'
             if (!form.numeroIdentificacion.trim()) e.numeroIdentificacion = 'El número de documento es obligatorio'
-            else if (!soloNumeros.test(form.numeroIdentificacion)) e.numeroIdentificacion = 'Solo se permiten números'
+            else if (!/^\d+$/.test(form.numeroIdentificacion)) e.numeroIdentificacion = 'Solo se permiten números'
             if (!form.nombre.trim()) e.nombre = 'El nombre es obligatorio'
-            else if (!soloLetras.test(form.nombre)) e.nombre = 'El nombre solo puede contener letras'
+            else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(form.nombre)) e.nombre = 'El nombre solo puede contener letras'
         }
-
         if (step === 1) {
             if (!form.telefono.trim()) e.telefono = 'El teléfono es obligatorio'
             else if (!/^\d{10}$/.test(form.telefono)) e.telefono = 'El teléfono debe tener 10 dígitos'
@@ -111,65 +135,49 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
             if (!form.licenciaConduccion) e.licenciaConduccion = 'Selecciona una categoría de licencia'
             if (!form.fechaVencimientoLicencia) e.fechaVencimientoLicencia = 'La fecha de vencimiento es obligatoria'
         }
-
         return e
     }
 
     const handleNext = () => {
         const erroresEncontrados = validarPaso(activeStep)
-        if (Object.keys(erroresEncontrados).length > 0) {
-            setErrores(erroresEncontrados)
-            return
-        }
-        setActiveStep((prev) => prev + 1)
+        if (Object.keys(erroresEncontrados).length > 0) { setErrores(erroresEncontrados); return }
+        setActiveStep(prev => prev + 1)
     }
 
-    const handleBack = () => setActiveStep((prev) => prev - 1)
-
+    const handleBack = () => setActiveStep(prev => prev - 1)
     const handleCancelar = () => onClose()
 
     const handleSubmit = async () => {
         const erroresEncontrados = validarPaso(activeStep)
-        if (Object.keys(erroresEncontrados).length > 0) {
-            setErrores(erroresEncontrados)
-            return
-        }
+        if (Object.keys(erroresEncontrados).length > 0) { setErrores(erroresEncontrados); return }
 
+        // Detectar si realmente hubo cambios
         if (formOriginal) {
-            const hayCambios = Object.keys(form).some(key => {
-                const original = formOriginal[key] !== undefined ? String(formOriginal[key]) : ''
-                const actual = form[key] !== undefined ? String(form[key]) : ''
-                return original !== actual
-            })
-
-            if (!hayCambios) {
-                setSinCambios(true)
-                return
-            }
+            const hayCambios = Object.keys(form).some(key =>
+                String(formOriginal[key] ?? '') !== String(form[key] ?? '')
+            )
+            if (!hayCambios) { setSinCambios(true); return }
         }
 
         setSinCambios(false)
         setSubmitting(true)
         setApiError(null)
+
         try {
             const { emailLocal, emailDominio, licenciaConduccion, fechaVencimientoLicencia, ...resto } = form
 
-            const result = await actualizarConductorApi(
+            await actualizarConductorApi(
                 parseInt(conductorProp?.idConductor),
                 {
                     ...resto,
                     email: emailLocal ? emailLocal + emailDominio : '',
+                    // El backend espera "categoriaLicencia" y "vencimientoLicencia"
                     categoriaLicencia: licenciaConduccion,
-                    vencimientoLicencia: fechaVencimientoLicencia
+                    vencimientoLicencia: fechaVencimientoLicencia,
                 }
             )
 
-            if (result?.success === false) {
-                setApiError(result.message || 'Error al actualizar el conductor')
-                return
-            }
-
-            fetchConductores()
+            await fetchConductores()
             setExito(true)
             setTimeout(() => {
                 onClose()
@@ -180,23 +188,6 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
         } finally {
             setSubmitting(false)
         }
-    }
-
-    const cardSx = {
-        flex: 1, minWidth: 0, borderRadius: 2, p: 2.5,
-        border: `1px solid ${theme.palette.divider}`,
-        backgroundColor: 'white', elevation: 0,
-        overflow: 'hidden',
-    }
-
-    const getTipoLabel = (tipo) => {
-        const tipos = { 'CC': 'Cédula', 'NIT': 'NIT', 'CE': 'Cédula Extranjería', 'TI': 'Tarjeta Identidad', 'PAS': 'Pasaporte', 'RC': 'Registro Civil' }
-        return tipos[tipo] || tipo
-    }
-
-    const getLicenciaLabel = (lic) => {
-        const licencias = { 'A1': 'A1 - Motocicleta', 'A2': 'A2 - Motocicleta alta cilindrada', 'B1': 'B1 - Automóvil', 'B2': 'B2 - Camioneta', 'C1': 'C1 - Camión pequeño', 'C2': 'C2 - Camión grande', 'C3': 'C3 - Tractocamión', 'D1': 'D1 - Bus pequeño', 'D2': 'D2 - Bus grande', 'E': 'E - Remolque' }
-        return licencias[lic] || lic
     }
 
     const renderStepContent = () => {
@@ -214,8 +205,7 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
                         </FormSelect>
                         <FormField label="Número de documento" name="numeroIdentificacion" value={form.numeroIdentificacion}
                             onChange={handleChange} required error={errores.numeroIdentificacion}
-                            helperText={errores.numeroIdentificacion} icon={BadgeOutlinedIcon}
-                            inputProps={{ maxLength: 15 }} />
+                            helperText={errores.numeroIdentificacion} icon={BadgeOutlinedIcon} inputProps={{ maxLength: 15 }} />
                         <FormField label="Nombres" name="nombre" value={form.nombre} onChange={handleChange}
                             required error={errores.nombre} helperText={errores.nombre} icon={PersonOutlinedIcon}
                             inputProps={{ maxLength: 50 }} placeholder="Ej: Juan" />
@@ -235,20 +225,12 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
                             error={!!errores.emailLocal} helperText={errores.emailLocal}
                             slotProps={{
                                 input: {
-                                    startAdornment: (
-                                        <InputAdornment position="start">
-                                            <EmailOutlinedIcon sx={{ color: '#94a3b8' }} />
-                                        </InputAdornment>
-                                    ),
+                                    startAdornment: <InputAdornment position="start"><EmailOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment>,
                                     endAdornment: (
                                         <InputAdornment position="end">
-                                            <Select name="emailDominio" value={form.emailDominio}
-                                                onChange={handleChange} variant="standard" disableUnderline
-                                                IconComponent={KeyboardArrowDownOutlinedIcon}
-                                                sx={{
-                                                    fontSize: '1rem', color: theme.palette.text.secondary,
-                                                    '& .MuiSelect-select': { py: 0, pl: 0.5, pr: '22px !important' }
-                                                }}>
+                                            <Select name="emailDominio" value={form.emailDominio} onChange={handleChange}
+                                                variant="standard" disableUnderline IconComponent={KeyboardArrowDownOutlinedIcon}
+                                                sx={{ fontSize: '1rem', color: theme.palette.text.secondary, '& .MuiSelect-select': { py: 0, pl: 0.5, pr: '22px !important' } }}>
                                                 {DOMINIOS_EMAIL.map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
                                             </Select>
                                         </InputAdornment>
@@ -325,22 +307,17 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
             slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}>
             <DialogTitle sx={{ m: 0, p: 2, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${theme.palette.divider}` }}>
                 <Box>
-                    <Typography variant="h6" fontWeight={700}>
-                        Editar Conductor
-                    </Typography>
+                    <Typography variant="h6" fontWeight={700}>Editar Conductor</Typography>
                     <Typography variant="body2" color={theme.palette.text.secondary}>
                         {formOriginal?.nombre && formOriginal?.apellido
                             ? `Modificando datos de ${formOriginal.nombre} ${formOriginal.apellido}`
-                            : 'Modifica los campos que necesites.'
-                        }
+                            : 'Modifica los campos que necesites.'}
                     </Typography>
                 </Box>
-                <IconButton onClick={onClose} sx={{ color: theme.palette.text.secondary }}>
-                    <CloseIcon />
-                </IconButton>
+                <IconButton onClick={onClose} sx={{ color: theme.palette.text.secondary }}><CloseIcon /></IconButton>
             </DialogTitle>
-            <DialogContent sx={{ p: 3, pt: 1.5 }}>
 
+            <DialogContent sx={{ p: 3, pt: 1.5 }}>
                 <Stepper activeStep={activeStep} alternativeLabel
                     sx={{
                         mb: 3, mt: 2,
@@ -354,11 +331,9 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
                         '& .MuiStepLabel-label': { fontSize: '0.8rem', color: theme.palette.text.secondary, mt: 0.5 },
                         '& .MuiStepLabel-label.Mui-active': { color: theme.palette.text.primary, fontWeight: 600 },
                         '& .MuiStepLabel-label.Mui-completed': { color: theme.palette.primary.main, fontWeight: 500 },
-                    }}
-                >
+                    }}>
                     {steps.map(label => <Step key={label}><StepLabel>{label}</StepLabel></Step>)}
                 </Stepper>
-
                 <Box sx={{ px: 4, py: 2 }}>
                     <Box sx={{ maxWidth: 700, mx: 'auto' }}>
                         {renderStepContent()}
@@ -372,41 +347,21 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
                 </Alert>
             </Snackbar>
 
-            <Box sx={{
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                px: 4, py: 2.5, borderTop: `1px solid ${theme.palette.divider}`, backgroundColor: '#FAFAFA',
-            }}>
-                <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined"
-                    startIcon={<ArrowBackOutlinedIcon />} disableRipple
-                    sx={{
-                        textTransform: 'none', borderRadius: 2, borderColor: theme.palette.divider,
-                        color: theme.palette.text.primary, fontWeight: 500,
-                        '&:hover': { borderColor: '#BDBDBD', backgroundColor: theme.palette.background.subtle },
-                        '&.Mui-disabled': { borderColor: theme.palette.divider, color: theme.palette.text.secondary },
-                    }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 4, py: 2.5, borderTop: `1px solid ${theme.palette.divider}`, backgroundColor: '#FAFAFA' }}>
+                <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined" startIcon={<ArrowBackOutlinedIcon />} disableRipple
+                    sx={{ textTransform: 'none', borderRadius: 2, borderColor: theme.palette.divider, color: theme.palette.text.primary, fontWeight: 500, '&:hover': { borderColor: '#BDBDBD', backgroundColor: theme.palette.background.subtle }, '&.Mui-disabled': { borderColor: theme.palette.divider, color: theme.palette.text.secondary } }}>
                     Anterior
                 </Button>
                 <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
                     <Button onClick={handleCancelar} disableRipple
-                        sx={{
-                            textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 2,
-                            '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary },
-                        }}>
+                        sx={{ textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 2, '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary } }}>
                         Cancelar
                     </Button>
-                    <Button
-                        onClick={activeStep < steps.length - 1 ? handleNext : handleSubmit}
-                        variant="contained"
-                        disabled={submitting || (activeStep === steps.length - 1 && sinCambios)}
+                    <Button onClick={activeStep < steps.length - 1 ? handleNext : handleSubmit}
+                        variant="contained" disabled={submitting || (activeStep === steps.length - 1 && sinCambios)}
                         endIcon={activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <SaveOutlinedIcon />}
                         disableRipple
-                        sx={{
-                            textTransform: 'none', borderRadius: 2, fontWeight: 600,
-                            backgroundColor: theme.palette.primary.main,
-                            boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
-                            '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
-                            '&.Mui-disabled': { backgroundColor: theme.palette.divider, color: '#9E9E9E' },
-                        }}>
+                        sx={{ textTransform: 'none', borderRadius: 2, fontWeight: 600, backgroundColor: theme.palette.primary.main, boxShadow: '0 4px 14px rgba(204,24,24,0.2)', '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: '0 6px 20px rgba(204,24,24,0.2)' }, '&.Mui-disabled': { backgroundColor: theme.palette.divider, color: '#9E9E9E' } }}>
                         {activeStep < steps.length - 1 ? 'Siguiente' : submitting ? 'Guardando...' : sinCambios ? 'Sin cambios' : 'Guardar cambios'}
                     </Button>
                 </Box>

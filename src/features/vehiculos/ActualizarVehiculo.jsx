@@ -3,9 +3,11 @@ import { useState, useEffect } from 'react'
 import { Box, TextField, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Snackbar, Alert, Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material'
 import { DirectionsCar, Person, Business, Event, Speed, SaveOutlined, ArrowBackOutlined, ArrowForwardOutlined, Close } from '@mui/icons-material'
 import { useTransporte } from '../../shared/contexts/TransporteContext.jsx'
+import { useConductor } from '../../shared/contexts/ConductorContext.jsx'
+import { usePropietario } from '../../shared/contexts/PropietarioContext.jsx'
 import { 
-  FormField, FormSelect, PrimaryButton, SecondaryButton, 
-  FormAlert, FormHeader, FormFieldsContainer, FormButtonGroup 
+  FormField, FormSelect,
+  FormAlert, FormHeader, FormButtonGroup 
 } from '../../shared/components/FormularioEstandarizado.jsx'
 
 const steps = ['Datos del Vehículo', 'Documentación y Estado', 'Confirmación']
@@ -24,6 +26,8 @@ const COLORS = theme.palette
 
 const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSuccess }) => {
   const { getTransporteById, actualizarTransporte } = useTransporte()
+  const { conductores } = useConductor()
+  const { propietarios } = usePropietario()
   
   const [formData, setFormData] = useState({
     idConductor: '',
@@ -118,7 +122,7 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
     setSubmitting(true)
     
     try {
-      actualizarTransporte({
+      await actualizarTransporte({
         idVehiculo: parseInt(transporteProp?.idVehiculo),
         ...formData,
         capacidad: parseFloat(formData.capacidad),
@@ -153,7 +157,7 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
     switch (activeStep) {
       case 0:
         return (
-          <FormFieldsContainer>
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
             <FormField
               label="Placa"
               name="placa"
@@ -223,35 +227,45 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
               error={errores.capacidad}
               helperText={errores.capacidad}
             />
-          </FormFieldsContainer>
+          </Box>
         )
       case 1:
         return (
-          <FormFieldsContainer>
-            <FormField
-              label="ID Conductor"
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
+            <FormSelect
+              label="Conductor"
               name="idConductor"
-              type="number"
               value={formData.idConductor}
               onChange={handleChange}
               required
-              placeholder="Ej: 4"
-              icon={Person}
               error={errores.idConductor}
               helperText={errores.idConductor}
-            />
-            <FormField
-              label="ID Propietario"
+            >
+              {conductores
+                .filter(c => c.habilitado !== false)
+                .map((c) => (
+                  <MenuItem key={c.idConductor} value={c.idConductor}>
+                    {c.nombre} {c.apellido}
+                  </MenuItem>
+                ))}
+            </FormSelect>
+            <FormSelect
+              label="Propietario"
               name="idPropietario"
-              type="number"
               value={formData.idPropietario}
               onChange={handleChange}
               required
-              placeholder="Ej: 6"
-              icon={Business}
               error={errores.idPropietario}
               helperText={errores.idPropietario}
-            />
+            >
+              {propietarios
+                .filter(p => p.habilitado !== false)
+                .map((p) => (
+                  <MenuItem key={p.idPropietario} value={p.idPropietario}>
+                    {p.nombre} {p.apellido}
+                  </MenuItem>
+                ))}
+            </FormSelect>
             <FormSelect
               label="Estado"
               name="estado"
@@ -290,7 +304,7 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
               icon={Event}
               InputLabelProps={{ shrink: true }}
             />
-          </FormFieldsContainer>
+          </Box>
         )
       case 2:
         return (
@@ -325,8 +339,8 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
                   <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Documentación y Estado</Typography>
                 </Box>
                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la documentación</Typography>
-                <ConfirmRow label="Conductor ID" value={formData.idConductor} />
-                <ConfirmRow label="Propietario ID" value={formData.idPropietario} />
+                <ConfirmRow label="Conductor" value={(() => { const c = conductores.find(c => c.idConductor === formData.idConductor); return c ? `${c.nombre} ${c.apellido}` : '—' })()} />
+                <ConfirmRow label="Propietario" value={(() => { const p = propietarios.find(p => p.idPropietario === formData.idPropietario); return p ? `${p.nombre} ${p.apellido}` : '—' })()} />
                 <ConfirmRow label="Estado" value={formData.estado} />
                 <ConfirmRow label="SOAT" value={formData.vencimientoSOAT} />
                 <ConfirmRow label="Revisión Técnica" value={formData.vencimientoRevisionTecnica} />

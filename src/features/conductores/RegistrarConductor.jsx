@@ -131,7 +131,7 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
         setApiError(null)
         try {
             const { emailLocal, emailDominio, ...resto } = form
-            registrarConductor({
+            await registrarConductor({
                 ...resto,
                 email: emailLocal ? emailLocal + emailDominio : '',
                 habilitado: true,

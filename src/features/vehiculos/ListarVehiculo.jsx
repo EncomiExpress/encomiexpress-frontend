@@ -79,7 +79,6 @@ const isVencido = (fecha) => {
 }
 
 const ListarTransporte = () => {
-    const [transportes, setTransportes] = useState([])
     const [searchTerm, setSearchTerm] = useState('')
     const [vehiculoVer, setVehiculoVer] = useState(null)
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
@@ -90,7 +89,7 @@ const ListarTransporte = () => {
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [vehiculoEditar, setVehiculoEditar] = useState(null)
 
-    const { getTransportes, updateEstado, toggleHabilitado } = useTransporte()
+    const { getTransportes, updateEstado, toggleHabilitado, fetchVehiculos } = useTransporte()
     const { getRutasProgramadas } = useRutaProgramacion()
     const { usuario, tienePermiso, PERMISOS } = useAuth()
     const navigate = useNavigate()
@@ -102,6 +101,7 @@ const ListarTransporte = () => {
             .map(r => r.idVehiculo)
     )
 
+    const transportes = getTransportes()
     const transportesConEstado = transportes.map(t => {
         const estaOcupado = vehiculosOcupadosIds.has(t.idVehiculo)
         return {
@@ -114,28 +114,30 @@ const ListarTransporte = () => {
         if (!usuario) {
             navigate('/login')
         } else {
-            setTransportes(getTransportes())
+            fetchVehiculos()
         }
-    }, [usuario, navigate, getTransportes])
+    }, [usuario, navigate, fetchVehiculos])
 
-    const handleEstadoChange = (id, nuevoEstado) => {
-        updateEstado(id, nuevoEstado)
-        setTransportes(getTransportes())
-        setSnackbar({
-            open: true,
-            message: `Estado actualizado a ${vehicleStatusLabel(nuevoEstado)}.`,
-            severity: 'success',
-        })
+    const handleEstadoChange = async (id, nuevoEstado) => {
+        const success = await updateEstado(id, nuevoEstado)
+        if (success) {
+            setSnackbar({
+                open: true,
+                message: `Estado actualizado a ${vehicleStatusLabel(nuevoEstado)}.`,
+                severity: 'success',
+            })
+        }
     }
 
-    const handleToggleHabilitado = (id) => {
-        toggleHabilitado(id)
-        setTransportes(getTransportes())
-        setSnackbar({
-            open: true,
-            message: `Vehículo ${toggleHabilitado ? 'habilitado' : 'inhabilitado'} correctamente.`,
-            severity: 'success',
-        })
+    const handleToggleHabilitado = async (id, habilitadoActual) => {
+        const success = await toggleHabilitado(id)
+        if (success) {
+            setSnackbar({
+                open: true,
+                message: `Vehículo ${habilitadoActual !== false ? 'inhabilitado' : 'habilitado'} correctamente.`,
+                severity: 'success',
+            })
+        }
     }
 
     const filteredTransportes = transportesConEstado.filter(t => {
@@ -222,6 +224,7 @@ const ListarTransporte = () => {
                  )}
              </Box>
 
+            {/* ── Filtro slider: habilitado / inhabilitado ── */}
             <Box sx={{
                 display: 'inline-flex',
                 backgroundColor: '#FFECEC',
@@ -229,7 +232,6 @@ const ListarTransporte = () => {
                 p: '4px',
                 mb: 2.5,
                 gap: '5px',
-                flexWrap: 'wrap',
             }}>
                 {FILTROS_HABILITADO.map(f => (
                     <Button
@@ -248,9 +250,7 @@ const ListarTransporte = () => {
                             fontWeight: filtroHabilitado === f.value ? 600 : 400,
                             backgroundColor: filtroHabilitado === f.value ? 'white' : 'transparent',
                             color: filtroHabilitado === f.value ? theme.palette.text.primary : '#B05050',
-                            boxShadow: filtroHabilitado === f.value
-                                ? '0 1px 4px rgba(0,0,0,0.12)'
-                                : 'none',
+                            boxShadow: filtroHabilitado === f.value ? '0 1px 4px rgba(0,0,0,0.12)' : 'none',
                             border: 'none',
                             '&:hover': {
                                 backgroundColor: filtroHabilitado === f.value ? 'white' : 'transparent',
@@ -262,55 +262,70 @@ const ListarTransporte = () => {
                         {f.label}
                     </Button>
                 ))}
-                <Select
-                    value={filtroEstadoVehiculo}
-                    onChange={(e) => { setFiltroEstadoVehiculo(e.target.value); setPage(1) }}
-                    size="small"
-                    displayEmpty
-                    sx={{ ml: 1, minWidth: 140, borderRadius: 2 }}
-                >
-                    <MenuItem value="todo">Todos los estados</MenuItem>
-                    <MenuItem value="Activo">Activo</MenuItem>
-                    <MenuItem value="Inactivo">Inactivo</MenuItem>
-                    <MenuItem value="Mantenimiento">Mantenimiento</MenuItem>
-                    <MenuItem value="En Reparación">En Reparación</MenuItem>
-                    <MenuItem value="ocupado">Ocupado</MenuItem>
-                </Select>
             </Box>
 
+            {/* ── Buscador + filtro dropdown de estado ── */}
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-                <TextField
-                    size="small"
-                    placeholder="Buscar vehículos..."
-                    sx={{
-                        width: 320,
-                        '& .MuiOutlinedInput-root': {
-                            borderRadius: 2,
-                            '&.Mui-focused': { boxShadow: '0 0 0 3px rgba(229,115,115,0.18)' },
-                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                borderColor: theme.palette.primary.main, borderWidth: '1px',
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <TextField
+                        size="small"
+                        placeholder="Buscar vehículos..."
+                        sx={{
+                            width: 280,
+                            '& .MuiOutlinedInput-root': {
+                                borderRadius: 2,
+                                '&.Mui-focused': { boxShadow: '0 0 0 3px rgba(229,115,115,0.18)' },
+                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                    borderColor: theme.palette.primary.main, borderWidth: '1px',
+                                },
                             },
-                        },
-                    }}
-                    value={searchTerm}
-                    onChange={e => setSearchTerm(e.target.value)}
-                    slotProps={{
-                        input: {
-                            startAdornment: (
-                                <InputAdornment position="start">
-                                    <SearchIcon sx={{ color: theme.palette.text.secondary, fontSize: 20 }} />
-                                </InputAdornment>
-                            ),
-                            endAdornment: searchTerm && (
-                                <InputAdornment position="end">
-                                    <IconButton size="small" onClick={limpiarBusqueda}>
-                                        <ClearIcon sx={{ fontSize: 16 }} />
-                                    </IconButton>
-                                </InputAdornment>
-                            )
-                        }
-                    }}
-                />
+                        }}
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                        slotProps={{
+                            input: {
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <SearchIcon sx={{ color: theme.palette.text.secondary, fontSize: 20 }} />
+                                    </InputAdornment>
+                                ),
+                                endAdornment: searchTerm && (
+                                    <InputAdornment position="end">
+                                        <IconButton size="small" onClick={limpiarBusqueda}>
+                                            <ClearIcon sx={{ fontSize: 16 }} />
+                                        </IconButton>
+                                    </InputAdornment>
+                                )
+                            }
+                        }}
+                    />
+
+                    {/* Filtro dropdown de estado */}
+                    <FormControl size="small" sx={{ minWidth: 160 }}>
+                        <Select
+                            value={filtroEstadoVehiculo}
+                            onChange={e => { setFiltroEstadoVehiculo(e.target.value); setPage(1) }}
+                            IconComponent={KeyboardArrowDownOutlinedIcon}
+                            displayEmpty
+                            sx={{
+                                fontSize: '0.82rem',
+                                borderRadius: 2,
+                                backgroundColor: 'white',
+                                '& .MuiOutlinedInput-notchedOutline': { borderColor: '#E0E0E0' },
+                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#BDBDBD' },
+                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
+                            }}
+                            MenuProps={filterMenuProps}
+                        >
+                            <MenuItem value="todo" sx={{ fontSize: '0.82rem' }}>Todos los estados</MenuItem>
+                            <MenuItem value="Activo" sx={{ fontSize: '0.82rem' }}>Activo</MenuItem>
+                            <MenuItem value="Inactivo" sx={{ fontSize: '0.82rem' }}>Inactivo</MenuItem>
+                            <MenuItem value="Mantenimiento" sx={{ fontSize: '0.82rem' }}>Mantenimiento</MenuItem>
+                            <MenuItem value="En Reparación" sx={{ fontSize: '0.82rem' }}>En Reparación</MenuItem>
+                            <MenuItem value="ocupado" sx={{ fontSize: '0.82rem' }}>Ocupado</MenuItem>
+                        </Select>
+                    </FormControl>
+                </Box>
 
                 {hayFiltrosActivos && (
                     <Chip
@@ -442,7 +457,7 @@ const ListarTransporte = () => {
                                                     <Tooltip title={transporte.habilitado !== false ? 'Inhabilitar' : 'Habilitar'}>
                                                         <IconButton
                                                             size="small"
-                                                            onClick={() => handleToggleHabilitado(transporte.idVehiculo)}
+                                                            onClick={() => handleToggleHabilitado(transporte.idVehiculo, transporte.habilitado)}
                                                             sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
                                                         >
                                                             {transporte.habilitado !== false ? <CheckBoxIcon sx={{ fontSize: 18, color: theme.palette.primary.main }} /> : <CheckBoxOutlineBlankIcon sx={{ fontSize: 18, color: theme.palette.status.disabled2.color }} />}
@@ -549,7 +564,7 @@ const ListarTransporte = () => {
                 open={modalRegistrarOpen}
                 onClose={() => setModalRegistrarOpen(false)}
                 onSuccess={() => {
-                    setTransportes(getTransportes())
+                    fetchVehiculos()
                     setSnackbar({ open: true, message: 'Vehículo registrado correctamente', severity: 'success' })
                 }}
             />
@@ -559,7 +574,7 @@ const ListarTransporte = () => {
                 onClose={() => { setModalActualizarOpen(false); setVehiculoEditar(null) }}
                 transporte={vehiculoEditar}
                 onSuccess={() => {
-                    setTransportes(getTransportes())
+                    fetchVehiculos()
                     setSnackbar({ open: true, message: 'Vehículo actualizado correctamente', severity: 'success' })
                 }}
             />

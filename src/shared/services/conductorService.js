@@ -47,6 +47,17 @@ export const updateConductor = async (id, conductorData) => {
 };
 
 /**
+ * Cambiar estado del conductor
+ * PATCH /api/conductores/:id/estado
+ */
+export const cambiarEstadoConductor = async (id, estado) => {
+  return await fetchWithAuth(`/conductores/${id}/estado`, {
+    method: 'PATCH',
+    body: JSON.stringify({ estado }),
+  });
+};
+
+/**
  * Eliminar conductor (inhabilitar)
  * DELETE /api/conductores/:id
  */

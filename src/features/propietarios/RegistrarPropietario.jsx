@@ -1,25 +1,27 @@
 import theme from '../../shared/styles/theme.js'
 import { useState } from 'react'
-import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, Snackbar, TextField, Select, InputAdornment, Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material'
+import {
+    Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel,
+    Button, Alert, Snackbar, TextField, Select, InputAdornment,
+    Dialog, DialogTitle, DialogContent, IconButton
+} from '@mui/material'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined'
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
 import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
-import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined'
 import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined'
 import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined'
+import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import { usePropietario } from '../../shared/contexts/PropietarioContext.jsx'
 import { FormField, FormSelect, formFieldStyles } from '../../shared/components/FormularioEstandarizado.jsx'
 
 const DOMINIOS_EMAIL = ['@gmail.com', '@hotmail.com', '@outlook.com', '@yahoo.com', '@icloud.com', '@live.com']
 
-const COLORS = theme.palette
-
-const steps = ['Datos Personales', 'Información de Contacto', 'Confirmación']
+const steps = ['Datos Personales', 'Contacto y Vehículo', 'Confirmación']
 
 const ConfirmRow = ({ label, value }) => (
     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, py: 0.9, overflow: 'hidden' }}>
@@ -31,6 +33,18 @@ const ConfirmRow = ({ label, value }) => (
     </Box>
 )
 
+const EMPTY_FORM = {
+    tipoIdentificacion: '',
+    numeroIdentificacion: '',
+    nombre: '',
+    apellido: '',
+    telefono: '',
+    emailLocal: '',
+    emailDominio: '@gmail.com',
+    tarjetaPropiedad: '',
+    tipoFlota: '',
+}
+
 const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
     const { registrarPropietario } = usePropietario()
     const [errores, setErrores] = useState({})
@@ -38,31 +52,10 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
     const [activeStep, setActiveStep] = useState(0)
     const [submitting, setSubmitting] = useState(false)
     const [exito, setExito] = useState(false)
-
-    const [form, setForm] = useState({
-        tipoIdentificacion: '',
-        numeroIdentificacion: '',
-        nombre: '',
-        apellido: '',
-        telefono: '',
-        emailLocal: '',
-        emailDominio: '@gmail.com',
-        direccion: '',
-        ciudad: ''
-    })
+    const [form, setForm] = useState(EMPTY_FORM)
 
     const handleClose = () => {
-        setForm({
-            tipoIdentificacion: '',
-            numeroIdentificacion: '',
-            nombre: '',
-            apellido: '',
-            telefono: '',
-            emailLocal: '',
-            emailDominio: '@gmail.com',
-            direccion: '',
-            ciudad: ''
-        })
+        setForm(EMPTY_FORM)
         setErrores({})
         setApiError(null)
         setActiveStep(0)
@@ -82,9 +75,6 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
         if (name === 'emailLocal') {
             value = value.replace(/[^a-zA-Z0-9._-]/g, '')
         }
-        if (name === 'direccion') {
-            value = value.replace(/[^a-zA-Z0-9\s,.\-#\/']/g, '')
-        }
 
         setForm(prev => ({ ...prev, [name]: value }))
         setErrores(prev => ({ ...prev, [name]: '' }))
@@ -102,14 +92,13 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
             else if (!soloNumeros.test(form.numeroIdentificacion)) e.numeroIdentificacion = 'Solo se permiten números'
             if (!form.nombre.trim()) e.nombre = 'El nombre es obligatorio'
             else if (!soloLetras.test(form.nombre)) e.nombre = 'El nombre solo puede contener letras'
-            if (!form.apellido?.trim() && form.tipoIdentificacion !== 'NIT') e.apellido = 'El apellido es obligatorio'
+            if (form.tipoIdentificacion !== 'NIT' && !form.apellido?.trim()) e.apellido = 'El apellido es obligatorio'
         }
 
         if (step === 1) {
             if (!form.telefono.trim()) e.telefono = 'El teléfono es obligatorio'
             else if (!/^\d{10}$/.test(form.telefono)) e.telefono = 'El teléfono debe tener 10 dígitos'
             if (!form.emailLocal?.trim()) e.emailLocal = 'El correo es obligatorio'
-            if (!form.ciudad?.trim()) e.ciudad = 'La ciudad es obligatoria'
         }
 
         return e
@@ -121,21 +110,19 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
             setErrores(erroresEncontrados)
             return
         }
-        setActiveStep((prev) => prev + 1)
+        setActiveStep(prev => prev + 1)
     }
 
-    const handleBack = () => setActiveStep((prev) => prev - 1)
+    const handleBack = () => setActiveStep(prev => prev - 1)
 
     const handleSubmit = async () => {
         setSubmitting(true)
         setApiError(null)
         try {
             const { emailLocal, emailDominio, ...resto } = form
-            registrarPropietario({
+            await registrarPropietario({
                 ...resto,
                 email: emailLocal ? emailLocal + emailDominio : '',
-                habilitado: true,
-                estado: 'Activo'
             })
             setExito(true)
             setTimeout(() => {
@@ -149,17 +136,8 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
         }
     }
 
-    const handleCancelar = () => handleClose()
-
-    const cardSx = {
-        flex: 1, minWidth: 0, borderRadius: 2, p: 2.5,
-        border: `1px solid ${theme.palette.divider}`,
-        backgroundColor: 'white', elevation: 0,
-        overflow: 'hidden',
-    }
-
     const getTipoLabel = (tipo) => {
-        const tipos = { 'CC': 'Cédula', 'NIT': 'NIT', 'CE': 'Cédula Extranjería', 'TI': 'Tarjeta Identidad', 'PAS': 'Pasaporte', 'RC': 'Registro Civil' }
+        const tipos = { CC: 'Cédula', NIT: 'NIT', CE: 'Cédula Extranjería', TI: 'Tarjeta Identidad', PAS: 'Pasaporte', RC: 'Registro Civil' }
         return tipos[tipo] || tipo
     }
 
@@ -224,23 +202,16 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
                                 htmlInput: { maxLength: 50 }
                             }}
                             sx={formFieldStyles} />
-                        <FormSelect label="Ciudad" name="ciudad" value={form.ciudad}
-                            onChange={handleChange} required error={errores.ciudad} helperText={errores.ciudad}>
-                            <MenuItem value="Medellín">Medellín</MenuItem>
-                            <MenuItem value="Bogotá">Bogotá</MenuItem>
-                            <MenuItem value="Cali">Cali</MenuItem>
-                            <MenuItem value="Barranquilla">Barranquilla</MenuItem>
-                            <MenuItem value="Cartagena">Cartagena</MenuItem>
-                            <MenuItem value="Bucaramanga">Bucaramanga</MenuItem>
-                            <MenuItem value="Pereira">Pereira</MenuItem>
-                            <MenuItem value="Manizales">Manizales</MenuItem>
-                            <MenuItem value="Cúcuta">Cúcuta</MenuItem>
-                            <MenuItem value="Ibagué">Ibagué</MenuItem>
+                        <FormField label="Tarjeta de propiedad" name="tarjetaPropiedad" value={form.tarjetaPropiedad}
+                            onChange={handleChange} icon={DirectionsCarOutlinedIcon}
+                            inputProps={{ maxLength: 50 }} placeholder="Ej: 123456789" />
+                        <FormSelect label="Tipo de flota" name="tipoFlota" value={form.tipoFlota}
+                            onChange={handleChange} error={errores.tipoFlota} helperText={errores.tipoFlota}>
+                            <MenuItem value="">Sin especificar</MenuItem>
+                            <MenuItem value="Liviana">Liviana</MenuItem>
+                            <MenuItem value="Pesada">Pesada</MenuItem>
+                            <MenuItem value="Mixta">Mixta</MenuItem>
                         </FormSelect>
-                        <FormField label="Dirección" name="direccion" value={form.direccion}
-                            onChange={handleChange} icon={HomeOutlinedIcon}
-                            inputProps={{ maxLength: 200 }}
-                            placeholder="Ej: Calle 45 #20-10" />
                     </Box>
                 )
             case 2:
@@ -252,10 +223,10 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
                             </Alert>
                         )}
                         <Box sx={{ display: 'flex', gap: 2 }}>
-                            <Paper elevation={0} sx={cardSx}>
+                            <Paper elevation={0} sx={{ flex: 1, minWidth: 0, borderRadius: 2, p: 2.5, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white' }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                                     <BusinessOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
-                                    <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Datos Personales</Typography>
+                                    <Typography fontWeight={700} fontSize="0.95rem">Datos Personales</Typography>
                                 </Box>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la información personal</Typography>
                                 <ConfirmRow label="Tipo de documento" value={getTipoLabel(form.tipoIdentificacion)} />
@@ -263,16 +234,16 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
                                 <ConfirmRow label="Nombre" value={form.nombre} />
                                 <ConfirmRow label="Apellido" value={form.apellido || 'N/A'} />
                             </Paper>
-                            <Paper elevation={0} sx={cardSx}>
+                            <Paper elevation={0} sx={{ flex: 1, minWidth: 0, borderRadius: 2, p: 2.5, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white' }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                                     <PhoneOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
-                                    <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Información de Contacto</Typography>
+                                    <Typography fontWeight={700} fontSize="0.95rem">Contacto y Vehículo</Typography>
                                 </Box>
-                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica los datos de contacto</Typography>
+                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica los datos de contacto y flota</Typography>
                                 <ConfirmRow label="Teléfono" value={form.telefono} />
-                                <ConfirmRow label="Correo" value={form.emailLocal + form.emailDominio} />
-                                <ConfirmRow label="Ciudad" value={form.ciudad} />
-                                <ConfirmRow label="Dirección" value={form.direccion || 'N/A'} />
+                                <ConfirmRow label="Correo" value={form.emailLocal ? form.emailLocal + form.emailDominio : '—'} />
+                                <ConfirmRow label="Tarjeta propiedad" value={form.tarjetaPropiedad || 'N/A'} />
+                                <ConfirmRow label="Tipo de flota" value={form.tipoFlota || 'N/A'} />
                             </Paper>
                         </Box>
                     </Box>
@@ -280,6 +251,14 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
             default:
                 return null
         }
+    }
+
+    const btnSx = {
+        textTransform: 'none', borderRadius: 2, fontWeight: 600,
+        backgroundColor: theme.palette.primary.main,
+        boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
+        '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
+        '&.Mui-disabled': { backgroundColor: theme.palette.divider, color: '#9E9E9E' },
     }
 
     return (
@@ -297,25 +276,21 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
                 </IconButton>
             </DialogTitle>
             <DialogContent sx={{ p: 3, pt: 1.5 }}>
-
-                <Stepper activeStep={activeStep} alternativeLabel
-                    sx={{
-                        mb: 3, mt: 2,
-                        '& .MuiStepIcon-root': { color: theme.palette.divider },
-                        '& .MuiStepIcon-root.Mui-active': { color: theme.palette.primary.main },
-                        '& .MuiStepIcon-root.Mui-completed': { color: theme.palette.primary.main },
-                        '& .MuiStepIcon-text': { fill: 'white', fontSize: '0.7rem', fontWeight: 700 },
-                        '& .MuiStepConnector-line': { borderColor: theme.palette.divider },
-                        '& .MuiStepConnector-root.Mui-active .MuiStepConnector-line': { borderColor: theme.palette.primary.main },
-                        '& .MuiStepConnector-root.Mui-completed .MuiStepConnector-line': { borderColor: theme.palette.primary.main },
-                        '& .MuiStepLabel-label': { fontSize: '0.8rem', color: theme.palette.text.secondary, mt: 0.5 },
-                        '& .MuiStepLabel-label.Mui-active': { color: theme.palette.text.primary, fontWeight: 600 },
-                        '& .MuiStepLabel-label.Mui-completed': { color: theme.palette.primary.main, fontWeight: 500 },
-                    }}
-                >
+                <Stepper activeStep={activeStep} alternativeLabel sx={{
+                    mb: 3, mt: 2,
+                    '& .MuiStepIcon-root': { color: theme.palette.divider },
+                    '& .MuiStepIcon-root.Mui-active': { color: theme.palette.primary.main },
+                    '& .MuiStepIcon-root.Mui-completed': { color: theme.palette.primary.main },
+                    '& .MuiStepIcon-text': { fill: 'white', fontSize: '0.7rem', fontWeight: 700 },
+                    '& .MuiStepConnector-line': { borderColor: theme.palette.divider },
+                    '& .MuiStepConnector-root.Mui-active .MuiStepConnector-line': { borderColor: theme.palette.primary.main },
+                    '& .MuiStepConnector-root.Mui-completed .MuiStepConnector-line': { borderColor: theme.palette.primary.main },
+                    '& .MuiStepLabel-label': { fontSize: '0.8rem', color: theme.palette.text.secondary, mt: 0.5 },
+                    '& .MuiStepLabel-label.Mui-active': { color: theme.palette.text.primary, fontWeight: 600 },
+                    '& .MuiStepLabel-label.Mui-completed': { color: theme.palette.primary.main, fontWeight: 500 },
+                }}>
                     {steps.map(label => <Step key={label}><StepLabel>{label}</StepLabel></Step>)}
                 </Stepper>
-
                 <Box sx={{ px: 4, py: 2 }}>
                     <Box sx={{ maxWidth: 700, mx: 'auto' }}>
                         {renderStepContent()}
@@ -323,10 +298,7 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
                 </Box>
             </DialogContent>
 
-            <Box sx={{
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                px: 4, py: 2.5, borderTop: `1px solid ${theme.palette.divider}`,
-            }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 4, py: 2.5, borderTop: `1px solid ${theme.palette.divider}` }}>
                 <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined"
                     startIcon={<ArrowBackOutlinedIcon />} disableRipple
                     sx={{
@@ -338,26 +310,15 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
                     Anterior
                 </Button>
                 <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
-                    <Button onClick={handleCancelar} disableRipple
-                        sx={{
-                            textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 2,
-                            '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary },
-                        }}>
+                    <Button onClick={handleClose} disableRipple
+                        sx={{ textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 2, '&:hover': { backgroundColor: theme.palette.background.subtle } }}>
                         Cancelar
                     </Button>
                     <Button
                         onClick={activeStep < steps.length - 1 ? handleNext : handleSubmit}
-                        variant="contained"
-                        disabled={submitting}
+                        variant="contained" disabled={submitting}
                         endIcon={activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <CheckOutlinedIcon />}
-                        disableRipple
-                        sx={{
-                            textTransform: 'none', borderRadius: 2, fontWeight: 600,
-                            backgroundColor: theme.palette.primary.main,
-                            boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
-                            '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
-                            '&.Mui-disabled': { backgroundColor: theme.palette.divider, color: '#9E9E9E' },
-                        }}>
+                        disableRipple sx={btnSx}>
                         {activeStep < steps.length - 1 ? 'Siguiente' : submitting ? 'Registrando...' : 'Registrar'}
                     </Button>
                 </Box>
