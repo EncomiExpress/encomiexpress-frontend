@@ -1,7 +1,10 @@
 import theme from '../../shared/styles/theme.js'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
+import { useVentas } from '../../shared/contexts/VentaContext.jsx'
+import { useConductor } from '../../shared/contexts/ConductorContext.jsx'
+import { useTransporte } from '../../shared/contexts/TransporteContext.jsx'
 import {
-  Box, Typography, Paper, Grid, Button, TextField,
+  Box, Typography, Paper, Button, TextField,
   LinearProgress, Divider
 } from '@mui/material'
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
@@ -12,37 +15,54 @@ import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined
 import RouteOutlinedIcon from '@mui/icons-material/RouteOutlined'
 import BarChartOutlinedIcon from '@mui/icons-material/BarChartOutlined'
 
-// ── Datos quemados ──────────────────────────────────────────────────────────
-const STATS = {
-  conductoresDisp: 12,
-  conductoresTotal: 18,
-  vehiculosDisp: 9,
-  vehiculosTotal: 15,
+const STATUS_COLOR_MAP = {
+  'entregado': '#22c55e',
+  'en tránsito': '#f59e0b',
+  'pendiente de recogida': '#3b82f6',
+  'en recogida': '#38bdf8',
+  'programada': '#a855f7',
+  'devuelto': '#ef4444',
+  'cancelado': '#9ca3af',
 }
 
-const ENVIOS_ESTADO = [
-  { label: 'Entregado',   count: 742, color: '#22c55e' },
-  { label: 'En tránsito', count: 283, color: '#f59e0b' },
-  { label: 'Pendiente',   count: 156, color: '#3b82f6' },
-  { label: 'Cancelado',   count: 67,  color: '#ef4444' },
-  { label: 'Devuelto',    count: 36,  color: '#9ca3af' },
-]
-
-const TOP_RUTAS = [
-  { origen: 'Medellín', destino: 'Caucasia',            envios: 287 },
-  { origen: 'Medellín', destino: 'Pereira',             envios: 214 },
-  { origen: 'Medellín', destino: 'El Bagre',            envios: 176 },
-  { origen: 'Pereira',  destino: 'Santa Rosa de Cabal', envios: 139 },
-  { origen: 'Caucasia', destino: 'Zaragoza',            envios: 98  },
-]
-
-const INGRESOS_MES = [
-  { mes: 'Enero 2025',   valor: 14200000 },
-  { mes: 'Febrero 2025', valor: 17350000 },
-  { mes: 'Marzo 2025',   valor: 17200000 },
-]
+const STATUS_LABEL = {
+  'entregado': 'Entregado',
+  'en tránsito': 'En tránsito',
+  'pendiente de recogida': 'Pendiente',
+  'en recogida': 'En recogida',
+  'programada': 'Programada',
+  'devuelto': 'Devuelto',
+  'cancelado': 'Cancelado',
+}
 
 const formatCOP = (n) => '$' + n.toLocaleString('es-CO')
+
+const formatRutaDestino = (destino) => {
+  if (!destino) return '—'
+  if (typeof destino === 'string') return destino
+  if (typeof destino === 'object') {
+    if (destino.ciudad) return `${destino.ciudad} — ${destino.departamento}`
+    return destino.nombre || String(destino.idDestino ?? destino.id ?? '')
+  }
+  return String(destino)
+}
+
+const normalizeMonth = (dateString) => {
+  const date = new Date(dateString)
+  if (Number.isNaN(date.getTime())) return null
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const year = date.getFullYear()
+  const label = date.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' })
+  return { key: `${year}-${month}`, label, date }
+}
+
+const isWithinRange = (dateString, desde, hasta) => {
+  const fecha = new Date(dateString)
+  if (Number.isNaN(fecha.getTime())) return false
+  const inicio = new Date(desde)
+  const fin = new Date(hasta)
+  return fecha >= inicio && fecha <= fin
+}
 
 const KpiCard = ({ icon, label, main, sub, height = '100%', minHeight = 0 }) => (
   <Paper elevation={0} sx={{
@@ -100,8 +120,66 @@ const Dashboard = () => {
   const [hasta, setHasta] = useState('2025-03-31')
   const [filtroActivo, setFiltroActivo] = useState({ desde: '2025-01-01', hasta: '2025-03-31' })
 
-  const maxEnvios = Math.max(...ENVIOS_ESTADO.map(e => e.count))
-  const maxIngreso = Math.max(...INGRESOS_MES.map(m => m.valor))
+  const { ventas } = useVentas()
+  const { conductores } = useConductor()
+  const { getTransportes } = useTransporte()
+  const transportes = getTransportes()
+
+  const ingresosMes = useMemo(() => {
+    const meses = new Map()
+    ventas.forEach((venta) => {
+      if (!isWithinRange(venta.fechaRegistro, filtroActivo.desde, filtroActivo.hasta)) return
+      const fecha = normalizeMonth(venta.fechaRegistro)
+      if (!fecha || venta.total == null) return
+      const valor = Number(venta.total) || 0
+      const current = meses.get(fecha.key) || { key: fecha.key, mes: fecha.label, valor: 0 }
+      meses.set(fecha.key, { ...current, valor: current.valor + valor })
+    })
+    return Array.from(meses.values()).sort((a, b) => a.key.localeCompare(b.key))
+  }, [ventas, filtroActivo])
+
+  const enviosEstado = useMemo(() => {
+    const contador = {}
+    ventas.forEach((venta) => {
+      if (!isWithinRange(venta.fechaRegistro, filtroActivo.desde, filtroActivo.hasta)) return
+      const estadoKey = String(venta.estado || '').trim().toLowerCase()
+      if (!estadoKey) return
+      contador[estadoKey] = (contador[estadoKey] || 0) + 1
+    })
+    const orden = [
+      'entregado', 'en tránsito', 'pendiente de recogida',
+      'en recogida', 'programada', 'cancelado', 'devuelto',
+    ]
+    return orden
+      .filter(key => contador[key])
+      .map(key => ({
+        label: STATUS_LABEL[key] || key.charAt(0).toUpperCase() + key.slice(1),
+        count: contador[key],
+        color: STATUS_COLOR_MAP[key] || '#9ca3af',
+      }))
+  }, [ventas, filtroActivo])
+
+  const topRutas = useMemo(() => {
+    const contador = {}
+    ventas.forEach((venta) => {
+      if (!isWithinRange(venta.fechaRegistro, filtroActivo.desde, filtroActivo.hasta)) return
+      const ruta = formatRutaDestino(venta.ruta?.destino)
+      if (!ruta || ruta === '—') return
+      contador[ruta] = (contador[ruta] || 0) + 1
+    })
+    return Object.entries(contador)
+      .map(([ruta, envios]) => ({ ruta, envios }))
+      .sort((a, b) => b.envios - a.envios)
+      .slice(0, 5)
+  }, [ventas, filtroActivo])
+
+  const conductoresTotales = conductores.length
+  const conductoresDisponibles = conductores.filter(c => c.habilitado).length
+  const vehiculosTotales = transportes.length
+  const vehiculosDisponibles = transportes.filter(t => t.habilitado).length
+
+  const maxEnvios = enviosEstado.length > 0 ? Math.max(...enviosEstado.map(e => e.count)) : 1
+  const maxIngreso = ingresosMes.length > 0 ? Math.max(...ingresosMes.map(m => m.valor)) : 1
 
   return (
     <Box sx={{ p: { xs: 2, md: 3 }, display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -198,8 +276,8 @@ const Dashboard = () => {
               </Typography>
             </Box>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {INGRESOS_MES.map((m) => (
-                <Box key={m.mes}>
+              {ingresosMes.map((m) => (
+                <Box key={m.key}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
                     <Typography variant="body2" sx={{ color: theme.palette.text.medium, fontWeight: 500, fontSize: '0.82rem' }}>
                       {m.mes}
@@ -231,7 +309,7 @@ const Dashboard = () => {
               title="Envíos por Estado"
             />
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.6 }}>
-              {ENVIOS_ESTADO.map((e) => (
+              {enviosEstado.map((e) => (
                 <Box key={e.label}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.4 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -267,14 +345,14 @@ const Dashboard = () => {
             <KpiCard
               icon={<PersonOutlinedIcon sx={{ fontSize: 18, color: theme.palette.primary.main }} />}
               label="Conductores Disponibles"
-              main={`${STATS.conductoresDisp} / ${STATS.conductoresTotal}`}
+              main={`${conductoresDisponibles} / ${conductoresTotales}`}
               sub="disponibles / total"
               height="165px"
             />
             <KpiCard
               icon={<DirectionsCarOutlinedIcon sx={{ fontSize: 18, color: theme.palette.primary.main }} />}
               label="Vehículos Disponibles"
-              main={`${STATS.vehiculosDisp} / ${STATS.vehiculosTotal}`}
+              main={`${vehiculosDisponibles} / ${vehiculosTotales}`}
               sub="disponibles / total"
               height="165px"
             />
@@ -287,8 +365,8 @@ const Dashboard = () => {
               title="Top 5 Rutas más Utilizadas"
             />
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.2 }}>
-              {TOP_RUTAS.map((r, i) => (
-                <Box key={i} sx={{
+              {topRutas.map((r, i) => (
+                <Box key={r.ruta} sx={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   p: 1.2, borderRadius: 2,
                   backgroundColor: i === 0 ? theme.palette.primary.light : theme.palette.background.muted,
@@ -304,7 +382,7 @@ const Dashboard = () => {
                       {i + 1}
                     </Typography>
                     <Typography variant="body2" sx={{ color: theme.palette.text.medium, fontWeight: 500, fontSize: '0.82rem' }}>
-                      {r.origen} → {r.destino}
+                      {r.ruta}
                     </Typography>
                   </Box>
                   <Typography variant="body2" fontWeight={700} sx={{ color: theme.palette.primary.main, fontSize: '0.82rem', whiteSpace: 'nowrap', ml: 1 }}>
