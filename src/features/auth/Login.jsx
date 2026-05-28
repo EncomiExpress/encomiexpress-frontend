@@ -35,14 +35,15 @@ const Login = () => {
   const [registerError, setRegisterError] = useState('')
   const [registerSuccess, setRegisterSuccess] = useState('')
 
-  const { login, registrarUsuario, usuario } = useAuth()
+  const { login, registrarUsuario, usuario, loading } = useAuth()
   const navigate = useNavigate()
 
+  // Solo redirigir si ya terminó de cargar la sesión y el usuario está autenticado
   useEffect(() => {
-    if (usuario) {
-      navigate('/dashboard')
+    if (!loading && usuario) {
+      navigate('/dashboard', { replace: true })
     }
-  }, [usuario, navigate])
+  }, [usuario, loading, navigate])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -68,11 +69,11 @@ const Login = () => {
           setTipoCarga(TIPOS_CARGA.CIRCULAR)
         }
 
-        // Después de 3 segundos, navegar
+        // Después de la animación, navegar
         setTimeout(() => {
           setCargando(false)
-          navigate('/dashboard')
-        }, 9000)
+          navigate('/dashboard', { replace: true })
+        }, 2500)
       } else {
         // Login falló - ocultar pantalla de carga
         setCargando(false)

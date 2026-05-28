@@ -66,7 +66,12 @@ import ActualizarVenta from './features/ventas/ActualizarVenta.jsx'
 
 // Componente wrapper para rutas privadas con LayoutAdmin
 const PrivateRoute = ({ children, permisosRequeridos = [] }) => {
-  const { usuario, tieneAlgunPermiso } = useAuth()
+  const { usuario, loading, tieneAlgunPermiso } = useAuth()
+
+  // Esperar a que AuthContext restaure la sesión desde localStorage
+  if (loading) {
+    return null
+  }
 
   if (!usuario) {
     return <Navigate to="/login" replace />

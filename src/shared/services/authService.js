@@ -43,32 +43,31 @@ export const fetchWithAuth = async (endpoint, options = {}) => {
     headers,
   });
 
-   // Token expirado o inválido → limpiar sesión y redirigir al login
-   if (response.status === 401) {
-     clearAuthData();
-     window.location.href = '/login';
-     throw new Error('Sesión expirada. Por favor inicia sesión de nuevo.');
-   }
+  const data = await response.json();
 
-   // Sin permisos (403) — no redirigir, solo lanzar error para que el contexto lo maneje
-   if (response.status === 403) {
-     throw new Error('403 - No tienes permisos para esta acción');
-   }
+  // Token expirado o inválido → limpiar sesión y lanzar error.
+  // NO redirigir aquí con window.location — eso genera loops cuando los Contexts
+  // hacen fetch antes de que AuthContext restaure el token desde localStorage.
+  // La redirección la maneja AuthContext o PrivateRoute.
+  if (response.status === 401) {
+    clearAuthData();
+    const error = new Error('Sesión expirada. Por favor inicia sesión de nuevo.');
+    error.status = 401;
+    throw error;
+  }
 
-   const data = await response.json();
+  // Sin permisos (403) — lanzar error con status para identificación silenciosa
+  if (response.status === 403) {
+    const error = new Error('Sin permisos');
+    error.status = 403;
+    throw error;
+  }
 
-   // Sin permisos (403) — no redirigir, lanzar error con status para identificación silenciosa
-   if (response.status === 403) {
-     const error = new Error('Sin permisos')
-     error.status = 403
-     throw error
-   }
+  if (!response.ok) {
+    throw new Error(data.message || 'Error en la petición');
+  }
 
-   if (!response.ok) {
-     throw new Error(data.message || 'Error en la petición')
-   }
-
-   return data;
+  return data;
 };
 
 // ============================================
@@ -317,4 +316,3 @@ export default {
   actualizarRol,
   eliminarRol,
 };
-

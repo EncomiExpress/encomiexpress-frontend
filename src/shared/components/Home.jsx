@@ -25,6 +25,21 @@ const stats = [
   { label: 'Solo personal autorizado', value: 'Acceso Seguro' },
 ]
 
+// Estilo para el logo — fondo transparente, se ve igual en cualquier fondo
+const logoStyleLight = {
+  width: '100%',
+  height: '100%',
+  objectFit: 'contain',
+}
+
+const logoStyleDark = {
+  width: '100%',
+  height: '100%',
+  objectFit: 'contain',
+}
+
+
+
 const Home = () => {
   const [current, setCurrent] = useState(0)
 
@@ -67,19 +82,26 @@ const Home = () => {
 
       <Box sx={{ height: 4, background: theme.palette.gradient.navbar, width: '100%', position: 'relative', zIndex: 10 }} />
 
+      {/* HEADER */}
       <Box sx={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        px: { xs: 4, md: 10 }, py: 1.5,
+        px: { xs: 4, md: 10 }, py: 1,
         position: 'relative', zIndex: 10,
         borderBottom: '1px solid rgba(26,46,110,0.1)',
         backgroundColor: 'rgba(245, 245, 245, 0.9)',
         backdropFilter: 'blur(10px)',
       }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Box sx={{ width: 135, height: 65, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-            <img src={logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          </Box>
+        <Box sx={{
+          width: 160,
+          height: 70,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'flex-start',
+          flexShrink: 0,
+        }}>
+          <img src={logo} alt="EncomiExpress" style={logoStyleLight} />
         </Box>
+
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <Box sx={{
             display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 0.8, borderRadius: '20px',
@@ -238,16 +260,22 @@ const Home = () => {
         </Box>
       </Box>
 
+      {/* FOOTER */}
       <Box sx={{
         position: 'relative', zIndex: 10,
         background: theme.palette.gradient.hero,
         px: { xs: 4, md: 10 }, py: 1.5,
         display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2,
       }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Box sx={{ width: 135, height: 65, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-            <img src={logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          </Box>
+        <Box sx={{
+          width: 160,
+          height: 70,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'flex-start',
+          flexShrink: 0,
+        }}>
+          <img src={logo} alt="EncomiExpress" style={logoStyleDark} />
         </Box>
         <Typography sx={{ color: 'rgba(255, 255, 255, 0.35)', fontSize: '0.78rem' }}>
           © 2026 EncomiExpress · Uso exclusivo del personal autorizado.

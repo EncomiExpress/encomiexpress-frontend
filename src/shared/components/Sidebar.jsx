@@ -22,6 +22,7 @@ import {
   ChevronLeft as ChevronLeftIcon,
 } from '@mui/icons-material'
 import logo from '../../assets/logo.png'
+import logoEE from '../../assets/logoEE.png'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import theme from '../styles/theme.js'
 
@@ -236,36 +237,50 @@ const Sidebar = ({ collapsed, onToggleCollapsed }) => {
     }}>
       {/* Logo + botón de colapso */}
       <Box sx={{
+        position: 'relative',
         px: collapsed ? 1 : 2.5,
         pt: 1.5,
-        pb: 0.5,
+        pb: collapsed ? 4.5 : 4,
         borderBottom: `1px solid ${C.divider}`,
         display: 'flex',
         alignItems: 'center',
-        justifyContent: collapsed ? 'center' : 'space-between',
-        gap: 1,
+        justifyContent: collapsed ? 'center' : 'flex-start',
       }}>
-        {!collapsed && (
-          <Box sx={{ width: 130, height: 55, overflow: 'hidden', display: 'flex', alignItems: 'center' }}>
-            <img src={logo} alt="EncomiExpress" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          </Box>
-        )}
-        {collapsed && (
-          <Box sx={{ width: 40, height: 40, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <img src={logo} alt="EncomiExpress" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-          </Box>
-        )}
-        <IconButton
-          onClick={onToggleCollapsed}
-          size="small"
-          sx={{
-            color: C.textMuted,
-            '&:hover': { color: C.red, backgroundColor: C.hoverBg },
-            transition: 'all 0.2s',
-          }}
-        >
-          {collapsed ? <ChevronLeftIcon /> : <MenuOpenIcon />}
-        </IconButton>
+        {/* Contenedor del logo */}
+        <Box sx={{
+          width: collapsed ? 44 : '100%',
+          maxWidth: collapsed ? 44 : 190,
+          // Sin altura fija en modo expandido, dejamos que la imagen defina su altura natural
+          height: collapsed ? 44 : 'auto',
+          overflow: collapsed ? 'hidden' : 'visible',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+          <img
+            src={collapsed ? logoEE : logo}
+            alt="EncomiExpress"
+            style={{
+              width: '100%',
+              height: 'auto',          // Importante: altura automática para mantener proporción
+              objectFit: collapsed ? 'contain' : 'contain', // 'contain' en ambos casos evita cortes
+            }}
+          />
+        </Box>
+
+        {/* Botón colapsar (sin cambios) */}
+        <Box sx={{
+          position: 'absolute',
+          right: collapsed ? 'auto' : 12,
+          left: collapsed ? '50%' : 'auto',
+          bottom: -18,
+          transform: collapsed ? 'translateX(-50%)' : 'none',
+          zIndex: 5,
+        }}>
+          <IconButton onClick={onToggleCollapsed} size="small" sx={{ /* estilos existentes */ }}>
+            {collapsed ? <ChevronLeftIcon /> : <MenuOpenIcon />}
+          </IconButton>
+        </Box>
       </Box>
 
       {/* Navegación con scroll */}
