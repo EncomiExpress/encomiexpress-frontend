@@ -62,8 +62,10 @@ const formatRutaDestino = (destino) => {
     if (!destino) return '—'
     if (typeof destino === 'string') return destino
     if (typeof destino === 'object') {
-        if (destino.ciudad) return `${destino.ciudad} — ${destino.departamento}`
-        return destino.nombre || String(destino.idDestino ?? destino.id ?? '')
+        if (destino.ciudad || destino.departamento) {
+            return `${destino.ciudad || ''}${destino.ciudad && destino.departamento ? ' — ' : ''}${destino.departamento || ''}`.trim() || '—'
+        }
+        return destino.nombre || String(destino.idDestino ?? destino.id ?? '—')
     }
     return String(destino)
 }
@@ -258,11 +260,12 @@ const ListarVenta = () => {
 
     const ventasFiltradas = ventas.filter(v => {
         const q = busqueda.toLowerCase()
+        const rutaTexto = formatRutaDestino(v.ruta?.destino).toLowerCase()
         const coincideBusqueda = !q ||
             v.numeroGuia.toLowerCase().includes(q) ||
             `${v.cliente?.nombre} ${v.cliente?.apellido}`.toLowerCase().includes(q) ||
             v.destinatario?.nombreDestinatario?.toLowerCase().includes(q) ||
-            formatRutaDestino(v.ruta?.destino).toLowerCase().includes(q)
+            rutaTexto.includes(q)
 
         const coincideHabilitado =
             filtroHabilitado === 'todo' ||
@@ -322,12 +325,10 @@ const ListarVenta = () => {
 
     const handleToggleHabilitado = async (id) => {
         try {
-            // ⚠️ FIX: usar el resultado de la operación para saber el nuevo estado
-            const resultado = await toggleHabilitadoVenta(id)
-            const nuevoEstado = resultado?.habilitado
+            const actualizada = await toggleHabilitadoVenta(id)
             setSnackbar({
                 open: true,
-                message: `Venta ${nuevoEstado ? 'habilitada' : 'inhabilitada'} correctamente.`,
+                message: `Venta ${actualizada?.habilitado ? 'habilitada' : 'inhabilitada'} correctamente.`,
                 severity: 'success',
             })
         } catch (err) {
@@ -634,7 +635,7 @@ const ListarVenta = () => {
                                                 {venta.destinatario?.nombreDestinatario}
                                             </TableCell>
 
-                                            <TableCell sx={{ fontSize: '0.85rem', color: theme.palette.text.primary, py: 1.5 }}>
+                                                                    <TableCell sx={{ fontSize: '0.85rem', color: theme.palette.text.primary, py: 1.5 }}>
                                                 {formatRutaDestino(venta.ruta?.destino)}
                                             </TableCell>
 

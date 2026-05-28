@@ -38,12 +38,42 @@ export const fetchWithAuth = async (endpoint, options = {}) => {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_URL}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  const controller = options.signal ? null : new AbortController();
+  const signal = options.signal || controller?.signal;
 
-  const data = await response.json();
+  try {
+    const response = await fetch(`${API_URL}${endpoint}`, {
+      ...options,
+      headers,
+      signal,
+    });
+
+    const data = await response.json();
+
+    if (response.status === 401) {
+      clearAuthData();
+      const error = new Error('Sesión expirada. Por favor inicia sesión de nuevo.');
+      error.status = 401;
+      throw error;
+    }
+
+    if (response.status === 403) {
+      const error = new Error('Sin permisos');
+      error.status = 403;
+      throw error;
+    }
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Error en la petición');
+    }
+
+    return data;
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      return;
+    }
+    throw error;
+  }
 
   // Token expirado o inválido → limpiar sesión y lanzar error.
   // NO redirigir aquí con window.location — eso genera loops cuando los Contexts

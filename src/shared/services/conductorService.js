@@ -8,9 +8,10 @@ import { fetchWithAuth } from './authService';
  * Obtener todos los conductores
  * GET /api/conductores
  */
-export const getConductores = async () => {
+export const getConductores = async (signal) => {
   return await fetchWithAuth('/conductores', {
     method: 'GET',
+    signal,
   });
 };
 
@@ -18,9 +19,10 @@ export const getConductores = async () => {
  * Obtener conductor por ID
  * GET /api/conductores/:id
  */
-export const getConductorById = async (id) => {
+export const getConductorById = async (id, signal) => {
   return await fetchWithAuth(`/conductores/${id}`, {
     method: 'GET',
+    signal,
   });
 };
 

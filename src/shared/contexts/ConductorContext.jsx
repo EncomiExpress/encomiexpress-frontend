@@ -15,12 +15,12 @@ export const ConductorProvider = ({ children }) => {
   // ─── fetchConductores DEBE declararse PRIMERO ────────────────────────────────
   // Las demás funciones lo referencian en sus dependencias; si se declara después
   // se produce: "Cannot access 'fetchConductores' before initialization"
-  const fetchConductores = useCallback(async () => {
+  const fetchConductores = useCallback(async (signal) => {
     setLoading(true)
     setError(null)
     try {
-      const response = await conductorService.getConductores()
-      if (response.success) {
+      const response = await conductorService.getConductores(signal)
+      if (response?.success) {
         const datos = response.data.map(c => ({
           ...c,
           // Aplanar los datos del usuario anidado para facilitar el uso en vistas
@@ -37,8 +37,10 @@ export const ConductorProvider = ({ children }) => {
         setConductores(datos)
       }
     } catch (err) {
-      setError(err.message)
-      console.error('Error fetching conductores:', err)
+      if (err?.name !== 'AbortError') {
+        setError(err.message)
+        console.error('Error fetching conductores:', err)
+      }
     } finally {
       setLoading(false)
     }
@@ -46,9 +48,11 @@ export const ConductorProvider = ({ children }) => {
 
   // Cargar conductores cuando hay token disponible
   useEffect(() => {
-    if (token) {
-      fetchConductores()
-    }
+    if (!token) return
+
+    const abortController = new AbortController()
+    fetchConductores(abortController.signal)
+    return () => abortController.abort()
   }, [fetchConductores, token])
 
   // ─── Lecturas locales (sin llamada a API) ─────────────────────────────────

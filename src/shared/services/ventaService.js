@@ -2,11 +2,11 @@ import { fetchWithAuth } from './authService'
 
 // ── Encomiendas / Ventas ──────────────────────────────────────────────────────
 
-export const getEncomiendas = () =>
-  fetchWithAuth('/encomiendas')
+export const getEncomiendas = (signal) =>
+  fetchWithAuth('/encomiendas', { method: 'GET', signal })
 
-export const getEncomiendaById = (id) =>
-  fetchWithAuth(`/encomiendas/${id}`)
+export const getEncomiendaById = (id, signal) =>
+  fetchWithAuth(`/encomiendas/${id}`, { method: 'GET', signal })
 
 export const createEncomienda = (datos) =>
   fetchWithAuth('/encomiendas', { method: 'POST', body: JSON.stringify(datos) })

@@ -1,10 +1,10 @@
 import { fetchWithAuth } from './authService'
 
-export const getClientes = () =>
-  fetchWithAuth('/clientes')
+export const getClientes = (signal) =>
+  fetchWithAuth('/clientes', { method: 'GET', signal })
 
-export const getClienteById = (id) =>
-  fetchWithAuth(`/clientes/${id}`)
+export const getClienteById = (id, signal) =>
+  fetchWithAuth(`/clientes/${id}`, { method: 'GET', signal })
 
 export const createCliente = (datos) =>
   fetchWithAuth('/clientes', { method: 'POST', body: JSON.stringify(datos) })

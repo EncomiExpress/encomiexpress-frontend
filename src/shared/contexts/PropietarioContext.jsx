@@ -14,17 +14,19 @@ export const PropietarioProvider = ({ children }) => {
   const [error, setError] = useState(null)
 
   // ── Fetch todos los propietarios desde la API ─────────────────────────────
-  const fetchPropietarios = useCallback(async () => {
+  const fetchPropietarios = useCallback(async (signal) => {
     setLoading(true)
     setError(null)
     try {
-      const response = await propietarioService.getPropietarios()
-      if (response.success) {
+      const response = await propietarioService.getPropietarios(signal)
+      if (response?.success) {
         setPropietarios(response.data)
       }
     } catch (err) {
-      setError(err.message)
-      console.error('Error fetching propietarios:', err)
+      if (err?.name !== 'AbortError') {
+        setError(err.message)
+        console.error('Error fetching propietarios:', err)
+      }
     } finally {
       setLoading(false)
     }
@@ -120,9 +122,11 @@ export const PropietarioProvider = ({ children }) => {
 
   // ── Efectos ───────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (token) {
-      fetchPropietarios()
-    }
+    if (!token) return
+
+    const abortController = new AbortController()
+    fetchPropietarios(abortController.signal)
+    return () => abortController.abort()
   }, [fetchPropietarios, token])
 
   // Re-fetch cuando un vehículo cambia de estado (puede afectar el toggle)

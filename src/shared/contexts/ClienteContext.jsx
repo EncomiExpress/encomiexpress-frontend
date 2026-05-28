@@ -20,14 +20,25 @@ export const ClienteProvider = ({ children }) => {
             setLoading(false)
             return
         }
-        clienteService.getClientes()
-            .then(res => setClientes(res.data.map(normalize)))
-            .catch(err => {
-                if (err.status !== 403) {
+
+        const abortController = new AbortController()
+        const loadClientes = async () => {
+            try {
+                const res = await clienteService.getClientes(abortController.signal)
+                if (res?.data) {
+                    setClientes(res.data.map(normalize))
+                }
+            } catch (err) {
+                if (err?.name !== 'AbortError' && err.status !== 403) {
                     setError(err.message)
                 }
-            })
-            .finally(() => setLoading(false))
+            } finally {
+                setLoading(false)
+            }
+        }
+
+        loadClientes()
+        return () => abortController.abort()
     }, [token])
 
     const agregarCliente = async (nuevoCliente) => {

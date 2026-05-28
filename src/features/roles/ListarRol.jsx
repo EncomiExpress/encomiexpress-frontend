@@ -315,7 +315,7 @@ const ListarRol = () => {
                 </Box>
                 {puedeRegistrar && (
                     <Button
-                        onClick={() => setModalRegistrarOpen(true)}
+                        onClick={(e) => { e.currentTarget.blur(); setModalRegistrarOpen(true) }}
                         variant="contained"
                         startIcon={<AddOutlinedIcon />}
                         sx={{
@@ -454,7 +454,7 @@ const ListarRol = () => {
                                                         <Tooltip title="Ver detalle">
                                                             <IconButton
                                                                 size="small"
-                                                                onClick={() => setRolConsulta(rol)}
+                                                                onClick={(e) => { e.currentTarget.blur(); setRolConsulta(rol) }}
                                                                 sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
                                                             >
                                                                 <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
@@ -465,7 +465,7 @@ const ListarRol = () => {
                                                         <Tooltip title="Editar">
                                                             <IconButton
                                                                 size="small"
-                                                                onClick={() => { setRolEditar(rol); setModalActualizarOpen(true) }}
+                                                                onClick={(e) => { e.currentTarget.blur(); setRolEditar(rol); setModalActualizarOpen(true) }}
                                                                 sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
                                                             >
                                                                 <EditOutlinedIcon sx={{ fontSize: 18 }} />

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react'
 import {
   getRutas,
   getRutaById,
@@ -22,14 +22,28 @@ export const RutaProgramacionProvider = ({ children }) => {
   const { token } = useAuth()
   const { destinos, fetchDestinos } = useDestino()
   const { getTransportes, fetchVehiculos } = useTransporte()
+  const fetchingRef = useRef(false)
 
   // Pre-carga destinos y vehículos cuando existe token, para que los selectores
   // de RegistrarRuta / ActualizarRuta tengan datos sin depender del orden
   // de navegación del usuario.
   useEffect(() => {
     if (!token) return
-    if (destinos.length === 0) fetchDestinos()
-    if (getTransportes().length === 0) fetchVehiculos()
+
+    const ac = new AbortController()
+    const load = async () => {
+      if (fetchingRef.current) return
+      fetchingRef.current = true
+      try {
+        if (destinos.length === 0) await fetchDestinos(ac.signal)
+        if (getTransportes().length === 0) await fetchVehiculos(ac.signal)
+      } finally {
+        fetchingRef.current = false
+      }
+    }
+
+    load()
+    return () => ac.abort()
   }, [token, destinos.length, fetchDestinos, fetchVehiculos, getTransportes])
 
   // Obtener todas las rutas desde la API

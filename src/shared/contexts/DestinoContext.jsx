@@ -13,18 +13,20 @@ export const DestinoProvider = ({ children }) => {
   const [error, setError] = useState(null);
 
   // Cargar todos los destinos desde la API
-  const fetchDestinos = useCallback(async () => {
+  const fetchDestinos = useCallback(async (signal) => {
     setLoading(true)
     setError(null)
     try {
-      const res = await destinoService.getDestinos()
-      if (res.success) {
+      const res = await destinoService.getDestinos(signal)
+      if (res?.success) {
         setDestinos(res.data)
       } else {
         setError('Error al cargar destinos')
       }
     } catch (e) {
-      setError(e.message || 'Error al cargar destinos')
+      if (e?.name !== 'AbortError') {
+        setError(e.message || 'Error al cargar destinos')
+      }
     } finally {
       setLoading(false)
     }
@@ -42,7 +44,12 @@ export const DestinoProvider = ({ children }) => {
 
   // ⬇️ NUEVO: cargar destinos cuando haya token
   useEffect(() => {
-    if (token) fetchDestinos();
+    if (!token) return
+
+    const abortController = new AbortController()
+    fetchDestinos(abortController.signal)
+
+    return () => abortController.abort()
   }, [token, fetchDestinos]);
 
   // Registrar destino vía API

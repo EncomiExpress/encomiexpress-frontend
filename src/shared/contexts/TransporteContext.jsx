@@ -22,22 +22,26 @@ export const TransporteProvider = ({ children }) => {
   }, [transportes])
 
   // Registrar transporte
-  const fetchVehiculos = useCallback(async () => {
-    setTransportes([])
+  const fetchVehiculos = useCallback(async (signal) => {
     try {
-      const response = await vehiculoService.getVehiculos()
-      if (response.success) {
+      const response = await vehiculoService.getVehiculos(signal)
+      if (response?.success) {
         setTransportes(response.data)
       }
     } catch (err) {
-      console.error('Error fetching vehiculos:', err)
+      if (err?.name !== 'AbortError') {
+        console.error('Error fetching vehiculos:', err)
+      }
     }
   }, [])
 
   useEffect(() => {
-    if (token) {
-      fetchVehiculos()
-    }
+    if (!token) return
+
+    const abortController = new AbortController()
+    fetchVehiculos(abortController.signal)
+
+    return () => abortController.abort()
   }, [fetchVehiculos, token])
 
   const registrarTransporte = useCallback(async (nuevoTransporte) => {

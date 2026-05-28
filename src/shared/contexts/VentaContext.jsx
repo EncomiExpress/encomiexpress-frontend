@@ -40,10 +40,25 @@ export const VentaProvider = ({ children }) => {
       setLoading(false)
       return
     }
-    ventaService.getEncomiendas()
-      .then(res => setVentas(res.data.map(normalize)))
-      .catch(err => setError(err.message))
-      .finally(() => setLoading(false))
+
+    const abortController = new AbortController()
+    const loadVentas = async () => {
+      try {
+        const res = await ventaService.getEncomiendas(abortController.signal)
+        if (res?.data) {
+          setVentas(res.data.map(normalize))
+        }
+      } catch (err) {
+        if (err?.name !== 'AbortError') {
+          setError(err.message)
+        }
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadVentas()
+    return () => abortController.abort()
   }, [token])
 
   const agregarVenta = async (datos) => {

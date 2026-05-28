@@ -23,13 +23,25 @@ export const AnticipoExcedenteProvider = ({ children }) => {
       setLoading(false)
       return
     }
-    anticipoService
-      .getAnticipos()
-      .then((res) => setAnticipos(res.data || []))
-      .catch((err) => {
-        if (err.status !== 403) setError(err.message)
-      })
-      .finally(() => setLoading(false))
+
+    const abortController = new AbortController()
+    const loadAnticipos = async () => {
+      try {
+        const res = await anticipoService.getAnticipos(abortController.signal)
+        if (res?.data) {
+          setAnticipos(res.data)
+        }
+      } catch (err) {
+        if (err?.name !== 'AbortError' && err.status !== 403) {
+          setError(err.message)
+        }
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadAnticipos()
+    return () => abortController.abort()
   }, [token])
 
   // Cargar rutas al montar siempre que haya token,

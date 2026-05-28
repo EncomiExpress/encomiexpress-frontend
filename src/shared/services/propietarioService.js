@@ -8,9 +8,10 @@ import { fetchWithAuth } from './authService';
  * Obtener todos los propietarios
  * GET /api/propietarios
  */
-export const getPropietarios = async () => {
+export const getPropietarios = async (signal) => {
   return await fetchWithAuth('/propietarios', {
     method: 'GET',
+    signal,
   });
 };
 
@@ -18,9 +19,10 @@ export const getPropietarios = async () => {
  * Obtener propietario por ID
  * GET /api/propietarios/:id
  */
-export const getPropietarioById = async (id) => {
+export const getPropietarioById = async (id, signal) => {
   return await fetchWithAuth(`/propietarios/${id}`, {
     method: 'GET',
+    signal,
   });
 };
 

@@ -1,10 +1,10 @@
 import { fetchWithAuth } from './authService'
 
-export const getAnticipos = () =>
-  fetchWithAuth('/anticipos')
+export const getAnticipos = (signal) =>
+  fetchWithAuth('/anticipos', { method: 'GET', signal })
 
-export const getAnticipoById = (id) =>
-  fetchWithAuth(`/anticipos/${id}`)
+export const getAnticipoById = (id, signal) =>
+  fetchWithAuth(`/anticipos/${id}`, { method: 'GET', signal })
 
 export const createAnticipo = (datos) =>
   fetchWithAuth('/anticipos', { method: 'POST', body: JSON.stringify(datos) })
