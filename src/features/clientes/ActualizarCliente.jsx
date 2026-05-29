@@ -1,5 +1,5 @@
 import theme from '../../shared/styles/theme.js'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Snackbar, Alert, TextField, Select, InputAdornment, Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined'
@@ -40,6 +40,7 @@ const ActualizarCliente = ({ open, onClose, cliente: clienteProp, onSuccess }) =
     const [submitting, setSubmitting] = useState(false)
     const [formOriginal, setFormOriginal] = useState(null)
     const [sinCambios, setSinCambios] = useState(false)
+    const cargado = useRef(false)
 
     const [form, setForm] = useState({
         nombre: '',
@@ -54,7 +55,9 @@ const ActualizarCliente = ({ open, onClose, cliente: clienteProp, onSuccess }) =
     })
 
     useEffect(() => {
-        if (loading || !open || !clienteProp) return
+        if (!open) { cargado.current = false; return }
+        if (loading || !clienteProp || cargado.current) return
+        cargado.current = true
         setActiveStep(0)
         setErrores({})
         setSinCambios(false)

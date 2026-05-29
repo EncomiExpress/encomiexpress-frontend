@@ -1,5 +1,5 @@
 import theme from '../../shared/styles/theme.js'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
     Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel,
     Button, Alert, Snackbar, TextField, Dialog, DialogTitle, DialogContent, IconButton
@@ -56,9 +56,12 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
     const [formOriginal, setFormOriginal] = useState(null)
     const [sinCambios, setSinCambios] = useState(false)
     const [form, setForm] = useState(null)
+    const cargado = useRef(false)
 
     useEffect(() => {
-        if (!open || !anticipoProp) return
+        if (!open) { cargado.current = false; return }
+        if (!anticipoProp || cargado.current) return
+        cargado.current = true
         setActiveStep(0)
         setErrores({})
         setSinCambios(false)

@@ -1,5 +1,5 @@
 import theme from '../../shared/styles/theme.js'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
     Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel,
     Button, Snackbar, Alert, TextField, Select, InputAdornment,
@@ -71,9 +71,12 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
     const [formOriginal, setFormOriginal] = useState(null)
     const [sinCambios, setSinCambios] = useState(false)
     const [form, setForm] = useState(FORM_INICIAL)
+    const cargado = useRef(false)
 
     useEffect(() => {
-        if (open && conductorProp) {
+        if (!open) { cargado.current = false; return }
+        if (!conductorProp || cargado.current) return
+        cargado.current = true
             setActiveStep(0)
             setErrores({})
             setSinCambios(false)
@@ -102,7 +105,6 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
             }
             setForm(datosForm)
             setFormOriginal(datosForm)
-        }
     }, [open, conductorProp, getConductorById])
 
     const handleChange = (e) => {

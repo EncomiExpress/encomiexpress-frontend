@@ -1,5 +1,5 @@
 import theme from '../../shared/styles/theme.js'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
     Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel,
     Button, Snackbar, Alert, TextField, Select, InputAdornment,
@@ -55,10 +55,13 @@ const ActualizarPropietario = ({ open, onClose, propietario: propietarioProp, on
     const [formOriginal, setFormOriginal] = useState(null)
     const [sinCambios, setSinCambios] = useState(false)
     const [form, setForm] = useState(EMPTY_FORM)
+    const cargado = useRef(false)
 
     // Poblar formulario con datos reales de la BD al abrir
     useEffect(() => {
-        if (!open || !propietarioProp) return
+        if (!open) { cargado.current = false; return }
+        if (!propietarioProp || cargado.current) return
+        cargado.current = true
         setActiveStep(0)
         setErrores({})
         setApiError(null)

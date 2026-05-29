@@ -1,5 +1,5 @@
 import theme from '../../shared/styles/theme.js'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Box, TextField, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Snackbar, Alert, Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material'
 import { DirectionsCar, Person, Business, Event, Speed, SaveOutlined, ArrowBackOutlined, ArrowForwardOutlined, Close } from '@mui/icons-material'
 import { useTransporte } from '../../shared/contexts/TransporteContext.jsx'
@@ -50,9 +50,12 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
   const [formOriginal, setFormOriginal] = useState(null)
   const [sinCambios, setSinCambios] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const cargado = useRef(false)
 
   useEffect(() => {
-    if (open && transporteProp) {
+    if (!open) { cargado.current = false; return }
+    if (!transporteProp || cargado.current) return
+    cargado.current = true
       setActiveStep(0)
       setSinCambios(false)
       setErrores({})
@@ -62,7 +65,6 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
         setFormData(transporte)
         setFormOriginal(transporte)
       }
-    }
   }, [open, transporteProp, getTransporteById])
 
   const handleChange = (e) => {
