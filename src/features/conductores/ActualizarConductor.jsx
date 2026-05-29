@@ -1,4 +1,4 @@
-import theme from '../../shared/styles/theme.js'
+import { useTheme } from '@mui/material/styles'
 import { useState, useEffect, useRef } from 'react'
 import {
     Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel,
@@ -23,20 +23,18 @@ const DOMINIOS_EMAIL = ['@gmail.com', '@hotmail.com', '@outlook.com', '@yahoo.co
 
 const steps = ['Datos Personales', 'Licencia de Conducción', 'Confirmación']
 
-const ConfirmRow = ({ label, value }) => (
-    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, py: 0.9, overflow: 'hidden' }}>
-        <Typography variant="body2" sx={{ color: '#9C4040', fontWeight: 500, flexShrink: 0 }}>{label}</Typography>
-        <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary}
-            sx={{ textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
-            {value || '—'}
-        </Typography>
-    </Box>
-)
+const ConfirmRow = ({ label, value }) => {
+    const theme = useTheme()
 
-const cardSx = {
-    flex: 1, minWidth: 0, borderRadius: 2, p: 2.5,
-    border: `1px solid ${theme.palette.divider}`,
-    backgroundColor: 'white', elevation: 0, overflow: 'hidden',
+    return (
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, py: 0.9, overflow: 'hidden' }}>
+            <Typography variant="body2" sx={{ color: '#9C4040', fontWeight: 500, flexShrink: 0 }}>{label}</Typography>
+            <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary}
+                sx={{ textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
+                {value || '—'}
+            </Typography>
+        </Box>
+    )
 }
 
 const getTipoLabel = (tipo) => {
@@ -63,6 +61,12 @@ const FORM_INICIAL = {
 
 const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSuccess }) => {
     const { getConductorById, actualizarConductorApi, fetchConductores } = useConductor()
+    const theme = useTheme()
+    const cardSx = {
+        flex: 1, minWidth: 0, borderRadius: 2, p: 2.5,
+        border: `1px solid ${theme.palette.divider}`,
+        backgroundColor: 'white', elevation: 0, overflow: 'hidden',
+    }
     const [exito, setExito] = useState(false)
     const [apiError, setApiError] = useState(null)
     const [errores, setErrores] = useState({})
@@ -373,3 +377,4 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
 }
 
 export default ActualizarConductor
+

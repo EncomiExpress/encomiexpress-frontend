@@ -1,10 +1,9 @@
-import theme from '../styles/theme.js'
+import { useTheme } from '@mui/material/styles'
 import { TextField, Button, Box, Typography, Select, MenuItem, FormControl, InputLabel, InputAdornment, IconButton, Alert, FormHelperText } from '@mui/material'
 import { SaveOutlined, VisibilityOutlined, VisibilityOffOutlined } from '@mui/icons-material'
 import { useState } from 'react'
 
-// Estilos estándar para TextField
-export const formFieldStyles = {
+export const formFieldStyles = (theme) => ({
   '& .MuiOutlinedInput-root': {
     borderRadius: 2,
     '& fieldset': { borderColor: theme.palette.divider },
@@ -17,21 +16,8 @@ export const formFieldStyles = {
     },
   },
   '& .MuiInputLabel-root.Mui-focused': { color: theme.palette.primary.main },
-}
+})
 
-// Estilos estándar para Select/FormControl
-export const formSelectStyles = {
-  '& .MuiOutlinedInput-root': {
-    borderRadius: 2,
-    '& fieldset': { borderColor: theme.palette.divider },
-    '&:hover fieldset': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
-    '&.Mui-focused': { boxShadow: '0 0 0 3px rgba(229,115,115,0.18)' },
-    '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
-  },
-  '& .MuiInputLabel-root.Mui-focused': { color: theme.palette.primary.main },
-}
-
-// Componente de campo de texto estándar
 export const FormField = ({
   label,
   name,
@@ -85,7 +71,6 @@ export const FormField = ({
   )
 }
 
-// Componente de Select estándar
 export const FormSelect = ({ 
   label, 
   name, 
@@ -96,6 +81,19 @@ export const FormSelect = ({
   helperText, 
   children 
 }) => {
+  const theme = useTheme()
+
+  const formSelectStyles = {
+    '& .MuiOutlinedInput-root': {
+      borderRadius: 2,
+      '& fieldset': { borderColor: theme.palette.divider },
+      '&:hover fieldset': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
+      '&.Mui-focused': { boxShadow: '0 0 0 3px rgba(229,115,115,0.18)' },
+      '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
+    },
+    '& .MuiInputLabel-root.Mui-focused': { color: theme.palette.primary.main },
+  }
+
   return (
     <FormControl fullWidth required={required} error={!!error} sx={formSelectStyles}>
       <InputLabel sx={{ '&.Mui-focused': { color: theme.palette.primary.main } }}>{label}</InputLabel>
@@ -116,7 +114,6 @@ export const FormSelect = ({
   )
 }
 
-// Componente de campo de contraseña con visibilidad
 export const PasswordField = ({ 
   label, 
   name, 
@@ -131,8 +128,7 @@ export const PasswordField = ({
   const [showPassword, setShowPassword] = useState(false)
 
   return (
-    <TextField
-      fullWidth
+    <FormField
       label={label}
       name={name}
       type={showPassword ? 'text' : 'password'}
@@ -140,35 +136,27 @@ export const PasswordField = ({
       onChange={onChange}
       required={required}
       placeholder={placeholder}
-      error={!!error}
-      helperText={error || helperText}
-      slotProps={{
-        input: {
-          startAdornment: Icon ? (
-            <InputAdornment position="start">
-              <Icon sx={{ color: '#94a3b8' }} />
-            </InputAdornment>
-          ) : undefined,
-          endAdornment: (
-            <InputAdornment position="end">
-              <IconButton
-                onClick={() => setShowPassword(!showPassword)}
-                edge="end"
-                sx={{ color: '#94a3b8' }}
-              >
-                {showPassword ? <VisibilityOffOutlined /> : <VisibilityOutlined />}
-              </IconButton>
-            </InputAdornment>
-          ),
-        }
-      }}
-      sx={formFieldStyles}
+      error={error}
+      helperText={helperText}
+      icon={Icon}
+      children={
+        <InputAdornment position="end">
+          <IconButton
+            onClick={() => setShowPassword(!showPassword)}
+            edge="end"
+            sx={{ color: '#94a3b8' }}
+          >
+            {showPassword ? <VisibilityOffOutlined /> : <VisibilityOutlined />}
+          </IconButton>
+        </InputAdornment>
+      }
     />
   )
 }
 
-// Componente de botón primario estándar
 export const PrimaryButton = ({ children, onClick, type = 'submit', fullWidth = false, disabled = false, icon: Icon }) => {
+  const theme = useTheme()
+
   return (
     <Button
       type={type}
@@ -196,8 +184,9 @@ export const PrimaryButton = ({ children, onClick, type = 'submit', fullWidth = 
   )
 }
 
-// Componente de botón secundario estándar
 export const SecondaryButton = ({ children, onClick, type = 'button', fullWidth = false, disabled = false, icon: Icon, href }) => {
+  const theme = useTheme()
+
   return (
     <Button
       type={type}
@@ -226,7 +215,6 @@ export const SecondaryButton = ({ children, onClick, type = 'button', fullWidth 
   )
 }
 
-// Componente de botón de acción (Eliminar, etc.)
 export const ActionButton = ({ children, onClick, type = 'button', variant = 'contained', color = 'error', icon: Icon }) => {
   return (
     <Button
@@ -248,7 +236,6 @@ export const ActionButton = ({ children, onClick, type = 'button', variant = 'co
   )
 }
 
-// Componente de Alerts estándar
 export const FormAlert = ({ severity = 'error', children, onClose }) => {
   return (
     <Alert severity={severity} sx={{ mb: 3, borderRadius: 2 }} onClose={onClose}>
@@ -257,8 +244,9 @@ export const FormAlert = ({ severity = 'error', children, onClose }) => {
   )
 }
 
-// Componente de cabecera de formulario
 export const FormHeader = ({ icon: Icon, title, subtitle }) => {
+  const theme = useTheme()
+
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
       <Box sx={{
@@ -286,8 +274,9 @@ export const FormHeader = ({ icon: Icon, title, subtitle }) => {
   )
 }
 
-// Contenedor de formulario estándar
 export const FormContainer = ({ children, maxWidth = 900 }) => {
+  const theme = useTheme()
+
   return (
     <Box sx={{ p: 4 }}>
       <Box sx={{ 
@@ -304,7 +293,6 @@ export const FormContainer = ({ children, maxWidth = 900 }) => {
   )
 }
 
-// Contenedor de Paper para formularios
 export const FormPaper = ({ children }) => {
   return (
     <Box sx={{ p: 4 }}>
@@ -313,7 +301,6 @@ export const FormPaper = ({ children }) => {
   )
 }
 
-// Contenedor de campos del formulario
 export const FormFieldsContainer = ({ children, direction = 'column', spacing = 3 }) => {
   return (
     <Box sx={{ display: 'flex', flexDirection: direction, gap: spacing }}>
@@ -322,7 +309,6 @@ export const FormFieldsContainer = ({ children, direction = 'column', spacing = 
   )
 }
 
-// Grupo de botones de formulario
 export const FormButtonGroup = ({ children, justify = 'flex-end', spacing = 2 }) => {
   return (
     <Box sx={{ display: 'flex', gap: spacing, mt: 2, justifyContent: justify }}>
@@ -331,7 +317,6 @@ export const FormButtonGroup = ({ children, justify = 'flex-end', spacing = 2 })
   )
 }
 
-// Grid de formulario
 export const FormGrid = ({ children }) => {
   return (
     <Box sx={{ 
@@ -343,4 +328,3 @@ export const FormGrid = ({ children }) => {
     </Box>
   )
 }
-

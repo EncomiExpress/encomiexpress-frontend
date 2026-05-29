@@ -1,4 +1,4 @@
-import theme from '../../shared/styles/theme.js'
+import { useTheme } from '@mui/material/styles'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -22,7 +22,7 @@ import { useAuth } from '../../shared/contexts/AuthContext.jsx'
 import RegistrarDestino from './RegistrarDestino'
 import ActualizarDestino from './ActualizarDestino'
 
-const thStyle = {
+const getThStyle = (theme) => ({
     fontWeight: 700,
     fontSize: '0.80rem',
     color: theme.palette.text.primary,
@@ -30,7 +30,7 @@ const thStyle = {
     py: 1.5,
     borderBottom: `1px solid #E0E0E0`,
     whiteSpace: 'nowrap',
-}
+})
 
 const FILTROS = [
     { value: 'todo', label: 'Todo' },
@@ -39,6 +39,8 @@ const FILTROS = [
 ]
 
 const ListarDestino = () => {
+    const theme = useTheme()
+    const thStyle = getThStyle(theme)
     const [searchTerm, setSearchTerm] = useState('')
     const [destinoVer, setDestinoVer] = useState(null)
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
@@ -438,3 +440,4 @@ const ListarDestino = () => {
 }
 
 export default ListarDestino
+

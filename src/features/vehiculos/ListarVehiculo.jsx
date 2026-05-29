@@ -1,4 +1,4 @@
-import theme from '../../shared/styles/theme.js'
+import { useTheme } from '@mui/material/styles'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -24,9 +24,7 @@ import { useRutaProgramacion } from '../../shared/contexts/RutaProgramacionConte
 import RegistrarVehiculo from './RegistrarVehiculo'
 import ActualizarVehiculo from './ActualizarVehiculo'
 
-const COLORS = theme.palette
-
-const thStyle = {
+const getThStyle = (theme) => ({
     fontWeight: 700,
     fontSize: '0.80rem',
     color: theme.palette.text.primary,
@@ -34,11 +32,11 @@ const thStyle = {
     py: 1.5,
     borderBottom: `1px solid #E0E0E0`,
     whiteSpace: 'nowrap',
-}
+})
 
 const ESTADOS_VEHICULO = ['Activo', 'Inactivo', 'Mantenimiento', 'En Reparación']
 
-const filterMenuProps = {
+const getFilterMenuProps = (theme) => ({
     slotProps: {
         paper: {
             sx: {
@@ -54,7 +52,7 @@ const filterMenuProps = {
             },
         },
     },
-}
+})
 
 const FILTROS_HABILITADO = [
     { value: 'todo', label: 'Todo' },
@@ -79,6 +77,9 @@ const isVencido = (fecha) => {
 }
 
 const ListarTransporte = () => {
+    const theme = useTheme()
+    const thStyle = getThStyle(theme)
+    const filterMenuProps = getFilterMenuProps(theme)
     const [searchTerm, setSearchTerm] = useState('')
     const [vehiculoVer, setVehiculoVer] = useState(null)
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
@@ -604,3 +605,4 @@ const ListarTransporte = () => {
 }
 
 export default ListarTransporte
+

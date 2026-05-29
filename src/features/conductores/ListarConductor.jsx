@@ -1,4 +1,4 @@
-import theme from '../../shared/styles/theme.js'
+import { useTheme } from '@mui/material/styles'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -23,7 +23,7 @@ import { useAuth } from '../../shared/contexts/AuthContext.jsx'
 import RegistrarConductor from './RegistrarConductor'
 import ActualizarConductor from './ActualizarConductor'
 
-const thStyle = {
+const getThStyle = (theme) => ({
     fontWeight: 700,
     fontSize: '0.80rem',
     color: theme.palette.text.primary,
@@ -31,7 +31,7 @@ const thStyle = {
     py: 1.5,
     borderBottom: `1px solid #E0E0E0`,
     whiteSpace: 'nowrap',
-}
+})
 
 // Los estados que acepta el backend
 const ESTADOS_CONDUCTOR = [
@@ -39,7 +39,7 @@ const ESTADOS_CONDUCTOR = [
     { value: 'inactivo', label: 'Inactivo' },
 ]
 
-const filterMenuProps = {
+const getFilterMenuProps = (theme) => ({
     slotProps: {
         paper: {
             sx: {
@@ -55,7 +55,7 @@ const filterMenuProps = {
             },
         },
     },
-}
+})
 
 const isVencido = (fecha) => {
     if (!fecha) return false
@@ -68,7 +68,7 @@ const FILTROS = [
     { value: 'inhabilitado', label: 'Inhabilitado' },
 ]
 
-const estadoColor = (estado) => {
+const estadoColor = (estado, theme) => {
     if (!estado) return theme.palette.text.secondary
     switch (estado.toLowerCase()) {
         case 'activo': return '#10b981'
@@ -78,6 +78,9 @@ const estadoColor = (estado) => {
 }
 
 const ListarConductor = () => {
+    const theme = useTheme()
+    const thStyle = getThStyle(theme)
+    const filterMenuProps = getFilterMenuProps(theme)
     const { tienePermiso, PERMISOS, usuario } = useAuth()
     const [searchTerm, setSearchTerm] = useState('')
     const [conductorVer, setConductorVer] = useState(null)
@@ -294,7 +297,7 @@ const ListarConductor = () => {
                                                     value={conductor.estado || 'activo'}
                                                     onChange={(e) => handleEstadoChange(conductor.idConductor, e.target.value)}
                                                     IconComponent={KeyboardArrowDownOutlinedIcon}
-                                                    sx={{ fontSize: '0.75rem', py: 0.5, color: estadoColor(conductor.estado) }}
+                                                    sx={{ fontSize: '0.75rem', py: 0.5, color: estadoColor(conductor.estado, theme) }}
                                                     MenuProps={filterMenuProps}
                                                 >
                                                     {ESTADOS_CONDUCTOR.map(e => (
@@ -402,7 +405,7 @@ const ListarConductor = () => {
                                 </Box>
                                 <Box sx={{ gridColumn: '1 / -1' }}>
                                     <Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Estado</Typography>
-                                    <Typography variant="body2" fontWeight={500} color={estadoColor(conductorVer.estado)}>
+                                    <Typography variant="body2" fontWeight={500} color={estadoColor(conductorVer.estado, theme)}>
                                         {conductorVer.estado ? conductorVer.estado.charAt(0).toUpperCase() + conductorVer.estado.slice(1) : '-'}
                                     </Typography>
                                 </Box>
@@ -452,3 +455,4 @@ const ListarConductor = () => {
 }
 
 export default ListarConductor
+

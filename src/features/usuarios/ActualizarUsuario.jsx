@@ -1,4 +1,4 @@
-import theme from '../../shared/styles/theme.js'
+import { useTheme } from '@mui/material/styles'
 import { useState, useEffect } from 'react'
 import { Dialog, DialogTitle, DialogContent, IconButton, Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Snackbar, Alert, TextField, Select, InputAdornment, CircularProgress } from '@mui/material'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
@@ -17,11 +17,11 @@ import { formFieldStyles } from '../../shared/components/FormularioEstandarizado
 
 const DOMINIOS_EMAIL = ['@gmail.com', '@hotmail.com', '@outlook.com', '@yahoo.com', '@icloud.com', '@live.com']
 
-const COLORS = theme.palette
-
 const steps = ['Datos Personales', 'Credenciales', 'Confirmación']
 
-const HighlightText = ({ original, actual, color = theme.palette.primary.main }) => {
+const HighlightText = ({ original, actual, color }) => {
+    const theme = useTheme()
+    const highlightColor = color || theme.palette.primary.main
     if (original === actual) {
         return <>{actual || '—'}</>
     }
@@ -58,6 +58,7 @@ const ConfirmRow = ({ label, valueOriginal, valueActual }) => {
 
 const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) => {
     const { actualizarUsuario, getRolesBackend } = useAuth()
+    const theme = useTheme()
     const [exito, setExito] = useState(false)
     const [apiError, setApiError] = useState(null)
     const [errores, setErrores] = useState({})
@@ -510,3 +511,4 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
 }
 
 export default ActualizarUsuario
+

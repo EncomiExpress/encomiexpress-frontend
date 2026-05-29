@@ -1,4 +1,4 @@
-import theme from '../../shared/styles/theme.js'
+import { useTheme } from '@mui/material/styles'
 import { useState, useEffect } from 'react'
 import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, Snackbar, TextField, Autocomplete, Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
@@ -17,8 +17,6 @@ import { useVentas } from '../../shared/contexts/VentaContext.jsx'
 import { useClientes } from '../../shared/contexts/ClienteContext.jsx'
 import { useRutaProgramacion } from '../../shared/contexts/RutaProgramacionContext.jsx'
 import { FormField, FormSelect, formFieldStyles } from '../../shared/components/FormularioEstandarizado.jsx'
-
-const COLORS = theme.palette
 
 const getEstadoColor = (estado) => {
     switch (estado) {
@@ -70,6 +68,7 @@ const ConfirmRowChip = ({ label, value, colors }) => (
 
 const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
     const { actualizarVenta, cambiarEstadoVenta } = useVentas()
+    const theme = useTheme()
     const { clientes } = useClientes()
     const { rutasProgramadas, fetchRutasProgramadas } = useRutaProgramacion()
     const [errores, setErrores] = useState({})
@@ -837,3 +836,4 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
 }
 
 export default ActualizarVenta
+

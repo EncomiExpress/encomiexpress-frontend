@@ -2,29 +2,14 @@ import { useState } from 'react'
 import { Box, Typography, Avatar, Menu, MenuItem, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button } from '@mui/material'
 import {
   DarkModeOutlined as MoonIcon,
+  LightModeOutlined as SunIcon,
   PaletteOutlined as PaletteIcon,
   Logout as LogoutIcon,
 } from '@mui/icons-material'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import { useNavigate } from 'react-router-dom'
-import theme from '../styles/theme.js'
+import { useDarkMode } from '../contexts/ThemeContext.jsx'
 
-//────────────────────────────────────────────────
-const C = {
-  red: theme.palette.primary.main,
-  navy: theme.palette.secondary.main,
-  white: '#ffffff',
-  textMuted: 'rgba(33,33,33,0.45)',
-  textBase: theme.palette.text.dark,
-  textIcon: '#8b8382',
-  textIconHover: '#483c3a',
-  bg: '#f5f5f5',
-  border: 'rgba(26,46,110,0.1)',
-  divider: 'rgba(26,46,110,0.08)',
-  hoverBg: 'rgba(26,46,110,0.05)',
-}
-
-// Función para obtener saludo según la hora
 const getGreeting = () => {
   const hour = new Date().getHours()
   if (hour >= 5 && hour < 12) return 'Buenos días,'
@@ -33,7 +18,7 @@ const getGreeting = () => {
 }
 
 const Header = ({ collapsed }) => {
-  const [darkMode, setDarkMode] = useState(false)
+  const { darkMode, toggleDarkMode } = useDarkMode()
   const [anchorEl, setAnchorEl] = useState(null)
   const [openLogoutDialog, setOpenLogoutDialog] = useState(false)
   const { usuario, logout } = useAuth()
@@ -44,12 +29,12 @@ const Header = ({ collapsed }) => {
     <>
       <Box sx={{
         position: 'fixed',
-        top: 4, // Debajo de la barra roja
+        top: 4,
         left: collapsed ? 70 : 250,
         right: 0,
         height: 68,
-        backgroundColor: C.white,
-        borderBottom: `1px solid ${C.divider}`,
+        backgroundColor: darkMode ? '#1E1E1E' : '#ffffff',
+        borderBottom: `1px solid ${darkMode ? '#444444' : 'rgba(26,46,110,0.08)'}`,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -58,12 +43,11 @@ const Header = ({ collapsed }) => {
         transition: 'left 0.3s ease',
       }}>
         
-        {/* Saludo - izquierda */}
         <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'baseline', gap: 0.5 }}>
           <Typography 
             sx={{ 
               fontSize: '1.4rem', 
-              color: C.textIconHover, 
+              color: darkMode ? '#A0A0A0' : '#483c3a', 
               fontWeight: 500,
               fontFamily: 'Cambria !important',
               lineHeight: 1,
@@ -71,17 +55,15 @@ const Header = ({ collapsed }) => {
           >
             {greeting}
           </Typography>
-          <Typography sx={{ fontSize: '1.3rem', color: C.textBase, fontWeight: 600, ml: 0.5, fontFamily: 'Cambria !important'}}>
+          <Typography sx={{ fontSize: '1.3rem', color: darkMode ? '#FFFFFF' : '#212121', fontWeight: 600, ml: 0.5, fontFamily: 'Cambria !important'}}>
             {usuario?.nombre || 'Usuario'}
           </Typography>
         </Box>
 
-        {/* Iconos y perfil - derecha */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           
-          {/* Luna - modo oscuro */}
           <Box
-            onClick={() => setDarkMode(p => !p)}
+            onClick={toggleDarkMode}
             sx={{
               display: 'flex',
               alignItems: 'center',
@@ -91,18 +73,17 @@ const Header = ({ collapsed }) => {
               cursor: 'pointer',
               transition: 'all 0.18s ease',
               '&:hover': {
-                backgroundColor: C.hoverBg,
-                '& svg': { color: C.textIconHover },
+                backgroundColor: darkMode ? 'rgba(79,195,247,0.1)' : 'rgba(26,46,110,0.05)',
+                '& svg': { color: darkMode ? '#4FC3F7' : '#483c3a' },
               },
             }}
           >
             {darkMode
-              ? <MoonIcon sx={{ fontSize: '1.3rem', color: C.navy, transition: 'color 0.18s ease' }} />
-              : <MoonIcon sx={{ fontSize: '1.3rem', color: C.textIcon, transition: 'color 0.18s ease' }} />
+              ? <SunIcon sx={{ fontSize: '1.3rem', color: '#4FC3F7', transition: 'color 0.18s ease' }} />
+              : <MoonIcon sx={{ fontSize: '1.3rem', color: '#8b8382', transition: 'color 0.18s ease' }} />
             }
           </Box>
 
-          {/* Paleta - selector de colores */}
           <Box
             sx={{
               display: 'flex',
@@ -113,21 +94,20 @@ const Header = ({ collapsed }) => {
               cursor: 'pointer',
               transition: 'all 0.18s ease',
               '&:hover': {
-                backgroundColor: C.hoverBg,
-                '& svg': { color: C.textIconHover },
+                backgroundColor: darkMode ? 'rgba(79,195,247,0.1)' : 'rgba(26,46,110,0.05)',
+                '& svg': { color: darkMode ? '#4FC3F7' : '#483c3a' },
               },
             }}
           >
-            <PaletteIcon sx={{ fontSize: '1.3rem', color: C.textIcon, transition: 'color 0.18s ease' }} />
+            <PaletteIcon sx={{ fontSize: '1.3rem', color: darkMode ? '#A0A0A0' : '#8b8382', transition: 'color 0.18s ease' }} />
           </Box>
 
-          {/* Perfil con dropdown */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, ml: 1 }}>
             <Avatar
               onClick={(e) => setAnchorEl(e.currentTarget)}
               sx={{
                 width: 33, height: 33, fontSize: '0.73rem', fontWeight: 700,
-                bgcolor: theme.palette.primary.main, color: '#ffffff', cursor: 'pointer',
+                bgcolor: '#CC1818', color: '#ffffff', cursor: 'pointer',
               }}
             >
               {usuario?.nombre?.trim()
@@ -146,10 +126,11 @@ const Header = ({ collapsed }) => {
                   sx: {
                     mt: 0.5,
                     minWidth: 180,
-                    boxShadow: '0 8px 32px rgba(26,46,110,0.14)',
+                    boxShadow: darkMode ? '0 8px 32px rgba(0,0,0,0.3)' : '0 8px 32px rgba(26,46,110,0.14)',
                     borderRadius: '12px',
-                    border: `1px solid ${C.border}`,
+                    border: `1px solid ${darkMode ? '#444444' : 'rgba(26,46,110,0.1)'}`,
                     px: 0.5, py: 0.5,
+                    backgroundColor: darkMode ? '#1E1E1E' : '#ffffff',
                   },
                 },
               }}
@@ -169,18 +150,17 @@ const Header = ({ collapsed }) => {
 
         </Box>
 
-        {/* Dialog de confirmación de cierre de sesión */}
         <Dialog
           open={openLogoutDialog}
           onClose={() => setOpenLogoutDialog(false)}
           maxWidth="xs"
           fullWidth
         >
-          <DialogTitle sx={{ fontWeight: 700, fontSize: '1.1rem', color: C.textBase }}>
+          <DialogTitle sx={{ fontWeight: 700, fontSize: '1.1rem', color: darkMode ? '#FFFFFF' : '#212121' }}>
             ¿Cerrar sesión?
           </DialogTitle>
           <DialogContent>
-            <DialogContentText sx={{ color: C.textMuted, fontSize: '0.88rem' }}>
+            <DialogContentText sx={{ color: darkMode ? '#A0A0A0' : 'rgba(33,33,33,0.45)', fontSize: '0.88rem' }}>
               Estás a punto de salir del sistema. ¿Estás seguro de que deseas cerrar sesión?
             </DialogContentText>
           </DialogContent>
@@ -189,8 +169,8 @@ const Header = ({ collapsed }) => {
               onClick={() => setOpenLogoutDialog(false)}
               disableRipple
               sx={{
-                textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 1.5,
-                '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary },
+                textTransform: 'none', color: darkMode ? '#A0A0A0' : '#8A94A6', fontWeight: 500, borderRadius: 1.5,
+                '&:hover': { backgroundColor: darkMode ? '#2A2A2A' : '#F8F9FA', color: darkMode ? '#FFFFFF' : '#1a0e0c' },
               }}
             >
               Cancelar
@@ -201,9 +181,9 @@ const Header = ({ collapsed }) => {
               disableRipple
               sx={{
                 textTransform: 'none', borderRadius: 1.5, fontWeight: 600,
-                backgroundColor: theme.palette.primary.main,
+                backgroundColor: '#CC1818',
                 boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
-                '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
+                '&:hover': { backgroundColor: '#b91c1c', boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
               }}
             >
               Sí, cerrar sesión

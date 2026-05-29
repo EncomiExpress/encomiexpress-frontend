@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { useTheme } from '@mui/material/styles'
 import { Box, TextField, Button, Typography, Paper, Alert, MenuItem, Select, FormControl, InputLabel, InputAdornment, IconButton, Grid } from '@mui/material'
 import {
   PersonOutline as Person,
@@ -13,7 +14,6 @@ import {
   PersonAdd
 } from '@mui/icons-material'
 import { useAuth, ROLES } from '../../shared/contexts/AuthContext.jsx'
-import theme from '../../shared/styles/theme.js'
 import logo from '../../assets/logo.png'
 
 const TIPOS_IDENTIFICACION = [
@@ -42,11 +42,13 @@ const Register = () => {
 
   const { registrarUsuario, usuario } = useAuth()
   const navigate = useNavigate()
+  const theme = useTheme()
 
   useEffect(() => {
     if (usuario) {
       navigate('/dashboard')
     }
+  const theme = useTheme()
   }, [usuario, navigate])
 
   const handleChange = (e) => {
@@ -114,21 +116,19 @@ const Register = () => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#f5f5f5',
+        backgroundColor: theme.palette.background.default,
         py: 4,
         px: 2,
         position: 'relative',
         overflow: 'hidden',
       }}
     >
-      {/* Barra superior roja */}
       <Box sx={{
         position: 'absolute', top: 0, left: 0, right: 0, height: 4,
         background: theme.palette.gradient.navbar,
         zIndex: 20,
       }} />
 
-      {/* Cubo decorativo — abajo izquierda */}
       <Box sx={{ position: 'absolute', bottom: -80, left: -80, zIndex: 0, opacity: 0.12, transform: 'rotate(-5deg)' }}>
         <svg width="520" height="520" viewBox="0 0 300 300" fill="none" xmlns="http://www.w3.org/2000/svg">
           <polygon points="150,20 280,90 150,160 20,90" fill="#e84040" />
@@ -140,13 +140,11 @@ const Register = () => {
         </svg>
       </Box>
 
-      {/* Botón volver al inicio */}
       <Button
         component={Link}
         to="/"
         startIcon={<ArrowBack />}
         sx={{
-
           position: 'absolute',
           top: 20,
           left: 24,
@@ -171,7 +169,6 @@ const Register = () => {
         Volver al inicio
       </Button>
 
-      {/* Formulario */}
       <Paper
         elevation={0}
         sx={{
@@ -187,7 +184,6 @@ const Register = () => {
           boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
         }}
       >
-        {/* Header: logo arriba centrado, texto debajo */}
         <Box sx={{
           px: 4,
           py: 4,
@@ -195,7 +191,7 @@ const Register = () => {
           flexDirection: 'column',
           alignItems: 'center',
           gap: 1.5,
-          backgroundColor: '#ffffff',
+          backgroundColor: 'white',
           borderBottom: '1px solid rgba(26,46,110,0.08)',
         }}>
           <Box sx={{
@@ -218,7 +214,6 @@ const Register = () => {
           </Box>
         </Box>
 
-        {/* Cuerpo */}
         <Box sx={{ p: 4 }}>
           {success && (
             <Alert severity="success" sx={{ mb: 3, borderRadius: 2 }}>
@@ -234,7 +229,6 @@ const Register = () => {
 
           <form onSubmit={handleSubmit}>
             <Box sx={{ display: 'flex', gap: 2 }}>
-              {/* Columna izquierda */}
               <Box sx={{ flex: 1 }}>
                 <FormControl fullWidth required sx={{ mb: 2.5 }}>
                   <InputLabel sx={{ '&.Mui-focused': { color: theme.palette.primary.main } }}>
@@ -321,7 +315,6 @@ const Register = () => {
                 />
               </Box>
 
-              {/* Columna derecha */}
               <Box sx={{ flex: 1 }}>
                 <TextField
                   fullWidth
@@ -421,7 +414,6 @@ const Register = () => {
               </Box>
             </Box>
 
-            {/* Iniciales automáticas */}
             <Box sx={{
               p: 1.5,
               mb: 3,
@@ -460,10 +452,6 @@ const Register = () => {
                   backgroundColor: theme.palette.primary.dark,
                   boxShadow: '0 6px 20px rgba(204, 24, 24, 0.4)',
                 },
-                '&:disabled': {
-                  backgroundColor: '#e0e0e0',
-                  color: '#9e9e9e',
-                }
               }}
             >
               {loading ? 'Registrando...' : 'Crear Cuenta'}

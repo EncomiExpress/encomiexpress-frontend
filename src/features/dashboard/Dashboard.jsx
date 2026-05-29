@@ -1,4 +1,4 @@
-import theme from '../../shared/styles/theme.js'
+import { useTheme } from '@mui/material/styles'
 import { useState, useMemo } from 'react'
 import { useVentas } from '../../shared/contexts/VentaContext.jsx'
 import { useConductor } from '../../shared/contexts/ConductorContext.jsx'
@@ -64,61 +64,83 @@ const isWithinRange = (dateString, desde, hasta) => {
   return fecha >= inicio && fecha <= fin
 }
 
-const KpiCard = ({ icon, label, main, sub, height = '100%', minHeight = 0 }) => (
-  <Paper elevation={0} sx={{
-    p: 2.5,
-    borderRadius: 3,
-    border: `1px solid ${theme.palette.divider}`,
-    width: '100%',
-    height,
-    minHeight,
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'flex-start',
-    justifyContent: 'flex-start',
-    gap: 0.5,
-    boxSizing: 'border-box',
-  }}>
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-      <Box sx={{ p: 0.8, borderRadius: 2, backgroundColor: theme.palette.primary.light, display: 'flex' }}>
+const KpiCard = ({ icon, label, main, sub, height = '100%', minHeight = 0 }) => {
+  const theme = useTheme()
+  return (
+    <Paper elevation={0} sx={{
+      p: 2.5,
+      borderRadius: 3,
+      border: `1px solid ${theme.palette.divider}`,
+      width: '100%',
+      height,
+      minHeight,
+      flex: 1,
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'flex-start',
+      justifyContent: 'flex-start',
+      gap: 0.5,
+      boxSizing: 'border-box',
+    }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+        <Box sx={{ p: 0.8, borderRadius: 2, backgroundColor: theme.palette.primary.light, display: 'flex' }}>
+          {icon}
+        </Box>
+        <Typography variant="caption" sx={{
+          fontWeight: 600, color: theme.palette.text.secondary,
+          fontSize: '0.82rem', letterSpacing: 0.5,
+        }}>
+          {label}
+        </Typography>
+      </Box>
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center', flex: 1, width: '100%' }}>
+        <Typography variant="h4" sx={{ color: theme.palette.primary.dark, fontSize: '2rem', lineHeight: 1.1, fontWeight: 600 }}>
+          {main}
+        </Typography>
+        {sub && (
+          <Typography variant="caption" sx={{ color: theme.palette.text.secondary, fontSize: '0.72rem', mt: 0.5 }}>
+            {sub}
+          </Typography>
+        )}
+      </Box>
+    </Paper>
+  )
+}
+
+const SectionHeader = ({ icon, title }) => {
+  const theme = useTheme()
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+      <Box sx={{ p: 0.6, borderRadius: 1.5, backgroundColor: theme.palette.primary.light, display: 'flex' }}>
         {icon}
       </Box>
-      <Typography variant="caption" sx={{
-        fontWeight: 600, color: theme.palette.text.secondary,
-        fontSize: '0.82rem', letterSpacing: 0.5,
-      }}>
-        {label}
+      <Typography fontWeight={600} fontSize="0.9rem" color={theme.palette.text.primary}>
+        {title}
       </Typography>
     </Box>
-    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center', flex: 1, width: '100%' }}>
-      <Typography variant="h4" sx={{ color: theme.palette.primary.dark, fontSize: '2rem', lineHeight: 1.1, fontWeight: 600 }}>
-        {main}
-      </Typography>
-      {sub && (
-        <Typography variant="caption" sx={{ color: theme.palette.text.secondary, fontSize: '0.72rem', mt: 0.5 }}>
-          {sub}
-        </Typography>
-      )}
-    </Box>
-  </Paper>
-)
-
-const SectionHeader = ({ icon, title }) => (
-  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-    <Box sx={{ p: 0.6, borderRadius: 1.5, backgroundColor: theme.palette.primary.light, display: 'flex' }}>
-      {icon}
-    </Box>
-    <Typography fontWeight={600} fontSize="0.9rem" color={theme.palette.text.primary}>
-      {title}
-    </Typography>
-  </Box>
-)
+  )
+}
 
 const Dashboard = () => {
-  const [desde, setDesde] = useState('2025-01-01')
-  const [hasta, setHasta] = useState('2025-03-31')
-  const [filtroActivo, setFiltroActivo] = useState({ desde: '2025-01-01', hasta: '2025-03-31' })
+  const [desde, setDesde] = useState(() => {
+    const date = new Date();
+    const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+    return firstDay.toISOString().split('T')[0];
+  });
+  const [hasta, setHasta] = useState(() => {
+    const date = new Date();
+    const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+    return lastDay.toISOString().split('T')[0];
+  });
+  const [filtroActivo, setFiltroActivo] = useState(() => {
+    const date = new Date();
+    const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+    const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+    return {
+      desde: firstDay.toISOString().split('T')[0],
+      hasta: lastDay.toISOString().split('T')[0]
+    };
+  });
 
   const { ventas } = useVentas()
   const { conductores } = useConductor()
@@ -181,10 +203,11 @@ const Dashboard = () => {
   const maxEnvios = enviosEstado.length > 0 ? Math.max(...enviosEstado.map(e => e.count)) : 1
   const maxIngreso = ingresosMes.length > 0 ? Math.max(...ingresosMes.map(m => m.valor)) : 1
 
+  const theme = useTheme()
+
   return (
     <Box sx={{ p: { xs: 2, md: 3 }, display: 'flex', flexDirection: 'column', gap: 2 }}>
 
-      {/* ── Encabezado con Exportar ── */}
       <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
         <Box>
           <Typography variant="h5" fontWeight={700} sx={{ color: theme.palette.text.dark, mb: 0.3 }}>
@@ -207,7 +230,6 @@ const Dashboard = () => {
         </Button>
       </Box>
 
-      {/* ── Filtro de período ── */}
       <Paper elevation={0} sx={{
         p: 1.5, borderRadius: 3, border: `1px solid ${theme.palette.divider}`,
         display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap',
@@ -245,8 +267,12 @@ const Dashboard = () => {
         <Button
           variant="outlined" size="small"
           onClick={() => {
-            setDesde('2025-01-01'); setHasta('2025-03-31')
-            setFiltroActivo({ desde: '2025-01-01', hasta: '2025-03-31' })
+            const date = new Date();
+            const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+            const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+            setDesde(firstDay.toISOString().split('T')[0]);
+            setHasta(lastDay.toISOString().split('T')[0]);
+            setFiltroActivo({ desde: firstDay.toISOString().split('T')[0], hasta: lastDay.toISOString().split('T')[0] });
           }}
           sx={{
             borderRadius: 2, textTransform: 'none', fontWeight: 500, fontSize: '0.8rem', px: 2,
@@ -258,13 +284,10 @@ const Dashboard = () => {
         </Button>
       </Paper>
 
-      {/* ── Layout principal: dos columnas independientes ── */}
       <Box sx={{ display: 'flex', gap: 2.5, alignItems: 'flex-start' }}>
 
-        {/* ── Columna izquierda: Ingresos + Envíos ── */}
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
 
-          {/* Ingresos por mes */}
           <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, border: `1px solid ${theme.palette.divider}` }}>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
               <SectionHeader
@@ -302,7 +325,6 @@ const Dashboard = () => {
             </Box>
           </Paper>
 
-          {/* Envíos por estado */}
           <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, border: `1px solid ${theme.palette.divider}` }}>
             <SectionHeader
               icon={<BarChartOutlinedIcon sx={{ fontSize: 16, color: theme.palette.primary.main }} />}
@@ -337,10 +359,8 @@ const Dashboard = () => {
 
         </Box>
 
-        {/* ── Columna derecha: KPIs + Rutas ── */}
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
 
-          {/* KPIs lado a lado */}
           <Box sx={{ display: 'flex', gap: 2.5, alignItems: 'stretch', width: '100%' }}>
             <KpiCard
               icon={<PersonOutlinedIcon sx={{ fontSize: 18, color: theme.palette.primary.main }} />}
@@ -358,7 +378,6 @@ const Dashboard = () => {
             />
           </Box>
 
-          {/* Top 5 rutas — arranca justo debajo de los KPIs */}
           <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, border: `1px solid ${theme.palette.divider}` }}>
             <SectionHeader
               icon={<RouteOutlinedIcon sx={{ fontSize: 16, color: theme.palette.primary.main }} />}

@@ -1,4 +1,4 @@
-import theme from '../../shared/styles/theme.js'
+import { useTheme } from '@mui/material/styles'
 import { useState, useEffect, useRef } from 'react'
 import { Box, TextField, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Snackbar, Alert, Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material'
 import { DirectionsCar, Person, Business, Event, Speed, SaveOutlined, ArrowBackOutlined, ArrowForwardOutlined, Close } from '@mui/icons-material'
@@ -12,20 +12,23 @@ import {
 
 const steps = ['Datos del Vehículo', 'Documentación y Estado', 'Confirmación']
 
-const ConfirmRow = ({ label, value }) => (
-  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, py: 0.9, overflow: 'hidden' }}>
-    <Typography variant="body2" sx={{ color: '#9C4040', fontWeight: 500, flexShrink: 0 }}>{label}</Typography>
-    <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary}
-      sx={{ textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
-      {value || '—'}
-    </Typography>
-  </Box>
-)
+const ConfirmRow = ({ label, value }) => {
+  const theme = useTheme()
 
-const COLORS = theme.palette
+  return (
+    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, py: 0.9, overflow: 'hidden' }}>
+      <Typography variant="body2" sx={{ color: '#9C4040', fontWeight: 500, flexShrink: 0 }}>{label}</Typography>
+      <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary}
+        sx={{ textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
+        {value || '—'}
+      </Typography>
+    </Box>
+  )
+}
 
 const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSuccess }) => {
   const { getTransporteById, actualizarTransporte } = useTransporte()
+  const theme = useTheme()
   const { conductores } = useConductor()
   const { propietarios } = usePropietario()
   
@@ -457,3 +460,4 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
 }
 
 export default ActualizarVehiculo
+

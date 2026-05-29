@@ -1,4 +1,4 @@
-import theme from '../../shared/styles/theme.js'
+import { useTheme } from '@mui/material/styles'
 import { useState } from 'react'
 import {
     Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel,
@@ -47,6 +47,7 @@ const EMPTY_FORM = {
 
 const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
     const { registrarPropietario } = usePropietario()
+    const theme = useTheme()
     const [errores, setErrores] = useState({})
     const [apiError, setApiError] = useState(null)
     const [activeStep, setActiveStep] = useState(0)
@@ -334,3 +335,4 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
 }
 
 export default RegistrarPropietario
+

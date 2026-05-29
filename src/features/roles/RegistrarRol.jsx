@@ -1,4 +1,4 @@
-import theme from '../../shared/styles/theme.js'
+import { useTheme } from '@mui/material/styles'
 import { useState, useEffect } from 'react'
 import { Box, Typography, Paper, FormControlLabel, Checkbox, Grid, Alert, IconButton, Snackbar, Dialog, DialogTitle, DialogContent, Button } from '@mui/material'
 import { Security, Close, CheckOutlined } from '@mui/icons-material'
@@ -8,10 +8,9 @@ import {
   FormAlert
 } from '../../shared/components/FormularioEstandarizado.jsx'
 
-const COLORS = theme.palette
-
 const RegistrarRol = ({ open, onClose, onSuccess }) => {
   const { tienePermiso, registrarRol, getPermisosBackend } = useAuth()
+  const theme = useTheme()
 
   const [formData, setFormData] = useState({
     nombre: '',
@@ -331,3 +330,4 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
 }
 
 export default RegistrarRol
+

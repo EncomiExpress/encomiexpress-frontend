@@ -1,4 +1,4 @@
-import theme from '../../shared/styles/theme.js'
+import { useTheme } from '@mui/material/styles'
 import { useEffect, useState } from 'react'
 import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, Snackbar, TextField, Autocomplete, Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
@@ -18,22 +18,25 @@ import { useClientes } from '../../shared/contexts/ClienteContext.jsx'
 import { useRutaProgramacion } from '../../shared/contexts/RutaProgramacionContext.jsx'
 import { FormField, FormSelect, formFieldStyles } from '../../shared/components/FormularioEstandarizado.jsx'
 
-const COLORS = theme.palette
-
 const steps = ['Remitente', 'Destinatario', 'Paquete', 'Envío', 'Pago', 'Confirmación']
 
-const ConfirmRow = ({ label, value }) => (
-    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, py: 0.9, overflow: 'hidden' }}>
-        <Typography variant="body2" sx={{ color: '#9C4040', fontWeight: 500, flexShrink: 0 }}>{label}</Typography>
-        <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary}
-            sx={{ textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
-            {value || '—'}
-        </Typography>
-    </Box>
-)
+const ConfirmRow = ({ label, value }) => {
+    const theme = useTheme()
+
+    return (
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, py: 0.9, overflow: 'hidden' }}>
+            <Typography variant="body2" sx={{ color: '#9C4040', fontWeight: 500, flexShrink: 0 }}>{label}</Typography>
+            <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary}
+                sx={{ textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
+                {value || '—'}
+            </Typography>
+        </Box>
+    )
+}
 
 const RegistrarVenta = ({ open, onClose, onSuccess }) => {
     const { agregarVenta } = useVentas()
+    const theme = useTheme()
     const { clientes } = useClientes()
     const { rutasProgramadas, fetchRutasProgramadas } = useRutaProgramacion()
     const [errores, setErrores] = useState({})
@@ -637,3 +640,4 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
 }
 
 export default RegistrarVenta
+

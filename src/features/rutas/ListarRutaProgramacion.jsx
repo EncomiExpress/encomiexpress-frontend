@@ -1,4 +1,4 @@
-import theme from '../../shared/styles/theme.js'
+import { useTheme } from '@mui/material/styles'
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -26,7 +26,7 @@ import { useAuth } from '../../shared/contexts/AuthContext.jsx'
 import RegistrarRutaProgramacion from './RegistrarRutaProgramacion'
 import ActualizarRutaProgramacion from './ActualizarRutaProgramacion'
 
-const thStyle = {
+const getThStyle = (theme) => ({
     fontWeight: 700,
     fontSize: '0.80rem',
     color: theme.palette.text.primary,
@@ -34,11 +34,11 @@ const thStyle = {
     py: 1.5,
     borderBottom: `1px solid #E0E0E0`,
     whiteSpace: 'nowrap',
-}
+})
 
 const ESTADOS_RUTA = ['Programada', 'En Curso', 'Completada', 'Cancelada']
 
-const filterMenuProps = {
+const getFilterMenuProps = (theme) => ({
     slotProps: {
         paper: {
             sx: {
@@ -54,7 +54,7 @@ const filterMenuProps = {
             },
         },
     },
-}
+})
 
 const getEstadoColor = (estado) => {
     switch (estado) {
@@ -76,6 +76,9 @@ const MESES = [
 ]
 
 const ListarRutaProgramacion = () => {
+    const theme = useTheme()
+    const thStyle = getThStyle(theme)
+    const filterMenuProps = getFilterMenuProps(theme)
     const navigate = useNavigate()
     const { tienePermiso, PERMISOS, usuario } = useAuth()
     const [searchTerm, setSearchTerm]         = useState('')
@@ -639,3 +642,4 @@ const resolveDestino = (ruta) =>
 }
 
 export default ListarRutaProgramacion
+

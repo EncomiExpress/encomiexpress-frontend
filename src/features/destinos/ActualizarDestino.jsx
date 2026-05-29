@@ -1,4 +1,4 @@
-import theme from '../../shared/styles/theme.js'
+import { useTheme } from '@mui/material/styles'
 import { useState, useEffect } from 'react'
 import {
     Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel,
@@ -35,6 +35,7 @@ const departamentos = [
 
 const ActualizarDestino = ({ open, onClose, destino, onSuccess }) => {
     const { actualizarDestino } = useDestino()
+    const theme = useTheme()
     const [errores, setErrores] = useState({})
     const [apiError, setApiError] = useState(null)
     const [activeStep, setActiveStep] = useState(0)
@@ -299,3 +300,4 @@ const ActualizarDestino = ({ open, onClose, destino, onSuccess }) => {
 }
 
 export default ActualizarDestino
+

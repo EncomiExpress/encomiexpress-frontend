@@ -1,4 +1,4 @@
-import theme from '../../shared/styles/theme.js'
+import { useTheme } from '@mui/material/styles'
 import { useState } from 'react'
 import { Box, Paper, TextField, Typography, MenuItem, Dialog, DialogTitle, DialogContent, Stepper, Step, StepLabel, Snackbar, Alert, IconButton, Button } from '@mui/material'
 import { DirectionsCar, Person, Business, Event, Speed, Close, ArrowBackOutlined, ArrowForwardOutlined, CheckOutlined } from '@mui/icons-material'
@@ -9,17 +9,19 @@ import { FormField, FormSelect, FormAlert } from '../../shared/components/Formul
 
 const steps = ['Datos del Vehículo', 'Documentación y Estado', 'Confirmación']
 
-const COLORS = theme.palette
+const ConfirmRow = ({ label, value }) => {
+  const theme = useTheme()
 
-const ConfirmRow = ({ label, value }) => (
-  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, py: 0.9, overflow: 'hidden' }}>
-    <Typography variant="body2" sx={{ color: '#9C4040', fontWeight: 500, flexShrink: 0 }}>{label}</Typography>
-    <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary}
-      sx={{ textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
-      {value || '—'}
-    </Typography>
-  </Box>
-)
+  return (
+    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, py: 0.9, overflow: 'hidden' }}>
+      <Typography variant="body2" sx={{ color: '#9C4040', fontWeight: 500, flexShrink: 0 }}>{label}</Typography>
+      <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary}
+        sx={{ textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
+        {value || '—'}
+      </Typography>
+    </Box>
+  )
+}
 
 const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
@@ -42,6 +44,7 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
   const [activeStep, setActiveStep] = useState(0)
    
   const { registrarTransporte } = useTransporte()
+  const theme = useTheme()
   const { conductores } = useConductor()
   const { propietarios } = usePropietario()
 
@@ -424,3 +427,4 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
 }
 
 export default RegistrarVehiculo
+

@@ -1,4 +1,4 @@
-import theme from '../../shared/styles/theme.js'
+import { useTheme } from '@mui/material/styles'
 import { useState } from 'react'
 import {
     Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel,
@@ -35,6 +35,7 @@ const departamentos = [
 
 const RegistrarDestino = ({ open, onClose, onSuccess }) => {
     const { registrarDestino } = useDestino()
+    const theme = useTheme()
     const [errores, setErrores] = useState({})
     const [apiError, setApiError] = useState(null)
     const [activeStep, setActiveStep] = useState(0)
@@ -265,3 +266,4 @@ const RegistrarDestino = ({ open, onClose, onSuccess }) => {
 }
 
 export default RegistrarDestino
+

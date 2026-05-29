@@ -1,4 +1,4 @@
-import theme from '../../shared/styles/theme.js'
+import { useTheme } from '@mui/material/styles'
 import { useState } from 'react'
 import {
     Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel,
@@ -27,6 +27,7 @@ const ConfirmRow = ({ label, value }) => (
 
 const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
     const { agregarAnticipo, conductores, rutas } = useAnticipos()
+    const theme = useTheme()
     const [errores, setErrores] = useState({})
     const [activeStep, setActiveStep] = useState(0)
     const [submitting, setSubmitting] = useState(false)
@@ -408,3 +409,4 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
 }
 
 export default RegistrarAnticipoExcedente
+

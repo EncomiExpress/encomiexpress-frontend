@@ -1,4 +1,4 @@
-import theme from '../../shared/styles/theme.js'
+import { useTheme } from '@mui/material/styles'
 import { useState, useEffect } from 'react'
 import { Dialog, DialogTitle, DialogContent, IconButton, Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, Snackbar, TextField, Select, InputAdornment, CircularProgress } from '@mui/material'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
@@ -17,22 +17,25 @@ import { formFieldStyles } from '../../shared/components/FormularioEstandarizado
 
 const DOMINIOS_EMAIL = ['@gmail.com', '@hotmail.com', '@outlook.com', '@yahoo.com', '@icloud.com', '@live.com']
 
-const COLORS = theme.palette
-
 const steps = ['Datos Personales', 'Credenciales', 'Confirmación']
 
-const ConfirmRow = ({ label, value }) => (
-    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, py: 0.9, overflow: 'hidden' }}>
-        <Typography variant="body2" sx={{ color: '#9C4040', fontWeight: 500, flexShrink: 0 }}>{label}</Typography>
-        <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary}
-            sx={{ textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
-            {value || '—'}
-        </Typography>
-    </Box>
-)
+const ConfirmRow = ({ label, value }) => {
+    const theme = useTheme()
+
+    return (
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, py: 0.9, overflow: 'hidden' }}>
+            <Typography variant="body2" sx={{ color: '#9C4040', fontWeight: 500, flexShrink: 0 }}>{label}</Typography>
+            <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary}
+                sx={{ textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
+                {value || '—'}
+            </Typography>
+        </Box>
+    )
+}
 
 const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
     const { tienePermiso, registrarUsuario, getRolesBackend } = useAuth()
+    const theme = useTheme()
     const [errores, setErrores] = useState({})
     const [apiError, setApiError] = useState(null)
     const [activeStep, setActiveStep] = useState(0)

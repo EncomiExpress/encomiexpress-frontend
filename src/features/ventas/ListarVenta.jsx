@@ -1,4 +1,4 @@
-import theme from '../../shared/styles/theme.js'
+import { useTheme } from '@mui/material/styles'
 import { useState } from 'react'
 import { useVentas } from '../../shared/contexts/VentaContext.jsx'
 import {
@@ -29,9 +29,7 @@ import { ESTADOS_ENCOMIENDA, METODOS_PAGO, ESTADOS_PAGO } from '../../shared/con
 import RegistrarVenta from './RegistrarVenta'
 import ActualizarVenta from './ActualizarVenta'
 
-const COLORS = theme.palette
-
-const thStyle = {
+const getThStyle = (theme) => ({
     fontWeight: 700,
     fontSize: '0.80rem',
     color: theme.palette.text.primary,
@@ -39,7 +37,7 @@ const thStyle = {
     py: 1.5,
     borderBottom: `1px solid #E0E0E0`,
     whiteSpace: 'nowrap',
-}
+})
 
 const getEstadoColor = (estado) => {
     switch (estado?.toLowerCase()) {
@@ -80,6 +78,7 @@ const CampoFila = ({ label, value }) => (
 )
 
 const ModalConsultar = ({ venta, onClose }) => {
+    const theme = useTheme()
     if (!venta) return null
     const estadoStyles = getEstadoColor(venta.estado)
     const pagoStyles = getPagoColor(venta.estadoPago)
@@ -207,7 +206,7 @@ const ModalConsultar = ({ venta, onClose }) => {
     )
 }
 
-const filterSelectSx = {
+const getFilterSelectSx = (theme) => ({
     fontSize: '0.82rem',
     borderRadius: 2,
     '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
@@ -216,9 +215,9 @@ const filterSelectSx = {
     '&.Mui-focused': { boxShadow: '0 0 0 3px rgba(229,115,115,0.18)' },
     '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
     '& .MuiTouchRipple-root': { display: 'none' },
-}
+})
 
-const filterMenuProps = {
+const getFilterMenuProps = (theme) => ({
     slotProps: {
         paper: {
             sx: {
@@ -234,7 +233,7 @@ const filterMenuProps = {
             },
         },
     },
-}
+})
 
 const FILTROS_HABILITADO = [
     { value: 'todo', label: 'Todo' },
@@ -243,6 +242,10 @@ const FILTROS_HABILITADO = [
 ]
 
 const ListarVenta = () => {
+    const theme = useTheme()
+    const thStyle = getThStyle(theme)
+    const filterSelectSx = getFilterSelectSx(theme)
+    const filterMenuProps = getFilterMenuProps(theme)
     const { ventas, loading, error, cambiarEstadoVenta, actualizarVenta, toggleHabilitadoVenta } = useVentas()
 
     const [busqueda, setBusqueda] = useState('')
@@ -940,3 +943,4 @@ const ListarVenta = () => {
 }
 
 export default ListarVenta
+

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { useTheme } from '@mui/material/styles'
 import { Box, Typography, Grid, Button } from '@mui/material'
 import { Login as LoginIcon } from '@mui/icons-material'
 import { useState, useEffect } from 'react'
@@ -7,7 +8,6 @@ import slide2 from '../../assets/camion.png'
 import slide3 from '../../assets/customers.png'
 import slide4 from '../../assets/cashbag.png'
 import logo from '../../assets/logo.png'
-import theme from '../styles/theme.js'
 
 const slides = [slide1, slide2, slide3, slide4]
 
@@ -25,23 +25,15 @@ const stats = [
   { label: 'Solo personal autorizado', value: 'Acceso Seguro' },
 ]
 
-// Estilo para el logo — fondo transparente, se ve igual en cualquier fondo
-const logoStyleLight = {
+const logoStyle = {
   width: '100%',
   height: '100%',
   objectFit: 'contain',
 }
-
-const logoStyleDark = {
-  width: '100%',
-  height: '100%',
-  objectFit: 'contain',
-}
-
-
 
 const Home = () => {
   const [current, setCurrent] = useState(0)
+  const theme = useTheme()
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -53,7 +45,7 @@ const Home = () => {
   return (
     <Box sx={{
       minHeight: '100vh',
-      backgroundColor: '#f5f5f5',
+      backgroundColor: theme.palette.background.default,
       fontFamily: '"DM Sans", system-ui, sans-serif',
       position: 'relative',
       overflow: 'hidden',
@@ -82,7 +74,6 @@ const Home = () => {
 
       <Box sx={{ height: 4, background: theme.palette.gradient.navbar, width: '100%', position: 'relative', zIndex: 10 }} />
 
-      {/* HEADER */}
       <Box sx={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         px: { xs: 4, md: 10 }, py: 1,
@@ -99,7 +90,7 @@ const Home = () => {
           justifyContent: 'flex-start',
           flexShrink: 0,
         }}>
-          <img src={logo} alt="EncomiExpress" style={logoStyleLight} />
+          <img src={logo} alt="EncomiExpress" style={logoStyle} />
         </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -260,7 +251,6 @@ const Home = () => {
         </Box>
       </Box>
 
-      {/* FOOTER */}
       <Box sx={{
         position: 'relative', zIndex: 10,
         background: theme.palette.gradient.hero,
@@ -275,7 +265,7 @@ const Home = () => {
           justifyContent: 'flex-start',
           flexShrink: 0,
         }}>
-          <img src={logo} alt="EncomiExpress" style={logoStyleDark} />
+          <img src={logo} alt="EncomiExpress" style={logoStyle} />
         </Box>
         <Typography sx={{ color: 'rgba(255, 255, 255, 0.35)', fontSize: '0.78rem' }}>
           © 2026 EncomiExpress · Uso exclusivo del personal autorizado.

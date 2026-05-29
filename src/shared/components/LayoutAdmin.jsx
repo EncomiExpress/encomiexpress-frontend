@@ -1,11 +1,12 @@
 import { Box } from '@mui/material'
 import { useState } from 'react'
+import { useTheme } from '@mui/material/styles'
 import Sidebar from './Sidebar.jsx'
 import Header from './Header.jsx'
-import theme from '../styles/theme.js'
 
 const Layout = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false)
+  const theme = useTheme()
 
   const toggleSidebar = () => setCollapsed(prev => !prev)
 
@@ -21,7 +22,6 @@ const Layout = ({ children }) => {
       <Sidebar collapsed={collapsed} onToggleCollapsed={toggleSidebar} />
       <Header collapsed={collapsed} />
 
-      {/* Contenido principal - margen izquierdo dinámico */}
       <Box
         component="main"
         sx={{

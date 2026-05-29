@@ -1,4 +1,4 @@
-import theme from '../../shared/styles/theme.js'
+import { useTheme } from '@mui/material/styles'
 import { useState } from 'react'
 import { useClientes } from '../../shared/contexts/ClienteContext.jsx'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
@@ -25,9 +25,7 @@ import CheckBoxIcon from '@mui/icons-material/CheckBox'
 import RegistrarCliente from './RegistrarCliente'
 import ActualizarCliente from './ActualizarCliente'
 
-const COLORS = theme.palette
-
-const thStyle = {
+const getThStyle = (theme) => ({
     fontWeight: 700,
     fontSize: '0.80rem',
     color: theme.palette.text.primary,
@@ -35,7 +33,7 @@ const thStyle = {
     py: 1.5,
     borderBottom: `1px solid #E0E0E0`,
     whiteSpace: 'nowrap',
-}
+})
 
 const CampoFila = ({ label, value }) => (
     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
@@ -47,6 +45,7 @@ const CampoFila = ({ label, value }) => (
 )
 
 const ModalConsultar = ({ cliente, onClose }) => {
+    const theme = useTheme()
     if (!cliente) return null
     const estado = cliente.habilitado ? 'Habilitado' : 'Inhabilitado'
 
@@ -132,6 +131,8 @@ const FILTROS = [
 ]
 
 const ListarCliente = () => {
+    const theme = useTheme()
+    const thStyle = getThStyle(theme)
     const { clientes, loading, error, actualizarEstadoCliente } = useClientes()
     const { tienePermiso, PERMISOS } = useAuth()
     const [busqueda, setBusqueda] = useState('')
@@ -630,3 +631,4 @@ const ListarCliente = () => {
 }
 
 export default ListarCliente
+

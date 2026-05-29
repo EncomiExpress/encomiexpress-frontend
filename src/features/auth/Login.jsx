@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { useTheme } from '@mui/material/styles'
 import { Box, TextField, Button, Typography, Paper, Alert, Grid, MenuItem, Select, FormControl, InputLabel, InputAdornment, IconButton, Divider, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material'
 import {
   EmailOutlined as Email,
@@ -13,7 +14,6 @@ import {
   ArrowBack
 } from '@mui/icons-material'
 import { useAuth, ROLES } from '../../shared/contexts/AuthContext.jsx'
-import theme from '../../shared/styles/theme.js'
 import { LoadingScreen, TIPOS_CARGA } from '../../shared/components/LoadingScreen.jsx'
 import logo from '../../assets/logo.png'
 
@@ -37,8 +37,8 @@ const Login = () => {
 
   const { login, registrarUsuario, usuario, loading } = useAuth()
   const navigate = useNavigate()
+  const theme = useTheme()
 
-  // Solo redirigir si ya terminó de cargar la sesión y el usuario está autenticado
   useEffect(() => {
     if (!loading && usuario) {
       navigate('/dashboard', { replace: true })
@@ -49,7 +49,6 @@ const Login = () => {
     e.preventDefault()
     setError('')
 
-    // Mostrar pantalla de carga primero
     setCargando(true)
     setTipoCarga(TIPOS_CARGA.CIRCULAR)
 
@@ -57,7 +56,6 @@ const Login = () => {
       const resultado = await login(email, password)
 
       if (resultado.success) {
-        // Personalizar el tipo de carga según el rol del usuario
         const rolUsuario = resultado.usuario?.rol?.toLowerCase() || ''
         if (rolUsuario.includes('admin') || rolUsuario.includes('administrador')) {
           setTipoCarga(TIPOS_CARGA.CAMION)
@@ -69,13 +67,11 @@ const Login = () => {
           setTipoCarga(TIPOS_CARGA.CIRCULAR)
         }
 
-        // Después de la animación, navegar
         setTimeout(() => {
           setCargando(false)
           navigate('/dashboard', { replace: true })
         }, 2500)
       } else {
-        // Login falló - ocultar pantalla de carga
         setCargando(false)
         setError(resultado.mensaje)
       }
@@ -106,7 +102,6 @@ const Login = () => {
     }
   }
 
-  // Mensaje dinámico según el tipo de carga
   const getMensajeCarga = () => {
     switch (tipoCarga) {
       case TIPOS_CARGA.CAMION:
@@ -127,56 +122,43 @@ const Login = () => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#f5f5f5',
+        backgroundColor: theme.palette.background.default,
         py: 4,
         px: 2,
         position: 'relative',
         overflow: 'hidden',
       }}
     >
-      {/* Pantalla de carga - solo se muestra cuando está cargando */}
       {cargando && <LoadingScreen tipo={tipoCarga} mensaje={getMensajeCarga()} />}
 
-      {/* Barra superior roja */}
       <Box sx={{
         position: 'absolute', top: 0, left: 0, right: 0, height: 4,
         background: theme.palette.gradient.navbar,
         zIndex: 20,
       }} />
 
-      {/* Cubo decorativo — abajo izquierda */}
       <Box sx={{ position: 'absolute', bottom: -80, left: -80, zIndex: 0, opacity: 0.12, transform: 'rotate(-5deg)' }}>
         <svg width="520" height="520" viewBox="0 0 300 300" fill="none" xmlns="http://www.w3.org/2000/svg">
-          {/* Cara superior */}
           <polygon points="150,20 280,90 150,160 20,90" fill="#e84040" />
-          {/* Cara izquierda */}
           <polygon points="20,90 150,160 150,280 20,210" fill={theme.palette.primary.main} />
-          {/* Cara derecha */}
           <polygon points="280,90 150,160 150,280 280,210" fill="#9b1010" />
-          {/* Bordes */}
           <polygon points="150,20 280,90 150,160 20,90" fill="none" stroke={theme.palette.primary.main} strokeWidth="2.5" />
           <polygon points="20,90 150,160 150,280 20,210" fill="none" stroke={theme.palette.primary.main} strokeWidth="2.5" />
           <polygon points="280,90 150,160 150,280 280,210" fill="none" stroke={theme.palette.primary.main} strokeWidth="2.5" />
         </svg>
       </Box>
 
-      {/* Cubo decorativo — arriba derecha */}
       <Box sx={{ position: 'absolute', top: -80, right: -80, zIndex: 0, opacity: 0.09, transform: 'rotate(8deg)' }}>
         <svg width="580" height="580" viewBox="0 0 300 300" fill="none" xmlns="http://www.w3.org/2000/svg">
-          {/* Cara superior */}
           <polygon points="150,20 280,90 150,160 20,90" fill="#2a3f8f" />
-          {/* Cara izquierda */}
           <polygon points="20,90 150,160 150,280 20,210" fill={theme.palette.secondary.main} />
-          {/* Cara derecha */}
           <polygon points="280,90 150,160 150,280 280,210" fill="#0f1c45" />
-          {/* Bordes */}
           <polygon points="150,20 280,90 150,160 20,90" fill="none" stroke={theme.palette.secondary.main} strokeWidth="2.5" />
           <polygon points="20,90 150,160 150,280 20,210" fill="none" stroke={theme.palette.secondary.main} strokeWidth="2.5" />
           <polygon points="280,90 150,160 150,280 280,210" fill="none" stroke={theme.palette.secondary.main} strokeWidth="2.5" />
         </svg>
       </Box>
 
-      {/* Botón volver al inicio */}
       <Button
         component={Link}
         to="/"
@@ -206,7 +188,6 @@ const Login = () => {
         Volver al inicio
       </Button>
 
-      {/* Formulario */}
       <Paper
         elevation={0}
         sx={{
@@ -222,7 +203,6 @@ const Login = () => {
           boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
         }}
       >
-        {/* Header: logo arriba centrado, texto debajo */}
         <Box sx={{
           px: 4,
           py: 4,
@@ -230,7 +210,7 @@ const Login = () => {
           flexDirection: 'column',
           alignItems: 'center',
           gap: 1.5,
-          backgroundColor: '#ffffff',
+          backgroundColor: 'white',
           borderBottom: '1px solid rgba(26,46,110,0.08)',
         }}>
           <Box sx={{
@@ -253,7 +233,6 @@ const Login = () => {
           </Box>
         </Box>
 
-        {/* Cuerpo */}
         <Box sx={{ p: 4 }}>
           {error && (
             <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
@@ -370,11 +349,10 @@ const Login = () => {
         </Box>
       </Paper>
 
-      {/* Dialog de Registro */}
       <Dialog open={openRegister} onClose={() => setOpenRegister(false)} maxWidth="sm" fullWidth>
         <DialogTitle sx={{
           p: 3, textAlign: 'center',
-          backgroundColor: '#ffffff',
+          backgroundColor: 'white',
           borderBottom: '1px solid rgba(26,46,110,0.08)',
         }}>
           <Typography sx={{ color: theme.palette.text.dark, fontWeight: 700, fontSize: '1.1rem' }}>

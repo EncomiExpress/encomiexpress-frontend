@@ -1,4 +1,4 @@
-import theme from '../../shared/styles/theme.js'
+import { useTheme } from '@mui/material/styles'
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
 import {
@@ -24,9 +24,7 @@ import CheckBoxIcon from '@mui/icons-material/CheckBox'
 import RegistrarUsuario from './RegistrarUsuario'
 import ActualizarUsuario from './ActualizarUsuario'
 
-const COLORS = theme.palette
-
-const thStyle = {
+const getThStyle = (theme) => ({
     fontWeight: 700,
     fontSize: '0.80rem',
     color: theme.palette.text.primary,
@@ -34,7 +32,7 @@ const thStyle = {
     py: 1.5,
     borderBottom: `1px solid #E0E0E0`,
     whiteSpace: 'nowrap',
-}
+})
 
 const CampoFila = ({ label, value, esRol }) => (
     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
@@ -62,6 +60,7 @@ const CampoFila = ({ label, value, esRol }) => (
 )
 
 const ModalConsultar = ({ usuario, onClose }) => {
+    const theme = useTheme()
     if (!usuario) return null
     const estado = usuario.habilitado ? 'Habilitado' : 'Inhabilitado'
 
@@ -147,6 +146,8 @@ const FILTROS = [
 ]
 
 const ListarUsuario = () => {
+    const theme = useTheme()
+    const thStyle = getThStyle(theme)
     const { tienePermiso, PERMISOS, getUsuarios, habilitarInhabilitarUsuario } = useAuth()
 
     const [usuarios, setUsuarios] = useState([])
@@ -686,3 +687,4 @@ const ListarUsuario = () => {
 }
 
 export default ListarUsuario
+

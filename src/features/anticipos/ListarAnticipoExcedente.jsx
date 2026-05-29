@@ -1,4 +1,4 @@
-import theme from '../../shared/styles/theme.js'
+import { useTheme } from '@mui/material/styles'
 import { useState } from 'react'
 import { useAnticipos } from '../../shared/contexts/AnticipoExcedenteContext.jsx'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
@@ -26,7 +26,7 @@ import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile'
 import RegistrarAnticipoExcedente from './RegistrarAnticipoExcedente'
 import ActualizarAnticipoExcedente from './ActualizarAnticipoExcedente'
 
-const thStyle = {
+const getThStyle = (theme) => ({
     fontWeight: 700,
     fontSize: '0.80rem',
     color: theme.palette.text.primary,
@@ -34,9 +34,9 @@ const thStyle = {
     py: 1.5,
     borderBottom: `1px solid #E0E0E0`,
     whiteSpace: 'nowrap',
-}
+})
 
-const filterSelectSx = {
+const getFilterSelectSx = (theme) => ({
     fontSize: '0.82rem',
     borderRadius: 2,
     '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
@@ -46,9 +46,9 @@ const filterSelectSx = {
     '&.Mui-focused': { boxShadow: '0 0 0 3px rgba(229,115,115,0.18)' },
     '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
     '& .MuiTouchRipple-root': { display: 'none' },
-}
+})
 
-const filterMenuProps = {
+const getFilterMenuProps = (theme) => ({
     slotProps: {
         paper: {
             sx: {
@@ -64,7 +64,7 @@ const filterMenuProps = {
             },
         },
     },
-}
+})
 
 const ESTADO_ANTICIPO_COLORS = {
     'pendiente': { bg: '#F3F4F6', color: '#6B7280' },
@@ -132,6 +132,7 @@ const CampoFila = ({ label, value, esEstado, estadoValue }) => (
 
 // ── Modal de consulta ────────────────────────────────────────────────────────
 const ModalConsultar = ({ anticipo, conductores, rutas, onClose }) => {
+    const theme = useTheme()
     if (!anticipo) return null
 
     const excedente = parseFloat(anticipo.valorAnticipo || 0) - parseFloat(anticipo.valorGastado || 0)
@@ -250,6 +251,10 @@ const ModalConsultar = ({ anticipo, conductores, rutas, onClose }) => {
 
 // ── Componente principal ─────────────────────────────────────────────────────
 const ListarAnticipoExcedente = () => {
+    const theme = useTheme()
+    const thStyle = getThStyle(theme)
+    const filterSelectSx = getFilterSelectSx(theme)
+    const filterMenuProps = getFilterMenuProps(theme)
     const { anticipos, conductores, rutas, loading, toggleHabilitado, cambiarEstado } = useAnticipos()
     const { tienePermiso, PERMISOS } = useAuth()
 
@@ -745,3 +750,4 @@ const ListarAnticipoExcedente = () => {
 }
 
 export default ListarAnticipoExcedente
+

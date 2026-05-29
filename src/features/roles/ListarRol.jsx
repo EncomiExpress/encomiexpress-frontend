@@ -1,4 +1,4 @@
-import theme from '../../shared/styles/theme.js'
+import { useTheme } from '@mui/material/styles'
 import { useState, useEffect } from 'react'
 import { useAuth, PERMISOS } from '../../shared/contexts/AuthContext.jsx'
 import {
@@ -23,9 +23,7 @@ import RegistrarRol from './RegistrarRol'
 import ActualizarRol from './ActualizarRol'
 import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined'
 
-const COLORS = theme.palette
-
-const thStyle = {
+const getThStyle = (theme) => ({
     fontWeight: 700,
     fontSize: '0.80rem',
     color: theme.palette.text.primary,
@@ -33,9 +31,9 @@ const thStyle = {
     py: 1.5,
     borderBottom: `1px solid #E0E0E0`,
     whiteSpace: 'nowrap',
-}
+})
 
-const filterSelectSx = {
+const getFilterSelectSx = (theme) => ({
     fontSize: '0.82rem',
     borderRadius: 2,
     '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
@@ -45,9 +43,9 @@ const filterSelectSx = {
     '&.Mui-focused': { boxShadow: '0 0 0 3px rgba(229,115,115,0.18)' },
     '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
     '& .MuiTouchRipple-root': { display: 'none' },
-}
+})
 
-const filterMenuProps = {
+const getFilterMenuProps = (theme) => ({
     slotProps: {
         paper: {
             sx: {
@@ -63,7 +61,7 @@ const filterMenuProps = {
             },
         },
     },
-}
+})
 
 const getRolColor = (nombre) => {
     const colors = {
@@ -78,6 +76,7 @@ const getRolColor = (nombre) => {
 }
 
 const ModalConsultar = ({ rol, onClose }) => {
+    const theme = useTheme()
     if (!rol) return null
 
     const rolStyle = getRolColor(rol.nombre)
@@ -217,6 +216,10 @@ const ModalConsultar = ({ rol, onClose }) => {
 }
 
 const ListarRol = () => {
+    const theme = useTheme()
+    const thStyle = getThStyle(theme)
+    const filterSelectSx = getFilterSelectSx(theme)
+    const filterMenuProps = getFilterMenuProps(theme)
     const { tienePermiso, PERMISOS, getRolesBackend, toggleHabilitadoRol, eliminarRolBackend } = useAuth()
 
     const [roles, setRoles] = useState([])
@@ -639,3 +642,4 @@ const ListarRol = () => {
 }
 
 export default ListarRol
+

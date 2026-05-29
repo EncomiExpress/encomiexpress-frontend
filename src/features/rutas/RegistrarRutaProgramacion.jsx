@@ -1,4 +1,4 @@
-import theme from '../../shared/styles/theme.js'
+import { useTheme } from '@mui/material/styles'
 import { useState, useEffect } from 'react'
 import {
     Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel,
@@ -31,6 +31,7 @@ const ConfirmRow = ({ label, value }) => (
 
 const RegistrarRutaProgramacion = ({ open, onClose, onSuccess }) => {
     const { registrarRutaProgramada } = useRutaProgramacion()
+    const theme = useTheme()
     const { getTransportesHabilitados } = useTransporte()
     const { getConductoresHabilitados } = useConductor()
     const { getDestinosHabilitados }    = useDestino()
@@ -315,3 +316,4 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess }) => {
 }
 
 export default RegistrarRutaProgramacion
+

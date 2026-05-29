@@ -1,4 +1,4 @@
-import theme from '../../shared/styles/theme.js'
+import { useTheme } from '@mui/material/styles'
 import { useState, useEffect, useRef } from 'react'
 import {
     Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel,
@@ -47,6 +47,7 @@ const EMPTY_FORM = {
 
 const ActualizarPropietario = ({ open, onClose, propietario: propietarioProp, onSuccess }) => {
     const { propietarios, actualizarPropietario } = usePropietario()
+    const theme = useTheme()
     const [exito, setExito] = useState(false)
     const [apiError, setApiError] = useState(null)
     const [errores, setErrores] = useState({})
@@ -377,3 +378,4 @@ const ActualizarPropietario = ({ open, onClose, propietario: propietarioProp, on
 }
 
 export default ActualizarPropietario
+

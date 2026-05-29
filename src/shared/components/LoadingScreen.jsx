@@ -1,9 +1,8 @@
-import theme from '../styles/theme.js'
+import { useTheme } from '@mui/material/styles'
 import { Box, Typography, CircularProgress } from '@mui/material'
 import { LocalShipping } from '@mui/icons-material'
 import logo from '../../assets/logo.png'
 
-// Tipos de carga disponibles
 const TIPOS_CARGA = {
   CIRCULAR: 'circular',
   CAMION: 'camion',
@@ -12,6 +11,8 @@ const TIPOS_CARGA = {
 }
 
 const LoadingScreen = ({ tipo = 'circular', mensaje = 'Cargando...' }) => {
+  const theme = useTheme()
+
   const renderLoading = () => {
     switch (tipo) {
       case TIPOS_CARGA.CAMION:
@@ -130,4 +131,3 @@ const LoadingScreen = ({ tipo = 'circular', mensaje = 'Cargando...' }) => {
 
 export { LoadingScreen, TIPOS_CARGA }
 export default LoadingScreen
-

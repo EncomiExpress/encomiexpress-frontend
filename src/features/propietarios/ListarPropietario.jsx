@@ -1,4 +1,4 @@
-import theme from '../../shared/styles/theme.js'
+import { useTheme } from '@mui/material/styles'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -23,7 +23,7 @@ import { useAuth } from '../../shared/contexts/AuthContext.jsx'
 import RegistrarPropietario from './RegistrarPropietario'
 import ActualizarPropietario from './ActualizarPropietario'
 
-const thStyle = {
+const getThStyle = (theme) => ({
     fontWeight: 700,
     fontSize: '0.80rem',
     color: theme.palette.text.primary,
@@ -31,7 +31,7 @@ const thStyle = {
     py: 1.5,
     borderBottom: `1px solid #E0E0E0`,
     whiteSpace: 'nowrap',
-}
+})
 
 const FILTROS = [
     { value: 'todo', label: 'Todo' },
@@ -40,6 +40,8 @@ const FILTROS = [
 ]
 
 const ListarPropietario = () => {
+    const theme = useTheme()
+    const thStyle = getThStyle(theme)
     const navigate = useNavigate()
     const [searchTerm, setSearchTerm] = useState('')
     const [propietarioVer, setPropietarioVer] = useState(null)
@@ -403,3 +405,4 @@ const ListarPropietario = () => {
 }
 
 export default ListarPropietario
+

@@ -1,4 +1,4 @@
-import theme from '../../shared/styles/theme.js'
+import { useTheme } from '@mui/material/styles'
 import { useState, useEffect } from 'react'
 import { Box, Typography, Paper, FormControlLabel, Checkbox, Grid, Alert, Snackbar, Dialog, DialogTitle, DialogContent, IconButton, Button } from '@mui/material'
 import { Security, Close, SaveOutlined } from '@mui/icons-material'
@@ -7,8 +7,6 @@ import {
   FormField, PrimaryButton, SecondaryButton,
   FormButtonGroup
 } from '../../shared/components/FormularioEstandarizado.jsx'
-
-const COLORS = theme.palette
 
 const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
   const [formData, setFormData] = useState({
@@ -24,6 +22,7 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
   const [permisosDisponibles, setPermisosDisponibles] = useState([])
 
   const { getPermisosBackend, actualizarRolBackend } = useAuth()
+  const theme = useTheme()
 
   const modulos = Object.entries(MODULOS)
 
@@ -276,3 +275,4 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
 }
 
 export default ActualizarRol
+
