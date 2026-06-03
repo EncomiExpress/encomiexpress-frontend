@@ -44,6 +44,7 @@ const HighlightText = ({ original, actual, color }) => {
 }
 
 const ConfirmRow = ({ label, valueOriginal, valueActual }) => {
+    const theme = useTheme()
     const changed = valueOriginal !== valueActual
     return (
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, py: 0.9, overflow: 'hidden' }}>
@@ -286,7 +287,7 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
                         <TextField fullWidth label="Número de documento" name="numeroIdentificacion"
                             value={form.numeroIdentificacion} onChange={handleChange}
                             error={!!errores.numeroIdentificacion} helperText={errores.numeroIdentificacion || 'Sin puntos ni comas'}
-                            slotProps={{ input: { startAdornment: <InputAdornment position="start"><BadgeOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment>, sx: { pl: 1.5 }, htmlInput: { maxLength: 15 } } }}
+                            slotProps={{ input: { startAdornment: <InputAdornment position="start"><BadgeOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment>, sx: { pl: 1.5 } }, htmlInput: { maxLength: 15 } }}
                             sx={formFieldStyles} />
                         <TextField fullWidth label="Nombres" name="nombre" value={form.nombre} onChange={handleChange}
                             error={!!errores.nombre} helperText={errores.nombre || 'Solo letras'}
@@ -294,7 +295,7 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
                             sx={formFieldStyles} />
                         <TextField fullWidth label="Apellidos" name="apellido" value={form.apellido} onChange={handleChange}
                             error={!!errores.apellido} helperText={errores.apellido || 'Solo letras'}
-                            slotProps={{ input: { startAdornment: <InputAdornment position="start"><PersonOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment>, sx: { pl: 1.5 }, htmlInput: { maxLength: 50 } } }}
+                            slotProps={{ input: { startAdornment: <InputAdornment position="start"><PersonOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment>, sx: { pl: 1.5 } }, htmlInput: { maxLength: 50 } }}
                             sx={formFieldStyles} />
                     </Box>
                 )
@@ -303,7 +304,7 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
                     <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                         <TextField fullWidth label="Teléfono" name="telefono" value={form.telefono} onChange={handleChange}
                             error={!!errores.telefono} helperText={errores.telefono || 'Número de 10 dígitos'}
-                            slotProps={{ input: { startAdornment: <InputAdornment position="start"><PhoneOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment>, sx: { pl: 1.5 }, htmlInput: { maxLength: 10 } } }}
+                            slotProps={{ input: { startAdornment: <InputAdornment position="start"><PhoneOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment>, sx: { pl: 1.5 } }, htmlInput: { maxLength: 10 } }}
                             sx={formFieldStyles} />
                         <TextField fullWidth label="Correo electrónico" name="emailLocal"
                             value={form.emailLocal} onChange={handleChange} required

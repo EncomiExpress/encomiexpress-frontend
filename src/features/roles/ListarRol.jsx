@@ -63,23 +63,15 @@ const getFilterMenuProps = (theme) => ({
     },
 })
 
-const getRolColor = (nombre) => {
-    const colors = {
-        'admin': { bg: '#FFCDD2', color: '#C62828' },
-        'Administrador': { bg: '#FFCDD2', color: '#C62828' },
-        'Gerente': { bg: '#FFEBEE', color: '#D32F2F' },
-        'Vendedor': { bg: '#FFECB3', color: '#FFA000' },
-        'Conductor': { bg: '#F8BBD9', color: '#C2185B' },
-        'Auxiliar': { bg: '#FFE0B2', color: '#E65100' },
-    }
-    return colors[nombre] || { bg: '#F5F5F5', color: '#616161' }
+const getRolColor = (theme, nombre) => {
+    return theme.palette.avatarDefault || theme.palette.roles.default
 }
 
 const ModalConsultar = ({ rol, onClose }) => {
     const theme = useTheme()
     if (!rol) return null
 
-    const rolStyle = getRolColor(rol.nombre)
+    const avatarStyle = theme.palette.avatarDefault || theme.palette.roles.default
     const cardSx = { borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white' }
     const tituloSx = { display: 'flex', alignItems: 'center', gap: 1, mb: 1 }
 
@@ -88,7 +80,7 @@ const ModalConsultar = ({ rol, onClose }) => {
             slotProps={{ paper: { sx: { borderRadius: 3, p: 3, backgroundColor: '#FAFAFA' } } }}>
 
             <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pb: 1 }}>
-                <Avatar sx={{ backgroundColor: '#FFCDD2', color: '#C62828', width: 36, height: 36 }}>
+                <Avatar sx={{ backgroundColor: avatarStyle.bg, color: avatarStyle.color, width: 36, height: 36 }}>
                     <AssignmentIndOutlinedIcon sx={{ fontSize: 18 }} />
                 </Avatar>
                 <Box>
@@ -115,10 +107,10 @@ const ModalConsultar = ({ rol, onClose }) => {
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
                             <Box sx={{
                                 width: 50, height: 50, borderRadius: 2,
-                                backgroundColor: rolStyle.bg,
+                                backgroundColor: avatarStyle.bg,
                                 display: 'flex', alignItems: 'center', justifyContent: 'center'
                             }}>
-                                <AssignmentIndOutlinedIcon sx={{ fontSize: 24, color: rolStyle.color }} />
+                                <AssignmentIndOutlinedIcon sx={{ fontSize: 24, color: avatarStyle.color }} />
                             </Box>
                             <Box>
                                 <Typography fontWeight={700} color={theme.palette.text.primary}>
@@ -402,7 +394,9 @@ const ListarRol = () => {
                                 </TableRow>
                             ) : (
                                 paginatedRoles.map(rol => {
-                                    const rolStyle = getRolColor(rol.nombre)
+                                    const rolStyle = (rol.habilitado !== false)
+                                        ? (theme.palette.avatarDefault || theme.palette.roles.default)
+                                        : (theme.palette.avatarDisabled || theme.palette.roles.default)
                                     return (
                                         <TableRow
                                             key={rol.id}

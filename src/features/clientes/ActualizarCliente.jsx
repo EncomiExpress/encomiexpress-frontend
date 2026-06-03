@@ -248,7 +248,7 @@ const ActualizarCliente = ({ open, onClose, cliente: clienteProp, onSuccess }) =
                                             </InputAdornment>
                                         ),
                                     },
-                                    htmlInput: { maxLength: 50 }
+                                    inputProps: { maxLength: 50 }
                                 }}
                                 sx={formFieldStyles} />
                             <Box sx={{ gridColumn: '1 / -1' }}>
