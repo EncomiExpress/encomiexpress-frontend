@@ -5,7 +5,8 @@ import {
     Box, Typography, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, Chip, IconButton,
     TextField, InputAdornment, Select, MenuItem, FormControl,
-    Snackbar, Alert, Tooltip, Button, Dialog, Avatar, CircularProgress
+    Snackbar, Alert, Tooltip, Button, Dialog, Avatar, CircularProgress,
+    Pagination
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
@@ -18,6 +19,7 @@ import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined
 import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined'
 import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank'
 import CheckBoxIcon from '@mui/icons-material/CheckBox'
+import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import { useRutaProgramacion } from '../../shared/contexts/RutaProgramacionContext.jsx'
 import { useTransporte } from '../../shared/contexts/TransporteContext.jsx'
 import { useConductor } from '../../shared/contexts/ConductorContext.jsx'
@@ -91,22 +93,38 @@ const ListarRutaProgramacion = () => {
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [rutaEditar, setRutaEditar]         = useState(null)
+    const [page, setPage] = useState(1)
+    const [rowsPerPage, setRowsPerPage] = useState(5)
 
-    const { rutasProgramadas, fetchRutasProgramadas, updateEstado, toggleHabilitado, loading } = useRutaProgramacion()
-    const { getTransportes }  = useTransporte()
-    const { getConductores }  = useConductor()
-    const { destinos } = useDestino();
+    const { rutasProgramadas, total, fetchRutasProgramadas, updateEstado, toggleHabilitado, loading } = useRutaProgramacion()
+    const { getTransportes } = useTransporte()
+    const { getConductores } = useConductor()
+    const { destinos } = useDestino()
 
     const ahora      = new Date()
     const anioActual = ahora.getFullYear()
 
     useEffect(() => {
-        if (!usuario) {
-            navigate('/login')
-        } else {
-            fetchRutasProgramadas()
-        }
+      if (!usuario) {
+        navigate('/login')
+      }
     }, [usuario, navigate])
+
+    const buildRutasParams = () => ({
+        page,
+        limit: rowsPerPage,
+        sortBy: 'fechaSalida.desc',
+        habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
+        estado: filtroEstadoRuta === 'todo' ? undefined : filtroEstadoRuta,
+        anio: filtroAnio || undefined,
+        mes: filtroMes || undefined,
+        q: searchTerm.trim() || undefined,
+    })
+
+    useEffect(() => {
+        if (!usuario) return
+        fetchRutasProgramadas(buildRutasParams())
+    }, [fetchRutasProgramadas, page, rowsPerPage, searchTerm, filtroHabilitado, filtroEstadoRuta, filtroAnio, filtroMes, usuario])
 
     // Vehículos en curso (para bloquear cambio de estado)
     const vehiculosOcupadosIds = useMemo(() => {
@@ -128,27 +146,6 @@ const ListarRutaProgramacion = () => {
         })
         return Array.from(anios).sort((a, b) => b - a)
     }, [rutasProgramadas])
-
-    useEffect(() => {
-        if (!filtroAnio && aniosDisponibles.length > 0) {
-            setFiltroAnio(String(anioActual))
-        }
-    }, [aniosDisponibles])
-
-    const mesMasActual = useMemo(() => {
-        if (!filtroAnio) return ''
-        const meses = rutasProgramadas
-            .filter(r => r.fechaSalida && r.fechaSalida.startsWith(filtroAnio))
-            .map(r => r.fechaSalida.split('-')[1])
-        if (meses.length === 0) return ''
-        return String(Math.max(...meses.map(m => parseInt(m))))
-    }, [rutasProgramadas, filtroAnio])
-
-    useEffect(() => {
-        if (filtroAnio && mesMasActual && !filtroMes) {
-            setFiltroMes(mesMasActual)
-        }
-    }, [filtroAnio, mesMasActual])
 
     // Helpers para mostrar datos relacionados (ya están en los contextos)
     const getVehiculoPlaca = (id) => {
@@ -182,44 +179,22 @@ const resolveDestino = (ruta) =>
 
     const getId = (ruta) => ruta.idRuta ?? ruta.idRutaProgramada
 
-    const filteredRutas = rutasProgramadas.filter(r => {
-        const q = searchTerm.toLowerCase()
-        const coincideBusqueda = !q ||
-            (r.nombreRuta || '').toLowerCase().includes(q) ||
-            (r.fechaSalida || '').includes(q) ||
-            resolveVehiculo(r).toLowerCase().includes(q) ||
-            resolveConductor(r).toLowerCase().includes(q)
-
-        const coincideHabilitado =
-            filtroHabilitado === 'todo' ||
-            (filtroHabilitado === 'habilitado'   && r.habilitado !== false) ||
-            (filtroHabilitado === 'inhabilitado' && r.habilitado === false)
-
-        const coincideEstado = filtroEstadoRuta === 'todo' || r.estado === filtroEstadoRuta
-
-        let coincideFecha = true
-        if (filtroAnio || filtroMes) {
-            if (!r.fechaSalida) {
-                coincideFecha = false
-            } else {
-                const [anioR, mesR] = r.fechaSalida.split('-')
-                if (filtroAnio && anioR !== filtroAnio) coincideFecha = false
-                if (filtroMes && parseInt(mesR) !== parseInt(filtroMes)) coincideFecha = false
-            }
-        }
-
-        return coincideBusqueda && coincideHabilitado && coincideEstado && coincideFecha
-    })
-
     const limpiarFiltros = () => {
         setSearchTerm('')
         setFiltroHabilitado('todo')
         setFiltroEstadoRuta('todo')
         setFiltroAnio('')
         setFiltroMes('')
+        setPage(1)
     }
 
     const hayFiltrosActivos = searchTerm.trim() !== '' || filtroHabilitado !== 'todo' || filtroEstadoRuta !== 'todo' || filtroAnio || filtroMes
+
+    const totalPages = Math.max(1, Math.ceil(total / rowsPerPage))
+    const safePage = Math.min(page, totalPages)
+    const paginatedRutas = rutasProgramadas
+    const from = total === 0 ? 0 : (safePage - 1) * rowsPerPage + 1
+    const to = Math.min(safePage * rowsPerPage, total)
 
     const handleEstadoChange = async (id, nuevoEstado) => {
         const rutaActual = rutasProgramadas.find(r => getId(r) === id)
@@ -257,12 +232,12 @@ const resolveDestino = (ruta) =>
     }
 
     const handleRegistrarSuccess = () => {
-        fetchRutasProgramadas()
+        fetchRutasProgramadas(buildRutasParams())
         setSnackbar({ open: true, message: 'Ruta registrada correctamente', severity: 'success' })
     }
 
     const handleActualizarSuccess = () => {
-        fetchRutasProgramadas()
+        fetchRutasProgramadas(buildRutasParams())
         setSnackbar({ open: true, message: 'Ruta actualizada correctamente', severity: 'success' })
     }
 
@@ -275,7 +250,7 @@ const resolveDestino = (ruta) =>
                             Programación de Rutas
                         </Typography>
                         <Chip
-                            label={`${rutasProgramadas.length} registrada${rutasProgramadas.length !== 1 ? 's' : ''}`}
+                            label={`${total} registrada${total !== 1 ? 's' : ''}`}
                             size="small"
                             sx={{
                                 backgroundColor: '#F3F4F6',
@@ -328,7 +303,7 @@ const resolveDestino = (ruta) =>
                         },
                     }}
                     value={searchTerm}
-                    onChange={e => setSearchTerm(e.target.value)}
+                    onChange={e => { setSearchTerm(e.target.value); setPage(1) }}
                     slotProps={{
                         input: {
                             startAdornment: (
@@ -350,7 +325,7 @@ const resolveDestino = (ruta) =>
                 <FormControl size="small" sx={{ minWidth: 120 }}>
                     <Select
                         value={filtroAnio}
-                        onChange={(e) => { setFiltroAnio(e.target.value); setFiltroMes('') }}
+                        onChange={(e) => { setFiltroAnio(e.target.value); setFiltroMes(''); setPage(1) }}
                         displayEmpty
                         sx={{ borderRadius: 2 }}
                     >
@@ -364,7 +339,7 @@ const resolveDestino = (ruta) =>
                 <FormControl size="small" sx={{ minWidth: 120 }}>
                     <Select
                         value={filtroMes}
-                        onChange={(e) => setFiltroMes(e.target.value)}
+                            onChange={(e) => { setFiltroMes(e.target.value); setPage(1) }}
                         displayEmpty
                         disabled={!filtroAnio}
                         sx={{ borderRadius: 2 }}
@@ -409,7 +384,7 @@ const resolveDestino = (ruta) =>
                                         <CircularProgress size={28} sx={{ color: theme.palette.primary.main }} />
                                     </TableCell>
                                 </TableRow>
-                            ) : filteredRutas.length === 0 ? (
+                            ) : rutasProgramadas.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={8} align="center" sx={{ py: 7 }}>
                                         <Typography color={theme.palette.text.secondary} variant="body2">
@@ -419,8 +394,16 @@ const resolveDestino = (ruta) =>
                                         </Typography>
                                     </TableCell>
                                 </TableRow>
+                            ) : paginatedRutas.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={8} align="center" sx={{ py: 7 }}>
+                                        <Typography color={theme.palette.text.secondary} variant="body2">
+                                            No hay rutas en esta página.
+                                        </Typography>
+                                    </TableCell>
+                                </TableRow>
                             ) : (
-                                filteredRutas.map((ruta) => {
+                                paginatedRutas.map((ruta) => {
                                     const id = getId(ruta)
                                     return (
                                         <TableRow
@@ -520,10 +503,97 @@ const resolveDestino = (ruta) =>
                 </TableContainer>
             </Paper>
 
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 0.5, pt: 1.5 }}>
+            <Box sx={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                px: 0.5, pt: 1.5,
+            }}>
                 <Typography variant="body2" color={theme.palette.text.secondary}>
-                    Total de rutas: {filteredRutas.length}
+                    Mostrando {from}–{to} de {total} resultado{total !== 1 ? 's' : ''}
                 </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="body2" color={theme.palette.text.secondary} fontWeight={500}>
+                            Filas
+                        </Typography>
+                        <Select
+                            value={rowsPerPage}
+                            onChange={e => { setRowsPerPage(Number(e.target.value)); setPage(1) }}
+                            size="small"
+                            renderValue={(value) => value}
+                            IconComponent={KeyboardArrowDownOutlinedIcon}
+                            sx={{
+                                fontSize: '0.82rem',
+                                borderRadius: 2,
+                                '& .MuiSelect-select': { py: 0.6, pl: 1.5, pr: '28px !important' },
+                                '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
+                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#BDBDBD' },
+                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                    borderColor: '#E57373',
+                                    borderWidth: '1px',
+                                },
+                                '&.Mui-focused': { boxShadow: '0 0 0 3px rgba(229,115,115,0.18)' },
+                                '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
+                                '& .MuiTouchRipple-root': { display: 'none' },
+                            }}
+                            MenuProps={{
+                                slotProps: {
+                                    paper: {
+                                        sx: {
+                                            borderRadius: 2,
+                                            boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+                                            mt: 0.5,
+                                            minWidth: 80,
+                                            '& .MuiMenuItem-root': {
+                                                fontSize: '0.82rem', py: 0.9, px: 2,
+                                                display: 'flex', justifyContent: 'space-between', gap: 2,
+                                                '&:hover': { backgroundColor: '#FFF5F5' },
+                                                '&.Mui-selected': { backgroundColor: 'transparent', fontWeight: 600, color: theme.palette.text.primary },
+                                                '&.Mui-selected:hover': { backgroundColor: '#FFF5F5' },
+                                            },
+                                        },
+                                    },
+                                },
+                            }}
+                        >
+                            {[5, 10, 25].map(n => (
+                                <MenuItem key={n} value={n}>{n}
+                                    {rowsPerPage === n && <CheckOutlinedIcon sx={{ fontSize: 14, color: theme.palette.text.secondary }} />}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </Box>
+                    <Pagination
+                        count={totalPages}
+                        page={safePage}
+                        onChange={(_, val) => setPage(val)}
+                        size="small"
+                        shape="rounded"
+                        sx={{
+                            '& .MuiPaginationItem-root': {
+                                fontSize: '0.82rem',
+                                borderRadius: '8px',
+                                minWidth: 34,
+                                height: 34,
+                                mx: 0.2,
+                                color: theme.palette.text.primary,
+                                border: `1px solid ${theme.palette.divider}`,
+                                '& .MuiTouchRipple-root': { display: 'none' },
+                            },
+                            '& .MuiPaginationItem-ellipsis': { border: 'none' },
+                            '& .MuiPaginationItem-root.Mui-selected': {
+                                backgroundColor: theme.palette.primary.main,
+                                borderColor: theme.palette.primary.main,
+                                color: 'white',
+                                fontWeight: 600,
+                                '&:hover': { backgroundColor: theme.palette.primary.darker },
+                            },
+                            '& .MuiPaginationItem-root:hover:not(.Mui-selected)': {
+                                backgroundColor: theme.palette.background.subtle,
+                                borderColor: '#BDBDBD',
+                            },
+                        }}
+                    />
+                </Box>
             </Box>
 
             {/* Dialog Ver Detalle */}

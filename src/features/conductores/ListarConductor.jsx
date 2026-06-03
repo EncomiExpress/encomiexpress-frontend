@@ -1,11 +1,12 @@
 import { useTheme } from '@mui/material/styles'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
     Box, Typography, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, Chip, IconButton,
     TextField, InputAdornment, Select, MenuItem, FormControl,
-    Snackbar, Alert, Tooltip, Button, Dialog, Avatar, CircularProgress
+    Snackbar, Alert, Tooltip, Button, Dialog, Avatar, CircularProgress,
+    Pagination
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
@@ -18,6 +19,7 @@ import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined
 import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
 import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank'
 import CheckBoxIcon from '@mui/icons-material/CheckBox'
+import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import { useConductor } from '../../shared/contexts/ConductorContext.jsx'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
 import RegistrarConductor from './RegistrarConductor'
@@ -86,20 +88,35 @@ const ListarConductor = () => {
     const [conductorVer, setConductorVer] = useState(null)
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
     const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
+    const [page, setPage] = useState(1)
+    const [rowsPerPage, setRowsPerPage] = useState(5)
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [conductorEditar, setConductorEditar] = useState(null)
 
-    const { conductores, loading, fetchConductores, updateEstado, toggleHabilitado } = useConductor()
+    const { conductores, total, loading, fetchConductores, updateEstado, toggleHabilitado } = useConductor()
     const navigate = useNavigate()
 
     useEffect(() => {
-        if (!usuario) {
-            navigate('/login')
-        } else {
-            fetchConductores()
-        }
-    }, [usuario, navigate, fetchConductores])
+      if (!usuario) {
+        navigate('/login')
+      }
+    }, [usuario, navigate])
+
+    const fetchConductoresBackend = useCallback(() => {
+      fetchConductores(undefined, {
+        page,
+        limit: rowsPerPage,
+        estado: undefined,
+        habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
+        sortBy: 'idConductor.asc',
+        q: searchTerm.trim() || undefined,
+      })
+    }, [page, rowsPerPage, filtroHabilitado, searchTerm, fetchConductores])
+
+    useEffect(() => {
+      fetchConductoresBackend()
+    }, [fetchConductoresBackend])
 
     const handleEstadoChange = async (id, nuevoEstado) => {
         const success = await updateEstado(id, nuevoEstado)
@@ -123,31 +140,18 @@ const ListarConductor = () => {
         }
     }
 
-    const filteredConductores = conductores.filter(c => {
-        const q = searchTerm.toLowerCase()
-        const coincideBusqueda = !q ||
-            (c.nombre || '').toLowerCase().includes(q) ||
-            (c.apellido || '').toLowerCase().includes(q) ||
-            (c.numeroIdentificacion || '').toLowerCase().includes(q) ||
-            (c.tipoIdentificacion || '').toLowerCase().includes(q) ||
-            (c.licenciaConduccion || '').toLowerCase().includes(q) ||
-            (c.email || '').toLowerCase().includes(q)
-
-        const coincideHabilitado =
-            filtroHabilitado === 'todo' ||
-            (filtroHabilitado === 'habilitado' && c.habilitado) ||
-            (filtroHabilitado === 'inhabilitado' && !c.habilitado)
-
-        return coincideBusqueda && coincideHabilitado
-    })
-
-    const limpiarFiltros = () => { setSearchTerm(''); setFiltroHabilitado('todo') }
-    const limpiarBusqueda = () => setSearchTerm('')
+    const limpiarFiltros = () => { setSearchTerm(''); setFiltroHabilitado('todo'); setPage(1) }
+    const limpiarBusqueda = () => { setSearchTerm(''); setPage(1) }
     const hayFiltrosActivos = searchTerm.trim() !== '' || filtroHabilitado !== 'todo'
+
+    const totalPages = Math.max(1, Math.ceil(total / rowsPerPage))
+    const safePage = Math.min(page, totalPages)
+    const from = total === 0 ? 0 : (safePage - 1) * rowsPerPage + 1
+    const to = Math.min(safePage * rowsPerPage, total)
 
     return (
         <Box sx={{ p: 3.5 }}>
-            {/* ── Encabezado ── */}
+            {/* -- Encabezado -- */}
             <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
                 <Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -181,10 +185,10 @@ const ListarConductor = () => {
                 )}
             </Box>
 
-            {/* ── Filtros habilitado / inhabilitado ── */}
+            {/* -- Filtros habilitado / inhabilitado -- */}
             <Box sx={{ display: 'inline-flex', backgroundColor: '#FFECEC', borderRadius: 4, p: '4px', mb: 2.5, gap: '5px' }}>
                 {FILTROS.map(f => (
-                    <Button key={f.value} onClick={() => setFiltroHabilitado(f.value)}
+                    <Button key={f.value} onClick={() => { setFiltroHabilitado(f.value); setPage(1) }}
                         size="small" disableElevation disableRipple
                         sx={{
                             borderRadius: 3, textTransform: 'none', fontSize: '0.75rem', px: 2, py: 0.5, minWidth: 0,
@@ -200,12 +204,12 @@ const ListarConductor = () => {
                 ))}
             </Box>
 
-            {/* ── Buscador ── */}
+            {/* -- Buscador -- */}
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
                 <TextField
                     size="small" placeholder="Buscar conductores..."
                     sx={{ width: 320, '& .MuiOutlinedInput-root': { borderRadius: 2, '&.Mui-focused': { boxShadow: '0 0 0 3px rgba(229,115,115,0.18)' }, '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main, borderWidth: '1px' } } }}
-                    value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
+                    value={searchTerm} onChange={e => { setSearchTerm(e.target.value); setPage(1) }}
                     slotProps={{
                         input: {
                             startAdornment: <InputAdornment position="start"><SearchIcon sx={{ color: theme.palette.text.secondary, fontSize: 20 }} /></InputAdornment>,
@@ -220,7 +224,7 @@ const ListarConductor = () => {
                 )}
             </Box>
 
-            {/* ── Tabla ── */}
+            {/* -- Tabla -- */}
             <Paper elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 3, overflow: 'hidden' }}>
                 <TableContainer>
                     <Table>
@@ -243,18 +247,18 @@ const ListarConductor = () => {
                                         <CircularProgress size={28} sx={{ color: theme.palette.primary.main }} />
                                     </TableCell>
                                 </TableRow>
-                            ) : filteredConductores.length === 0 ? (
+                            ) : total === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={8} align="center" sx={{ py: 7 }}>
                                         <Typography color={theme.palette.text.secondary} variant="body2">
-                                            {conductores.length === 0
+                                            {total === 0
                                                 ? 'No hay conductores registrados en el sistema.'
                                                 : 'No se encontraron conductores que coincidan con la búsqueda.'}
                                         </Typography>
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                filteredConductores.map((conductor) => (
+                                conductores.map((conductor) => (
                                     <TableRow key={conductor.idConductor}
                                         sx={{ '&:hover': { backgroundColor: theme.palette.background.subtle }, transition: 'background-color 0.15s', opacity: conductor.habilitado ? 1 : 0.55 }}>
                                         {/* Nombre */}
@@ -348,11 +352,110 @@ const ListarConductor = () => {
 
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 0.5, pt: 1.5 }}>
                 <Typography variant="body2" color={theme.palette.text.secondary}>
-                    Total de conductores: {filteredConductores.length}
+                    Mostrando {from}–{to} de {total} resultado{total !== 1 ? 's' : ''}
                 </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="body2" color={theme.palette.text.secondary} fontWeight={500}>
+                            Filas
+                        </Typography>
+                        <Select
+                            value={rowsPerPage}
+                            onChange={e => { setRowsPerPage(Number(e.target.value)); setPage(1) }}
+                            size="small"
+                            renderValue={(value) => value}
+                            IconComponent={KeyboardArrowDownOutlinedIcon}
+                            sx={{
+                                fontSize: '0.82rem',
+                                borderRadius: 2,
+                                '& .MuiSelect-select': { py: 0.6, pl: 1.5, pr: '28px !important' },
+                                '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
+                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#BDBDBD' },
+                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                    borderColor: '#E57373',
+                                    borderWidth: '1px',
+                                },
+                                '&.Mui-focused': {
+                                    boxShadow: '0 0 0 3px rgba(229,115,115,0.18)',
+                                },
+                                '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
+                                '& .MuiTouchRipple-root': { display: 'none' },
+                            }}
+                            MenuProps={{
+                                slotProps: {
+                                    paper: {
+                                        sx: {
+                                            borderRadius: 2,
+                                            boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+                                            mt: 0.5,
+                                            minWidth: 80,
+                                            '& .MuiMenuItem-root': {
+                                                fontSize: '0.82rem',
+                                                py: 0.9,
+                                                px: 2,
+                                                display: 'flex',
+                                                justifyContent: 'space-between',
+                                                gap: 2,
+                                                '&:hover': { backgroundColor: '#FFF5F5' },
+                                                '&.Mui-selected': {
+                                                    backgroundColor: 'transparent',
+                                                    fontWeight: 600,
+                                                    color: theme.palette.text.primary,
+                                                },
+                                                '&.Mui-selected:hover': { backgroundColor: '#FFF5F5' },
+                                            },
+                                        },
+                                    },
+                                },
+                            }}
+                        >
+                            {[5, 10, 25].map(n => (
+                                <MenuItem key={n} value={n}>
+                                    {n}
+                                    {rowsPerPage === n && (
+                                        <CheckOutlinedIcon sx={{ fontSize: 14, color: theme.palette.text.secondary }} />
+                                    )}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </Box>
+                    <Pagination
+                        count={totalPages}
+                        page={safePage}
+                        onChange={(_, val) => setPage(val)}
+                        size="small"
+                        shape="rounded"
+                        sx={{
+                            '& .MuiPaginationItem-root': {
+                                fontSize: '0.82rem',
+                                borderRadius: '8px',
+                                minWidth: 34,
+                                height: 34,
+                                mx: 0.2,
+                                color: theme.palette.text.primary,
+                                border: `1px solid ${theme.palette.divider}`,
+                                '& .MuiTouchRipple-root': { display: 'none' },
+                            },
+                            '& .MuiPaginationItem-ellipsis': {
+                                border: 'none',
+                            },
+                            '& .MuiPaginationItem-root.Mui-selected': {
+                                backgroundColor: theme.palette.primary.main,
+                                borderColor: theme.palette.primary.main,
+                                color: 'white',
+                                fontWeight: 600,
+                                '&:hover': { backgroundColor: theme.palette.primary.darker },
+                            },
+                            '& .MuiPaginationItem-root:hover:not(.Mui-selected)': {
+                                backgroundColor: theme.palette.background.subtle,
+                                borderColor: '#BDBDBD',
+                            },
+                        }}
+                    />
+                </Box>
             </Box>
 
-            {/* ── Modal detalle ── */}
+            {/* -- Modal detalle -- */}
             {conductorVer && (
                 <Dialog open onClose={() => setConductorVer(null)} maxWidth="md" fullWidth
                     slotProps={{ paper: { sx: { borderRadius: 3, p: 3, backgroundColor: '#FAFAFA' } } }}>
@@ -425,7 +528,7 @@ const ListarConductor = () => {
                 </Dialog>
             )}
 
-            {/* ── Modales registrar / actualizar ── */}
+            {/* -- Modales registrar / actualizar -- */}
             <RegistrarConductor
                 open={modalRegistrarOpen}
                 onClose={() => setModalRegistrarOpen(false)}

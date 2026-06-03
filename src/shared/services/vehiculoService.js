@@ -1,6 +1,11 @@
 import { fetchWithAuth } from './authService'
 
-export const getVehiculos = (signal) => fetchWithAuth('/vehiculos', { method: 'GET', signal })
+export const getVehiculos = (signal, params = {}) => {
+  const qs = new URLSearchParams()
+  Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '') qs.set(k, v) })
+  const suffix = qs.toString() ? `?${qs.toString()}` : ''
+  return fetchWithAuth(`/vehiculos${suffix}`, { method: 'GET', signal })
+}
 export const getVehiculoById = (id, signal) => fetchWithAuth(`/vehiculos/${id}`, { method: 'GET', signal })
 export const createVehiculo = (datos) => fetchWithAuth('/vehiculos', { method: 'POST', body: JSON.stringify(datos) })
 export const updateVehiculo = (id, datos) => fetchWithAuth(`/vehiculos/${id}`, { method: 'PUT', body: JSON.stringify(datos) })

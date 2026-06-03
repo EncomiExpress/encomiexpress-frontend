@@ -8,12 +8,12 @@ import { fetchWithAuth } from './authService';
  * Obtener todos los propietarios
  * GET /api/propietarios
  */
-export const getPropietarios = async (signal) => {
-  return await fetchWithAuth('/propietarios', {
-    method: 'GET',
-    signal,
-  });
-};
+export const getPropietarios = async (signal, params = {}) => {
+  const qs = new URLSearchParams()
+  Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '') qs.set(k, v) })
+  const suffix = qs.toString() ? `?${qs.toString()}` : ''
+  return await fetchWithAuth(`/propietarios${suffix}`, { method: 'GET', signal })
+}
 
 /**
  * Obtener propietario por ID

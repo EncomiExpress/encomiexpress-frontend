@@ -10,17 +10,18 @@ export const PropietarioProvider = ({ children }) => {
   const auth = useAuth() || {}
   const token = auth?.token || null
   const [propietarios, setPropietarios] = useState([])
+  const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  // ── Fetch todos los propietarios desde la API ─────────────────────────────
-  const fetchPropietarios = useCallback(async (signal) => {
+  const fetchPropietarios = useCallback(async (signal, params = {}) => {
     setLoading(true)
     setError(null)
     try {
-      const response = await propietarioService.getPropietarios(signal)
+      const response = await propietarioService.getPropietarios(signal, params)
       if (response?.success) {
         setPropietarios(response.data)
+        setTotal(response.total ?? response.data.length)
       }
     } catch (err) {
       if (err?.name !== 'AbortError') {
@@ -138,6 +139,7 @@ export const PropietarioProvider = ({ children }) => {
 
   const value = {
     propietarios,
+    total,
     loading,
     error,
     // Selectores

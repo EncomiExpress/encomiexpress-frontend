@@ -17,6 +17,7 @@ export const useRutaProgramacion = () => useContext(RutaProgramacionContext)
 
 export const RutaProgramacionProvider = ({ children }) => {
   const [rutasProgramadas, setRutasProgramadas] = useState([])
+  const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const { token } = useAuth()
@@ -24,36 +25,14 @@ export const RutaProgramacionProvider = ({ children }) => {
   const { getTransportes, fetchVehiculos } = useTransporte()
   const fetchingRef = useRef(false)
 
-  // Pre-carga destinos y vehículos cuando existe token, para que los selectores
-  // de RegistrarRuta / ActualizarRuta tengan datos sin depender del orden
-  // de navegación del usuario.
-  useEffect(() => {
-    if (!token) return
-
-    const ac = new AbortController()
-    const load = async () => {
-      if (fetchingRef.current) return
-      fetchingRef.current = true
-      try {
-        if (destinos.length === 0) await fetchDestinos(ac.signal)
-        if (getTransportes().length === 0) await fetchVehiculos(ac.signal)
-      } finally {
-        fetchingRef.current = false
-      }
-    }
-
-    load()
-    return () => ac.abort()
-  }, [token, destinos.length, fetchDestinos, fetchVehiculos, getTransportes])
-
-  // Obtener todas las rutas desde la API
-  const fetchRutasProgramadas = useCallback(async () => {
+  const fetchRutasProgramadas = useCallback(async (params = {}) => {
     setLoading(true)
     setError(null)
     try {
-      const res = await getRutas()
+      const res = await getRutas(params)
       const data = res?.data ?? []
       setRutasProgramadas(data)
+      setTotal(res?.total ?? data.length)
       return data
     } catch (err) {
       setError(err.message || 'Error al cargar rutas')
@@ -123,6 +102,7 @@ export const RutaProgramacionProvider = ({ children }) => {
 
   const value = {
     rutasProgramadas,
+    total,
     loading,
     error,
     fetchRutasProgramadas,

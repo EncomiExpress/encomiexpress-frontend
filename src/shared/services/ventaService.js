@@ -2,8 +2,12 @@ import { fetchWithAuth } from './authService'
 
 // ── Encomiendas / Ventas ──────────────────────────────────────────────────────
 
-export const getEncomiendas = (signal) =>
-  fetchWithAuth('/encomiendas', { method: 'GET', signal })
+export const getEncomiendas = (signal, params = {}) => {
+  const qs = new URLSearchParams()
+  Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '') qs.set(k, v) })
+  const suffix = qs.toString() ? `?${qs.toString()}` : ''
+  return fetchWithAuth(`/encomiendas${suffix}`, { method: 'GET', signal })
+}
 
 export const getEncomiendaById = (id, signal) =>
   fetchWithAuth(`/encomiendas/${id}`, { method: 'GET', signal })

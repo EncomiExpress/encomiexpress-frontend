@@ -1,6 +1,11 @@
 import { fetchWithAuth } from './authService'
 
-export const getRutas        = ()         => fetchWithAuth('/rutas')
+export const getRutas = (params = {}) => {
+  const qs = new URLSearchParams()
+  Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '') qs.set(k, v) })
+  const suffix = qs.toString() ? `?${qs.toString()}` : ''
+  return fetchWithAuth(`/rutas${suffix}`)
+}
 export const getRutaById     = (id)       => fetchWithAuth(`/rutas/${id}`)
 export const createRuta      = (datos)    => fetchWithAuth('/rutas',     { method: 'POST',  body: JSON.stringify(datos) })
 export const updateRuta      = (id, datos)=> fetchWithAuth(`/rutas/${id}`, { method: 'PUT', body: JSON.stringify(datos) })

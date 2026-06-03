@@ -1,11 +1,12 @@
 import { useTheme } from '@mui/material/styles'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
     Box, Typography, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, Chip, IconButton,
     TextField, InputAdornment, Snackbar, Alert,
-    Tooltip, Button, Dialog, Avatar, CircularProgress
+    Tooltip, Button, Dialog, Avatar, CircularProgress,
+    Select, MenuItem, FormControl, Pagination
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
@@ -17,6 +18,8 @@ import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined'
 import AttachMoneyOutlinedIcon from '@mui/icons-material/AttachMoneyOutlined'
 import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank'
 import CheckBoxIcon from '@mui/icons-material/CheckBox'
+import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
+import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import { useDestino } from '../../shared/contexts/DestinoContext.jsx'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
 import RegistrarDestino from './RegistrarDestino'
@@ -45,22 +48,36 @@ const ListarDestino = () => {
     const [destinoVer, setDestinoVer] = useState(null)
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
     const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
+    const [page, setPage] = useState(1)
+    const [rowsPerPage, setRowsPerPage] = useState(5)
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [destinoEditar, setDestinoEditar] = useState(null)
     const [togglingId, setTogglingId] = useState(null)
 
-    const { destinos, loading, error, fetchDestinos, toggleHabilitado } = useDestino()
+    const { destinos, total, loading, error, fetchDestinos, toggleHabilitado } = useDestino()
     const { usuario, tienePermiso, PERMISOS } = useAuth()
     const navigate = useNavigate()
 
+    const fetchDestinosBackend = useCallback(() => {
+      fetchDestinos(undefined, {
+        page,
+        limit: rowsPerPage,
+        habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
+        sortBy: 'idDestino.asc',
+        q: searchTerm.trim() || undefined,
+      })
+    }, [page, rowsPerPage, filtroHabilitado, searchTerm, fetchDestinos])
+
     useEffect(() => {
-        if (!usuario) {
-            navigate('/login')
-        } else {
-            fetchDestinos()
-        }
-    }, [usuario, navigate, fetchDestinos])
+      fetchDestinosBackend()
+    }, [fetchDestinosBackend])
+
+    useEffect(() => {
+      if (!usuario) {
+        navigate('/login')
+      }
+    }, [usuario, navigate])
 
     const handleToggleHabilitado = async (id, habilitadoActual) => {
         setTogglingId(id)
@@ -82,22 +99,14 @@ const ListarDestino = () => {
         }
     }
 
-    const filteredDestinos = destinos.filter(d => {
-        const q = searchTerm.toLowerCase()
-        const coincideBusqueda = !q ||
-            (d.ciudad || '').toLowerCase().includes(q) ||
-            (d.departamento || '').toLowerCase().includes(q)
-
-        const coincideHabilitado =
-            filtroHabilitado === 'todo' ||
-            (filtroHabilitado === 'habilitado' && d.habilitado) ||
-            (filtroHabilitado === 'inhabilitado' && !d.habilitado)
-
-        return coincideBusqueda && coincideHabilitado
-    })
-
-    const limpiarFiltros = () => { setSearchTerm(''); setFiltroHabilitado('todo') }
+    const limpiarFiltros = () => { setSearchTerm(''); setFiltroHabilitado('todo'); setPage(1) }
+    const limpiarBusqueda = () => { setSearchTerm(''); setPage(1) }
     const hayFiltrosActivos = searchTerm.trim() !== '' || filtroHabilitado !== 'todo'
+
+    const totalPages = Math.max(1, Math.ceil(total / rowsPerPage))
+    const safePage = Math.min(page, totalPages)
+    const from = total === 0 ? 0 : (safePage - 1) * rowsPerPage + 1
+    const to = Math.min(safePage * rowsPerPage, total)
 
     return (
         <Box sx={{ p: 3.5 }}>
@@ -110,7 +119,7 @@ const ListarDestino = () => {
                             Destinos
                         </Typography>
                         <Chip
-                            label={`${destinos.length} registrado${destinos.length !== 1 ? 's' : ''}`}
+                            label={`${total} registrado${total !== 1 ? 's' : ''}`}
                             size="small"
                             sx={{ backgroundColor: '#F3F4F6', color: theme.palette.text.secondary, fontWeight: 500, fontSize: '0.72rem', height: 22, borderRadius: 10 }}
                         />
@@ -212,18 +221,24 @@ const ListarDestino = () => {
                                         <Typography variant="body2" color="error">{error}</Typography>
                                     </TableCell>
                                 </TableRow>
-                            ) : filteredDestinos.length === 0 ? (
+                            ) : total === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={5} align="center" sx={{ py: 7 }}>
                                         <Typography color={theme.palette.text.secondary} variant="body2">
-                                            {destinos.length === 0
-                                                ? 'No hay destinos registrados en el sistema.'
-                                                : 'No se encontraron destinos que coincidan con la búsqueda.'}
+                                            No hay destinos registrados en el sistema.
+                                        </Typography>
+                                    </TableCell>
+                                </TableRow>
+                            ) : destinos.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={5} align="center" sx={{ py: 7 }}>
+                                        <Typography color={theme.palette.text.secondary} variant="body2">
+                                            No hay destinos en esta página.
                                         </Typography>
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                filteredDestinos.map(destino => (
+                                destinos.map(destino => (
                                     <TableRow key={destino.idDestino}
                                         sx={{
                                             '&:hover': { backgroundColor: theme.palette.background.subtle },
@@ -322,10 +337,97 @@ const ListarDestino = () => {
                 </TableContainer>
             </Paper>
 
-            <Box sx={{ display: 'flex', alignItems: 'center', px: 0.5, pt: 1.5 }}>
+            <Box sx={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                px: 0.5, pt: 1.5,
+            }}>
                 <Typography variant="body2" color={theme.palette.text.secondary}>
-                    Total: {filteredDestinos.length} destino{filteredDestinos.length !== 1 ? 's' : ''}
+                    Mostrando {from}–{to} de {total} resultado{total !== 1 ? 's' : ''}
                 </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="body2" color={theme.palette.text.secondary} fontWeight={500}>
+                            Filas
+                        </Typography>
+                        <Select
+                            value={rowsPerPage}
+                            onChange={e => { setRowsPerPage(Number(e.target.value)); setPage(1) }}
+                            size="small"
+                            renderValue={(value) => value}
+                            IconComponent={KeyboardArrowDownOutlinedIcon}
+                            sx={{
+                                fontSize: '0.82rem',
+                                borderRadius: 2,
+                                '& .MuiSelect-select': { py: 0.6, pl: 1.5, pr: '28px !important' },
+                                '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
+                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#BDBDBD' },
+                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                    borderColor: '#E57373',
+                                    borderWidth: '1px',
+                                },
+                                '&.Mui-focused': { boxShadow: '0 0 0 3px rgba(229,115,115,0.18)' },
+                                '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
+                                '& .MuiTouchRipple-root': { display: 'none' },
+                            }}
+                            MenuProps={{
+                                slotProps: {
+                                    paper: {
+                                        sx: {
+                                            borderRadius: 2,
+                                            boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+                                            mt: 0.5,
+                                            minWidth: 80,
+                                            '& .MuiMenuItem-root': {
+                                                fontSize: '0.82rem', py: 0.9, px: 2,
+                                                display: 'flex', justifyContent: 'space-between', gap: 2,
+                                                '&:hover': { backgroundColor: '#FFF5F5' },
+                                                '&.Mui-selected': { backgroundColor: 'transparent', fontWeight: 600, color: theme.palette.text.primary },
+                                                '&.Mui-selected:hover': { backgroundColor: '#FFF5F5' },
+                                            },
+                                        },
+                                    },
+                                },
+                            }}
+                        >
+                            {[5, 10, 25].map(n => (
+                                <MenuItem key={n} value={n}>{n}
+                                    {rowsPerPage === n && <CheckOutlinedIcon sx={{ fontSize: 14, color: theme.palette.text.secondary }} />}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </Box>
+                    <Pagination
+                        count={totalPages}
+                        page={safePage}
+                        onChange={(_, val) => setPage(val)}
+                        size="small"
+                        shape="rounded"
+                        sx={{
+                            '& .MuiPaginationItem-root': {
+                                fontSize: '0.82rem',
+                                borderRadius: '8px',
+                                minWidth: 34,
+                                height: 34,
+                                mx: 0.2,
+                                color: theme.palette.text.primary,
+                                border: `1px solid ${theme.palette.divider}`,
+                                '& .MuiTouchRipple-root': { display: 'none' },
+                            },
+                            '& .MuiPaginationItem-ellipsis': { border: 'none' },
+                            '& .MuiPaginationItem-root.Mui-selected': {
+                                backgroundColor: theme.palette.primary.main,
+                                borderColor: theme.palette.primary.main,
+                                color: 'white',
+                                fontWeight: 600,
+                                '&:hover': { backgroundColor: theme.palette.primary.darker },
+                            },
+                            '& .MuiPaginationItem-root:hover:not(.Mui-selected)': {
+                                backgroundColor: theme.palette.background.subtle,
+                                borderColor: '#BDBDBD',
+                            },
+                        }}
+                    />
+                </Box>
             </Box>
 
             {/* ── Modal detalle ── */}

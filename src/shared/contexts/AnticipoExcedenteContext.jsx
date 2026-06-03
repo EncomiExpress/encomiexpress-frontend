@@ -14,10 +14,28 @@ export const AnticipoExcedenteProvider = ({ children }) => {
   const { rutasProgramadas, fetchRutasProgramadas } = useRutaProgramacion()
 
   const [anticipos, setAnticipos] = useState([])
+  const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  // Cargar anticipos cuando hay token
+  const fetchAnticipos = useCallback(async (signal, params = {}) => {
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await anticipoService.getAnticipos(signal, params)
+      if (res?.success) {
+        setAnticipos(res.data)
+        setTotal(res.total ?? res.data.length)
+      }
+    } catch (err) {
+      if (err?.name !== 'AbortError' && err.status !== 403) {
+        setError(err.message)
+      }
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
   useEffect(() => {
     if (!token) {
       setLoading(false)
@@ -25,22 +43,11 @@ export const AnticipoExcedenteProvider = ({ children }) => {
     }
 
     const abortController = new AbortController()
-    const loadAnticipos = async () => {
-      try {
-        const res = await anticipoService.getAnticipos(abortController.signal)
-        if (res?.data) {
-          setAnticipos(res.data)
-        }
-      } catch (err) {
-        if (err?.name !== 'AbortError' && err.status !== 403) {
-          setError(err.message)
-        }
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    loadAnticipos()
+    fetchAnticipos(abortController.signal, {
+      page: 1,
+      limit: 5,
+      sortBy: 'fechaEntrega.desc'
+    })
     return () => abortController.abort()
   }, [token])
 
@@ -110,6 +117,8 @@ export const AnticipoExcedenteProvider = ({ children }) => {
     <AnticipoExcedenteContext.Provider
       value={{
         anticipos,
+        total,
+        fetchAnticipos,
         conductores: conductoresNormalizados,
         rutas: rutasNormalizadas,
         loading,

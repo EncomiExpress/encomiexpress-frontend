@@ -8,8 +8,13 @@ import { fetchWithAuth } from './authService';
  * Obtener todos los conductores
  * GET /api/conductores
  */
-export const getConductores = async (signal) => {
-  return await fetchWithAuth('/conductores', {
+export const getConductores = async (signal, params = {}) => {
+  const qs = new URLSearchParams()
+  Object.entries(params).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== '') qs.set(k, v)
+  })
+  const suffix = qs.toString() ? `?${qs.toString()}` : ''
+  return await fetchWithAuth(`/conductores${suffix}`, {
     method: 'GET',
     signal,
   });

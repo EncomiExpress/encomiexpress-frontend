@@ -9,32 +9,29 @@ export const useConductor = () => useContext(ConductorContext)
 export const ConductorProvider = ({ children }) => {
   const { token } = useAuth()
   const [conductores, setConductores] = useState([])
+  const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  // ─── fetchConductores DEBE declararse PRIMERO ────────────────────────────────
-  // Las demás funciones lo referencian en sus dependencias; si se declara después
-  // se produce: "Cannot access 'fetchConductores' before initialization"
-  const fetchConductores = useCallback(async (signal) => {
+  const fetchConductores = useCallback(async (signal, params = {}) => {
     setLoading(true)
     setError(null)
     try {
-      const response = await conductorService.getConductores(signal)
+      const response = await conductorService.getConductores(signal, params)
       if (response?.success) {
         const datos = response.data.map(c => ({
           ...c,
-          // Aplanar los datos del usuario anidado para facilitar el uso en vistas
           nombre: c.usuario?.nombre || c.nombre || '',
           apellido: c.usuario?.apellido || c.apellido || '',
           telefono: c.usuario?.telefono || c.telefono || '',
           email: c.usuario?.email || c.email || '',
           tipoIdentificacion: c.usuario?.tipoIdentificacion || c.tipoIdentificacion || '',
           numeroIdentificacion: c.usuario?.numeroIdentificacion || c.numeroIdentificacion || '',
-          // Mapear campos de licencia al nombre que usan las vistas
           licenciaConduccion: c.categoriaLicencia || '',
           fechaVencimientoLicencia: c.vencimientoLicencia || '',
         }))
         setConductores(datos)
+        setTotal(response.total || datos.length)
       }
     } catch (err) {
       if (err?.name !== 'AbortError') {
@@ -226,6 +223,7 @@ export const ConductorProvider = ({ children }) => {
 
   const value = {
     conductores,
+    total,
     loading,
     error,
     // Lecturas

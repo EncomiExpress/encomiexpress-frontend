@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import * as ventaService from '../services/ventaService'
 import { useAuth } from './AuthContext'
 
@@ -32,8 +32,28 @@ const normalize = (e) => ({
 export const VentaProvider = ({ children }) => {
   const { token } = useAuth()
   const [ventas, setVentas] = useState([])
+  const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+
+  const fetchVentas = useCallback(async (params = {}) => {
+    const abortController = new AbortController()
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await ventaService.getEncomiendas(abortController.signal, params)
+      if (res?.success) {
+        setVentas((res.data ?? []).map(normalize))
+        setTotal(res.total ?? 0)
+      }
+    } catch (err) {
+      if (err?.name !== 'AbortError') {
+        setError(err.message)
+      }
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
     if (!token) {
@@ -41,25 +61,8 @@ export const VentaProvider = ({ children }) => {
       return
     }
 
-    const abortController = new AbortController()
-    const loadVentas = async () => {
-      try {
-        const res = await ventaService.getEncomiendas(abortController.signal)
-        if (res?.data) {
-          setVentas(res.data.map(normalize))
-        }
-      } catch (err) {
-        if (err?.name !== 'AbortError') {
-          setError(err.message)
-        }
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    loadVentas()
-    return () => abortController.abort()
-  }, [token])
+    fetchVentas()
+  }, [token, fetchVentas])
 
   const agregarVenta = async (datos) => {
     const res = await ventaService.createEncomienda(datos)
@@ -93,11 +96,12 @@ export const VentaProvider = ({ children }) => {
 
   return (
     <VentaContext.Provider value={{
-      ventas, loading, error,
+      ventas, total, loading, error,
+      fetchVentas,
       agregarVenta,
       actualizarVenta,
       cambiarEstadoVenta,
-      toggleHabilitadoVenta,   // ⚠️ nombre correcto expuesto al contexto
+      toggleHabilitadoVenta,
       ESTADOS_ENCOMIENDA,
       METODOS_PAGO,
       ESTADOS_PAGO,

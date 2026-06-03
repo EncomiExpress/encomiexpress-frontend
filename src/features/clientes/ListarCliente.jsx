@@ -1,5 +1,5 @@
 import { useTheme } from '@mui/material/styles'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useClientes } from '../../shared/contexts/ClienteContext.jsx'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
 import {
@@ -137,7 +137,7 @@ const FILTROS = [
 const ListarCliente = () => {
     const theme = useTheme()
     const thStyle = getThStyle(theme)
-    const { clientes, loading, error, actualizarEstadoCliente } = useClientes()
+    const { clientes, total, loading, error, fetchClientes, actualizarEstadoCliente } = useClientes()
     const { tienePermiso, PERMISOS } = useAuth()
     const [busqueda, setBusqueda] = useState('')
     const [filtroEstado, setFiltroEstado] = useState('todo')
@@ -149,47 +149,54 @@ const ListarCliente = () => {
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [clienteEditar, setClienteEditar] = useState(null)
 
+    useEffect(() => {
+        let active = true
+        const controller = new AbortController()
+
+        const cargar = async () => {
+            await fetchClientes(controller.signal, {
+                page,
+                limit: rowsPerPage,
+                estado: filtroEstado === 'todo' ? undefined : filtroEstado,
+                q: busqueda.trim() || undefined,
+            })
+        }
+
+        cargar()
+        return () => {
+            active = false
+            controller.abort()
+        }
+    }, [page, rowsPerPage, filtroEstado, busqueda, fetchClientes])
+
     const handleToggleHabilitado = async (id, nuevoEstado) => {
         try {
             await actualizarEstadoCliente(id, nuevoEstado)
             setSnackbar({ open: true, message: `Cliente ${nuevoEstado ? 'habilitado' : 'inhabilitado'} correctamente`, severity: 'success' })
+            await fetchClientes(undefined, { page, limit: rowsPerPage, estado: filtroEstado === 'todo' ? undefined : filtroEstado, q: busqueda.trim() || undefined })
         } catch (err) {
             setSnackbar({ open: true, message: 'Error al cambiar el estado', severity: 'error' })
         }
     }
 
-    const clientesFiltrados = clientes.filter(c => {
-        const q = busqueda.toLowerCase().trim()
-        const coincideBusqueda = !q ||
-            c.nombre.toLowerCase().includes(q) ||
-            c.apellido.toLowerCase().includes(q) ||
-            (`${c.nombre} ${c.apellido}`).toLowerCase().includes(q) ||
-            c.email.toLowerCase().includes(q) ||
-            c.telefono.includes(q) ||
-            c.numeroIdentificacion.includes(q) ||
-            c.tipoIdentificacion.toLowerCase().includes(q)
-
-        const coincideEstado =
-            filtroEstado === 'todo' ||
-            (filtroEstado === 'habilitado' && c.habilitado) ||
-            (filtroEstado === 'inhabilitado' && !c.habilitado)
-
-        return coincideBusqueda && coincideEstado
-    })
-
-    const limpiarFiltros = () => {
-        setBusqueda('')
-        setFiltroEstado('todo')
-        setPage(1)
+    const cargarClientes = async () => {
+        await fetchClientes(undefined, { page, limit: rowsPerPage, estado: filtroEstado === 'todo' ? undefined : filtroEstado, q: busqueda.trim() || undefined })
     }
 
-    const hayFiltrosActivos = busqueda.trim() !== '' || filtroEstado !== 'todo'
+    useEffect(() => {
+        cargarClientes()
+    }, [page, rowsPerPage, filtroEstado, busqueda])
 
-    const totalPages = Math.max(1, Math.ceil(clientesFiltrados.length / rowsPerPage))
+    const totalPages = Math.max(1, Math.ceil(total / rowsPerPage))
     const safePage = Math.min(page, totalPages)
-    const paginatedClientes = clientesFiltrados.slice((safePage - 1) * rowsPerPage, safePage * rowsPerPage)
-    const from = clientesFiltrados.length === 0 ? 0 : (safePage - 1) * rowsPerPage + 1
-    const to = Math.min(safePage * rowsPerPage, clientesFiltrados.length)
+    const from = total === 0 ? 0 : (safePage - 1) * rowsPerPage + 1
+    const to = Math.min(safePage * rowsPerPage, total)
+
+    const totalClientes = total
+    const totalActivos = clientes.filter(c => c.habilitado).length
+    const totalInactivos = clientes.filter(c => !c.habilitado).length
+    const hayFiltrosActivos = busqueda.trim() !== '' || filtroEstado !== 'todo'
+    const paginatedClientes = clientes
 
     return (
         <Box sx={{ p: 3.5 }}>
@@ -488,7 +495,7 @@ const ListarCliente = () => {
                 px: 0.5, pt: 1.5,
             }}>
                 <Typography variant="body2" color={theme.palette.text.secondary}>
-                    Mostrando {from}–{to} de {clientesFiltrados.length} resultado{clientesFiltrados.length !== 1 ? 's' : ''}
+                    Mostrando {from}–{to} de {total} resultado{total !== 1 ? 's' : ''}
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

@@ -1,11 +1,12 @@
 import { useTheme } from '@mui/material/styles'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
     Box, Typography, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, Chip, IconButton,
-    TextField, InputAdornment, Snackbar, Alert,
-    Tooltip, Button, Dialog, Avatar
+    TextField, InputAdornment, Select, MenuItem, FormControl,
+    Snackbar, Alert, Tooltip, Button, Dialog, DialogTitle, DialogContent, DialogActions,
+    Avatar, Pagination, CircularProgress
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
@@ -18,6 +19,8 @@ import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
 import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
 import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank'
 import CheckBoxIcon from '@mui/icons-material/CheckBox'
+import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
+import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import { usePropietario } from '../../shared/contexts/PropietarioContext.jsx'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
 import RegistrarPropietario from './RegistrarPropietario'
@@ -47,72 +50,76 @@ const ListarPropietario = () => {
     const [propietarioVer, setPropietarioVer] = useState(null)
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
     const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
+    const [page, setPage] = useState(1)
+    const [rowsPerPage, setRowsPerPage] = useState(5)
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [propietarioEditar, setPropietarioEditar] = useState(null)
 
-    const { propietarios, fetchPropietarios, toggleHabilitado } = usePropietario()
+    const { propietarios, total, loading, error, fetchPropietarios, toggleHabilitado } = usePropietario()
     const { usuario, tienePermiso, PERMISOS } = useAuth()
 
+    const fetchPropietariosBackend = useCallback(() => {
+      fetchPropietarios(undefined, {
+        page,
+        limit: rowsPerPage,
+        habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
+        sortBy: 'idPropietario.asc',
+        q: searchTerm.trim() || undefined,
+      })
+    }, [page, rowsPerPage, filtroHabilitado, searchTerm, fetchPropietarios])
+
     useEffect(() => {
-        if (!usuario) {
-            navigate('/login')
-        } else {
-            fetchPropietarios()
-        }
-    }, [usuario, navigate, fetchPropietarios])
+      fetchPropietariosBackend()
+    }, [fetchPropietariosBackend])
+
+    useEffect(() => {
+      if (!usuario) {
+        navigate('/login')
+      }
+    }, [usuario, navigate])
 
     const handleToggleHabilitado = async (id, habilitadoActual) => {
-        const success = await toggleHabilitado(id)
-        if (success) {
-            setSnackbar({
-                open: true,
-                message: `Propietario ${habilitadoActual ? 'inhabilitado' : 'habilitado'} correctamente.`,
-                severity: 'success',
-            })
-        } else {
-            setSnackbar({
-                open: true,
-                message: 'No se pudo cambiar el estado del propietario. Verifica que no tenga vehículos activos.',
-                severity: 'error',
-            })
-        }
+      const success = await toggleHabilitado(id)
+      if (success) {
+        setSnackbar({
+          open: true,
+          message: `Propietario ${habilitadoActual ? 'inhabilitado' : 'habilitado'} correctamente.`,
+          severity: 'success',
+        })
+      } else {
+        setSnackbar({
+          open: true,
+          message: 'No se pudo cambiar el estado del propietario. Verifica que no tenga vehículos activos.',
+          severity: 'error',
+        })
+      }
     }
 
-    const propietariosFiltrados = propietarios.filter(p => {
-        const q = searchTerm.toLowerCase()
-        const coincideBusqueda = !q ||
-            (p.nombre || '').toLowerCase().includes(q) ||
-            (p.apellido || '').toLowerCase().includes(q) ||
-            (p.numeroIdentificacion || '').toLowerCase().includes(q) ||
-            (p.tipoIdentificacion || '').toLowerCase().includes(q) ||
-            (p.email || '').toLowerCase().includes(q)
-
-        const coincideHabilitado =
-            filtroHabilitado === 'todo' ||
-            (filtroHabilitado === 'habilitado' && p.habilitado) ||
-            (filtroHabilitado === 'inhabilitado' && !p.habilitado)
-
-        return coincideBusqueda && coincideHabilitado
-    })
-
-    const limpiarFiltros = () => { setSearchTerm(''); setFiltroHabilitado('todo') }
+    const limpiarFiltros = () => { setSearchTerm(''); setFiltroHabilitado('todo'); setPage(1) }
+    const limpiarBusqueda = () => { setSearchTerm(''); setPage(1) }
     const hayFiltrosActivos = searchTerm.trim() !== '' || filtroHabilitado !== 'todo'
+
+    const totalPages = Math.max(1, Math.ceil(total / rowsPerPage))
+    const safePage = Math.min(page, totalPages)
+    const from = total === 0 ? 0 : (safePage - 1) * rowsPerPage + 1
+    const to = Math.min(safePage * rowsPerPage, total)
 
     return (
         <Box sx={{ p: 3.5 }}>
-            {/* Encabezado */}
             <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
                 <Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                         <Typography variant="h5" fontWeight={700} color={theme.palette.text.primary}>
                             Propietarios
                         </Typography>
-                        <Chip
-                            label={`${propietarios.length} registrado${propietarios.length !== 1 ? 's' : ''}`}
-                            size="small"
-                            sx={{ backgroundColor: '#F3F4F6', color: theme.palette.text.secondary, fontWeight: 500, fontSize: '0.72rem', height: 22, borderRadius: 10 }}
-                        />
+                        {!loading && !error && (
+                            <Chip
+                                label={`${total} registrado${total !== 1 ? 's' : ''}`}
+                                size="small"
+                                sx={{ backgroundColor: '#F3F4F6', color: theme.palette.text.secondary, fontWeight: 500, fontSize: '0.72rem', height: 22, borderRadius: 10 }}
+                            />
+                        )}
                     </Box>
                     <Typography variant="body2" color={theme.palette.text.secondary} mt={0.3}>
                         Gestiona los propietarios de vehículos registrados en el sistema.
@@ -131,10 +138,9 @@ const ListarPropietario = () => {
                 </Button>
             </Box>
 
-            {/* Filtros de estado */}
             <Box sx={{ display: 'inline-flex', backgroundColor: '#FFECEC', borderRadius: 4, p: '4px', mb: 2.5, gap: '5px' }}>
                 {FILTROS.map(f => (
-                    <Button key={f.value} onClick={() => setFiltroHabilitado(f.value)} size="small" disableElevation disableRipple
+                    <Button key={f.value} onClick={() => { setFiltroHabilitado(f.value); setPage(1) }} size="small" disableElevation disableRipple
                         sx={{
                             borderRadius: 3, textTransform: 'none', fontSize: '0.75rem', px: 2, py: 0.5, minWidth: 0,
                             fontWeight: filtroHabilitado === f.value ? 600 : 400,
@@ -149,7 +155,6 @@ const ListarPropietario = () => {
                 ))}
             </Box>
 
-            {/* Buscador */}
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
                 <TextField size="small" placeholder="Buscar propietarios..."
                     sx={{
@@ -160,7 +165,7 @@ const ListarPropietario = () => {
                             '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
                         },
                     }}
-                    value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
+                    value={searchTerm} onChange={e => { setSearchTerm(e.target.value); setPage(1) }}
                     slotProps={{
                         input: {
                             startAdornment: <InputAdornment position="start"><SearchIcon sx={{ color: theme.palette.text.secondary, fontSize: 20 }} /></InputAdornment>,
@@ -178,7 +183,6 @@ const ListarPropietario = () => {
                 )}
             </Box>
 
-            {/* Tabla */}
             <Paper elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 3, overflow: 'hidden' }}>
                 <TableContainer>
                     <Table>
@@ -192,18 +196,30 @@ const ListarPropietario = () => {
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {propietariosFiltrados.length === 0 ? (
+                            {loading ? (
+                                <TableRow>
+                                    <TableCell colSpan={5} align="center" sx={{ py: 7 }}>
+                                        <CircularProgress size={28} sx={{ color: theme.palette.primary.main }} />
+                                    </TableCell>
+                                </TableRow>
+                            ) : error ? (
+                                <TableRow>
+                                    <TableCell colSpan={5} align="center" sx={{ py: 7 }}>
+                                        <Typography color="error" variant="body2">{error}</Typography>
+                                    </TableCell>
+                                </TableRow>
+                            ) : propietarios.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={5} align="center" sx={{ py: 7 }}>
                                         <Typography color={theme.palette.text.secondary} variant="body2">
-                                            {propietarios.length === 0
+                                            {total === 0
                                                 ? 'No hay propietarios registrados en el sistema.'
                                                 : 'No se encontraron propietarios que coincidan con la búsqueda.'}
                                         </Typography>
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                propietariosFiltrados.map((propietario) => (
+                                propietarios.map((propietario) => (
                                     <TableRow key={propietario.idPropietario}
                                         sx={{
                                             '&:hover': { backgroundColor: theme.palette.background.subtle },
@@ -266,13 +282,114 @@ const ListarPropietario = () => {
                 </TableContainer>
             </Paper>
 
-            <Box sx={{ display: 'flex', alignItems: 'center', px: 0.5, pt: 1.5 }}>
+            <Box sx={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                px: 0.5, pt: 1.5,
+            }}>
                 <Typography variant="body2" color={theme.palette.text.secondary}>
-                    Total: {propietariosFiltrados.length} propietario{propietariosFiltrados.length !== 1 ? 's' : ''}
+                    Mostrando {from}–{to} de {total} resultado{total !== 1 ? 's' : ''}
                 </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="body2" color={theme.palette.text.secondary} fontWeight={500}>
+                            Filas
+                        </Typography>
+                        <Select
+                            value={rowsPerPage}
+                            onChange={e => { setRowsPerPage(Number(e.target.value)); setPage(1) }}
+                            size="small"
+                            renderValue={(value) => value}
+                            IconComponent={KeyboardArrowDownOutlinedIcon}
+                            sx={{
+                                fontSize: '0.82rem',
+                                borderRadius: 2,
+                                '& .MuiSelect-select': { py: 0.6, pl: 1.5, pr: '28px !important' },
+                                '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
+                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#BDBDBD' },
+                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                    borderColor: '#E57373',
+                                    borderWidth: '1px',
+                                },
+                                '&.Mui-focused': {
+                                    boxShadow: '0 0 0 3px rgba(229,115,115,0.18)',
+                                },
+                                '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
+                                '& .MuiTouchRipple-root': { display: 'none' },
+                            }}
+                            MenuProps={{
+                                slotProps: {
+                                    paper: {
+                                        sx: {
+                                            borderRadius: 2,
+                                            boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+                                            mt: 0.5,
+                                            minWidth: 80,
+                                            '& .MuiMenuItem-root': {
+                                                fontSize: '0.82rem',
+                                                py: 0.9,
+                                                px: 2,
+                                                display: 'flex',
+                                                justifyContent: 'space-between',
+                                                gap: 2,
+                                                '&:hover': { backgroundColor: '#FFF5F5' },
+                                                '&.Mui-selected': {
+                                                    backgroundColor: 'transparent',
+                                                    fontWeight: 600,
+                                                    color: theme.palette.text.primary,
+                                                },
+                                                '&.Mui-selected:hover': { backgroundColor: '#FFF5F5' },
+                                            },
+                                        },
+                                    },
+                                },
+                            }}
+                        >
+                            {[5, 10, 25].map(n => (
+                                <MenuItem key={n} value={n}>
+                                    {n}
+                                    {rowsPerPage === n && (
+                                        <CheckOutlinedIcon sx={{ fontSize: 14, color: theme.palette.text.secondary }} />
+                                    )}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </Box>
+                    <Pagination
+                        count={totalPages}
+                        page={safePage}
+                        onChange={(_, val) => setPage(val)}
+                        size="small"
+                        shape="rounded"
+                        sx={{
+                            '& .MuiPaginationItem-root': {
+                                fontSize: '0.82rem',
+                                borderRadius: '8px',
+                                minWidth: 34,
+                                height: 34,
+                                mx: 0.2,
+                                color: theme.palette.text.primary,
+                                border: `1px solid ${theme.palette.divider}`,
+                                '& .MuiTouchRipple-root': { display: 'none' },
+                            },
+                            '& .MuiPaginationItem-ellipsis': {
+                                border: 'none',
+                            },
+                            '& .MuiPaginationItem-root.Mui-selected': {
+                                backgroundColor: theme.palette.primary.main,
+                                borderColor: theme.palette.primary.main,
+                                color: 'white',
+                                fontWeight: 600,
+                                '&:hover': { backgroundColor: theme.palette.darker },
+                            },
+                            '& .MuiPaginationItem-root:hover:not(.Mui-selected)': {
+                                backgroundColor: theme.palette.background.subtle,
+                                borderColor: '#BDBDBD',
+                            },
+                        }}
+                    />
+                </Box>
             </Box>
 
-            {/* Modal detalle */}
             {propietarioVer && (
                 <Dialog open onClose={() => setPropietarioVer(null)} maxWidth="md" fullWidth
                     slotProps={{ paper: { sx: { borderRadius: 3, p: 3, backgroundColor: '#FAFAFA' } } }}>
@@ -285,10 +402,10 @@ const ListarPropietario = () => {
                             Información del perfil del propietario
                         </Typography>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5 }}>
-                            <Avatar sx={{ 
-                                backgroundColor: propietarioVer.habilitado ? theme.palette.avatarDefault.bg : theme.palette.avatarDisabled.bg, 
-                                color: propietarioVer.habilitado ? theme.palette.avatarDefault.color : theme.palette.avatarDisabled.color, 
-                                width: 70, height: 70, fontSize: '1.5rem', fontWeight: 700 
+                            <Avatar sx={{
+                                backgroundColor: propietarioVer.habilitado ? theme.palette.avatarDefault.bg : theme.palette.avatarDisabled.bg,
+                                color: propietarioVer.habilitado ? theme.palette.avatarDefault.color : theme.palette.avatarDisabled.color,
+                                width: 70, height: 70, fontSize: '1.5rem', fontWeight: 700
                             }}>
                                 {(propietarioVer.nombre?.[0] || '').toUpperCase()}{(propietarioVer.apellido?.[0] || '').toUpperCase()}
                             </Avatar>
@@ -364,18 +481,15 @@ const ListarPropietario = () => {
                     </Box>
 
                     <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-                        <Button onClick={() => setPropietarioVer(null)} variant="contained" sx={{
-                            backgroundColor: theme.palette.primary.main, borderRadius: 2, textTransform: 'none',
-                            boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
-                            '&:hover': { backgroundColor: theme.palette.primary.dark },
-                        }}>
+                        <Button onClick={() => setPropietarioVer(null)} variant="contained"
+                            sx={{ backgroundColor: theme.palette.primary.main, borderRadius: 2, textTransform: 'none',
+                                boxShadow: '0 4px 14px rgba(204,24,24,0.2)', '&:hover': { backgroundColor: theme.palette.primary.dark } }}>
                             Cerrar
                         </Button>
                     </Box>
                 </Dialog>
             )}
 
-            {/* Modales CRUD */}
             <RegistrarPropietario
                 open={modalRegistrarOpen}
                 onClose={() => setModalRegistrarOpen(false)}
@@ -409,4 +523,3 @@ const ListarPropietario = () => {
 }
 
 export default ListarPropietario
-

@@ -169,15 +169,18 @@ export const AuthProvider = ({ children }) => {
   const recuperarPassword = async () => ({ success: true })
 
   // Backend real
-  const getUsuarios = async () => {
+  const getUsuarios = async (params = {}) => {
     try {
-      const res = await fetch(`${API_URL}/usuarios`, {
+      const qs = new URLSearchParams()
+      Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '') qs.set(k, v) })
+      const suffix = qs.toString() ? `?${qs.toString()}` : ''
+      const res = await fetch(`${API_URL}/usuarios${suffix}`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       const data = await res.json()
-      return { success: res.ok, data: data.data || [] }
+      return { success: res.ok, data: data.data || [], total: data.total ?? (data.data || []).length }
     } catch {
-      return { success: false, data: [] }
+      return { success: false, data: [], total: 0 }
     }
   }
 

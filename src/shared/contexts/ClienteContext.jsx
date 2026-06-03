@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import * as clienteService from '../services/clienteService.js'
 import { useAuth } from './AuthContext'
 
@@ -6,14 +6,32 @@ const ClienteContext = createContext()
 
 export const useClientes = () => useContext(ClienteContext)
 
-// El backend devuelve `id`, el frontend usa `idCliente` — normalizamos aquí
 const normalize = (c) => ({ ...c, idCliente: c.id })
 
 export const ClienteProvider = ({ children }) => {
     const { token } = useAuth()
     const [clientes, setClientes] = useState([])
+    const [total, setTotal] = useState(0)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
+
+    const fetchClientes = useCallback(async (signal, params = {}) => {
+        setLoading(true)
+        setError(null)
+        try {
+            const res = await clienteService.getClientes(signal, params)
+            if (res?.success) {
+                setClientes((res.data || []).map(normalize))
+                setTotal(res.total ?? (res.data || []).length)
+            }
+        } catch (err) {
+            if (err?.name !== 'AbortError' && err.status !== 403) {
+                setError(err.message)
+            }
+        } finally {
+            setLoading(false)
+        }
+    }, [])
 
     useEffect(() => {
         if (!token) {
@@ -22,53 +40,39 @@ export const ClienteProvider = ({ children }) => {
         }
 
         const abortController = new AbortController()
-        const loadClientes = async () => {
-            try {
-                const res = await clienteService.getClientes(abortController.signal)
-                if (res?.data) {
-                    setClientes(res.data.map(normalize))
-                }
-            } catch (err) {
-                if (err?.name !== 'AbortError' && err.status !== 403) {
-                    setError(err.message)
-                }
-            } finally {
-                setLoading(false)
-            }
-        }
+        fetchClientes(abortController.signal)
 
-        loadClientes()
         return () => abortController.abort()
-    }, [token])
+    }, [token, fetchClientes])
 
-    const agregarCliente = async (nuevoCliente) => {
-        const res = await clienteService.createCliente(nuevoCliente)
-        setClientes(prev => [...prev, normalize(res.data)])
-    }
+  const agregarCliente = async (nuevoCliente) => {
+    const res = await clienteService.createCliente(nuevoCliente)
+    setClientes(prev => [...prev, normalize(res.data)])
+  }
 
-    const actualizarCliente = async (clienteActualizado) => {
-        const res = await clienteService.updateCliente(clienteActualizado.idCliente, clienteActualizado)
-        setClientes(prev =>
-            prev.map(c => c.idCliente === clienteActualizado.idCliente ? normalize(res.data) : c)
-        )
-    }
-
-    const invalidateCliente = async (id) => {
-        const res = await clienteService.toggleHabilitadoCliente(id)
-        setClientes(prev =>
-            prev.map(c => c.idCliente === id ? normalize(res.data) : c)
-        )
-    }
-
-    const actualizarEstadoCliente = (id, habilitado) => {
-        setClientes(prev =>
-            prev.map(c => c.idCliente === id ? { ...c, habilitado } : c)
-        )
-    }
-
-    return (
-        <ClienteContext.Provider value={{ clientes, loading, error, agregarCliente, invalidateCliente, actualizarCliente, actualizarEstadoCliente }}>
-            {children}
-        </ClienteContext.Provider>
+  const actualizarCliente = async (clienteActualizado) => {
+    const res = await clienteService.updateCliente(clienteActualizado.idCliente, clienteActualizado)
+    setClientes(prev =>
+      prev.map(c => c.idCliente === clienteActualizado.idCliente ? normalize(res.data) : c)
     )
+  }
+
+  const toggleHabilitadoCliente = async (id) => {
+    const res = await clienteService.toggleHabilitadoCliente(id)
+    setClientes(prev =>
+      prev.map(c => c.idCliente === id ? normalize(res.data) : c)
+    )
+    return res
+  }
+
+  const value = {
+    clientes, total, loading, error,
+    agregarCliente, actualizarCliente, toggleHabilitadoCliente,
+  }
+
+  return (
+    <ClienteContext.Provider value={value}>
+      {children}
+    </ClienteContext.Provider>
+  )
 }

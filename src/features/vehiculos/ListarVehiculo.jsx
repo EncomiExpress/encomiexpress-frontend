@@ -5,7 +5,8 @@ import {
     Box, Typography, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, Chip, IconButton,
     TextField, InputAdornment, Select, MenuItem, FormControl,
-    Snackbar, Alert, Tooltip, Button, Dialog, Avatar
+    Snackbar, Alert, Tooltip, Button, Dialog, Avatar,
+    Pagination
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
@@ -18,6 +19,7 @@ import SpeedOutlinedIcon from '@mui/icons-material/SpeedOutlined'
 import EventOutlinedIcon from '@mui/icons-material/EventOutlined'
 import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank'
 import CheckBoxIcon from '@mui/icons-material/CheckBox'
+import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import { useTransporte } from '../../shared/contexts/TransporteContext.jsx'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
 import { useRutaProgramacion } from '../../shared/contexts/RutaProgramacionContext.jsx'
@@ -86,14 +88,18 @@ const ListarTransporte = () => {
     const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
     const [filtroEstadoVehiculo, setFiltroEstadoVehiculo] = useState('todo')
     const [page, setPage] = useState(1)
+    const [rowsPerPage, setRowsPerPage] = useState(5)
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [vehiculoEditar, setVehiculoEditar] = useState(null)
 
-    const { getTransportes, updateEstado, toggleHabilitado, fetchVehiculos } = useTransporte()
+    const { getTransportes, getTotal, updateEstado, toggleHabilitado, fetchVehiculos } = useTransporte()
     const { rutasProgramadas, fetchRutasProgramadas } = useRutaProgramacion()
     const { usuario, tienePermiso, PERMISOS } = useAuth()
     const navigate = useNavigate()
+
+    const transportes = getTransportes()
+    const totalBackend = getTotal()
 
     const vehiculosOcupadosIds = new Set(
         rutasProgramadas
@@ -101,7 +107,6 @@ const ListarTransporte = () => {
             .map(r => r.idVehiculo)
     )
 
-    const transportes = getTransportes()
     const transportesConEstado = transportes.map(t => {
         const estaOcupado = vehiculosOcupadosIds.has(t.idVehiculo)
         return {
@@ -114,10 +119,16 @@ const ListarTransporte = () => {
         if (!usuario) {
             navigate('/login')
         } else {
-            fetchVehiculos()
+            fetchVehiculos(undefined, {
+                page,
+                limit: rowsPerPage,
+                estado: filtroEstadoVehiculo === 'todo' ? undefined : filtroEstadoVehiculo,
+                habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
+                sortBy: 'idVehiculo.asc',
+            })
             if (rutasProgramadas.length === 0) fetchRutasProgramadas()
         }
-    }, [usuario, navigate, fetchVehiculos])
+    }, [usuario, navigate])
 
     const handleEstadoChange = async (id, nuevoEstado) => {
         const success = await updateEstado(id, nuevoEstado)
@@ -173,10 +184,10 @@ const ListarTransporte = () => {
 
     const hayFiltrosActivos = searchTerm.trim() !== '' || filtroHabilitado !== 'todo' || filtroEstadoVehiculo !== 'todo'
 
-    const totalTransportes = transportes.length
-    const totalActivos = transportesConEstado.filter(t => t.estadoEfectivo === 'Activo' || t.estadoEfectivo === 'ocupado').length
-    const totalInactivos = transportesConEstado.filter(t => t.estadoEfectivo === 'Inactivo').length
-    const totalMantenimiento = transportesConEstado.filter(t => t.estadoEfectivo === 'Mantenimiento').length
+    const totalPages = Math.max(1, Math.ceil(totalBackend / rowsPerPage))
+    const safePage = Math.min(page, totalPages)
+    const from = totalBackend === 0 ? 0 : (safePage - 1) * rowsPerPage + 1
+    const to = Math.min(safePage * rowsPerPage, totalBackend)
 
     return (
         <Box sx={{ p: 3.5 }}>
@@ -187,7 +198,7 @@ const ListarTransporte = () => {
                             Vehículos
                         </Typography>
                         <Chip
-                            label={`${totalTransportes} registrado${totalTransportes !== 1 ? 's' : ''}`}
+                            label={`${totalBackend} registrado${totalBackend !== 1 ? 's' : ''}`}
                             size="small"
                             sx={{
                                 backgroundColor: '#F3F4F6',
@@ -282,7 +293,7 @@ const ListarTransporte = () => {
                             },
                         }}
                         value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
+                        onChange={e => { setSearchTerm(e.target.value); setPage(1) }}
                         slotProps={{
                             input: {
                                 startAdornment: (
@@ -366,8 +377,18 @@ const ListarTransporte = () => {
                                         </Typography>
                                     </TableCell>
                                 </TableRow>
+                            ) : transportes.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={9} align="center" sx={{ py: 7 }}>
+                                        <Typography color={theme.palette.text.secondary} variant="body2">
+                                            {totalBackend === 0
+                                                ? 'No hay vehículos registrados en el sistema.'
+                                                : 'No se encontraron vehículos que coincidan con la búsqueda.'}
+                                        </Typography>
+                                    </TableCell>
+                                </TableRow>
                             ) : (
-                                filteredTransportes.map((transporte) => (
+                                transportes.map((transporte) => (
                                     <TableRow
                                         key={transporte.idVehiculo}
                                         sx={{
@@ -480,13 +501,107 @@ const ListarTransporte = () => {
                 px: 0.5, pt: 1.5,
             }}>
                 <Typography variant="body2" color={theme.palette.text.secondary}>
-                    Total de vehículos: {transportes.length} &nbsp;|&nbsp;
-                    <Box component="span" sx={{ color: '#10b981', fontWeight: 600 }}>{totalActivos} activos</Box>
-                    &nbsp;|&nbsp;
-                    <Box component="span" sx={{ color: '#f59e0b', fontWeight: 600 }}>{totalInactivos} inactivos</Box>
-                    &nbsp;|&nbsp;
-                    <Box component="span" sx={{ color: '#3730A3', fontWeight: 600 }}>{totalMantenimiento} mantenimiento</Box>
+                    Mostrando {from}–{to} de {totalBackend} resultado{totalBackend !== 1 ? 's' : ''}
                 </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="body2" color={theme.palette.text.secondary} fontWeight={500}>
+                            Filas
+                        </Typography>
+                        <Select
+                            value={rowsPerPage}
+                            onChange={e => { setRowsPerPage(Number(e.target.value)); setPage(1) }}
+                            size="small"
+                            renderValue={(value) => value}
+                            IconComponent={KeyboardArrowDownOutlinedIcon}
+                            sx={{
+                                fontSize: '0.82rem',
+                                borderRadius: 2,
+                                '& .MuiSelect-select': { py: 0.6, pl: 1.5, pr: '28px !important' },
+                                '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
+                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#BDBDBD' },
+                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                    borderColor: '#E57373',
+                                    borderWidth: '1px',
+                                },
+                                '&.Mui-focused': {
+                                    boxShadow: '0 0 0 3px rgba(229,115,115,0.18)',
+                                },
+                                '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
+                                '& .MuiTouchRipple-root': { display: 'none' },
+                            }}
+                            MenuProps={{
+                                slotProps: {
+                                    paper: {
+                                        sx: {
+                                            borderRadius: 2,
+                                            boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+                                            mt: 0.5,
+                                            minWidth: 80,
+                                            '& .MuiMenuItem-root': {
+                                                fontSize: '0.82rem',
+                                                py: 0.9,
+                                                px: 2,
+                                                display: 'flex',
+                                                justifyContent: 'space-between',
+                                                gap: 2,
+                                                '&:hover': { backgroundColor: '#FFF5F5' },
+                                                '&.Mui-selected': {
+                                                    backgroundColor: 'transparent',
+                                                    fontWeight: 600,
+                                                    color: theme.palette.text.primary,
+                                                },
+                                                '&.Mui-selected:hover': { backgroundColor: '#FFF5F5' },
+                                            },
+                                        },
+                                    },
+                                },
+                            }}
+                        >
+                            {[5, 10, 25].map(n => (
+                                <MenuItem key={n} value={n}>
+                                    {n}
+                                    {rowsPerPage === n && (
+                                        <CheckOutlinedIcon sx={{ fontSize: 14, color: theme.palette.text.secondary }} />
+                                    )}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </Box>
+                    <Pagination
+                        count={totalPages}
+                        page={safePage}
+                        onChange={(_, val) => setPage(val)}
+                        size="small"
+                        shape="rounded"
+                        sx={{
+                            '& .MuiPaginationItem-root': {
+                                fontSize: '0.82rem',
+                                borderRadius: '8px',
+                                minWidth: 34,
+                                height: 34,
+                                mx: 0.2,
+                                color: theme.palette.text.primary,
+                                border: `1px solid ${theme.palette.divider}`,
+                                '& .MuiTouchRipple-root': { display: 'none' },
+                            },
+                            '& .MuiPaginationItem-ellipsis': {
+                                border: 'none',
+                            },
+                            '& .MuiPaginationItem-root.Mui-selected': {
+                                backgroundColor: theme.palette.primary.main,
+                                borderColor: theme.palette.primary.main,
+                                color: 'white',
+                                fontWeight: 600,
+                                '&:hover': { backgroundColor: theme.palette.primary.darker },
+                            },
+                            '& .MuiPaginationItem-root:hover:not(.Mui-selected)': {
+                                backgroundColor: theme.palette.background.subtle,
+                                borderColor: '#BDBDBD',
+                            },
+                        }}
+                    />
+                </Box>
             </Box>
 
             {vehiculoVer && (

@@ -1,5 +1,5 @@
 import { useTheme } from '@mui/material/styles'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAnticipos } from '../../shared/contexts/AnticipoExcedenteContext.jsx'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
 import {
@@ -255,7 +255,7 @@ const ListarAnticipoExcedente = () => {
     const thStyle = getThStyle(theme)
     const filterSelectSx = getFilterSelectSx(theme)
     const filterMenuProps = getFilterMenuProps(theme)
-    const { anticipos, conductores, rutas, loading, toggleHabilitado, cambiarEstado } = useAnticipos()
+    const { anticipos, total, conductores, rutas, loading, fetchAnticipos, toggleHabilitado, cambiarEstado } = useAnticipos()
     const { tienePermiso, PERMISOS } = useAuth()
 
     const [busqueda, setBusqueda] = useState('')
@@ -269,6 +269,17 @@ const ListarAnticipoExcedente = () => {
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [anticipoEditar, setAnticipoEditar] = useState(null)
 
+    useEffect(() => {
+        fetchAnticipos(undefined, {
+            page,
+            limit: rowsPerPage,
+            q: busqueda.trim() || undefined,
+            habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
+            estado: filtroEstadoAnticipo === 'todos' ? undefined : filtroEstadoAnticipo,
+            sortBy: 'fechaEntrega.desc',
+        })
+    }, [page, rowsPerPage, busqueda, filtroHabilitado, filtroEstadoAnticipo, fetchAnticipos])
+
     // Helpers para resolver nombres desde los arrays del contexto
     const getNombreConductor = (id) => {
         const c = conductores.find(c => c.idConductor === parseInt(id))
@@ -280,32 +291,11 @@ const ListarAnticipoExcedente = () => {
         return r ? r.nombre : '—'
     }
 
-    const anticiposFiltrados = anticipos.filter(a => {
-        const q = busqueda.toLowerCase().trim()
-        const nombreConductor = getNombreConductor(a.idConductor).toLowerCase()
-        const nombreRuta = getNombreRuta(a.idRuta).toLowerCase()
-
-        const coincideBusqueda = !q ||
-            nombreConductor.includes(q) ||
-            nombreRuta.includes(q) ||
-            (a.observaciones || '').toLowerCase().includes(q) ||
-            String(a.idAnticipoExcedente).includes(q)
-
-        const coincideHabilitado =
-            filtroHabilitado === 'todo' ||
-            (filtroHabilitado === 'habilitado' && a.habilitado !== false) ||
-            (filtroHabilitado === 'inhabilitado' && a.habilitado === false)
-
-        const coincideEstadoAnticipo = filtroEstadoAnticipo === 'todos' || a.estado === filtroEstadoAnticipo
-
-        return coincideBusqueda && coincideHabilitado && coincideEstadoAnticipo
-    })
-
-    const totalPages = Math.max(1, Math.ceil(anticiposFiltrados.length / rowsPerPage))
+    const currentAnticipos = anticipos
+    const totalPages = Math.max(1, Math.ceil(total / rowsPerPage))
     const safePage = Math.min(page, totalPages)
-    const paginatedAnticipos = anticiposFiltrados.slice((safePage - 1) * rowsPerPage, safePage * rowsPerPage)
-    const from = anticiposFiltrados.length === 0 ? 0 : (safePage - 1) * rowsPerPage + 1
-    const to = Math.min(safePage * rowsPerPage, anticiposFiltrados.length)
+    const from = total === 0 ? 0 : (safePage - 1) * rowsPerPage + 1
+    const to = Math.min(safePage * rowsPerPage, total)
 
     const handleToggleHabilitado = async (id) => {
         try {
@@ -343,7 +333,7 @@ const ListarAnticipoExcedente = () => {
                             Anticipos y Excedentes
                         </Typography>
                         <Chip
-                            label={`${anticipos.length} registrado${anticipos.length !== 1 ? 's' : ''}`}
+                            label={`${total} registrado${total !== 1 ? 's' : ''}`}
                             size="small"
                             sx={{ backgroundColor: '#F3F4F6', color: theme.palette.text.secondary, fontWeight: 500, fontSize: '0.72rem', height: 22, borderRadius: 10 }}
                         />
@@ -473,11 +463,11 @@ const ListarAnticipoExcedente = () => {
                         </TableHead>
 
                         <TableBody>
-                            {paginatedAnticipos.length === 0 ? (
+                            {currentAnticipos.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={8} align="center" sx={{ py: 7 }}>
                                         <Typography color={theme.palette.text.secondary} variant="body2">
-                                            {anticipos.length === 0
+                                            {total === 0
                                                 ? 'No hay anticipos registrados en el sistema.'
                                                 : 'No se encontraron resultados con los filtros aplicados.'
                                             }
@@ -485,7 +475,7 @@ const ListarAnticipoExcedente = () => {
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                paginatedAnticipos.map((anticipo) => {
+                                currentAnticipos.map((anticipo) => {
                                     const excedente = parseFloat(anticipo.valorAnticipo || 0) - parseFloat(anticipo.valorGastado || 0)
                                     const nombreConductor = getNombreConductor(anticipo.idConductor)
                                     const nombreRuta = getNombreRuta(anticipo.idRuta)
@@ -656,7 +646,7 @@ const ListarAnticipoExcedente = () => {
             {/* Paginación */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
                 <Typography variant="body2" color={theme.palette.text.secondary} fontWeight={500}>
-                    Mostrando {from}–{to} de {anticiposFiltrados.length} resultado{anticiposFiltrados.length !== 1 ? 's' : ''}
+                    Mostrando {from}–{to} de {total} resultado{total !== 1 ? 's' : ''}
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

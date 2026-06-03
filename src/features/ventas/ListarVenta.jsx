@@ -1,5 +1,5 @@
 import { useTheme } from '@mui/material/styles'
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useVentas } from '../../shared/contexts/VentaContext.jsx'
 import {
     Box, Typography, Paper, Table, TableBody, TableCell,
@@ -246,8 +246,8 @@ const ListarVenta = () => {
     const thStyle = getThStyle(theme)
     const filterSelectSx = getFilterSelectSx(theme)
     const filterMenuProps = getFilterMenuProps(theme)
-    const { ventas, loading, error, cambiarEstadoVenta, actualizarVenta, toggleHabilitadoVenta } = useVentas()
-
+    const { ventas, total, loading, error, fetchVentas, cambiarEstadoVenta, actualizarVenta, toggleHabilitadoVenta } = useVentas()
+    
     const [busqueda, setBusqueda] = useState('')
     const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
     const [filtroEstadoEncomienda, setFiltroEstadoEncomienda] = useState('todos')
@@ -261,25 +261,22 @@ const ListarVenta = () => {
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [ventaEditar, setVentaEditar] = useState(null)
 
-    const ventasFiltradas = ventas.filter(v => {
-        const q = busqueda.toLowerCase()
-        const rutaTexto = formatRutaDestino(v.ruta?.destino).toLowerCase()
-        const coincideBusqueda = !q ||
-            v.numeroGuia.toLowerCase().includes(q) ||
-            `${v.cliente?.nombre} ${v.cliente?.apellido}`.toLowerCase().includes(q) ||
-            v.destinatario?.nombreDestinatario?.toLowerCase().includes(q) ||
-            rutaTexto.includes(q)
+    const fetchVentasBackend = useCallback(() => {
+      fetchVentas({
+        page,
+        limit: rowsPerPage,
+        sortBy: 'fechaRegistro.desc',
+        estado: filtroEstadoEncomienda === 'todos' ? undefined : filtroEstadoEncomienda,
+        estadoPago: filtroPago === 'todos' ? undefined : filtroPago,
+        metodoPago: filtroMetodoPago === 'todos' ? undefined : filtroMetodoPago,
+        habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
+        q: busqueda.trim() || undefined,
+      })
+    }, [page, rowsPerPage, filtroEstadoEncomienda, filtroPago, filtroMetodoPago, filtroHabilitado, busqueda, fetchVentas])
 
-        const coincideHabilitado =
-            filtroHabilitado === 'todo' ||
-            (filtroHabilitado === 'habilitado' && v.habilitado !== false) ||
-            (filtroHabilitado === 'inhabilitado' && v.habilitado === false)
-        const coincideEstado = filtroEstadoEncomienda === 'todos' || v.estado === filtroEstadoEncomienda
-        const coincidePago = filtroPago === 'todos' || v.estadoPago?.toLowerCase() === filtroPago.toLowerCase()
-        const coincideMetodo = filtroMetodoPago === 'todos' || v.metodoPago?.toLowerCase() === filtroMetodoPago.toLowerCase()
-
-        return coincideBusqueda && coincideHabilitado && coincideEstado && coincidePago && coincideMetodo
-    })
+    useEffect(() => {
+      fetchVentasBackend()
+    }, [fetchVentasBackend])
 
     const limpiarFiltros = () => {
         setBusqueda('')
@@ -343,11 +340,10 @@ const ListarVenta = () => {
         }
     }
 
-    const totalPages = Math.max(1, Math.ceil(ventasFiltradas.length / rowsPerPage))
+    const totalPages = Math.max(1, Math.ceil(total / rowsPerPage))
     const safePage = Math.min(page, totalPages)
-    const paginatedVentas = ventasFiltradas.slice((safePage - 1) * rowsPerPage, safePage * rowsPerPage)
-    const from = ventasFiltradas.length === 0 ? 0 : (safePage - 1) * rowsPerPage + 1
-    const to = Math.min(safePage * rowsPerPage, ventasFiltradas.length)
+    const from = total === 0 ? 0 : (safePage - 1) * rowsPerPage + 1
+    const to = Math.min(safePage * rowsPerPage, total)
 
     return (
         <Box sx={{ p: 3.5 }}>
@@ -584,11 +580,11 @@ const ListarVenta = () => {
                                         </Typography>
                                     </TableCell>
                                 </TableRow>
-                            ) : paginatedVentas.length === 0 ? (
+                            ) : ventas.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={8} align="center" sx={{ py: 7 }}>
                                         <Typography color={theme.palette.text.secondary} variant="body2">
-                                            {ventas.length === 0
+                                            {total === 0
                                                 ? 'No hay ventas registradas en el sistema.'
                                                 : 'No se encontraron ventas que coincidan con los filtros aplicados.'
                                             }
@@ -596,7 +592,7 @@ const ListarVenta = () => {
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                paginatedVentas.map(venta => {
+                                ventas.map(venta => {
                                     const estadoStyles = getEstadoColor(venta.estado)
                                     const pagoStyles = getPagoColor(venta.estadoPago)
                                     return (
@@ -824,7 +820,7 @@ const ListarVenta = () => {
                 px: 0.5, pt: 1.5,
             }}>
                 <Typography variant="body2" color={theme.palette.text.secondary}>
-                    Mostrando {from}–{to} de {ventasFiltradas.length} resultado{ventasFiltradas.length !== 1 ? 's' : ''}
+                    Mostrando {from}–{to} de {total} resultado{total !== 1 ? 's' : ''}
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

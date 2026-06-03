@@ -1,7 +1,11 @@
 import { fetchWithAuth } from './authService'
 
-export const getAnticipos = (signal) =>
-  fetchWithAuth('/anticipos', { method: 'GET', signal })
+export const getAnticipos = (signal, params = {}) => {
+  const qs = new URLSearchParams()
+  Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '') qs.set(k, v) })
+  const suffix = qs.toString() ? `?${qs.toString()}` : ''
+  return fetchWithAuth(`/anticipos${suffix}`, { method: 'GET', signal })
+}
 
 export const getAnticipoById = (id, signal) =>
   fetchWithAuth(`/anticipos/${id}`, { method: 'GET', signal })

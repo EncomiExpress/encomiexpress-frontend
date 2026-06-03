@@ -10,23 +10,21 @@ export const TransporteProvider = ({ children }) => {
   const auth = useAuth() || {}
   const token = auth?.token || null
   const [transportes, setTransportes] = useState([])
+  const [total, setTotal] = useState(0)
 
-  // Obtener todos los transportes
-  const getTransportes = useCallback(() => {
-    return transportes
-  }, [transportes])
+  const getTransportes = useCallback(() => transportes, [transportes])
+  const getTotal = useCallback(() => total, [total])
 
-  // Obtener transporte por ID
   const getTransporteById = useCallback((id) => {
     return transportes.find(t => t.idVehiculo === parseInt(id))
   }, [transportes])
 
-  // Registrar transporte
-  const fetchVehiculos = useCallback(async (signal) => {
+  const fetchVehiculos = useCallback(async (signal, params = {}) => {
     try {
-      const response = await vehiculoService.getVehiculos(signal)
+      const response = await vehiculoService.getVehiculos(signal, params)
       if (response?.success) {
         setTransportes(response.data)
+        setTotal(response.total ?? response.data.length)
       }
     } catch (err) {
       if (err?.name !== 'AbortError') {
@@ -111,7 +109,8 @@ export const TransporteProvider = ({ children }) => {
 
   return (
     <TransporteContext.Provider value={{
-      getTransportes, getTransporteById, registrarTransporte,
+      getTransportes, getTransporteById, getTotal,
+      registrarTransporte,
       actualizarTransporte, toggleHabilitado, updateEstado, getTransportesHabilitados,
       fetchVehiculos,
     }}>

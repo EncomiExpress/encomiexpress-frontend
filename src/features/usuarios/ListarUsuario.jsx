@@ -1,5 +1,5 @@
 import { useTheme } from '@mui/material/styles'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
 import {
     Box, Typography, Paper, Table, TableBody, TableCell,
@@ -157,6 +157,7 @@ const ListarUsuario = () => {
     const [usuarios, setUsuarios] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
+    const [total, setTotal] = useState(0)
 
     const [busqueda, setBusqueda] = useState('')
     const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
@@ -168,21 +169,29 @@ const ListarUsuario = () => {
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [usuarioEditar, setUsuarioEditar] = useState(null)
 
-    const cargarUsuarios = async () => {
+    const cargarUsuarios = useCallback(async () => {
         setLoading(true)
+        setError(null)
         try {
-            const respuesta = await getUsuarios()
+            const respuesta = await getUsuarios({
+                page,
+                limit: rowsPerPage,
+                sortBy: 'idUsuario.asc',
+                habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
+                q: busqueda.trim() || undefined,
+            })
             setUsuarios(Array.isArray(respuesta.data) ? respuesta.data : [])
+            setTotal(typeof respuesta.total === 'number' ? respuesta.total : (Array.isArray(respuesta.data) ? respuesta.data.length : 0))
         } catch (err) {
             setError(err.message)
         } finally {
             setLoading(false)
         }
-    }
+    }, [getUsuarios, page, rowsPerPage, busqueda, filtroHabilitado])
 
     useEffect(() => {
         cargarUsuarios()
-    }, [getUsuarios])
+    }, [cargarUsuarios])
 
     const puedeRegistrar = tienePermiso(PERMISOS.REGISTRAR_USUARIO)
 
@@ -198,25 +207,6 @@ const ListarUsuario = () => {
         }
     }
 
-    const usuariosFiltrados = usuarios.filter(u => {
-        const q = busqueda.toLowerCase().trim()
-        const coincideBusqueda = !q ||
-            u.nombre.toLowerCase().includes(q) ||
-            u.apellido.toLowerCase().includes(q) ||
-            (`${u.nombre} ${u.apellido}`).toLowerCase().includes(q) ||
-            u.email.toLowerCase().includes(q) ||
-            u.telefono?.includes(q) ||
-            u.numeroIdentificacion?.includes(q) ||
-            u.tipoIdentificacion?.toLowerCase().includes(q)
-
-        const coincideHabilitado =
-            filtroHabilitado === 'todo' ||
-            (filtroHabilitado === 'habilitado' && u.habilitado) ||
-            (filtroHabilitado === 'inhabilitado' && !u.habilitado)
-
-        return coincideBusqueda && coincideHabilitado
-    })
-
     const limpiarFiltros = () => {
         setBusqueda('')
         setFiltroHabilitado('todo')
@@ -225,11 +215,11 @@ const ListarUsuario = () => {
 
     const hayFiltrosActivos = busqueda.trim() !== '' || filtroHabilitado !== 'todo'
 
-    const totalPages = Math.max(1, Math.ceil(usuariosFiltrados.length / rowsPerPage))
+    const totalPages = Math.max(1, Math.ceil(total / rowsPerPage))
     const safePage = Math.min(page, totalPages)
-    const paginatedUsuarios = usuariosFiltrados.slice((safePage - 1) * rowsPerPage, safePage * rowsPerPage)
-    const from = usuariosFiltrados.length === 0 ? 0 : (safePage - 1) * rowsPerPage + 1
-    const to = Math.min(safePage * rowsPerPage, usuariosFiltrados.length)
+    const from = total === 0 ? 0 : (safePage - 1) * rowsPerPage + 1
+    const to = Math.min(safePage * rowsPerPage, total)
+    const paginatedUsuarios = usuarios
 
     return (
         <Box sx={{ p: 3.5 }}>
@@ -241,7 +231,7 @@ const ListarUsuario = () => {
                         </Typography>
                         {!loading && !error && (
                             <Chip
-                                label={`${usuarios.length} registrado${usuarios.length !== 1 ? 's' : ''}`}
+                                label={`${total} registrado${total !== 1 ? 's' : ''}`}
                                 size="small"
                                 sx={{
                                     backgroundColor: '#F3F4F6',
@@ -425,11 +415,11 @@ const ListarUsuario = () => {
                                         </Typography>
                                     </TableCell>
                                 </TableRow>
-                            ) : paginatedUsuarios.length === 0 ? (
+                            ) : usuarios.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={6} align="center" sx={{ py: 7 }}>
                                         <Typography color={theme.palette.text.secondary} variant="body2">
-                                            {usuarios.length === 0
+                                            {total === 0
                                                 ? 'No hay usuarios registrados en el sistema.'
                                                 : 'No se encontraron usuarios que coincidan con los filtros aplicados.'
                                             }
@@ -542,7 +532,7 @@ const ListarUsuario = () => {
                 px: 0.5, pt: 1.5,
             }}>
                 <Typography variant="body2" color={theme.palette.text.secondary}>
-                    Mostrando {from}–{to} de {usuariosFiltrados.length} resultado{usuariosFiltrados.length !== 1 ? 's' : ''}
+                    Mostrando {from}–{to} de {total} resultado{total !== 1 ? 's' : ''}
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
