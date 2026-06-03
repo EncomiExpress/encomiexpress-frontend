@@ -152,12 +152,14 @@ const FILTROS = [
 const ListarUsuario = () => {
     const theme = useTheme()
     const thStyle = getThStyle(theme)
-    const { tienePermiso, PERMISOS, getUsuarios, habilitarInhabilitarUsuario } = useAuth()
+    const { tienePermiso, PERMISOS, getUsuarios, getRolesBackend, habilitarInhabilitarUsuario } = useAuth()
 
     const [usuarios, setUsuarios] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
     const [total, setTotal] = useState(0)
+    const [roles, setRoles] = useState([])
+    const [filtroRol, setFiltroRol] = useState('')
 
     const [busqueda, setBusqueda] = useState('')
     const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
@@ -178,6 +180,7 @@ const ListarUsuario = () => {
                 limit: rowsPerPage,
                 sortBy: 'idUsuario.asc',
                 habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
+                idRol: filtroRol || undefined,
                 q: busqueda.trim() || undefined,
             })
             setUsuarios(Array.isArray(respuesta.data) ? respuesta.data : [])
@@ -187,11 +190,25 @@ const ListarUsuario = () => {
         } finally {
             setLoading(false)
         }
-    }, [getUsuarios, page, rowsPerPage, busqueda, filtroHabilitado])
+    }, [getUsuarios, page, rowsPerPage, busqueda, filtroHabilitado, filtroRol])
 
     useEffect(() => {
         cargarUsuarios()
     }, [cargarUsuarios])
+
+    useEffect(() => {
+        const cargarRoles = async () => {
+            try {
+                const respuesta = await getRolesBackend()
+                if (respuesta.success) {
+                    setRoles(respuesta.data || [])
+                }
+            } catch {
+                setRoles([])
+            }
+        }
+        cargarRoles()
+    }, [getRolesBackend])
 
     const puedeRegistrar = tienePermiso(PERMISOS.REGISTRAR_USUARIO)
 
@@ -213,7 +230,7 @@ const ListarUsuario = () => {
         setPage(1)
     }
 
-    const hayFiltrosActivos = busqueda.trim() !== '' || filtroHabilitado !== 'todo'
+    const hayFiltrosActivos = busqueda.trim() !== '' || filtroHabilitado !== 'todo' || filtroRol !== ''
 
     const totalPages = Math.max(1, Math.ceil(total / rowsPerPage))
     const safePage = Math.min(page, totalPages)
@@ -363,6 +380,26 @@ const ListarUsuario = () => {
                         sx={{ fontSize: '0.72rem', height: 28, cursor: 'pointer', backgroundColor: theme.palette.primary.light, color: theme.palette.primary.main }}
                     />
                 )}
+
+                <FormControl size="small" sx={{ minWidth: 180 }}>
+                    <Select
+                        value={filtroRol}
+                        onChange={e => { setFiltroRol(e.target.value); setPage(1) }}
+                        displayEmpty
+                        sx={{
+                            width: 220,
+                            borderRadius: 2,
+                            '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
+                            '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#BDBDBD' },
+                        }}
+                        renderValue={(value) => value ? roles.find(r => r.id === value)?.nombre || 'Rol' : 'Todos los roles'}
+                    >
+                        <MenuItem value="">Todos los roles</MenuItem>
+                        {roles.map((rol) => (
+                            <MenuItem key={rol.id} value={rol.id}>{rol.nombre}</MenuItem>
+                        ))}
+                    </Select>
+                </FormControl>
 
                 <Button
                     variant="outlined"

@@ -125,10 +125,11 @@ const ListarTransporte = () => {
                 estado: filtroEstadoVehiculo === 'todo' ? undefined : filtroEstadoVehiculo,
                 habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
                 sortBy: 'idVehiculo.asc',
+                q: searchTerm.trim() || undefined,
             })
             if (rutasProgramadas.length === 0) fetchRutasProgramadas()
         }
-    }, [usuario, navigate])
+    }, [usuario, navigate, page, rowsPerPage, filtroEstadoVehiculo, filtroHabilitado, searchTerm, rutasProgramadas, fetchVehiculos, fetchRutasProgramadas])
 
     const handleEstadoChange = async (id, nuevoEstado) => {
         const success = await updateEstado(id, nuevoEstado)

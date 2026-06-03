@@ -137,7 +137,7 @@ const FILTROS = [
 const ListarCliente = () => {
     const theme = useTheme()
     const thStyle = getThStyle(theme)
-    const { clientes, total, loading, error, fetchClientes, actualizarEstadoCliente } = useClientes()
+    const { clientes, total, loading, error, fetchClientes, toggleHabilitadoCliente } = useClientes()
     const { tienePermiso, PERMISOS } = useAuth()
     const [busqueda, setBusqueda] = useState('')
     const [filtroEstado, setFiltroEstado] = useState('todo')
@@ -149,6 +149,12 @@ const ListarCliente = () => {
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [clienteEditar, setClienteEditar] = useState(null)
 
+    const limpiarFiltros = () => {
+        setBusqueda('')
+        setFiltroEstado('todo')
+        setPage(1)
+    }
+
     useEffect(() => {
         let active = true
         const controller = new AbortController()
@@ -157,8 +163,9 @@ const ListarCliente = () => {
             await fetchClientes(controller.signal, {
                 page,
                 limit: rowsPerPage,
-                estado: filtroEstado === 'todo' ? undefined : filtroEstado,
+                habilitado: filtroEstado === 'todo' ? undefined : filtroEstado,
                 q: busqueda.trim() || undefined,
+                sortBy: 'idCliente.asc',
             })
         }
 
@@ -171,21 +178,13 @@ const ListarCliente = () => {
 
     const handleToggleHabilitado = async (id, nuevoEstado) => {
         try {
-            await actualizarEstadoCliente(id, nuevoEstado)
+            await toggleHabilitadoCliente(id)
             setSnackbar({ open: true, message: `Cliente ${nuevoEstado ? 'habilitado' : 'inhabilitado'} correctamente`, severity: 'success' })
-            await fetchClientes(undefined, { page, limit: rowsPerPage, estado: filtroEstado === 'todo' ? undefined : filtroEstado, q: busqueda.trim() || undefined })
+            await fetchClientes(undefined, { page, limit: rowsPerPage, habilitado: filtroEstado === 'todo' ? undefined : filtroEstado, q: busqueda.trim() || undefined, sortBy: 'idCliente.asc' })
         } catch (err) {
             setSnackbar({ open: true, message: 'Error al cambiar el estado', severity: 'error' })
         }
     }
-
-    const cargarClientes = async () => {
-        await fetchClientes(undefined, { page, limit: rowsPerPage, estado: filtroEstado === 'todo' ? undefined : filtroEstado, q: busqueda.trim() || undefined })
-    }
-
-    useEffect(() => {
-        cargarClientes()
-    }, [page, rowsPerPage, filtroEstado, busqueda])
 
     const totalPages = Math.max(1, Math.ceil(total / rowsPerPage))
     const safePage = Math.min(page, totalPages)

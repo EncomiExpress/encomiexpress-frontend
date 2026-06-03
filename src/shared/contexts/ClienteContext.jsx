@@ -67,6 +67,7 @@ export const ClienteProvider = ({ children }) => {
 
   const value = {
     clientes, total, loading, error,
+    fetchClientes,
     agregarCliente, actualizarCliente, toggleHabilitadoCliente,
   }
 

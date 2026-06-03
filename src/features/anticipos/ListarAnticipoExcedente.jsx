@@ -315,7 +315,9 @@ const ListarAnticipoExcedente = () => {
         }
     }
 
-    if (loading) {
+    const isInitialLoading = loading && anticipos.length === 0 && total === 0
+
+    if (isInitialLoading) {
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 300 }}>
                 <CircularProgress color="primary" />
