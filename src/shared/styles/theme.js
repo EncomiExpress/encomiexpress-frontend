@@ -91,8 +91,6 @@ const lightPalette = {
   },
   avatarDefault: { bg: '#FFCDD2', color: '#C62828' },
   avatarDisabled: { bg: '#E0E0E0', color: '#9E9E9E' },
-  avatarDefault: { bg: '#FFCDD2', color: '#C62828' },
-  avatarDisabled: { bg: '#E0E0E0', color: '#9E9E9E' },
   gradient: {
     primary: 'linear-gradient(135deg, #CC1818 0%, #dc2626 100%)',
     primaryHover: 'linear-gradient(135deg, #a81212 0%, #CC1818 100%)',
@@ -190,9 +188,7 @@ const darkPalette = {
     neutral: { bg: '#424242', color: '#AAAAAA' },
     neutralAlt: { bg: '#333333', color: '#999999' },
   },
-  avatarDefault: { bg: '#B71C1C', color: '#EF5350' },
-  avatarDisabled: { bg: '#424242', color: '#9E9E9E' },
-  avatarDefault: { bg: '#B71C1C', color: '#EF5350' },
+  avatarDefault: { bg: '#180806', color: '#EF5350' },
   avatarDisabled: { bg: '#424242', color: '#9E9E9E' },
   gradient: {
     primary: 'linear-gradient(135deg, #E57373 0%, #EF5350 100%)',

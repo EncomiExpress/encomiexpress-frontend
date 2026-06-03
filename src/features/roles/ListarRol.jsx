@@ -480,21 +480,6 @@ const ListarRol = () => {
                                                             </IconButton>
                                                         </Tooltip>
                                                     )}
-                                                    {tienePermiso(PERMISOS.INHABILITAR_ROL) && rol.id !== 1 && (
-                                                        <Tooltip title="Eliminar">
-                                                            <IconButton
-                                                                size="small"
-                                                                onClick={() => {
-                                                                    if (window.confirm(`¿Está seguro de que desea eliminar el rol ${rol.nombre}?`)) {
-                                                                        handleEliminarRol(rol.id)
-                                                                    }
-                                                                }}
-                                                                sx={{ color: '#DC2626', '&:hover': { backgroundColor: '#FEE2E2' } }}
-                                                            >
-                                                                <DeleteOutlinedIcon sx={{ fontSize: 18 }} />
-                                                            </IconButton>
-                                                        </Tooltip>
-                                                    )}
                                                 </Box>
                                             </TableCell>
                                         </TableRow>

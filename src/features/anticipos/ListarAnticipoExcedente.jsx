@@ -504,9 +504,9 @@ const ListarAnticipoExcedente = () => {
                                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                                                     <Avatar sx={{
                                                         width: 34, height: 34,
-                                                        backgroundColor: anticipo.habilitado !== false ? '#FFCDD2' : theme.palette.divider,
+                                                        backgroundColor: anticipo.habilitado !== false ? theme.palette.avatarDefault.bg : theme.palette.avatarDisabled.bg,
                                                         fontSize: '0.73rem', fontWeight: 700,
-                                                        color: anticipo.habilitado !== false ? '#C62828' : '#9CA3AF',
+                                                        color: anticipo.habilitado !== false ? theme.palette.avatarDefault.color : theme.palette.avatarDisabled.color,
                                                     }}>
                                                         {nombreConductor.split(' ').map(n => n[0]).slice(0, 2).join('')}
                                                     </Avatar>

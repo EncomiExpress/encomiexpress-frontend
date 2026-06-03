@@ -81,7 +81,11 @@ const ModalConsultar = ({ usuario, onClose }) => {
                 </Typography>
 
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5 }}>
-                    <Avatar sx={{ backgroundColor: '#FFCDD2', color: '#C62828', width: 70, height: 70, fontSize: '1.5rem', fontWeight: 700 }}>
+                    <Avatar sx={{ 
+                        backgroundColor: usuario.habilitado ? theme.palette.avatarDefault.bg : theme.palette.avatarDisabled.bg, 
+                        color: usuario.habilitado ? theme.palette.avatarDefault.color : theme.palette.avatarDisabled.color, 
+                        width: 70, height: 70, fontSize: '1.5rem', fontWeight: 700 
+                    }}>
                         {usuario.iniciales && usuario.iniciales !== 'U' ? usuario.iniciales : (usuario.nombre?.[0] || '') + (usuario.apellido?.[0] || '') || 'U'}
                     </Avatar>
                     <Box>
@@ -446,10 +450,10 @@ const ListarUsuario = () => {
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                                                 <Avatar sx={{
                                                     width: 34, height: 34,
-                                                    backgroundColor: usuario.habilitado ? '#FFCDD2' : theme.palette.divider,
+                                                    backgroundColor: usuario.habilitado ? theme.palette.avatarDefault.bg : theme.palette.avatarDisabled.bg,
                                                     fontSize: '0.73rem',
                                                     fontWeight: 700,
-                                                    color: usuario.habilitado ? '#C62828' : '#8E8E8E',
+                                                    color: usuario.habilitado ? theme.palette.avatarDefault.color : theme.palette.avatarDisabled.color,
                                                 }}
                                                 >
                                                     {usuario.iniciales && usuario.iniciales !== 'U' ? usuario.iniciales : (usuario.nombre?.[0] || '') + (usuario.apellido?.[0] || '') || 'U'}

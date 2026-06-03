@@ -14,7 +14,7 @@ export const ROLES = {
 export const MODULOS = {
   DASHBOARD: { nombre: 'Dashboard', permisos: ['ver_dashboard'] },
   USUARIOS: { nombre: 'Usuarios', permisos: ['listar_usuario', 'registrar_usuario', 'consultar_usuario', 'actualizar_usuario', 'inhabilitar_usuario'] },
-  ROLES: { nombre: 'Roles', permisos: ['listar_rol', 'registrar_rol', 'consultar_rol', 'actualizar_rol'] },
+  ROLES: { nombre: 'Roles', permisos: ['listar_rol', 'registrar_rol', 'consultar_rol', 'actualizar_rol', 'inhabilitar_rol'] },
   CLIENTES: { nombre: 'Clientes', permisos: ['listar_cliente', 'registrar_cliente', 'consultar_cliente', 'actualizar_cliente', 'inhabilitar_cliente'] },
   VEHICULOS: { nombre: 'Vehículos', permisos: ['listar_vehiculo', 'registrar_vehiculo', 'consultar_vehiculo', 'actualizar_vehiculo'] },
   CONDUCTORES: { nombre: 'Conductores', permisos: ['listar_conductor', 'registrar_conductor', 'consultar_conductor', 'actualizar_conductor'] },

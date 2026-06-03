@@ -260,7 +260,7 @@ const ListarConductor = () => {
                                         {/* Nombre */}
                                         <TableCell>
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                                <Avatar sx={{ width: 34, height: 34, backgroundColor: conductor.habilitado ? '#FFCDD2' : theme.palette.divider, fontSize: '0.73rem', fontWeight: 700, color: conductor.habilitado ? '#C62828' : '#8E8E8E' }}>
+                                                <Avatar sx={{ width: 34, height: 34, backgroundColor: conductor.habilitado ? theme.palette.avatarDefault.bg : theme.palette.avatarDisabled.bg, fontSize: '0.73rem', fontWeight: 700, color: conductor.habilitado ? theme.palette.avatarDefault.color : theme.palette.avatarDisabled.color }}>
                                                     {conductor.nombre?.[0] || ''}{conductor.apellido?.[0] || ''}
                                                 </Avatar>
                                                 <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary} noWrap>
@@ -363,7 +363,11 @@ const ListarConductor = () => {
                         </Box>
                         <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2.5 }}>Información del perfil del conductor</Typography>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5 }}>
-                            <Avatar sx={{ backgroundColor: '#FFCDD2', color: '#C62828', width: 70, height: 70, fontSize: '1.5rem', fontWeight: 700 }}>
+                            <Avatar sx={{ 
+                                backgroundColor: conductorVer.habilitado ? theme.palette.avatarDefault.bg : theme.palette.avatarDisabled.bg, 
+                                color: conductorVer.habilitado ? theme.palette.avatarDefault.color : theme.palette.avatarDisabled.color, 
+                                width: 70, height: 70, fontSize: '1.5rem', fontWeight: 700 
+                            }}>
                                 {(conductorVer.nombre?.[0] || '') + (conductorVer.apellido?.[0] || '') || 'C'}
                             </Avatar>
                             <Box>

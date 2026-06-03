@@ -214,9 +214,9 @@ const ListarPropietario = () => {
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                                                 <Avatar sx={{
                                                     width: 34, height: 34,
-                                                    backgroundColor: propietario.habilitado ? '#FFCDD2' : theme.palette.divider,
+                                                    backgroundColor: propietario.habilitado ? theme.palette.avatarDefault.bg : theme.palette.avatarDisabled.bg,
                                                     fontSize: '0.73rem', fontWeight: 700,
-                                                    color: propietario.habilitado ? '#C62828' : '#8E8E8E',
+                                                    color: propietario.habilitado ? theme.palette.avatarDefault.color : theme.palette.avatarDisabled.color,
                                                 }}>
                                                     {(propietario.nombre?.[0] || '').toUpperCase()}{(propietario.apellido?.[0] || '').toUpperCase()}
                                                 </Avatar>
@@ -285,7 +285,11 @@ const ListarPropietario = () => {
                             Información del perfil del propietario
                         </Typography>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5 }}>
-                            <Avatar sx={{ backgroundColor: '#FFCDD2', color: '#C62828', width: 70, height: 70, fontSize: '1.5rem', fontWeight: 700 }}>
+                            <Avatar sx={{ 
+                                backgroundColor: propietarioVer.habilitado ? theme.palette.avatarDefault.bg : theme.palette.avatarDisabled.bg, 
+                                color: propietarioVer.habilitado ? theme.palette.avatarDefault.color : theme.palette.avatarDisabled.color, 
+                                width: 70, height: 70, fontSize: '1.5rem', fontWeight: 700 
+                            }}>
                                 {(propietarioVer.nombre?.[0] || '').toUpperCase()}{(propietarioVer.apellido?.[0] || '').toUpperCase()}
                             </Avatar>
                             <Box>

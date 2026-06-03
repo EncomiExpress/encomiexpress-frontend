@@ -612,10 +612,10 @@ const ListarVenta = () => {
                                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                                                     <Avatar sx={{
                                                         width: 34, height: 34,
-                                                        backgroundColor: venta.habilitado ? '#FFCDD2' : theme.palette.divider,
+                                                        backgroundColor: venta.habilitado ? theme.palette.avatarDefault.bg : theme.palette.avatarDisabled.bg,
                                                         fontSize: '0.73rem',
                                                         fontWeight: 700,
-                                                        color: venta.habilitado ? '#C62828' : '#8E8E8E',
+                                                        color: venta.habilitado ? theme.palette.avatarDefault.color : theme.palette.avatarDisabled.color,
                                                     }}>
                                                         {venta.cliente?.nombre?.[0]}{venta.cliente?.apellido?.[0]}
                                                     </Avatar>
