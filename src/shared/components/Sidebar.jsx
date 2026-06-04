@@ -3,8 +3,6 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Box, Typography, Collapse, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button, Tooltip, IconButton } from '@mui/material'
 import {
   DashboardOutlined as DashboardIcon,
-  PersonAdd as PersonAddIcon,
-  List as ListIcon,
   ControlPointOutlined as RolesIcon,
   GroupAddOutlined as GroupAddIcon,
   GroupOutlined as PeopleIcon,
@@ -18,8 +16,8 @@ import {
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
   Logout as LogoutIcon,
-  MenuOpen as MenuOpenIcon,
   ChevronLeft as ChevronLeftIcon,
+  ChevronRight as ChevronRightIcon,
 } from '@mui/icons-material'
 import logo from '../../assets/logo.png'
 import logoEE from '../../assets/logoEE.png'
@@ -106,18 +104,16 @@ const NavItem = ({ item, depth = 0, location, collapsed, darkMode }) => {
         borderRadius: '10px',
         cursor: 'pointer',
         textDecoration: 'none',
-        transition: 'all 0.18s ease',
-        background: isActive && !hasChildren ? `linear-gradient(90deg, ${C.activeBg} 0%, ${darkMode ? 'rgba(79,195,247,0.15)' : 'rgba(26,46,110,0.12)'} 100%)` : 'transparent',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        background: isActive && !hasChildren
+          ? `linear-gradient(90deg, ${C.activeBg} 0%, ${darkMode ? 'rgba(79,195,247,0.15)' : 'rgba(26,46,110,0.12)'} 100%)`
+          : 'transparent',
         '&:hover': {
           background: isActive && !hasChildren
             ? `linear-gradient(90deg, ${C.activeBg} 0%, ${darkMode ? 'rgba(79,195,247,0.2)' : 'rgba(26,46,110,0.15)'} 100%)`
             : C.hoverBg,
-          '& .MuiSvgIcon-root': {
-            color: isActive && !hasChildren ? C.red : C.textIconHover
-          },
-          '& .MuiTypography-root': {
-            color: isActive && !hasChildren ? C.red : C.textNavHover
-          },
+          '& .MuiSvgIcon-root': { color: isActive && !hasChildren ? C.red : C.textIconHover },
+          '& .MuiTypography-root': { color: isActive && !hasChildren ? C.red : C.textNavHover },
         },
       }}
     >
@@ -125,8 +121,16 @@ const NavItem = ({ item, depth = 0, location, collapsed, darkMode }) => {
         fontSize: depth === 0 ? '1.1rem' : '0.9rem',
         color: isActive && !hasChildren ? C.red : C.textIcon,
         flexShrink: 0,
+        transition: 'color 0.18s ease',
       }} />
-      {!collapsed && (
+      <Box sx={{
+        overflow: 'hidden',
+        whiteSpace: 'nowrap',
+        opacity: collapsed ? 0 : 1,
+        width: collapsed ? 0 : 'auto',
+        minWidth: collapsed ? 0 : 'auto',
+        transition: 'opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      }}>
         <Typography sx={{
           fontSize: depth === 0 ? '0.875rem' : '0.8rem',
           fontWeight: 500,
@@ -136,21 +140,25 @@ const NavItem = ({ item, depth = 0, location, collapsed, darkMode }) => {
         }}>
           {item.label}
         </Typography>
-      )}
-      {!collapsed && hasChildren && (
-        open
+      </Box>
+      <Box sx={{
+        opacity: (collapsed || !hasChildren) ? 0 : 1,
+        width: (collapsed || !hasChildren) ? 0 : 'auto',
+        minWidth: (collapsed || !hasChildren) ? 0 : 'auto',
+        transition: 'opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      }}>
+        {hasChildren && (open
           ? <ExpandLessIcon sx={{ fontSize: '0.95rem', color: C.textMuted }} />
           : <ExpandMoreIcon sx={{ fontSize: '0.95rem', color: C.textMuted }} />
-      )}
+        )}
+      </Box>
     </Box>
   )
 
   return (
     <>
       {collapsed ? (
-        <Tooltip title={item.label} placement="right">
-          {content}
-        </Tooltip>
+        <Tooltip title={item.label} placement="right">{content}</Tooltip>
       ) : (
         content
       )}
@@ -172,7 +180,6 @@ const SectionLabel = ({ label, isOpen, onClick, collapsed, darkMode }) => {
   const lightColors = { label: 'rgba(26,46,110,0.38)', textMuted: 'rgba(33,33,33,0.45)' }
   const C = darkMode ? darkColors : lightColors
 
-  if (collapsed) return null
   return (
     <Box
       onClick={onClick}
@@ -183,22 +190,22 @@ const SectionLabel = ({ label, isOpen, onClick, collapsed, darkMode }) => {
         px: 3,
         pt: 2.0,
         pb: 1,
-        cursor: 'pointer',
+        cursor: collapsed ? 'default' : 'pointer',
         userSelect: 'none',
-        '&:hover .section-label': { color: darkMode ? '#4FC3F7' : '#483c3a' },
-        transition: 'color 0.18s ease',
+        pointerEvents: collapsed ? 'none' : 'auto',
+        opacity: collapsed ? 0 : 1,
+        height: collapsed ? 0 : 'auto',
+        overflow: 'hidden',
+        transition: 'opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), height 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
       }}
     >
-      <Typography
-        className="section-label"
-        sx={{
-          fontSize: '0.75rem',
-          fontWeight: 600,
-          letterSpacing: '0.07em',
-          color: C.label,
-          transition: 'color 0.18s ease',
-        }}
-      >
+      <Typography className="section-label" sx={{
+        fontSize: '0.75rem',
+        fontWeight: 600,
+        letterSpacing: '0.07em',
+        color: C.label,
+        transition: 'color 0.18s ease',
+      }}>
         {label}
       </Typography>
       {isOpen
@@ -244,6 +251,9 @@ const Sidebar = ({ collapsed, onToggleCollapsed }) => {
     setOpenSections(prev => ({ ...prev, [sectionId]: !prev[sectionId] }))
   }
 
+  // Timing de la transición principal del sidebar
+  const TRANSITION = '0.35s cubic-bezier(0.4, 0, 0.2, 1)'
+
   return (
     <Box sx={{
       width: collapsed ? 70 : 250,
@@ -254,10 +264,12 @@ const Sidebar = ({ collapsed, onToggleCollapsed }) => {
       display: 'flex',
       flexDirection: 'column',
       fontFamily: '"DM Sans", system-ui, sans-serif',
-      transition: 'width 0.3s ease',
+      transition: `width ${TRANSITION}`,
       overflowX: 'hidden',
       zIndex: 20,
     }}>
+
+      {/* ── HEADER / LOGO ── */}
       <Box sx={{
         position: 'relative',
         px: collapsed ? 1 : 2.5,
@@ -267,48 +279,87 @@ const Sidebar = ({ collapsed, onToggleCollapsed }) => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: collapsed ? 'center' : 'flex-start',
+        transition: `padding ${TRANSITION}`,
       }}>
+        {/* Contenedor con ambas imágenes superpuestas — cross-fade */}
         <Box sx={{
+          position: 'relative',
           width: collapsed ? 44 : '100%',
           maxWidth: collapsed ? 44 : 190,
           height: collapsed ? 44 : 'auto',
-          overflow: collapsed ? 'hidden' : 'visible',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
+          transition: `width ${TRANSITION}, max-width ${TRANSITION}, height ${TRANSITION}`,
         }}>
-          <img
-            src={collapsed ? logoEE : logo}
+          {/* Logo completo — visible cuando está expandido */}
+          <Box
+            component="img"
+            src={logo}
             alt="EncomiExpress"
-            style={{
+            sx={{
               width: '100%',
               height: 'auto',
               objectFit: 'contain',
+              display: 'block',
+              opacity: collapsed ? 0 : 1,
+              visibility: collapsed ? 'hidden' : 'visible',
+              pointerEvents: 'none', 
+              transition: `opacity ${TRANSITION}`,
+              // Al colapsar se saca del flujo para que no ocupe espacio
+              position: collapsed ? 'absolute' : 'relative',
+              top: 0,
+              left: 0,
+            }}
+          />
+          {/* Logo pequeño (EE) — visible cuando está colapsado */}
+          <Box
+            component="img"
+            src={logoEE}
+            alt="EE"
+            sx={{
+              width: collapsed ? '100%' : '100%',
+              height: 'auto',
+              objectFit: 'contain',
+              display: 'block',
+              opacity: collapsed ? 1 : 0,
+              visibility: collapsed ? 'visible' : 'hidden',
+              pointerEvents: 'none',  
+              transition: `opacity ${TRANSITION}`,
+              position: collapsed ? 'relative' : 'absolute',
+              top: 0,
+              left: 0,
             }}
           />
         </Box>
 
-        <Box sx={{
-          position: 'absolute',
-          right: collapsed ? 'auto' : 12,
-          left: collapsed ? '50%' : 'auto',
-          bottom: -18,
-          transform: collapsed ? 'translateX(-50%)' : 'none',
-          zIndex: 5,
-        }}>
-          <IconButton onClick={onToggleCollapsed} size="small" sx={{}}>
-            {collapsed ? <ChevronLeftIcon /> : <MenuOpenIcon />}
-          </IconButton>
-        </Box>
+        {/* Botón toggle */}
+        <IconButton
+          onClick={onToggleCollapsed}
+          size="small"
+          sx={{
+            position: 'absolute',
+            bottom: 0,
+            right: collapsed ? 'calc(50% - 16px)' : '8px',
+            transition: `right ${TRANSITION}`,
+            zIndex: 5,
+          }}
+        >
+          <ChevronLeftIcon sx={{
+            transition: `transform ${TRANSITION}`,
+            transform: collapsed ? 'rotate(180deg)' : 'rotate(0deg)',
+          }} />
+        </IconButton>
       </Box>
 
+      {/* ── NAV ITEMS ── */}
       <Box sx={{
         flex: 1,
         overflowY: 'auto',
         py: 1,
         minHeight: 0,
         '&::-webkit-scrollbar': { width: 4 },
-        '&::-webkit-scrollbar-thumb': { background: darkMode ? '#444444' : 'rgba(26,46,110,0.08)', borderRadius: 2 },
+        '&::-webkit-scrollbar-thumb': {
+          background: darkMode ? '#444444' : 'rgba(26,46,110,0.08)',
+          borderRadius: 2,
+        },
       }}>
         {SECTIONS.map((section) => (
           <Box key={section.id}>
@@ -326,78 +377,121 @@ const Sidebar = ({ collapsed, onToggleCollapsed }) => {
                 ))}
               </Collapse>
             )}
-            {collapsed && (
-              section.items.map(item => (
-                <NavItem key={item.id} item={item} depth={0} location={location} collapsed={collapsed} darkMode={darkMode} />
-              ))
-            )}
+            {collapsed && section.items.map(item => (
+              <NavItem key={item.id} item={item} depth={0} location={location} collapsed={collapsed} darkMode={darkMode} />
+            ))}
           </Box>
         ))}
       </Box>
 
-      <Box sx={{ borderTop: `1px solid ${darkMode ? '#444444' : 'rgba(26,46,110,0.08)'}`, pt: 1.5, pb: 2 }}>
+      {/* ── FOOTER (avatar + logout animados) ── */}
+      <Box sx={{
+        borderTop: `1px solid ${darkMode ? '#444444' : 'rgba(26,46,110,0.08)'}`,
+        // Altura fija para poder hacer la animación posicional
+        height: collapsed ? 88 : 60,
+        flexShrink: 0,
+        position: 'relative',
+        transition: `height ${TRANSITION}`,
+      }}>
+
+        {/* Avatar — se desplaza al centro-top cuando colapsa */}
         <Box sx={{
+          position: 'absolute',
+          // expandido: centrado verticalmente a la izquierda (con px 2.5)
+          // colapsado: centrado horizontalmente en top
+          top: collapsed ? 14 : '50%',
+          left: collapsed ? '50%' : 20,
+          transform: collapsed ? 'translateX(-50%)' : 'translateY(-50%)',
+          transition: `top ${TRANSITION}, left ${TRANSITION}, transform ${TRANSITION}`,
+          width: 34,
+          height: 34,
+          borderRadius: '50%',
+          backgroundColor: C.red,
           display: 'flex',
           alignItems: 'center',
-          justifyContent: collapsed ? 'center' : 'flex-start',
-          gap: collapsed ? 0 : 1.5,
-          px: collapsed ? 1 : 2.5,
-          py: 0.85,
+          justifyContent: 'center',
+          flexShrink: 0,
+          zIndex: 2,
         }}>
-          <Box sx={{
-            width: 34, height: 34, borderRadius: '50%',
-            backgroundColor: C.red,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexShrink: 0,
-          }}>
-            <Typography sx={{ color: '#ffffff', fontWeight: 700, fontSize: '0.75rem' }}>
-              {usuario?.nombre?.trim()
-                ? usuario.nombre.trim().split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()
-                : 'U'}
-            </Typography>
-          </Box>
-          {!collapsed && (
-            <>
-              <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Typography sx={{ fontWeight: 700, fontSize: '0.82rem', color: C.textBase, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {usuario?.nombre || 'Usuario'}
-                </Typography>
-                <Typography sx={{ fontSize: '0.71rem', color: C.textMuted, lineHeight: 1.3 }}>
-                  {usuario?.rol?.nombre || 'Sin Rol'}
-                </Typography>
-              </Box>
-              <Box
-                onClick={() => setOpenLogoutDialog(true)}
-                sx={{
-                  cursor: 'pointer',
-                  p: 0.5,
-                  borderRadius: '8px',
-                  '&:hover': { backgroundColor: darkMode ? 'rgba(229,115,115,0.1)' : 'rgba(204,24,24,0.08)' },
-                  transition: 'background 0.18s ease',
-                }}
-              >
-                <LogoutIcon sx={{ fontSize: '1.1rem', color: C.textMuted, transition: 'color 0.18s ease', '&:hover': { color: C.red } }} />
-              </Box>
-            </>
-          )}
-          {collapsed && (
-            <Tooltip title="Cerrar sesión" placement="right">
-              <Box
-                onClick={() => setOpenLogoutDialog(true)}
-                sx={{
-                  cursor: 'pointer',
-                  p: 0.5,
-                  borderRadius: '8px',
-                  '&:hover': { backgroundColor: darkMode ? 'rgba(229,115,115,0.1)' : 'rgba(204,24,24,0.08)' },
-                }}
-              >
-                <LogoutIcon sx={{ fontSize: '1.1rem', color: C.textMuted }} />
-              </Box>
-            </Tooltip>
-          )}
+          <Typography sx={{ color: '#ffffff', fontWeight: 700, fontSize: '0.75rem', ml: 0.2, userSelect: 'none' }}>
+            {usuario?.nombre?.trim()
+              ? usuario.nombre.trim().split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()
+              : 'U'}
+          </Typography>
         </Box>
+
+        {/* Texto nombre + rol — se desvanece al colapsar (sin ocupar espacio) */}
+        <Box sx={{
+          position: 'absolute',
+          top: '50%',
+          // empieza justo después del avatar (34px) + gap (12px) + px inicial (20px)
+          left: 66,
+          transform: 'translateY(-50%)',
+          opacity: collapsed ? 0 : 1,
+          pointerEvents: collapsed ? 'none' : 'auto',
+          transition: `opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1)`,
+          // reservamos espacio solo cuando está visible
+          width: collapsed ? 0 : 'calc(100% - 100px)',
+          overflow: 'hidden',
+          whiteSpace: 'nowrap',
+        }}>
+          <Typography sx={{
+            fontWeight: 700,
+            fontSize: '0.82rem',
+            color: C.textBase,
+            lineHeight: 1.2,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}>
+            {usuario?.nombre || 'Usuario'}
+          </Typography>
+          <Typography sx={{
+            fontSize: '0.71rem',
+            color: C.textMuted,
+            lineHeight: 1.3,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}>
+            {usuario?.rol?.nombre || 'Sin Rol'}
+          </Typography>
+        </Box>
+
+        {/* Botón logout — viaja desde la derecha hasta debajo del avatar */}
+        <Tooltip title="Cerrar sesión" placement={collapsed ? 'right' : 'top'}>
+          <Box
+            onClick={() => setOpenLogoutDialog(true)}
+            sx={{
+              position: 'absolute',
+              // expandido: lado derecho, centrado vertical
+              // colapsado: centrado horizontal, debajo del avatar
+              top: collapsed ? 58 : '50%',
+              right: collapsed ? 'auto' : 12,
+              left: collapsed ? '50%' : 'auto',
+              transform: collapsed ? 'translateX(-50%)' : 'translateY(-50%)',
+              transition: `top ${TRANSITION}, right ${TRANSITION}, left ${TRANSITION}, transform ${TRANSITION}`,
+              cursor: 'pointer',
+              p: 0.5,
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 2,
+              '&:hover': {
+                backgroundColor: darkMode ? 'rgba(229,115,115,0.1)' : 'rgba(204,24,24,0.08)',
+                '& .MuiSvgIcon-root': { color: C.red },
+              },
+            }}
+          >
+            <LogoutIcon sx={{
+              fontSize: '1.1rem',
+              color: C.textMuted,
+              transition: 'color 0.18s ease',
+            }} />
+          </Box>
+        </Tooltip>
       </Box>
 
+      {/* ── DIALOG LOGOUT ── */}
       <Dialog
         open={openLogoutDialog}
         onClose={() => setOpenLogoutDialog(false)}
@@ -418,7 +512,10 @@ const Sidebar = ({ collapsed, onToggleCollapsed }) => {
             disableRipple
             sx={{
               textTransform: 'none', color: C.textMuted, fontWeight: 500, borderRadius: 1.5,
-              '&:hover': { backgroundColor: darkMode ? '#2A2A2A' : '#F8F9FA', color: darkMode ? '#FFFFFF' : '#1a0e0c' },
+              '&:hover': {
+                backgroundColor: darkMode ? '#2A2A2A' : '#F8F9FA',
+                color: darkMode ? '#FFFFFF' : '#1a0e0c',
+              },
             }}
           >
             Cancelar
@@ -431,7 +528,10 @@ const Sidebar = ({ collapsed, onToggleCollapsed }) => {
               textTransform: 'none', borderRadius: 1.5, fontWeight: 600,
               backgroundColor: C.red,
               boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
-              '&:hover': { backgroundColor: darkMode ? '#C62828' : '#b91c1c', boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
+              '&:hover': {
+                backgroundColor: darkMode ? '#C62828' : '#b91c1c',
+                boxShadow: '0 6px 20px rgba(204,24,24,0.2)',
+              },
             }}
           >
             Sí, cerrar sesión
