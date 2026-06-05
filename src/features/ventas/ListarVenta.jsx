@@ -196,8 +196,8 @@ const ModalConsultar = ({ venta, onClose }) => {
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
                 <Button onClick={onClose} variant="contained" sx={{
                     backgroundColor: theme.palette.primary.main, borderRadius: 2, textTransform: 'none',
-                    boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
-                    '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
+                    boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
+                    '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}` },
                 }}>
                     Cerrar
                 </Button>
@@ -211,8 +211,8 @@ const getFilterSelectSx = (theme) => ({
     borderRadius: 2,
     '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
     '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#BDBDBD' },
-    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#E57373', borderWidth: '1px' },
-    '&.Mui-focused': { boxShadow: '0 0 0 3px rgba(229,115,115,0.18)' },
+    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
+    '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` },
     '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
     '& .MuiTouchRipple-root': { display: 'none' },
 })
@@ -226,9 +226,9 @@ const getFilterMenuProps = (theme) => ({
                 mt: 0.5,
                 '& .MuiMenuItem-root': {
                     fontSize: '0.82rem',
-                    '&:hover': { backgroundColor: '#FFF5F5' },
+                    '&:hover': { backgroundColor: theme.palette.primary.light },
                     '&.Mui-selected': { backgroundColor: 'transparent', fontWeight: 600, color: theme.palette.text.primary },
-                    '&.Mui-selected:hover': { backgroundColor: '#FFF5F5' },
+                    '&.Mui-selected:hover': { backgroundColor: theme.palette.primary.light },
                 },
             },
         },
@@ -381,10 +381,10 @@ const ListarVenta = () => {
                         borderRadius: 2,
                         textTransform: 'none',
                         fontWeight: 600,
-                        boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
+                        boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
                         '&:hover': {
                             backgroundColor: theme.palette.primary.dark,
-                            boxShadow: '0 6px 20px rgba(204,24,24,0.2)',
+                            boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}`,
                         },
                     }}
                 >
@@ -448,7 +448,7 @@ const ListarVenta = () => {
                         width: 320,
                         '& .MuiOutlinedInput-root': {
                             borderRadius: 2,
-                            '&.Mui-focused': { boxShadow: '0 0 0 3px rgba(229,115,115,0.18)' },
+                            '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` },
                             '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                                 borderColor: theme.palette.primary.main, borderWidth: '1px',
                             },
@@ -475,7 +475,7 @@ const ListarVenta = () => {
                 />
 
                 <FormControl size="small" sx={{ width: 160 }}>
-                    <InputLabel sx={{ fontSize: '0.82rem', '&.Mui-focused': { color: '#E57373' } }}>Estado encomienda</InputLabel>
+                    <InputLabel sx={{ fontSize: '0.82rem', '&.Mui-focused': { color: theme.palette.primary.main } }}>Estado encomienda</InputLabel>
                     <Select value={filtroEstadoEncomienda} label="Estado encomienda"
                         onChange={e => { setFiltroEstadoEncomienda(e.target.value); setPage(1) }}
                         IconComponent={KeyboardArrowDownOutlinedIcon}
@@ -491,7 +491,7 @@ const ListarVenta = () => {
                 </FormControl>
 
                 <FormControl size="small" sx={{ minWidth: 130 }}>
-                    <InputLabel sx={{ fontSize: '0.82rem', '&.Mui-focused': { color: '#E57373' } }}>Estado pago</InputLabel>
+                    <InputLabel sx={{ fontSize: '0.82rem', '&.Mui-focused': { color: theme.palette.primary.main } }}>Estado pago</InputLabel>
                     <Select value={filtroPago} label="Estado pago"
                         onChange={e => { setFiltroPago(e.target.value); setPage(1) }}
                         IconComponent={KeyboardArrowDownOutlinedIcon}
@@ -504,7 +504,7 @@ const ListarVenta = () => {
                 </FormControl>
 
                 <FormControl size="small" sx={{ minWidth: 140 }}>
-                    <InputLabel sx={{ fontSize: '0.82rem', '&.Mui-focused': { color: '#E57373' } }}>Método de pago</InputLabel>
+                    <InputLabel sx={{ fontSize: '0.82rem', '&.Mui-focused': { color: theme.palette.primary.main } }}>Método de pago</InputLabel>
                     <Select value={filtroMetodoPago} label="Método de pago"
                         onChange={e => { setFiltroMetodoPago(e.target.value); setPage(1) }}
                         IconComponent={KeyboardArrowDownOutlinedIcon}
@@ -840,9 +840,9 @@ const ListarVenta = () => {
                                 '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
                                 '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#BDBDBD' },
                                 '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                    borderColor: '#E57373', borderWidth: '1px',
+                                    borderColor: theme.palette.primary.main, borderWidth: '1px',
                                 },
-                                '&.Mui-focused': { boxShadow: '0 0 0 3px rgba(229,115,115,0.18)' },
+                                '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` },
                                 '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
                                 '& .MuiTouchRipple-root': { display: 'none' },
                             }}

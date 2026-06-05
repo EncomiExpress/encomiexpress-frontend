@@ -339,8 +339,8 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
                         sx={{
                             textTransform: 'none', borderRadius: 2, fontWeight: 600,
                             backgroundColor: theme.palette.primary.main,
-                            boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
-                            '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
+                            boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
+                            '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}` },
                             '&.Mui-disabled': { backgroundColor: theme.palette.divider, color: '#9E9E9E' },
                         }}>
                         {activeStep < steps.length - 1 ? 'Siguiente' : submitting ? 'Guardando...' : sinCambios ? 'Sin cambios' : 'Guardar cambios'}

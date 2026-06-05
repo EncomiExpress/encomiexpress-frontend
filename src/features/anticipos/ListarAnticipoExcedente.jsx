@@ -42,8 +42,8 @@ const getFilterSelectSx = (theme) => ({
     '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
     '&:hover': { backgroundColor: 'transparent' },
     '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#BDBDBD' },
-    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#E57373', borderWidth: '1px' },
-    '&.Mui-focused': { boxShadow: '0 0 0 3px rgba(229,115,115,0.18)' },
+    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
+    '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` },
     '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
     '& .MuiTouchRipple-root': { display: 'none' },
 })
@@ -57,9 +57,9 @@ const getFilterMenuProps = (theme) => ({
                 mt: 0.5,
                 '& .MuiMenuItem-root': {
                     fontSize: '0.82rem',
-                    '&:hover': { backgroundColor: '#FFF5F5' },
+                    '&:hover': { backgroundColor: theme.palette.primary.light },
                     '&.Mui-selected': { backgroundColor: 'transparent', fontWeight: 600, color: theme.palette.text.primary },
-                    '&.Mui-selected:hover': { backgroundColor: '#FFF5F5' },
+                    '&.Mui-selected:hover': { backgroundColor: theme.palette.primary.light },
                 },
             },
         },
@@ -354,8 +354,8 @@ const ListarAnticipoExcedente = () => {
                             borderRadius: 2,
                             textTransform: 'none',
                             fontWeight: 600,
-                            boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
-                            '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
+                            boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
+                            '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}` },
                         }}
                     >
                         Nuevo anticipo
@@ -404,7 +404,7 @@ const ListarAnticipoExcedente = () => {
                         width: 320,
                         '& .MuiOutlinedInput-root': {
                             borderRadius: 2,
-                            '&.Mui-focused': { boxShadow: '0 0 0 3px rgba(229,115,115,0.18)' },
+                            '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` },
                             '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
                         },
                     }}
@@ -429,7 +429,7 @@ const ListarAnticipoExcedente = () => {
                 />
 
                 <FormControl size="small" sx={{ minWidth: 180 }}>
-                    <InputLabel sx={{ fontSize: '0.82rem', '&.Mui-focused': { color: '#E57373' } }}>Estado del anticipo</InputLabel>
+                    <InputLabel sx={{ fontSize: '0.82rem', '&.Mui-focused': { color: theme.palette.primary.main } }}>Estado del anticipo</InputLabel>
                     <Select
                         value={filtroEstadoAnticipo}
                         label="Estado del anticipo"
@@ -664,8 +664,8 @@ const ListarAnticipoExcedente = () => {
                                 '& .MuiSelect-select': { py: 0.6, pl: 1.5, pr: '28px !important' },
                                 '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
                                 '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#BDBDBD' },
-                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#E57373', borderWidth: '1px' },
-                                '&.Mui-focused': { boxShadow: '0 0 0 3px rgba(229,115,115,0.18)' },
+                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
+                                '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` },
                                 '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
                                 '& .MuiTouchRipple-root': { display: 'none' },
                             }}

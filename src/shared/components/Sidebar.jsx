@@ -209,10 +209,6 @@ const Sidebar = ({ collapsed, onToggleCollapsed }) => {
   const TRANSITION = '0.35s cubic-bezier(0.4, 0, 0.2, 1)'
 
   // ── Objeto de colores del sidebar ────────────────────────────────────────
-  // Los valores de paleta (`primary`, `activeBg`, `activeGrad`, `avatarBg`,
-  // `hoverBg`, `hoverIcon`, `hoverText`) vienen del tema activo, por lo que
-  // responden automáticamente al cambio de paleta rojo/azul y modo dark/light.
-  // El resto (fondos, textos, bordes) son neutros y se mantienen estables.
   const colors = darkMode
     ? {
         bg:           pal.background.paper,

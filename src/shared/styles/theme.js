@@ -41,8 +41,8 @@ const tokens = {
       primaryLight:  '#E8EEFF',
       primaryDark:   '#0f1c45',
       primaryDarker: '#091236',
-      activeBg:      'rgba(26,46,110,0.08)',
-      activeGrad:    'rgba(26,46,110,0.12)',
+      activeBg:      'rgba(26,46,110,0.12)',
+      activeGrad:    'rgba(204,24,24,0.08)',
       hoverBg:       'rgba(0,0,0,0.04)',
       hoverIcon:     '#0f1c45',
       hoverText:     '#091236',
@@ -82,8 +82,6 @@ const buildLightPalette = (t) => ({
     hoverText:     t.hoverText,
   },
   secondary: {
-    // El secundario siempre es el color complementario
-    // (cuando la paleta es roja, el secundario es azul y viceversa)
     main:          '#1A2E6E',
     light:         '#2a3f8f',
     dark:          '#0f1c45',

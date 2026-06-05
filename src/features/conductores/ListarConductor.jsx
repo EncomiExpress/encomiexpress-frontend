@@ -50,9 +50,9 @@ const getFilterMenuProps = (theme) => ({
                 mt: 0.5,
                 '& .MuiMenuItem-root': {
                     fontSize: '0.82rem',
-                    '&:hover': { backgroundColor: '#FFF5F5' },
+                    '&:hover': { backgroundColor: theme.palette.primary.light },
                     '&.Mui-selected': { backgroundColor: 'transparent', fontWeight: 600, color: theme.palette.text.primary },
-                    '&.Mui-selected:hover': { backgroundColor: '#FFF5F5' },
+                    '&.Mui-selected:hover': { backgroundColor: theme.palette.primary.light },
                 },
             },
         },
@@ -176,8 +176,8 @@ const ListarConductor = () => {
                         sx={{
                             backgroundColor: theme.palette.primary.main, borderRadius: 2,
                             textTransform: 'none', fontWeight: 600,
-                            boxShadow: '0 4px 14px rgba(204,24,24,0.2)',
-                            '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: '0 6px 20px rgba(204,24,24,0.2)' },
+                            boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
+                            '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}` },
                         }}
                     >
                         Nuevo conductor
@@ -208,7 +208,7 @@ const ListarConductor = () => {
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
                 <TextField
                     size="small" placeholder="Buscar conductores..."
-                    sx={{ width: 320, '& .MuiOutlinedInput-root': { borderRadius: 2, '&.Mui-focused': { boxShadow: '0 0 0 3px rgba(229,115,115,0.18)' }, '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main, borderWidth: '1px' } } }}
+                    sx={{ width: 320, '& .MuiOutlinedInput-root': { borderRadius: 2, '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` }, '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main, borderWidth: '1px' } } }}
                     value={searchTerm} onChange={e => { setSearchTerm(e.target.value); setPage(1) }}
                     slotProps={{
                         input: {
@@ -372,11 +372,11 @@ const ListarConductor = () => {
                                 '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
                                 '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#BDBDBD' },
                                 '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                    borderColor: '#E57373',
+                                    borderColor: theme.palette.primary.main,
                                     borderWidth: '1px',
                                 },
                                 '&.Mui-focused': {
-                                    boxShadow: '0 0 0 3px rgba(229,115,115,0.18)',
+                                    boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}`,
                                 },
                                 '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
                                 '& .MuiTouchRipple-root': { display: 'none' },
@@ -396,13 +396,13 @@ const ListarConductor = () => {
                                                 display: 'flex',
                                                 justifyContent: 'space-between',
                                                 gap: 2,
-                                                '&:hover': { backgroundColor: '#FFF5F5' },
+                                                '&:hover': { backgroundColor: theme.palette.primary.light },
                                                 '&.Mui-selected': {
                                                     backgroundColor: 'transparent',
                                                     fontWeight: 600,
                                                     color: theme.palette.text.primary,
                                                 },
-                                                '&.Mui-selected:hover': { backgroundColor: '#FFF5F5' },
+                                                '&.Mui-selected:hover': { backgroundColor: theme.palette.primary.light },
                                             },
                                         },
                                     },
@@ -521,7 +521,7 @@ const ListarConductor = () => {
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
                         <Button onClick={() => setConductorVer(null)} variant="contained"
-                            sx={{ backgroundColor: theme.palette.primary.main, borderRadius: 2, textTransform: 'none', boxShadow: '0 4px 14px rgba(204,24,24,0.2)', '&:hover': { backgroundColor: theme.palette.primary.dark } }}>
+                            sx={{ backgroundColor: theme.palette.primary.main, borderRadius: 2, textTransform: 'none', boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`, '&:hover': { backgroundColor: theme.palette.primary.dark } }}>
                             Cerrar
                         </Button>
                     </Box>
