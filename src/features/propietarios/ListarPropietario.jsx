@@ -138,14 +138,14 @@ const ListarPropietario = () => {
                 </Button>
             </Box>
 
-            <Box sx={{ display: 'inline-flex', backgroundColor: '#FFECEC', borderRadius: 4, p: '4px', mb: 2.5, gap: '5px' }}>
+            <Box sx={{ display: 'inline-flex', backgroundColor: theme.palette.primary.light, borderRadius: 4, p: '4px', mb: 2.5, gap: '5px' }}>
                 {FILTROS.map(f => (
                     <Button key={f.value} onClick={() => { setFiltroHabilitado(f.value); setPage(1) }} size="small" disableElevation disableRipple
                         sx={{
                             borderRadius: 3, textTransform: 'none', fontSize: '0.75rem', px: 2, py: 0.5, minWidth: 0,
                             fontWeight: filtroHabilitado === f.value ? 600 : 400,
                             backgroundColor: filtroHabilitado === f.value ? 'white' : 'transparent',
-                            color: filtroHabilitado === f.value ? theme.palette.text.primary : '#B05050',
+                            color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.secondary,
                             boxShadow: filtroHabilitado === f.value ? '0 1px 4px rgba(0,0,0,0.12)' : 'none',
                             border: 'none',
                             '&:hover': { backgroundColor: filtroHabilitado === f.value ? 'white' : 'transparent', border: 'none' },
@@ -187,7 +187,7 @@ const ListarPropietario = () => {
                 <TableContainer>
                     <Table>
                         <TableHead>
-                            <TableRow sx={{ backgroundColor: '#F8F9FA' }}>
+                            <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
                                 <TableCell sx={thStyle}>Nombre</TableCell>
                                 <TableCell sx={thStyle}>Identificación</TableCell>
                                 <TableCell sx={thStyle}>Teléfono</TableCell>
@@ -392,7 +392,7 @@ const ListarPropietario = () => {
 
             {propietarioVer && (
                 <Dialog open onClose={() => setPropietarioVer(null)} maxWidth="md" fullWidth
-                    slotProps={{ paper: { sx: { borderRadius: 3, p: 3, backgroundColor: '#FAFAFA' } } }}>
+                    slotProps={{ paper: { sx: { borderRadius: 3, p: 3, backgroundColor: theme.palette.background.subtle } } }}>
                     <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white', mb: 2 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                             <PersonOutlinedIcon sx={{ fontSize: 22, color: theme.palette.text.primary }} />

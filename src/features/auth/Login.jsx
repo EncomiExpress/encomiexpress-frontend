@@ -320,10 +320,10 @@ const Login = () => {
                 fontWeight: 700,
                 fontSize: '1rem',
                 textTransform: 'none',
-                boxShadow: '0 4px 14px rgba(204, 24, 24, 0.3)',
+                boxShadow: `0 4px 14px ${theme.palette.primary.main}4D`,
                 '&:hover': {
                   backgroundColor: theme.palette.primary.dark,
-                  boxShadow: '0 6px 20px rgba(204, 24, 24, 0.4)',
+                  boxShadow: `0 6px 20px ${theme.palette.primary.main}66`,
                 },
               }}
             >

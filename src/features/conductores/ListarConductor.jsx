@@ -186,7 +186,7 @@ const ListarConductor = () => {
             </Box>
 
             {/* -- Filtros habilitado / inhabilitado -- */}
-            <Box sx={{ display: 'inline-flex', backgroundColor: '#FFECEC', borderRadius: 4, p: '4px', mb: 2.5, gap: '5px' }}>
+            <Box sx={{ display: 'inline-flex', backgroundColor: theme.palette.primary.light, borderRadius: 4, p: '4px', mb: 2.5, gap: '5px' }}>
                 {FILTROS.map(f => (
                     <Button key={f.value} onClick={() => { setFiltroHabilitado(f.value); setPage(1) }}
                         size="small" disableElevation disableRipple
@@ -194,10 +194,10 @@ const ListarConductor = () => {
                             borderRadius: 3, textTransform: 'none', fontSize: '0.75rem', px: 2, py: 0.5, minWidth: 0,
                             fontWeight: filtroHabilitado === f.value ? 600 : 400,
                             backgroundColor: filtroHabilitado === f.value ? 'white' : 'transparent',
-                            color: filtroHabilitado === f.value ? theme.palette.text.primary : '#B05050',
+                            color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.secondary,
                             boxShadow: filtroHabilitado === f.value ? '0 1px 4px rgba(0,0,0,0.12)' : 'none',
                             border: 'none',
-                            '&:hover': { backgroundColor: filtroHabilitado === f.value ? 'white' : 'transparent', color: filtroHabilitado === f.value ? theme.palette.text.primary : '#5C3333', border: 'none' },
+                            '&:hover': { backgroundColor: filtroHabilitado === f.value ? 'white' : 'transparent', color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.medium, border: 'none' },
                         }}>
                         {f.label}
                     </Button>
@@ -229,7 +229,7 @@ const ListarConductor = () => {
                 <TableContainer>
                     <Table>
                         <TableHead>
-                            <TableRow sx={{ backgroundColor: '#F8F9FA' }}>
+                            <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
                                 <TableCell sx={thStyle}>Nombre</TableCell>
                                 <TableCell sx={thStyle}>Identificación</TableCell>
                                 <TableCell sx={thStyle}>Teléfono</TableCell>
@@ -458,8 +458,8 @@ const ListarConductor = () => {
             {/* -- Modal detalle -- */}
             {conductorVer && (
                 <Dialog open onClose={() => setConductorVer(null)} maxWidth="md" fullWidth
-                    slotProps={{ paper: { sx: { borderRadius: 3, p: 3, backgroundColor: '#FAFAFA' } } }}>
-                    <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white', mb: 2 }}>
+                    slotProps={{ paper: { sx: { borderRadius: 3, p: 3, backgroundColor: theme.palette.background.subtle } } }}>
+                    <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: theme.palette.background.paper, mb: 2 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                             <PersonOutlinedIcon sx={{ fontSize: 22, color: theme.palette.text.primary }} />
                             <Typography fontWeight={700} fontSize="1.05rem" color={theme.palette.text.primary}>Detalles del Conductor</Typography>
@@ -484,7 +484,7 @@ const ListarConductor = () => {
                         </Box>
                     </Paper>
                     <Box sx={{ display: 'flex', gap: 2 }}>
-                        <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white', flex: 1 }}>
+                        <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: theme.palette.background.paper, flex: 1 }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                                 <AssignmentIndOutlinedIcon sx={{ fontSize: 22, color: theme.palette.text.primary }} />
                                 <Typography fontWeight={700} fontSize="1.05rem" color={theme.palette.text.primary}>Datos Personales</Typography>
@@ -497,7 +497,7 @@ const ListarConductor = () => {
                                 <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Teléfono</Typography><Typography variant="body2" fontWeight={500}>{conductorVer.telefono || '-'}</Typography></Box>
                             </Box>
                         </Paper>
-                        <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white', flex: 1 }}>
+                        <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: theme.palette.background.paper, flex: 1 }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                                 <DirectionsCarOutlinedIcon sx={{ fontSize: 22, color: theme.palette.text.primary }} />
                                 <Typography fontWeight={700} fontSize="1.05rem" color={theme.palette.text.primary}>Licencia de Conducción</Typography>

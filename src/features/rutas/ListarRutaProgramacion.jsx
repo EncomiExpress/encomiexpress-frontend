@@ -366,7 +366,7 @@ const resolveDestino = (ruta) =>
                 <TableContainer>
                     <Table>
                         <TableHead>
-                            <TableRow sx={{ backgroundColor: '#F8F9FA' }}>
+                            <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
                                 <TableCell sx={thStyle}>Ruta</TableCell>
                                 <TableCell sx={thStyle}>Fecha</TableCell>
                                 <TableCell sx={thStyle}>Hora Salida</TableCell>
@@ -599,7 +599,7 @@ const resolveDestino = (ruta) =>
             {/* Dialog Ver Detalle */}
             {rutaVer && (
                 <Dialog open onClose={() => setRutaVer(null)} maxWidth="md" fullWidth
-                    slotProps={{ paper: { sx: { borderRadius: 3, p: 3, backgroundColor: '#FAFAFA' } } }}>
+                    slotProps={{ paper: { sx: { borderRadius: 3, p: 3, backgroundColor: theme.palette.background.subtle } } }}>
                     <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white', mb: 2 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                             <RouteIcon sx={{ fontSize: 22, color: theme.palette.text.primary }} />

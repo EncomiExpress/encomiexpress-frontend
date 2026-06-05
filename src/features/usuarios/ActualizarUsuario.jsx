@@ -48,7 +48,7 @@ const ConfirmRow = ({ label, valueOriginal, valueActual }) => {
     const changed = valueOriginal !== valueActual
     return (
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, py: 0.9, overflow: 'hidden' }}>
-            <Typography variant="body2" sx={{ color: '#9C4040', fontWeight: 500, flexShrink: 0 }}>{label}</Typography>
+            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500, flexShrink: 0 }}>{label}</Typography>
             <Typography variant="body2" fontWeight={changed ? 700 : 500} color={changed ? theme.palette.primary.main : theme.palette.text.primary}
                 sx={{ textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0, backgroundColor: changed ? theme.palette.primary.light + '22' : 'transparent', px: changed ? 1 : 0, borderRadius: changed ? 1 : 0 }}>
                 <HighlightText original={valueOriginal} actual={valueActual} />
@@ -340,7 +340,7 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
                             {rolesDisponibles.map((rol) => (
                                 <MenuItem key={rol.idRol} value={rol.idRol} sx={{ p: 0, justifyContent: 'flex-start', my: 0.5 }}>
                                     <Box sx={{
-                                        backgroundColor: '#B91C1C',
+                                        backgroundColor: theme.palette.primary.main,
                                         color: 'white',
                                         px: 1.5,
                                         py: 0.3,

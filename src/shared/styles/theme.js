@@ -162,7 +162,7 @@ const buildLightPalette = (t) => ({
     neutral:          { bg: '#F3F4F6', color: '#6B7280' },
     neutralAlt:       { bg: '#F5F5F5', color: '#757575' },
   },
-  avatarDefault:  { bg: '#FFCDD2', color: '#C62828' },
+  avatarDefault:  { bg: `${t.primaryLight}`, color: `${t.primaryDark}` },
   avatarDisabled: { bg: '#E0E0E0', color: '#9E9E9E' },
   gradient: {
     primary:      `linear-gradient(135deg, ${t.primary} 0%, ${t.primaryDark} 100%)`,
@@ -266,7 +266,7 @@ const buildDarkPalette = (t) => ({
     neutral:          { bg: '#2A2A2A', color: '#AAAAAA' },
     neutralAlt:       { bg: '#333333', color: '#999999' },
   },
-  avatarDefault:  { bg: '#3A0A0A', color: '#E57373' },
+  avatarDefault:  { bg: `${t.primaryLight}`, color: `${t.primaryDark}` },
   avatarDisabled: { bg: '#424242', color: '#9E9E9E' },
   gradient: {
     primary:      `linear-gradient(135deg, ${t.primary} 0%, ${t.primaryDark} 100%)`,

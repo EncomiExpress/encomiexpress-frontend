@@ -240,7 +240,7 @@ const ListarTransporte = () => {
             {/* ── Filtro slider: habilitado / inhabilitado ── */}
             <Box sx={{
                 display: 'inline-flex',
-                backgroundColor: '#FFECEC',
+                backgroundColor: theme.palette.primary.light,
                 borderRadius: 4,
                 p: '4px',
                 mb: 2.5,
@@ -262,12 +262,12 @@ const ListarTransporte = () => {
                             minWidth: 0,
                             fontWeight: filtroHabilitado === f.value ? 600 : 400,
                             backgroundColor: filtroHabilitado === f.value ? 'white' : 'transparent',
-                            color: filtroHabilitado === f.value ? theme.palette.text.primary : '#B05050',
+                            color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.secondary,
                             boxShadow: filtroHabilitado === f.value ? '0 1px 4px rgba(0,0,0,0.12)' : 'none',
                             border: 'none',
                             '&:hover': {
                                 backgroundColor: filtroHabilitado === f.value ? 'white' : 'transparent',
-                                color: filtroHabilitado === f.value ? theme.palette.text.primary : '#5C3333',
+                                color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.medium,
                                 border: 'none',
                             },
                         }}
@@ -323,7 +323,7 @@ const ListarTransporte = () => {
                             sx={{
                                 fontSize: '0.82rem',
                                 borderRadius: 2,
-                                backgroundColor: 'white',
+                                backgroundColor: theme.palette.background.paper,
                                 '& .MuiOutlinedInput-notchedOutline': { borderColor: '#E0E0E0' },
                                 '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#BDBDBD' },
                                 '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
@@ -355,7 +355,7 @@ const ListarTransporte = () => {
                 <TableContainer>
                     <Table>
                         <TableHead>
-                            <TableRow sx={{ backgroundColor: '#F8F9FA' }}>
+                            <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
                                 <TableCell sx={thStyle}>Placa</TableCell>
                                 <TableCell sx={thStyle}>Marca</TableCell>
                                 <TableCell sx={thStyle}>Modelo</TableCell>
@@ -607,8 +607,8 @@ const ListarTransporte = () => {
 
             {vehiculoVer && (
                 <Dialog open onClose={() => setVehiculoVer(null)} maxWidth="md" fullWidth
-                    slotProps={{ paper: { sx: { borderRadius: 3, p: 3, backgroundColor: '#FAFAFA' } } }}>
-                    <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white', mb: 2 }}>
+                    slotProps={{ paper: { sx: { borderRadius: 3, p: 3, backgroundColor: theme.palette.background.subtle } } }}>
+                    <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: theme.palette.background.paper, mb: 2 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                             <DirectionsCarOutlinedIcon sx={{ fontSize: 22, color: theme.palette.text.primary }} />
                             <Typography fontWeight={700} fontSize="1.05rem" color={theme.palette.text.primary}>Detalles del Vehículo</Typography>
@@ -632,7 +632,7 @@ const ListarTransporte = () => {
                     </Paper>
 
                     <Box sx={{ display: 'flex', gap: 2 }}>
-                        <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white', flex: 1 }}>
+                        <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: theme.palette.background.paper, flex: 1 }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                                 <SpeedOutlinedIcon sx={{ fontSize: 22, color: theme.palette.text.primary }} />
                                 <Typography fontWeight={700} fontSize="1.05rem" color={theme.palette.text.primary}>Detalles del Vehículo</Typography>
@@ -650,7 +650,7 @@ const ListarTransporte = () => {
                             </Box>
                         </Paper>
 
-                        <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white', flex: 1 }}>
+                        <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: theme.palette.background.paper, flex: 1 }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                                 <EventOutlinedIcon sx={{ fontSize: 22, color: theme.palette.text.primary }} />
                                 <Typography fontWeight={700} fontSize="1.05rem" color={theme.palette.text.primary}>Estado y Documentos</Typography>

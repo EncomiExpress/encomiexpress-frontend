@@ -35,26 +35,29 @@ const getThStyle = (theme) => ({
     whiteSpace: 'nowrap',
 })
 
-const CampoFila = ({ label, value }) => (
-    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
-        <Typography variant="body2" sx={{ color: '#9C4040', fontWeight: 500 }}>{label}</Typography>
-        <Typography variant="body2" fontWeight={500} color="#2D3748">
-            {String(value ?? '-')}
-        </Typography>
-    </Box>
-)
+const CampoFila = ({ label, value }) => {
+    const theme = useTheme()
+    return (
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
+            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>{label}</Typography>
+            <Typography variant="body2" fontWeight={500} color={theme.palette.text.medium}>
+                {String(value ?? '-')}
+            </Typography>
+        </Box>
+    )
+}
 
 const ModalConsultar = ({ cliente, onClose }) => {
     const theme = useTheme()
     if (!cliente) return null
     const estado = cliente.habilitado ? 'Habilitado' : 'Inhabilitado'
 
-    const cardSx = { borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white' }
+    const cardSx = { borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: theme.palette.background.paper }
     const tituloSx = { display: 'flex', alignItems: 'center', gap: 1, mb: 1 }
 
     return (
         <Dialog open onClose={onClose} maxWidth="md" fullWidth
-            slotProps={{ paper: { sx: { borderRadius: 3, p: 3, backgroundColor: '#FAFAFA' } } }}>
+            slotProps={{ paper: { sx: { borderRadius: 3, p: 3, backgroundColor: theme.palette.background.subtle } } }}>
 
             <Paper elevation={0} sx={{ ...cardSx, mb: 2 }}>
                 <Box sx={tituloSx}>
@@ -254,7 +257,7 @@ const ListarCliente = () => {
 
             <Box sx={{
                 display: 'inline-flex',
-                backgroundColor: '#FFECEC',
+                backgroundColor: theme.palette.primary.light,
                 borderRadius: 4,
                 p: '4px',
                 mb: 2.5,
@@ -275,15 +278,15 @@ const ListarCliente = () => {
                             py: 0.5,
                             minWidth: 0,
                             fontWeight: filtroEstado === f.value ? 600 : 400,
-                            backgroundColor: filtroEstado === f.value ? 'white' : 'transparent',
-                            color: filtroEstado === f.value ? theme.palette.text.primary : '#B05050',
+                            backgroundColor: filtroEstado === f.value ? theme.palette.background.paper : 'transparent',
+                            color: filtroEstado === f.value ? theme.palette.text.primary : theme.palette.text.secondary,
                             boxShadow: filtroEstado === f.value
                                 ? '0 1px 4px rgba(0,0,0,0.12)'
                                 : 'none',
                             border: 'none',
                             '&:hover': {
-                                backgroundColor: filtroEstado === f.value ? 'white' : 'transparent',
-                                color: filtroEstado === f.value ? theme.palette.text.primary : '#5C3333',
+                                backgroundColor: filtroEstado === f.value ? theme.palette.background.paper : 'transparent',
+                                color: filtroEstado === f.value ? theme.palette.text.primary : theme.palette.text.medium,
                                 border: 'none',
                             },
                         }}
@@ -362,7 +365,7 @@ const ListarCliente = () => {
                 <TableContainer>
                     <Table>
                         <TableHead>
-                            <TableRow sx={{ backgroundColor: '#F8F9FA' }}>
+                            <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
                                 <TableCell sx={thStyle}>Nombre</TableCell>
                                 <TableCell sx={thStyle}>Identificación</TableCell>
                                 <TableCell sx={thStyle}>Teléfono</TableCell>

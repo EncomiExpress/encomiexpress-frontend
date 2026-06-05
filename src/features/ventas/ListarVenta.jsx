@@ -68,14 +68,17 @@ const formatRutaDestino = (destino) => {
     return String(destino)
 }
 
-const CampoFila = ({ label, value }) => (
-    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
-        <Typography variant="body2" sx={{ color: '#9C4040', fontWeight: 500 }}>{label}</Typography>
-        <Typography variant="body2" fontWeight={500} color="#2D3748">
-            {String(value ?? '—')}
-        </Typography>
-    </Box>
-)
+const CampoFila = ({ label, value }) => {
+    const theme = useTheme()
+    return (
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
+            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>{label}</Typography>
+            <Typography variant="body2" fontWeight={500} color={theme.palette.text.medium}>
+                {String(value ?? '—')}
+            </Typography>
+        </Box>
+    )
+}
 
 const ModalConsultar = ({ venta, onClose }) => {
     const theme = useTheme()
@@ -83,12 +86,12 @@ const ModalConsultar = ({ venta, onClose }) => {
     const estadoStyles = getEstadoColor(venta.estado)
     const pagoStyles = getPagoColor(venta.estadoPago)
 
-    const cardSx = { borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white' }
+    const cardSx = { borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: theme.palette.background.paper }
     const tituloSx = { display: 'flex', alignItems: 'center', gap: 1, mb: 1 }
 
     return (
         <Dialog open onClose={onClose} maxWidth="md" fullWidth
-            slotProps={{ paper: { sx: { borderRadius: 3, p: 3, backgroundColor: '#FAFAFA' } } }}>
+            slotProps={{ paper: { sx: { borderRadius: 3, p: 3, backgroundColor: theme.palette.background.subtle } } }}>
 
             <Paper elevation={0} sx={{ ...cardSx, mb: 2 }}>
                 <Box sx={tituloSx}>
@@ -400,7 +403,7 @@ const ListarVenta = () => {
 
             <Box sx={{
                 display: 'inline-flex',
-                backgroundColor: '#FFECEC',
+                backgroundColor: theme.palette.primary.light,
                 borderRadius: 4,
                 p: '4px',
                 mb: 2,
@@ -423,14 +426,14 @@ const ListarVenta = () => {
                             minWidth: 0,
                             fontWeight: filtroHabilitado === f.value ? 600 : 400,
                             backgroundColor: filtroHabilitado === f.value ? 'white' : 'transparent',
-                            color: filtroHabilitado === f.value ? theme.palette.text.primary : '#B05050',
+                            color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.secondary,
                             boxShadow: filtroHabilitado === f.value
                                 ? '0 1px 4px rgba(0,0,0,0.12)'
                                 : 'none',
                             border: 'none',
                             '&:hover': {
                                 backgroundColor: filtroHabilitado === f.value ? 'white' : 'transparent',
-                                color: filtroHabilitado === f.value ? theme.palette.text.primary : '#5C3333',
+                                color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.medium,
                                 border: 'none',
                             },
                         }}
@@ -550,7 +553,7 @@ const ListarVenta = () => {
                 <TableContainer>
                     <Table>
                         <TableHead>
-                            <TableRow sx={{ backgroundColor: '#F8F9FA' }}>
+                            <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
                                 <TableCell sx={thStyle}>Remitente</TableCell>
                                 <TableCell sx={thStyle}>Guía</TableCell>
                                 <TableCell sx={thStyle}>Destinatario</TableCell>

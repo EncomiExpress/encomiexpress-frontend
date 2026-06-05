@@ -72,12 +72,12 @@ const ModalConsultar = ({ rol, onClose }) => {
     if (!rol) return null
 
     const avatarStyle = theme.palette.avatarDefault || theme.palette.roles.default
-    const cardSx = { borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white' }
+    const cardSx = { borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: theme.palette.background.paper }
     const tituloSx = { display: 'flex', alignItems: 'center', gap: 1, mb: 1 }
 
     return (
         <Dialog open onClose={onClose} maxWidth="md" fullWidth
-            slotProps={{ paper: { sx: { borderRadius: 3, p: 3, backgroundColor: '#FAFAFA' } } }}>
+            slotProps={{ paper: { sx: { borderRadius: 3, p: 3, backgroundColor: theme.palette.background.subtle } } }}>
 
             <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pb: 1 }}>
                 <Avatar sx={{ backgroundColor: avatarStyle.bg, color: avatarStyle.color, width: 36, height: 36 }}>
@@ -133,7 +133,7 @@ const ModalConsultar = ({ rol, onClose }) => {
                         </Typography>
 
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9, borderTop: `1px solid ${theme.palette.divider}`, mt: 1, pt: 1.5 }}>
-                            <Typography variant="body2" sx={{ color: '#9C4040', fontWeight: 500 }}>Total permisos</Typography>
+                            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Total permisos</Typography>
                             <Chip
                                 label={`${rol.permisos?.length || 0} permisos`}
                                 size="small"
@@ -372,7 +372,7 @@ const ListarRol = () => {
                 <TableContainer>
                     <Table>
                         <TableHead>
-                            <TableRow sx={{ backgroundColor: '#F8F9FA' }}>
+                            <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
                                 <TableCell sx={thStyle}>Rol</TableCell>
                                 <TableCell sx={thStyle}>Descripción</TableCell>
                                 <TableCell sx={thStyle}>Permisos</TableCell>

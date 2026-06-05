@@ -108,27 +108,30 @@ const formatFecha = (fecha) => {
     return `${d}/${m}/${y}`
 }
 
-const CampoFila = ({ label, value, esEstado, estadoValue }) => (
-    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
-        <Typography variant="body2" sx={{ color: '#9C4040', fontWeight: 500 }}>{label}</Typography>
-        {esEstado ? (
-            <Chip
-                label={estadoValue}
-                size="small"
-                sx={{
-                    backgroundColor: ESTADO_ANTICIPO_COLORS[estadoValue]?.bg || '#F3F4F6',
-                    color: ESTADO_ANTICIPO_COLORS[estadoValue]?.color || '#9CA3AF',
-                    fontWeight: 600, fontSize: '0.72rem',
-                    height: 22, borderRadius: 10, border: 'none', textTransform: 'capitalize',
-                }}
-            />
-        ) : (
-            <Typography variant="body2" fontWeight={500} color="#2D3748">
-                {String(value ?? '—')}
-            </Typography>
-        )}
-    </Box>
-)
+const CampoFila = ({ label, value, esEstado, estadoValue }) => {
+    const theme = useTheme()
+    return (
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
+            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>{label}</Typography>
+            {esEstado ? (
+                <Chip
+                    label={estadoValue}
+                    size="small"
+                    sx={{
+                        backgroundColor: ESTADO_ANTICIPO_COLORS[estadoValue]?.bg || '#F3F4F6',
+                        color: ESTADO_ANTICIPO_COLORS[estadoValue]?.color || '#9CA3AF',
+                        fontWeight: 600, fontSize: '0.72rem',
+                        height: 22, borderRadius: 10, border: 'none', textTransform: 'capitalize',
+                    }}
+                />
+            ) : (
+                <Typography variant="body2" fontWeight={500} color={theme.palette.text.medium}>
+                    {String(value ?? '—')}
+                </Typography>
+            )}
+        </Box>
+    )
+}
 
 // ── Modal de consulta ────────────────────────────────────────────────────────
 const ModalConsultar = ({ anticipo, conductores, rutas, onClose }) => {
@@ -149,12 +152,12 @@ const ModalConsultar = ({ anticipo, conductores, rutas, onClose }) => {
         return r ? r.nombre : '—'
     }
 
-    const cardSx = { borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white' }
+    const cardSx = { borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: theme.palette.background.paper }
     const tituloSx = { display: 'flex', alignItems: 'center', gap: 1, mb: 1 }
 
     return (
         <Dialog open onClose={onClose} maxWidth="md" fullWidth
-            slotProps={{ paper: { sx: { borderRadius: 3, p: 3, backgroundColor: '#FAFAFA' } } }}>
+            slotProps={{ paper: { sx: { borderRadius: 3, p: 3, backgroundColor: theme.palette.background.subtle } } }}>
 
             <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pb: 1 }}>
                 <Avatar sx={{ backgroundColor: '#FFCDD2', color: '#C62828', width: 36, height: 36 }}>
@@ -364,7 +367,7 @@ const ListarAnticipoExcedente = () => {
             </Box>
 
             {/* Filtros de habilitado */}
-            <Box sx={{ display: 'inline-flex', backgroundColor: '#FFECEC', borderRadius: 4, p: '4px', mb: 2.5, gap: '5px' }}>
+            <Box sx={{ display: 'inline-flex', backgroundColor: theme.palette.primary.light, borderRadius: 4, p: '4px', mb: 2.5, gap: '5px' }}>
                 {FILTROS_HABILITADO.map(f => (
                     <Button
                         key={f.value}
@@ -380,12 +383,12 @@ const ListarAnticipoExcedente = () => {
                             minWidth: 0,
                             fontWeight: filtroHabilitado === f.value ? 600 : 400,
                             backgroundColor: filtroHabilitado === f.value ? 'white' : 'transparent',
-                            color: filtroHabilitado === f.value ? theme.palette.text.primary : '#B05050',
+                            color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.secondary,
                             boxShadow: filtroHabilitado === f.value ? '0 1px 4px rgba(0,0,0,0.12)' : 'none',
                             border: 'none',
                             '&:hover': {
                                 backgroundColor: filtroHabilitado === f.value ? 'white' : 'transparent',
-                                color: filtroHabilitado === f.value ? theme.palette.text.primary : '#5C3333',
+                                color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.medium,
                                 border: 'none',
                             },
                         }}
@@ -452,7 +455,7 @@ const ListarAnticipoExcedente = () => {
                 <TableContainer>
                     <Table>
                         <TableHead>
-                            <TableRow sx={{ backgroundColor: '#F8F9FA' }}>
+                            <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
                                 <TableCell sx={thStyle}>Conductor</TableCell>
                                 <TableCell sx={thStyle}>Ruta</TableCell>
                                 <TableCell sx={thStyle}>Anticipo</TableCell>
