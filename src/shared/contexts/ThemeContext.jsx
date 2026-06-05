@@ -1,31 +1,40 @@
-import { createContext, useContext, useState, useEffect } from 'react'
-import { useTheme } from '@mui/material/styles'
+import { createContext, useContext, useState, useMemo } from 'react'
+import { ThemeProvider } from '@mui/material/styles'
+import CssBaseline from '@mui/material/CssBaseline'
+import { getTheme } from '../styles/theme.js'
 
-const ThemeContext = createContext()
+const DarkModeContext = createContext()
 
-export const useDarkMode = () => {
-  const context = useContext(ThemeContext)
-  if (!context) throw new Error('useDarkMode must be used within ThemeProvider')
-  return context
-}
+export const ThemeProviderWrapper = ({ children }) => {
+  const [darkMode,    setDarkMode]    = useState(() => localStorage.getItem('darkMode')    === 'true')
+  const [paletteKey,  setPaletteKey]  = useState(() => localStorage.getItem('paletteKey')  || 'red')
 
-export const ThemeModeProvider = ({ children }) => {
-  const [darkMode, setDarkMode] = useState(() => {
-    const saved = localStorage.getItem('darkMode')
-    return saved === 'true'
+  const toggleDarkMode = () =>
+    setDarkMode(prev => {
+      localStorage.setItem('darkMode', !prev)
+      return !prev
+    })
+
+  const togglePalette = (newPalette) =>
+  setPaletteKey(prev => {
+    const next = newPalette || (prev === 'red' ? 'blue' : 'red')
+    localStorage.setItem('paletteKey', next)
+    return next
   })
 
-  useEffect(() => {
-    localStorage.setItem('darkMode', darkMode)
-  }, [darkMode])
-
-  const toggleDarkMode = () => setDarkMode(prev => !prev)
+  const theme = useMemo(
+    () => getTheme(darkMode ? 'dark' : 'light', paletteKey),
+    [darkMode, paletteKey]
+  )
 
   return (
-    <ThemeContext.Provider value={{ darkMode, toggleDarkMode }}>
-      {children}
-    </ThemeContext.Provider>
+    <DarkModeContext.Provider value={{ darkMode, toggleDarkMode, paletteKey, togglePalette }}>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        {children}
+      </ThemeProvider>
+    </DarkModeContext.Provider>
   )
 }
 
-export default ThemeContext
+export const useDarkMode = () => useContext(DarkModeContext)

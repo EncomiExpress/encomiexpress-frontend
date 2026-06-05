@@ -8,10 +8,10 @@ export const formFieldStyles = (theme) => ({
     borderRadius: 2,
     '& fieldset': { borderColor: theme.palette.divider },
     '&:hover fieldset': { borderColor: theme.palette.primary.main },
-    '&.Mui-focused': { boxShadow: '0 0 0 3px rgba(229,115,115,0.18)' },
+    '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` },
     '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
     '& input:-webkit-autofill': {
-      WebkitBoxShadow: '0 0 0 1000px #FFF5F5 inset',
+      WebkitBoxShadow: `0 0 0 1000px ${theme.palette.primary.light} inset`,
       WebkitTextFillColor: theme.palette.text.primary,
     },
   },
@@ -88,7 +88,7 @@ export const FormSelect = ({
       borderRadius: 2,
       '& fieldset': { borderColor: theme.palette.divider },
       '&:hover fieldset': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
-      '&.Mui-focused': { boxShadow: '0 0 0 3px rgba(229,115,115,0.18)' },
+      '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` },
       '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
     },
     '& .MuiInputLabel-root.Mui-focused': { color: theme.palette.primary.main },
@@ -172,10 +172,10 @@ export const PrimaryButton = ({ children, onClick, type = 'submit', fullWidth = 
         px: 3,
         fontWeight: 600,
         textTransform: 'none',
-        boxShadow: '0 4px 14px rgba(204, 24, 24, 0.3)',
+        boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
         '&:hover': {
           backgroundColor: theme.palette.primary.dark,
-          boxShadow: '0 6px 20px rgba(204, 24, 24, 0.4)'
+          boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}`,
         },
       }}
     >
