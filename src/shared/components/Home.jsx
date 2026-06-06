@@ -34,6 +34,9 @@ const logoStyle = {
 const Home = () => {
   const [current, setCurrent] = useState(0)
   const theme = useTheme()
+  const gridColor = theme.palette.background.default === '#121212' ? '255,255,255' : '26,46,110'
+  const gridOpacity = theme.palette.background.default === '#121212' ? '0.06' : '0.05'
+  const isDark = theme.palette.background.default === '#121212'
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -53,10 +56,7 @@ const Home = () => {
     }}>
       <Box sx={{
         position: 'absolute', inset: 0, zIndex: 0,
-        backgroundImage: `
-          linear-gradient(rgba(26,46,110,0.05) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(26,46,110,0.05) 1px, transparent 1px)
-        `,
+        backgroundImage: `linear-gradient(rgba(${gridColor},${gridOpacity}) 1px, transparent 1px), linear-gradient(90deg, rgba(${gridColor},${gridOpacity}) 1px, transparent 1px)`,
         backgroundSize: '60px 60px',
       }} />
       <Box sx={{
@@ -78,8 +78,8 @@ const Home = () => {
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         px: { xs: 4, md: 10 }, py: 1,
         position: 'relative', zIndex: 10,
-        borderBottom: '1px solid rgba(26,46,110,0.1)',
-        backgroundColor: 'rgba(245, 245, 245, 0.9)',
+        borderBottom: `1px solid ${theme.palette.divider}`,
+        backgroundColor: theme.palette.background.paper,
         backdropFilter: 'blur(10px)',
       }}>
         <Box sx={{
@@ -96,10 +96,10 @@ const Home = () => {
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <Box sx={{
             display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 0.8, borderRadius: '20px',
-            border: '1px solid rgba(16, 55, 185, 0.2)', backgroundColor: 'rgba(24, 27, 204, 0.06)',
+            border: `1px solid ${theme.palette.primary.main}33`, backgroundColor: `${theme.palette.primary.main}0F`,
           }}>
-            <Box sx={{ width: 7, height: 7, borderRadius: '50%', backgroundColor: '#344ec4', boxShadow: '0 0 6px #3449c4' }} />
-            <Typography sx={{ color: '#1a2a6e', fontSize: '0.72rem', fontWeight: 600 }}>Acceso Exclusivo</Typography>
+            <Box sx={{ width: 7, height: 7, borderRadius: '50%', backgroundColor: theme.palette.primary.main, boxShadow: `0 0 6px ${theme.palette.primary.main}` }} />
+            <Typography sx={{ color: theme.palette.primary.main, fontSize: '0.72rem', fontWeight: 600 }}>Acceso Exclusivo</Typography>
           </Box>
           <Button
             component={Link}
@@ -125,12 +125,12 @@ const Home = () => {
           <Box sx={{ maxWidth: 1200, mx: 'auto' }}>
             <Box sx={{
               display: 'inline-flex', alignItems: 'center', gap: 1.5,
-              backgroundColor: 'rgba(26,46,110,0.07)',
-              border: '1px solid rgba(26,46,110,0.18)',
+              backgroundColor: `${theme.palette.primary.main}12`,
+              border: `1px solid ${theme.palette.primary.main}2E`,
               px: 2.5, py: 0.8, borderRadius: '30px', mb: 4,
             }}>
-              <Box sx={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: theme.palette.secondary.main }} />
-              <Typography sx={{ color: theme.palette.secondary.main, fontWeight: 600, fontSize: '0.8rem', letterSpacing: '0.5px' }}>
+              <Box sx={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: theme.palette.primary.main }} />
+              <Typography sx={{ color: theme.palette.primary.main, fontWeight: 600, fontSize: '0.8rem', letterSpacing: '0.5px' }}>
                 Gestión de Módulos
               </Typography>
             </Box>
@@ -139,13 +139,13 @@ const Home = () => {
               <Grid size={{ xs: 12, md: 7 }}>
                 <Typography sx={{
                   fontWeight: 700, fontSize: { xs: '2.8rem', md: '4rem' }, fontFamily: 'Cambria',
-                  lineHeight: 1.08, letterSpacing: '-2px', mb: 3, color: 'rgb(26, 46, 110, 0.95)',
+                  lineHeight: 1.08, letterSpacing: '-2px', mb: 3, color: theme.palette.background.default === '#121212' ? '#4FC3F7' : 'rgb(26, 46, 110, 0.95)',
                 }}>
                   Panel de{' '}
-                  <Box component="span" sx={{ color: 'rgba(204,24,24,0.95)' }}>administración</Box>
+                  <Box component="span" sx={{ color: theme.palette.background.default === '#121212' ? '#E57373' : 'rgba(204,24,24,0.95)' }}>administración</Box>
                   <br /> operativa
                 </Typography>
-                <Typography sx={{ color: 'rgba(33,33,33,0.6)', fontSize: '1.05rem', lineHeight: 1.8, mb: 5, maxWidth: 480 }}>
+                <Typography sx={{ color: theme.palette.text.secondary, fontSize: '1.05rem', lineHeight: 1.8, mb: 5, maxWidth: 480 }}>
                   Gestiona encomiendas, transporte, clientes y finanzas en un solo sistema centralizado. Acceso exclusivo para personal autorizado.
                 </Typography>
                 <Box sx={{ display: 'flex', gap: 4, mt: 6, flexWrap: 'wrap' }}>
@@ -176,42 +176,44 @@ const Home = () => {
 
               <Grid size={{ xs: 12, md: 12 }} mt={10}>
                 <Box sx={{
-                  backgroundColor: 'white', borderRadius: '24px', border: '1px solid rgba(26,46,110,0.12)',
-                  p: 3.5, boxShadow: '0 8px 40px rgba(26,46,110,0.1)',
+                  backgroundColor: theme.palette.background.paper,
+                  borderRadius: '24px',
+                  border: `1px solid ${theme.palette.primary.main}20`,
+                  p: 3.5, boxShadow: `0 8px 40px ${theme.palette.primary.main}1A`,
                 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                    <Typography sx={{ color: 'rgb(26, 42, 110, 0.8)', fontWeight: 700, fontSize: '0.85rem', letterSpacing: '2px' }}>
+                    <Typography sx={{ color: theme.palette.primary.main, fontWeight: 700, fontSize: '0.85rem', letterSpacing: '2px' }}>
                       Módulos del Sistema
                     </Typography>
-                    <Box sx={{ px: 1.5, py: 0.4, borderRadius: '8px', backgroundColor: 'rgba(26, 42, 110, 0.08)', border: '1px solid rgba(26, 42, 110, 0.2)' }}>
-                      <Typography sx={{ color: '#1a2a6e', fontSize: '0.68rem', fontWeight: 700 }}>EncomiExpress</Typography>
+                    <Box sx={{ px: 1.5, py: 0.4, borderRadius: '8px', backgroundColor: `${theme.palette.primary.main}14`, border: `1px solid ${theme.palette.primary.main}33` }}>
+                      <Typography sx={{ color: theme.palette.primary.main, fontSize: '0.68rem', fontWeight: 700 }}>EncomiExpress</Typography>
                     </Box>
                   </Box>
                   <Grid container spacing={1.5}>
                     {modules.map((mod, i) => (
                       <Grid size={{ xs: 12, md: 2.4 }} key={i}>
                         <Box sx={{
-                          p: 2.5, borderRadius: '16px', backgroundColor: '#f5f5f5', border: '1px solid rgba(26,46,110,0.08)',
+                          p: 2.5, borderRadius: '16px', backgroundColor: theme.palette.background.subtle, border: `1px solid ${theme.palette.primary.main}14`,
                           display: 'flex', alignItems: 'center', gap: 1.5, transition: 'all 0.25s ease', cursor: 'default',
                           '&:hover': {
                             backgroundColor: `${mod.color}08`, borderColor: `${mod.color}30`,
                             transform: 'translateY(-2px)', boxShadow: `0 4px 12px ${mod.color}15`,
                           },
                         }}>
-                          <Box sx={{ width: 38, height: 38, borderRadius: '10px', backgroundColor: `${mod.color}12`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem', flexShrink: 0 }}>
+                          <Box sx={{ width: 38, height: 38, borderRadius: '10px', backgroundColor: `${mod.color}${isDark ? '33' : '12'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem', flexShrink: 0 }}>
                             <i className={mod.iconClass}></i>
                           </Box>
                           <Box>
                             <Typography sx={{ color: theme.palette.text.dark, fontWeight: 700, fontSize: '0.82rem' }}>{mod.name}</Typography>
-                            <Typography sx={{ color: 'rgba(33,33,33,0.45)', fontSize: '0.68rem' }}>{mod.desc}</Typography>
+                            <Typography sx={{ color: theme.palette.text.secondary, fontSize: '0.68rem' }}>{mod.desc}</Typography>
                           </Box>
                         </Box>
                       </Grid>
                     ))}
                   </Grid>
-                  <Box sx={{ mt: 2.5, pt: 2.5, borderTop: '1px solid rgba(26,46,110,0.08)', display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#344ec4', boxShadow: '0 0 8px #3449c4', flexShrink: 0 }} />
-                    <Typography sx={{ color: 'rgb(26, 42, 110, 0.6)', fontSize: '0.72rem' }}>Acceso restringido · Solo personal autorizado</Typography>
+                  <Box sx={{ mt: 2.5, pt: 2.5, borderTop: `1px solid ${theme.palette.primary.main}14`, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: theme.palette.primary.main, boxShadow: `0 0 8px ${theme.palette.primary.main}`, flexShrink: 0 }} />
+                    <Typography sx={{ color: theme.palette.text.secondary, fontSize: '0.72rem' }}>Acceso restringido · Solo personal autorizado</Typography>
                   </Box>
                 </Box>
               </Grid>
@@ -221,10 +223,10 @@ const Home = () => {
 
         <Box sx={{
           position: 'relative', zIndex: 10, borderTop: '1px solid rgba(26,46,110,0.1)',
-          backgroundColor: 'white', px: { xs: 4, md: 10 }, py: 8,
+          backgroundColor: theme.palette.background.paper, px: { xs: 4, md: 10 }, py: 8,
         }}>
           <Box sx={{ maxWidth: 1100, mx: 'auto' }}>
-            <Typography sx={{ color: 'rgb(204, 24, 24, 0.8)', fontWeight: 700, fontSize: '0.95rem', letterSpacing: '2px', textAlign: 'center', mb: 5 }}>
+            <Typography sx={{ color: theme.palette.primary.main, fontWeight: 700, fontSize: '0.95rem', letterSpacing: '2px', textAlign: 'center', mb: 5 }}>
               Capacidades del Sistema
             </Typography>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2.5, justifyContent: 'center', textAlign: 'center' }}>
@@ -235,15 +237,15 @@ const Home = () => {
                 { iconClass: 'fi fi-ss-money-bill-wave', title: 'Control financiero', desc: 'Anticipos, legalización, excedentes y pagos de ventas. Reportes contables.', accent: '#1A2E6E' },
               ].map((item, i) => (
                 <Box key={i} sx={{
-                  flex: '1 1 220px', maxWidth: 260, p: 3.5, borderRadius: '20px', backgroundColor: '#f5f5f5',
+                  flex: '1 1 220px', maxWidth: 260, p: 3.5, borderRadius: '20px', backgroundColor: theme.palette.background.subtle,
                   border: '1px solid rgba(26,46,110,0.08)', transition: 'all 0.25s ease', display: 'flex', flexDirection: 'column', alignItems: 'center',
                   '&:hover': { borderColor: `${item.accent}30`, backgroundColor: `${item.accent}05`, transform: 'translateY(-3px)', boxShadow: `0 8px 24px ${item.accent}12` },
                 }}>
-                  <Box sx={{ width: 50, height: 50, borderRadius: '12px', backgroundColor: `${item.accent}12`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', mb: 1.5 }}>
+                  <Box sx={{ width: 50, height: 50, borderRadius: '12px', backgroundColor: `${item.accent}${isDark ? '33' : '12'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', mb: 1.5 }}>
                     <i className={item.iconClass}></i>
                   </Box>
-                  <Typography sx={{ color: 'rgb(33, 33, 33, 0.9)', fontWeight: 700, fontSize: '0.95rem', mb: 1 }}>{item.title}</Typography>
-                  <Typography sx={{ color: 'rgba(33, 33, 33, 0.5)', fontSize: '0.82rem', lineHeight: 1.6 }}>{item.desc}</Typography>
+                  <Typography sx={{ color: theme.palette.text.dark, fontWeight: 700, fontSize: '0.95rem', mb: 1 }}>{item.title}</Typography>
+                  <Typography sx={{ color: theme.palette.text.secondary, fontSize: '0.82rem', lineHeight: 1.6 }}>{item.desc}</Typography>
                 </Box>
               ))}
             </Box>

@@ -167,19 +167,19 @@ const Login = () => {
           position: 'absolute',
           top: 20,
           left: 24,
-          color: 'rgba(33,33,33,0.6)',
+          color: theme.palette.text.secondary,
           textTransform: 'none',
           fontWeight: 600,
           fontSize: '0.85rem',
           borderRadius: 2,
           px: 2,
           py: 0.8,
-          border: '1px solid rgba(26,46,110,0.15)',
-          backgroundColor: 'white',
+          border: `1px solid ${theme.palette.divider}`,
+          backgroundColor: theme.palette.background.paper,
           zIndex: 20,
           '&:hover': {
-            backgroundColor: '#f5f5f5',
-            borderColor: 'rgba(26,46,110,0.2)',
+            backgroundColor: theme.palette.background.subtle,
+            borderColor: theme.palette.divider,
             color: theme.palette.primary.main,
           },
           transition: 'all 0.2s ease',
@@ -195,8 +195,8 @@ const Login = () => {
           width: '100%',
           maxWidth: 440,
           borderRadius: 4,
-          backgroundColor: 'white',
-          border: '1px solid rgba(26,46,110,0.1)',
+          backgroundColor: theme.palette.background.paper,
+          border: `1px solid ${theme.palette.divider}`,
           overflow: 'hidden',
           position: 'relative',
           zIndex: 10,
@@ -210,8 +210,8 @@ const Login = () => {
           flexDirection: 'column',
           alignItems: 'center',
           gap: 1.5,
-          backgroundColor: 'white',
-          borderBottom: '1px solid rgba(26,46,110,0.08)',
+          backgroundColor: theme.palette.background.paper,
+          borderBottom: `1px solid ${theme.palette.divider}`,
         }}>
           <Box sx={{
             width: 140,
@@ -227,7 +227,7 @@ const Login = () => {
             <Typography sx={{ color: theme.palette.text.dark, fontWeight: 700, fontSize: '1.5rem', mb: 0.5, lineHeight: 1.2, fontFamily: 'Cambria, Georgia, serif' }}>
               Bienvenido
             </Typography>
-            <Typography sx={{ color: 'rgba(33,33,33,0.45)', fontSize: '0.875rem' }}>
+            <Typography sx={{ color: theme.palette.text.secondary, fontSize: '0.875rem' }}>
               Ingresa tus credenciales para acceder
             </Typography>
           </Box>
@@ -332,17 +332,17 @@ const Login = () => {
           </form>
 
           <Divider sx={{ my: 3 }}>
-            <Typography sx={{ color: 'rgba(33,33,33,0.45)', fontSize: '0.75rem' }}>O</Typography>
+            <Typography sx={{ color: theme.palette.text.secondary, fontSize: '0.75rem' }}>O</Typography>
           </Divider>
 
-          <Box sx={{ p: 2.5, backgroundColor: '#fafafa', borderRadius: 2, border: '1px solid rgba(26,46,110,0.08)' }}>
-            <Typography sx={{ color: 'rgba(33,33,33,0.45)', fontSize: '0.7rem', letterSpacing: '1px', mb: 1.5, fontWeight: 600 }}>
+          <Box sx={{ p: 2.5, backgroundColor: theme.palette.background.subtle, borderRadius: 2, border: `1px solid ${theme.palette.divider}` }}>
+            <Typography sx={{ color: theme.palette.text.secondary, fontSize: '0.7rem', letterSpacing: '1px', mb: 1.5, fontWeight: 600 }}>
               USUARIO ADMINISTRADOR
             </Typography>
             <Typography sx={{ color: theme.palette.text.dark, fontSize: '0.75rem', fontFamily: 'monospace', display: 'block', mb: 0.5 }}>
               • admin@encomiexpress.com
             </Typography>
-            <Typography sx={{ color: 'rgba(33,33,33,0.45)', fontSize: '0.7rem', fontFamily: 'monospace', borderTop: '1px solid rgba(26,46,110,0.08)', pt: 1.5, display: 'block' }}>
+            <Typography sx={{ color: theme.palette.text.secondary, fontSize: '0.7rem', fontFamily: 'monospace', borderTop: `1px solid ${theme.palette.divider}`, pt: 1.5, display: 'block' }}>
               Contraseña: admin123
             </Typography>
           </Box>
@@ -352,8 +352,8 @@ const Login = () => {
       <Dialog open={openRegister} onClose={() => setOpenRegister(false)} maxWidth="sm" fullWidth>
         <DialogTitle sx={{
           p: 3, textAlign: 'center',
-          backgroundColor: 'white',
-          borderBottom: '1px solid rgba(26,46,110,0.08)',
+          backgroundColor: theme.palette.background.paper,
+          borderBottom: `1px solid ${theme.palette.divider}`,
         }}>
           <Typography sx={{ color: theme.palette.text.dark, fontWeight: 700, fontSize: '1.1rem' }}>
             Crear Cuenta
