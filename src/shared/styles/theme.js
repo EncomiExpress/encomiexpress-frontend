@@ -168,7 +168,7 @@ const buildLightPalette = (t) => ({
     primary:      `linear-gradient(135deg, ${t.primary} 0%, ${t.primaryDark} 100%)`,
     primaryHover: `linear-gradient(135deg, ${t.primaryDarker} 0%, ${t.primary} 100%)`,
     navbar:       t.gradientNav,
-    hero:         `linear-gradient(135deg, #f5f5f5 0%, ${t.primaryDark} 50%)`,
+    hero:         `linear-gradient(135deg, #f5f5f5 0%, ${t.primaryDarker} 50%)`,
   },
 })
 
@@ -272,7 +272,7 @@ const buildDarkPalette = (t) => ({
     primary:      `linear-gradient(135deg, ${t.primary} 0%, ${t.primaryDark} 100%)`,
     primaryHover: `linear-gradient(135deg, ${t.primaryDarker} 0%, ${t.primary} 100%)`,
     navbar:       t.gradientNav,
-    hero:         `linear-gradient(135deg, #222222 0%, ${t.primaryDark} 50%)`,
+    hero:         `linear-gradient(135deg, #222222 0%, ${t.primaryDarker} 50%)`,
   },
 })
 
