@@ -112,7 +112,7 @@ export const AuthProvider = ({ children }) => {
         return { success: false, mensaje: data.message || 'Credenciales inválidas' }
       }
 
-      const { token: tokenNuevo, usuario } = data.data
+      const { token: tokenNuevo, refreshToken: refreshTokenNuevo, usuario } = data.data
 
       // Normalizar rol: el backend puede devolver string u objeto { nombre, idRol }
       const rolNombre = typeof usuario.rol === 'string'
@@ -127,6 +127,7 @@ export const AuthProvider = ({ children }) => {
       setToken(tokenNuevo)
       localStorage.setItem('token', tokenNuevo)
       localStorage.setItem('usuario', JSON.stringify(usuarioNormalizado))
+      localStorage.setItem('refreshToken', refreshTokenNuevo)
       setUsuario(usuarioNormalizado)
 
       return { success: true, usuario: usuarioNormalizado }
@@ -138,9 +139,10 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     setToken(null)
-    localStorage.removeItem('token')
-    localStorage.removeItem('usuario')
     setUsuario(null)
+    localStorage.removeItem('token')
+    localStorage.removeItem('refreshToken')
+    localStorage.removeItem('usuario')
   }
 
   const tienePermiso = (permiso) => {

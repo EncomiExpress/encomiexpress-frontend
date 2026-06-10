@@ -23,6 +23,7 @@ export const setAuthData = (token, usuario) => {
 export const clearAuthData = () => {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
+  localStorage.removeItem('refreshToken');
 };
 
 // Función helper para hacer peticiones con token — compartida con todos los servicios
@@ -305,6 +306,22 @@ export const eliminarRol = async (id) => {
   });
 };
 
+
+export const refreshTokenService = async () => {
+  const storedRefreshToken = localStorage.getItem('refreshToken');
+  if (!storedRefreshToken) return null;
+
+  const data = await fetchWithAuth('/auth/refresh', {
+    method: 'POST',
+    body: JSON.stringify({ refreshToken: storedRefreshToken }),
+  });
+
+  if (data.success && data.data.token) {
+    localStorage.setItem('token', data.data.token);
+  }
+
+  return data;
+};
 
 // ============================================
 // MAPEO DE ROLES
