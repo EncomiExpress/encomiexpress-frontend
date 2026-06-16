@@ -39,24 +39,22 @@ export const fetchWithAuth = async (endpoint, options = {}) => {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const controller = options.signal ? null : new AbortController();
-  const signal = options.signal || controller?.signal;
+  const controller = new AbortController();
+  const signal = controller.signal;
 
-  try {
+  const ejecutarPeticion = async (authToken) => {
+    const reqHeaders = { ...headers };
+    if (authToken) {
+      reqHeaders['Authorization'] = `Bearer ${authToken}`;
+    }
+
     const response = await fetch(`${API_URL}${endpoint}`, {
       ...options,
-      headers,
+      headers: reqHeaders,
       signal,
     });
 
     const data = await response.json();
-
-    if (response.status === 401) {
-      clearAuthData();
-      const error = new Error('Sesión expirada. Por favor inicia sesión de nuevo.');
-      error.status = 401;
-      throw error;
-    }
 
     if (response.status === 403) {
       const error = new Error('Sin permisos');
@@ -69,36 +67,51 @@ export const fetchWithAuth = async (endpoint, options = {}) => {
     }
 
     return data;
+  };
+
+  try {
+    return await ejecutarPeticion(token);
   } catch (error) {
-    if (error.name === 'AbortError') {
-      return;
+    if (error.status !== 401) {
+      throw error;
     }
-    throw error;
-  }
 
-  // Token expirado o inválido → limpiar sesión y lanzar error.
-  // NO redirigir aquí con window.location — eso genera loops cuando los Contexts
-  // hacen fetch antes de que AuthContext restaure el token desde localStorage.
-  // La redirección la maneja AuthContext o PrivateRoute.
-  if (response.status === 401) {
-    clearAuthData();
-    const error = new Error('Sesión expirada. Por favor inicia sesión de nuevo.');
-    error.status = 401;
-    throw error;
-  }
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (!refreshToken) {
+      clearAuthData();
+      const authError = new Error('Sesión expirada. Por favor inicia sesión de nuevo.');
+      authError.status = 401;
+      throw authError;
+    }
 
-  // Sin permisos (403) — lanzar error con status para identificación silenciosa
-  if (response.status === 403) {
-    const error = new Error('Sin permisos');
-    error.status = 403;
-    throw error;
-  }
+    try {
+      const refreshRes = await fetch(`${API_URL}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+        signal,
+      });
 
-  if (!response.ok) {
-    throw new Error(data.message || 'Error en la petición');
-  }
+      const refreshData = await refreshRes.json();
 
-  return data;
+      if (!refreshRes.ok || !refreshData.success) {
+        clearAuthData();
+        const authError = new Error('Sesión expirada. Por favor inicia sesión de nuevo.');
+        authError.status = 401;
+        throw authError;
+      }
+
+      const nuevoToken = refreshData.data.token;
+      localStorage.setItem('token', nuevoToken);
+
+      return await ejecutarPeticion(nuevoToken);
+    } catch (refreshError) {
+      clearAuthData();
+      const authError = new Error('Sesión expirada. Por favor inicia sesión de nuevo.');
+      authError.status = 401;
+      throw authError;
+    }
+  }
 };
 
 // ============================================

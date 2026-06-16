@@ -168,6 +168,37 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
+  const refreshAccessToken = async () => {
+    const refreshTokenGuardado = localStorage.getItem('refreshToken')
+    if (!refreshTokenGuardado) {
+      logout()
+      return { success: false }
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: refreshTokenGuardado })
+      })
+
+      const data = await res.json()
+      if (!res.ok || !data.success) {
+        logout()
+        return { success: false }
+      }
+
+      const { token: nuevoToken } = data.data
+      setToken(nuevoToken)
+      localStorage.setItem('token', nuevoToken)
+
+      return { success: true }
+    } catch {
+      logout()
+      return { success: false }
+    }
+  }
+
   const recuperarPassword = async () => ({ success: true })
 
   // Backend real
@@ -303,6 +334,7 @@ export const AuthProvider = ({ children }) => {
       loading,
       login,
       logout,
+      refreshAccessToken,
       tienePermiso,
       tieneAlgunPermiso,
       tieneTodosLosPermisos,
