@@ -17,6 +17,7 @@ import ClearIcon from '@mui/icons-material/Clear'
 import RouteIcon from '@mui/icons-material/Route'
 import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
 import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined'
+import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank'
 import CheckBoxIcon from '@mui/icons-material/CheckBox'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
@@ -272,67 +273,136 @@ const resolveDestino = (ruta) =>
                         Gestiona las rutas programadas en el sistema.
                     </Typography>
                 </Box>
-                {tienePermiso(PERMISOS.REGISTRAR_RUTA_PROGRAMACION) && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Button
-                        onClick={() => setModalRegistrarOpen(true)}
                         variant="contained"
-                        startIcon={<AddOutlinedIcon />}
+                        startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 18 }} />}
                         sx={{
-                            backgroundColor: theme.palette.primary.main,
+                            backgroundColor: theme.palette.background.paper,
+                            color: theme.palette.text.primary,
                             borderRadius: 2,
                             textTransform: 'none',
-                            fontWeight: 600,
-                            boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
+                            fontSize: '0.875rem',
+                            fontWeight: 700,
+                            border: `1px solid ${theme.palette.divider}`,
+                            boxShadow: 'none',
                             '&:hover': {
-                                backgroundColor: theme.palette.primary.dark,
-                                boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}`,
+                                backgroundColor: theme.palette.primary.light,
+                                color: theme.palette.text.primary,
+                                border: `1px solid ${theme.palette.divider}`,
+                                boxShadow: 'none',
                             },
                         }}
                     >
-                        Nueva ruta
+                        Exportar
                     </Button>
-                )}
-            </Box>
 
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1.5, flexWrap: 'wrap' }}>
-                <Box sx={{
-                    display: 'inline-flex',
-                    backgroundColor: theme.palette.primary.light,
-                    borderRadius: 4,
-                    p: '4px',
-                    gap: '5px',
-                }}>
-                    {FILTROS.map(f => (
+                    {tienePermiso(PERMISOS.REGISTRAR_RUTA_PROGRAMACION) && (
                         <Button
-                            key={f.value}
-                            onClick={() => { setFiltroHabilitado(f.value); setPage(1) }}
-                            size="small"
-                            disableElevation
-                            disableRipple
+                            onClick={() => setModalRegistrarOpen(true)}
+                            variant="contained"
+                            startIcon={<AddOutlinedIcon sx={{ fontSize: 20 }} />}
                             sx={{
-                                borderRadius: 3,
+                                backgroundColor: theme.palette.primary.main,
+                                borderRadius: 2,
                                 textTransform: 'none',
-                                fontSize: '0.75rem',
-                                px: 2,
-                                py: 0.5,
-                                minWidth: 0,
-                                fontWeight: filtroHabilitado === f.value ? 600 : 400,
-                                backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
-                                color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.secondary,
-                                boxShadow: filtroHabilitado === f.value
-                                    ? '0 1px 4px rgba(0,0,0,0.12)'
-                                    : 'none',
-                                border: 'none',
+                                fontSize: '0.875rem',
+                                fontWeight: 600,
+                                boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
                                 '&:hover': {
-                                    backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
-                                    color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.medium,
-                                    border: 'none',
+                                    backgroundColor: theme.palette.primary.dark,
+                                    boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}`,
                                 },
                             }}
                         >
-                            {f.label}
+                            Nueva ruta
                         </Button>
-                    ))}
+                    )}
+                </Box>
+            </Box>
+
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, mb: 1.5, flexWrap: 'wrap' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+                    <Box sx={{
+                        display: 'inline-flex',
+                        backgroundColor: theme.palette.primary.light,
+                        borderRadius: 4,
+                        p: '4px',
+                        gap: '5px',
+                    }}>
+                        {FILTROS.map(f => (
+                            <Button
+                                key={f.value}
+                                onClick={() => { setFiltroHabilitado(f.value); setPage(1) }}
+                                size="small"
+                                disableElevation
+                                disableRipple
+                                sx={{
+                                    borderRadius: 3,
+                                    textTransform: 'none',
+                                    fontSize: '0.75rem',
+                                    px: 2,
+                                    py: 0.5,
+                                    minWidth: 0,
+                                    fontWeight: filtroHabilitado === f.value ? 600 : 400,
+                                    backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
+                                    color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.secondary,
+                                    boxShadow: filtroHabilitado === f.value
+                                        ? '0 1px 4px rgba(0,0,0,0.12)'
+                                        : 'none',
+                                    border: 'none',
+                                    '&:hover': {
+                                        backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
+                                        color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.medium,
+                                        border: 'none',
+                                    },
+                                }}
+                            >
+                                {f.label}
+                            </Button>
+                        ))}
+                    </Box>
+
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <FormControl size="small" sx={{ minWidth: 120 }}>
+                            <Select
+                                value={filtroAnio}
+                                onChange={(e) => { setFiltroAnio(e.target.value); setFiltroMes(''); setPage(1) }}
+                                displayEmpty
+                                sx={{ borderRadius: 4 }}
+                            >
+                                <MenuItem value="">Año</MenuItem>
+                                {aniosDisponibles.map(anio => (
+                                    <MenuItem key={anio} value={anio}>{anio}</MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+
+                        <FormControl size="small" sx={{ minWidth: 120 }}>
+                            <Select
+                                value={filtroMes}
+                                onChange={(e) => { setFiltroMes(e.target.value); setPage(1) }}
+                                displayEmpty
+                                disabled={!filtroAnio}
+                                sx={{ borderRadius: 4 }}
+                            >
+                                <MenuItem value="">Mes</MenuItem>
+                                {MESES.map(m => (
+                                    <MenuItem key={m.value} value={m.value}>{m.label}</MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    </Box>
+
+                    {hayFiltrosActivos && (
+                        <Chip
+                            label="Limpiar"
+                            size="small"
+                            icon={<ClearIcon sx={{ fontSize: '14px !important' }} />}
+                            onClick={limpiarFiltros}
+                            sx={{ fontSize: '0.72rem', height: 28, cursor: 'pointer', backgroundColor: theme.palette.primary.light, color: theme.palette.primary.main }}
+                        />
+                    )}
                 </Box>
 
                 <TextField
@@ -367,45 +437,6 @@ const resolveDestino = (ruta) =>
                         }
                     }}
                 />
-
-                <FormControl size="small" sx={{ minWidth: 120 }}>
-                    <Select
-                        value={filtroAnio}
-                        onChange={(e) => { setFiltroAnio(e.target.value); setFiltroMes(''); setPage(1) }}
-                        displayEmpty
-                        sx={{ borderRadius: 4 }}
-                    >
-                        <MenuItem value="">Año</MenuItem>
-                        {aniosDisponibles.map(anio => (
-                            <MenuItem key={anio} value={anio}>{anio}</MenuItem>
-                        ))}
-                    </Select>
-                </FormControl>
-
-                <FormControl size="small" sx={{ minWidth: 120 }}>
-                    <Select
-                        value={filtroMes}
-                            onChange={(e) => { setFiltroMes(e.target.value); setPage(1) }}
-                        displayEmpty
-                        disabled={!filtroAnio}
-                        sx={{ borderRadius: 4 }}
-                    >
-                        <MenuItem value="">Mes</MenuItem>
-                        {MESES.map(m => (
-                            <MenuItem key={m.value} value={m.value}>{m.label}</MenuItem>
-                        ))}
-                    </Select>
-                </FormControl>
-
-                {hayFiltrosActivos && (
-                    <Chip
-                        label="Limpiar"
-                        size="small"
-                        icon={<ClearIcon sx={{ fontSize: '14px !important' }} />}
-                        onClick={limpiarFiltros}
-                        sx={{ fontSize: '0.72rem', height: 28, cursor: 'pointer', backgroundColor: theme.palette.primary.light, color: theme.palette.primary.main }}
-                    />
-                )}
             </Box>
 
             <Paper elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 3, overflow: 'hidden' }}>

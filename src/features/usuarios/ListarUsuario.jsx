@@ -230,6 +230,7 @@ const ListarUsuario = () => {
     const limpiarFiltros = () => {
         setBusqueda('')
         setFiltroHabilitado('todo')
+        setFiltroRol('')
         setPage(1)
     }
 
@@ -268,26 +269,52 @@ const ListarUsuario = () => {
                         Gestiona los usuarios registrados en el sistema.
                     </Typography>
                 </Box>
-                {puedeRegistrar && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Button
-                        onClick={() => setModalRegistrarOpen(true)}
                         variant="contained"
-                        startIcon={<AddOutlinedIcon />}
+                        startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 18 }} />}
                         sx={{
-                            backgroundColor: theme.palette.primary.main,
+                            backgroundColor: theme.palette.background.paper,
+                            color: theme.palette.text.primary,
                             borderRadius: 2,
                             textTransform: 'none',
-                            fontWeight: 600,
-                            boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
+                            fontSize: '0.875rem',
+                            fontWeight: 700,
+                            border: `1px solid ${theme.palette.divider}`,
+                            boxShadow: 'none',
                             '&:hover': {
-                                backgroundColor: theme.palette.primary.dark,
-                                boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}`,
+                                backgroundColor: theme.palette.primary.light,
+                                color: theme.palette.text.primary,
+                                border: `1px solid ${theme.palette.divider}`,
+                                boxShadow: 'none',
                             },
                         }}
                     >
-                        Nuevo usuario
+                        Exportar
                     </Button>
-                )}
+
+                    {puedeRegistrar && (
+                        <Button
+                            onClick={() => setModalRegistrarOpen(true)}
+                            variant="contained"
+                            startIcon={<AddOutlinedIcon sx={{ fontSize: 20 }} />}
+                            sx={{
+                                backgroundColor: theme.palette.primary.main,
+                                borderRadius: 2,
+                                textTransform: 'none',
+                                fontSize: '0.875rem',
+                                fontWeight: 600,
+                                boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
+                                '&:hover': {
+                                    backgroundColor: theme.palette.primary.dark,
+                                    boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}`,
+                                },
+                            }}
+                        >
+                            Nuevo usuario
+                        </Button>
+                    )}
+                </Box>
             </Box>
 
             {error && (
@@ -296,131 +323,116 @@ const ListarUsuario = () => {
                 </Alert>
             )}
 
-            <Box sx={{
-                display: 'inline-flex',
-                backgroundColor: theme.palette.primary.light,
-                borderRadius: 4,
-                p: '4px',
-                mb: 2.5,
-                gap: '5px',
-            }}>
-                {FILTROS.map(f => (
-                    <Button
-                        key={f.value}
-                        onClick={() => { setFiltroHabilitado(f.value); setPage(1) }}
-                        size="small"
-                        disableElevation
-                        disableRipple
-                        sx={{
-                            borderRadius: 3,
-                            textTransform: 'none',
-                            fontSize: '0.75rem',
-                            px: 2,
-                            py: 0.5,
-                            minWidth: 0,
-                            fontWeight: filtroHabilitado === f.value ? 600 : 400,
-                            backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
-                            color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.secondary,
-                            boxShadow: filtroHabilitado === f.value
-                                ? '0 1px 4px rgba(0,0,0,0.12)'
-                                : 'none',
-                            border: 'none',
-                            '&:hover': {
-                                backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
-                                color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.medium,
-                                border: 'none',
-                            },
-                        }}
-                    >
-                        {f.label}
-                    </Button>
-                ))}
-            </Box>
-
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
-                <TextField
-                    size="small"
-                    placeholder="Buscar usuarios..."
-                    sx={{
-                        width: 280,
-                        '& .MuiOutlinedInput-root': {
-                            borderRadius: 2,
-                            '&.Mui-focused': {
-                                boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}`,
-                            },
-                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                borderColor: theme.palette.primary.main,
-                                borderWidth: '1px',
-                            },
-                        },
-                    }}
-                    value={busqueda}
-                    onChange={e => { setBusqueda(e.target.value); setPage(1) }}
-                    slotProps={{
-                        input: {
-                            startAdornment: (
-                                <InputAdornment position="start">
-                                    <SearchIcon sx={{ color: theme.palette.text.secondary, fontSize: 20 }} />
-                                </InputAdornment>
-                            ),
-                            endAdornment: busqueda && (
-                                <InputAdornment position="end">
-                                    <IconButton size="small" onClick={() => { setBusqueda(''); setPage(1) }}>
-                                        <ClearIcon sx={{ fontSize: 16 }} />
-                                    </IconButton>
-                                </InputAdornment>
-                            )
-                        }
-                    }}
-                />
-
-                {hayFiltrosActivos && (
-                    <Chip
-                        label="Limpiar"
-                        size="small"
-                        icon={<ClearIcon sx={{ fontSize: '14px !important' }} />}
-                        onClick={limpiarFiltros}
-                        sx={{ fontSize: '0.72rem', height: 28, cursor: 'pointer', backgroundColor: theme.palette.primary.light, color: theme.palette.primary.main }}
-                    />
-                )}
-
-                <FormControl size="small" sx={{ minWidth: 180 }}>
-                    <Select
-                        value={filtroRol}
-                        onChange={e => { setFiltroRol(e.target.value); setPage(1) }}
-                        displayEmpty
-                        sx={{
-                            width: 220,
-                            borderRadius: 2,
-                            '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
-                            '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#BDBDBD' },
-                        }}
-                        renderValue={(value) => value ? roles.find(r => r.id === value)?.nombre || 'Rol' : 'Todos los roles'}
-                    >
-                        <MenuItem value="">Todos los roles</MenuItem>
-                        {roles.map((rol) => (
-                            <MenuItem key={rol.id} value={rol.id}>{rol.nombre}</MenuItem>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+                    <Box sx={{
+                        display: 'inline-flex',
+                        backgroundColor: theme.palette.primary.light,
+                        borderRadius: 4,
+                        p: '4px',
+                        gap: '5px',
+                    }}>
+                        {FILTROS.map(f => (
+                            <Button
+                                key={f.value}
+                                onClick={() => { setFiltroHabilitado(f.value); setPage(1) }}
+                                size="small"
+                                disableElevation
+                                disableRipple
+                                sx={{
+                                    borderRadius: 3,
+                                    textTransform: 'none',
+                                    fontSize: '0.75rem',
+                                    px: 2,
+                                    py: 0.5,
+                                    minWidth: 0,
+                                    fontWeight: filtroHabilitado === f.value ? 600 : 400,
+                                    backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
+                                    color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.secondary,
+                                    boxShadow: filtroHabilitado === f.value
+                                        ? '0 1px 4px rgba(0,0,0,0.12)'
+                                        : 'none',
+                                    border: 'none',
+                                    '&:hover': {
+                                        backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
+                                        color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.medium,
+                                        border: 'none',
+                                    },
+                                }}
+                            >
+                                {f.label}
+                            </Button>
                         ))}
-                    </Select>
-                </FormControl>
+                    </Box>
 
-                <Button
-                    variant="outlined"
-                    size="small"
-                    startIcon={<FileDownloadOutlinedIcon />}
-                    sx={{
-                        borderRadius: 2,
-                        textTransform: 'none',
-                        fontSize: '0.85rem',
-                        borderColor: theme.palette.divider,
-                        color: theme.palette.text.primary,
-                        fontWeight: 500,
-                        ml: 'auto',
-                        '&:hover': { backgroundColor: theme.palette.primary.light },
-                    }}
-                >
-                    Exportar
-                </Button>
+                    <FormControl size="small" sx={{ minWidth: 180 }}>
+                        <Select
+                            value={filtroRol}
+                            onChange={e => { setFiltroRol(e.target.value); setPage(1) }}
+                            displayEmpty
+                            sx={{
+                                width: 220,
+                                borderRadius: 4,
+                                '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
+                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#BDBDBD' },
+                            }}
+                            renderValue={(value) => value ? roles.find(r => r.id === value)?.nombre || 'Rol' : 'Todos los roles'}
+                        >
+                            <MenuItem value="">Todos los roles</MenuItem>
+                            {roles.map((rol) => (
+                                <MenuItem key={rol.id} value={rol.id}>{rol.nombre}</MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                </Box>
+
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+                    <TextField
+                        size="small"
+                        placeholder="Buscar usuarios..."
+                        sx={{
+                            width: 280,
+                            '& .MuiOutlinedInput-root': {
+                                borderRadius: 4,
+                                '&.Mui-focused': {
+                                    boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}`,
+                                },
+                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                    borderColor: theme.palette.primary.main,
+                                    borderWidth: '1px',
+                                },
+                            },
+                        }}
+                        value={busqueda}
+                        onChange={e => { setBusqueda(e.target.value); setPage(1) }}
+                        slotProps={{
+                            input: {
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <SearchIcon sx={{ color: theme.palette.text.secondary, fontSize: 20 }} />
+                                    </InputAdornment>
+                                ),
+                                endAdornment: busqueda && (
+                                    <InputAdornment position="end">
+                                        <IconButton size="small" onClick={() => { setBusqueda(''); setPage(1) }}>
+                                            <ClearIcon sx={{ fontSize: 16 }} />
+                                        </IconButton>
+                                    </InputAdornment>
+                                )
+                            }
+                        }}
+                    />
+
+                    {hayFiltrosActivos && (
+                        <Chip
+                            label="Limpiar"
+                            size="small"
+                            icon={<ClearIcon sx={{ fontSize: '14px !important' }} />}
+                            onClick={limpiarFiltros}
+                            sx={{ fontSize: '0.72rem', height: 28, cursor: 'pointer', backgroundColor: theme.palette.primary.light, color: theme.palette.primary.main }}
+                        />
+                    )}
+                </Box>
             </Box>
 
             <Paper elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 3, overflow: 'hidden' }}>

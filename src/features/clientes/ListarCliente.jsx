@@ -227,26 +227,52 @@ const ListarCliente = () => {
                         Gestiona los clientes registrados en el sistema.
                     </Typography>
                 </Box>
-                {tienePermiso(PERMISOS.REGISTRAR_CLIENTE) && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Button
-                        onClick={() => setModalRegistrarOpen(true)}
                         variant="contained"
-                        startIcon={<AddOutlinedIcon />}
+                        startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 18 }} />}
                         sx={{
-                            backgroundColor: theme.palette.primary.main,
+                            backgroundColor: theme.palette.background.paper,
+                            color: theme.palette.text.primary,
                             borderRadius: 2,
                             textTransform: 'none',
-                            fontWeight: 600,
-                            boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
+                            fontSize: '0.875rem',
+                            fontWeight: 700,
+                            border: `1px solid ${theme.palette.divider}`,
+                            boxShadow: 'none',
                             '&:hover': {
-                                backgroundColor: theme.palette.primary.dark,
-                                boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}`,
+                                backgroundColor: theme.palette.primary.light,
+                                color: theme.palette.text.primary,
+                                border: `1px solid ${theme.palette.divider}`,
+                                boxShadow: 'none',
                             },
                         }}
                     >
-                        Nuevo cliente
+                        Exportar
                     </Button>
-                )}
+
+                    {tienePermiso(PERMISOS.REGISTRAR_CLIENTE) && (
+                        <Button
+                            onClick={() => setModalRegistrarOpen(true)}
+                            variant="contained"
+                            startIcon={<AddOutlinedIcon sx={{ fontSize: 20 }} />}
+                            sx={{
+                                backgroundColor: theme.palette.primary.main,
+                                borderRadius: 2,
+                                textTransform: 'none',
+                                fontSize: '0.875rem',
+                                fontWeight: 600,
+                                boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
+                                '&:hover': {
+                                    backgroundColor: theme.palette.primary.dark,
+                                    boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}`,
+                                },
+                            }}
+                        >
+                            Nuevo cliente
+                        </Button>
+                    )}
+                </Box>
             </Box>
 
             {error && (
@@ -255,7 +281,7 @@ const ListarCliente = () => {
                 </Alert>
             )}
 
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
                 <Box sx={{
                     display: 'inline-flex',
                     backgroundColor: theme.palette.primary.light,
@@ -341,24 +367,6 @@ const ListarCliente = () => {
                         sx={{ fontSize: '0.72rem', height: 28, cursor: 'pointer', backgroundColor: theme.palette.primary.light, color: theme.palette.primary.main }}
                     />
                 )}
-
-                <Button
-                    variant="outlined"
-                    size="small"
-                    startIcon={<FileDownloadOutlinedIcon />}
-                    sx={{
-                        borderRadius: 2,
-                        textTransform: 'none',
-                        fontSize: '0.85rem',
-                        borderColor: theme.palette.divider,
-                        color: theme.palette.text.primary,
-                        fontWeight: 500,
-                        ml: 'auto',
-                        '&:hover': { backgroundColor: theme.palette.primary.light },
-                    }}
-                >
-                    Exportar
-                </Button>
             </Box>
 
             <Paper elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 3, overflow: 'hidden' }}>

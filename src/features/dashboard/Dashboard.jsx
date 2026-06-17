@@ -218,12 +218,23 @@ const Dashboard = () => {
           </Typography>
         </Box>
         <Button
-          variant="outlined" size="small"
-          startIcon={<FileDownloadOutlinedIcon />}
+          variant="contained"
+          startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 18 }} />}
           sx={{
-            borderRadius: 2, textTransform: 'none', fontSize: '0.85rem',
-            borderColor: theme.palette.divider, color: theme.palette.text.primary, fontWeight: 500,
-            '&:hover': { backgroundColor: theme.palette.primary.light},
+            backgroundColor: theme.palette.background.paper,
+            color: theme.palette.text.primary,
+            borderRadius: 2,
+            textTransform: 'none',
+            fontSize: '0.875rem',
+            fontWeight: 700,
+            border: `1px solid ${theme.palette.divider}`,
+            boxShadow: 'none',
+            '&:hover': {
+              backgroundColor: theme.palette.primary.light,
+              color: theme.palette.text.primary,
+              border: `1px solid ${theme.palette.divider}`,
+              boxShadow: 'none',
+            },
           }}
         >
           Exportar

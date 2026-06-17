@@ -16,6 +16,7 @@ import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined'
+import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import ClearIcon from '@mui/icons-material/Clear'
 import RouteIcon from '@mui/icons-material/Route'
@@ -38,7 +39,7 @@ const getThStyle = (theme) => ({
 
 const getFilterSelectSx = (theme) => ({
     fontSize: '0.82rem',
-    borderRadius: 2,
+    borderRadius: 4,
     '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
     '&:hover': { backgroundColor: 'transparent' },
     '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#BDBDBD' },
@@ -272,6 +273,13 @@ const ListarAnticipoExcedente = () => {
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [anticipoEditar, setAnticipoEditar] = useState(null)
 
+    const limpiarFiltros = () => {
+        setBusqueda('')
+        setFiltroHabilitado('todo')
+        setFiltroEstadoAnticipo('todos')
+        setPage(1)
+    }
+
     useEffect(() => {
         fetchAnticipos(undefined, {
             page,
@@ -295,6 +303,7 @@ const ListarAnticipoExcedente = () => {
     }
 
     const currentAnticipos = anticipos
+    const hayFiltrosActivos = busqueda.trim() !== '' || filtroHabilitado !== 'todo' || filtroEstadoAnticipo !== 'todos'
     const totalPages = Math.max(1, Math.ceil(total / rowsPerPage))
     const safePage = Math.min(page, totalPages)
     const from = total === 0 ? 0 : (safePage - 1) * rowsPerPage + 1
@@ -347,107 +356,155 @@ const ListarAnticipoExcedente = () => {
                         Gestiona los anticipos y excedentes de los conductores.
                     </Typography>
                 </Box>
-                {tienePermiso(PERMISOS.REGISTRAR_ANTICIPO) && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Button
-                        onClick={() => setModalRegistrarOpen(true)}
                         variant="contained"
-                        startIcon={<AddOutlinedIcon />}
+                        startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 18 }} />}
                         sx={{
-                            backgroundColor: theme.palette.primary.main,
+                            backgroundColor: theme.palette.background.paper,
+                            color: theme.palette.text.primary,
                             borderRadius: 2,
                             textTransform: 'none',
-                            fontWeight: 600,
-                            boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
-                            '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}` },
-                        }}
-                    >
-                        Nuevo anticipo
-                    </Button>
-                )}
-            </Box>
-
-            {/* Filtros de habilitado */}
-            <Box sx={{ display: 'inline-flex', backgroundColor: theme.palette.primary.light, borderRadius: 4, p: '4px', mb: 2.5, gap: '5px' }}>
-                {FILTROS_HABILITADO.map(f => (
-                    <Button
-                        key={f.value}
-                        onClick={() => { setFiltroHabilitado(f.value); setPage(1) }}
-                        size="small"
-                        disableElevation
-                        disableRipple
-                        sx={{
-                            borderRadius: 3,
-                            textTransform: 'none',
-                            fontSize: '0.75rem',
-                            px: 2, py: 0.5,
-                            minWidth: 0,
-                            fontWeight: filtroHabilitado === f.value ? 600 : 400,
-                            backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
-                            color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.secondary,
-                            boxShadow: filtroHabilitado === f.value ? '0 1px 4px rgba(0,0,0,0.12)' : 'none',
-                            border: 'none',
+                            fontSize: '0.875rem',
+                            fontWeight: 700,
+                            border: `1px solid ${theme.palette.divider}`,
+                            boxShadow: 'none',
                             '&:hover': {
-                                backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
-                                color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.medium,
-                                border: 'none',
+                                backgroundColor: theme.palette.primary.light,
+                                color: theme.palette.text.primary,
+                                border: `1px solid ${theme.palette.divider}`,
+                                boxShadow: 'none',
                             },
                         }}
                     >
-                        {f.label}
+                        Exportar
                     </Button>
-                ))}
+
+                    {tienePermiso(PERMISOS.REGISTRAR_ANTICIPO) && (
+                        <Button
+                            onClick={() => setModalRegistrarOpen(true)}
+                            variant="contained"
+                            startIcon={<AddOutlinedIcon sx={{ fontSize: 20 }} />}
+                            sx={{
+                                backgroundColor: theme.palette.primary.main,
+                                borderRadius: 2,
+                                textTransform: 'none',
+                                fontSize: '0.875rem',
+                                fontWeight: 600,
+                                boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
+                                '&:hover': {
+                                    backgroundColor: theme.palette.primary.dark,
+                                    boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}`,
+                                },
+                            }}
+                        >
+                            Nuevo anticipo
+                        </Button>
+                    )}
+                </Box>
             </Box>
 
-            {/* Búsqueda + filtro estado */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
-                <TextField
-                    size="small"
-                    placeholder="Buscar anticipos..."
-                    sx={{
-                        width: 320,
-                        '& .MuiOutlinedInput-root': {
-                            borderRadius: 2,
-                            '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` },
-                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
-                        },
-                    }}
-                    value={busqueda}
-                    onChange={e => { setBusqueda(e.target.value); setPage(1) }}
-                    slotProps={{
-                        input: {
-                            startAdornment: (
-                                <InputAdornment position="start">
-                                    <SearchIcon sx={{ color: theme.palette.text.secondary, fontSize: 20 }} />
-                                </InputAdornment>
-                            ),
-                            endAdornment: busqueda && (
-                                <InputAdornment position="end">
-                                    <IconButton size="small" onClick={() => { setBusqueda(''); setPage(1) }}>
-                                        <ClearIcon sx={{ fontSize: 16 }} />
-                                    </IconButton>
-                                </InputAdornment>
-                            )
-                        }
-                    }}
-                />
-
-                <FormControl size="small" sx={{ minWidth: 180 }}>
-                    <InputLabel sx={{ fontSize: '0.82rem', '&.Mui-focused': { color: theme.palette.primary.main } }}>Estado del anticipo</InputLabel>
-                    <Select
-                        value={filtroEstadoAnticipo}
-                        label="Estado del anticipo"
-                        onChange={e => { setFiltroEstadoAnticipo(e.target.value); setPage(1) }}
-                        IconComponent={KeyboardArrowDownOutlinedIcon}
-                        sx={filterSelectSx}
-                        MenuProps={filterMenuProps}
-                    >
-                        {FILTROS_ANTICIPO.map(f => (
-                            <MenuItem key={f.value} value={f.value} sx={{ fontSize: '0.8rem' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+                    <Box sx={{
+                        display: 'inline-flex',
+                        backgroundColor: theme.palette.primary.light,
+                        borderRadius: 4,
+                        p: '4px',
+                        gap: '5px',
+                    }}>
+                        {FILTROS_HABILITADO.map(f => (
+                            <Button
+                                key={f.value}
+                                onClick={() => { setFiltroHabilitado(f.value); setPage(1) }}
+                                size="small"
+                                disableElevation
+                                disableRipple
+                                sx={{
+                                    borderRadius: 3,
+                                    textTransform: 'none',
+                                    fontSize: '0.75rem',
+                                    px: 2,
+                                    py: 0.5,
+                                    minWidth: 0,
+                                    fontWeight: filtroHabilitado === f.value ? 600 : 400,
+                                    backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
+                                    color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.secondary,
+                                    boxShadow: filtroHabilitado === f.value ? '0 1px 4px rgba(0,0,0,0.12)' : 'none',
+                                    border: 'none',
+                                    '&:hover': {
+                                        backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
+                                        color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.medium,
+                                        border: 'none',
+                                    },
+                                }}
+                            >
                                 {f.label}
-                            </MenuItem>
+                            </Button>
                         ))}
-                    </Select>
-                </FormControl>
+                    </Box>
+
+                    <FormControl size="small" sx={{ minWidth: 180 }}>
+                        <InputLabel sx={{ fontSize: '0.82rem', '&.Mui-focused': { color: theme.palette.primary.main } }}>Estado del anticipo</InputLabel>
+                        <Select
+                            value={filtroEstadoAnticipo}
+                            label="Estado del anticipo"
+                            onChange={e => { setFiltroEstadoAnticipo(e.target.value); setPage(1) }}
+                            IconComponent={KeyboardArrowDownOutlinedIcon}
+                            sx={filterSelectSx}
+                            MenuProps={filterMenuProps}
+                        >
+                            {FILTROS_ANTICIPO.map(f => (
+                                <MenuItem key={f.value} value={f.value} sx={{ fontSize: '0.8rem' }}>
+                                    {f.label}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                </Box>
+
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+                    <TextField
+                        size="small"
+                        placeholder="Buscar anticipos..."
+                        sx={{
+                            width: 320,
+                            '& .MuiOutlinedInput-root': {
+                                borderRadius: 4,
+                                '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` },
+                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
+                            },
+                        }}
+                        value={busqueda}
+                        onChange={e => { setBusqueda(e.target.value); setPage(1) }}
+                        slotProps={{
+                            input: {
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <SearchIcon sx={{ color: theme.palette.text.secondary, fontSize: 20 }} />
+                                    </InputAdornment>
+                                ),
+                                endAdornment: busqueda && (
+                                    <InputAdornment position="end">
+                                        <IconButton size="small" onClick={() => { setBusqueda(''); setPage(1) }}>
+                                            <ClearIcon sx={{ fontSize: 16 }} />
+                                        </IconButton>
+                                    </InputAdornment>
+                                )
+                            }
+                        }}
+                    />
+
+                    {hayFiltrosActivos && (
+                        <Chip
+                            label="Limpiar"
+                            size="small"
+                            icon={<ClearIcon sx={{ fontSize: '14px !important' }} />}
+                            onClick={limpiarFiltros}
+                            sx={{ fontSize: '0.72rem', height: 28, cursor: 'pointer', backgroundColor: theme.palette.primary.light, color: theme.palette.primary.main }}
+                        />
+                    )}
+                </Box>
             </Box>
 
             {/* Tabla */}
