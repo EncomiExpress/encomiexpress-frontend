@@ -159,7 +159,7 @@ const ListarConductor = () => {
                             Conductores
                         </Typography>
                         <Chip
-                            label={`${conductores.length} registrado${conductores.length !== 1 ? 's' : ''}`}
+                            label={`${total} registros`}
                             size="small"
                             sx={{ backgroundColor: '#F3F4F6', color: theme.palette.text.secondary, fontWeight: 500, fontSize: '0.72rem', height: 22, borderRadius: 10 }}
                         />
@@ -193,11 +193,11 @@ const ListarConductor = () => {
                         sx={{
                             borderRadius: 3, textTransform: 'none', fontSize: '0.75rem', px: 2, py: 0.5, minWidth: 0,
                             fontWeight: filtroHabilitado === f.value ? 600 : 400,
-                            backgroundColor: filtroHabilitado === f.value ? 'white' : 'transparent',
+                            backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
                             color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.secondary,
                             boxShadow: filtroHabilitado === f.value ? '0 1px 4px rgba(0,0,0,0.12)' : 'none',
                             border: 'none',
-                            '&:hover': { backgroundColor: filtroHabilitado === f.value ? 'white' : 'transparent', color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.medium, border: 'none' },
+                            '&:hover': { backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent', color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.medium, border: 'none' },
                         }}>
                         {f.label}
                     </Button>

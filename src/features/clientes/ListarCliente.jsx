@@ -210,7 +210,7 @@ const ListarCliente = () => {
                         </Typography>
                         {!loading && !error && (
                             <Chip
-                                label={`${total} registrado${total !== 1 ? 's' : ''}`}
+                                label={`${total} registros`}
                                 size="small"
                                 sx={{
                                     backgroundColor: '#F3F4F6',
@@ -255,55 +255,54 @@ const ListarCliente = () => {
                 </Alert>
             )}
 
-            <Box sx={{
-                display: 'inline-flex',
-                backgroundColor: theme.palette.primary.light,
-                borderRadius: 4,
-                p: '4px',
-                mb: 2.5,
-                gap: '5px',
-            }}>
-                {FILTROS.map(f => (
-                    <Button
-                        key={f.value}
-                        onClick={() => { setFiltroEstado(f.value); setPage(1) }}
-                        size="small"
-                        disableElevation
-                        disableRipple
-                        sx={{
-                            borderRadius: 3,
-                            textTransform: 'none',
-                            fontSize: '0.75rem',
-                            px: 2,
-                            py: 0.5,
-                            minWidth: 0,
-                            fontWeight: filtroEstado === f.value ? 600 : 400,
-                            backgroundColor: filtroEstado === f.value ? theme.palette.background.paper : 'transparent',
-                            color: filtroEstado === f.value ? theme.palette.text.primary : theme.palette.text.secondary,
-                            boxShadow: filtroEstado === f.value
-                                ? '0 1px 4px rgba(0,0,0,0.12)'
-                                : 'none',
-                            border: 'none',
-                            '&:hover': {
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
+                <Box sx={{
+                    display: 'inline-flex',
+                    backgroundColor: theme.palette.primary.light,
+                    borderRadius: 4,
+                    p: '4px',
+                    gap: '5px',
+                }}>
+                    {FILTROS.map(f => (
+                        <Button
+                            key={f.value}
+                            onClick={() => { setFiltroEstado(f.value); setPage(1) }}
+                            size="small"
+                            disableElevation
+                            disableRipple
+                            sx={{
+                                borderRadius: 3,
+                                textTransform: 'none',
+                                fontSize: '0.75rem',
+                                px: 2,
+                                py: 0.5,
+                                minWidth: 0,
+                                fontWeight: filtroEstado === f.value ? 600 : 400,
                                 backgroundColor: filtroEstado === f.value ? theme.palette.background.paper : 'transparent',
-                                color: filtroEstado === f.value ? theme.palette.text.primary : theme.palette.text.medium,
+                                color: filtroEstado === f.value ? theme.palette.text.primary : theme.palette.text.secondary,
+                                boxShadow: filtroEstado === f.value
+                                    ? '0 1px 4px rgba(0,0,0,0.12)'
+                                    : 'none',
                                 border: 'none',
-                            },
-                        }}
-                    >
-                        {f.label}
-                    </Button>
-                ))}
-            </Box>
+                                '&:hover': {
+                                    backgroundColor: filtroEstado === f.value ? theme.palette.background.paper : 'transparent',
+                                    color: filtroEstado === f.value ? theme.palette.text.primary : theme.palette.text.medium,
+                                    border: 'none',
+                                },
+                            }}
+                        >
+                            {f.label}
+                        </Button>
+                    ))}
+                </Box>
 
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
                 <TextField
                     size="small"
                     placeholder="Buscar clientes..."
                     sx={{
                         width: 320,
                         '& .MuiOutlinedInput-root': {
-                            borderRadius: 2,
+                            borderRadius: 4,
                             '&.Mui-focused': {
                                 boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}`,
                             },
@@ -354,6 +353,7 @@ const ListarCliente = () => {
                         borderColor: theme.palette.divider,
                         color: theme.palette.text.primary,
                         fontWeight: 500,
+                        ml: 'auto',
                         '&:hover': { backgroundColor: theme.palette.primary.light },
                     }}
                 >

@@ -40,6 +40,12 @@ const getThStyle = (theme) => ({
 
 const ESTADOS_RUTA = ['Programada', 'En Curso', 'Completada', 'Cancelada']
 
+const FILTROS = [
+    { value: 'todo', label: 'Todo' },
+    { value: 'habilitado', label: 'Habilitado' },
+    { value: 'inhabilitado', label: 'Inhabilitado' },
+]
+
 const getFilterMenuProps = (theme) => ({
     slotProps: {
         paper: {
@@ -250,7 +256,7 @@ const resolveDestino = (ruta) =>
                             Programación de Rutas
                         </Typography>
                         <Chip
-                            label={`${total} registrada${total !== 1 ? 's' : ''}`}
+                            label={`${total} registros`}
                             size="small"
                             sx={{
                                 backgroundColor: '#F3F4F6',
@@ -289,13 +295,53 @@ const resolveDestino = (ruta) =>
             </Box>
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1.5, flexWrap: 'wrap' }}>
+                <Box sx={{
+                    display: 'inline-flex',
+                    backgroundColor: theme.palette.primary.light,
+                    borderRadius: 4,
+                    p: '4px',
+                    gap: '5px',
+                }}>
+                    {FILTROS.map(f => (
+                        <Button
+                            key={f.value}
+                            onClick={() => { setFiltroHabilitado(f.value); setPage(1) }}
+                            size="small"
+                            disableElevation
+                            disableRipple
+                            sx={{
+                                borderRadius: 3,
+                                textTransform: 'none',
+                                fontSize: '0.75rem',
+                                px: 2,
+                                py: 0.5,
+                                minWidth: 0,
+                                fontWeight: filtroHabilitado === f.value ? 600 : 400,
+                                backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
+                                color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.secondary,
+                                boxShadow: filtroHabilitado === f.value
+                                    ? '0 1px 4px rgba(0,0,0,0.12)'
+                                    : 'none',
+                                border: 'none',
+                                '&:hover': {
+                                    backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
+                                    color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.medium,
+                                    border: 'none',
+                                },
+                            }}
+                        >
+                            {f.label}
+                        </Button>
+                    ))}
+                </Box>
+
                 <TextField
                     size="small"
                     placeholder="Buscar rutas..."
                     sx={{
                         width: 320,
                         '& .MuiOutlinedInput-root': {
-                            borderRadius: 2,
+                            borderRadius: 4,
                             '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` },
                             '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                                 borderColor: theme.palette.primary.main, borderWidth: '1px',
@@ -327,7 +373,7 @@ const resolveDestino = (ruta) =>
                         value={filtroAnio}
                         onChange={(e) => { setFiltroAnio(e.target.value); setFiltroMes(''); setPage(1) }}
                         displayEmpty
-                        sx={{ borderRadius: 2 }}
+                        sx={{ borderRadius: 4 }}
                     >
                         <MenuItem value="">Año</MenuItem>
                         {aniosDisponibles.map(anio => (
@@ -342,7 +388,7 @@ const resolveDestino = (ruta) =>
                             onChange={(e) => { setFiltroMes(e.target.value); setPage(1) }}
                         displayEmpty
                         disabled={!filtroAnio}
-                        sx={{ borderRadius: 2 }}
+                        sx={{ borderRadius: 4 }}
                     >
                         <MenuItem value="">Mes</MenuItem>
                         {MESES.map(m => (

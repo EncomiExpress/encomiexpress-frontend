@@ -292,7 +292,7 @@ const ListarRol = () => {
                             Roles
                         </Typography>
                         <Chip
-                            label={`${roles.length} registrado${roles.length !== 1 ? 's' : ''}`}
+                            label={`${roles.length} registros`}
                             size="small"
                             sx={{
                                 backgroundColor: '#F3F4F6',

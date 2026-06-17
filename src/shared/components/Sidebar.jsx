@@ -41,8 +41,8 @@ const SECTIONS = [
     id: 'transporte',
     label: 'Transporte',
     items: [
-      { id: 'vehiculos',    label: 'Vehículos',              icon: TruckIcon,  path: '/vehiculos/listar' },
       { id: 'propietarios', label: 'Propietarios',           icon: BadgeIcon,  path: '/transporte/propietarios' },
+      { id: 'vehiculos',    label: 'Vehículos',              icon: TruckIcon,  path: '/vehiculos/listar' },
       { id: 'conductores',  label: 'Conductores',            icon: DriverIcon, path: '/transporte/conductores' },
       { id: 'destinos',     label: 'Destinos',               icon: DestIcon,   path: '/transporte/destinos' },
       { id: 'rutas',        label: 'Programación de rutas',  icon: RouteIcon,  path: '/transporte/rutas' },

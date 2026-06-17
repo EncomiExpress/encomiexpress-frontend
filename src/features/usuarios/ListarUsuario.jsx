@@ -251,7 +251,7 @@ const ListarUsuario = () => {
                         </Typography>
                         {!loading && !error && (
                             <Chip
-                                label={`${total} registrado${total !== 1 ? 's' : ''}`}
+                                label={`${total} registros`}
                                 size="small"
                                 sx={{
                                     backgroundColor: '#F3F4F6',
@@ -319,14 +319,14 @@ const ListarUsuario = () => {
                             py: 0.5,
                             minWidth: 0,
                             fontWeight: filtroHabilitado === f.value ? 600 : 400,
-                            backgroundColor: filtroHabilitado === f.value ? 'white' : 'transparent',
+                            backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
                             color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.secondary,
                             boxShadow: filtroHabilitado === f.value
                                 ? '0 1px 4px rgba(0,0,0,0.12)'
                                 : 'none',
                             border: 'none',
                             '&:hover': {
-                                backgroundColor: filtroHabilitado === f.value ? 'white' : 'transparent',
+                                backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
                                 color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.medium,
                                 border: 'none',
                             },
