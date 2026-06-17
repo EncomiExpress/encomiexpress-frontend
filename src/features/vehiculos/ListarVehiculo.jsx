@@ -118,18 +118,25 @@ const ListarTransporte = () => {
     useEffect(() => {
         if (!usuario) {
             navigate('/login')
-        } else {
-            fetchVehiculos(undefined, {
-                page,
-                limit: rowsPerPage,
-                estado: filtroEstadoVehiculo === 'todo' ? undefined : filtroEstadoVehiculo,
-                habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
-                sortBy: 'idVehiculo.asc',
-                q: searchTerm.trim() || undefined,
-            })
-            if (rutasProgramadas.length === 0) fetchRutasProgramadas()
+            return
         }
-    }, [usuario, navigate, page, rowsPerPage, filtroEstadoVehiculo, filtroHabilitado, searchTerm, rutasProgramadas, fetchVehiculos, fetchRutasProgramadas])
+
+        fetchVehiculos(undefined, {
+            page,
+            limit: rowsPerPage,
+            estado: filtroEstadoVehiculo === 'todo' ? undefined : filtroEstadoVehiculo,
+            habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
+            sortBy: 'idVehiculo.asc',
+            q: searchTerm.trim() || undefined,
+        })
+    }, [usuario, navigate, page, rowsPerPage, filtroEstadoVehiculo, filtroHabilitado, searchTerm, fetchVehiculos])
+
+    useEffect(() => {
+        if (!usuario) return
+        if (rutasProgramadas.length === 0) {
+            fetchRutasProgramadas()
+        }
+    }, [usuario, rutasProgramadas.length, fetchRutasProgramadas])
 
     const handleEstadoChange = async (id, nuevoEstado) => {
         const success = await updateEstado(id, nuevoEstado)

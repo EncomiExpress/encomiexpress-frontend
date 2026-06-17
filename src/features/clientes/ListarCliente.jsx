@@ -166,7 +166,7 @@ const ListarCliente = () => {
             await fetchClientes(controller.signal, {
                 page,
                 limit: rowsPerPage,
-                habilitado: filtroEstado === 'todo' ? undefined : filtroEstado,
+                habilitado: filtroEstado === 'todo' ? undefined : filtroEstado === 'habilitado' ? 'true' : 'false',
                 q: busqueda.trim() || undefined,
                 sortBy: 'idCliente.asc',
             })
@@ -183,7 +183,7 @@ const ListarCliente = () => {
         try {
             await toggleHabilitadoCliente(id)
             setSnackbar({ open: true, message: `Cliente ${nuevoEstado ? 'habilitado' : 'inhabilitado'} correctamente`, severity: 'success' })
-            await fetchClientes(undefined, { page, limit: rowsPerPage, habilitado: filtroEstado === 'todo' ? undefined : filtroEstado, q: busqueda.trim() || undefined, sortBy: 'idCliente.asc' })
+            await fetchClientes(undefined, { page, limit: rowsPerPage, habilitado: filtroEstado === 'todo' ? undefined : filtroEstado === 'habilitado' ? 'true' : 'false', q: busqueda.trim() || undefined, sortBy: 'idCliente.asc' })
         } catch (err) {
             setSnackbar({ open: true, message: 'Error al cambiar el estado', severity: 'error' })
         }
@@ -210,7 +210,7 @@ const ListarCliente = () => {
                         </Typography>
                         {!loading && !error && (
                             <Chip
-                                label={`${clientes.length} registrado${clientes.length !== 1 ? 's' : ''}`}
+                                label={`${total} registrado${total !== 1 ? 's' : ''}`}
                                 size="small"
                                 sx={{
                                     backgroundColor: '#F3F4F6',

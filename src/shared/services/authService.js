@@ -52,6 +52,7 @@ export const fetchWithAuth = async (endpoint, options = {}) => {
       ...options,
       headers: reqHeaders,
       signal,
+      cache: 'no-store',
     });
 
     const data = await response.json();
