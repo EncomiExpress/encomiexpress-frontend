@@ -1,16 +1,20 @@
 import { useState } from 'react'
 import { useTheme } from '@mui/material/styles'
-import { Box, Typography, Avatar, Menu, MenuItem, Popover, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button } from '@mui/material'
+import { Box, Typography, Avatar, Menu, MenuItem, Divider, Popover, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button, TextField, Alert, CircularProgress, InputAdornment, IconButton } from '@mui/material'
 import {
   DarkModeOutlined as MoonIcon,
   LightModeOutlined as SunIcon,
   PaletteOutlined as PaletteIcon,
   Logout as LogoutIcon,
   CheckRounded as CheckIcon,
+  LockResetOutlined as LockResetIcon,
+  VisibilityOutlined as EyeIcon,
+  VisibilityOffOutlined as EyeOffIcon,
 } from '@mui/icons-material'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import { useNavigate } from 'react-router-dom'
 import { useDarkMode } from '../contexts/ThemeContext.jsx'
+import { fetchWithAuth } from '../services/authService'
 
 const getGreeting = () => {
   const hour = new Date().getHours()
@@ -38,11 +42,22 @@ const Header = ({ collapsed }) => {
   const theme = useTheme()
   const pal   = theme.palette
 
-  const [anchorEl,        setAnchorEl]        = useState(null)  // avatar menu
-  const [paletteAnchor,   setPaletteAnchor]   = useState(null)  // palette popover
-  const [openLogoutDialog, setOpenLogoutDialog] = useState(false)
+  const [anchorEl,          setAnchorEl]          = useState(null)
+  const [paletteAnchor,     setPaletteAnchor]     = useState(null)
+  const [openLogoutDialog,  setOpenLogoutDialog]  = useState(false)
 
-  const { usuario, logout } = useAuth()
+  // Estados para cambio de contraseña
+  const [openCambiarDialog, setOpenCambiarDialog] = useState(false)
+  const [passwordActual,    setPasswordActual]    = useState('')
+  const [passwordNueva,     setPasswordNueva]     = useState('')
+  const [passwordConfirm,   setPasswordConfirm]   = useState('')
+  const [showActual,        setShowActual]        = useState(false)
+  const [showNueva,         setShowNueva]         = useState(false)
+  const [showConfirm,       setShowConfirm]       = useState(false)
+  const [cambiarLoading,    setCambiarLoading]    = useState(false)
+  const [cambiarMensaje,    setCambiarMensaje]    = useState(null) // { tipo: 'success'|'error', texto: '' }
+
+  const { usuario, logout, token } = useAuth()
   const navigate  = useNavigate()
   const greeting  = getGreeting()
 
@@ -53,8 +68,69 @@ const Header = ({ collapsed }) => {
   const panelBorder = darkMode ? '#444444' : 'rgba(26,46,110,0.1)'
   const labelColor  = darkMode ? '#A0A0A0' : 'rgba(33,33,33,0.5)'
   const optionHover = darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)'
-  const activeOptionBg   = pal.primary.activeBg
+  const activeOptionBg     = pal.primary.activeBg
   const activeOptionBorder = pal.primary.main
+
+  const handleAbrirCambiar = () => {
+    setAnchorEl(null)
+    setPasswordActual('')
+    setPasswordNueva('')
+    setPasswordConfirm('')
+    setCambiarMensaje(null)
+    setOpenCambiarDialog(true)
+  }
+
+  const handleCambiarPassword = async () => {
+  if (passwordNueva !== passwordConfirm) {
+    setCambiarMensaje({ tipo: 'error', texto: 'Las contraseñas nuevas no coinciden.' })
+    return
+  }
+  if (passwordNueva.length < 6) {
+    setCambiarMensaje({ tipo: 'error', texto: 'La nueva contraseña debe tener al menos 6 caracteres.' })
+    return
+  }
+  setCambiarLoading(true)
+  setCambiarMensaje(null)
+  try {
+    const response = await fetch('http://localhost:3000/api/auth/cambiar-password', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}` // ← token del contexto, no de localStorage
+      },
+      body: JSON.stringify({ passwordActual, passwordNueva })
+    })
+    const data = await response.json()
+    if (!response.ok) throw new Error(data.message || 'Error al cambiar la contraseña')
+    setCambiarMensaje({ tipo: 'success', texto: 'Contraseña actualizada correctamente.' })
+    setPasswordActual('')
+    setPasswordNueva('')
+    setPasswordConfirm('')
+  } catch (error) {
+    setCambiarMensaje({ tipo: 'error', texto: error.message || 'No se pudo actualizar la contraseña.' })
+  } finally {
+    setCambiarLoading(false)
+  }
+}
+
+  const campoPassword = (label, value, setter, show, setShow) => ({
+    label,
+    type: show ? 'text' : 'password',
+    fullWidth: true,
+    size: 'small',
+    value,
+    onChange: (e) => setter(e.target.value),
+    disabled: cambiarLoading,
+    InputProps: {
+      endAdornment: (
+        <InputAdornment position="end">
+          <IconButton size="small" onClick={() => setShow(p => !p)} edge="end">
+            {show ? <EyeOffIcon fontSize="small" /> : <EyeIcon fontSize="small" />}
+          </IconButton>
+        </InputAdornment>
+      ),
+    },
+  })
 
   return (
     <>
@@ -131,7 +207,7 @@ const Header = ({ collapsed }) => {
             }} />
           </Box>
 
-          {/* Avatar + menu logout */}
+          {/* Avatar + menu */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, ml: 1 }}>
             <Avatar
               onClick={(e) => setAnchorEl(e.currentTarget)}
@@ -151,7 +227,7 @@ const Header = ({ collapsed }) => {
               slotProps={{
                 paper: {
                   sx: {
-                    mt: 0.5, minWidth: 180,
+                    mt: 0.5, minWidth: 200,
                     boxShadow: darkMode ? '0 8px 32px rgba(0,0,0,0.3)' : '0 8px 32px rgba(26,46,110,0.14)',
                     borderRadius: '12px',
                     border: `1px solid ${panelBorder}`,
@@ -161,6 +237,21 @@ const Header = ({ collapsed }) => {
                 },
               }}
             >
+              {/* Cambiar contraseña */}
+              <MenuItem
+                onClick={handleAbrirCambiar}
+                sx={{
+                  borderRadius: '8px', fontSize: '0.82rem', fontWeight: 500, gap: 1.5, py: 1,
+                  '&:hover': { backgroundColor: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(26,46,110,0.06)' },
+                }}
+              >
+                <LockResetIcon sx={{ fontSize: '1.1rem', color: pal.secondary.main }} />
+                Cambiar contraseña
+              </MenuItem>
+
+              <Divider sx={{ my: 0.5, borderColor: panelBorder }} />
+
+              {/* Cerrar sesión */}
               <MenuItem
                 onClick={() => { setOpenLogoutDialog(true); setAnchorEl(null) }}
                 sx={{
@@ -271,6 +362,53 @@ const Header = ({ collapsed }) => {
 
           </Box>
         </Popover>
+
+        {/* ── Dialog cambiar contraseña ── */}
+        <Dialog open={openCambiarDialog} onClose={() => !cambiarLoading && setOpenCambiarDialog(false)} maxWidth="xs" fullWidth>
+          <DialogTitle sx={{ fontWeight: 700, fontSize: '1.1rem', color: darkMode ? '#FFFFFF' : '#212121' }}>
+            Cambiar contraseña
+          </DialogTitle>
+          <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '8px !important' }}>
+            <DialogContentText sx={{ color: darkMode ? '#A0A0A0' : 'rgba(33,33,33,0.45)', fontSize: '0.88rem' }}>
+              Ingresa tu contraseña actual y la nueva contraseña.
+            </DialogContentText>
+            <TextField {...campoPassword('Contraseña actual', passwordActual, setPasswordActual, showActual, setShowActual)} />
+            <TextField {...campoPassword('Nueva contraseña', passwordNueva, setPasswordNueva, showNueva, setShowNueva)} />
+            <TextField {...campoPassword('Confirmar nueva contraseña', passwordConfirm, setPasswordConfirm, showConfirm, setShowConfirm)} />
+            {cambiarMensaje && (
+              <Alert severity={cambiarMensaje.tipo} sx={{ fontSize: '0.82rem' }}>
+                {cambiarMensaje.texto}
+              </Alert>
+            )}
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 2.5, pt: 1, gap: 1.5 }}>
+            <Button
+              onClick={() => setOpenCambiarDialog(false)}
+              disableRipple
+              disabled={cambiarLoading}
+              sx={{
+                textTransform: 'none', color: darkMode ? '#A0A0A0' : '#8A94A6', fontWeight: 500, borderRadius: 1.5,
+                '&:hover': { backgroundColor: darkMode ? '#2A2A2A' : '#F8F9FA', color: darkMode ? '#FFFFFF' : '#1a0e0c' },
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleCambiarPassword}
+              variant="contained"
+              disableRipple
+              disabled={cambiarLoading || !passwordActual || !passwordNueva || !passwordConfirm}
+              sx={{
+                textTransform: 'none', borderRadius: 1.5, fontWeight: 600, minWidth: 100,
+                backgroundColor: pal.secondary.main,
+                boxShadow: `0 4px 14px rgba(26,46,110,0.2)`,
+                '&:hover': { backgroundColor: pal.secondary.dark, boxShadow: `0 6px 20px rgba(26,46,110,0.2)` },
+              }}
+            >
+              {cambiarLoading ? <CircularProgress size={18} sx={{ color: '#fff' }} /> : 'Guardar'}
+            </Button>
+          </DialogActions>
+        </Dialog>
 
         {/* ── Dialog logout ── */}
         <Dialog open={openLogoutDialog} onClose={() => setOpenLogoutDialog(false)} maxWidth="xs" fullWidth>
