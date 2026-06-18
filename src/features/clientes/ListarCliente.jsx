@@ -166,7 +166,7 @@ const ListarCliente = () => {
             await fetchClientes(controller.signal, {
                 page,
                 limit: rowsPerPage,
-                habilitado: filtroEstado === 'todo' ? undefined : filtroEstado,
+                habilitado: filtroEstado === 'todo' ? undefined : filtroEstado === 'habilitado' ? 'true' : 'false',
                 q: busqueda.trim() || undefined,
                 sortBy: 'idCliente.asc',
             })
@@ -183,7 +183,7 @@ const ListarCliente = () => {
         try {
             await toggleHabilitadoCliente(id)
             setSnackbar({ open: true, message: `Cliente ${nuevoEstado ? 'habilitado' : 'inhabilitado'} correctamente`, severity: 'success' })
-            await fetchClientes(undefined, { page, limit: rowsPerPage, habilitado: filtroEstado === 'todo' ? undefined : filtroEstado, q: busqueda.trim() || undefined, sortBy: 'idCliente.asc' })
+            await fetchClientes(undefined, { page, limit: rowsPerPage, habilitado: filtroEstado === 'todo' ? undefined : filtroEstado === 'habilitado' ? 'true' : 'false', q: busqueda.trim() || undefined, sortBy: 'idCliente.asc' })
         } catch (err) {
             setSnackbar({ open: true, message: 'Error al cambiar el estado', severity: 'error' })
         }
@@ -210,7 +210,7 @@ const ListarCliente = () => {
                         </Typography>
                         {!loading && !error && (
                             <Chip
-                                label={`${clientes.length} registrado${clientes.length !== 1 ? 's' : ''}`}
+                                label={`${total} registros`}
                                 size="small"
                                 sx={{
                                     backgroundColor: '#F3F4F6',
@@ -227,26 +227,52 @@ const ListarCliente = () => {
                         Gestiona los clientes registrados en el sistema.
                     </Typography>
                 </Box>
-                {tienePermiso(PERMISOS.REGISTRAR_CLIENTE) && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Button
-                        onClick={() => setModalRegistrarOpen(true)}
                         variant="contained"
-                        startIcon={<AddOutlinedIcon />}
+                        startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 18 }} />}
                         sx={{
-                            backgroundColor: theme.palette.primary.main,
+                            backgroundColor: theme.palette.background.paper,
+                            color: theme.palette.text.primary,
                             borderRadius: 2,
                             textTransform: 'none',
-                            fontWeight: 600,
-                            boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
+                            fontSize: '0.875rem',
+                            fontWeight: 700,
+                            border: `1px solid ${theme.palette.divider}`,
+                            boxShadow: 'none',
                             '&:hover': {
-                                backgroundColor: theme.palette.primary.dark,
-                                boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}`,
+                                backgroundColor: theme.palette.primary.light,
+                                color: theme.palette.text.primary,
+                                border: `1px solid ${theme.palette.divider}`,
+                                boxShadow: 'none',
                             },
                         }}
                     >
-                        Nuevo cliente
+                        Exportar
                     </Button>
-                )}
+
+                    {tienePermiso(PERMISOS.REGISTRAR_CLIENTE) && (
+                        <Button
+                            onClick={() => setModalRegistrarOpen(true)}
+                            variant="contained"
+                            startIcon={<AddOutlinedIcon sx={{ fontSize: 20 }} />}
+                            sx={{
+                                backgroundColor: theme.palette.primary.main,
+                                borderRadius: 2,
+                                textTransform: 'none',
+                                fontSize: '0.875rem',
+                                fontWeight: 600,
+                                boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
+                                '&:hover': {
+                                    backgroundColor: theme.palette.primary.dark,
+                                    boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}`,
+                                },
+                            }}
+                        >
+                            Nuevo cliente
+                        </Button>
+                    )}
+                </Box>
             </Box>
 
             {error && (
@@ -255,55 +281,54 @@ const ListarCliente = () => {
                 </Alert>
             )}
 
-            <Box sx={{
-                display: 'inline-flex',
-                backgroundColor: theme.palette.primary.light,
-                borderRadius: 4,
-                p: '4px',
-                mb: 2.5,
-                gap: '5px',
-            }}>
-                {FILTROS.map(f => (
-                    <Button
-                        key={f.value}
-                        onClick={() => { setFiltroEstado(f.value); setPage(1) }}
-                        size="small"
-                        disableElevation
-                        disableRipple
-                        sx={{
-                            borderRadius: 3,
-                            textTransform: 'none',
-                            fontSize: '0.75rem',
-                            px: 2,
-                            py: 0.5,
-                            minWidth: 0,
-                            fontWeight: filtroEstado === f.value ? 600 : 400,
-                            backgroundColor: filtroEstado === f.value ? theme.palette.background.paper : 'transparent',
-                            color: filtroEstado === f.value ? theme.palette.text.primary : theme.palette.text.secondary,
-                            boxShadow: filtroEstado === f.value
-                                ? '0 1px 4px rgba(0,0,0,0.12)'
-                                : 'none',
-                            border: 'none',
-                            '&:hover': {
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
+                <Box sx={{
+                    display: 'inline-flex',
+                    backgroundColor: theme.palette.primary.light,
+                    borderRadius: 4,
+                    p: '4px',
+                    gap: '5px',
+                }}>
+                    {FILTROS.map(f => (
+                        <Button
+                            key={f.value}
+                            onClick={() => { setFiltroEstado(f.value); setPage(1) }}
+                            size="small"
+                            disableElevation
+                            disableRipple
+                            sx={{
+                                borderRadius: 3,
+                                textTransform: 'none',
+                                fontSize: '0.75rem',
+                                px: 2,
+                                py: 0.5,
+                                minWidth: 0,
+                                fontWeight: filtroEstado === f.value ? 600 : 400,
                                 backgroundColor: filtroEstado === f.value ? theme.palette.background.paper : 'transparent',
-                                color: filtroEstado === f.value ? theme.palette.text.primary : theme.palette.text.medium,
+                                color: filtroEstado === f.value ? theme.palette.text.primary : theme.palette.text.secondary,
+                                boxShadow: filtroEstado === f.value
+                                    ? '0 1px 4px rgba(0,0,0,0.12)'
+                                    : 'none',
                                 border: 'none',
-                            },
-                        }}
-                    >
-                        {f.label}
-                    </Button>
-                ))}
-            </Box>
+                                '&:hover': {
+                                    backgroundColor: filtroEstado === f.value ? theme.palette.background.paper : 'transparent',
+                                    color: filtroEstado === f.value ? theme.palette.text.primary : theme.palette.text.medium,
+                                    border: 'none',
+                                },
+                            }}
+                        >
+                            {f.label}
+                        </Button>
+                    ))}
+                </Box>
 
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
                 <TextField
                     size="small"
                     placeholder="Buscar clientes..."
                     sx={{
                         width: 320,
                         '& .MuiOutlinedInput-root': {
-                            borderRadius: 2,
+                            borderRadius: 4,
                             '&.Mui-focused': {
                                 boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}`,
                             },
@@ -342,23 +367,6 @@ const ListarCliente = () => {
                         sx={{ fontSize: '0.72rem', height: 28, cursor: 'pointer', backgroundColor: theme.palette.primary.light, color: theme.palette.primary.main }}
                     />
                 )}
-
-                <Button
-                    variant="outlined"
-                    size="small"
-                    startIcon={<FileDownloadOutlinedIcon />}
-                    sx={{
-                        borderRadius: 2,
-                        textTransform: 'none',
-                        fontSize: '0.85rem',
-                        borderColor: theme.palette.divider,
-                        color: theme.palette.text.primary,
-                        fontWeight: 500,
-                        '&:hover': { backgroundColor: theme.palette.primary.light },
-                    }}
-                >
-                    Exportar
-                </Button>
             </Box>
 
             <Paper elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 3, overflow: 'hidden' }}>

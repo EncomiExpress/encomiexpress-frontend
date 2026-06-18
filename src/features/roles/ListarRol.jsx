@@ -292,7 +292,7 @@ const ListarRol = () => {
                             Roles
                         </Typography>
                         <Chip
-                            label={`${roles.length} registrado${roles.length !== 1 ? 's' : ''}`}
+                            label={`${roles.length} registros`}
                             size="small"
                             sx={{
                                 backgroundColor: '#F3F4F6',
@@ -330,14 +330,14 @@ const ListarRol = () => {
                 )}
             </Box>
 
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
                 <TextField
                     size="small"
                     placeholder="Buscar roles..."
                     sx={{
                         width: 320,
                         '& .MuiOutlinedInput-root': {
-                            borderRadius: 2,
+                            borderRadius: 4,
                             '&.Mui-focused': {
                                 boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}`,
                             },

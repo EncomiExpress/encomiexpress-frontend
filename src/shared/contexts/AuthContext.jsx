@@ -112,7 +112,7 @@ export const AuthProvider = ({ children }) => {
         return { success: false, mensaje: data.message || 'Credenciales inválidas' }
       }
 
-      const { token: tokenNuevo, usuario } = data.data
+      const { token: tokenNuevo, refreshToken: refreshTokenNuevo, usuario } = data.data
 
       // Normalizar rol: el backend puede devolver string u objeto { nombre, idRol }
       const rolNombre = typeof usuario.rol === 'string'
@@ -127,6 +127,7 @@ export const AuthProvider = ({ children }) => {
       setToken(tokenNuevo)
       localStorage.setItem('token', tokenNuevo)
       localStorage.setItem('usuario', JSON.stringify(usuarioNormalizado))
+      localStorage.setItem('refreshToken', refreshTokenNuevo)
       setUsuario(usuarioNormalizado)
 
       return { success: true, usuario: usuarioNormalizado }
@@ -138,9 +139,10 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     setToken(null)
-    localStorage.removeItem('token')
-    localStorage.removeItem('usuario')
     setUsuario(null)
+    localStorage.removeItem('token')
+    localStorage.removeItem('refreshToken')
+    localStorage.removeItem('usuario')
   }
 
   const tienePermiso = (permiso) => {
@@ -163,6 +165,37 @@ export const AuthProvider = ({ children }) => {
       return { success: res.ok, data: data.data, message: data.message }
     } catch {
       return { success: false, message: 'Error de conexión' }
+    }
+  }
+
+  const refreshAccessToken = async () => {
+    const refreshTokenGuardado = localStorage.getItem('refreshToken')
+    if (!refreshTokenGuardado) {
+      logout()
+      return { success: false }
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: refreshTokenGuardado })
+      })
+
+      const data = await res.json()
+      if (!res.ok || !data.success) {
+        logout()
+        return { success: false }
+      }
+
+      const { token: nuevoToken } = data.data
+      setToken(nuevoToken)
+      localStorage.setItem('token', nuevoToken)
+
+      return { success: true }
+    } catch {
+      logout()
+      return { success: false }
     }
   }
 
@@ -301,6 +334,7 @@ export const AuthProvider = ({ children }) => {
       loading,
       login,
       logout,
+      refreshAccessToken,
       tienePermiso,
       tieneAlgunPermiso,
       tieneTodosLosPermisos,

@@ -211,7 +211,7 @@ const ModalConsultar = ({ venta, onClose }) => {
 
 const getFilterSelectSx = (theme) => ({
     fontSize: '0.82rem',
-    borderRadius: 2,
+    borderRadius: 4,
     '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
     '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#BDBDBD' },
     '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
@@ -358,7 +358,7 @@ const ListarVenta = () => {
                         </Typography>
                         {!loading && !error && (
                             <Chip
-                                label={`${ventas.length} registrada${ventas.length !== 1 ? 's' : ''}`}
+                                label={`${total} registros`}
                                 size="small"
                                 sx={{
                                     backgroundColor: '#F3F4F6',
@@ -375,24 +375,50 @@ const ListarVenta = () => {
                         Gestiona las ventas y encomiendas registradas en el sistema.
                     </Typography>
                 </Box>
-                <Button
-                    onClick={() => setModalRegistrarOpen(true)}
-                    variant="contained"
-                    startIcon={<AddOutlinedIcon />}
-                    sx={{
-                        backgroundColor: theme.palette.primary.main,
-                        borderRadius: 2,
-                        textTransform: 'none',
-                        fontWeight: 600,
-                        boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
-                        '&:hover': {
-                            backgroundColor: theme.palette.primary.dark,
-                            boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}`,
-                        },
-                    }}
-                >
-                    Nueva venta
-                </Button>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Button
+                        variant="contained"
+                        startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 18 }} />}
+                        sx={{
+                            backgroundColor: theme.palette.background.paper,
+                            color: theme.palette.text.primary,
+                            borderRadius: 2,
+                            textTransform: 'none',
+                            fontSize: '0.875rem',
+                            fontWeight: 700,
+                            border: `1px solid ${theme.palette.divider}`,
+                            boxShadow: 'none',
+                            '&:hover': {
+                                backgroundColor: theme.palette.primary.light,
+                                color: theme.palette.text.primary,
+                                border: `1px solid ${theme.palette.divider}`,
+                                boxShadow: 'none',
+                            },
+                        }}
+                    >
+                        Exportar
+                    </Button>
+
+                    <Button
+                        onClick={() => setModalRegistrarOpen(true)}
+                        variant="contained"
+                        startIcon={<AddOutlinedIcon sx={{ fontSize: 20 }} />}
+                        sx={{
+                            backgroundColor: theme.palette.primary.main,
+                            borderRadius: 2,
+                            textTransform: 'none',
+                            fontSize: '0.875rem',
+                            fontWeight: 600,
+                            boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
+                            '&:hover': {
+                                backgroundColor: theme.palette.primary.dark,
+                                boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}`,
+                            },
+                        }}
+                    >
+                        Nueva venta
+                    </Button>
+                </Box>
             </Box>
 
             {error && (
@@ -401,152 +427,136 @@ const ListarVenta = () => {
                 </Alert>
             )}
 
-            <Box sx={{
-                display: 'inline-flex',
-                backgroundColor: theme.palette.primary.light,
-                borderRadius: 4,
-                p: '4px',
-                mb: 2,
-                gap: '5px',
-                flexWrap: 'wrap',
-            }}>
-                {FILTROS_HABILITADO.map(f => (
-                    <Button
-                        key={f.value}
-                        onClick={() => { setFiltroHabilitado(f.value); setPage(1) }}
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+                    <Box sx={{
+                        display: 'inline-flex',
+                        backgroundColor: theme.palette.primary.light,
+                        borderRadius: 4,
+                        p: '4px',
+                        gap: '5px',
+                    }}>
+                        {FILTROS_HABILITADO.map(f => (
+                            <Button
+                                key={f.value}
+                                onClick={() => { setFiltroHabilitado(f.value); setPage(1) }}
+                                size="small"
+                                disableElevation
+                                disableRipple
+                                sx={{
+                                    borderRadius: 3,
+                                    textTransform: 'none',
+                                    fontSize: '0.75rem',
+                                    px: 2,
+                                    py: 0.5,
+                                    minWidth: 0,
+                                    fontWeight: filtroHabilitado === f.value ? 600 : 400,
+                                    backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
+                                    color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.secondary,
+                                    boxShadow: filtroHabilitado === f.value
+                                        ? '0 1px 4px rgba(0,0,0,0.12)'
+                                        : 'none',
+                                    border: 'none',
+                                    '&:hover': {
+                                        backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
+                                        color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.medium,
+                                        border: 'none',
+                                    },
+                                }}
+                            >
+                                {f.label}
+                            </Button>
+                        ))}
+                    </Box>
+
+                    <FormControl size="small" sx={{ width: 160 }}>
+                        <InputLabel sx={{ fontSize: '0.82rem', '&.Mui-focused': { color: theme.palette.primary.main } }}>Estado encomienda</InputLabel>
+                        <Select value={filtroEstadoEncomienda} label="Estado encomienda"
+                            onChange={e => { setFiltroEstadoEncomienda(e.target.value); setPage(1) }}
+                            IconComponent={KeyboardArrowDownOutlinedIcon}
+                            sx={filterSelectSx}
+                            MenuProps={filterMenuProps}>
+                            <MenuItem value="todos">Todos</MenuItem>
+                            {ESTADOS_ENCOMIENDA.map(estado => (
+                                <MenuItem key={estado} value={estado}>
+                                    {estado.charAt(0).toUpperCase() + estado.slice(1)}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+
+                    <FormControl size="small" sx={{ minWidth: 130 }}>
+                        <InputLabel sx={{ fontSize: '0.82rem', '&.Mui-focused': { color: theme.palette.primary.main } }}>Estado pago</InputLabel>
+                        <Select value={filtroPago} label="Estado pago"
+                            onChange={e => { setFiltroPago(e.target.value); setPage(1) }}
+                            IconComponent={KeyboardArrowDownOutlinedIcon}
+                            sx={filterSelectSx}
+                            MenuProps={filterMenuProps}>
+                            <MenuItem value="todos">Todos</MenuItem>
+                            <MenuItem value="pagado">Pagado</MenuItem>
+                            <MenuItem value="pendiente">Pendiente</MenuItem>
+                        </Select>
+                    </FormControl>
+
+                    <FormControl size="small" sx={{ minWidth: 140 }}>
+                        <InputLabel sx={{ fontSize: '0.82rem', '&.Mui-focused': { color: theme.palette.primary.main } }}>Método de pago</InputLabel>
+                        <Select value={filtroMetodoPago} label="Método de pago"
+                            onChange={e => { setFiltroMetodoPago(e.target.value); setPage(1) }}
+                            IconComponent={KeyboardArrowDownOutlinedIcon}
+                            sx={filterSelectSx}
+                            MenuProps={filterMenuProps}>
+                            <MenuItem value="todos">Todos</MenuItem>
+                            {METODOS_PAGO.map(mp => (
+                                <MenuItem key={mp} value={mp}>{mp}</MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                </Box>
+
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+                    <TextField
                         size="small"
-                        disableElevation
-                        disableRipple
+                        placeholder="Buscar ventas..."
                         sx={{
-                            borderRadius: 3,
-                            textTransform: 'none',
-                            fontSize: '0.75rem',
-                            px: 2,
-                            py: 0.5,
-                            minWidth: 0,
-                            fontWeight: filtroHabilitado === f.value ? 600 : 400,
-                            backgroundColor: filtroHabilitado === f.value ? 'white' : 'transparent',
-                            color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.secondary,
-                            boxShadow: filtroHabilitado === f.value
-                                ? '0 1px 4px rgba(0,0,0,0.12)'
-                                : 'none',
-                            border: 'none',
-                            '&:hover': {
-                                backgroundColor: filtroHabilitado === f.value ? 'white' : 'transparent',
-                                color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.medium,
-                                border: 'none',
+                            width: 320,
+                            '& .MuiOutlinedInput-root': {
+                                borderRadius: 4,
+                                '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` },
+                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                    borderColor: theme.palette.primary.main, borderWidth: '1px',
+                                },
                             },
                         }}
-                    >
-                        {f.label}
-                    </Button>
-                ))}
-            </Box>
-
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
-                <TextField
-                    size="small"
-                    placeholder="Buscar ventas..."
-                    sx={{
-                        width: 320,
-                        '& .MuiOutlinedInput-root': {
-                            borderRadius: 2,
-                            '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` },
-                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                borderColor: theme.palette.primary.main, borderWidth: '1px',
-                            },
-                        },
-                    }}
-                    value={busqueda}
-                    onChange={e => { setBusqueda(e.target.value); setPage(1) }}
-                    slotProps={{
-                        input: {
-                            startAdornment: (
-                                <InputAdornment position="start">
-                                    <SearchIcon sx={{ color: theme.palette.text.secondary, fontSize: 20 }} />
-                                </InputAdornment>
-                            ),
-                            endAdornment: busqueda && (
-                                <InputAdornment position="end">
-                                    <IconButton size="small" onClick={() => { setBusqueda(''); setPage(1) }}>
-                                        <ClearIcon sx={{ fontSize: 16 }} />
-                                    </IconButton>
-                                </InputAdornment>
-                            )
-                        }
-                    }}
-                />
-
-                <FormControl size="small" sx={{ width: 160 }}>
-                    <InputLabel sx={{ fontSize: '0.82rem', '&.Mui-focused': { color: theme.palette.primary.main } }}>Estado encomienda</InputLabel>
-                    <Select value={filtroEstadoEncomienda} label="Estado encomienda"
-                        onChange={e => { setFiltroEstadoEncomienda(e.target.value); setPage(1) }}
-                        IconComponent={KeyboardArrowDownOutlinedIcon}
-                        sx={filterSelectSx}
-                        MenuProps={filterMenuProps}>
-                        <MenuItem value="todos">Todos</MenuItem>
-                        {ESTADOS_ENCOMIENDA.map(estado => (
-                            <MenuItem key={estado} value={estado}>
-                                {estado.charAt(0).toUpperCase() + estado.slice(1)}
-                            </MenuItem>
-                        ))}
-                    </Select>
-                </FormControl>
-
-                <FormControl size="small" sx={{ minWidth: 130 }}>
-                    <InputLabel sx={{ fontSize: '0.82rem', '&.Mui-focused': { color: theme.palette.primary.main } }}>Estado pago</InputLabel>
-                    <Select value={filtroPago} label="Estado pago"
-                        onChange={e => { setFiltroPago(e.target.value); setPage(1) }}
-                        IconComponent={KeyboardArrowDownOutlinedIcon}
-                        sx={filterSelectSx}
-                        MenuProps={filterMenuProps}>
-                        <MenuItem value="todos">Todos</MenuItem>
-                        <MenuItem value="pagado">Pagado</MenuItem>
-                        <MenuItem value="pendiente">Pendiente</MenuItem>
-                    </Select>
-                </FormControl>
-
-                <FormControl size="small" sx={{ minWidth: 140 }}>
-                    <InputLabel sx={{ fontSize: '0.82rem', '&.Mui-focused': { color: theme.palette.primary.main } }}>Método de pago</InputLabel>
-                    <Select value={filtroMetodoPago} label="Método de pago"
-                        onChange={e => { setFiltroMetodoPago(e.target.value); setPage(1) }}
-                        IconComponent={KeyboardArrowDownOutlinedIcon}
-                        sx={filterSelectSx}
-                        MenuProps={filterMenuProps}>
-                        <MenuItem value="todos">Todos</MenuItem>
-                        {METODOS_PAGO.map(mp => (
-                            <MenuItem key={mp} value={mp}>{mp}</MenuItem>
-                        ))}
-                    </Select>
-                </FormControl>
-
-                {hayFiltrosActivos && (
-                    <Chip
-                        label="Limpiar"
-                        size="small"
-                        icon={<ClearIcon sx={{ fontSize: '14px !important' }} />}
-                        onClick={limpiarFiltros}
-                        sx={{ fontSize: '0.72rem', height: 28, cursor: 'pointer', backgroundColor: theme.palette.primary.light, color: theme.palette.primary.main }}
+                        value={busqueda}
+                        onChange={e => { setBusqueda(e.target.value); setPage(1) }}
+                        slotProps={{
+                            input: {
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <SearchIcon sx={{ color: theme.palette.text.secondary, fontSize: 20 }} />
+                                    </InputAdornment>
+                                ),
+                                endAdornment: busqueda && (
+                                    <InputAdornment position="end">
+                                        <IconButton size="small" onClick={() => { setBusqueda(''); setPage(1) }}>
+                                            <ClearIcon sx={{ fontSize: 16 }} />
+                                        </IconButton>
+                                    </InputAdornment>
+                                )
+                            }
+                        }}
                     />
-                )}
 
-                <Button
-                    variant="outlined"
-                    size="small"
-                    startIcon={<FileDownloadOutlinedIcon />}
-                    sx={{
-                        borderRadius: 2,
-                        textTransform: 'none',
-                        fontSize: '0.85rem',
-                        borderColor: theme.palette.divider,
-                        color: theme.palette.text.primary,
-                        fontWeight: 500,
-                        ml: 'auto',
-                        '&:hover': { backgroundColor: theme.palette.primary.light },
-                    }}
-                >
-                    Exportar
-                </Button>
+                    {hayFiltrosActivos && (
+                        <Chip
+                            label="Limpiar"
+                            size="small"
+                            icon={<ClearIcon sx={{ fontSize: '14px !important' }} />}
+                            onClick={limpiarFiltros}
+                            sx={{ fontSize: '0.72rem', height: 28, cursor: 'pointer', backgroundColor: theme.palette.primary.light, color: theme.palette.primary.main }}
+                        />
+                    )}
+                </Box>
             </Box>
 
             <Paper elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 3, overflow: 'hidden' }}>
@@ -838,7 +848,7 @@ const ListarVenta = () => {
                             IconComponent={KeyboardArrowDownOutlinedIcon}
                             sx={{
                                 fontSize: '0.82rem',
-                                borderRadius: 2,
+    borderRadius: 4,
                                 '& .MuiSelect-select': { py: 0.6, pl: 1.5, pr: '28px !important' },
                                 '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
                                 '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#BDBDBD' },

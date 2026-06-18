@@ -17,6 +17,7 @@ import ClearIcon from '@mui/icons-material/Clear'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined'
 import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
+import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank'
 import CheckBoxIcon from '@mui/icons-material/CheckBox'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
@@ -159,7 +160,7 @@ const ListarConductor = () => {
                             Conductores
                         </Typography>
                         <Chip
-                            label={`${conductores.length} registrado${conductores.length !== 1 ? 's' : ''}`}
+                            label={`${total} registros`}
                             size="small"
                             sx={{ backgroundColor: '#F3F4F6', color: theme.palette.text.secondary, fontWeight: 500, fontSize: '0.72rem', height: 22, borderRadius: 10 }}
                         />
@@ -168,60 +169,88 @@ const ListarConductor = () => {
                         Gestiona los conductores registrados en el sistema.
                     </Typography>
                 </Box>
-                {tienePermiso(PERMISOS.REGISTRAR_CONDUCTOR) && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Button
-                        onClick={() => setModalRegistrarOpen(true)}
                         variant="contained"
-                        startIcon={<AddOutlinedIcon />}
+                        startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 18 }} />}
                         sx={{
-                            backgroundColor: theme.palette.primary.main, borderRadius: 2,
-                            textTransform: 'none', fontWeight: 600,
-                            boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
-                            '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}` },
+                            backgroundColor: theme.palette.background.paper,
+                            color: theme.palette.text.primary,
+                            borderRadius: 2,
+                            textTransform: 'none',
+                            fontSize: '0.875rem',
+                            fontWeight: 700,
+                            border: `1px solid ${theme.palette.divider}`,
+                            boxShadow: 'none',
+                            '&:hover': {
+                                backgroundColor: theme.palette.primary.light,
+                                color: theme.palette.text.primary,
+                                border: `1px solid ${theme.palette.divider}`,
+                                boxShadow: 'none',
+                            },
                         }}
                     >
-                        Nuevo conductor
+                        Exportar
                     </Button>
-                )}
+
+                    {tienePermiso(PERMISOS.REGISTRAR_CONDUCTOR) && (
+                        <Button
+                            onClick={() => setModalRegistrarOpen(true)}
+                            variant="contained"
+                            startIcon={<AddOutlinedIcon sx={{ fontSize: 20 }} />}
+                            sx={{
+                                backgroundColor: theme.palette.primary.main,
+                                borderRadius: 2,
+                                textTransform: 'none',
+                                fontSize: '0.875rem',
+                                fontWeight: 600,
+                                boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
+                                '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}` },
+                            }}
+                        >
+                            Nuevo conductor
+                        </Button>
+                    )}
+                </Box>
             </Box>
 
-            {/* -- Filtros habilitado / inhabilitado -- */}
-            <Box sx={{ display: 'inline-flex', backgroundColor: theme.palette.primary.light, borderRadius: 4, p: '4px', mb: 2.5, gap: '5px' }}>
-                {FILTROS.map(f => (
-                    <Button key={f.value} onClick={() => { setFiltroHabilitado(f.value); setPage(1) }}
-                        size="small" disableElevation disableRipple
-                        sx={{
-                            borderRadius: 3, textTransform: 'none', fontSize: '0.75rem', px: 2, py: 0.5, minWidth: 0,
-                            fontWeight: filtroHabilitado === f.value ? 600 : 400,
-                            backgroundColor: filtroHabilitado === f.value ? 'white' : 'transparent',
-                            color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.secondary,
-                            boxShadow: filtroHabilitado === f.value ? '0 1px 4px rgba(0,0,0,0.12)' : 'none',
-                            border: 'none',
-                            '&:hover': { backgroundColor: filtroHabilitado === f.value ? 'white' : 'transparent', color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.medium, border: 'none' },
-                        }}>
-                        {f.label}
-                    </Button>
-                ))}
-            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
+                <Box sx={{ display: 'inline-flex', backgroundColor: theme.palette.primary.light, borderRadius: 4, p: '4px', gap: '5px' }}>
+                    {FILTROS.map(f => (
+                        <Button key={f.value} onClick={() => { setFiltroHabilitado(f.value); setPage(1) }}
+                            size="small" disableElevation disableRipple
+                            sx={{
+                                borderRadius: 3, textTransform: 'none', fontSize: '0.75rem', px: 2, py: 0.5, minWidth: 0,
+                                fontWeight: filtroHabilitado === f.value ? 600 : 400,
+                                backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
+                                color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.secondary,
+                                boxShadow: filtroHabilitado === f.value ? '0 1px 4px rgba(0,0,0,0.12)' : 'none',
+                                border: 'none',
+                                '&:hover': { backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent', color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.medium, border: 'none' },
+                            }}>
+                            {f.label}
+                        </Button>
+                    ))}
+                </Box>
 
-            {/* -- Buscador -- */}
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-                <TextField
-                    size="small" placeholder="Buscar conductores..."
-                    sx={{ width: 320, '& .MuiOutlinedInput-root': { borderRadius: 2, '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` }, '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main, borderWidth: '1px' } } }}
-                    value={searchTerm} onChange={e => { setSearchTerm(e.target.value); setPage(1) }}
-                    slotProps={{
-                        input: {
-                            startAdornment: <InputAdornment position="start"><SearchIcon sx={{ color: theme.palette.text.secondary, fontSize: 20 }} /></InputAdornment>,
-                            endAdornment: searchTerm && <InputAdornment position="end"><IconButton size="small" onClick={limpiarBusqueda}><ClearIcon sx={{ fontSize: 16 }} /></IconButton></InputAdornment>
-                        }
-                    }}
-                />
-                {hayFiltrosActivos && (
-                    <Chip label="Limpiar" size="small" icon={<ClearIcon sx={{ fontSize: '14px !important' }} />}
-                        onClick={limpiarFiltros}
-                        sx={{ fontSize: '0.72rem', height: 28, cursor: 'pointer', backgroundColor: theme.palette.primary.light, color: theme.palette.primary.main }} />
-                )}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+                    <TextField
+                        size="small" placeholder="Buscar conductores..."
+                        sx={{ width: 320, '& .MuiOutlinedInput-root': { borderRadius: 4, '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` }, '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main, borderWidth: '1px' } } }}
+                        value={searchTerm} onChange={e => { setSearchTerm(e.target.value); setPage(1) }}
+                        slotProps={{
+                            input: {
+                                startAdornment: <InputAdornment position="start"><SearchIcon sx={{ color: theme.palette.text.secondary, fontSize: 20 }} /></InputAdornment>,
+                                endAdornment: searchTerm && <InputAdornment position="end"><IconButton size="small" onClick={limpiarBusqueda}><ClearIcon sx={{ fontSize: 16 }} /></IconButton></InputAdornment>
+                            }
+                        }}
+                    />
+                    {hayFiltrosActivos && (
+                        <Chip label="Limpiar" size="small" icon={<ClearIcon sx={{ fontSize: '14px !important' }} />}
+                            onClick={limpiarFiltros}
+                            sx={{ fontSize: '0.72rem', height: 28, cursor: 'pointer', backgroundColor: theme.palette.primary.light, color: theme.palette.primary.main }} />
+                    )}
+                </Box>
             </Box>
 
             {/* -- Tabla -- */}

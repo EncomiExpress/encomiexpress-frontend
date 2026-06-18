@@ -15,6 +15,7 @@ import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import ClearIcon from '@mui/icons-material/Clear'
 import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
+import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import SpeedOutlinedIcon from '@mui/icons-material/SpeedOutlined'
 import EventOutlinedIcon from '@mui/icons-material/EventOutlined'
 import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank'
@@ -118,18 +119,25 @@ const ListarTransporte = () => {
     useEffect(() => {
         if (!usuario) {
             navigate('/login')
-        } else {
-            fetchVehiculos(undefined, {
-                page,
-                limit: rowsPerPage,
-                estado: filtroEstadoVehiculo === 'todo' ? undefined : filtroEstadoVehiculo,
-                habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
-                sortBy: 'idVehiculo.asc',
-                q: searchTerm.trim() || undefined,
-            })
-            if (rutasProgramadas.length === 0) fetchRutasProgramadas()
+            return
         }
-    }, [usuario, navigate, page, rowsPerPage, filtroEstadoVehiculo, filtroHabilitado, searchTerm, rutasProgramadas, fetchVehiculos, fetchRutasProgramadas])
+
+        fetchVehiculos(undefined, {
+            page,
+            limit: rowsPerPage,
+            estado: filtroEstadoVehiculo === 'todo' ? undefined : filtroEstadoVehiculo,
+            habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
+            sortBy: 'idVehiculo.asc',
+            q: searchTerm.trim() || undefined,
+        })
+    }, [usuario, navigate, page, rowsPerPage, filtroEstadoVehiculo, filtroHabilitado, searchTerm, fetchVehiculos])
+
+    useEffect(() => {
+        if (!usuario) return
+        if (rutasProgramadas.length === 0) {
+            fetchRutasProgramadas()
+        }
+    }, [usuario, rutasProgramadas.length, fetchRutasProgramadas])
 
     const handleEstadoChange = async (id, nuevoEstado) => {
         const success = await updateEstado(id, nuevoEstado)
@@ -199,7 +207,7 @@ const ListarTransporte = () => {
                             Vehículos
                         </Typography>
                         <Chip
-                            label={`${totalBackend} registrado${totalBackend !== 1 ? 's' : ''}`}
+                            label={`${totalBackend} registros`}
                             size="small"
                             sx={{
                                 backgroundColor: '#F3F4F6',
@@ -215,78 +223,128 @@ const ListarTransporte = () => {
                         Gestiona los vehículos registrados en el sistema.
                     </Typography>
                  </Box>
-                 {tienePermiso(PERMISOS.REGISTRAR_VEHICULO) && (
+                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                      <Button
-                         onClick={() => setModalRegistrarOpen(true)}
                          variant="contained"
-                         startIcon={<AddOutlinedIcon />}
+                         startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 18 }} />}
                          sx={{
-                             backgroundColor: theme.palette.primary.main,
+                             backgroundColor: theme.palette.background.paper,
+                             color: theme.palette.text.primary,
                              borderRadius: 2,
                              textTransform: 'none',
-                             fontWeight: 600,
-                             boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
+                             fontSize: '0.875rem',
+                             fontWeight: 700,
+                             border: `1px solid ${theme.palette.divider}`,
+                             boxShadow: 'none',
                              '&:hover': {
-                                 backgroundColor: theme.palette.primary.dark,
-                                 boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}`,
+                                 backgroundColor: theme.palette.primary.light,
+                                 color: theme.palette.text.primary,
+                                 border: `1px solid ${theme.palette.divider}`,
+                                 boxShadow: 'none',
                              },
                          }}
                      >
-                         Nuevo vehículo
+                         Exportar
                      </Button>
-                 )}
+
+                     {tienePermiso(PERMISOS.REGISTRAR_VEHICULO) && (
+                         <Button
+                             onClick={() => setModalRegistrarOpen(true)}
+                             variant="contained"
+                             startIcon={<AddOutlinedIcon sx={{ fontSize: 20 }} />}
+                             sx={{
+                                 backgroundColor: theme.palette.primary.main,
+                                 borderRadius: 2,
+                                 textTransform: 'none',
+                                 fontSize: '0.875rem',
+                                 fontWeight: 600,
+                                 boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
+                                 '&:hover': {
+                                     backgroundColor: theme.palette.primary.dark,
+                                     boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}`,
+                                 },
+                             }}
+                         >
+                             Nuevo vehículo
+                         </Button>
+                     )}
+                 </Box>
              </Box>
 
-            {/* ── Filtro slider: habilitado / inhabilitado ── */}
-            <Box sx={{
-                display: 'inline-flex',
-                backgroundColor: theme.palette.primary.light,
-                borderRadius: 4,
-                p: '4px',
-                mb: 2.5,
-                gap: '5px',
-            }}>
-                {FILTROS_HABILITADO.map(f => (
-                    <Button
-                        key={f.value}
-                        onClick={() => { setFiltroHabilitado(f.value); setPage(1) }}
-                        size="small"
-                        disableElevation
-                        disableRipple
-                        sx={{
-                            borderRadius: 3,
-                            textTransform: 'none',
-                            fontSize: '0.75rem',
-                            px: 2,
-                            py: 0.5,
-                            minWidth: 0,
-                            fontWeight: filtroHabilitado === f.value ? 600 : 400,
-                            backgroundColor: filtroHabilitado === f.value ? 'white' : 'transparent',
-                            color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.secondary,
-                            boxShadow: filtroHabilitado === f.value ? '0 1px 4px rgba(0,0,0,0.12)' : 'none',
-                            border: 'none',
-                            '&:hover': {
-                                backgroundColor: filtroHabilitado === f.value ? 'white' : 'transparent',
-                                color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.medium,
-                                border: 'none',
-                            },
-                        }}
-                    >
-                        {f.label}
-                    </Button>
-                ))}
-            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+                    <Box sx={{
+                        display: 'inline-flex',
+                        backgroundColor: theme.palette.primary.light,
+                        borderRadius: 4,
+                        p: '4px',
+                        gap: '5px',
+                    }}>
+                        {FILTROS_HABILITADO.map(f => (
+                            <Button
+                                key={f.value}
+                                onClick={() => { setFiltroHabilitado(f.value); setPage(1) }}
+                                size="small"
+                                disableElevation
+                                disableRipple
+                                sx={{
+                                    borderRadius: 3,
+                                    textTransform: 'none',
+                                    fontSize: '0.75rem',
+                                    px: 2,
+                                    py: 0.5,
+                                    minWidth: 0,
+                                    fontWeight: filtroHabilitado === f.value ? 600 : 400,
+                                    backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
+                                    color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.secondary,
+                                    boxShadow: filtroHabilitado === f.value ? '0 1px 4px rgba(0,0,0,0.12)' : 'none',
+                                    border: 'none',
+                                    '&:hover': {
+                                        backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
+                                        color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.medium,
+                                        border: 'none',
+                                    },
+                                }}
+                            >
+                                {f.label}
+                            </Button>
+                        ))}
+                    </Box>
 
-            {/* ── Buscador + filtro dropdown de estado ── */}
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <FormControl size="small" sx={{ minWidth: 160 }}>
+                        <Select
+                            value={filtroEstadoVehiculo}
+                            onChange={e => { setFiltroEstadoVehiculo(e.target.value); setPage(1) }}
+                            IconComponent={KeyboardArrowDownOutlinedIcon}
+                            displayEmpty
+                            sx={{
+                                fontSize: '0.82rem',
+                                borderRadius: 4,
+                                backgroundColor: theme.palette.background.paper,
+                                '& .MuiOutlinedInput-notchedOutline': { borderColor: '#E0E0E0' },
+                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#BDBDBD' },
+                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
+                            }}
+                            MenuProps={filterMenuProps}
+                        >
+                            <MenuItem value="todo" sx={{ fontSize: '0.82rem' }}>Todos los estados</MenuItem>
+                            <MenuItem value="Activo" sx={{ fontSize: '0.82rem' }}>Activo</MenuItem>
+                            <MenuItem value="Inactivo" sx={{ fontSize: '0.82rem' }}>Inactivo</MenuItem>
+                            <MenuItem value="Mantenimiento" sx={{ fontSize: '0.82rem' }}>Mantenimiento</MenuItem>
+                            <MenuItem value="En Reparación" sx={{ fontSize: '0.82rem' }}>En Reparación</MenuItem>
+                            <MenuItem value="ocupado" sx={{ fontSize: '0.82rem' }}>Ocupado</MenuItem>
+                        </Select>
+                    </FormControl>
+                </Box>
+
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
                     <TextField
                         size="small"
                         placeholder="Buscar vehículos..."
                         sx={{
                             width: 280,
                             '& .MuiOutlinedInput-root': {
-                                borderRadius: 2,
+                                borderRadius: 4,
                                 '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` },
                                 '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                                     borderColor: theme.palette.primary.main, borderWidth: '1px',
@@ -313,42 +371,16 @@ const ListarTransporte = () => {
                         }}
                     />
 
-                    {/* Filtro dropdown de estado */}
-                    <FormControl size="small" sx={{ minWidth: 160 }}>
-                        <Select
-                            value={filtroEstadoVehiculo}
-                            onChange={e => { setFiltroEstadoVehiculo(e.target.value); setPage(1) }}
-                            IconComponent={KeyboardArrowDownOutlinedIcon}
-                            displayEmpty
-                            sx={{
-                                fontSize: '0.82rem',
-                                borderRadius: 2,
-                                backgroundColor: theme.palette.background.paper,
-                                '& .MuiOutlinedInput-notchedOutline': { borderColor: '#E0E0E0' },
-                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#BDBDBD' },
-                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
-                            }}
-                            MenuProps={filterMenuProps}
-                        >
-                            <MenuItem value="todo" sx={{ fontSize: '0.82rem' }}>Todos los estados</MenuItem>
-                            <MenuItem value="Activo" sx={{ fontSize: '0.82rem' }}>Activo</MenuItem>
-                            <MenuItem value="Inactivo" sx={{ fontSize: '0.82rem' }}>Inactivo</MenuItem>
-                            <MenuItem value="Mantenimiento" sx={{ fontSize: '0.82rem' }}>Mantenimiento</MenuItem>
-                            <MenuItem value="En Reparación" sx={{ fontSize: '0.82rem' }}>En Reparación</MenuItem>
-                            <MenuItem value="ocupado" sx={{ fontSize: '0.82rem' }}>Ocupado</MenuItem>
-                        </Select>
-                    </FormControl>
+                    {hayFiltrosActivos && (
+                        <Chip
+                            label="Limpiar"
+                            size="small"
+                            icon={<ClearIcon sx={{ fontSize: '14px !important' }} />}
+                            onClick={limpiarFiltros}
+                            sx={{ fontSize: '0.72rem', height: 28, cursor: 'pointer', backgroundColor: theme.palette.primary.light, color: theme.palette.primary.main }}
+                        />
+                    )}
                 </Box>
-
-                {hayFiltrosActivos && (
-                    <Chip
-                        label="Limpiar"
-                        size="small"
-                        icon={<ClearIcon sx={{ fontSize: '14px !important' }} />}
-                        onClick={limpiarFiltros}
-                        sx={{ fontSize: '0.72rem', height: 28, cursor: 'pointer', backgroundColor: theme.palette.primary.light, color: theme.palette.primary.main }}
-                    />
-                )}
             </Box>
 
             <Paper elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 3, overflow: 'hidden' }}>
