@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useTheme } from '@mui/material/styles'
-import { Box, TextField, Button, Typography, Paper, Alert, Grid, MenuItem, Select, FormControl, InputLabel, InputAdornment, IconButton, Divider, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material'
+import { Box, TextField, Button, Typography, Paper, Alert, Grid, MenuItem, Select, FormControl, InputLabel, InputAdornment, IconButton, Divider, Dialog, DialogTitle, DialogContent, DialogActions, CircularProgress } from '@mui/material'
 import {
   EmailOutlined as Email,
   LockOutlined as Lock,
@@ -34,6 +34,12 @@ const Login = () => {
   })
   const [registerError, setRegisterError] = useState('')
   const [registerSuccess, setRegisterSuccess] = useState('')
+
+  // Estados para recuperar contraseña
+  const [openRecuperar, setOpenRecuperar]       = useState(false)
+  const [recuperarEmail, setRecuperarEmail]     = useState('')
+  const [recuperarLoading, setRecuperarLoading] = useState(false)
+  const [recuperarMensaje, setRecuperarMensaje] = useState(null) // { tipo, texto }
 
   const { login, registrarUsuario, usuario, loading } = useAuth()
   const navigate = useNavigate()
@@ -99,6 +105,26 @@ const Login = () => {
       setRegisterData({ nombre: '', email: '', password: '', rol: '', iniciales: '' })
     } catch {
       setRegisterError('Error al registrar usuario')
+    }
+  }
+
+  const handleRecuperar = async () => {
+    if (!recuperarEmail) return
+    setRecuperarLoading(true)
+    setRecuperarMensaje(null)
+    try {
+      const res = await fetch('http://localhost:3000/api/auth/recuperar-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: recuperarEmail })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.message || 'Error al enviar el correo')
+      setRecuperarMensaje({ tipo: 'success', texto: 'Se envió una contraseña temporal a tu correo.' })
+    } catch (err) {
+      setRecuperarMensaje({ tipo: 'error', texto: err.message || 'No se pudo enviar el correo.' })
+    } finally {
+      setRecuperarLoading(false)
     }
   }
 
@@ -259,13 +285,9 @@ const Login = () => {
               sx={{
                 mb: 3,
                 '& .MuiOutlinedInput-root': {
-                  '&.Mui-focused fieldset': {
-                    borderColor: theme.palette.primary.main,
-                  },
+                  '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main },
                 },
-                '& .MuiInputLabel-root.Mui-focused': {
-                  color: theme.palette.primary.main,
-                },
+                '& .MuiInputLabel-root.Mui-focused': { color: theme.palette.primary.main },
               }}
             />
             <TextField
@@ -284,28 +306,37 @@ const Login = () => {
                 ),
                 endAdornment: (
                   <InputAdornment position="end">
-                    <IconButton
-                      onClick={() => setShowPassword(!showPassword)}
-                      edge="end"
-                      sx={{ color: '#8b8382' }}
-                    >
+                    <IconButton onClick={() => setShowPassword(!showPassword)} edge="end" sx={{ color: '#8b8382' }}>
                       {showPassword ? <VisibilityOff /> : <Visibility />}
                     </IconButton>
                   </InputAdornment>
                 ),
               }}
               sx={{
-                mb: 4,
+                mb: 2,
                 '& .MuiOutlinedInput-root': {
-                  '&.Mui-focused fieldset': {
-                    borderColor: theme.palette.primary.main,
-                  },
+                  '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main },
                 },
-                '& .MuiInputLabel-root.Mui-focused': {
-                  color: theme.palette.primary.main,
-                },
+                '& .MuiInputLabel-root.Mui-focused': { color: theme.palette.primary.main },
               }}
             />
+
+            {/* ── ¿Olvidaste tu contraseña? ── */}
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
+              <Typography
+                onClick={() => { setRecuperarEmail(''); setRecuperarMensaje(null); setOpenRecuperar(true) }}
+                sx={{
+                  fontSize: '0.8rem',
+                  color: theme.palette.secondary.main,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  '&:hover': { textDecoration: 'underline' },
+                }}
+              >
+                ¿Olvidaste tu contraseña?
+              </Typography>
+            </Box>
+
             <Button
               type="submit"
               fullWidth
@@ -349,6 +380,56 @@ const Login = () => {
         </Box>
       </Paper>
 
+      {/* ── Dialog recuperar contraseña ── */}
+      <Dialog open={openRecuperar} onClose={() => !recuperarLoading && setOpenRecuperar(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.1rem', color: theme.palette.text.dark }}>
+          Recuperar contraseña
+        </DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '8px !important' }}>
+          <Typography sx={{ color: theme.palette.text.secondary, fontSize: '0.88rem' }}>
+            Ingresa tu correo y te enviaremos una contraseña temporal.
+          </Typography>
+          <TextField
+            label="Correo electrónico"
+            type="email"
+            fullWidth
+            size="small"
+            value={recuperarEmail}
+            onChange={(e) => setRecuperarEmail(e.target.value)}
+            disabled={recuperarLoading}
+          />
+          {recuperarMensaje && (
+            <Alert severity={recuperarMensaje.tipo} sx={{ fontSize: '0.82rem' }}>
+              {recuperarMensaje.texto}
+            </Alert>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2.5, pt: 1, gap: 1.5 }}>
+          <Button
+            onClick={() => setOpenRecuperar(false)}
+            disabled={recuperarLoading}
+            disableRipple
+            sx={{ textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 1.5 }}
+          >
+            Cancelar
+          </Button>
+          <Button
+            onClick={handleRecuperar}
+            variant="contained"
+            disableRipple
+            disabled={recuperarLoading || !recuperarEmail}
+            sx={{
+              textTransform: 'none', borderRadius: 1.5, fontWeight: 600, minWidth: 100,
+              backgroundColor: theme.palette.secondary.main,
+              '&:hover': { backgroundColor: theme.palette.secondary.dark },
+            }}
+          >
+            {recuperarLoading ? <CircularProgress size={18} sx={{ color: '#fff' }} /> : 'Enviar'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ── Dialog registro ── */}
       <Dialog open={openRegister} onClose={() => setOpenRegister(false)} maxWidth="sm" fullWidth>
         <DialogTitle sx={{
           p: 3, textAlign: 'center',
