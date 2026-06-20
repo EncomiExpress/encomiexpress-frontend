@@ -39,9 +39,6 @@ export const fetchWithAuth = async (endpoint, options = {}) => {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const controller = new AbortController();
-  const signal = controller.signal;
-
   const ejecutarPeticion = async (authToken) => {
     const reqHeaders = { ...headers };
     if (authToken) {
@@ -51,11 +48,16 @@ export const fetchWithAuth = async (endpoint, options = {}) => {
     const response = await fetch(`${API_URL}${endpoint}`, {
       ...options,
       headers: reqHeaders,
-      signal,
       cache: 'no-store',
     });
 
     const data = await response.json();
+
+    if (response.status === 401) {
+      const error = new Error(data.message || 'No autorizado');
+      error.status = 401;
+      throw error;
+    }
 
     if (response.status === 403) {
       const error = new Error('Sin permisos');
@@ -72,46 +74,44 @@ export const fetchWithAuth = async (endpoint, options = {}) => {
 
   try {
     return await ejecutarPeticion(token);
-  } catch (error) {
-    if (error.status !== 401) {
-      throw error;
-    }
+  } catch (originalError) {
+    if (originalError.status !== 401) throw originalError;
 
-    const refreshToken = localStorage.getItem('refreshToken');
-    if (!refreshToken) {
-      clearAuthData();
-      const authError = new Error('Sesión expirada. Por favor inicia sesión de nuevo.');
-      authError.status = 401;
-      throw authError;
-    }
+    // Intentar renovar con refresh token
+    const storedRefreshToken = localStorage.getItem('refreshToken');
+    const refreshTokenValido = storedRefreshToken && storedRefreshToken !== 'undefined';
 
-    try {
-      const refreshRes = await fetch(`${API_URL}/auth/refresh`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken }),
-        signal,
-      });
+    if (refreshTokenValido) {
+      let nuevoToken = null;
+      try {
+        const refreshRes = await fetch(`${API_URL}/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken: storedRefreshToken }),
+        });
+        const refreshData = await refreshRes.json();
 
-      const refreshData = await refreshRes.json();
-
-      if (!refreshRes.ok || !refreshData.success) {
-        clearAuthData();
-        const authError = new Error('Sesión expirada. Por favor inicia sesión de nuevo.');
-        authError.status = 401;
-        throw authError;
+        if (refreshRes.ok && refreshData.success && refreshData.data?.token) {
+          nuevoToken = refreshData.data.token;
+        }
+      } catch {
+        // Error de red durante el refresh — tratar como sesión expirada
       }
 
-      const nuevoToken = refreshData.data.token;
-      localStorage.setItem('token', nuevoToken);
-
-      return await ejecutarPeticion(nuevoToken);
-    } catch (refreshError) {
-      clearAuthData();
-      const authError = new Error('Sesión expirada. Por favor inicia sesión de nuevo.');
-      authError.status = 401;
-      throw authError;
+      if (nuevoToken) {
+        localStorage.setItem('token', nuevoToken);
+        window.dispatchEvent(new CustomEvent('encomi:token-refreshed', { detail: { token: nuevoToken } }));
+        return await ejecutarPeticion(nuevoToken);
+      }
     }
+
+    // Sin refresh token válido o el refresh falló — notificar sesión expirada.
+    // Solo dispara el evento si había un token activo (evita falsos positivos en login/register).
+    if (token) {
+      window.dispatchEvent(new CustomEvent('encomi:session-expired'));
+    }
+
+    throw originalError;
   }
 };
 

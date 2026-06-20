@@ -3,6 +3,7 @@ import { Box } from '@mui/material'
 import LayoutAdmin from './shared/components/LayoutAdmin.jsx'
 import { useAuth } from './shared/contexts/AuthContext.jsx'
 import { PERMISOS } from './shared/contexts/AuthContext.jsx'
+import SessionExpiredDialog from './shared/components/SessionExpiredDialog.jsx'
 
 // Página pública principal
 import Home from './shared/components/Home.jsx'
@@ -99,6 +100,8 @@ const PrivateRoute = ({ children, permisosRequeridos = [] }) => {
 
 const AppRoutes = () => {
   return (
+    <>
+    <SessionExpiredDialog />
     <Routes>
       {/* Ruta raíz con Home directamente */}
       <Route path="/" element={<Home />} />
@@ -167,6 +170,7 @@ const AppRoutes = () => {
       {/* Cualquier ruta no reconocida redirige al inicio */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </>
   )
 }
 

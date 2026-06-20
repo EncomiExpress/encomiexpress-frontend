@@ -24,6 +24,7 @@ const Login = () => {
   const [error, setError] = useState('')
   const [openRegister, setOpenRegister] = useState(false)
   const [cargando, setCargando] = useState(false)
+  const [apiCargando, setApiCargando] = useState(false)
   const [tipoCarga, setTipoCarga] = useState(TIPOS_CARGA.CIRCULAR)
   const [registerData, setRegisterData] = useState({
     nombre: '',
@@ -41,48 +42,48 @@ const Login = () => {
   const [recuperarLoading, setRecuperarLoading] = useState(false)
   const [recuperarMensaje, setRecuperarMensaje] = useState(null) // { tipo, texto }
 
-  const { login, registrarUsuario, usuario, loading } = useAuth()
+  const { login, registrarUsuario, usuario, loading, sessionExpired } = useAuth()
   const navigate = useNavigate()
   const theme = useTheme()
 
+  // No navegar mientras cargando=true para que el LoadingScreen dure sus 2.5s completos
   useEffect(() => {
-    if (!loading && usuario) {
+    if (!loading && !cargando && !apiCargando && usuario) {
       navigate('/dashboard', { replace: true })
     }
-  }, [usuario, loading, navigate])
+  }, [usuario, loading, cargando, apiCargando, navigate])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
-
-    setCargando(true)
-    setTipoCarga(TIPOS_CARGA.CIRCULAR)
+    setApiCargando(true)
 
     try {
       const resultado = await login(email, password)
 
       if (resultado.success) {
-        const rolUsuario = resultado.usuario?.rol?.toLowerCase() || ''
+        const rolUsuario = resultado.usuario?.rol?.nombre?.toLowerCase() || ''
+        let tipo = TIPOS_CARGA.CIRCULAR
         if (rolUsuario.includes('admin') || rolUsuario.includes('administrador')) {
-          setTipoCarga(TIPOS_CARGA.CAMION)
+          tipo = TIPOS_CARGA.CAMION
         } else if (rolUsuario.includes('conductor')) {
-          setTipoCarga(TIPOS_CARGA.PULSO)
+          tipo = TIPOS_CARGA.PULSO
         } else if (rolUsuario.includes('vendedor') || rolUsuario.includes('venta')) {
-          setTipoCarga(TIPOS_CARGA.ESPIRAL)
-        } else {
-          setTipoCarga(TIPOS_CARGA.CIRCULAR)
+          tipo = TIPOS_CARGA.ESPIRAL
         }
+        setTipoCarga(tipo)
+        setApiCargando(false)
+        setCargando(true)
 
         setTimeout(() => {
-          setCargando(false)
           navigate('/dashboard', { replace: true })
         }, 2500)
       } else {
-        setCargando(false)
+        setApiCargando(false)
         setError(resultado.mensaje)
       }
     } catch {
-      setCargando(false)
+      setApiCargando(false)
       setError('Error al iniciar sesión')
     }
   }
@@ -260,6 +261,11 @@ const Login = () => {
         </Box>
 
         <Box sx={{ p: 4 }}>
+          {sessionExpired && !error && (
+            <Alert severity="warning" sx={{ mb: 3, borderRadius: 2 }}>
+              Tu sesión ha expirado. Inicia sesión nuevamente para continuar.
+            </Alert>
+          )}
           {error && (
             <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
               {error}
@@ -343,7 +349,7 @@ const Login = () => {
               variant="contained"
               size="large"
               endIcon={<LoginIcon />}
-              disabled={cargando}
+              disabled={cargando || apiCargando}
               sx={{
                 backgroundColor: theme.palette.primary.main,
                 borderRadius: 2,
@@ -358,7 +364,7 @@ const Login = () => {
                 },
               }}
             >
-              {cargando ? 'Ingresando...' : 'Iniciar Sesión'}
+              {cargando || apiCargando ? 'Ingresando...' : 'Iniciar Sesión'}
             </Button>
           </form>
 

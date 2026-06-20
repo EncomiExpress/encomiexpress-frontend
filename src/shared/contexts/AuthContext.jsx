@@ -82,20 +82,77 @@ export const AuthProvider = ({ children }) => {
   const [usuario, setUsuario] = useState(null)
   const [token, setToken] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [sessionExpired, setSessionExpired] = useState(false)
 
-  console.log('✅ AuthProvider montado')
-
-  // Al iniciar, restaurar sesión desde localStorage
+  // Escuchar evento de sesión expirada mid-session (disparado por fetchWithAuth al recibir 401)
   useEffect(() => {
-    const tokenGuardado = localStorage.getItem('token')
-    const usuarioGuardado = localStorage.getItem('usuario')
-
-    if (tokenGuardado && usuarioGuardado) {
-      setToken(tokenGuardado)
-      setUsuario(JSON.parse(usuarioGuardado))
+    const handleSessionExpired = () => {
+      // Limpiar credenciales del storage pero mantener `usuario` en estado
+      // para que SessionExpiredDialog distinga entre "nunca logueado" y "expirado en uso"
+      localStorage.removeItem('token')
+      localStorage.removeItem('refreshToken')
+      setToken(null)
+      setSessionExpired(true)
     }
 
-    setLoading(false)
+    // Sincronizar estado cuando fetchWithAuth renueva el access token silenciosamente
+    const handleTokenRefreshed = (e) => setToken(e.detail.token)
+
+    window.addEventListener('encomi:session-expired', handleSessionExpired)
+    window.addEventListener('encomi:token-refreshed', handleTokenRefreshed)
+    return () => {
+      window.removeEventListener('encomi:session-expired', handleSessionExpired)
+      window.removeEventListener('encomi:token-refreshed', handleTokenRefreshed)
+    }
+  }, [])
+
+  // Al iniciar, validar el token con el backend antes de restaurar la sesión
+  useEffect(() => {
+    const validateSession = async () => {
+      const tokenGuardado = localStorage.getItem('token')
+      const usuarioGuardado = localStorage.getItem('usuario')
+
+      if (!tokenGuardado || !usuarioGuardado) {
+        setLoading(false)
+        return
+      }
+
+      try {
+        const res = await fetch(`${API_URL}/auth/profile`, {
+          headers: { Authorization: `Bearer ${tokenGuardado}` }
+        })
+
+        if (res.status === 401) {
+          // Token expirado o inválido — limpiar sesión y marcar como expirada
+          localStorage.removeItem('token')
+          localStorage.removeItem('usuario')
+          localStorage.removeItem('refreshToken')
+          setSessionExpired(true)
+          setLoading(false)
+          return
+        }
+
+        if (!res.ok) {
+          // Otro error del servidor — mantener sesión local (puede ser problema de red)
+          setToken(tokenGuardado)
+          setUsuario(JSON.parse(usuarioGuardado))
+          setLoading(false)
+          return
+        }
+
+        // Token válido — restaurar sesión
+        setToken(tokenGuardado)
+        setUsuario(JSON.parse(usuarioGuardado))
+      } catch {
+        // Error de red — restaurar sesión de todos modos para no desloguear sin razón
+        setToken(tokenGuardado)
+        setUsuario(JSON.parse(usuarioGuardado))
+      }
+
+      setLoading(false)
+    }
+
+    validateSession()
   }, [])
 
   const login = async (email, password) => {
@@ -124,10 +181,11 @@ export const AuthProvider = ({ children }) => {
         rol: rolNombre ? { nombre: rolNombre } : null
       }
 
+      setSessionExpired(false)
       setToken(tokenNuevo)
       localStorage.setItem('token', tokenNuevo)
       localStorage.setItem('usuario', JSON.stringify(usuarioNormalizado))
-      localStorage.setItem('refreshToken', refreshTokenNuevo)
+      if (refreshTokenNuevo) localStorage.setItem('refreshToken', refreshTokenNuevo)
       setUsuario(usuarioNormalizado)
 
       return { success: true, usuario: usuarioNormalizado }
@@ -146,7 +204,6 @@ export const AuthProvider = ({ children }) => {
   }
 
   const tienePermiso = (permiso) => {
-    console.log('verificando permiso:', permiso, '| permisos del usuario:', usuario?.permisos)
     if (!usuario?.permisos) return false
     return usuario.permisos.includes(permiso)
   }
@@ -332,6 +389,7 @@ export const AuthProvider = ({ children }) => {
       usuario,
       token,
       loading,
+      sessionExpired,
       login,
       logout,
       refreshAccessToken,
