@@ -352,25 +352,9 @@ const ListarVenta = () => {
         <Box sx={{ p: 3.5 }}>
             <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
                 <Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <Typography variant="h5" fontWeight={700} color={theme.palette.text.primary}>
-                            Ventas
-                        </Typography>
-                        {!loading && !error && (
-                            <Chip
-                                label={`${total} registros`}
-                                size="small"
-                                sx={{
-                                    backgroundColor: '#F3F4F6',
-                                    color: theme.palette.text.secondary,
-                                    fontWeight: 500,
-                                    fontSize: '0.72rem',
-                                    height: 22,
-                                    borderRadius: 10,
-                                }}
-                            />
-                        )}
-                    </Box>
+                    <Typography variant="h5" fontWeight={700} color={theme.palette.text.primary}>
+                        Ventas
+                    </Typography>
                     <Typography variant="body2" color={theme.palette.text.secondary} mt={0.3}>
                         Gestiona las ventas y encomiendas registradas en el sistema.
                     </Typography>

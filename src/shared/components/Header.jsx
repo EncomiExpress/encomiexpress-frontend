@@ -5,16 +5,18 @@ import {
   DarkModeOutlined as MoonIcon,
   LightModeOutlined as SunIcon,
   PaletteOutlined as PaletteIcon,
+  LockResetOutlined as LockResetIcon,
   Logout as LogoutIcon,
   CheckRounded as CheckIcon,
-  LockResetOutlined as LockResetIcon,
   VisibilityOutlined as EyeIcon,
   VisibilityOffOutlined as EyeOffIcon,
+  Close,
 } from '@mui/icons-material'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import { useNavigate } from 'react-router-dom'
 import { useDarkMode } from '../contexts/ThemeContext.jsx'
 import { fetchWithAuth } from '../services/authService'
+import LogoutConfirmDialog from './LogoutConfirmDialog.jsx'
 
 const getGreeting = () => {
   const hour = new Date().getHours()
@@ -176,14 +178,14 @@ const Header = ({ collapsed }) => {
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               p: 1, borderRadius: '10px', cursor: 'pointer', transition: 'all 0.18s ease',
               '&:hover': {
-                backgroundColor: darkMode ? pal.primary.activeBg : 'rgba(26,46,110,0.05)',
-                '& svg': { color: darkMode ? pal.primary.main : '#483c3a' },
+                backgroundColor: pal.primary.activeBg,
+                '& svg': { color: pal.primary.main },
               },
             }}
           >
             {darkMode
               ? <SunIcon  sx={{ fontSize: '1.3rem', color: pal.primary.main, transition: 'color 0.18s ease' }} />
-              : <MoonIcon sx={{ fontSize: '1.3rem', color: '#8b8382',         transition: 'color 0.18s ease' }} />
+              : <MoonIcon sx={{ fontSize: '1.3rem', color: '#8b8382',      transition: 'color 0.18s ease' }} />
             }
           </Box>
 
@@ -274,31 +276,34 @@ const Header = ({ collapsed }) => {
           anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
           transformOrigin={{ vertical: 'top', horizontal: 'right' }}
           slotProps={{
-            paper: {
-              sx: {
-                mt: 1,
-                width: 260,
-                borderRadius: '16px',
-                border: `1px solid ${panelBorder}`,
-                boxShadow: darkMode ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(26,46,110,0.14)',
-                backgroundColor: panelBg,
-                overflow: 'hidden',
-              },
-            },
-          }}
-        >
-          <Box sx={{ p: 2.5 }}>
+                paper: {
+                  sx: {
+                    mt: 1,
+                    width: 260,
+                    borderRadius: '16px',
+                    border: `1px solid ${panelBorder}`,
+                    boxShadow: darkMode ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(26,46,110,0.14)',
+                    backgroundColor: panelBg,
+                    overflow: 'hidden',
+                  },
+                },
+              }}
+            >
+            <IconButton onClick={() => setPaletteAnchor(null)} sx={{ position: 'absolute', top: 11, right: 8, color: theme.palette.text.secondary }}>
+              <Close sx={{ fontSize: '1.3rem' }}/>
+            </IconButton>
+            <Box sx={{ p: 2.5, pt: 2.5 }}>
 
             {/* Encabezado */}
-            <Typography sx={{ fontWeight: 700, fontSize: '0.9rem', color: darkMode ? '#fff' : '#0f172a', mb: 0.5 }}>
+            <Typography sx={{ fontWeight: 700, fontSize: '0.96rem', color: darkMode ? '#fff' : '#0f172a', mb: 0.5 }}>
               Personalizar
             </Typography>
-            <Typography sx={{ fontSize: '0.75rem', color: labelColor, mb: 2.5 }}>
+            <Typography sx={{ fontSize: '0.8rem', color: labelColor, mb: 2.5 }}>
               Tema y color del panel
             </Typography>
 
             {/* ── Sección: Tema ── */}
-            <Typography sx={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.08em', color: labelColor, mb: 1.2, textTransform: 'uppercase' }}>
+            <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.08em', color: labelColor, mb: 1.2 }}>
               Tema
             </Typography>
             <Box sx={{ display: 'flex', gap: 1, mb: 2.5 }}>
@@ -327,7 +332,7 @@ const Header = ({ collapsed }) => {
             </Box>
 
             {/* ── Sección: Color ── */}
-            <Typography sx={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.08em', color: labelColor, mb: 1.2, textTransform: 'uppercase' }}>
+            <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.08em', color: labelColor, mb: 1.2 }}>
               Color
             </Typography>
             <Box sx={{ display: 'flex', gap: 1 }}>
@@ -411,41 +416,11 @@ const Header = ({ collapsed }) => {
         </Dialog>
 
         {/* ── Dialog logout ── */}
-        <Dialog open={openLogoutDialog} onClose={() => setOpenLogoutDialog(false)} maxWidth="xs" fullWidth>
-          <DialogTitle sx={{ fontWeight: 700, fontSize: '1.1rem', color: darkMode ? '#FFFFFF' : '#212121' }}>
-            ¿Cerrar sesión?
-          </DialogTitle>
-          <DialogContent>
-            <DialogContentText sx={{ color: darkMode ? '#A0A0A0' : 'rgba(33,33,33,0.45)', fontSize: '0.88rem' }}>
-              Estás a punto de salir del sistema. ¿Estás seguro de que deseas cerrar sesión?
-            </DialogContentText>
-          </DialogContent>
-          <DialogActions sx={{ px: 3, pb: 2.5, pt: 1, gap: 1.5 }}>
-            <Button
-              onClick={() => setOpenLogoutDialog(false)}
-              disableRipple
-              sx={{
-                textTransform: 'none', color: darkMode ? '#A0A0A0' : '#8A94A6', fontWeight: 500, borderRadius: 1.5,
-                '&:hover': { backgroundColor: darkMode ? '#2A2A2A' : '#F8F9FA', color: darkMode ? '#FFFFFF' : '#1a0e0c' },
-              }}
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={() => { logout(); navigate('/'); setOpenLogoutDialog(false) }}
-              variant="contained"
-              disableRipple
-              sx={{
-                textTransform: 'none', borderRadius: 1.5, fontWeight: 600,
-                backgroundColor: pal.primary.main,
-                boxShadow: `0 4px 14px ${pal.primary.activeBg}`,
-                '&:hover': { backgroundColor: pal.primary.dark, boxShadow: `0 6px 20px ${pal.primary.activeBg}` },
-              }}
-            >
-              Sí, cerrar sesión
-            </Button>
-          </DialogActions>
-        </Dialog>
+        <LogoutConfirmDialog
+          open={openLogoutDialog}
+          onClose={() => setOpenLogoutDialog(false)}
+          onConfirm={() => { logout(); navigate('/'); setOpenLogoutDialog(false) }}
+        />
 
       </Box>
     </>

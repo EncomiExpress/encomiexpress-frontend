@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useTheme } from '@mui/material/styles'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
-  Box, Typography, Collapse, Dialog, DialogTitle, DialogContent,
+  Box, Typography, Collapse, DialogTitle, DialogContent,
   DialogContentText, DialogActions, Button, Tooltip, IconButton,
 } from '@mui/material'
 import {
@@ -26,6 +26,7 @@ import logo from '../../assets/logo.png'
 import logoEE from '../../assets/logoEE.png'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import { useDarkMode } from '../contexts/ThemeContext.jsx'
+import LogoutConfirmDialog from './LogoutConfirmDialog.jsx'
 
 const SECTIONS = [
   {
@@ -42,8 +43,8 @@ const SECTIONS = [
     label: 'Transporte',
     items: [
       { id: 'propietarios', label: 'Propietarios',           icon: BadgeIcon,  path: '/transporte/propietarios' },
-      { id: 'vehiculos',    label: 'Vehículos',              icon: TruckIcon,  path: '/vehiculos/listar' },
       { id: 'conductores',  label: 'Conductores',            icon: DriverIcon, path: '/transporte/conductores' },
+      { id: 'vehiculos',    label: 'Vehículos',              icon: TruckIcon,  path: '/vehiculos/listar' },
       { id: 'destinos',     label: 'Destinos',               icon: DestIcon,   path: '/transporte/destinos' },
       { id: 'rutas',        label: 'Programación de rutas',  icon: RouteIcon,  path: '/transporte/rutas' },
       { id: 'anticipos',    label: 'Anticipos y Excedentes', icon: MoneyIcon,  path: '/anticipos/listar' },
@@ -279,7 +280,6 @@ const Sidebar = ({ collapsed, onToggleCollapsed }) => {
         px: collapsed ? 1 : 2.5,
         pt: 1.5,
         pb: collapsed ? 4.5 : 4,
-        borderBottom: `1px solid ${colors.border}`,
         display: 'flex',
         alignItems: 'center',
         justifyContent: collapsed ? 'center' : 'flex-start',
@@ -447,48 +447,12 @@ const Sidebar = ({ collapsed, onToggleCollapsed }) => {
         </Tooltip>
       </Box>
 
-      {/* ── DIALOG LOGOUT ── */}
-      <Dialog open={openLogoutDialog} onClose={() => setOpenLogoutDialog(false)} maxWidth="xs" fullWidth>
-        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.1rem', color: colors.textBase }}>
-          ¿Cerrar sesión?
-        </DialogTitle>
-        <DialogContent>
-          <DialogContentText sx={{ color: colors.textMuted, fontSize: '0.88rem' }}>
-            Estás a punto de salir del sistema. ¿Estás seguro de que deseas cerrar sesión?
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2.5, pt: 1, gap: 1.5 }}>
-          <Button
-            onClick={() => setOpenLogoutDialog(false)}
-            disableRipple
-            sx={{
-              textTransform: 'none', color: colors.textMuted, fontWeight: 500, borderRadius: 1.5,
-              '&:hover': {
-                backgroundColor: darkMode ? '#2A2A2A' : '#F8F9FA',
-                color: darkMode ? '#FFFFFF' : '#1a0e0c',
-              },
-            }}
-          >
-            Cancelar
-          </Button>
-          <Button
-            onClick={() => { logout(); navigate('/'); setOpenLogoutDialog(false) }}
-            variant="contained"
-            disableRipple
-            sx={{
-              textTransform: 'none', borderRadius: 1.5, fontWeight: 600,
-              backgroundColor: colors.primary,
-              boxShadow: `0 4px 14px ${pal.primary.activeBg}`,
-              '&:hover': {
-                backgroundColor: pal.primary.dark,
-                boxShadow: `0 6px 20px ${pal.primary.activeBg}`,
-              },
-            }}
-          >
-            Sí, cerrar sesión
-          </Button>
-        </DialogActions>
-      </Dialog>
+       {/* ── Dialog logout ── */}
+        <LogoutConfirmDialog
+          open={openLogoutDialog}
+          onClose={() => setOpenLogoutDialog(false)}
+          onConfirm={() => { logout(); navigate('/'); setOpenLogoutDialog(false) }}
+        />
     </Box>
   )
 }

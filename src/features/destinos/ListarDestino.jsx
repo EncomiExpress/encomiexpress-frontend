@@ -115,16 +115,9 @@ const ListarDestino = () => {
             {/* ── Encabezado ── */}
             <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
                 <Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <Typography variant="h5" fontWeight={700} color={theme.palette.text.primary}>
-                            Destinos
-                        </Typography>
-                        <Chip
-                            label={`${total} registros`}
-                            size="small"
-                            sx={{ backgroundColor: '#F3F4F6', color: theme.palette.text.secondary, fontWeight: 500, fontSize: '0.72rem', height: 22, borderRadius: 10 }}
-                        />
-                    </Box>
+                    <Typography variant="h5" fontWeight={700} color={theme.palette.text.primary}>
+                        Destinos
+                    </Typography>
                     <Typography variant="body2" color={theme.palette.text.secondary} mt={0.3}>
                         Gestiona los destinos de entrega registrados en el sistema.
                     </Typography>

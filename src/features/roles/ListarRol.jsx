@@ -287,23 +287,9 @@ const ListarRol = () => {
         <Box sx={{ p: 3.5 }}>
             <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
                 <Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <Typography variant="h5" fontWeight={700} color={theme.palette.text.primary}>
-                            Roles
-                        </Typography>
-                        <Chip
-                            label={`${roles.length} registros`}
-                            size="small"
-                            sx={{
-                                backgroundColor: '#F3F4F6',
-                                color: theme.palette.text.secondary,
-                                fontWeight: 500,
-                                fontSize: '0.72rem',
-                                height: 22,
-                                borderRadius: 10,
-                            }}
-                        />
-                    </Box>
+                    <Typography variant="h5" fontWeight={700} color={theme.palette.text.primary}>
+                        Roles
+                    </Typography>
                     <Typography variant="body2" color={theme.palette.text.secondary} mt={0.3}>
                         Gestiona los roles de usuario en el sistema.
                     </Typography>
