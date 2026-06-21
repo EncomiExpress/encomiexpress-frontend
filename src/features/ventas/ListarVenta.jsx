@@ -7,7 +7,7 @@ import {
     IconButton, Chip, Tooltip, InputAdornment,
     Button, Dialog, DialogTitle, DialogContent,
     DialogActions, Avatar, Select, MenuItem, Pagination, Snackbar, Alert,
-    CircularProgress, FormControl, InputLabel
+    CircularProgress, FormControl, InputLabel, TableSortLabel
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
@@ -263,23 +263,32 @@ const ListarVenta = () => {
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [ventaEditar, setVentaEditar] = useState(null)
+    const [sortBy, setSortBy] = useState({ field: 'fechaRegistro', dir: 'desc' })
 
     const fetchVentasBackend = useCallback(() => {
       fetchVentas({
         page,
         limit: rowsPerPage,
-        sortBy: 'fechaRegistro.desc',
+        sortBy: `${sortBy.field}.${sortBy.dir}`,
         estado: filtroEstadoEncomienda === 'todos' ? undefined : filtroEstadoEncomienda,
         estadoPago: filtroPago === 'todos' ? undefined : filtroPago,
         metodoPago: filtroMetodoPago === 'todos' ? undefined : filtroMetodoPago,
         habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
         q: busqueda.trim() || undefined,
       })
-    }, [page, rowsPerPage, filtroEstadoEncomienda, filtroPago, filtroMetodoPago, filtroHabilitado, busqueda, fetchVentas])
+    }, [page, rowsPerPage, filtroEstadoEncomienda, filtroPago, filtroMetodoPago, filtroHabilitado, busqueda, sortBy, fetchVentas])
 
     useEffect(() => {
       fetchVentasBackend()
     }, [fetchVentasBackend])
+
+    const handleSort = (field) => {
+        setSortBy(prev => prev.field === field
+            ? { field, dir: prev.dir === 'asc' ? 'desc' : 'asc' }
+            : { field, dir: 'asc' }
+        )
+        setPage(1)
+    }
 
     const limpiarFiltros = () => {
         setBusqueda('')
@@ -552,7 +561,21 @@ const ListarVenta = () => {
                                 <TableCell sx={thStyle}>Guía</TableCell>
                                 <TableCell sx={thStyle}>Destinatario</TableCell>
                                 <TableCell sx={thStyle}>Ruta</TableCell>
-                                <TableCell sx={thStyle}>Estado</TableCell>
+                                <TableCell sx={thStyle}>
+                                    <TableSortLabel
+                                        active={sortBy.field === 'estado'}
+                                        direction={sortBy.field === 'estado' ? sortBy.dir : 'asc'}
+                                        onClick={() => handleSort('estado')}
+                                        sx={{
+                                            color: 'inherit',
+                                            '&.Mui-active': { color: theme.palette.primary.main },
+                                            '& .MuiTableSortLabel-icon': { opacity: 0.4, fontSize: 16 },
+                                            '&.Mui-active .MuiTableSortLabel-icon': { opacity: 1 },
+                                        }}
+                                    >
+                                        Estado
+                                    </TableSortLabel>
+                                </TableCell>
                                 <TableCell sx={thStyle}>Pago</TableCell>
                                 <TableCell sx={thStyle}>Total</TableCell>
                                 <TableCell sx={{ ...thStyle, width: 130 }}>Acciones</TableCell>

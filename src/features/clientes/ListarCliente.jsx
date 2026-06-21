@@ -8,7 +8,7 @@ import {
     IconButton, Chip, Tooltip, InputAdornment,
     Button, Dialog, DialogTitle, DialogContent,
     DialogActions, Avatar, Select, MenuItem, Pagination, Snackbar, Alert,
-    CircularProgress, FormControl
+    CircularProgress, FormControl, TableSortLabel
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
@@ -144,6 +144,7 @@ const ListarCliente = () => {
     const { tienePermiso, PERMISOS } = useAuth()
     const [busqueda, setBusqueda] = useState('')
     const [filtroEstado, setFiltroEstado] = useState('todo')
+    const [sortBy, setSortBy] = useState({ field: 'nombre', dir: 'asc' })
     const [page, setPage] = useState(1)
     const [rowsPerPage, setRowsPerPage] = useState(5)
     const [clienteConsulta, setClienteConsulta] = useState(null)
@@ -151,6 +152,14 @@ const ListarCliente = () => {
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [clienteEditar, setClienteEditar] = useState(null)
+
+    const handleSort = (field) => {
+        setSortBy(prev => prev.field === field
+            ? { field, dir: prev.dir === 'asc' ? 'desc' : 'asc' }
+            : { field, dir: 'asc' }
+        )
+        setPage(1)
+    }
 
     const limpiarFiltros = () => {
         setBusqueda('')
@@ -168,7 +177,7 @@ const ListarCliente = () => {
                 limit: rowsPerPage,
                 habilitado: filtroEstado === 'todo' ? undefined : filtroEstado === 'habilitado' ? 'true' : 'false',
                 q: busqueda.trim() || undefined,
-                sortBy: 'idCliente.asc',
+                sortBy: `${sortBy.field}.${sortBy.dir}`,
             })
         }
 
@@ -177,13 +186,13 @@ const ListarCliente = () => {
             active = false
             controller.abort()
         }
-    }, [page, rowsPerPage, filtroEstado, busqueda, fetchClientes])
+    }, [page, rowsPerPage, filtroEstado, busqueda, sortBy, fetchClientes])
 
     const handleToggleHabilitado = async (id, nuevoEstado) => {
         try {
             await toggleHabilitadoCliente(id)
             setSnackbar({ open: true, message: `Cliente ${nuevoEstado ? 'habilitado' : 'inhabilitado'} correctamente`, severity: 'success' })
-            await fetchClientes(undefined, { page, limit: rowsPerPage, habilitado: filtroEstado === 'todo' ? undefined : filtroEstado === 'habilitado' ? 'true' : 'false', q: busqueda.trim() || undefined, sortBy: 'idCliente.asc' })
+            await fetchClientes(undefined, { page, limit: rowsPerPage, habilitado: filtroEstado === 'todo' ? undefined : filtroEstado === 'habilitado' ? 'true' : 'false', q: busqueda.trim() || undefined, sortBy: `${sortBy.field}.${sortBy.dir}` })
         } catch (err) {
             setSnackbar({ open: true, message: 'Error al cambiar el estado', severity: 'error' })
         }
@@ -358,7 +367,21 @@ const ListarCliente = () => {
                     <Table>
                         <TableHead>
                             <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
-                                <TableCell sx={thStyle}>Nombre</TableCell>
+                                <TableCell sx={thStyle}>
+                                    <TableSortLabel
+                                        active={sortBy.field === 'nombre'}
+                                        direction={sortBy.field === 'nombre' ? sortBy.dir : 'asc'}
+                                        onClick={() => handleSort('nombre')}
+                                        sx={{
+                                            color: 'inherit',
+                                            '&.Mui-active': { color: theme.palette.primary.main },
+                                            '& .MuiTableSortLabel-icon': { opacity: 0.4, fontSize: 16 },
+                                            '&.Mui-active .MuiTableSortLabel-icon': { opacity: 1 },
+                                        }}
+                                    >
+                                        Nombre
+                                    </TableSortLabel>
+                                </TableCell>
                                 <TableCell sx={thStyle}>Identificación</TableCell>
                                 <TableCell sx={thStyle}>Teléfono</TableCell>
                                 <TableCell sx={thStyle}>Email</TableCell>
@@ -367,7 +390,7 @@ const ListarCliente = () => {
                         </TableHead>
 
                         <TableBody>
-                            {loading ? (
+                            {loading && clientes.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={5} align="center" sx={{ py: 7 }}>
                                         <CircularProgress size={28} sx={{ color: theme.palette.primary.main }} />

@@ -1,12 +1,13 @@
 import { useTheme } from '@mui/material/styles'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useAuth, PERMISOS } from '../../shared/contexts/AuthContext.jsx'
 import {
     Box, Typography, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, TextField,
     IconButton, Tooltip, InputAdornment,
     Button, Dialog, DialogTitle, DialogContent,
-    DialogActions, Select, MenuItem, Pagination, Chip, Avatar, Snackbar, Alert
+    DialogActions, Select, MenuItem, Pagination, Chip, Avatar, Snackbar, Alert,
+    TableSortLabel, CircularProgress
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
@@ -215,10 +216,13 @@ const ListarRol = () => {
     const { tienePermiso, PERMISOS, getRolesBackend, toggleHabilitadoRol, eliminarRolBackend } = useAuth()
 
     const [roles, setRoles] = useState([])
+    const [total, setTotal] = useState(0)
+    const [loading, setLoading] = useState(true)
     const [busqueda, setBusqueda] = useState('')
+    const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
+    const [sortBy, setSortBy] = useState({ field: 'nombre', dir: 'asc' })
     const [page, setPage] = useState(1)
     const [rowsPerPage, setRowsPerPage] = useState(10)
-    const [cargando, setCargando] = useState(false)
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [rolEditar, setRolEditar] = useState(null)
@@ -226,6 +230,37 @@ const ListarRol = () => {
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' })
 
     const puedeRegistrar = tienePermiso(PERMISOS.REGISTRAR_ROL)
+
+    const cargarRoles = useCallback(async () => {
+        setLoading(true)
+        const respuesta = await getRolesBackend({
+            page,
+            limit: rowsPerPage,
+            sortBy: `${sortBy.field}.${sortBy.dir}`,
+            habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
+            q: busqueda.trim() || undefined,
+        })
+        if (respuesta.success) {
+            setRoles(respuesta.data || [])
+            setTotal(respuesta.total ?? (respuesta.data || []).length)
+        } else {
+            setRoles([])
+            setTotal(0)
+        }
+        setLoading(false)
+    }, [getRolesBackend, page, rowsPerPage, sortBy, filtroHabilitado, busqueda])
+
+    useEffect(() => {
+        cargarRoles()
+    }, [cargarRoles])
+
+    const handleSort = (field) => {
+        setSortBy(prev => prev.field === field
+            ? { field, dir: prev.dir === 'asc' ? 'desc' : 'asc' }
+            : { field, dir: 'asc' }
+        )
+        setPage(1)
+    }
 
     const handleToggleHabilitado = async (id, habilitadoActual) => {
         try {
@@ -245,7 +280,7 @@ const ListarRol = () => {
         try {
             const respuesta = await eliminarRolBackend(id)
             if (respuesta.success) {
-                setRoles(roles.filter(r => r.id !== id))
+                cargarRoles()
                 setSnackbar({ open: true, message: respuesta.message, severity: 'success' })
             } else {
                 setSnackbar({ open: true, message: respuesta.message || 'Error al eliminar el rol', severity: 'error' })
@@ -255,33 +290,19 @@ const ListarRol = () => {
         }
     }
 
-    useEffect(() => {
-        const cargarRoles = async () => {
-            setCargando(true)
-            const respuesta = await getRolesBackend()
-            if (respuesta.success) {
-                setRoles(respuesta.data || [])
-            } else {
-                console.error('Error al cargar roles:', respuesta.message)
-                setRoles([])
-            }
-            setCargando(false)
-        }
-        cargarRoles()
-    }, [getRolesBackend])
+    const limpiarFiltros = () => {
+        setBusqueda('')
+        setFiltroHabilitado('todo')
+        setPage(1)
+    }
 
-    const rolesFiltrados = roles.filter(r => {
-        const q = busqueda.toLowerCase().trim()
-        if (!q) return true
-        return r.nombre.toLowerCase().includes(q) ||
-            (r.descripcion || '').toLowerCase().includes(q)
-    })
+    const hayFiltrosActivos = busqueda.trim() !== '' || filtroHabilitado !== 'todo'
 
-    const totalPages = Math.max(1, Math.ceil(rolesFiltrados.length / rowsPerPage))
+    const totalPages = Math.max(1, Math.ceil(total / rowsPerPage))
     const safePage = Math.min(page, totalPages)
-    const paginatedRoles = rolesFiltrados.slice((safePage - 1) * rowsPerPage, safePage * rowsPerPage)
-    const from = rolesFiltrados.length === 0 ? 0 : (safePage - 1) * rowsPerPage + 1
-    const to = Math.min(safePage * rowsPerPage, rolesFiltrados.length)
+    const from = total === 0 ? 0 : (safePage - 1) * rowsPerPage + 1
+    const to = Math.min(safePage * rowsPerPage, total)
+    const paginatedRoles = roles
 
     return (
         <Box sx={{ p: 3.5 }}>
@@ -316,7 +337,46 @@ const ListarRol = () => {
                 )}
             </Box>
 
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
+                <Box sx={{
+                    display: 'inline-flex',
+                    backgroundColor: theme.palette.primary.light,
+                    borderRadius: 4,
+                    p: '4px',
+                    gap: '5px',
+                }}>
+                    {[{ value: 'todo', label: 'Todo' }, { value: 'habilitado', label: 'Habilitado' }, { value: 'inhabilitado', label: 'Inhabilitado' }].map(f => (
+                        <Button
+                            key={f.value}
+                            onClick={() => { setFiltroHabilitado(f.value); setPage(1) }}
+                            size="small"
+                            disableElevation
+                            disableRipple
+                            sx={{
+                                borderRadius: 3,
+                                textTransform: 'none',
+                                fontSize: '0.75rem',
+                                px: 2,
+                                py: 0.5,
+                                minWidth: 0,
+                                fontWeight: filtroHabilitado === f.value ? 600 : 400,
+                                backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
+                                color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.secondary,
+                                boxShadow: filtroHabilitado === f.value ? '0 1px 4px rgba(0,0,0,0.12)' : 'none',
+                                border: 'none',
+                                '&:hover': {
+                                    backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
+                                    color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.medium,
+                                    border: 'none',
+                                },
+                            }}
+                        >
+                            {f.label}
+                        </Button>
+                    ))}
+                </Box>
+
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                 <TextField
                     size="small"
                     placeholder="Buscar roles..."
@@ -352,6 +412,16 @@ const ListarRol = () => {
                         }
                     }}
                 />
+                {hayFiltrosActivos && (
+                    <Chip
+                        label="Limpiar"
+                        size="small"
+                        icon={<ClearIcon sx={{ fontSize: '14px !important' }} />}
+                        onClick={limpiarFiltros}
+                        sx={{ fontSize: '0.72rem', height: 28, cursor: 'pointer', backgroundColor: theme.palette.primary.light, color: theme.palette.primary.main }}
+                    />
+                )}
+                </Box>
             </Box>
 
             <Paper elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 3, overflow: 'hidden' }}>
@@ -359,7 +429,21 @@ const ListarRol = () => {
                     <Table>
                         <TableHead>
                             <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
-                                <TableCell sx={thStyle}>Rol</TableCell>
+                                <TableCell sx={thStyle}>
+                                    <TableSortLabel
+                                        active={sortBy.field === 'nombre'}
+                                        direction={sortBy.field === 'nombre' ? sortBy.dir : 'asc'}
+                                        onClick={() => handleSort('nombre')}
+                                        sx={{
+                                            color: 'inherit',
+                                            '&.Mui-active': { color: theme.palette.primary.main },
+                                            '& .MuiTableSortLabel-icon': { opacity: 0.4, fontSize: 16 },
+                                            '&.Mui-active .MuiTableSortLabel-icon': { opacity: 1 },
+                                        }}
+                                    >
+                                        Rol
+                                    </TableSortLabel>
+                                </TableCell>
                                 <TableCell sx={thStyle}>Descripción</TableCell>
                                 <TableCell sx={thStyle}>Permisos</TableCell>
                                 <TableCell sx={{ ...thStyle, width: 130 }}>Acciones</TableCell>
@@ -367,11 +451,20 @@ const ListarRol = () => {
                         </TableHead>
 
                         <TableBody>
-                            {paginatedRoles.length === 0 ? (
+                            {loading && roles.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={4} align="center" sx={{ py: 7 }}>
+                                        <CircularProgress size={28} sx={{ color: theme.palette.primary.main }} />
+                                        <Typography variant="body2" color={theme.palette.text.secondary} mt={1.5}>
+                                            Cargando roles...
+                                        </Typography>
+                                    </TableCell>
+                                </TableRow>
+                            ) : paginatedRoles.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={4} align="center" sx={{ py: 7 }}>
                                         <Typography color={theme.palette.text.secondary} variant="body2">
-                                            {roles.length === 0
+                                            {total === 0
                                                 ? 'No hay roles registrados en el sistema.'
                                                 : 'No se encontraron roles que coincidan con la búsqueda.'
                                             }
@@ -479,7 +572,7 @@ const ListarRol = () => {
 
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
                 <Typography variant="body2" color={theme.palette.text.secondary} fontWeight={500}>
-                    Mostrando {from}–{to} de {rolesFiltrados.length} resultado{rolesFiltrados.length !== 1 ? 's' : ''}
+                    Mostrando {from}–{to} de {total} resultado{total !== 1 ? 's' : ''}
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -560,12 +653,9 @@ const ListarRol = () => {
             <RegistrarRol
                 open={modalRegistrarOpen}
                 onClose={() => setModalRegistrarOpen(false)}
-                onSuccess={async () => {
-                    const respuesta = await getRolesBackend()
-                    if (respuesta.success) {
-                        setRoles(respuesta.data || [])
-                    }
-                    setSnackbar({ open: true, message: respuesta.success ? 'Rol registrado correctamente' : respuesta.message, severity: respuesta.success ? 'success' : 'error' })
+                onSuccess={() => {
+                    cargarRoles()
+                    setSnackbar({ open: true, message: 'Rol registrado correctamente', severity: 'success' })
                 }}
             />
 
@@ -573,12 +663,9 @@ const ListarRol = () => {
                 open={modalActualizarOpen}
                 onClose={() => { setModalActualizarOpen(false); setRolEditar(null) }}
                 rol={rolEditar}
-                onSuccess={async () => {
-                    const respuesta = await getRolesBackend()
-                    if (respuesta.success) {
-                        setRoles(respuesta.data || [])
-                    }
-                    setSnackbar({ open: true, message: respuesta.success ? 'Rol actualizado correctamente' : respuesta.message, severity: respuesta.success ? 'success' : 'error' })
+                onSuccess={() => {
+                    cargarRoles()
+                    setSnackbar({ open: true, message: 'Rol actualizado correctamente', severity: 'success' })
                 }}
             />
 

@@ -8,7 +8,7 @@ import {
     IconButton, Chip, Tooltip, InputAdornment,
     Button, Dialog, DialogTitle, DialogContent,
     DialogActions, Avatar, Select, MenuItem, Pagination, Snackbar, Alert,
-    CircularProgress, FormControl, InputLabel
+    CircularProgress, FormControl, InputLabel, TableSortLabel
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
@@ -272,6 +272,15 @@ const ListarAnticipoExcedente = () => {
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [anticipoEditar, setAnticipoEditar] = useState(null)
+    const [sortBy, setSortBy] = useState({ field: 'fechaEntrega', dir: 'desc' })
+
+    const handleSort = (field) => {
+        setSortBy(prev => prev.field === field
+            ? { field, dir: prev.dir === 'asc' ? 'desc' : 'asc' }
+            : { field, dir: 'asc' }
+        )
+        setPage(1)
+    }
 
     const limpiarFiltros = () => {
         setBusqueda('')
@@ -287,9 +296,9 @@ const ListarAnticipoExcedente = () => {
             q: busqueda.trim() || undefined,
             habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
             estado: filtroEstadoAnticipo === 'todos' ? undefined : filtroEstadoAnticipo,
-            sortBy: 'fechaEntrega.desc',
+            sortBy: `${sortBy.field}.${sortBy.dir}`,
         })
-    }, [page, rowsPerPage, busqueda, filtroHabilitado, filtroEstadoAnticipo, fetchAnticipos])
+    }, [page, rowsPerPage, busqueda, filtroHabilitado, filtroEstadoAnticipo, sortBy, fetchAnticipos])
 
     // Helpers para resolver nombres desde los arrays del contexto
     const getNombreConductor = (id) => {
@@ -511,7 +520,21 @@ const ListarAnticipoExcedente = () => {
                                 <TableCell sx={thStyle}>Anticipo</TableCell>
                                 <TableCell sx={thStyle}>Gastado</TableCell>
                                 <TableCell sx={thStyle}>Excedente</TableCell>
-                                <TableCell sx={thStyle}>F. Entrega</TableCell>
+                                <TableCell sx={thStyle}>
+                                    <TableSortLabel
+                                        active={sortBy.field === 'fechaEntrega'}
+                                        direction={sortBy.field === 'fechaEntrega' ? sortBy.dir : 'asc'}
+                                        onClick={() => handleSort('fechaEntrega')}
+                                        sx={{
+                                            color: 'inherit',
+                                            '&.Mui-active': { color: theme.palette.primary.main },
+                                            '& .MuiTableSortLabel-icon': { opacity: 0.4, fontSize: 16 },
+                                            '&.Mui-active .MuiTableSortLabel-icon': { opacity: 1 },
+                                        }}
+                                    >
+                                        F. Entrega
+                                    </TableSortLabel>
+                                </TableCell>
                                 <TableCell sx={thStyle}>Estado</TableCell>
                                 <TableCell sx={{ ...thStyle, width: 130 }}>Acciones</TableCell>
                             </TableRow>

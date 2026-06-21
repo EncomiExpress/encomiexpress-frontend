@@ -6,7 +6,7 @@ const ClienteContext = createContext()
 
 export const useClientes = () => useContext(ClienteContext)
 
-const normalize = (c) => ({ ...c, idCliente: c.id })
+const normalize = (c) => c
 
 export const ClienteProvider = ({ children }) => {
     const { token } = useAuth()

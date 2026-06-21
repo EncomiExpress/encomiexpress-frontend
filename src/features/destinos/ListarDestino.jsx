@@ -6,7 +6,7 @@ import {
     TableContainer, TableHead, TableRow, Chip, IconButton,
     TextField, InputAdornment, Snackbar, Alert,
     Tooltip, Button, Dialog, Avatar, CircularProgress,
-    Select, MenuItem, FormControl, Pagination
+    Select, MenuItem, FormControl, Pagination, TableSortLabel
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
@@ -55,6 +55,7 @@ const ListarDestino = () => {
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [destinoEditar, setDestinoEditar] = useState(null)
     const [togglingId, setTogglingId] = useState(null)
+    const [sortBy, setSortBy] = useState({ field: 'ciudad', dir: 'asc' })
 
     const { destinos, total, loading, error, fetchDestinos, toggleHabilitado } = useDestino()
     const { usuario, tienePermiso, PERMISOS } = useAuth()
@@ -65,14 +66,22 @@ const ListarDestino = () => {
         page,
         limit: rowsPerPage,
         habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
-        sortBy: 'idDestino.asc',
+        sortBy: `${sortBy.field}.${sortBy.dir}`,
         q: searchTerm.trim() || undefined,
       })
-    }, [page, rowsPerPage, filtroHabilitado, searchTerm, fetchDestinos])
+    }, [page, rowsPerPage, filtroHabilitado, searchTerm, sortBy, fetchDestinos])
 
     useEffect(() => {
       fetchDestinosBackend()
     }, [fetchDestinosBackend])
+
+    const handleSort = (field) => {
+        setSortBy(prev => prev.field === field
+            ? { field, dir: prev.dir === 'asc' ? 'desc' : 'asc' }
+            : { field, dir: 'asc' }
+        )
+        setPage(1)
+    }
 
     useEffect(() => {
       if (!usuario) {
@@ -229,7 +238,21 @@ const ListarDestino = () => {
                     <Table>
                         <TableHead>
                             <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
-                                <TableCell sx={thStyle}>Ciudad</TableCell>
+                                <TableCell sx={thStyle}>
+                                    <TableSortLabel
+                                        active={sortBy.field === 'ciudad'}
+                                        direction={sortBy.field === 'ciudad' ? sortBy.dir : 'asc'}
+                                        onClick={() => handleSort('ciudad')}
+                                        sx={{
+                                            color: 'inherit',
+                                            '&.Mui-active': { color: theme.palette.primary.main },
+                                            '& .MuiTableSortLabel-icon': { opacity: 0.4, fontSize: 16 },
+                                            '&.Mui-active .MuiTableSortLabel-icon': { opacity: 1 },
+                                        }}
+                                    >
+                                        Ciudad
+                                    </TableSortLabel>
+                                </TableCell>
                                 <TableCell sx={thStyle}>Departamento</TableCell>
                                 <TableCell sx={thStyle}>Tarifa Base</TableCell>
                                 <TableCell sx={thStyle}>Estado</TableCell>
@@ -279,9 +302,9 @@ const ListarDestino = () => {
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                                                 <Avatar sx={{
                                                     width: 34, height: 34,
-                                                    backgroundColor: destino.habilitado ? '#FFCDD2' : theme.palette.divider,
+                                                    backgroundColor: destino.habilitado ? theme.palette.avatarDefault.bg : theme.palette.avatarDisabled.bg,
                                                     fontSize: '0.73rem', fontWeight: 700,
-                                                    color: destino.habilitado ? '#C62828' : '#8E8E8E',
+                                                    color: destino.habilitado ? theme.palette.avatarDefault.color : theme.palette.avatarDisabled.color,
                                                 }}>
                                                     {(destino.ciudad?.[0] || '').toUpperCase()}
                                                 </Avatar>
@@ -303,7 +326,7 @@ const ListarDestino = () => {
                                                     ? `$${Number(destino.tarifaBase).toLocaleString('es-CO')}`
                                                     : '—'}
                                                 size="small"
-                                                sx={{ fontWeight: 600, backgroundColor: '#FEF2F2', color: theme.palette.primary.main, fontSize: '0.7rem' }}
+                                                sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.main, fontSize: '0.7rem' }}
                                             />
                                         </TableCell>
 
@@ -314,8 +337,8 @@ const ListarDestino = () => {
                                                 size="small"
                                                 sx={{
                                                     fontSize: '0.72rem', fontWeight: 600, height: 22, borderRadius: 10,
-                                                    backgroundColor: destino.habilitado ? '#E8F5E9' : '#FEF2F2',
-                                                    color: destino.habilitado ? '#2E7D32' : '#ef4444',
+                                                    backgroundColor: destino.habilitado ? theme.palette.status.success.bg : theme.palette.status.error.bg,
+                                                    color: destino.habilitado ? theme.palette.status.success.color : theme.palette.status.error.color,
                                                 }}
                                             />
                                         </TableCell>
@@ -469,7 +492,7 @@ const ListarDestino = () => {
                         </Box>
                         <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2.5 }}>Información del destino seleccionado</Typography>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5 }}>
-                            <Avatar sx={{ backgroundColor: '#FFCDD2', color: '#C62828', width: 70, height: 70, fontSize: '1.5rem', fontWeight: 700 }}>
+                            <Avatar sx={{ backgroundColor: theme.palette.avatarDefault.bg, color: theme.palette.avatarDefault.color, width: 70, height: 70, fontSize: '1.5rem', fontWeight: 700 }}>
                                 {(destinoVer.ciudad?.[0] || '').toUpperCase()}
                             </Avatar>
                             <Box>

@@ -6,7 +6,7 @@ import {
     TableContainer, TableHead, TableRow, Chip, IconButton,
     TextField, InputAdornment, Select, MenuItem, FormControl,
     Snackbar, Alert, Tooltip, Button, Dialog, DialogTitle, DialogContent, DialogActions,
-    Avatar, Pagination, CircularProgress
+    Avatar, Pagination, CircularProgress, TableSortLabel
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
@@ -56,6 +56,7 @@ const ListarPropietario = () => {
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [propietarioEditar, setPropietarioEditar] = useState(null)
+    const [sortBy, setSortBy] = useState({ field: 'nombre', dir: 'asc' })
 
     const { propietarios, total, loading, error, fetchPropietarios, toggleHabilitado } = usePropietario()
     const { usuario, tienePermiso, PERMISOS } = useAuth()
@@ -65,14 +66,22 @@ const ListarPropietario = () => {
         page,
         limit: rowsPerPage,
         habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
-        sortBy: 'idPropietario.asc',
+        sortBy: `${sortBy.field}.${sortBy.dir}`,
         q: searchTerm.trim() || undefined,
       })
-    }, [page, rowsPerPage, filtroHabilitado, searchTerm, fetchPropietarios])
+    }, [page, rowsPerPage, filtroHabilitado, searchTerm, sortBy, fetchPropietarios])
 
     useEffect(() => {
       fetchPropietariosBackend()
     }, [fetchPropietariosBackend])
+
+    const handleSort = (field) => {
+        setSortBy(prev => prev.field === field
+            ? { field, dir: prev.dir === 'asc' ? 'desc' : 'asc' }
+            : { field, dir: 'asc' }
+        )
+        setPage(1)
+    }
 
     useEffect(() => {
       if (!usuario) {
@@ -209,7 +218,21 @@ const ListarPropietario = () => {
                     <Table>
                         <TableHead>
                             <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
-                                <TableCell sx={thStyle}>Nombre</TableCell>
+                                <TableCell sx={thStyle}>
+                                    <TableSortLabel
+                                        active={sortBy.field === 'nombre'}
+                                        direction={sortBy.field === 'nombre' ? sortBy.dir : 'asc'}
+                                        onClick={() => handleSort('nombre')}
+                                        sx={{
+                                            color: 'inherit',
+                                            '&.Mui-active': { color: theme.palette.primary.main },
+                                            '& .MuiTableSortLabel-icon': { opacity: 0.4, fontSize: 16 },
+                                            '&.Mui-active .MuiTableSortLabel-icon': { opacity: 1 },
+                                        }}
+                                    >
+                                        Nombre
+                                    </TableSortLabel>
+                                </TableCell>
                                 <TableCell sx={thStyle}>Identificación</TableCell>
                                 <TableCell sx={thStyle}>Teléfono</TableCell>
                                 <TableCell sx={thStyle}>Email</TableCell>

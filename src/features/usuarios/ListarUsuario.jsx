@@ -7,7 +7,7 @@ import {
     IconButton, Chip, Tooltip, InputAdornment,
     Button, Dialog, DialogTitle, DialogContent,
     Avatar, Select, MenuItem, Pagination, Snackbar, Alert,
-    CircularProgress, FormControl
+    CircularProgress, FormControl, TableSortLabel
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
@@ -166,6 +166,7 @@ const ListarUsuario = () => {
 
     const [busqueda, setBusqueda] = useState('')
     const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
+    const [sortBy, setSortBy] = useState({ field: 'nombre', dir: 'asc' })
     const [page, setPage] = useState(1)
     const [rowsPerPage, setRowsPerPage] = useState(5)
     const [usuarioConsulta, setUsuarioConsulta] = useState(null)
@@ -181,7 +182,7 @@ const ListarUsuario = () => {
             const respuesta = await getUsuarios({
                 page,
                 limit: rowsPerPage,
-                sortBy: 'idUsuario.asc',
+                sortBy: `${sortBy.field}.${sortBy.dir}`,
                 habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
                 idRol: filtroRol || undefined,
                 q: busqueda.trim() || undefined,
@@ -193,7 +194,7 @@ const ListarUsuario = () => {
         } finally {
             setLoading(false)
         }
-    }, [getUsuarios, page, rowsPerPage, busqueda, filtroHabilitado, filtroRol])
+    }, [getUsuarios, page, rowsPerPage, busqueda, filtroHabilitado, filtroRol, sortBy])
 
     useEffect(() => {
         cargarUsuarios()
@@ -202,7 +203,7 @@ const ListarUsuario = () => {
     useEffect(() => {
         const cargarRoles = async () => {
             try {
-                const respuesta = await getRolesBackend()
+                const respuesta = await getRolesBackend({ habilitado: 'true' })
                 if (respuesta.success) {
                     setRoles(respuesta.data || [])
                 }
@@ -225,6 +226,14 @@ const ListarUsuario = () => {
         } catch (err) {
             setSnackbar({ open: true, message: 'Error al cambiar el estado', severity: 'error' })
         }
+    }
+
+    const handleSort = (field) => {
+        setSortBy(prev => prev.field === field
+            ? { field, dir: prev.dir === 'asc' ? 'desc' : 'asc' }
+            : { field, dir: 'asc' }
+        )
+        setPage(1)
     }
 
     const limpiarFiltros = () => {
@@ -424,7 +433,21 @@ const ListarUsuario = () => {
                     <Table>
                         <TableHead>
                             <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
-                                <TableCell sx={thStyle}>Nombre</TableCell>
+                                <TableCell sx={thStyle}>
+                                    <TableSortLabel
+                                        active={sortBy.field === 'nombre'}
+                                        direction={sortBy.field === 'nombre' ? sortBy.dir : 'asc'}
+                                        onClick={() => handleSort('nombre')}
+                                        sx={{
+                                            color: 'inherit',
+                                            '&.Mui-active': { color: theme.palette.primary.main },
+                                            '& .MuiTableSortLabel-icon': { opacity: 0.4, fontSize: 16 },
+                                            '&.Mui-active .MuiTableSortLabel-icon': { opacity: 1 },
+                                        }}
+                                    >
+                                        Nombre
+                                    </TableSortLabel>
+                                </TableCell>
                                 <TableCell sx={thStyle}>Identificación</TableCell>
                                 <TableCell sx={thStyle}>Teléfono</TableCell>
                                 <TableCell sx={thStyle}>Email</TableCell>
@@ -434,7 +457,7 @@ const ListarUsuario = () => {
                         </TableHead>
 
                         <TableBody>
-                            {loading ? (
+                            {loading && usuarios.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={6} align="center" sx={{ py: 7 }}>
                                         <CircularProgress size={28} sx={{ color: theme.palette.primary.main }} />

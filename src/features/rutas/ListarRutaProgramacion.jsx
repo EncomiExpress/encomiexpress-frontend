@@ -6,7 +6,7 @@ import {
     TableContainer, TableHead, TableRow, Chip, IconButton,
     TextField, InputAdornment, Select, MenuItem, FormControl,
     Snackbar, Alert, Tooltip, Button, Dialog, Avatar, CircularProgress,
-    Pagination
+    Pagination, TableSortLabel
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
@@ -102,6 +102,7 @@ const ListarRutaProgramacion = () => {
     const [rutaEditar, setRutaEditar]         = useState(null)
     const [page, setPage] = useState(1)
     const [rowsPerPage, setRowsPerPage] = useState(5)
+    const [sortBy, setSortBy] = useState({ field: 'fechaSalida', dir: 'desc' })
 
     const { rutasProgramadas, total, fetchRutasProgramadas, updateEstado, toggleHabilitado, loading } = useRutaProgramacion()
     const { getTransportes } = useTransporte()
@@ -120,7 +121,7 @@ const ListarRutaProgramacion = () => {
     const buildRutasParams = () => ({
         page,
         limit: rowsPerPage,
-        sortBy: 'fechaSalida.desc',
+        sortBy: `${sortBy.field}.${sortBy.dir}`,
         habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
         estado: filtroEstadoRuta === 'todo' ? undefined : filtroEstadoRuta,
         anio: filtroAnio || undefined,
@@ -131,7 +132,15 @@ const ListarRutaProgramacion = () => {
     useEffect(() => {
         if (!usuario) return
         fetchRutasProgramadas(buildRutasParams())
-    }, [fetchRutasProgramadas, page, rowsPerPage, searchTerm, filtroHabilitado, filtroEstadoRuta, filtroAnio, filtroMes, usuario])
+    }, [fetchRutasProgramadas, page, rowsPerPage, searchTerm, filtroHabilitado, filtroEstadoRuta, filtroAnio, filtroMes, sortBy, usuario])
+
+    const handleSort = (field) => {
+        setSortBy(prev => prev.field === field
+            ? { field, dir: prev.dir === 'asc' ? 'desc' : 'asc' }
+            : { field, dir: 'asc' }
+        )
+        setPage(1)
+    }
 
     // Vehículos en curso (para bloquear cambio de estado)
     const vehiculosOcupadosIds = useMemo(() => {
@@ -431,7 +440,21 @@ const resolveDestino = (ruta) =>
                         <TableHead>
                             <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
                                 <TableCell sx={thStyle}>Ruta</TableCell>
-                                <TableCell sx={thStyle}>Fecha</TableCell>
+                                <TableCell sx={thStyle}>
+                                    <TableSortLabel
+                                        active={sortBy.field === 'fechaSalida'}
+                                        direction={sortBy.field === 'fechaSalida' ? sortBy.dir : 'asc'}
+                                        onClick={() => handleSort('fechaSalida')}
+                                        sx={{
+                                            color: 'inherit',
+                                            '&.Mui-active': { color: theme.palette.primary.main },
+                                            '& .MuiTableSortLabel-icon': { opacity: 0.4, fontSize: 16 },
+                                            '&.Mui-active .MuiTableSortLabel-icon': { opacity: 1 },
+                                        }}
+                                    >
+                                        Fecha
+                                    </TableSortLabel>
+                                </TableCell>
                                 <TableCell sx={thStyle}>Hora Salida</TableCell>
                                 <TableCell sx={thStyle}>Vehículo</TableCell>
                                 <TableCell sx={thStyle}>Conductor</TableCell>

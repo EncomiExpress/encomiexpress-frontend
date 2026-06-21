@@ -45,7 +45,7 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
 
     useEffect(() => {
         const cargarRoles = async () => {
-            const respuesta = await getRolesBackend()
+            const respuesta = await getRolesBackend({ habilitado: 'true' })
             if (respuesta.success) {
                 setRolesDisponibles(respuesta.data || [])
             }

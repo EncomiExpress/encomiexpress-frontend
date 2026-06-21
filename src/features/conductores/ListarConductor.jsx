@@ -6,7 +6,7 @@ import {
     TableContainer, TableHead, TableRow, Chip, IconButton,
     TextField, InputAdornment, Select, MenuItem, FormControl,
     Snackbar, Alert, Tooltip, Button, Dialog, Avatar, CircularProgress,
-    Pagination
+    Pagination, TableSortLabel
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
@@ -94,6 +94,7 @@ const ListarConductor = () => {
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [conductorEditar, setConductorEditar] = useState(null)
+    const [sortBy, setSortBy] = useState({ field: 'nombre', dir: 'asc' })
 
     const { conductores, total, loading, fetchConductores, updateEstado, toggleHabilitado } = useConductor()
     const navigate = useNavigate()
@@ -110,14 +111,22 @@ const ListarConductor = () => {
         limit: rowsPerPage,
         estado: undefined,
         habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
-        sortBy: 'idConductor.asc',
+        sortBy: `${sortBy.field}.${sortBy.dir}`,
         q: searchTerm.trim() || undefined,
       })
-    }, [page, rowsPerPage, filtroHabilitado, searchTerm, fetchConductores])
+    }, [page, rowsPerPage, filtroHabilitado, searchTerm, sortBy, fetchConductores])
 
     useEffect(() => {
       fetchConductoresBackend()
     }, [fetchConductoresBackend])
+
+    const handleSort = (field) => {
+        setSortBy(prev => prev.field === field
+            ? { field, dir: prev.dir === 'asc' ? 'desc' : 'asc' }
+            : { field, dir: 'asc' }
+        )
+        setPage(1)
+    }
 
     const handleEstadoChange = async (id, nuevoEstado) => {
         const success = await updateEstado(id, nuevoEstado)
@@ -252,7 +261,21 @@ const ListarConductor = () => {
                     <Table>
                         <TableHead>
                             <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
-                                <TableCell sx={thStyle}>Nombre</TableCell>
+                                <TableCell sx={thStyle}>
+                                    <TableSortLabel
+                                        active={sortBy.field === 'nombre'}
+                                        direction={sortBy.field === 'nombre' ? sortBy.dir : 'asc'}
+                                        onClick={() => handleSort('nombre')}
+                                        sx={{
+                                            color: 'inherit',
+                                            '&.Mui-active': { color: theme.palette.primary.main },
+                                            '& .MuiTableSortLabel-icon': { opacity: 0.4, fontSize: 16 },
+                                            '&.Mui-active .MuiTableSortLabel-icon': { opacity: 1 },
+                                        }}
+                                    >
+                                        Nombre
+                                    </TableSortLabel>
+                                </TableCell>
                                 <TableCell sx={thStyle}>Identificación</TableCell>
                                 <TableCell sx={thStyle}>Teléfono</TableCell>
                                 <TableCell sx={thStyle}>Email</TableCell>

@@ -6,7 +6,7 @@ import {
     TableContainer, TableHead, TableRow, Chip, IconButton,
     TextField, InputAdornment, Select, MenuItem, FormControl,
     Snackbar, Alert, Tooltip, Button, Dialog, Avatar,
-    Pagination
+    Pagination, TableSortLabel
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
@@ -93,6 +93,7 @@ const ListarTransporte = () => {
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [vehiculoEditar, setVehiculoEditar] = useState(null)
+    const [sortBy, setSortBy] = useState({ field: 'placa', dir: 'asc' })
 
     const { getTransportes, getTotal, updateEstado, toggleHabilitado, fetchVehiculos } = useTransporte()
     const { rutasProgramadas, fetchRutasProgramadas } = useRutaProgramacion()
@@ -127,10 +128,18 @@ const ListarTransporte = () => {
             limit: rowsPerPage,
             estado: filtroEstadoVehiculo === 'todo' ? undefined : filtroEstadoVehiculo,
             habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
-            sortBy: 'idVehiculo.asc',
+            sortBy: `${sortBy.field}.${sortBy.dir}`,
             q: searchTerm.trim() || undefined,
         })
-    }, [usuario, navigate, page, rowsPerPage, filtroEstadoVehiculo, filtroHabilitado, searchTerm, fetchVehiculos])
+    }, [usuario, navigate, page, rowsPerPage, filtroEstadoVehiculo, filtroHabilitado, searchTerm, sortBy, fetchVehiculos])
+
+    const handleSort = (field) => {
+        setSortBy(prev => prev.field === field
+            ? { field, dir: prev.dir === 'asc' ? 'desc' : 'asc' }
+            : { field, dir: 'asc' }
+        )
+        setPage(1)
+    }
 
     useEffect(() => {
         if (!usuario) return
@@ -374,7 +383,21 @@ const ListarTransporte = () => {
                     <Table>
                         <TableHead>
                             <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
-                                <TableCell sx={thStyle}>Placa</TableCell>
+                                <TableCell sx={thStyle}>
+                                    <TableSortLabel
+                                        active={sortBy.field === 'placa'}
+                                        direction={sortBy.field === 'placa' ? sortBy.dir : 'asc'}
+                                        onClick={() => handleSort('placa')}
+                                        sx={{
+                                            color: 'inherit',
+                                            '&.Mui-active': { color: theme.palette.primary.main },
+                                            '& .MuiTableSortLabel-icon': { opacity: 0.4, fontSize: 16 },
+                                            '&.Mui-active .MuiTableSortLabel-icon': { opacity: 1 },
+                                        }}
+                                    >
+                                        Placa
+                                    </TableSortLabel>
+                                </TableCell>
                                 <TableCell sx={thStyle}>Marca</TableCell>
                                 <TableCell sx={thStyle}>Modelo</TableCell>
                                 <TableCell sx={thStyle}>Color</TableCell>

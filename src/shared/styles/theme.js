@@ -32,7 +32,7 @@ const tokens = {
       hoverBg:       'rgba(255,255,255,0.06)',  // hover blanco muy tenue
       hoverIcon:     '#FFCDD2',
       hoverText:     '#FFFFFF',
-      gradientNav:   'linear-gradient(90deg, #b91c1c, #E57373, #b91c1c)',
+      gradientNav:   'linear-gradient(90deg, #4FC3F7, #E57373, #4FC3F7)',
     },
   },
   blue: {
@@ -58,7 +58,7 @@ const tokens = {
       hoverBg:       'rgba(255,255,255,0.06)',
       hoverIcon:     '#B3E5FC',
       hoverText:     '#FFFFFF',
-      gradientNav:   'linear-gradient(90deg, #0288D1, #4FC3F7, #0288D1)',
+      gradientNav:   'linear-gradient(90deg, #E57373, #4FC3F7, #E57373)',
     },
   },
 }

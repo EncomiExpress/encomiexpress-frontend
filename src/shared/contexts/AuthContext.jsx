@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 
 const AuthContext = createContext()
 export const useAuth = () => useContext(AuthContext)
@@ -259,7 +259,7 @@ export const AuthProvider = ({ children }) => {
   const recuperarPassword = async () => ({ success: true })
 
   // Backend real
-  const getUsuarios = async (params = {}) => {
+  const getUsuarios = useCallback(async (params = {}) => {
     try {
       const qs = new URLSearchParams()
       Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '') qs.set(k, v) })
@@ -272,11 +272,16 @@ export const AuthProvider = ({ children }) => {
     } catch {
       return { success: false, data: [], total: 0 }
     }
-  }
+  }, [token])
 
-  const getRolesBackend = async () => {
+  const getRolesBackend = useCallback(async (params = {}) => {
     try {
-      const res = await fetch(`${API_URL}/roles`, {
+      const qs = new URLSearchParams()
+      Object.entries(params).forEach(([k, v]) => {
+        if (v !== undefined && v !== null && v !== '') qs.set(k, v)
+      })
+      const suffix = qs.toString() ? `?${qs.toString()}` : ''
+      const res = await fetch(`${API_URL}/roles${suffix}`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       const data = await res.json()
@@ -285,13 +290,13 @@ export const AuthProvider = ({ children }) => {
         id: rol.id ?? rol.idRol,
         permisosIds: (rol.permisosIds || rol.permisos || []).map(id => Number(id))
       }))
-      return { success: res.ok, data: roles }
+      return { success: res.ok, data: roles, total: data.total ?? roles.length }
     } catch {
-      return { success: false, data: [] }
+      return { success: false, data: [], total: 0 }
     }
-  }
+  }, [token])
 
-  const getPermisosBackend = async () => {
+  const getPermisosBackend = useCallback(async () => {
     try {
       const res = await fetch(`${API_URL}/permisos`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -301,7 +306,7 @@ export const AuthProvider = ({ children }) => {
     } catch {
       return { success: false, data: [] }
     }
-  }
+  }, [token])
 
   const registrarRol = async (nombre, permisos, descripcion) => {
     try {
