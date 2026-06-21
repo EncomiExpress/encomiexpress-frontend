@@ -66,7 +66,11 @@ export const fetchWithAuth = async (endpoint, options = {}) => {
     }
 
     if (!response.ok) {
-      throw new Error(data.message || 'Error en la petición');
+      const error = new Error(data.message || 'Error en la petición');
+      error.status = response.status;
+      error.details = data.details;
+      error.errorCode = data.errorCode;
+      throw error;
     }
 
     return data;

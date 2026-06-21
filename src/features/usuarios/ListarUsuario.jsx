@@ -1,5 +1,5 @@
 import { useTheme } from '@mui/material/styles'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
 import {
     Box, Typography, Paper, Table, TableBody, TableCell,
@@ -159,12 +159,14 @@ const ListarUsuario = () => {
 
     const [usuarios, setUsuarios] = useState([])
     const [loading, setLoading] = useState(true)
+    const initialLoad = useRef(true)
     const [error, setError] = useState(null)
     const [total, setTotal] = useState(0)
     const [roles, setRoles] = useState([])
     const [filtroRol, setFiltroRol] = useState('')
 
     const [busqueda, setBusqueda] = useState('')
+    const [debouncedBusqueda, setDebouncedBusqueda] = useState('')
     const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
     const [sortBy, setSortBy] = useState({ field: 'nombre', dir: 'asc' })
     const [page, setPage] = useState(1)
@@ -174,6 +176,11 @@ const ListarUsuario = () => {
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [usuarioEditar, setUsuarioEditar] = useState(null)
+
+    useEffect(() => {
+        const t = setTimeout(() => { setDebouncedBusqueda(busqueda); setLoading(true) }, 300)
+        return () => clearTimeout(t)
+    }, [busqueda])
 
     const cargarUsuarios = useCallback(async () => {
         setLoading(true)
@@ -185,7 +192,7 @@ const ListarUsuario = () => {
                 sortBy: `${sortBy.field}.${sortBy.dir}`,
                 habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
                 idRol: filtroRol || undefined,
-                q: busqueda.trim() || undefined,
+                q: debouncedBusqueda.trim() || undefined,
             })
             setUsuarios(Array.isArray(respuesta.data) ? respuesta.data : [])
             setTotal(typeof respuesta.total === 'number' ? respuesta.total : (Array.isArray(respuesta.data) ? respuesta.data.length : 0))
@@ -193,8 +200,9 @@ const ListarUsuario = () => {
             setError(err.message)
         } finally {
             setLoading(false)
+            initialLoad.current = false
         }
-    }, [getUsuarios, page, rowsPerPage, busqueda, filtroHabilitado, filtroRol, sortBy])
+    }, [getUsuarios, page, rowsPerPage, debouncedBusqueda, filtroHabilitado, filtroRol, sortBy])
 
     useEffect(() => {
         cargarUsuarios()
@@ -416,15 +424,6 @@ const ListarUsuario = () => {
                         }}
                     />
 
-                    {hayFiltrosActivos && (
-                        <Chip
-                            label="Limpiar"
-                            size="small"
-                            icon={<ClearIcon sx={{ fontSize: '14px !important' }} />}
-                            onClick={limpiarFiltros}
-                            sx={{ fontSize: '0.72rem', height: 28, cursor: 'pointer', backgroundColor: theme.palette.primary.light, color: theme.palette.primary.main }}
-                        />
-                    )}
                 </Box>
             </Box>
 
@@ -457,7 +456,7 @@ const ListarUsuario = () => {
                         </TableHead>
 
                         <TableBody>
-                            {loading && usuarios.length === 0 ? (
+                            {loading && initialLoad.current ? (
                                 <TableRow>
                                     <TableCell colSpan={6} align="center" sx={{ py: 7 }}>
                                         <CircularProgress size={28} sx={{ color: theme.palette.primary.main }} />
@@ -474,13 +473,15 @@ const ListarUsuario = () => {
                                         </Typography>
                                     </TableCell>
                                 </TableRow>
-                            ) : usuarios.length === 0 ? (
+                            ) : !loading && usuarios.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={6} align="center" sx={{ py: 7 }}>
                                         <Typography color={theme.palette.text.secondary} variant="body2">
-                                            {total === 0
-                                                ? 'No hay usuarios registrados en el sistema.'
-                                                : 'No se encontraron usuarios que coincidan con los filtros aplicados.'
+                                            {filtroHabilitado !== 'todo' || filtroRol !== ''
+                                                ? 'No se encontraron usuarios que coincidan con los filtros aplicados.'
+                                                : debouncedBusqueda.trim()
+                                                    ? 'No se encontraron usuarios que coincidan con la búsqueda.'
+                                                    : 'No hay usuarios registrados en el sistema.'
                                             }
                                         </Typography>
                                     </TableCell>

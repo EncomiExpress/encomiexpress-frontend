@@ -1,5 +1,5 @@
 import { useTheme } from '@mui/material/styles'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAnticipos } from '../../shared/contexts/AnticipoExcedenteContext.jsx'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
 import {
@@ -26,6 +26,7 @@ import ImageIcon from '@mui/icons-material/Image'
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile'
 import RegistrarAnticipoExcedente from './RegistrarAnticipoExcedente'
 import ActualizarAnticipoExcedente from './ActualizarAnticipoExcedente'
+import ModalBloqueoInhabilitacion from '../../shared/components/ModalBloqueoInhabilitacion'
 
 const getThStyle = (theme) => ({
     fontWeight: 700,
@@ -261,14 +262,19 @@ const ListarAnticipoExcedente = () => {
     const filterMenuProps = getFilterMenuProps(theme)
     const { anticipos, total, conductores, rutas, loading, fetchAnticipos, toggleHabilitado, cambiarEstado } = useAnticipos()
     const { tienePermiso, PERMISOS } = useAuth()
+    const [localLoading, setLocalLoading] = useState(false)
+    const initialLoad = useRef(true)
+    const effectiveLoading = loading || localLoading
 
     const [busqueda, setBusqueda] = useState('')
+    const [debouncedBusqueda, setDebouncedBusqueda] = useState('')
     const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
     const [filtroEstadoAnticipo, setFiltroEstadoAnticipo] = useState('todos')
     const [page, setPage] = useState(1)
     const [rowsPerPage, setRowsPerPage] = useState(5)
     const [anticipoConsulta, setAnticipoConsulta] = useState(null)
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
+    const [modalBloqueo, setModalBloqueo] = useState({ open: false, dependencias: [], mensaje: '' })
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [anticipoEditar, setAnticipoEditar] = useState(null)
@@ -290,15 +296,24 @@ const ListarAnticipoExcedente = () => {
     }
 
     useEffect(() => {
+        const t = setTimeout(() => { setDebouncedBusqueda(busqueda); setLocalLoading(true) }, 300)
+        return () => clearTimeout(t)
+    }, [busqueda])
+
+    useEffect(() => {
         fetchAnticipos(undefined, {
             page,
             limit: rowsPerPage,
-            q: busqueda.trim() || undefined,
+            q: debouncedBusqueda.trim() || undefined,
             habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
             estado: filtroEstadoAnticipo === 'todos' ? undefined : filtroEstadoAnticipo,
             sortBy: `${sortBy.field}.${sortBy.dir}`,
         })
-    }, [page, rowsPerPage, busqueda, filtroHabilitado, filtroEstadoAnticipo, sortBy, fetchAnticipos])
+    }, [page, rowsPerPage, debouncedBusqueda, filtroHabilitado, filtroEstadoAnticipo, sortBy, fetchAnticipos])
+
+    useEffect(() => {
+        if (!loading) { setLocalLoading(false); initialLoad.current = false }
+    }, [loading])
 
     // Helpers para resolver nombres desde los arrays del contexto
     const getNombreConductor = (id) => {
@@ -323,7 +338,11 @@ const ListarAnticipoExcedente = () => {
             await toggleHabilitado(id)
             setSnackbar({ open: true, message: 'Estado de habilitación actualizado', severity: 'success' })
         } catch (err) {
-            setSnackbar({ open: true, message: err.message || 'No se pudo cambiar el estado', severity: 'error' })
+            if (err?.details?.length > 0) {
+                setModalBloqueo({ open: true, dependencias: err.details, mensaje: err.message })
+            } else {
+                setSnackbar({ open: true, message: err.message || 'No se pudo cambiar el estado', severity: 'error' })
+            }
         }
     }
 
@@ -334,16 +353,6 @@ const ListarAnticipoExcedente = () => {
         } catch (err) {
             setSnackbar({ open: true, message: err.message || 'No se pudo cambiar el estado', severity: 'error' })
         }
-    }
-
-    const isInitialLoading = loading && anticipos.length === 0 && total === 0
-
-    if (isInitialLoading) {
-        return (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 300 }}>
-                <CircularProgress color="primary" />
-            </Box>
-        )
     }
 
     return (
@@ -497,15 +506,6 @@ const ListarAnticipoExcedente = () => {
                         }}
                     />
 
-                    {hayFiltrosActivos && (
-                        <Chip
-                            label="Limpiar"
-                            size="small"
-                            icon={<ClearIcon sx={{ fontSize: '14px !important' }} />}
-                            onClick={limpiarFiltros}
-                            sx={{ fontSize: '0.72rem', height: 28, cursor: 'pointer', backgroundColor: theme.palette.primary.light, color: theme.palette.primary.main }}
-                        />
-                    )}
                 </Box>
             </Box>
 
@@ -541,13 +541,24 @@ const ListarAnticipoExcedente = () => {
                         </TableHead>
 
                         <TableBody>
-                            {currentAnticipos.length === 0 ? (
+                            {effectiveLoading && initialLoad.current ? (
+                                <TableRow>
+                                    <TableCell colSpan={8} align="center" sx={{ py: 7 }}>
+                                        <CircularProgress size={28} sx={{ color: theme.palette.primary.main }} />
+                                        <Typography variant="body2" color={theme.palette.text.secondary} mt={1.5}>
+                                            Cargando anticipos...
+                                        </Typography>
+                                    </TableCell>
+                                </TableRow>
+                            ) : !effectiveLoading && currentAnticipos.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={8} align="center" sx={{ py: 7 }}>
                                         <Typography color={theme.palette.text.secondary} variant="body2">
-                                            {total === 0
-                                                ? 'No hay anticipos registrados en el sistema.'
-                                                : 'No se encontraron resultados con los filtros aplicados.'
+                                            {filtroHabilitado !== 'todo' || filtroEstadoAnticipo !== 'todos'
+                                                ? 'No se encontraron anticipos que coincidan con los filtros aplicados.'
+                                                : debouncedBusqueda.trim()
+                                                    ? 'No se encontraron anticipos que coincidan con la búsqueda.'
+                                                    : 'No hay anticipos registrados en el sistema.'
                                             }
                                         </Typography>
                                     </TableCell>
@@ -800,6 +811,14 @@ const ListarAnticipoExcedente = () => {
                 onClose={() => { setModalActualizarOpen(false); setAnticipoEditar(null) }}
                 anticipo={anticipoEditar}
                 onSuccess={() => setSnackbar({ open: true, message: 'Anticipo actualizado correctamente', severity: 'success' })}
+            />
+
+            <ModalBloqueoInhabilitacion
+                open={modalBloqueo.open}
+                onClose={() => setModalBloqueo({ open: false, dependencias: [], mensaje: '' })}
+                entidad="anticipo"
+                mensaje={modalBloqueo.mensaje}
+                dependencias={modalBloqueo.dependencias}
             />
 
             <Snackbar

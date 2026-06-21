@@ -1,5 +1,5 @@
 import { useTheme } from '@mui/material/styles'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useVentas } from '../../shared/contexts/VentaContext.jsx'
 import {
     Box, Typography, Paper, Table, TableBody, TableCell,
@@ -28,6 +28,7 @@ import CheckBoxIcon from '@mui/icons-material/CheckBox'
 import { ESTADOS_ENCOMIENDA, METODOS_PAGO, ESTADOS_PAGO } from '../../shared/contexts/VentaContext.jsx'
 import RegistrarVenta from './RegistrarVenta'
 import ActualizarVenta from './ActualizarVenta'
+import ModalBloqueoInhabilitacion from '../../shared/components/ModalBloqueoInhabilitacion'
 
 const getThStyle = (theme) => ({
     fontWeight: 700,
@@ -250,8 +251,12 @@ const ListarVenta = () => {
     const filterSelectSx = getFilterSelectSx(theme)
     const filterMenuProps = getFilterMenuProps(theme)
     const { ventas, total, loading, error, fetchVentas, cambiarEstadoVenta, actualizarVenta, toggleHabilitadoVenta } = useVentas()
-    
+    const [localLoading, setLocalLoading] = useState(false)
+    const initialLoad = useRef(true)
+    const effectiveLoading = loading || localLoading
+
     const [busqueda, setBusqueda] = useState('')
+    const [debouncedBusqueda, setDebouncedBusqueda] = useState('')
     const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
     const [filtroEstadoEncomienda, setFiltroEstadoEncomienda] = useState('todos')
     const [filtroPago, setFiltroPago] = useState('todos')
@@ -260,10 +265,16 @@ const ListarVenta = () => {
     const [rowsPerPage, setRowsPerPage] = useState(5)
     const [ventaConsulta, setVentaConsulta] = useState(null)
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
+    const [modalBloqueo, setModalBloqueo] = useState({ open: false, dependencias: [], mensaje: '' })
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [ventaEditar, setVentaEditar] = useState(null)
     const [sortBy, setSortBy] = useState({ field: 'fechaRegistro', dir: 'desc' })
+
+    useEffect(() => {
+      const t = setTimeout(() => { setDebouncedBusqueda(busqueda); setLocalLoading(true) }, 300)
+      return () => clearTimeout(t)
+    }, [busqueda])
 
     const fetchVentasBackend = useCallback(() => {
       fetchVentas({
@@ -274,13 +285,17 @@ const ListarVenta = () => {
         estadoPago: filtroPago === 'todos' ? undefined : filtroPago,
         metodoPago: filtroMetodoPago === 'todos' ? undefined : filtroMetodoPago,
         habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
-        q: busqueda.trim() || undefined,
+        q: debouncedBusqueda.trim() || undefined,
       })
-    }, [page, rowsPerPage, filtroEstadoEncomienda, filtroPago, filtroMetodoPago, filtroHabilitado, busqueda, sortBy, fetchVentas])
+    }, [page, rowsPerPage, filtroEstadoEncomienda, filtroPago, filtroMetodoPago, filtroHabilitado, debouncedBusqueda, sortBy, fetchVentas])
 
     useEffect(() => {
       fetchVentasBackend()
     }, [fetchVentasBackend])
+
+    useEffect(() => {
+      if (!loading) { setLocalLoading(false); initialLoad.current = false }
+    }, [loading])
 
     const handleSort = (field) => {
         setSortBy(prev => prev.field === field
@@ -344,11 +359,15 @@ const ListarVenta = () => {
                 severity: 'success',
             })
         } catch (err) {
-            setSnackbar({
-                open: true,
-                message: err.message || 'Error al cambiar el estado de habilitación.',
-                severity: 'error',
-            })
+            if (err?.details?.length > 0) {
+                setModalBloqueo({ open: true, dependencias: err.details, mensaje: err.message })
+            } else {
+                setSnackbar({
+                    open: true,
+                    message: err.message || 'Error al cambiar el estado de habilitación.',
+                    severity: 'error',
+                })
+            }
         }
     }
 
@@ -540,15 +559,6 @@ const ListarVenta = () => {
                         }}
                     />
 
-                    {hayFiltrosActivos && (
-                        <Chip
-                            label="Limpiar"
-                            size="small"
-                            icon={<ClearIcon sx={{ fontSize: '14px !important' }} />}
-                            onClick={limpiarFiltros}
-                            sx={{ fontSize: '0.72rem', height: 28, cursor: 'pointer', backgroundColor: theme.palette.primary.light, color: theme.palette.primary.main }}
-                        />
-                    )}
                 </Box>
             </Box>
 
@@ -583,7 +593,7 @@ const ListarVenta = () => {
                         </TableHead>
 
                         <TableBody>
-                            {loading ? (
+                            {effectiveLoading && initialLoad.current ? (
                                 <TableRow>
                                     <TableCell colSpan={8} align="center" sx={{ py: 7 }}>
                                         <CircularProgress size={28} sx={{ color: theme.palette.primary.main }} />
@@ -600,13 +610,15 @@ const ListarVenta = () => {
                                         </Typography>
                                     </TableCell>
                                 </TableRow>
-                            ) : ventas.length === 0 ? (
+                            ) : !effectiveLoading && ventas.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={8} align="center" sx={{ py: 7 }}>
                                         <Typography color={theme.palette.text.secondary} variant="body2">
-                                            {total === 0
-                                                ? 'No hay ventas registradas en el sistema.'
-                                                : 'No se encontraron ventas que coincidan con los filtros aplicados.'
+                                            {filtroHabilitado !== 'todo' || filtroEstadoEncomienda !== 'todos' || filtroPago !== 'todos' || filtroMetodoPago !== 'todos'
+                                                ? 'No se encontraron ventas que coincidan con los filtros aplicados.'
+                                                : debouncedBusqueda.trim()
+                                                    ? 'No se encontraron ventas que coincidan con la búsqueda.'
+                                                    : 'No hay ventas registradas en el sistema.'
                                             }
                                         </Typography>
                                     </TableCell>
@@ -932,6 +944,14 @@ const ListarVenta = () => {
                     setVentaEditar(null)
                     setSnackbar({ open: true, message: 'Venta actualizada correctamente.', severity: 'success' })
                 }}
+            />
+
+            <ModalBloqueoInhabilitacion
+                open={modalBloqueo.open}
+                onClose={() => setModalBloqueo({ open: false, dependencias: [], mensaje: '' })}
+                entidad="venta"
+                mensaje={modalBloqueo.mensaje}
+                dependencias={modalBloqueo.dependencias}
             />
 
             <Snackbar

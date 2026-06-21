@@ -12,7 +12,7 @@ import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined'
 import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import { useRutaProgramacion } from '../../shared/contexts/RutaProgramacionContext.jsx'
-import { useTransporte } from '../../shared/contexts/TransporteContext.jsx'
+import { useVehiculo } from '../../shared/contexts/VehiculoContext.jsx'
 import { useConductor } from '../../shared/contexts/ConductorContext.jsx'
 import { useDestino } from '../../shared/contexts/DestinoContext.jsx'
 import { FormField, FormSelect } from '../../shared/components/FormularioEstandarizado.jsx'
@@ -36,7 +36,7 @@ const ConfirmRow = ({ label, value }) => {
 const RegistrarRutaProgramacion = ({ open, onClose, onSuccess }) => {
     const { registrarRutaProgramada } = useRutaProgramacion()
     const theme = useTheme()
-    const { getTransportesHabilitados } = useTransporte()
+    const { getVehiculosHabilitados } = useVehiculo()
     const { getConductoresHabilitados } = useConductor()
     const { getDestinosHabilitados }    = useDestino()
 
@@ -62,10 +62,10 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess }) => {
     })
 
     useEffect(() => {
-        setVehiculos(getTransportesHabilitados())
+        setVehiculos(getVehiculosHabilitados())
         setConductores(getConductoresHabilitados())
         setDestinos(getDestinosHabilitados())
-    }, [getTransportesHabilitados, getConductoresHabilitados, getDestinosHabilitados])
+    }, [getVehiculosHabilitados, getConductoresHabilitados, getDestinosHabilitados])
 
     const handleChange = (e) => {
         const { name, value } = e.target

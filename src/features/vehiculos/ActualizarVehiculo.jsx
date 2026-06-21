@@ -2,7 +2,7 @@ import { useTheme } from '@mui/material/styles'
 import { useState, useEffect, useRef } from 'react'
 import { Box, TextField, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Snackbar, Alert, Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material'
 import { DirectionsCar, Person, Business, Event, Speed, SaveOutlined, ArrowBackOutlined, ArrowForwardOutlined, Close } from '@mui/icons-material'
-import { useTransporte } from '../../shared/contexts/TransporteContext.jsx'
+import { useVehiculo } from '../../shared/contexts/VehiculoContext.jsx'
 import { useConductor } from '../../shared/contexts/ConductorContext.jsx'
 import { usePropietario } from '../../shared/contexts/PropietarioContext.jsx'
 import { 
@@ -27,7 +27,7 @@ const ConfirmRow = ({ label, value }) => {
 }
 
 const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSuccess }) => {
-  const { getTransporteById, actualizarTransporte } = useTransporte()
+  const { getVehiculoById, actualizarVehiculo } = useVehiculo()
   const theme = useTheme()
   const { conductores } = useConductor()
   const { propietarios } = usePropietario()
@@ -63,12 +63,12 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
       setSinCambios(false)
       setErrores({})
       setError('')
-      const transporte = getTransporteById(transporteProp.idVehiculo)
+      const transporte = getVehiculoById(transporteProp.idVehiculo)
       if (transporte) {
         setFormData(transporte)
         setFormOriginal(transporte)
       }
-  }, [open, transporteProp, getTransporteById])
+  }, [open, transporteProp, getVehiculoById])
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -127,7 +127,7 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
     setSubmitting(true)
     
     try {
-      await actualizarTransporte({
+      await actualizarVehiculo({
         idVehiculo: parseInt(transporteProp?.idVehiculo),
         ...formData,
         capacidad: parseFloat(formData.capacidad),

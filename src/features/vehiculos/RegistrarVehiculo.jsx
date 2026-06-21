@@ -2,7 +2,7 @@ import { useTheme } from '@mui/material/styles'
 import { useState } from 'react'
 import { Box, Paper, TextField, Typography, MenuItem, Dialog, DialogTitle, DialogContent, Stepper, Step, StepLabel, Snackbar, Alert, IconButton, Button } from '@mui/material'
 import { DirectionsCar, Person, Business, Event, Speed, Close, ArrowBackOutlined, ArrowForwardOutlined, CheckOutlined } from '@mui/icons-material'
-import { useTransporte } from '../../shared/contexts/TransporteContext.jsx'
+import { useVehiculo } from '../../shared/contexts/VehiculoContext.jsx'
 import { useConductor } from '../../shared/contexts/ConductorContext.jsx'
 import { usePropietario } from '../../shared/contexts/PropietarioContext.jsx'
 import { FormField, FormSelect, FormAlert } from '../../shared/components/FormularioEstandarizado.jsx'
@@ -43,7 +43,7 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
   const [submitting, setSubmitting] = useState(false)
   const [activeStep, setActiveStep] = useState(0)
    
-  const { registrarTransporte } = useTransporte()
+  const { registrarVehiculo } = useVehiculo()
   const theme = useTheme()
   const { conductores } = useConductor()
   const { propietarios } = usePropietario()
@@ -98,7 +98,7 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
         vencimientoRevisionTecnica: formData.vencimientoRevisionTecnica || null,
         vencimientoSeguroTerceros: formData.vencimientoSeguroTerceros || null,
       }
-      await registrarTransporte(payload)
+      await registrarVehiculo(payload)
       setSuccess('Transporte registrado correctamente')
       setTimeout(() => {
         handleClose()

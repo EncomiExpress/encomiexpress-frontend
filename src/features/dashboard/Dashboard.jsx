@@ -2,7 +2,7 @@ import { useTheme } from '@mui/material/styles'
 import { useState, useMemo } from 'react'
 import { useVentas } from '../../shared/contexts/VentaContext.jsx'
 import { useConductor } from '../../shared/contexts/ConductorContext.jsx'
-import { useTransporte } from '../../shared/contexts/TransporteContext.jsx'
+import { useVehiculo } from '../../shared/contexts/VehiculoContext.jsx'
 import {
   Box, Typography, Paper, Button, TextField,
   LinearProgress, Divider
@@ -144,8 +144,8 @@ const Dashboard = () => {
 
   const { ventas } = useVentas()
   const { conductores } = useConductor()
-  const { getTransportes } = useTransporte()
-  const transportes = getTransportes()
+  const { getVehiculos } = useVehiculo()
+  const transportes = getVehiculos()
 
   const ingresosMes = useMemo(() => {
     const meses = new Map()

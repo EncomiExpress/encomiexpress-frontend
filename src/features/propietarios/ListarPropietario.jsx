@@ -1,12 +1,12 @@
 import { useTheme } from '@mui/material/styles'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
     Box, Typography, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, Chip, IconButton,
     TextField, InputAdornment, Select, MenuItem, FormControl,
     Snackbar, Alert, Tooltip, Button, Dialog, DialogTitle, DialogContent, DialogActions,
-    Avatar, Pagination, CircularProgress, TableSortLabel
+    Avatar, Pagination, CircularProgress, TableSortLabel, Tabs, Tab
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
@@ -24,8 +24,10 @@ import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import { usePropietario } from '../../shared/contexts/PropietarioContext.jsx'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
+import * as vehiculoService from '../../shared/services/vehiculoService'
 import RegistrarPropietario from './RegistrarPropietario'
 import ActualizarPropietario from './ActualizarPropietario'
+import ModalBloqueoInhabilitacion from '../../shared/components/ModalBloqueoInhabilitacion'
 
 const getThStyle = (theme) => ({
     fontWeight: 700,
@@ -48,8 +50,12 @@ const ListarPropietario = () => {
     const thStyle = getThStyle(theme)
     const navigate = useNavigate()
     const [searchTerm, setSearchTerm] = useState('')
+    const [debouncedSearch, setDebouncedSearch] = useState('')
     const [propietarioVer, setPropietarioVer] = useState(null)
+    const [tabPropIndex, setTabPropIndex] = useState(0)
+    const [tabPropVehiculos, setTabPropVehiculos] = useState({ data: [], loading: false })
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
+    const [modalBloqueo, setModalBloqueo] = useState({ open: false, dependencias: [], mensaje: '' })
     const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
     const [page, setPage] = useState(1)
     const [rowsPerPage, setRowsPerPage] = useState(5)
@@ -57,9 +63,17 @@ const ListarPropietario = () => {
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [propietarioEditar, setPropietarioEditar] = useState(null)
     const [sortBy, setSortBy] = useState({ field: 'nombre', dir: 'asc' })
+    const [localLoading, setLocalLoading] = useState(false)
+    const initialLoad = useRef(true)
 
     const { propietarios, total, loading, error, fetchPropietarios, toggleHabilitado } = usePropietario()
+    const effectiveLoading = loading || localLoading
     const { usuario, tienePermiso, PERMISOS } = useAuth()
+
+    useEffect(() => {
+      const t = setTimeout(() => { setDebouncedSearch(searchTerm); setLocalLoading(true) }, 300)
+      return () => clearTimeout(t)
+    }, [searchTerm])
 
     const fetchPropietariosBackend = useCallback(() => {
       fetchPropietarios(undefined, {
@@ -67,13 +81,17 @@ const ListarPropietario = () => {
         limit: rowsPerPage,
         habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
         sortBy: `${sortBy.field}.${sortBy.dir}`,
-        q: searchTerm.trim() || undefined,
+        q: debouncedSearch.trim() || undefined,
       })
-    }, [page, rowsPerPage, filtroHabilitado, searchTerm, sortBy, fetchPropietarios])
+    }, [page, rowsPerPage, filtroHabilitado, debouncedSearch, sortBy, fetchPropietarios])
 
     useEffect(() => {
       fetchPropietariosBackend()
     }, [fetchPropietariosBackend])
+
+    useEffect(() => {
+      if (!loading) { setLocalLoading(false); initialLoad.current = false }
+    }, [loading])
 
     const handleSort = (field) => {
         setSortBy(prev => prev.field === field
@@ -89,20 +107,28 @@ const ListarPropietario = () => {
       }
     }, [usuario, navigate])
 
+    useEffect(() => {
+        if (!propietarioVer || tabPropIndex !== 1) return
+        setTabPropVehiculos({ data: [], loading: true })
+        vehiculoService.getVehiculos(undefined, { idPropietario: propietarioVer.idPropietario, limit: 100 })
+            .then(res => setTabPropVehiculos({ data: res?.data || [], loading: false }))
+            .catch(() => setTabPropVehiculos({ data: [], loading: false }))
+    }, [propietarioVer, tabPropIndex])
+
     const handleToggleHabilitado = async (id, habilitadoActual) => {
-      const success = await toggleHabilitado(id)
-      if (success) {
+      try {
+        await toggleHabilitado(id)
         setSnackbar({
           open: true,
           message: `Propietario ${habilitadoActual ? 'inhabilitado' : 'habilitado'} correctamente.`,
           severity: 'success',
         })
-      } else {
-        setSnackbar({
-          open: true,
-          message: 'No se pudo cambiar el estado del propietario. Verifica que no tenga vehículos activos.',
-          severity: 'error',
-        })
+      } catch (err) {
+        if (err?.details?.length > 0) {
+          setModalBloqueo({ open: true, dependencias: err.details, mensaje: err.message })
+        } else {
+          setSnackbar({ open: true, message: err.message || 'Error al cambiar el estado', severity: 'error' })
+        }
       }
     }
 
@@ -205,11 +231,6 @@ const ListarPropietario = () => {
                                 )
                             }
                         }} />
-                    {hayFiltrosActivos && (
-                        <Chip label="Limpiar" size="small" icon={<ClearIcon sx={{ fontSize: '14px !important' }} />}
-                            onClick={limpiarFiltros}
-                            sx={{ fontSize: '0.72rem', height: 28, cursor: 'pointer', backgroundColor: theme.palette.primary.light, color: theme.palette.primary.main }} />
-                    )}
                 </Box>
             </Box>
 
@@ -240,10 +261,13 @@ const ListarPropietario = () => {
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {loading ? (
+                            {effectiveLoading && initialLoad.current ? (
                                 <TableRow>
                                     <TableCell colSpan={5} align="center" sx={{ py: 7 }}>
                                         <CircularProgress size={28} sx={{ color: theme.palette.primary.main }} />
+                                        <Typography variant="body2" color={theme.palette.text.secondary} mt={1.5}>
+                                            Cargando propietarios...
+                                        </Typography>
                                     </TableCell>
                                 </TableRow>
                             ) : error ? (
@@ -252,13 +276,15 @@ const ListarPropietario = () => {
                                         <Typography color="error" variant="body2">{error}</Typography>
                                     </TableCell>
                                 </TableRow>
-                            ) : propietarios.length === 0 ? (
+                            ) : !effectiveLoading && propietarios.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={5} align="center" sx={{ py: 7 }}>
                                         <Typography color={theme.palette.text.secondary} variant="body2">
-                                            {total === 0
-                                                ? 'No hay propietarios registrados en el sistema.'
-                                                : 'No se encontraron propietarios que coincidan con la búsqueda.'}
+                                            {filtroHabilitado !== 'todo'
+                                                ? 'No se encontraron propietarios que coincidan con los filtros aplicados.'
+                                                : debouncedSearch.trim()
+                                                    ? 'No se encontraron propietarios que coincidan con la búsqueda.'
+                                                    : 'No hay propietarios registrados en el sistema.'}
                                         </Typography>
                                     </TableCell>
                                 </TableRow>
@@ -435,97 +461,143 @@ const ListarPropietario = () => {
             </Box>
 
             {propietarioVer && (
-                <Dialog open onClose={() => setPropietarioVer(null)} maxWidth="md" fullWidth
-                    slotProps={{ paper: { sx: { borderRadius: 3, p: 3, backgroundColor: theme.palette.background.subtle } } }}>
-                    <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white', mb: 2 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                            <PersonOutlinedIcon sx={{ fontSize: 22, color: theme.palette.text.primary }} />
-                            <Typography fontWeight={700} fontSize="1.05rem">Detalles del Propietario</Typography>
-                        </Box>
-                        <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2.5 }}>
-                            Información del perfil del propietario
-                        </Typography>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5 }}>
+                <Dialog open onClose={() => { setPropietarioVer(null); setTabPropIndex(0) }} maxWidth="md" fullWidth
+                    slotProps={{ paper: { sx: { borderRadius: 3, backgroundColor: theme.palette.background.subtle } } }}>
+
+                    <Box sx={{ borderBottom: 1, borderColor: 'divider', px: 3, pt: 2, backgroundColor: theme.palette.background.paper }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
                             <Avatar sx={{
                                 backgroundColor: propietarioVer.habilitado ? theme.palette.avatarDefault.bg : theme.palette.avatarDisabled.bg,
                                 color: propietarioVer.habilitado ? theme.palette.avatarDefault.color : theme.palette.avatarDisabled.color,
-                                width: 70, height: 70, fontSize: '1.5rem', fontWeight: 700
+                                width: 40, height: 40, fontSize: '0.9rem', fontWeight: 700
                             }}>
                                 {(propietarioVer.nombre?.[0] || '').toUpperCase()}{(propietarioVer.apellido?.[0] || '').toUpperCase()}
                             </Avatar>
                             <Box>
-                                <Typography fontWeight={700} fontSize="1.1rem" color={theme.palette.text.primary}>
+                                <Typography fontWeight={700} fontSize="1rem" color={theme.palette.text.primary}>
                                     {propietarioVer.nombre} {propietarioVer.apellido}
                                 </Typography>
-                                <Typography variant="body2" color={theme.palette.text.secondary} mt={0.4}>
-                                    {propietarioVer.email || 'Sin email'}
-                                </Typography>
+                                <Typography variant="caption" color={theme.palette.text.secondary}>Propietario</Typography>
                             </Box>
                         </Box>
-                    </Paper>
-
-                    <Box sx={{ display: 'flex', gap: 2 }}>
-                        <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white', flex: 1 }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                <AssignmentIndOutlinedIcon sx={{ fontSize: 22, color: theme.palette.text.primary }} />
-                                <Typography fontWeight={700} fontSize="1.05rem">Datos Personales</Typography>
-                            </Box>
-                            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Identificación y datos personales</Typography>
-                            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                                <Box>
-                                    <Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Tipo doc.</Typography>
-                                    <Typography variant="body2" fontWeight={500}>{propietarioVer.tipoIdentificacion}</Typography>
-                                </Box>
-                                <Box>
-                                    <Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>N° identificación</Typography>
-                                    <Typography variant="body2" fontWeight={500}>{propietarioVer.numeroIdentificacion}</Typography>
-                                </Box>
-                                <Box>
-                                    <Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Nombre</Typography>
-                                    <Typography variant="body2" fontWeight={500}>{propietarioVer.nombre}</Typography>
-                                </Box>
-                                <Box>
-                                    <Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Apellido</Typography>
-                                    <Typography variant="body2" fontWeight={500}>{propietarioVer.apellido || '—'}</Typography>
-                                </Box>
-                            </Box>
-                        </Paper>
-
-                        <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white', flex: 1 }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                <PhoneOutlinedIcon sx={{ fontSize: 22, color: theme.palette.text.primary }} />
-                                <Typography fontWeight={700} fontSize="1.05rem">Contacto y Vehículo</Typography>
-                            </Box>
-                            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Datos de contacto y flota</Typography>
-                            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                                <Box>
-                                    <Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Teléfono</Typography>
-                                    <Typography variant="body2" fontWeight={500}>{propietarioVer.telefono || '—'}</Typography>
-                                </Box>
-                                <Box>
-                                    <Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Email</Typography>
-                                    <Typography variant="body2" fontWeight={500}>{propietarioVer.email || '—'}</Typography>
-                                </Box>
-                                <Box>
-                                    <Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Tarjeta propiedad</Typography>
-                                    <Typography variant="body2" fontWeight={500}>{propietarioVer.tarjetaPropiedad || '—'}</Typography>
-                                </Box>
-                                <Box>
-                                    <Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Tipo de flota</Typography>
-                                    <Typography variant="body2" fontWeight={500}>{propietarioVer.tipoFlota || '—'}</Typography>
-                                </Box>
-                                <Box sx={{ gridColumn: '1 / -1' }}>
-                                    <Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Estado</Typography>
-                                    <Typography variant="body2" fontWeight={500} color={propietarioVer.habilitado ? '#2E7D32' : '#ef4444'}>
-                                        {propietarioVer.habilitado ? 'Habilitado' : 'Inhabilitado'}
-                                    </Typography>
-                                </Box>
-                            </Box>
-                        </Paper>
+                        <Tabs value={tabPropIndex} onChange={(_, v) => setTabPropIndex(v)} textColor="primary" indicatorColor="primary">
+                            <Tab label="Información" sx={{ textTransform: 'none', fontWeight: 600, fontSize: '0.875rem' }} />
+                            <Tab label={`Vehículos`} sx={{ textTransform: 'none', fontWeight: 600, fontSize: '0.875rem' }} />
+                        </Tabs>
                     </Box>
 
-                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-                        <Button onClick={() => setPropietarioVer(null)} variant="contained"
+                    {tabPropIndex === 0 && (
+                        <Box sx={{ p: 3 }}>
+                            <Box sx={{ display: 'flex', gap: 2 }}>
+                                <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white', flex: 1 }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                        <AssignmentIndOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
+                                        <Typography fontWeight={700} fontSize="0.95rem">Datos Personales</Typography>
+                                    </Box>
+                                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mt: 2 }}>
+                                        <Box>
+                                            <Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Tipo doc.</Typography>
+                                            <Typography variant="body2" fontWeight={500}>{propietarioVer.tipoIdentificacion}</Typography>
+                                        </Box>
+                                        <Box>
+                                            <Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>N° identificación</Typography>
+                                            <Typography variant="body2" fontWeight={500}>{propietarioVer.numeroIdentificacion}</Typography>
+                                        </Box>
+                                        <Box>
+                                            <Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Nombre</Typography>
+                                            <Typography variant="body2" fontWeight={500}>{propietarioVer.nombre}</Typography>
+                                        </Box>
+                                        <Box>
+                                            <Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Apellido</Typography>
+                                            <Typography variant="body2" fontWeight={500}>{propietarioVer.apellido || '—'}</Typography>
+                                        </Box>
+                                    </Box>
+                                </Paper>
+                                <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white', flex: 1 }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                        <PhoneOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
+                                        <Typography fontWeight={700} fontSize="0.95rem">Contacto y Flota</Typography>
+                                    </Box>
+                                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mt: 2 }}>
+                                        <Box>
+                                            <Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Teléfono</Typography>
+                                            <Typography variant="body2" fontWeight={500}>{propietarioVer.telefono || '—'}</Typography>
+                                        </Box>
+                                        <Box>
+                                            <Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Email</Typography>
+                                            <Typography variant="body2" fontWeight={500}>{propietarioVer.email || '—'}</Typography>
+                                        </Box>
+                                        <Box>
+                                            <Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Tarjeta propiedad</Typography>
+                                            <Typography variant="body2" fontWeight={500}>{propietarioVer.tarjetaPropiedad || '—'}</Typography>
+                                        </Box>
+                                        <Box>
+                                            <Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Tipo de flota</Typography>
+                                            <Typography variant="body2" fontWeight={500}>{propietarioVer.tipoFlota || '—'}</Typography>
+                                        </Box>
+                                        <Box sx={{ gridColumn: '1 / -1' }}>
+                                            <Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Estado</Typography>
+                                            <Typography variant="body2" fontWeight={500} color={propietarioVer.habilitado ? '#2E7D32' : '#ef4444'}>
+                                                {propietarioVer.habilitado ? 'Habilitado' : 'Inhabilitado'}
+                                            </Typography>
+                                        </Box>
+                                    </Box>
+                                </Paper>
+                            </Box>
+                        </Box>
+                    )}
+
+                    {tabPropIndex === 1 && (
+                        <Box sx={{ p: 3 }}>
+                            <Typography variant="body2" color={theme.palette.text.secondary} sx={{ mb: 2 }}>
+                                Vehículos registrados para este propietario
+                            </Typography>
+                            {tabPropVehiculos.loading
+                                ? <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}><CircularProgress size={30} /></Box>
+                                : tabPropVehiculos.data.length === 0
+                                ? <Typography color="text.secondary" variant="body2" sx={{ py: 4, textAlign: 'center' }}>Sin vehículos registrados</Typography>
+                                : <TableContainer component={Paper} elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 2 }}>
+                                    <Table size="small">
+                                        <TableHead>
+                                            <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
+                                                <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Placa</TableCell>
+                                                <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Marca / Modelo</TableCell>
+                                                <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Tipo</TableCell>
+                                                <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Estado</TableCell>
+                                                <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Habilitado</TableCell>
+                                            </TableRow>
+                                        </TableHead>
+                                        <TableBody>
+                                            {tabPropVehiculos.data.map(v => (
+                                                <TableRow key={v.idVehiculo} sx={{ '&:hover': { backgroundColor: theme.palette.background.subtle } }}>
+                                                    <TableCell sx={{ fontSize: '0.82rem', fontWeight: 600 }}>{v.placa}</TableCell>
+                                                    <TableCell sx={{ fontSize: '0.82rem' }}>{v.marca} {v.modelo}</TableCell>
+                                                    <TableCell sx={{ fontSize: '0.82rem' }}>{v.tipo || '—'}</TableCell>
+                                                    <TableCell>
+                                                        <Chip label={v.estado || '—'} size="small" sx={{
+                                                            backgroundColor: v.estado === 'disponible' ? '#E3F2FD' : v.estado === 'ocupado' ? '#FFF3E0' : '#FCE4EC',
+                                                            color: v.estado === 'disponible' ? '#1565C0' : v.estado === 'ocupado' ? '#E65100' : '#C62828',
+                                                            fontWeight: 600, fontSize: '0.72rem'
+                                                        }} />
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Chip label={v.habilitado ? 'Habilitado' : 'Inhabilitado'} size="small" sx={{
+                                                            backgroundColor: v.habilitado ? '#E8F5E9' : '#F5F5F5',
+                                                            color: v.habilitado ? '#2E7D32' : '#757575',
+                                                            fontWeight: 600, fontSize: '0.72rem'
+                                                        }} />
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </TableContainer>
+                            }
+                        </Box>
+                    )}
+
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', px: 3, pb: 3 }}>
+                        <Button onClick={() => { setPropietarioVer(null); setTabPropIndex(0) }} variant="contained"
                             sx={{ backgroundColor: theme.palette.primary.main, borderRadius: 2, textTransform: 'none',
                                 boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`, '&:hover': { backgroundColor: theme.palette.primary.dark } }}>
                             Cerrar
@@ -551,6 +623,14 @@ const ListarPropietario = () => {
                     fetchPropietarios()
                     setSnackbar({ open: true, message: 'Propietario actualizado correctamente', severity: 'success' })
                 }}
+            />
+
+            <ModalBloqueoInhabilitacion
+                open={modalBloqueo.open}
+                onClose={() => setModalBloqueo({ open: false, dependencias: [], mensaje: '' })}
+                entidad="propietario"
+                mensaje={modalBloqueo.mensaje}
+                dependencias={modalBloqueo.dependencias}
             />
 
             <Snackbar open={snackbar.open} autoHideDuration={3500}

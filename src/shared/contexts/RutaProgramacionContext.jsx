@@ -9,7 +9,7 @@ import {
 } from '../services/rutaService'
 import { useAuth } from './AuthContext'
 import { useDestino } from './DestinoContext'
-import { useTransporte } from './TransporteContext'
+import { useVehiculo } from './VehiculoContext'
 
 const RutaProgramacionContext = createContext()
 
@@ -22,7 +22,7 @@ export const RutaProgramacionProvider = ({ children }) => {
   const [error, setError] = useState(null)
   const { token } = useAuth()
   const { destinos, fetchDestinos } = useDestino()
-  const { getTransportes, fetchVehiculos } = useTransporte()
+  const { fetchVehiculos } = useVehiculo()
   const fetchingRef = useRef(false)
 
   const fetchRutasProgramadas = useCallback(async (params = {}) => {
@@ -96,9 +96,10 @@ export const RutaProgramacionProvider = ({ children }) => {
       setRutasProgramadas(prev =>
         prev.map(r => (r.idRuta === id ? { ...r, estado: actualizada.estado } : r))
       )
+      await fetchVehiculos()
     }
     return actualizada
-  }, [])
+  }, [fetchVehiculos])
 
   const value = {
     rutasProgramadas,

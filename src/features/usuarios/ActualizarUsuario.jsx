@@ -128,7 +128,6 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
             const emailDominio = DOMINIOS_EMAIL.includes(rawDominio) ? rawDominio : '@gmail.com'
 
             const rolId = Object.values(ROLES).find(r => r.nombre === usuario.rol?.nombre)?.id || ''
-            console.log('ActualizarUsuario - usuario.rol:', usuario.rol, '| rolId encontrado:', rolId)
 
             const datosForm = {
                 ...usuario,
@@ -230,8 +229,6 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
         setSubmitting(true)
         setApiError(null)
         try {
-            console.log('ActualizarUsuario - usuarioProp completo:', usuarioProp)
-            console.log('ActualizarUsuario - idUsuario:', usuarioProp?.idUsuario)
             const datosBackend = {
                 nombre: form.nombre,
                 apellido: form.apellido,

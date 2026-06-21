@@ -1,5 +1,5 @@
 import { useTheme } from '@mui/material/styles'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth, PERMISOS } from '../../shared/contexts/AuthContext.jsx'
 import {
     Box, Typography, Paper, Table, TableBody, TableCell,
@@ -218,7 +218,9 @@ const ListarRol = () => {
     const [roles, setRoles] = useState([])
     const [total, setTotal] = useState(0)
     const [loading, setLoading] = useState(true)
+    const initialLoad = useRef(true)
     const [busqueda, setBusqueda] = useState('')
+    const [debouncedBusqueda, setDebouncedBusqueda] = useState('')
     const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
     const [sortBy, setSortBy] = useState({ field: 'nombre', dir: 'asc' })
     const [page, setPage] = useState(1)
@@ -231,6 +233,11 @@ const ListarRol = () => {
 
     const puedeRegistrar = tienePermiso(PERMISOS.REGISTRAR_ROL)
 
+    useEffect(() => {
+        const t = setTimeout(() => { setDebouncedBusqueda(busqueda); setLoading(true) }, 300)
+        return () => clearTimeout(t)
+    }, [busqueda])
+
     const cargarRoles = useCallback(async () => {
         setLoading(true)
         const respuesta = await getRolesBackend({
@@ -238,7 +245,7 @@ const ListarRol = () => {
             limit: rowsPerPage,
             sortBy: `${sortBy.field}.${sortBy.dir}`,
             habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
-            q: busqueda.trim() || undefined,
+            q: debouncedBusqueda.trim() || undefined,
         })
         if (respuesta.success) {
             setRoles(respuesta.data || [])
@@ -248,7 +255,8 @@ const ListarRol = () => {
             setTotal(0)
         }
         setLoading(false)
-    }, [getRolesBackend, page, rowsPerPage, sortBy, filtroHabilitado, busqueda])
+        initialLoad.current = false
+    }, [getRolesBackend, page, rowsPerPage, sortBy, filtroHabilitado, debouncedBusqueda])
 
     useEffect(() => {
         cargarRoles()
@@ -412,15 +420,6 @@ const ListarRol = () => {
                         }
                     }}
                 />
-                {hayFiltrosActivos && (
-                    <Chip
-                        label="Limpiar"
-                        size="small"
-                        icon={<ClearIcon sx={{ fontSize: '14px !important' }} />}
-                        onClick={limpiarFiltros}
-                        sx={{ fontSize: '0.72rem', height: 28, cursor: 'pointer', backgroundColor: theme.palette.primary.light, color: theme.palette.primary.main }}
-                    />
-                )}
                 </Box>
             </Box>
 
@@ -451,7 +450,7 @@ const ListarRol = () => {
                         </TableHead>
 
                         <TableBody>
-                            {loading && roles.length === 0 ? (
+                            {loading && initialLoad.current ? (
                                 <TableRow>
                                     <TableCell colSpan={4} align="center" sx={{ py: 7 }}>
                                         <CircularProgress size={28} sx={{ color: theme.palette.primary.main }} />
@@ -460,13 +459,13 @@ const ListarRol = () => {
                                         </Typography>
                                     </TableCell>
                                 </TableRow>
-                            ) : paginatedRoles.length === 0 ? (
+                            ) : !loading && paginatedRoles.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={4} align="center" sx={{ py: 7 }}>
                                         <Typography color={theme.palette.text.secondary} variant="body2">
-                                            {total === 0
-                                                ? 'No hay roles registrados en el sistema.'
-                                                : 'No se encontraron roles que coincidan con la búsqueda.'
+                                            {debouncedBusqueda.trim() || filtroHabilitado !== 'todo'
+                                                ? 'No se encontraron roles que coincidan con la búsqueda.'
+                                                : 'No hay roles registrados en el sistema.'
                                             }
                                         </Typography>
                                     </TableCell>

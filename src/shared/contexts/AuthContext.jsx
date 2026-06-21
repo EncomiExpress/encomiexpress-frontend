@@ -1,9 +1,8 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { API_URL } from '../config/api.js'
 
 const AuthContext = createContext()
 export const useAuth = () => useContext(AuthContext)
-
-const API_URL = 'http://localhost:3000/api' // ← ajusta si tu URL es diferente
 
 export const ROLES = {
   ADMIN: { id: 1, nombre: 'admin' },

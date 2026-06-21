@@ -16,6 +16,7 @@ import { useAuth } from '../contexts/AuthContext.jsx'
 import { useNavigate } from 'react-router-dom'
 import { useDarkMode } from '../contexts/ThemeContext.jsx'
 import { fetchWithAuth } from '../services/authService'
+import { API_URL } from '../config/api.js'
 import LogoutConfirmDialog from './LogoutConfirmDialog.jsx'
 
 const getGreeting = () => {
@@ -94,7 +95,7 @@ const Header = ({ collapsed }) => {
   setCambiarLoading(true)
   setCambiarMensaje(null)
   try {
-    const response = await fetch('http://localhost:3000/api/auth/cambiar-password', {
+    const response = await fetch(`${API_URL}/auth/cambiar-password`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

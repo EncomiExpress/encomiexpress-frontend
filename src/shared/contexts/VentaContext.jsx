@@ -111,4 +111,3 @@ export const VentaProvider = ({ children }) => {
   )
 }
 
-export default VentaContext

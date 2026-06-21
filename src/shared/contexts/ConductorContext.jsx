@@ -169,11 +169,10 @@ export const ConductorProvider = ({ children }) => {
         await fetchConductores()
         return true
       }
-      return false
+      throw new Error(response.message || 'Error al cambiar el estado')
     } catch (err) {
       setError(err.message)
-      console.error('Error toggling conductor:', err)
-      return false
+      throw err
     } finally {
       setLoading(false)
     }

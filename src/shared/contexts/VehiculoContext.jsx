@@ -2,28 +2,28 @@ import { createContext, useContext, useState, useCallback, useEffect } from 'rea
 import * as vehiculoService from '../services/vehiculoService'
 import { useAuth } from './AuthContext'
 
-const TransporteContext = createContext()
+const VehiculoContext = createContext()
 
-export const useTransporte = () => useContext(TransporteContext)
+export const useVehiculo = () => useContext(VehiculoContext)
 
-export const TransporteProvider = ({ children }) => {
+export const VehiculoProvider = ({ children }) => {
   const auth = useAuth() || {}
   const token = auth?.token || null
-  const [transportes, setTransportes] = useState([])
+  const [vehiculos, setVehiculos] = useState([])
   const [total, setTotal] = useState(0)
 
-  const getTransportes = useCallback(() => transportes, [transportes])
+  const getVehiculos = useCallback(() => vehiculos, [vehiculos])
   const getTotal = useCallback(() => total, [total])
 
-  const getTransporteById = useCallback((id) => {
-    return transportes.find(t => t.idVehiculo === parseInt(id))
-  }, [transportes])
+  const getVehiculoById = useCallback((id) => {
+    return vehiculos.find(v => v.idVehiculo === parseInt(id))
+  }, [vehiculos])
 
   const fetchVehiculos = useCallback(async (signal, params = {}) => {
     try {
       const response = await vehiculoService.getVehiculos(signal, params)
       if (response?.success) {
-        setTransportes(response.data)
+        setVehiculos(response.data)
         setTotal(response.total ?? response.data.length)
       }
     } catch (err) {
@@ -35,28 +35,25 @@ export const TransporteProvider = ({ children }) => {
 
   useEffect(() => {
     if (!token) return
-
     const abortController = new AbortController()
     fetchVehiculos(abortController.signal)
-
     return () => abortController.abort()
   }, [fetchVehiculos, token])
 
-  const registrarTransporte = useCallback(async (nuevoTransporte) => {
+  const registrarVehiculo = useCallback(async (nuevoVehiculo) => {
     try {
-      const response = await vehiculoService.createVehiculo(nuevoTransporte)
+      const response = await vehiculoService.createVehiculo(nuevoVehiculo)
       if (response.success) {
         await fetchVehiculos()
         return response.data
       }
       throw new Error(response.message || 'Error al registrar vehículo')
     } catch (err) {
-      console.error('Error creating transporte:', err)
+      console.error('Error creating vehiculo:', err)
       throw err
     }
   }, [fetchVehiculos])
 
-  // Habilitar/Inhabilitar transporte usando API
   const toggleHabilitado = useCallback(async (id) => {
     try {
       const res = await vehiculoService.toggleHabilitadoVehiculo(id)
@@ -64,14 +61,12 @@ export const TransporteProvider = ({ children }) => {
         await fetchVehiculos()
         return true
       }
-      return false
+      throw new Error(res?.message || 'Error al cambiar el estado')
     } catch (err) {
-      console.error('Error toggling vehiculo via API:', err)
-      return false
+      throw err
     }
   }, [fetchVehiculos])
 
-  // Actualizar estado del transporte usando API
   const updateEstado = useCallback(async (id, nuevoEstado) => {
     try {
       const estadoBackend = nuevoEstado.toLowerCase()
@@ -87,34 +82,32 @@ export const TransporteProvider = ({ children }) => {
     }
   }, [fetchVehiculos])
 
-  // Actualizar transporte usando API
-  const actualizarTransporte = useCallback(async (transporteActualizado) => {
+  const actualizarVehiculo = useCallback(async (vehiculoActualizado) => {
     try {
-      const response = await vehiculoService.updateVehiculo(transporteActualizado.idVehiculo, transporteActualizado)
+      const response = await vehiculoService.updateVehiculo(vehiculoActualizado.idVehiculo, vehiculoActualizado)
       if (response.success) {
         await fetchVehiculos()
         return response.data
       }
       throw new Error(response.message || 'Error al actualizar vehículo')
     } catch (err) {
-      console.error('Error updating transporte:', err)
+      console.error('Error updating vehiculo:', err)
       throw err
     }
   }, [fetchVehiculos])
 
-  // Obtener transportes habilitados
-  const getTransportesHabilitados = useCallback(() => {
-    return transportes.filter(t => t.habilitado)
-  }, [transportes])
+  const getVehiculosHabilitados = useCallback(() => {
+    return vehiculos.filter(v => v.habilitado)
+  }, [vehiculos])
 
   return (
-    <TransporteContext.Provider value={{
-      getTransportes, getTransporteById, getTotal,
-      registrarTransporte,
-      actualizarTransporte, toggleHabilitado, updateEstado, getTransportesHabilitados,
+    <VehiculoContext.Provider value={{
+      getVehiculos, getVehiculoById, getTotal,
+      registrarVehiculo,
+      actualizarVehiculo, toggleHabilitado, updateEstado, getVehiculosHabilitados,
       fetchVehiculos,
     }}>
       {children}
-    </TransporteContext.Provider>
+    </VehiculoContext.Provider>
   )
 }

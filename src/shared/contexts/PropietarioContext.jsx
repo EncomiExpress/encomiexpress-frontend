@@ -98,11 +98,10 @@ export const PropietarioProvider = ({ children }) => {
         await fetchPropietarios()
         return true
       }
-      return false
+      throw new Error(res.message || 'Error al cambiar el estado')
     } catch (err) {
       setError(err.message)
-      console.error('Error toggling propietario:', err)
-      return false
+      throw err
     } finally {
       setLoading(false)
     }

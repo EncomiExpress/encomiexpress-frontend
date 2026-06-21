@@ -2,7 +2,7 @@ import { BrowserRouter } from 'react-router-dom'
 import { AuthProvider } from './shared/contexts/AuthContext'
 import { ClienteProvider } from './shared/contexts/ClienteContext'
 import { AnticipoExcedenteProvider } from './shared/contexts/AnticipoExcedenteContext'
-import { TransporteProvider } from './shared/contexts/TransporteContext'
+import { VehiculoProvider } from './shared/contexts/VehiculoContext'
 import { PropietarioProvider } from './shared/contexts/PropietarioContext'
 import { ConductorProvider } from './shared/contexts/ConductorContext'
 import { DestinoProvider } from './shared/contexts/DestinoContext'
@@ -14,7 +14,7 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <TransporteProvider>
+        <VehiculoProvider>
           <PropietarioProvider>
             <ConductorProvider>
               <DestinoProvider>
@@ -30,7 +30,7 @@ function App() {
               </DestinoProvider>
             </ConductorProvider>
           </PropietarioProvider>
-        </TransporteProvider>
+        </VehiculoProvider>
       </AuthProvider>
     </BrowserRouter>
   )

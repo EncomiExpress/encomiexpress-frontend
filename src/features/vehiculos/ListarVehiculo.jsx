@@ -5,8 +5,8 @@ import {
     Box, Typography, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, Chip, IconButton,
     TextField, InputAdornment, Select, MenuItem, FormControl,
-    Snackbar, Alert, Tooltip, Button, Dialog, Avatar,
-    Pagination, TableSortLabel
+    Snackbar, Alert, Tooltip, Button, Dialog, Avatar, CircularProgress,
+    Pagination, TableSortLabel, Tabs, Tab
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
@@ -21,11 +21,13 @@ import EventOutlinedIcon from '@mui/icons-material/EventOutlined'
 import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank'
 import CheckBoxIcon from '@mui/icons-material/CheckBox'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
-import { useTransporte } from '../../shared/contexts/TransporteContext.jsx'
+import { useVehiculo } from '../../shared/contexts/VehiculoContext.jsx'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
+import * as rutaService from '../../shared/services/rutaService'
 import { useRutaProgramacion } from '../../shared/contexts/RutaProgramacionContext.jsx'
 import RegistrarVehiculo from './RegistrarVehiculo'
 import ActualizarVehiculo from './ActualizarVehiculo'
+import ModalBloqueoInhabilitacion from '../../shared/components/ModalBloqueoInhabilitacion'
 
 const getThStyle = (theme) => ({
     fontWeight: 700,
@@ -84,8 +86,11 @@ const ListarTransporte = () => {
     const thStyle = getThStyle(theme)
     const filterMenuProps = getFilterMenuProps(theme)
     const [searchTerm, setSearchTerm] = useState('')
+    const [debouncedSearch, setDebouncedSearch] = useState('')
+    const [loading, setLoading] = useState(false)
     const [vehiculoVer, setVehiculoVer] = useState(null)
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
+    const [modalBloqueo, setModalBloqueo] = useState({ open: false, dependencias: [], mensaje: '' })
     const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
     const [filtroEstadoVehiculo, setFiltroEstadoVehiculo] = useState('todo')
     const [page, setPage] = useState(1)
@@ -94,13 +99,15 @@ const ListarTransporte = () => {
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [vehiculoEditar, setVehiculoEditar] = useState(null)
     const [sortBy, setSortBy] = useState({ field: 'placa', dir: 'asc' })
+    const [tabVehIndex, setTabVehIndex] = useState(0)
+    const [tabVehRutas, setTabVehRutas] = useState({ data: [], loading: false })
 
-    const { getTransportes, getTotal, updateEstado, toggleHabilitado, fetchVehiculos } = useTransporte()
+    const { getVehiculos, getTotal, updateEstado, toggleHabilitado, fetchVehiculos } = useVehiculo()
     const { rutasProgramadas, fetchRutasProgramadas } = useRutaProgramacion()
     const { usuario, tienePermiso, PERMISOS } = useAuth()
     const navigate = useNavigate()
 
-    const transportes = getTransportes()
+    const transportes = getVehiculos()
     const totalBackend = getTotal()
 
     const vehiculosOcupadosIds = new Set(
@@ -118,20 +125,32 @@ const ListarTransporte = () => {
     })
 
     useEffect(() => {
+        const t = setTimeout(() => setDebouncedSearch(searchTerm), 300)
+        return () => clearTimeout(t)
+    }, [searchTerm])
+
+    useEffect(() => {
         if (!usuario) {
             navigate('/login')
             return
         }
 
-        fetchVehiculos(undefined, {
-            page,
-            limit: rowsPerPage,
-            estado: filtroEstadoVehiculo === 'todo' ? undefined : filtroEstadoVehiculo,
-            habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
-            sortBy: `${sortBy.field}.${sortBy.dir}`,
-            q: searchTerm.trim() || undefined,
-        })
-    }, [usuario, navigate, page, rowsPerPage, filtroEstadoVehiculo, filtroHabilitado, searchTerm, sortBy, fetchVehiculos])
+        let cancelled = false
+        const doFetch = async () => {
+            setLoading(true)
+            await fetchVehiculos(undefined, {
+                page,
+                limit: rowsPerPage,
+                estado: filtroEstadoVehiculo === 'todo' ? undefined : filtroEstadoVehiculo,
+                habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
+                sortBy: `${sortBy.field}.${sortBy.dir}`,
+                q: debouncedSearch.trim() || undefined,
+            })
+            if (!cancelled) setLoading(false)
+        }
+        doFetch()
+        return () => { cancelled = true }
+    }, [usuario, navigate, page, rowsPerPage, filtroEstadoVehiculo, filtroHabilitado, debouncedSearch, sortBy, fetchVehiculos])
 
     const handleSort = (field) => {
         setSortBy(prev => prev.field === field
@@ -148,6 +167,14 @@ const ListarTransporte = () => {
         }
     }, [usuario, rutasProgramadas.length, fetchRutasProgramadas])
 
+    useEffect(() => {
+        if (!vehiculoVer || tabVehIndex !== 1) return
+        setTabVehRutas({ data: [], loading: true })
+        rutaService.getRutas({ idVehiculo: vehiculoVer.idVehiculo, limit: 100 })
+            .then(res => setTabVehRutas({ data: res?.data || [], loading: false }))
+            .catch(() => setTabVehRutas({ data: [], loading: false }))
+    }, [vehiculoVer, tabVehIndex])
+
     const handleEstadoChange = async (id, nuevoEstado) => {
         const success = await updateEstado(id, nuevoEstado)
         if (success) {
@@ -160,18 +187,24 @@ const ListarTransporte = () => {
     }
 
     const handleToggleHabilitado = async (id, habilitadoActual) => {
-        const success = await toggleHabilitado(id)
-        if (success) {
+        try {
+            await toggleHabilitado(id)
             setSnackbar({
                 open: true,
                 message: `Vehículo ${habilitadoActual !== false ? 'inhabilitado' : 'habilitado'} correctamente.`,
                 severity: 'success',
             })
+        } catch (err) {
+            if (err?.details?.length > 0) {
+                setModalBloqueo({ open: true, dependencias: err.details, mensaje: err.message })
+            } else {
+                setSnackbar({ open: true, message: err.message || 'Error al cambiar el estado', severity: 'error' })
+            }
         }
     }
 
     const filteredTransportes = transportesConEstado.filter(t => {
-        const q = searchTerm.toLowerCase()
+        const q = debouncedSearch.toLowerCase()
         const coincideBusqueda = !q ||
             t.placa.toLowerCase().includes(q) ||
             (t.marca || '').toLowerCase().includes(q) ||
@@ -366,15 +399,6 @@ const ListarTransporte = () => {
                         }}
                     />
 
-                    {hayFiltrosActivos && (
-                        <Chip
-                            label="Limpiar"
-                            size="small"
-                            icon={<ClearIcon sx={{ fontSize: '14px !important' }} />}
-                            onClick={limpiarFiltros}
-                            sx={{ fontSize: '0.72rem', height: 28, cursor: 'pointer', backgroundColor: theme.palette.primary.light, color: theme.palette.primary.main }}
-                        />
-                    )}
                 </Box>
             </Box>
 
@@ -409,23 +433,15 @@ const ListarTransporte = () => {
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {filteredTransportes.length === 0 ? (
+                            {filteredTransportes.length === 0 && !loading ? (
                                 <TableRow>
                                     <TableCell colSpan={9} align="center" sx={{ py: 7 }}>
                                         <Typography color={theme.palette.text.secondary} variant="body2">
-                                            {transportes.length === 0
-                                                ? 'No hay vehículos registrados en el sistema.'
-                                                : 'No se encontraron vehículos que coincidan con la búsqueda.'}
-                                        </Typography>
-                                    </TableCell>
-                                </TableRow>
-                            ) : transportes.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={9} align="center" sx={{ py: 7 }}>
-                                        <Typography color={theme.palette.text.secondary} variant="body2">
-                                            {totalBackend === 0
-                                                ? 'No hay vehículos registrados en el sistema.'
-                                                : 'No se encontraron vehículos que coincidan con la búsqueda.'}
+                                            {filtroEstadoVehiculo !== 'todo' || filtroHabilitado !== 'todo'
+                                                ? 'No se encontraron vehículos que coincidan con los filtros aplicados.'
+                                                : debouncedSearch.trim()
+                                                    ? 'No se encontraron vehículos que coincidan con la búsqueda.'
+                                                    : 'No hay vehículos registrados en el sistema.'}
                                         </Typography>
                                     </TableCell>
                                 </TableRow>
@@ -647,70 +663,104 @@ const ListarTransporte = () => {
             </Box>
 
             {vehiculoVer && (
-                <Dialog open onClose={() => setVehiculoVer(null)} maxWidth="md" fullWidth
-                    slotProps={{ paper: { sx: { borderRadius: 3, p: 3, backgroundColor: theme.palette.background.subtle } } }}>
-                    <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: theme.palette.background.paper, mb: 2 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                            <DirectionsCarOutlinedIcon sx={{ fontSize: 22, color: theme.palette.text.primary }} />
-                            <Typography fontWeight={700} fontSize="1.05rem" color={theme.palette.text.primary}>Detalles del Vehículo</Typography>
-                        </Box>
-                        <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2.5 }}>
-                            Información del vehículo
-                        </Typography>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5 }}>
-                            <Avatar sx={{ backgroundColor: '#FFCDD2', color: '#C62828', width: 70, height: 70, fontSize: '1.5rem', fontWeight: 700 }}>
+                <Dialog open onClose={() => { setVehiculoVer(null); setTabVehIndex(0) }} maxWidth="md" fullWidth
+                    slotProps={{ paper: { sx: { borderRadius: 3, backgroundColor: theme.palette.background.subtle } } }}>
+
+                    <Box sx={{ borderBottom: 1, borderColor: 'divider', px: 3, pt: 2, backgroundColor: theme.palette.background.paper }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
+                            <Avatar sx={{ backgroundColor: '#FFCDD2', color: '#C62828', width: 40, height: 40, fontSize: '0.9rem', fontWeight: 700 }}>
                                 {vehiculoVer.marca?.[0]}
                             </Avatar>
                             <Box>
-                                <Typography fontWeight={700} fontSize="1.1rem" color={theme.palette.text.primary}>
+                                <Typography fontWeight={700} fontSize="1rem" color={theme.palette.text.primary}>
                                     {vehiculoVer.marca} {vehiculoVer.modelo}
                                 </Typography>
-                                <Typography variant="body2" color={theme.palette.text.secondary} mt={0.4}>
-                                    Placa: {vehiculoVer.placa}
-                                </Typography>
+                                <Typography variant="caption" color={theme.palette.text.secondary}>Placa: {vehiculoVer.placa}</Typography>
                             </Box>
                         </Box>
-                    </Paper>
-
-                    <Box sx={{ display: 'flex', gap: 2 }}>
-                        <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: theme.palette.background.paper, flex: 1 }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                <SpeedOutlinedIcon sx={{ fontSize: 22, color: theme.palette.text.primary }} />
-                                <Typography fontWeight={700} fontSize="1.05rem" color={theme.palette.text.primary}>Detalles del Vehículo</Typography>
-                            </Box>
-                            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
-                                Características del vehículo
-                            </Typography>
-                            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                                <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Marca</Typography><Typography variant="body2" fontWeight={500}>{vehiculoVer.marca}</Typography></Box>
-                                <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Modelo</Typography><Typography variant="body2" fontWeight={500}>{vehiculoVer.modelo}</Typography></Box>
-                                <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Tipo</Typography><Typography variant="body2" fontWeight={500}>{vehiculoVer.tipo}</Typography></Box>
-                                <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Color</Typography><Typography variant="body2" fontWeight={500}>{vehiculoVer.color}</Typography></Box>
-                                <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Capacidad</Typography><Typography variant="body2" fontWeight={500}>{vehiculoVer.capacidad} kg</Typography></Box>
-                                <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Placa</Typography><Typography variant="body2" fontWeight={500}>{vehiculoVer.placa}</Typography></Box>
-                            </Box>
-                        </Paper>
-
-                        <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: theme.palette.background.paper, flex: 1 }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                <EventOutlinedIcon sx={{ fontSize: 22, color: theme.palette.text.primary }} />
-                                <Typography fontWeight={700} fontSize="1.05rem" color={theme.palette.text.primary}>Estado y Documentos</Typography>
-                            </Box>
-                            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
-                                Estado actual y documentación
-                            </Typography>
-                            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                                <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Estado</Typography><Typography variant="body2" fontWeight={500} color={vehiculoVer.estadoEfectivo === 'Activo' || vehiculoVer.estadoEfectivo === 'ocupado' ? '#2E7D32' : vehiculoVer.estadoEfectivo === 'Inactivo' ? '#9ca3af' : '#f59e0b'}>{vehicleStatusLabel(vehiculoVer.estadoEfectivo)}</Typography></Box>
-                                <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Vencimiento SOAT</Typography><Typography variant="body2" fontWeight={500} color={isVencido(vehiculoVer.vencimientoSOAT) ? '#ef4444' : '#2E7D32'}>{vehiculoVer.vencimientoSOAT ? new Date(vehiculoVer.vencimientoSOAT).toLocaleDateString() : 'N/A'}</Typography></Box>
-                            </Box>
-                        </Paper>
+                        <Tabs value={tabVehIndex} onChange={(_, v) => setTabVehIndex(v)} textColor="primary" indicatorColor="primary">
+                            <Tab label="Información" sx={{ textTransform: 'none', fontWeight: 600, fontSize: '0.875rem' }} />
+                            <Tab label="Rutas" sx={{ textTransform: 'none', fontWeight: 600, fontSize: '0.875rem' }} />
+                        </Tabs>
                     </Box>
 
-                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-                        <Button onClick={() => setVehiculoVer(null)} variant="contained" sx={{
+                    {tabVehIndex === 0 && (
+                        <Box sx={{ p: 3 }}>
+                            <Box sx={{ display: 'flex', gap: 2 }}>
+                                <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white', flex: 1 }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                        <SpeedOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
+                                        <Typography fontWeight={700} fontSize="0.95rem">Características</Typography>
+                                    </Box>
+                                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mt: 2 }}>
+                                        <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Marca</Typography><Typography variant="body2" fontWeight={500}>{vehiculoVer.marca}</Typography></Box>
+                                        <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Modelo</Typography><Typography variant="body2" fontWeight={500}>{vehiculoVer.modelo}</Typography></Box>
+                                        <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Tipo</Typography><Typography variant="body2" fontWeight={500}>{vehiculoVer.tipo}</Typography></Box>
+                                        <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Color</Typography><Typography variant="body2" fontWeight={500}>{vehiculoVer.color}</Typography></Box>
+                                        <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Capacidad</Typography><Typography variant="body2" fontWeight={500}>{vehiculoVer.capacidad} kg</Typography></Box>
+                                        <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Placa</Typography><Typography variant="body2" fontWeight={500}>{vehiculoVer.placa}</Typography></Box>
+                                    </Box>
+                                </Paper>
+                                <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white', flex: 1 }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                        <EventOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
+                                        <Typography fontWeight={700} fontSize="0.95rem">Estado y Documentos</Typography>
+                                    </Box>
+                                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mt: 2 }}>
+                                        <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Estado</Typography><Typography variant="body2" fontWeight={500} color={vehiculoVer.estadoEfectivo === 'disponible' ? '#2E7D32' : vehiculoVer.estadoEfectivo === 'ocupado' ? '#E65100' : '#9ca3af'}>{vehicleStatusLabel(vehiculoVer.estadoEfectivo)}</Typography></Box>
+                                        <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Venc. SOAT</Typography><Typography variant="body2" fontWeight={500} color={isVencido(vehiculoVer.vencimientoSOAT) ? '#ef4444' : '#2E7D32'}>{vehiculoVer.vencimientoSOAT ? new Date(vehiculoVer.vencimientoSOAT).toLocaleDateString() : 'N/A'}</Typography></Box>
+                                    </Box>
+                                </Paper>
+                            </Box>
+                        </Box>
+                    )}
+
+                    {tabVehIndex === 1 && (
+                        <Box sx={{ p: 3 }}>
+                            <Typography variant="body2" color={theme.palette.text.secondary} sx={{ mb: 2 }}>Rutas asignadas a este vehículo</Typography>
+                            {tabVehRutas.loading
+                                ? <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}><CircularProgress size={30} /></Box>
+                                : tabVehRutas.data.length === 0
+                                ? <Typography color="text.secondary" variant="body2" sx={{ py: 4, textAlign: 'center' }}>Sin rutas registradas</Typography>
+                                : <TableContainer component={Paper} elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 2 }}>
+                                    <Table size="small">
+                                        <TableHead>
+                                            <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
+                                                <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>#</TableCell>
+                                                <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Nombre</TableCell>
+                                                <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Destino</TableCell>
+                                                <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Fecha salida</TableCell>
+                                                <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Estado</TableCell>
+                                            </TableRow>
+                                        </TableHead>
+                                        <TableBody>
+                                            {tabVehRutas.data.map(r => (
+                                                <TableRow key={r.idRuta} sx={{ '&:hover': { backgroundColor: theme.palette.background.subtle } }}>
+                                                    <TableCell sx={{ fontSize: '0.82rem', fontWeight: 600 }}>{r.idRuta}</TableCell>
+                                                    <TableCell sx={{ fontSize: '0.82rem' }}>{r.nombreRuta || '—'}</TableCell>
+                                                    <TableCell sx={{ fontSize: '0.82rem' }}>{r.destino?.ciudad || '—'}</TableCell>
+                                                    <TableCell sx={{ fontSize: '0.82rem' }}>{r.fechaSalida ? new Date(r.fechaSalida).toLocaleDateString() : '—'}</TableCell>
+                                                    <TableCell>
+                                                        <Chip label={r.estado} size="small" sx={{
+                                                            backgroundColor: r.estado === 'Programada' ? '#E3F2FD' : r.estado === 'En Curso' ? '#FFF3E0' : r.estado === 'Completada' ? '#E8F5E9' : '#FCE4EC',
+                                                            color: r.estado === 'Programada' ? '#1565C0' : r.estado === 'En Curso' ? '#E65100' : r.estado === 'Completada' ? '#2E7D32' : '#C62828',
+                                                            fontWeight: 600, fontSize: '0.72rem'
+                                                        }} />
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </TableContainer>
+                            }
+                        </Box>
+                    )}
+
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', px: 3, pb: 3 }}>
+                        <Button onClick={() => { setVehiculoVer(null); setTabVehIndex(0) }} variant="contained" sx={{
                             backgroundColor: theme.palette.primary.main, borderRadius: 2, textTransform: 'none',
                             boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
-                            '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}` },
+                            '&:hover': { backgroundColor: theme.palette.primary.dark },
                         }}>
                             Cerrar
                         </Button>
@@ -735,6 +785,14 @@ const ListarTransporte = () => {
                     fetchVehiculos()
                     setSnackbar({ open: true, message: 'Vehículo actualizado correctamente', severity: 'success' })
                 }}
+            />
+
+            <ModalBloqueoInhabilitacion
+                open={modalBloqueo.open}
+                onClose={() => setModalBloqueo({ open: false, dependencias: [], mensaje: '' })}
+                entidad="vehículo"
+                mensaje={modalBloqueo.mensaje}
+                dependencias={modalBloqueo.dependencias}
             />
 
             <Snackbar

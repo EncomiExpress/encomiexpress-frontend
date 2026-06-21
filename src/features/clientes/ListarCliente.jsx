@@ -1,5 +1,5 @@
 import { useTheme } from '@mui/material/styles'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useClientes } from '../../shared/contexts/ClienteContext.jsx'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
 import {
@@ -8,8 +8,9 @@ import {
     IconButton, Chip, Tooltip, InputAdornment,
     Button, Dialog, DialogTitle, DialogContent,
     DialogActions, Avatar, Select, MenuItem, Pagination, Snackbar, Alert,
-    CircularProgress, FormControl, TableSortLabel
+    CircularProgress, FormControl, TableSortLabel, Tabs, Tab
 } from '@mui/material'
+import * as ventaService from '../../shared/services/ventaService'
 import SearchIcon from '@mui/icons-material/Search'
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
@@ -24,6 +25,7 @@ import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank'
 import CheckBoxIcon from '@mui/icons-material/CheckBox'
 import RegistrarCliente from './RegistrarCliente'
 import ActualizarCliente from './ActualizarCliente'
+import ModalBloqueoInhabilitacion from '../../shared/components/ModalBloqueoInhabilitacion'
 
 const getThStyle = (theme) => ({
     fontWeight: 700,
@@ -49,80 +51,122 @@ const CampoFila = ({ label, value }) => {
 
 const ModalConsultar = ({ cliente, onClose }) => {
     const theme = useTheme()
-    if (!cliente) return null
-    const estado = cliente.habilitado ? 'Habilitado' : 'Inhabilitado'
+    const [tabIndex, setTabIndex] = useState(0)
+    const [tabVentas, setTabVentas] = useState({ data: [], loading: false })
 
-    const cardSx = { borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: theme.palette.background.paper }
-    const tituloSx = { display: 'flex', alignItems: 'center', gap: 1, mb: 1 }
+    useEffect(() => {
+        if (!cliente || tabIndex !== 1) return
+        setTabVentas({ data: [], loading: true })
+        ventaService.getEncomiendas(undefined, { idCliente: cliente.idCliente, limit: 100 })
+            .then(res => setTabVentas({ data: res?.data || [], loading: false }))
+            .catch(() => setTabVentas({ data: [], loading: false }))
+    }, [cliente, tabIndex])
+
+    if (!cliente) return null
+    const cardSx = { borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white' }
+
+    const handleClose = () => { setTabIndex(0); onClose() }
 
     return (
-        <Dialog open onClose={onClose} maxWidth="md" fullWidth
-            slotProps={{ paper: { sx: { borderRadius: 3, p: 3, backgroundColor: theme.palette.background.subtle } } }}>
+        <Dialog open onClose={handleClose} maxWidth="md" fullWidth
+            slotProps={{ paper: { sx: { borderRadius: 3, backgroundColor: theme.palette.background.subtle } } }}>
 
-            <Paper elevation={0} sx={{ ...cardSx, mb: 2 }}>
-                <Box sx={tituloSx}>
-                    <PersonOutlinedIcon sx={{ fontSize: 22, color: theme.palette.text.primary }} />
-                    <Typography fontWeight={700} fontSize="1.05rem" color={theme.palette.text.primary}>Perfil</Typography>
-                </Box>
-                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2.5 }}>
-                    Información del perfil del cliente
-                </Typography>
-
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5 }}>
-                    <Avatar sx={{ 
-                        backgroundColor: cliente.habilitado ? theme.palette.avatarDefault.bg : theme.palette.avatarDisabled.bg, 
-                        color: cliente.habilitado ? theme.palette.avatarDefault.color : theme.palette.avatarDisabled.color, 
-                        width: 70, height: 70, fontSize: '1.5rem', fontWeight: 700 
+            <Box sx={{ borderBottom: 1, borderColor: 'divider', px: 3, pt: 2, backgroundColor: theme.palette.background.paper }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
+                    <Avatar sx={{
+                        backgroundColor: cliente.habilitado ? theme.palette.avatarDefault.bg : theme.palette.avatarDisabled.bg,
+                        color: cliente.habilitado ? theme.palette.avatarDefault.color : theme.palette.avatarDisabled.color,
+                        width: 40, height: 40, fontSize: '0.9rem', fontWeight: 700
                     }}>
                         {cliente.iniciales && cliente.iniciales !== 'U' ? cliente.iniciales : (cliente.nombre?.[0] || '') + (cliente.apellido?.[0] || '') || 'C'}
                     </Avatar>
                     <Box>
-                        <Typography fontWeight={700} fontSize="1.1rem" color={theme.palette.text.primary}>
+                        <Typography fontWeight={700} fontSize="1rem" color={theme.palette.text.primary}>
                             {cliente.nombre} {cliente.apellido}
                         </Typography>
-                        <Typography variant="body2" color={theme.palette.text.secondary} mt={0.4}>
-                            {cliente.email}
-                        </Typography>
+                        <Typography variant="caption" color={theme.palette.text.secondary}>Cliente</Typography>
                     </Box>
                 </Box>
-            </Paper>
-
-            <Box sx={{ display: 'flex', gap: 2 }}>
-                <Paper elevation={0} sx={{ ...cardSx, flex: 1 }}>
-                    <Box sx={tituloSx}>
-                        <AssignmentIndOutlinedIcon sx={{ fontSize: 22, color: theme.palette.text.primary }} />
-                        <Typography fontWeight={700} fontSize="1.05rem" color={theme.palette.text.primary}>Detalles del Cliente</Typography>
-                    </Box>
-                    <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
-                        Identificación y datos personales
-                    </Typography>
-
-                    <CampoFila label="Identificación" value={`${cliente.tipoIdentificacion} ${cliente.numeroIdentificacion}`} />
-                    <CampoFila label="Nombre" value={cliente.nombre} />
-                    <CampoFila label="Apellido" value={cliente.apellido} />
-                </Paper>
-
-                <Paper elevation={0} sx={{ ...cardSx, flex: 1 }}>
-                    <Box sx={tituloSx}>
-                        <AssignmentIndOutlinedIcon sx={{ fontSize: 22, color: theme.palette.text.primary }} />
-                        <Typography fontWeight={700} fontSize="1.05rem" color={theme.palette.text.primary}>Información de Contacto</Typography>
-                    </Box>
-                    <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
-                        Datos de contacto y estado de la cuenta
-                    </Typography>
-
-                    <CampoFila label="Teléfono" value={cliente.telefono} />
-                    <CampoFila label="Email" value={cliente.email} />
-                    <CampoFila label="Dirección" value={cliente.direccion} />
-                    <CampoFila label="Estado" value={estado} />
-                </Paper>
+                <Tabs value={tabIndex} onChange={(_, v) => setTabIndex(v)} textColor="primary" indicatorColor="primary">
+                    <Tab label="Información" sx={{ textTransform: 'none', fontWeight: 600, fontSize: '0.875rem' }} />
+                    <Tab label="Encomiendas" sx={{ textTransform: 'none', fontWeight: 600, fontSize: '0.875rem' }} />
+                </Tabs>
             </Box>
 
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-                <Button onClick={onClose} variant="contained" sx={{
+            {tabIndex === 0 && (
+                <Box sx={{ p: 3 }}>
+                    <Box sx={{ display: 'flex', gap: 2 }}>
+                        <Paper elevation={0} sx={{ ...cardSx, flex: 1 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                <AssignmentIndOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
+                                <Typography fontWeight={700} fontSize="0.95rem">Datos Personales</Typography>
+                            </Box>
+                            <Box sx={{ mt: 2 }}>
+                                <CampoFila label="Identificación" value={`${cliente.tipoIdentificacion} ${cliente.numeroIdentificacion}`} />
+                                <CampoFila label="Nombre" value={cliente.nombre} />
+                                <CampoFila label="Apellido" value={cliente.apellido} />
+                            </Box>
+                        </Paper>
+                        <Paper elevation={0} sx={{ ...cardSx, flex: 1 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                <PersonOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
+                                <Typography fontWeight={700} fontSize="0.95rem">Contacto</Typography>
+                            </Box>
+                            <Box sx={{ mt: 2 }}>
+                                <CampoFila label="Teléfono" value={cliente.telefono} />
+                                <CampoFila label="Email" value={cliente.email} />
+                                <CampoFila label="Dirección" value={cliente.direccion} />
+                                <CampoFila label="Estado" value={cliente.habilitado ? 'Habilitado' : 'Inhabilitado'} />
+                            </Box>
+                        </Paper>
+                    </Box>
+                </Box>
+            )}
+
+            {tabIndex === 1 && (
+                <Box sx={{ p: 3 }}>
+                    <Typography variant="body2" color={theme.palette.text.secondary} sx={{ mb: 2 }}>Encomiendas registradas para este cliente</Typography>
+                    {tabVentas.loading
+                        ? <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}><CircularProgress size={30} /></Box>
+                        : tabVentas.data.length === 0
+                        ? <Typography color="text.secondary" variant="body2" sx={{ py: 4, textAlign: 'center' }}>Sin encomiendas registradas</Typography>
+                        : <TableContainer component={Paper} elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 2 }}>
+                            <Table size="small">
+                                <TableHead>
+                                    <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
+                                        <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Guía</TableCell>
+                                        <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Destino</TableCell>
+                                        <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Valor</TableCell>
+                                        <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Estado</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {tabVentas.data.map(v => (
+                                        <TableRow key={v.idEncomiendaVenta} sx={{ '&:hover': { backgroundColor: theme.palette.background.subtle } }}>
+                                            <TableCell sx={{ fontSize: '0.82rem', fontWeight: 600 }}>{v.numeroGuia || `#${v.idEncomiendaVenta}`}</TableCell>
+                                            <TableCell sx={{ fontSize: '0.82rem' }}>{v.ruta?.destino?.ciudad || '—'}</TableCell>
+                                            <TableCell sx={{ fontSize: '0.82rem' }}>${Number(v.valorServicio || 0).toLocaleString('es-CO')}</TableCell>
+                                            <TableCell>
+                                                <Chip label={v.estado} size="small" sx={{
+                                                    backgroundColor: v.estado === 'pendiente' ? '#FFF3E0' : v.estado === 'entregado' ? '#E8F5E9' : v.estado === 'en_ruta' ? '#E3F2FD' : '#F5F5F5',
+                                                    color: v.estado === 'pendiente' ? '#E65100' : v.estado === 'entregado' ? '#2E7D32' : v.estado === 'en_ruta' ? '#1565C0' : '#757575',
+                                                    fontWeight: 600, fontSize: '0.72rem'
+                                                }} />
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    }
+                </Box>
+            )}
+
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', px: 3, pb: 3 }}>
+                <Button onClick={handleClose} variant="contained" sx={{
                     backgroundColor: theme.palette.primary.main, borderRadius: 2, textTransform: 'none',
                     boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
-                    '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}` },
+                    '&:hover': { backgroundColor: theme.palette.primary.dark },
                 }}>
                     Cerrar
                 </Button>
@@ -142,7 +186,11 @@ const ListarCliente = () => {
     const thStyle = getThStyle(theme)
     const { clientes, total, loading, error, fetchClientes, toggleHabilitadoCliente } = useClientes()
     const { tienePermiso, PERMISOS } = useAuth()
+    const [localLoading, setLocalLoading] = useState(false)
+    const initialLoad = useRef(true)
+    const effectiveLoading = loading || localLoading
     const [busqueda, setBusqueda] = useState('')
+    const [debouncedBusqueda, setDebouncedBusqueda] = useState('')
     const [filtroEstado, setFiltroEstado] = useState('todo')
     const [sortBy, setSortBy] = useState({ field: 'nombre', dir: 'asc' })
     const [page, setPage] = useState(1)
@@ -152,6 +200,7 @@ const ListarCliente = () => {
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [clienteEditar, setClienteEditar] = useState(null)
+    const [modalBloqueo, setModalBloqueo] = useState({ open: false, dependencias: [], mensaje: '' })
 
     const handleSort = (field) => {
         setSortBy(prev => prev.field === field
@@ -168,6 +217,11 @@ const ListarCliente = () => {
     }
 
     useEffect(() => {
+        const t = setTimeout(() => { setDebouncedBusqueda(busqueda); setLocalLoading(true) }, 300)
+        return () => clearTimeout(t)
+    }, [busqueda])
+
+    useEffect(() => {
         let active = true
         const controller = new AbortController()
 
@@ -176,7 +230,7 @@ const ListarCliente = () => {
                 page,
                 limit: rowsPerPage,
                 habilitado: filtroEstado === 'todo' ? undefined : filtroEstado === 'habilitado' ? 'true' : 'false',
-                q: busqueda.trim() || undefined,
+                q: debouncedBusqueda.trim() || undefined,
                 sortBy: `${sortBy.field}.${sortBy.dir}`,
             })
         }
@@ -186,7 +240,11 @@ const ListarCliente = () => {
             active = false
             controller.abort()
         }
-    }, [page, rowsPerPage, filtroEstado, busqueda, sortBy, fetchClientes])
+    }, [page, rowsPerPage, filtroEstado, debouncedBusqueda, sortBy, fetchClientes])
+
+    useEffect(() => {
+        if (!loading) { setLocalLoading(false); initialLoad.current = false }
+    }, [loading])
 
     const handleToggleHabilitado = async (id, nuevoEstado) => {
         try {
@@ -194,7 +252,11 @@ const ListarCliente = () => {
             setSnackbar({ open: true, message: `Cliente ${nuevoEstado ? 'habilitado' : 'inhabilitado'} correctamente`, severity: 'success' })
             await fetchClientes(undefined, { page, limit: rowsPerPage, habilitado: filtroEstado === 'todo' ? undefined : filtroEstado === 'habilitado' ? 'true' : 'false', q: busqueda.trim() || undefined, sortBy: `${sortBy.field}.${sortBy.dir}` })
         } catch (err) {
-            setSnackbar({ open: true, message: 'Error al cambiar el estado', severity: 'error' })
+            if (err?.details?.length > 0) {
+                setModalBloqueo({ open: true, dependencias: err.details, mensaje: err.message })
+            } else {
+                setSnackbar({ open: true, message: err.message || 'Error al cambiar el estado', severity: 'error' })
+            }
         }
     }
 
@@ -351,15 +413,6 @@ const ListarCliente = () => {
                     }}
                 />
 
-                {hayFiltrosActivos && (
-                    <Chip
-                        label="Limpiar"
-                        size="small"
-                        icon={<ClearIcon sx={{ fontSize: '14px !important' }} />}
-                        onClick={limpiarFiltros}
-                        sx={{ fontSize: '0.72rem', height: 28, cursor: 'pointer', backgroundColor: theme.palette.primary.light, color: theme.palette.primary.main }}
-                    />
-                )}
             </Box>
 
             <Paper elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 3, overflow: 'hidden' }}>
@@ -390,7 +443,7 @@ const ListarCliente = () => {
                         </TableHead>
 
                         <TableBody>
-                            {loading && clientes.length === 0 ? (
+                            {effectiveLoading && initialLoad.current ? (
                                 <TableRow>
                                     <TableCell colSpan={5} align="center" sx={{ py: 7 }}>
                                         <CircularProgress size={28} sx={{ color: theme.palette.primary.main }} />
@@ -407,15 +460,15 @@ const ListarCliente = () => {
                                         </Typography>
                                     </TableCell>
                                 </TableRow>
-                            ) : paginatedClientes.length === 0 ? (
+                            ) : !effectiveLoading && clientes.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={5} align="center" sx={{ py: 7 }}>
                                         <Typography color={theme.palette.text.secondary} variant="body2">
-                                            {clientes.length === 0
-                                                ? 'No hay clientes registrados en el sistema.'
-                                                : busqueda.trim() !== ''
+                                            {filtroEstado !== 'todo'
+                                                ? 'No se encontraron clientes que coincidan con los filtros aplicados.'
+                                                : debouncedBusqueda.trim()
                                                     ? 'No se encontraron clientes que coincidan con la búsqueda.'
-                                                    : 'No se encontraron clientes en este estado.'
+                                                    : 'No hay clientes registrados en el sistema.'
                                             }
                                         </Typography>
                                     </TableCell>
@@ -616,6 +669,14 @@ const ListarCliente = () => {
             </Box>
 
             <ModalConsultar cliente={clienteConsulta} onClose={() => setClienteConsulta(null)} />
+
+            <ModalBloqueoInhabilitacion
+                open={modalBloqueo.open}
+                onClose={() => setModalBloqueo({ open: false, dependencias: [], mensaje: '' })}
+                entidad="cliente"
+                mensaje={modalBloqueo.mensaje}
+                dependencias={modalBloqueo.dependencias}
+            />
 
             <RegistrarCliente
                 open={modalRegistrarOpen}
