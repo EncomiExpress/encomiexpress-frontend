@@ -256,7 +256,7 @@ const ListarPropietario = () => {
                             ) : error ? (
                                 <TableRow>
                                     <TableCell colSpan={5} align="center" sx={{ py: 7 }}>
-                                        <Typography color="error" variant="body2">{error}</Typography>
+                                        <Typography color="error" variant="body2">No se pudieron cargar los propietarios. Verifica la conexión con el servidor.</Typography>
                                     </TableCell>
                                 </TableRow>
                             ) : !loading && propietarios.length === 0 ? (

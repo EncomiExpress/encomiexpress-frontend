@@ -128,7 +128,7 @@ const ListarVenta = () => {
     }, [busqueda])
 
     const fetchVentasBackend = useCallback(() => {
-      fetchVentas({
+      fetchVentas(undefined, {
         page,
         limit: rowsPerPage,
         sortBy: `${sortBy.field}.${sortBy.dir}`,
@@ -286,7 +286,7 @@ const ListarVenta = () => {
 
             {error && (
                 <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
-                    Error al cargar las ventas: {error}
+                    No se pudieron cargar las ventas. Verifica la conexión con el servidor.
                 </Alert>
             )}
 

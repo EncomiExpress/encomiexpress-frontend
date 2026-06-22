@@ -204,7 +204,7 @@ const ListarUsuario = () => {
 
             {error && (
                 <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
-                    Error al cargar los usuarios: {error}
+                    No se pudieron cargar los usuarios. Verifica la conexión con el servidor.
                 </Alert>
             )}
 

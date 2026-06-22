@@ -187,7 +187,7 @@ const ListarCliente = () => {
 
             {error && (
                 <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
-                    Error al cargar los clientes: {error}
+                    No se pudieron cargar los clientes. Verifica la conexión con el servidor.
                 </Alert>
             )}
 

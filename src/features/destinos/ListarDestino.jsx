@@ -279,7 +279,7 @@ const ListarDestino = () => {
                             ) : error ? (
                                 <TableRow>
                                     <TableCell colSpan={5} align="center" sx={{ py: 7 }}>
-                                        <Typography variant="body2" color="error">{error}</Typography>
+                                        <Typography variant="body2" color="error">No se pudieron cargar los destinos. Verifica la conexión con el servidor.</Typography>
                                     </TableCell>
                                 </TableRow>
                             ) : !loading && destinos.length === 0 ? (
