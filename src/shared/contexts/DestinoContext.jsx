@@ -7,10 +7,10 @@ const DestinoContext = createContext()
 export const useDestino = () => useContext(DestinoContext)
 
 export const DestinoProvider = ({ children }) => {
-  const { token } = useAuth(); // obtener token
+  const { token } = useAuth()
   const [destinos, setDestinos] = useState([])
   const [total, setTotal] = useState(0)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
   const fetchDestinos = useCallback(async (signal, params = {}) => {

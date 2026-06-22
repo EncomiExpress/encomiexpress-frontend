@@ -5,18 +5,13 @@ import {
     Box, Typography, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, Chip, IconButton,
     TextField, InputAdornment, Select, MenuItem, FormControl,
-    Snackbar, Alert, Tooltip, Button, Dialog, DialogTitle, DialogContent, DialogActions,
-    Avatar, Pagination, CircularProgress, TableSortLabel, Tabs, Tab
+    Snackbar, Alert, Tooltip, Button, Avatar, Pagination, CircularProgress, TableSortLabel
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
 import ClearIcon from '@mui/icons-material/Clear'
-import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
-import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined'
-import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
-import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank'
 import CheckBoxIcon from '@mui/icons-material/CheckBox'
@@ -24,10 +19,10 @@ import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import { usePropietario } from '../../shared/contexts/PropietarioContext.jsx'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
-import * as vehiculoService from '../../shared/services/vehiculoService'
 import RegistrarPropietario from './RegistrarPropietario'
 import ActualizarPropietario from './ActualizarPropietario'
 import ModalBloqueoInhabilitacion from '../../shared/components/ModalBloqueoInhabilitacion'
+import ModalConsultarPropietario from './ModalConsultarPropietario'
 
 const getThStyle = (theme) => ({
     fontWeight: 700,
@@ -52,8 +47,6 @@ const ListarPropietario = () => {
     const [searchTerm, setSearchTerm] = useState('')
     const [debouncedSearch, setDebouncedSearch] = useState('')
     const [propietarioVer, setPropietarioVer] = useState(null)
-    const [tabPropIndex, setTabPropIndex] = useState(0)
-    const [tabPropVehiculos, setTabPropVehiculos] = useState({ data: [], loading: false })
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
     const [modalBloqueo, setModalBloqueo] = useState({ open: false, dependencias: [], mensaje: '' })
     const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
@@ -106,14 +99,6 @@ const ListarPropietario = () => {
         navigate('/login')
       }
     }, [usuario, navigate])
-
-    useEffect(() => {
-        if (!propietarioVer || tabPropIndex !== 1) return
-        setTabPropVehiculos({ data: [], loading: true })
-        vehiculoService.getVehiculos(undefined, { idPropietario: propietarioVer.idPropietario, limit: 100 })
-            .then(res => setTabPropVehiculos({ data: res?.data || [], loading: false }))
-            .catch(() => setTabPropVehiculos({ data: [], loading: false }))
-    }, [propietarioVer, tabPropIndex])
 
     const handleToggleHabilitado = async (id, habilitadoActual) => {
       try {
@@ -461,149 +446,7 @@ const ListarPropietario = () => {
             </Box>
 
             {propietarioVer && (
-                <Dialog open onClose={() => { setPropietarioVer(null); setTabPropIndex(0) }} maxWidth="md" fullWidth
-                    slotProps={{ paper: { sx: { borderRadius: 3, backgroundColor: theme.palette.background.subtle } } }}>
-
-                    <Box sx={{ borderBottom: 1, borderColor: 'divider', px: 3, pt: 2, backgroundColor: theme.palette.background.paper }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
-                            <Avatar sx={{
-                                backgroundColor: propietarioVer.habilitado ? theme.palette.avatarDefault.bg : theme.palette.avatarDisabled.bg,
-                                color: propietarioVer.habilitado ? theme.palette.avatarDefault.color : theme.palette.avatarDisabled.color,
-                                width: 40, height: 40, fontSize: '0.9rem', fontWeight: 700
-                            }}>
-                                {(propietarioVer.nombre?.[0] || '').toUpperCase()}{(propietarioVer.apellido?.[0] || '').toUpperCase()}
-                            </Avatar>
-                            <Box>
-                                <Typography fontWeight={700} fontSize="1rem" color={theme.palette.text.primary}>
-                                    {propietarioVer.nombre} {propietarioVer.apellido}
-                                </Typography>
-                                <Typography variant="caption" color={theme.palette.text.secondary}>Propietario</Typography>
-                            </Box>
-                        </Box>
-                        <Tabs value={tabPropIndex} onChange={(_, v) => setTabPropIndex(v)} textColor="primary" indicatorColor="primary">
-                            <Tab label="Información" sx={{ textTransform: 'none', fontWeight: 600, fontSize: '0.875rem' }} />
-                            <Tab label={`Vehículos`} sx={{ textTransform: 'none', fontWeight: 600, fontSize: '0.875rem' }} />
-                        </Tabs>
-                    </Box>
-
-                    {tabPropIndex === 0 && (
-                        <Box sx={{ p: 3 }}>
-                            <Box sx={{ display: 'flex', gap: 2 }}>
-                                <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white', flex: 1 }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                        <AssignmentIndOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
-                                        <Typography fontWeight={700} fontSize="0.95rem">Datos Personales</Typography>
-                                    </Box>
-                                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mt: 2 }}>
-                                        <Box>
-                                            <Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Tipo doc.</Typography>
-                                            <Typography variant="body2" fontWeight={500}>{propietarioVer.tipoIdentificacion}</Typography>
-                                        </Box>
-                                        <Box>
-                                            <Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>N° identificación</Typography>
-                                            <Typography variant="body2" fontWeight={500}>{propietarioVer.numeroIdentificacion}</Typography>
-                                        </Box>
-                                        <Box>
-                                            <Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Nombre</Typography>
-                                            <Typography variant="body2" fontWeight={500}>{propietarioVer.nombre}</Typography>
-                                        </Box>
-                                        <Box>
-                                            <Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Apellido</Typography>
-                                            <Typography variant="body2" fontWeight={500}>{propietarioVer.apellido || '—'}</Typography>
-                                        </Box>
-                                    </Box>
-                                </Paper>
-                                <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white', flex: 1 }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                        <PhoneOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
-                                        <Typography fontWeight={700} fontSize="0.95rem">Contacto y Flota</Typography>
-                                    </Box>
-                                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mt: 2 }}>
-                                        <Box>
-                                            <Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Teléfono</Typography>
-                                            <Typography variant="body2" fontWeight={500}>{propietarioVer.telefono || '—'}</Typography>
-                                        </Box>
-                                        <Box>
-                                            <Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Email</Typography>
-                                            <Typography variant="body2" fontWeight={500}>{propietarioVer.email || '—'}</Typography>
-                                        </Box>
-                                        <Box>
-                                            <Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Tarjeta propiedad</Typography>
-                                            <Typography variant="body2" fontWeight={500}>{propietarioVer.tarjetaPropiedad || '—'}</Typography>
-                                        </Box>
-                                        <Box>
-                                            <Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Tipo de flota</Typography>
-                                            <Typography variant="body2" fontWeight={500}>{propietarioVer.tipoFlota || '—'}</Typography>
-                                        </Box>
-                                        <Box sx={{ gridColumn: '1 / -1' }}>
-                                            <Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Estado</Typography>
-                                            <Typography variant="body2" fontWeight={500} color={propietarioVer.habilitado ? '#2E7D32' : '#ef4444'}>
-                                                {propietarioVer.habilitado ? 'Habilitado' : 'Inhabilitado'}
-                                            </Typography>
-                                        </Box>
-                                    </Box>
-                                </Paper>
-                            </Box>
-                        </Box>
-                    )}
-
-                    {tabPropIndex === 1 && (
-                        <Box sx={{ p: 3 }}>
-                            <Typography variant="body2" color={theme.palette.text.secondary} sx={{ mb: 2 }}>
-                                Vehículos registrados para este propietario
-                            </Typography>
-                            {tabPropVehiculos.loading
-                                ? <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}><CircularProgress size={30} /></Box>
-                                : tabPropVehiculos.data.length === 0
-                                ? <Typography color="text.secondary" variant="body2" sx={{ py: 4, textAlign: 'center' }}>Sin vehículos registrados</Typography>
-                                : <TableContainer component={Paper} elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 2 }}>
-                                    <Table size="small">
-                                        <TableHead>
-                                            <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
-                                                <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Placa</TableCell>
-                                                <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Marca / Modelo</TableCell>
-                                                <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Tipo</TableCell>
-                                                <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Estado</TableCell>
-                                                <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Habilitado</TableCell>
-                                            </TableRow>
-                                        </TableHead>
-                                        <TableBody>
-                                            {tabPropVehiculos.data.map(v => (
-                                                <TableRow key={v.idVehiculo} sx={{ '&:hover': { backgroundColor: theme.palette.background.subtle } }}>
-                                                    <TableCell sx={{ fontSize: '0.82rem', fontWeight: 600 }}>{v.placa}</TableCell>
-                                                    <TableCell sx={{ fontSize: '0.82rem' }}>{v.marca} {v.modelo}</TableCell>
-                                                    <TableCell sx={{ fontSize: '0.82rem' }}>{v.tipo || '—'}</TableCell>
-                                                    <TableCell>
-                                                        <Chip label={v.estado || '—'} size="small" sx={{
-                                                            backgroundColor: v.estado === 'disponible' ? '#E3F2FD' : v.estado === 'ocupado' ? '#FFF3E0' : '#FCE4EC',
-                                                            color: v.estado === 'disponible' ? '#1565C0' : v.estado === 'ocupado' ? '#E65100' : '#C62828',
-                                                            fontWeight: 600, fontSize: '0.72rem'
-                                                        }} />
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Chip label={v.habilitado ? 'Habilitado' : 'Inhabilitado'} size="small" sx={{
-                                                            backgroundColor: v.habilitado ? '#E8F5E9' : '#F5F5F5',
-                                                            color: v.habilitado ? '#2E7D32' : '#757575',
-                                                            fontWeight: 600, fontSize: '0.72rem'
-                                                        }} />
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
-                                </TableContainer>
-                            }
-                        </Box>
-                    )}
-
-                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', px: 3, pb: 3 }}>
-                        <Button onClick={() => { setPropietarioVer(null); setTabPropIndex(0) }} variant="contained"
-                            sx={{ backgroundColor: theme.palette.primary.main, borderRadius: 2, textTransform: 'none',
-                                boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`, '&:hover': { backgroundColor: theme.palette.primary.dark } }}>
-                            Cerrar
-                        </Button>
-                    </Box>
-                </Dialog>
+                <ModalConsultarPropietario propietario={propietarioVer} onClose={() => setPropietarioVer(null)} />
             )}
 
             <RegistrarPropietario

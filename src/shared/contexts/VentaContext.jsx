@@ -6,7 +6,6 @@ const VentaContext = createContext()
 
 export const useVentas = () => useContext(VentaContext)
 
-// Valores en minúsculas — deben coincidir con lo que el backend almacena
 export const ESTADOS_ENCOMIENDA = [
   'pendiente de recogida',
   'en recogida',
@@ -37,11 +36,10 @@ export const VentaProvider = ({ children }) => {
   const [error, setError] = useState(null)
 
   const fetchVentas = useCallback(async (params = {}) => {
-    const abortController = new AbortController()
     setLoading(true)
     setError(null)
     try {
-      const res = await ventaService.getEncomiendas(abortController.signal, params)
+      const res = await ventaService.getEncomiendas(undefined, params)
       if (res?.success) {
         setVentas((res.data ?? []).map(normalize))
         setTotal(res.total ?? 0)
@@ -60,39 +58,36 @@ export const VentaProvider = ({ children }) => {
       setLoading(false)
       return
     }
-
     fetchVentas()
   }, [token, fetchVentas])
 
-  const agregarVenta = async (datos) => {
+  const agregarVenta = useCallback(async (datos) => {
     const res = await ventaService.createEncomienda(datos)
     const normalizada = normalize(res.data)
     setVentas(prev => [normalizada, ...prev])
     return normalizada
-  }
+  }, [])
 
-  const actualizarVenta = async (id, datos) => {
+  const actualizarVenta = useCallback(async (id, datos) => {
     const res = await ventaService.updateEncomienda(id, datos)
     const normalizada = normalize(res.data)
     setVentas(prev => prev.map(v => v.idEncomiendaVenta === id ? normalizada : v))
     return normalizada
-  }
+  }, [])
 
-  const cambiarEstadoVenta = async (id, nuevoEstado) => {
+  const cambiarEstadoVenta = useCallback(async (id, nuevoEstado) => {
     await ventaService.cambiarEstadoEncomienda(id, nuevoEstado)
     setVentas(prev =>
       prev.map(v => v.idEncomiendaVenta === id ? { ...v, estado: nuevoEstado } : v)
     )
-  }
+  }, [])
 
-  // ⚠️ FIX: renombrado de invalidateVenta → toggleHabilitadoVenta
-  // para que ListarVenta pueda llamarlo con el nombre correcto
-  const toggleHabilitadoVenta = async (id) => {
+  const toggleHabilitadoVenta = useCallback(async (id) => {
     const res = await ventaService.toggleHabilitadoEncomienda(id)
     const normalizada = normalize(res.data)
     setVentas(prev => prev.map(v => v.idEncomiendaVenta === id ? normalizada : v))
     return normalizada
-  }
+  }, [])
 
   return (
     <VentaContext.Provider value={{
@@ -110,4 +105,3 @@ export const VentaProvider = ({ children }) => {
     </VentaContext.Provider>
   )
 }
-

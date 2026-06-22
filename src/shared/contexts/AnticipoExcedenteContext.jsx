@@ -105,12 +105,12 @@ export const AnticipoExcedenteProvider = ({ children }) => {
   }, [])
 
   const toggleHabilitado = useCallback(async (id) => {
-    await anticipoService.toggleHabilitadoAnticipo(id)
-    setAnticipos((prev) =>
-      prev.map((a) =>
-        a.idAnticipoExcedente === id ? { ...a, habilitado: !a.habilitado } : a
+    const res = await anticipoService.toggleHabilitadoAnticipo(id)
+    if (res?.data) {
+      setAnticipos((prev) =>
+        prev.map((a) => (a.idAnticipoExcedente === id ? res.data : a))
       )
-    )
+    }
   }, [])
 
   return (

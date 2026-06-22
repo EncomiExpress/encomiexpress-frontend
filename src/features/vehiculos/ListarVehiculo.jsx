@@ -5,8 +5,8 @@ import {
     Box, Typography, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, Chip, IconButton,
     TextField, InputAdornment, Select, MenuItem, FormControl,
-    Snackbar, Alert, Tooltip, Button, Dialog, Avatar, CircularProgress,
-    Pagination, TableSortLabel, Tabs, Tab
+    Snackbar, Alert, Tooltip, Button, Avatar, CircularProgress,
+    Pagination, TableSortLabel
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
@@ -16,18 +16,16 @@ import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDown
 import ClearIcon from '@mui/icons-material/Clear'
 import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
-import SpeedOutlinedIcon from '@mui/icons-material/SpeedOutlined'
-import EventOutlinedIcon from '@mui/icons-material/EventOutlined'
 import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank'
 import CheckBoxIcon from '@mui/icons-material/CheckBox'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import { useVehiculo } from '../../shared/contexts/VehiculoContext.jsx'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
-import * as rutaService from '../../shared/services/rutaService'
 import { useRutaProgramacion } from '../../shared/contexts/RutaProgramacionContext.jsx'
 import RegistrarVehiculo from './RegistrarVehiculo'
 import ActualizarVehiculo from './ActualizarVehiculo'
 import ModalBloqueoInhabilitacion from '../../shared/components/ModalBloqueoInhabilitacion'
+import ModalConsultarVehiculo from './ModalConsultarVehiculo'
 
 const getThStyle = (theme) => ({
     fontWeight: 700,
@@ -99,9 +97,6 @@ const ListarTransporte = () => {
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [vehiculoEditar, setVehiculoEditar] = useState(null)
     const [sortBy, setSortBy] = useState({ field: 'placa', dir: 'asc' })
-    const [tabVehIndex, setTabVehIndex] = useState(0)
-    const [tabVehRutas, setTabVehRutas] = useState({ data: [], loading: false })
-
     const { getVehiculos, getTotal, updateEstado, toggleHabilitado, fetchVehiculos } = useVehiculo()
     const { rutasProgramadas, fetchRutasProgramadas } = useRutaProgramacion()
     const { usuario, tienePermiso, PERMISOS } = useAuth()
@@ -166,14 +161,6 @@ const ListarTransporte = () => {
             fetchRutasProgramadas()
         }
     }, [usuario, rutasProgramadas.length, fetchRutasProgramadas])
-
-    useEffect(() => {
-        if (!vehiculoVer || tabVehIndex !== 1) return
-        setTabVehRutas({ data: [], loading: true })
-        rutaService.getRutas({ idVehiculo: vehiculoVer.idVehiculo, limit: 100 })
-            .then(res => setTabVehRutas({ data: res?.data || [], loading: false }))
-            .catch(() => setTabVehRutas({ data: [], loading: false }))
-    }, [vehiculoVer, tabVehIndex])
 
     const handleEstadoChange = async (id, nuevoEstado) => {
         const success = await updateEstado(id, nuevoEstado)
@@ -663,109 +650,7 @@ const ListarTransporte = () => {
             </Box>
 
             {vehiculoVer && (
-                <Dialog open onClose={() => { setVehiculoVer(null); setTabVehIndex(0) }} maxWidth="md" fullWidth
-                    slotProps={{ paper: { sx: { borderRadius: 3, backgroundColor: theme.palette.background.subtle } } }}>
-
-                    <Box sx={{ borderBottom: 1, borderColor: 'divider', px: 3, pt: 2, backgroundColor: theme.palette.background.paper }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
-                            <Avatar sx={{ backgroundColor: '#FFCDD2', color: '#C62828', width: 40, height: 40, fontSize: '0.9rem', fontWeight: 700 }}>
-                                {vehiculoVer.marca?.[0]}
-                            </Avatar>
-                            <Box>
-                                <Typography fontWeight={700} fontSize="1rem" color={theme.palette.text.primary}>
-                                    {vehiculoVer.marca} {vehiculoVer.modelo}
-                                </Typography>
-                                <Typography variant="caption" color={theme.palette.text.secondary}>Placa: {vehiculoVer.placa}</Typography>
-                            </Box>
-                        </Box>
-                        <Tabs value={tabVehIndex} onChange={(_, v) => setTabVehIndex(v)} textColor="primary" indicatorColor="primary">
-                            <Tab label="Información" sx={{ textTransform: 'none', fontWeight: 600, fontSize: '0.875rem' }} />
-                            <Tab label="Rutas" sx={{ textTransform: 'none', fontWeight: 600, fontSize: '0.875rem' }} />
-                        </Tabs>
-                    </Box>
-
-                    {tabVehIndex === 0 && (
-                        <Box sx={{ p: 3 }}>
-                            <Box sx={{ display: 'flex', gap: 2 }}>
-                                <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white', flex: 1 }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                        <SpeedOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
-                                        <Typography fontWeight={700} fontSize="0.95rem">Características</Typography>
-                                    </Box>
-                                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mt: 2 }}>
-                                        <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Marca</Typography><Typography variant="body2" fontWeight={500}>{vehiculoVer.marca}</Typography></Box>
-                                        <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Modelo</Typography><Typography variant="body2" fontWeight={500}>{vehiculoVer.modelo}</Typography></Box>
-                                        <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Tipo</Typography><Typography variant="body2" fontWeight={500}>{vehiculoVer.tipo}</Typography></Box>
-                                        <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Color</Typography><Typography variant="body2" fontWeight={500}>{vehiculoVer.color}</Typography></Box>
-                                        <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Capacidad</Typography><Typography variant="body2" fontWeight={500}>{vehiculoVer.capacidad} kg</Typography></Box>
-                                        <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Placa</Typography><Typography variant="body2" fontWeight={500}>{vehiculoVer.placa}</Typography></Box>
-                                    </Box>
-                                </Paper>
-                                <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white', flex: 1 }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                        <EventOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
-                                        <Typography fontWeight={700} fontSize="0.95rem">Estado y Documentos</Typography>
-                                    </Box>
-                                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mt: 2 }}>
-                                        <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Estado</Typography><Typography variant="body2" fontWeight={500} color={vehiculoVer.estadoEfectivo === 'disponible' ? '#2E7D32' : vehiculoVer.estadoEfectivo === 'ocupado' ? '#E65100' : '#9ca3af'}>{vehicleStatusLabel(vehiculoVer.estadoEfectivo)}</Typography></Box>
-                                        <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Venc. SOAT</Typography><Typography variant="body2" fontWeight={500} color={isVencido(vehiculoVer.vencimientoSOAT) ? '#ef4444' : '#2E7D32'}>{vehiculoVer.vencimientoSOAT ? new Date(vehiculoVer.vencimientoSOAT).toLocaleDateString() : 'N/A'}</Typography></Box>
-                                    </Box>
-                                </Paper>
-                            </Box>
-                        </Box>
-                    )}
-
-                    {tabVehIndex === 1 && (
-                        <Box sx={{ p: 3 }}>
-                            <Typography variant="body2" color={theme.palette.text.secondary} sx={{ mb: 2 }}>Rutas asignadas a este vehículo</Typography>
-                            {tabVehRutas.loading
-                                ? <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}><CircularProgress size={30} /></Box>
-                                : tabVehRutas.data.length === 0
-                                ? <Typography color="text.secondary" variant="body2" sx={{ py: 4, textAlign: 'center' }}>Sin rutas registradas</Typography>
-                                : <TableContainer component={Paper} elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 2 }}>
-                                    <Table size="small">
-                                        <TableHead>
-                                            <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
-                                                <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>#</TableCell>
-                                                <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Nombre</TableCell>
-                                                <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Destino</TableCell>
-                                                <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Fecha salida</TableCell>
-                                                <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Estado</TableCell>
-                                            </TableRow>
-                                        </TableHead>
-                                        <TableBody>
-                                            {tabVehRutas.data.map(r => (
-                                                <TableRow key={r.idRuta} sx={{ '&:hover': { backgroundColor: theme.palette.background.subtle } }}>
-                                                    <TableCell sx={{ fontSize: '0.82rem', fontWeight: 600 }}>{r.idRuta}</TableCell>
-                                                    <TableCell sx={{ fontSize: '0.82rem' }}>{r.nombreRuta || '—'}</TableCell>
-                                                    <TableCell sx={{ fontSize: '0.82rem' }}>{r.destino?.ciudad || '—'}</TableCell>
-                                                    <TableCell sx={{ fontSize: '0.82rem' }}>{r.fechaSalida ? new Date(r.fechaSalida).toLocaleDateString() : '—'}</TableCell>
-                                                    <TableCell>
-                                                        <Chip label={r.estado} size="small" sx={{
-                                                            backgroundColor: r.estado === 'Programada' ? '#E3F2FD' : r.estado === 'En Curso' ? '#FFF3E0' : r.estado === 'Completada' ? '#E8F5E9' : '#FCE4EC',
-                                                            color: r.estado === 'Programada' ? '#1565C0' : r.estado === 'En Curso' ? '#E65100' : r.estado === 'Completada' ? '#2E7D32' : '#C62828',
-                                                            fontWeight: 600, fontSize: '0.72rem'
-                                                        }} />
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
-                                </TableContainer>
-                            }
-                        </Box>
-                    )}
-
-                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', px: 3, pb: 3 }}>
-                        <Button onClick={() => { setVehiculoVer(null); setTabVehIndex(0) }} variant="contained" sx={{
-                            backgroundColor: theme.palette.primary.main, borderRadius: 2, textTransform: 'none',
-                            boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
-                            '&:hover': { backgroundColor: theme.palette.primary.dark },
-                        }}>
-                            Cerrar
-                        </Button>
-                    </Box>
-                </Dialog>
+                <ModalConsultarVehiculo vehiculo={vehiculoVer} onClose={() => setVehiculoVer(null)} />
             )}
 
             <RegistrarVehiculo

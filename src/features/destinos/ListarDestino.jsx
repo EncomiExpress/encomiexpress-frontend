@@ -5,8 +5,8 @@ import {
     Box, Typography, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, Chip, IconButton,
     TextField, InputAdornment, Snackbar, Alert,
-    Tooltip, Button, Dialog, Avatar, CircularProgress,
-    Select, MenuItem, FormControl, Pagination, TableSortLabel, Tabs, Tab
+    Tooltip, Button, Avatar, CircularProgress,
+    Select, MenuItem, FormControl, Pagination, TableSortLabel
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
@@ -15,18 +15,16 @@ import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
 import ClearIcon from '@mui/icons-material/Clear'
 import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined'
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
-import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined'
-import AttachMoneyOutlinedIcon from '@mui/icons-material/AttachMoneyOutlined'
 import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank'
 import CheckBoxIcon from '@mui/icons-material/CheckBox'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import { useDestino } from '../../shared/contexts/DestinoContext.jsx'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
-import * as rutaService from '../../shared/services/rutaService'
 import RegistrarDestino from './RegistrarDestino'
 import ActualizarDestino from './ActualizarDestino'
 import ModalBloqueoInhabilitacion from '../../shared/components/ModalBloqueoInhabilitacion'
+import ModalConsultarDestino from './ModalConsultarDestino'
 
 const getThStyle = (theme) => ({
     fontWeight: 700,
@@ -60,8 +58,6 @@ const ListarDestino = () => {
     const [destinoEditar, setDestinoEditar] = useState(null)
     const [togglingId, setTogglingId] = useState(null)
     const [sortBy, setSortBy] = useState({ field: 'ciudad', dir: 'asc' })
-    const [tabDestIndex, setTabDestIndex] = useState(0)
-    const [tabDestRutas, setTabDestRutas] = useState({ data: [], loading: false })
     const [localLoading, setLocalLoading] = useState(false)
     const initialLoad = useRef(true)
 
@@ -92,14 +88,6 @@ const ListarDestino = () => {
     useEffect(() => {
       if (!loading) { setLocalLoading(false); initialLoad.current = false }
     }, [loading])
-
-    useEffect(() => {
-        if (!destinoVer || tabDestIndex !== 1) return
-        setTabDestRutas({ data: [], loading: true })
-        rutaService.getRutas({ idDestino: destinoVer.idDestino, limit: 100 })
-            .then(res => setTabDestRutas({ data: res?.data || [], loading: false }))
-            .catch(() => setTabDestRutas({ data: [], loading: false }))
-    }, [destinoVer, tabDestIndex])
 
     const handleSort = (field) => {
         setSortBy(prev => prev.field === field
@@ -501,118 +489,8 @@ const ListarDestino = () => {
                 </Box>
             </Box>
 
-            {/* ── Modal detalle ── */}
             {destinoVer && (
-                <Dialog open onClose={() => { setDestinoVer(null); setTabDestIndex(0) }} maxWidth="md" fullWidth
-                    slotProps={{ paper: { sx: { borderRadius: 3, backgroundColor: theme.palette.background.subtle } } }}>
-
-                    <Box sx={{ borderBottom: 1, borderColor: 'divider', px: 3, pt: 2, backgroundColor: theme.palette.background.paper }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
-                            <Avatar sx={{ backgroundColor: theme.palette.avatarDefault.bg, color: theme.palette.avatarDefault.color, width: 40, height: 40, fontSize: '0.9rem', fontWeight: 700 }}>
-                                {(destinoVer.ciudad?.[0] || '').toUpperCase()}
-                            </Avatar>
-                            <Box>
-                                <Typography fontWeight={700} fontSize="1rem" color={theme.palette.text.primary}>{destinoVer.ciudad}</Typography>
-                                <Typography variant="caption" color={theme.palette.text.secondary}>{destinoVer.departamento}</Typography>
-                            </Box>
-                        </Box>
-                        <Tabs value={tabDestIndex} onChange={(_, v) => setTabDestIndex(v)} textColor="primary" indicatorColor="primary">
-                            <Tab label="Información" sx={{ textTransform: 'none', fontWeight: 600, fontSize: '0.875rem' }} />
-                            <Tab label="Rutas" sx={{ textTransform: 'none', fontWeight: 600, fontSize: '0.875rem' }} />
-                        </Tabs>
-                    </Box>
-
-                    {tabDestIndex === 0 && (
-                        <Box sx={{ p: 3 }}>
-                            <Box sx={{ display: 'flex', gap: 2 }}>
-                                <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white', flex: 1 }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                        <BusinessOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
-                                        <Typography fontWeight={700} fontSize="0.95rem">Ubicación</Typography>
-                                    </Box>
-                                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mt: 2 }}>
-                                        <Box>
-                                            <Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Ciudad</Typography>
-                                            <Typography variant="body2" fontWeight={500}>{destinoVer.ciudad}</Typography>
-                                        </Box>
-                                        <Box>
-                                            <Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Departamento</Typography>
-                                            <Typography variant="body2" fontWeight={500}>{destinoVer.departamento}</Typography>
-                                        </Box>
-                                    </Box>
-                                </Paper>
-                                <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white', flex: 1 }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                        <AttachMoneyOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
-                                        <Typography fontWeight={700} fontSize="0.95rem">Tarifa y Estado</Typography>
-                                    </Box>
-                                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mt: 2 }}>
-                                        <Box>
-                                            <Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Tarifa Base</Typography>
-                                            <Typography variant="body2" fontWeight={500}>
-                                                {destinoVer.tarifaBase !== undefined ? `$${Number(destinoVer.tarifaBase).toLocaleString('es-CO')}` : '—'}
-                                            </Typography>
-                                        </Box>
-                                        <Box>
-                                            <Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Estado</Typography>
-                                            <Typography variant="body2" fontWeight={500} color={destinoVer.habilitado ? '#2E7D32' : '#ef4444'}>
-                                                {destinoVer.habilitado ? 'Habilitado' : 'Inhabilitado'}
-                                            </Typography>
-                                        </Box>
-                                    </Box>
-                                </Paper>
-                            </Box>
-                        </Box>
-                    )}
-
-                    {tabDestIndex === 1 && (
-                        <Box sx={{ p: 3 }}>
-                            <Typography variant="body2" color={theme.palette.text.secondary} sx={{ mb: 2 }}>Rutas programadas hacia este destino</Typography>
-                            {tabDestRutas.loading
-                                ? <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}><CircularProgress size={30} /></Box>
-                                : tabDestRutas.data.length === 0
-                                ? <Typography color="text.secondary" variant="body2" sx={{ py: 4, textAlign: 'center' }}>Sin rutas registradas</Typography>
-                                : <TableContainer component={Paper} elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 2 }}>
-                                    <Table size="small">
-                                        <TableHead>
-                                            <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
-                                                <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>#</TableCell>
-                                                <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Nombre</TableCell>
-                                                <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Vehículo</TableCell>
-                                                <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Fecha salida</TableCell>
-                                                <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Estado</TableCell>
-                                            </TableRow>
-                                        </TableHead>
-                                        <TableBody>
-                                            {tabDestRutas.data.map(r => (
-                                                <TableRow key={r.idRuta} sx={{ '&:hover': { backgroundColor: theme.palette.background.subtle } }}>
-                                                    <TableCell sx={{ fontSize: '0.82rem', fontWeight: 600 }}>{r.idRuta}</TableCell>
-                                                    <TableCell sx={{ fontSize: '0.82rem' }}>{r.nombreRuta || '—'}</TableCell>
-                                                    <TableCell sx={{ fontSize: '0.82rem' }}>{r.vehiculo?.placa || '—'}</TableCell>
-                                                    <TableCell sx={{ fontSize: '0.82rem' }}>{r.fechaSalida ? new Date(r.fechaSalida).toLocaleDateString() : '—'}</TableCell>
-                                                    <TableCell>
-                                                        <Chip label={r.estado} size="small" sx={{
-                                                            backgroundColor: r.estado === 'Programada' ? '#E3F2FD' : r.estado === 'En Curso' ? '#FFF3E0' : r.estado === 'Completada' ? '#E8F5E9' : '#FCE4EC',
-                                                            color: r.estado === 'Programada' ? '#1565C0' : r.estado === 'En Curso' ? '#E65100' : r.estado === 'Completada' ? '#2E7D32' : '#C62828',
-                                                            fontWeight: 600, fontSize: '0.72rem'
-                                                        }} />
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
-                                </TableContainer>
-                            }
-                        </Box>
-                    )}
-
-                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', px: 3, pb: 3 }}>
-                        <Button onClick={() => { setDestinoVer(null); setTabDestIndex(0) }} variant="contained"
-                            sx={{ backgroundColor: theme.palette.primary.main, borderRadius: 2, textTransform: 'none', boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`, '&:hover': { backgroundColor: theme.palette.primary.dark } }}>
-                            Cerrar
-                        </Button>
-                    </Box>
-                </Dialog>
+                <ModalConsultarDestino destino={destinoVer} onClose={() => setDestinoVer(null)} />
             )}
 
             {/* ── Modales registrar / actualizar ── */}

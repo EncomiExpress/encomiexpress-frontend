@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react'
+import { createContext, useContext, useState, useCallback } from 'react'
 import {
   getRutas,
   getRutaById,
@@ -7,8 +7,6 @@ import {
   toggleHabilitadoRuta,
   updateEstadoRuta
 } from '../services/rutaService'
-import { useAuth } from './AuthContext'
-import { useDestino } from './DestinoContext'
 import { useVehiculo } from './VehiculoContext'
 
 const RutaProgramacionContext = createContext()
@@ -18,12 +16,9 @@ export const useRutaProgramacion = () => useContext(RutaProgramacionContext)
 export const RutaProgramacionProvider = ({ children }) => {
   const [rutasProgramadas, setRutasProgramadas] = useState([])
   const [total, setTotal] = useState(0)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const { token } = useAuth()
-  const { destinos, fetchDestinos } = useDestino()
   const { fetchVehiculos } = useVehiculo()
-  const fetchingRef = useRef(false)
 
   const fetchRutasProgramadas = useCallback(async (params = {}) => {
     setLoading(true)
@@ -42,17 +37,11 @@ export const RutaProgramacionProvider = ({ children }) => {
     }
   }, [])
 
-  // Obtener ruta por ID desde la API
   const getRutaProgramadaById = useCallback(async (id) => {
-    try {
-      const res = await getRutaById(id)
-      return res?.data ?? null
-    } catch (err) {
-      throw err
-    }
+    const res = await getRutaById(id)
+    return res?.data ?? null
   }, [])
 
-  // Registrar ruta en la API
   const registrarRutaProgramada = useCallback(async (nuevaRuta) => {
     const res = await createRuta(nuevaRuta)
     const creada = res?.data
@@ -62,7 +51,6 @@ export const RutaProgramacionProvider = ({ children }) => {
     return creada
   }, [])
 
-  // Actualizar ruta en la API
   const actualizarRutaProgramada = useCallback(async (rutaActualizada) => {
     const { idRuta, ...datos } = rutaActualizada
     const id = idRuta ?? rutaActualizada.idRutaProgramada
@@ -76,7 +64,6 @@ export const RutaProgramacionProvider = ({ children }) => {
     return actualizada
   }, [])
 
-  // Habilitar/Inhabilitar ruta
   const toggleHabilitado = useCallback(async (id) => {
     const res = await toggleHabilitadoRuta(id)
     const actualizada = res?.data
@@ -88,7 +75,6 @@ export const RutaProgramacionProvider = ({ children }) => {
     return actualizada
   }, [])
 
-  // Cambiar estado de la ruta
   const updateEstado = useCallback(async (id, nuevoEstado) => {
     const res = await updateEstadoRuta(id, nuevoEstado)
     const actualizada = res?.data
@@ -101,21 +87,19 @@ export const RutaProgramacionProvider = ({ children }) => {
     return actualizada
   }, [fetchVehiculos])
 
-  const value = {
-    rutasProgramadas,
-    total,
-    loading,
-    error,
-    fetchRutasProgramadas,
-    getRutaProgramadaById,
-    registrarRutaProgramada,
-    actualizarRutaProgramada,
-    toggleHabilitado,
-    updateEstado
-  }
-
   return (
-    <RutaProgramacionContext.Provider value={value}>
+    <RutaProgramacionContext.Provider value={{
+      rutasProgramadas,
+      total,
+      loading,
+      error,
+      fetchRutasProgramadas,
+      getRutaProgramadaById,
+      registrarRutaProgramada,
+      actualizarRutaProgramada,
+      toggleHabilitado,
+      updateEstado,
+    }}>
       {children}
     </RutaProgramacionContext.Provider>
   )

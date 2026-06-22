@@ -6,7 +6,7 @@ import {
     TableContainer, TableHead, TableRow, Chip, IconButton,
     TextField, InputAdornment, Select, MenuItem, FormControl,
     Snackbar, Alert, Tooltip, Button, Dialog, DialogTitle, DialogContent, DialogActions,
-    Avatar, CircularProgress, Pagination, TableSortLabel, Tabs, Tab
+    Avatar, CircularProgress, Pagination, TableSortLabel
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
@@ -15,8 +15,6 @@ import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import ClearIcon from '@mui/icons-material/Clear'
 import RouteIcon from '@mui/icons-material/Route'
-import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
-import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined'
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank'
 import CheckBoxIcon from '@mui/icons-material/CheckBox'
@@ -29,8 +27,7 @@ import { useAuth } from '../../shared/contexts/AuthContext.jsx'
 import RegistrarRutaProgramacion from './RegistrarRutaProgramacion'
 import ActualizarRutaProgramacion from './ActualizarRutaProgramacion'
 import ModalBloqueoInhabilitacion from '../../shared/components/ModalBloqueoInhabilitacion'
-import * as ventaService from '../../shared/services/ventaService'
-import * as anticipoService from '../../shared/services/anticipoService'
+import ModalConsultarRutaProgramacion from './ModalConsultarRutaProgramacion'
 
 const getThStyle = (theme) => ({
     fontWeight: 700,
@@ -109,10 +106,6 @@ const ListarRutaProgramacion = () => {
     const [page, setPage] = useState(1)
     const [rowsPerPage, setRowsPerPage] = useState(5)
     const [sortBy, setSortBy] = useState({ field: 'fechaSalida', dir: 'desc' })
-    const [tabRutaIndex, setTabRutaIndex] = useState(0)
-    const [tabRutaEncomiendas, setTabRutaEncomiendas] = useState({ data: [], loading: false })
-    const [tabRutaAnticipos, setTabRutaAnticipos] = useState({ data: [], loading: false })
-
     const [localLoading, setLocalLoading] = useState(false)
     const initialLoad = useRef(true)
 
@@ -155,22 +148,6 @@ const ListarRutaProgramacion = () => {
     useEffect(() => {
         if (!loading) { setLocalLoading(false); initialLoad.current = false }
     }, [loading])
-
-    useEffect(() => {
-        if (!rutaVer || tabRutaIndex !== 1) return
-        setTabRutaEncomiendas({ data: [], loading: true })
-        ventaService.getEncomiendas(undefined, { idRuta: rutaVer.idRuta, limit: 100 })
-            .then(res => setTabRutaEncomiendas({ data: res?.data || [], loading: false }))
-            .catch(() => setTabRutaEncomiendas({ data: [], loading: false }))
-    }, [rutaVer, tabRutaIndex])
-
-    useEffect(() => {
-        if (!rutaVer || tabRutaIndex !== 2) return
-        setTabRutaAnticipos({ data: [], loading: true })
-        anticipoService.getAnticipos(undefined, { idRuta: rutaVer.idRuta, limit: 100 })
-            .then(res => setTabRutaAnticipos({ data: res?.data || [], loading: false }))
-            .catch(() => setTabRutaAnticipos({ data: [], loading: false }))
-    }, [rutaVer, tabRutaIndex])
 
     const handleSort = (field) => {
         setSortBy(prev => prev.field === field
@@ -713,159 +690,8 @@ const resolveDestino = (ruta) =>
                 </Box>
             </Box>
 
-            {/* Dialog Ver Detalle */}
             {rutaVer && (
-                <Dialog open onClose={() => { setRutaVer(null); setTabRutaIndex(0) }} maxWidth="md" fullWidth
-                    slotProps={{ paper: { sx: { borderRadius: 3, backgroundColor: theme.palette.background.subtle } } }}>
-
-                    <Box sx={{ borderBottom: 1, borderColor: 'divider', px: 3, pt: 2, backgroundColor: theme.palette.background.paper }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
-                            <Avatar sx={{ backgroundColor: '#FFCDD2', color: '#C62828', width: 40, height: 40, fontSize: '0.9rem', fontWeight: 700 }}>
-                                {rutaVer.nombreRuta?.[0] || 'R'}
-                            </Avatar>
-                            <Box>
-                                <Typography fontWeight={700} fontSize="1rem" color={theme.palette.text.primary}>
-                                    {rutaVer.nombreRuta || 'Ruta Programada'}
-                                </Typography>
-                                <Typography variant="caption" color={theme.palette.text.secondary}>{rutaVer.fechaSalida}</Typography>
-                            </Box>
-                        </Box>
-                        <Tabs value={tabRutaIndex} onChange={(_, v) => setTabRutaIndex(v)} textColor="primary" indicatorColor="primary">
-                            <Tab label="Información" sx={{ textTransform: 'none', fontWeight: 600, fontSize: '0.875rem' }} />
-                            <Tab label="Encomiendas" sx={{ textTransform: 'none', fontWeight: 600, fontSize: '0.875rem' }} />
-                            <Tab label="Anticipos" sx={{ textTransform: 'none', fontWeight: 600, fontSize: '0.875rem' }} />
-                        </Tabs>
-                    </Box>
-
-                    {tabRutaIndex === 0 && (
-                        <Box sx={{ p: 3 }}>
-                            <Box sx={{ display: 'flex', gap: 2 }}>
-                                <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white', flex: 1 }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                        <DirectionsCarOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
-                                        <Typography fontWeight={700} fontSize="0.95rem">Vehículo y Conductor</Typography>
-                                    </Box>
-                                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mt: 2 }}>
-                                        <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Vehículo</Typography><Typography variant="body2" fontWeight={500}>{resolveVehiculo(rutaVer)}</Typography></Box>
-                                        <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Conductor</Typography><Typography variant="body2" fontWeight={500}>{resolveConductor(rutaVer)}</Typography></Box>
-                                    </Box>
-                                </Paper>
-                                <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white', flex: 1 }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                        <LocationOnOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
-                                        <Typography fontWeight={700} fontSize="0.95rem">Ruta y Horarios</Typography>
-                                    </Box>
-                                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mt: 2 }}>
-                                        <Box sx={{ gridColumn: '1 / -1' }}><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Destino</Typography><Typography variant="body2" fontWeight={500}>{resolveDestino(rutaVer)}</Typography></Box>
-                                        <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Fecha Salida</Typography><Typography variant="body2" fontWeight={500}>{rutaVer.fechaSalida}</Typography></Box>
-                                        <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Hora Salida</Typography><Typography variant="body2" fontWeight={500}>{rutaVer.horaSalida || '—'}</Typography></Box>
-                                        <Box sx={{ gridColumn: '1 / -1' }}>
-                                            <Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Estado</Typography>
-                                            <Typography variant="body2" fontWeight={500}
-                                                color={rutaVer.estado === 'Programada' ? '#3730A3' : rutaVer.estado === 'En Curso' ? '#1E40AF' : rutaVer.estado === 'Completada' ? '#065F46' : '#991B1B'}>
-                                                {rutaVer.estado}
-                                            </Typography>
-                                        </Box>
-                                        {rutaVer.observaciones && (
-                                            <Box sx={{ gridColumn: '1 / -1' }}>
-                                                <Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Observaciones</Typography>
-                                                <Typography variant="body2" fontWeight={500}>{rutaVer.observaciones}</Typography>
-                                            </Box>
-                                        )}
-                                    </Box>
-                                </Paper>
-                            </Box>
-                        </Box>
-                    )}
-
-                    {tabRutaIndex === 1 && (
-                        <Box sx={{ p: 3 }}>
-                            <Typography variant="body2" color={theme.palette.text.secondary} sx={{ mb: 2 }}>Encomiendas registradas en esta ruta</Typography>
-                            {tabRutaEncomiendas.loading
-                                ? <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}><CircularProgress size={30} /></Box>
-                                : tabRutaEncomiendas.data.length === 0
-                                ? <Typography color="text.secondary" variant="body2" sx={{ py: 4, textAlign: 'center' }}>Sin encomiendas registradas</Typography>
-                                : <TableContainer component={Paper} elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 2 }}>
-                                    <Table size="small">
-                                        <TableHead>
-                                            <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
-                                                <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Guía</TableCell>
-                                                <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Cliente</TableCell>
-                                                <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Valor</TableCell>
-                                                <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Estado</TableCell>
-                                            </TableRow>
-                                        </TableHead>
-                                        <TableBody>
-                                            {tabRutaEncomiendas.data.map(v => (
-                                                <TableRow key={v.idEncomiendaVenta} sx={{ '&:hover': { backgroundColor: theme.palette.background.subtle } }}>
-                                                    <TableCell sx={{ fontSize: '0.82rem', fontWeight: 600 }}>{v.numeroGuia || `#${v.idEncomiendaVenta}`}</TableCell>
-                                                    <TableCell sx={{ fontSize: '0.82rem' }}>{v.cliente ? `${v.cliente.nombre} ${v.cliente.apellido}` : '—'}</TableCell>
-                                                    <TableCell sx={{ fontSize: '0.82rem' }}>${Number(v.valorServicio || 0).toLocaleString('es-CO')}</TableCell>
-                                                    <TableCell>
-                                                        <Chip label={v.estado} size="small" sx={{
-                                                            backgroundColor: v.estado === 'pendiente' ? '#FFF3E0' : v.estado === 'entregado' ? '#E8F5E9' : '#E3F2FD',
-                                                            color: v.estado === 'pendiente' ? '#E65100' : v.estado === 'entregado' ? '#2E7D32' : '#1565C0',
-                                                            fontWeight: 600, fontSize: '0.72rem'
-                                                        }} />
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
-                                </TableContainer>
-                            }
-                        </Box>
-                    )}
-
-                    {tabRutaIndex === 2 && (
-                        <Box sx={{ p: 3 }}>
-                            <Typography variant="body2" color={theme.palette.text.secondary} sx={{ mb: 2 }}>Anticipos asociados a esta ruta</Typography>
-                            {tabRutaAnticipos.loading
-                                ? <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}><CircularProgress size={30} /></Box>
-                                : tabRutaAnticipos.data.length === 0
-                                ? <Typography color="text.secondary" variant="body2" sx={{ py: 4, textAlign: 'center' }}>Sin anticipos registrados</Typography>
-                                : <TableContainer component={Paper} elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 2 }}>
-                                    <Table size="small">
-                                        <TableHead>
-                                            <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
-                                                <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>#</TableCell>
-                                                <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Valor</TableCell>
-                                                <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Gastado</TableCell>
-                                                <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Estado</TableCell>
-                                            </TableRow>
-                                        </TableHead>
-                                        <TableBody>
-                                            {tabRutaAnticipos.data.map(a => (
-                                                <TableRow key={a.idAnticipoExcedente} sx={{ '&:hover': { backgroundColor: theme.palette.background.subtle } }}>
-                                                    <TableCell sx={{ fontSize: '0.82rem', fontWeight: 600 }}>{a.idAnticipoExcedente}</TableCell>
-                                                    <TableCell sx={{ fontSize: '0.82rem' }}>${Number(a.valorAnticipo).toLocaleString('es-CO')}</TableCell>
-                                                    <TableCell sx={{ fontSize: '0.82rem' }}>${Number(a.valorGastado || 0).toLocaleString('es-CO')}</TableCell>
-                                                    <TableCell>
-                                                        <Chip label={a.estado} size="small" sx={{
-                                                            backgroundColor: a.estado === 'pendiente' ? '#FFF3E0' : a.estado === 'liquidado' ? '#E8F5E9' : '#E3F2FD',
-                                                            color: a.estado === 'pendiente' ? '#E65100' : a.estado === 'liquidado' ? '#2E7D32' : '#1565C0',
-                                                            fontWeight: 600, fontSize: '0.72rem'
-                                                        }} />
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
-                                </TableContainer>
-                            }
-                        </Box>
-                    )}
-
-                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', px: 3, pb: 3 }}>
-                        <Button onClick={() => { setRutaVer(null); setTabRutaIndex(0) }} variant="contained" sx={{
-                            backgroundColor: theme.palette.primary.main, borderRadius: 2, textTransform: 'none',
-                            boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
-                            '&:hover': { backgroundColor: theme.palette.primary.dark },
-                        }}>
-                            Cerrar
-                        </Button>
-                    </Box>
-                </Dialog>
+                <ModalConsultarRutaProgramacion ruta={rutaVer} onClose={() => setRutaVer(null)} />
             )}
 
             <RegistrarRutaProgramacion

@@ -45,25 +45,25 @@ export const ClienteProvider = ({ children }) => {
         return () => abortController.abort()
     }, [token, fetchClientes])
 
-  const agregarCliente = async (nuevoCliente) => {
+  const agregarCliente = useCallback(async (nuevoCliente) => {
     const res = await clienteService.createCliente(nuevoCliente)
     setClientes(prev => [...prev, normalize(res.data)])
-  }
+  }, [])
 
-  const actualizarCliente = async (clienteActualizado) => {
+  const actualizarCliente = useCallback(async (clienteActualizado) => {
     const res = await clienteService.updateCliente(clienteActualizado.idCliente, clienteActualizado)
     setClientes(prev =>
       prev.map(c => c.idCliente === clienteActualizado.idCliente ? normalize(res.data) : c)
     )
-  }
+  }, [])
 
-  const toggleHabilitadoCliente = async (id) => {
+  const toggleHabilitadoCliente = useCallback(async (id) => {
     const res = await clienteService.toggleHabilitadoCliente(id)
     setClientes(prev =>
       prev.map(c => c.idCliente === id ? normalize(res.data) : c)
     )
     return res
-  }
+  }, [])
 
   const value = {
     clientes, total, loading, error,
