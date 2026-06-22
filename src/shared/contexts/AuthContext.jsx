@@ -1,5 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { API_URL } from '../config/api.js'
+import * as rolService from '../services/rolService'
+import * as usuarioService from '../services/usuarioService'
 
 const AuthContext = createContext()
 export const useAuth = () => useContext(AuthContext)
@@ -212,15 +214,10 @@ export const AuthProvider = ({ children }) => {
 
   const registrarUsuario = async (usuarioData) => {
     try {
-      const res = await fetch(`${API_URL}/usuarios`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify(usuarioData)
-      })
-      const data = await res.json()
-      return { success: res.ok, data: data.data, message: data.message }
-    } catch {
-      return { success: false, message: 'Error de conexión' }
+      const data = await usuarioService.createUsuario(usuarioData)
+      return { success: true, data: data.data, message: data.message }
+    } catch (err) {
+      return { success: false, message: err.message || 'Error de conexión' }
     }
   }
 
@@ -257,134 +254,89 @@ export const AuthProvider = ({ children }) => {
 
   const recuperarPassword = async () => ({ success: true })
 
-  // Backend real
   const getUsuarios = useCallback(async (params = {}) => {
     try {
-      const qs = new URLSearchParams()
-      Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '') qs.set(k, v) })
-      const suffix = qs.toString() ? `?${qs.toString()}` : ''
-      const res = await fetch(`${API_URL}/usuarios${suffix}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      const data = await res.json()
-      return { success: res.ok, data: data.data || [], total: data.total ?? (data.data || []).length }
+      const data = await usuarioService.getUsuarios(params)
+      return { success: true, data: data.data || [], total: data.total ?? (data.data || []).length }
     } catch {
       return { success: false, data: [], total: 0 }
     }
-  }, [token])
+  }, [])
 
   const getRolesBackend = useCallback(async (params = {}) => {
     try {
-      const qs = new URLSearchParams()
-      Object.entries(params).forEach(([k, v]) => {
-        if (v !== undefined && v !== null && v !== '') qs.set(k, v)
-      })
-      const suffix = qs.toString() ? `?${qs.toString()}` : ''
-      const res = await fetch(`${API_URL}/roles${suffix}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      const data = await res.json()
+      const data = await rolService.getRoles(params)
       const roles = (data.data || []).map(rol => ({
         ...rol,
         id: rol.id ?? rol.idRol,
         permisosIds: (rol.permisosIds || rol.permisos || []).map(id => Number(id))
       }))
-      return { success: res.ok, data: roles, total: data.total ?? roles.length }
+      return { success: true, data: roles, total: data.total ?? roles.length }
     } catch {
       return { success: false, data: [], total: 0 }
     }
-  }, [token])
+  }, [])
 
   const getPermisosBackend = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/permisos`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      const data = await res.json()
-      return { success: res.ok, data: data.data || [] }
+      const data = await rolService.getPermisos()
+      return { success: true, data: data.data || [] }
     } catch {
       return { success: false, data: [] }
     }
-  }, [token])
+  }, [])
 
   const registrarRol = async (nombre, permisos, descripcion) => {
     try {
-      const res = await fetch(`${API_URL}/roles`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ nombre, descripcion, permisos })
-      })
-      const data = await res.json()
-      return { success: res.ok, data: data.data, message: data.message }
-    } catch {
-      return { success: false, message: 'Error de conexión' }
+      const data = await rolService.createRol(nombre, descripcion, permisos)
+      return { success: true, data: data.data, message: data.message }
+    } catch (err) {
+      return { success: false, message: err.message || 'Error de conexión' }
     }
   }
 
   const actualizarRolBackend = async (id, nombre, permisos, habilitado) => {
     try {
-      const res = await fetch(`${API_URL}/roles/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ nombre, permisos, habilitado })
-      })
-      const data = await res.json()
-      return { success: res.ok, data: data.data, message: data.message }
-    } catch {
-      return { success: false, message: 'Error de conexión' }
+      const data = await rolService.updateRol(id, nombre, permisos, habilitado)
+      return { success: true, data: data.data, message: data.message }
+    } catch (err) {
+      return { success: false, message: err.message || 'Error de conexión' }
     }
   }
 
   const toggleHabilitadoRol = async (id) => {
     try {
-      const res = await fetch(`${API_URL}/roles/${id}/toggle-habilitado`, {
-        method: 'PATCH',
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      const data = await res.json()
-      return { success: res.ok, message: data.message, data: data.data }
-    } catch (error) {
-      return { success: false, message: 'Error de conexión' }
+      const data = await rolService.toggleHabilitadoRol(id)
+      return { success: true, message: data.message, data: data.data }
+    } catch (err) {
+      return { success: false, message: err.message || 'Error de conexión' }
     }
   }
 
   const eliminarRolBackend = async (id) => {
     try {
-      const res = await fetch(`${API_URL}/roles/${id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      const data = await res.json()
-      return { success: res.ok, message: data.message }
-    } catch {
-      return { success: false, message: 'Error de conexión' }
+      const data = await rolService.deleteRol(id)
+      return { success: true, message: data.message }
+    } catch (err) {
+      return { success: false, message: err.message || 'Error de conexión' }
     }
   }
 
   const actualizarUsuario = async (id, usuarioData) => {
     try {
-      const res = await fetch(`${API_URL}/usuarios/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify(usuarioData)
-      })
-      const data = await res.json()
-      return { success: res.ok, data: data.data, message: data.message }
-    } catch {
-      return { success: false, message: 'Error de conexión' }
+      const data = await usuarioService.updateUsuario(id, usuarioData)
+      return { success: true, data: data.data, message: data.message }
+    } catch (err) {
+      return { success: false, message: err.message || 'Error de conexión' }
     }
   }
 
   const habilitarInhabilitarUsuario = async (id) => {
     try {
-      const res = await fetch(`${API_URL}/usuarios/${id}/toggle-habilitado`, {
-        method: 'PATCH',
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      const data = await res.json()
-      return { success: res.ok, message: data.message }
-    } catch {
-      return { success: false, message: 'Error de conexión' }
+      const data = await usuarioService.toggleHabilitadoUsuario(id)
+      return { success: true, message: data.message }
+    } catch (err) {
+      return { success: false, message: err.message || 'Error de conexión' }
     }
   }
 

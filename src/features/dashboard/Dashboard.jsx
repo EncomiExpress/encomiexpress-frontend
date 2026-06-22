@@ -15,16 +15,6 @@ import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined
 import RouteOutlinedIcon from '@mui/icons-material/RouteOutlined'
 import BarChartOutlinedIcon from '@mui/icons-material/BarChartOutlined'
 
-const STATUS_COLOR_MAP = {
-  'entregado': '#22c55e',
-  'en tránsito': '#f59e0b',
-  'pendiente de recogida': '#3b82f6',
-  'en recogida': '#38bdf8',
-  'programada': '#a855f7',
-  'devuelto': '#ef4444',
-  'cancelado': '#9ca3af',
-}
-
 const STATUS_LABEL = {
   'entregado': 'Entregado',
   'en tránsito': 'En tránsito',
@@ -147,6 +137,8 @@ const Dashboard = () => {
   const { getVehiculos } = useVehiculo()
   const transportes = getVehiculos()
 
+  const theme = useTheme()
+
   const ingresosMes = useMemo(() => {
     const meses = new Map()
     ventas.forEach((venta) => {
@@ -161,6 +153,15 @@ const Dashboard = () => {
   }, [ventas, filtroActivo])
 
   const enviosEstado = useMemo(() => {
+    const statusColors = {
+      'entregado':             theme.palette.status.ventaEntregada.color,
+      'en tránsito':           theme.palette.status.ventaEnTransito.color,
+      'pendiente de recogida': theme.palette.status.ventaPendiente.color,
+      'en recogida':           theme.palette.status.ventaEnRecogida.color,
+      'programada':            theme.palette.status.ventaProgramada.color,
+      'devuelto':              theme.palette.status.ventaDevuelta.color,
+      'cancelado':             theme.palette.status.neutral.color,
+    }
     const contador = {}
     ventas.forEach((venta) => {
       if (!isWithinRange(venta.fechaRegistro, filtroActivo.desde, filtroActivo.hasta)) return
@@ -177,9 +178,9 @@ const Dashboard = () => {
       .map(key => ({
         label: STATUS_LABEL[key] || key.charAt(0).toUpperCase() + key.slice(1),
         count: contador[key],
-        color: STATUS_COLOR_MAP[key] || '#9ca3af',
+        color: statusColors[key] || theme.palette.status.neutral.color,
       }))
-  }, [ventas, filtroActivo])
+  }, [ventas, filtroActivo, theme])
 
   const topRutas = useMemo(() => {
     const contador = {}
@@ -202,8 +203,6 @@ const Dashboard = () => {
 
   const maxEnvios = enviosEstado.length > 0 ? Math.max(...enviosEstado.map(e => e.count)) : 1
   const maxIngreso = ingresosMes.length > 0 ? Math.max(...ingresosMes.map(m => m.valor)) : 1
-
-  const theme = useTheme()
 
   return (
     <Box sx={{ p: { xs: 2, md: 3 }, display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -324,7 +323,7 @@ const Dashboard = () => {
                     variant="determinate"
                     value={(m.valor / maxIngreso) * 100}
                     sx={{
-                      height: 7, borderRadius: 4, backgroundColor: '#f1f5f9',
+                      height: 7, borderRadius: 4, backgroundColor: theme.palette.background.subtle,
                       '& .MuiLinearProgress-bar': {
                         background: `linear-gradient(90deg, ${theme.palette.primary.main} 45%, ${theme.palette.secondary.main} 100%)`,
                         borderRadius: 4,
@@ -359,7 +358,7 @@ const Dashboard = () => {
                     variant="determinate"
                     value={(e.count / maxEnvios) * 100}
                     sx={{
-                      height: 6, borderRadius: 4, backgroundColor: '#f1f5f9',
+                      height: 6, borderRadius: 4, backgroundColor: theme.palette.background.subtle,
                       '& .MuiLinearProgress-bar': { backgroundColor: e.color, borderRadius: 4 },
                     }}
                   />

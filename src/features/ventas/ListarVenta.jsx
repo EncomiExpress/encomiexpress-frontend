@@ -36,26 +36,26 @@ const getThStyle = (theme) => ({
     color: theme.palette.text.primary,
     letterSpacing: 0.5,
     py: 1.5,
-    borderBottom: `1px solid #E0E0E0`,
+    borderBottom: `1px solid ${theme.palette.divider}`,
     whiteSpace: 'nowrap',
 })
 
-const getEstadoColor = (estado) => {
+const getEstadoColor = (estado, theme) => {
     switch (estado?.toLowerCase()) {
-        case 'pendiente de recogida': return { bg: '#FEF3C7', color: '#92400E' }
-        case 'en recogida': return { bg: '#DBEAFE', color: '#1E40AF' }
-        case 'programada': return { bg: '#E0E7FF', color: '#3730A3' }
-        case 'en tránsito': return { bg: '#CFFAFE', color: '#155E75' }
-        case 'entregado': return { bg: '#E8F5E9', color: '#2E7D32' }
-        case 'devuelto': return { bg: '#FFF4E5', color: '#BF360C' }
-        default: return { bg: '#F3F4F6', color: '#6B7280' }
+        case 'pendiente de recogida': return theme.palette.status.ventaPendiente
+        case 'en recogida': return theme.palette.status.ventaEnRecogida
+        case 'programada': return theme.palette.status.ventaProgramada
+        case 'en tránsito': return theme.palette.status.ventaEnTransito
+        case 'entregado': return theme.palette.status.ventaEntregadaAlt
+        case 'devuelto': return theme.palette.status.ventaDevueltaAlt
+        default: return theme.palette.status.neutral
     }
 }
 
-const getPagoColor = (estadoPago) =>
+const getPagoColor = (estadoPago, theme) =>
     estadoPago?.toLowerCase() === 'pagado'
-        ? { bg: '#D1FAE5', color: '#065F46' }
-        : { bg: '#FEE2E2', color: '#991B1B' }
+        ? theme.palette.status.pagado
+        : theme.palette.status.pendientePago
 
 const formatRutaDestino = (destino) => {
     if (!destino) return '—'
@@ -84,8 +84,8 @@ const CampoFila = ({ label, value }) => {
 const ModalConsultar = ({ venta, onClose }) => {
     const theme = useTheme()
     if (!venta) return null
-    const estadoStyles = getEstadoColor(venta.estado)
-    const pagoStyles = getPagoColor(venta.estadoPago)
+    const estadoStyles = getEstadoColor(venta.estado, theme)
+    const pagoStyles = getPagoColor(venta.estadoPago, theme)
 
     const cardSx = { borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: theme.palette.background.paper }
     const tituloSx = { display: 'flex', alignItems: 'center', gap: 1, mb: 1 }
@@ -625,8 +625,8 @@ const ListarVenta = () => {
                                 </TableRow>
                             ) : (
                                 ventas.map(venta => {
-                                    const estadoStyles = getEstadoColor(venta.estado)
-                                    const pagoStyles = getPagoColor(venta.estadoPago)
+                                    const estadoStyles = getEstadoColor(venta.estado, theme)
+                                    const pagoStyles = getPagoColor(venta.estadoPago, theme)
                                     return (
                                         <TableRow
                                             key={venta.idEncomiendaVenta}
@@ -677,7 +677,7 @@ const ListarVenta = () => {
                                                     size="small"
                                                     fullWidth
                                                     renderValue={(val) => {
-                                                        const style = getEstadoColor(val)
+                                                        const style = getEstadoColor(val, theme)
                                                         return (
                                                             <Box sx={{
                                                                 display: 'inline-flex',
@@ -696,13 +696,13 @@ const ListarVenta = () => {
                                                     }}
                                                     IconComponent={KeyboardArrowDownOutlinedIcon}
                                                     sx={{
-                                                        backgroundColor: '#ffffff',
+                                                        backgroundColor: theme.palette.background.paper,
                                                         color: theme.palette.text.primary,
                                                         fontSize: '0.72rem',
                                                         fontWeight: 600,
                                                         height: 32,
                                                         borderRadius: 1,
-                                                        border: '1px solid #E0E0E0',
+                                                        border: `1px solid ${theme.palette.divider}`,
                                                         '& .MuiSelect-select': {
                                                             py: 0.8,
                                                             px: 1,
@@ -717,7 +717,7 @@ const ListarVenta = () => {
                                                     MenuProps={filterMenuProps}
                                                 >
                                                     {ESTADOS_ENCOMIENDA.map(estado => {
-                                                        const optionStyles = getEstadoColor(estado)
+                                                        const optionStyles = getEstadoColor(estado, theme)
                                                         return (
                                                             <MenuItem key={estado} value={estado} dense>
                                                                 <Box sx={{
@@ -746,7 +746,7 @@ const ListarVenta = () => {
                                                     size="small"
                                                     fullWidth
                                                     renderValue={(val) => {
-                                                        const style = getPagoColor(val)
+                                                        const style = getPagoColor(val, theme)
                                                         return (
                                                             <Box sx={{
                                                                 display: 'inline-flex',
@@ -765,13 +765,13 @@ const ListarVenta = () => {
                                                     }}
                                                     IconComponent={KeyboardArrowDownOutlinedIcon}
                                                     sx={{
-                                                        backgroundColor: '#ffffff',
+                                                        backgroundColor: theme.palette.background.paper,
                                                         color: theme.palette.text.primary,
                                                         fontSize: '0.72rem',
                                                         fontWeight: 600,
                                                         height: 32,
                                                         borderRadius: 1,
-                                                        border: '1px solid #E0E0E0',
+                                                        border: `1px solid ${theme.palette.divider}`,
                                                         '& .MuiSelect-select': {
                                                             py: 0.8,
                                                             px: 1.3,
@@ -786,7 +786,7 @@ const ListarVenta = () => {
                                                     MenuProps={filterMenuProps}
                                                 >
                                                     {ESTADOS_PAGO.map(estado => {
-                                                        const optionStyles = getPagoColor(estado)
+                                                        const optionStyles = getPagoColor(estado, theme)
                                                         return (
                                                             <MenuItem key={estado} value={estado} dense>
                                                                 <Box sx={{
