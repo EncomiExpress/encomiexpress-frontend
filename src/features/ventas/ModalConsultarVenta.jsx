@@ -1,6 +1,6 @@
 import { useTheme } from '@mui/material/styles'
 import {
-    Box, Typography, Paper, Chip, Button, Dialog, Avatar
+    Box, Typography, Paper, Chip, Button, Dialog, Avatar, IconButton
 } from '@mui/material'
 import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined'
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined'
@@ -8,35 +8,14 @@ import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined'
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined'
 import PaymentOutlinedIcon from '@mui/icons-material/PaymentOutlined'
-
-const getEstadoColor = (estado, theme) => {
-    switch (estado?.toLowerCase()) {
-        case 'pendiente de recogida': return theme.palette.status.ventaPendiente
-        case 'en recogida': return theme.palette.status.ventaEnRecogida
-        case 'programada': return theme.palette.status.ventaProgramada
-        case 'en tránsito': return theme.palette.status.ventaEnTransito
-        case 'entregado': return theme.palette.status.ventaEntregadaAlt
-        case 'devuelto': return theme.palette.status.ventaDevueltaAlt
-        default: return theme.palette.status.neutral
-    }
-}
+import CloseIcon from '@mui/icons-material/Close'
+import { getEstadoColorVenta as getEstadoColor } from '../../shared/utils/estadoColors.js'
+import { formatRutaDestino } from '../../shared/utils/formatters.js'
 
 const getPagoColor = (estadoPago, theme) =>
     estadoPago?.toLowerCase() === 'pagado'
         ? theme.palette.status.pagado
         : theme.palette.status.pendientePago
-
-const formatRutaDestino = (destino) => {
-    if (!destino) return '—'
-    if (typeof destino === 'string') return destino
-    if (typeof destino === 'object') {
-        if (destino.ciudad || destino.departamento) {
-            return `${destino.ciudad || ''}${destino.ciudad && destino.departamento ? ' — ' : ''}${destino.departamento || ''}`.trim() || '—'
-        }
-        return destino.nombre || String(destino.idDestino ?? destino.id ?? '—')
-    }
-    return String(destino)
-}
 
 const CampoFila = ({ label, value }) => {
     const theme = useTheme()
@@ -61,7 +40,12 @@ const ModalConsultarVenta = ({ venta, onClose }) => {
 
     return (
         <Dialog open onClose={onClose} maxWidth="md" fullWidth
-            slotProps={{ paper: { sx: { borderRadius: 3, p: 3, backgroundColor: theme.palette.background.subtle } } }}>
+            slotProps={{ paper: { sx: { borderRadius: 3, p: 3, position: 'relative', backgroundColor: theme.palette.background.subtle } } }}>
+
+            <IconButton onClick={onClose} size="small"
+                sx={{ position: 'absolute', right: 12, top: 12, color: theme.palette.text.secondary, zIndex: 1 }}>
+                <CloseIcon fontSize="small" />
+            </IconButton>
 
             <Paper elevation={0} sx={{ ...cardSx, mb: 2 }}>
                 <Box sx={tituloSx}>

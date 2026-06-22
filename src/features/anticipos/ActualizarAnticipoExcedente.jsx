@@ -12,6 +12,8 @@ import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
 import CloseIcon from '@mui/icons-material/Close'
 import { useAnticipos } from '../../shared/contexts/AnticipoExcedenteContext.jsx'
 import { FormField, FormSelect, formFieldStyles } from '../../shared/components/FormularioEstandarizado.jsx'
+import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
+import { formatFecha } from '../../shared/utils/formatters.js'
 
 const ESTADO_COLORS = {
     'entregado': { bg: '#E3F2FD', color: '#1565C0' },
@@ -22,20 +24,6 @@ const ESTADO_COLORS = {
 }
 
 const steps = ['Asignación', 'Estado y Fechas']
-
-const ConfirmRow = ({ label, value }) => {
-    const theme = useTheme()
-
-    return (
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, py: 0.9, overflow: 'hidden' }}>
-            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500, flexShrink: 0 }}>{label}</Typography>
-        <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary}
-            sx={{ textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
-            {value || '—'}
-        </Typography>
-    </Box>
-    )
-}
 
 const ConfirmRowChip = ({ label, value, colors }) => {
     const theme = useTheme()
@@ -169,12 +157,6 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
         const num = parseFloat(val || 0)
         if (isNaN(num)) return '$0'
         return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(num)
-    }
-
-    const formatFecha = (fecha) => {
-        if (!fecha) return '—'
-        const [y, m, d] = fecha.split('-')
-        return `${d}/${m}/${y}`
     }
 
     const getNombreConductor = (id) => {

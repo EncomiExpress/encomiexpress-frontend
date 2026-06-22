@@ -18,20 +18,11 @@ import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined
 import CloseIcon from '@mui/icons-material/Close'
 import { usePropietario } from '../../shared/contexts/PropietarioContext.jsx'
 import { FormField, FormSelect, formFieldStyles } from '../../shared/components/FormularioEstandarizado.jsx'
+import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 
 const DOMINIOS_EMAIL = ['@gmail.com', '@hotmail.com', '@outlook.com', '@yahoo.com', '@icloud.com', '@live.com']
 
 const steps = ['Datos Personales', 'Contacto y Vehículo', 'Confirmación']
-
-const ConfirmRow = ({ label, value, theme }) => (
-    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, py: 0.9, overflow: 'hidden' }}>
-        <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500, flexShrink: 0 }}>{label}</Typography>
-        <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary}
-            sx={{ textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
-            {value || '—'}
-        </Typography>
-    </Box>
-)
 
 const EMPTY_FORM = {
     tipoIdentificacion: '',
@@ -230,10 +221,10 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
                                     <Typography fontWeight={700} fontSize="0.95rem">Datos Personales</Typography>
                                 </Box>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la información personal</Typography>
-                                <ConfirmRow theme={theme} label="Tipo de documento" value={getTipoLabel(form.tipoIdentificacion)} />
-                                <ConfirmRow theme={theme} label="N° de documento" value={form.numeroIdentificacion} />
-                                <ConfirmRow theme={theme} label="Nombre" value={form.nombre} />
-                                <ConfirmRow theme={theme} label="Apellido" value={form.apellido || 'N/A'} />
+                                <ConfirmRow label="Tipo de documento" value={getTipoLabel(form.tipoIdentificacion)} />
+                                <ConfirmRow label="N° de documento" value={form.numeroIdentificacion} />
+                                <ConfirmRow label="Nombre" value={form.nombre} />
+                                <ConfirmRow label="Apellido" value={form.apellido || 'N/A'} />
                             </Paper>
                             <Paper elevation={0} sx={{ flex: 1, minWidth: 0, borderRadius: 2, p: 2.5, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white' }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
@@ -241,10 +232,10 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
                                     <Typography fontWeight={700} fontSize="0.95rem">Contacto y Vehículo</Typography>
                                 </Box>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica los datos de contacto y flota</Typography>
-                                <ConfirmRow theme={theme} label="Teléfono" value={form.telefono} />
-                                <ConfirmRow theme={theme} label="Correo" value={form.emailLocal ? form.emailLocal + form.emailDominio : '—'} />
-                                <ConfirmRow theme={theme} label="Tarjeta propiedad" value={form.tarjetaPropiedad || 'N/A'} />
-                                <ConfirmRow theme={theme} label="Tipo de flota" value={form.tipoFlota || 'N/A'} />
+                                <ConfirmRow label="Teléfono" value={form.telefono} />
+                                <ConfirmRow label="Correo" value={form.emailLocal ? form.emailLocal + form.emailDominio : '—'} />
+                                <ConfirmRow label="Tarjeta propiedad" value={form.tarjetaPropiedad || 'N/A'} />
+                                <ConfirmRow label="Tipo de flota" value={form.tipoFlota || 'N/A'} />
                             </Paper>
                         </Box>
                     </Box>

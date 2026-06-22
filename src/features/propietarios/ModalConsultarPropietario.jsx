@@ -2,12 +2,13 @@ import { useTheme } from '@mui/material/styles'
 import { useState, useEffect } from 'react'
 import * as vehiculoService from '../../shared/services/vehiculoService'
 import {
-    Box, Typography, Paper, Chip, Button, Dialog, Avatar, CircularProgress,
+    Box, Typography, Paper, Chip, Button, Dialog, Avatar, IconButton, CircularProgress,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tabs, Tab
 } from '@mui/material'
 import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined'
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
 import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
+import CloseIcon from '@mui/icons-material/Close'
 
 const ModalConsultarPropietario = ({ propietario, onClose }) => {
     const theme = useTheme()
@@ -28,7 +29,12 @@ const ModalConsultarPropietario = ({ propietario, onClose }) => {
 
     return (
         <Dialog open onClose={handleClose} maxWidth="md" fullWidth
-            slotProps={{ paper: { sx: { borderRadius: 3, backgroundColor: theme.palette.background.subtle } } }}>
+            slotProps={{ paper: { sx: { borderRadius: 3, position: 'relative', backgroundColor: theme.palette.background.subtle } } }}>
+
+            <IconButton onClick={handleClose} size="small"
+                sx={{ position: 'absolute', right: 12, top: 12, color: theme.palette.text.secondary, zIndex: 1 }}>
+                <CloseIcon fontSize="small" />
+            </IconButton>
 
             <Box sx={{ borderBottom: 1, borderColor: 'divider', px: 3, pt: 2, backgroundColor: theme.palette.background.paper }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>

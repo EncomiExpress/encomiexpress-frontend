@@ -17,18 +17,8 @@ import { useVentas } from '../../shared/contexts/VentaContext.jsx'
 import { useClientes } from '../../shared/contexts/ClienteContext.jsx'
 import { useRutaProgramacion } from '../../shared/contexts/RutaProgramacionContext.jsx'
 import { FormField, FormSelect, formFieldStyles } from '../../shared/components/FormularioEstandarizado.jsx'
-
-const getEstadoColor = (estado) => {
-    switch (estado) {
-        case 'pendiente de recogida': return { bg: '#FEF3C7', color: '#92400E' }
-        case 'en recogida': return { bg: '#DBEAFE', color: '#1E40AF' }
-        case 'programada': return { bg: '#E0E7FF', color: '#3730A3' }
-        case 'en tránsito': return { bg: '#CFFAFE', color: '#155E75' }
-        case 'entregado': return { bg: '#D1FAE5', color: '#065F46' }
-        case 'devuelto': return { bg: '#FEE2E2', color: '#991B1B' }
-        default: return { bg: '#F3F4F6', color: '#6B7280' }
-    }
-}
+import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
+import { getEstadoColorVentaHex as getEstadoColor } from '../../shared/utils/estadoColors.js'
 
 const getPagoColor = (estadoPago) =>
     estadoPago?.toLowerCase() === 'pagado'
@@ -37,34 +27,27 @@ const getPagoColor = (estadoPago) =>
 
 const steps = ['Remitente', 'Destinatario', 'Paquete', 'Envío', 'Pago', 'Confirmación']
 
-const ConfirmRow = ({ label, value }) => (
-    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, py: 0.9, overflow: 'hidden' }}>
-        <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500, flexShrink: 0 }}>{label}</Typography>
-        <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary}
-            sx={{ textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
-            {value || '—'}
-        </Typography>
-    </Box>
-)
-
-const ConfirmRowChip = ({ label, value, colors }) => (
-    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, py: 0.9, overflow: 'hidden' }}>
-        <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500, flexShrink: 0 }}>{label}</Typography>
-        <Box sx={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            backgroundColor: colors?.bg || '#F3F4F6',
-            color: colors?.color || '#6B7280',
-            px: 1.5,
-            py: 0.3,
-            borderRadius: 10,
-            fontWeight: 600,
-            fontSize: '0.75rem',
-        }}>
-            {value || '—'}
+const ConfirmRowChip = ({ label, value, colors }) => {
+    const theme = useTheme()
+    return (
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, py: 0.9, overflow: 'hidden' }}>
+            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500, flexShrink: 0 }}>{label}</Typography>
+            <Box sx={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                backgroundColor: colors?.bg || '#F3F4F6',
+                color: colors?.color || '#6B7280',
+                px: 1.5,
+                py: 0.3,
+                borderRadius: 10,
+                fontWeight: 600,
+                fontSize: '0.75rem',
+            }}>
+                {value || '—'}
+            </Box>
         </Box>
-    </Box>
-)
+    )
+}
 
 const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
     const { actualizarVenta, cambiarEstadoVenta } = useVentas()

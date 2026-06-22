@@ -29,6 +29,7 @@ import ActualizarRutaProgramacion from './ActualizarRutaProgramacion'
 import ModalBloqueoInhabilitacion from '../../shared/components/ModalBloqueoInhabilitacion'
 import ModalConsultarRutaProgramacion from './ModalConsultarRutaProgramacion'
 import ModalConfirmarEstado from './ModalConfirmarEstado'
+import { getEstadoColorRuta as getEstadoColor } from '../../shared/utils/estadoColors.js'
 
 const getThStyle = (theme) => ({
     fontWeight: 700,
@@ -65,16 +66,6 @@ const getFilterMenuProps = (theme) => ({
         },
     },
 })
-
-const getEstadoColor = (estado) => {
-    switch (estado) {
-        case 'Programada': return { bg: '#E0E7FF', color: '#3730A3' }
-        case 'En Curso':   return { bg: '#DBEAFE', color: '#1E40AF' }
-        case 'Completada': return { bg: '#D1FAE5', color: '#065F46' }
-        case 'Cancelada':  return { bg: '#FEE2E2', color: '#991B1B' }
-        default:           return { bg: '#F3F4F6', color: '#6B7280' }
-    }
-}
 
 const MESES = [
     { value: '1',  label: 'Enero' },   { value: '2',  label: 'Febrero' },

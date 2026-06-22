@@ -18,24 +18,11 @@ import EventOutlinedIcon from '@mui/icons-material/EventOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import { useConductor } from '../../shared/contexts/ConductorContext.jsx'
 import { FormField, FormSelect, formFieldStyles } from '../../shared/components/FormularioEstandarizado.jsx'
+import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 
 const DOMINIOS_EMAIL = ['@gmail.com', '@hotmail.com', '@outlook.com', '@yahoo.com', '@icloud.com', '@live.com']
 
 const steps = ['Datos Personales', 'Licencia de Conducción', 'Confirmación']
-
-const ConfirmRow = ({ label, value }) => {
-    const theme = useTheme()
-
-    return (
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, py: 0.9, overflow: 'hidden' }}>
-            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500, flexShrink: 0 }}>{label}</Typography>
-            <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary}
-                sx={{ textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
-                {value || '—'}
-            </Typography>
-        </Box>
-    )
-}
 
 const getTipoLabel = (tipo) => {
     const tipos = { 'CC': 'Cédula', 'NIT': 'NIT', 'CE': 'Cédula Extranjería', 'TI': 'Tarjeta Identidad', 'PAS': 'Pasaporte', 'RC': 'Registro Civil' }

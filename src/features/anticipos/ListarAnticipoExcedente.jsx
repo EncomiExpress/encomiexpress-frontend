@@ -22,6 +22,8 @@ import RegistrarAnticipoExcedente from './RegistrarAnticipoExcedente'
 import ActualizarAnticipoExcedente from './ActualizarAnticipoExcedente'
 import ModalBloqueoInhabilitacion from '../../shared/components/ModalBloqueoInhabilitacion'
 import ModalConsultarAnticipoExcedente from './ModalConsultarAnticipoExcedente'
+import { getEstadoColorAnticipo as getEstadoColor } from '../../shared/utils/estadoColors.js'
+import { formatFecha } from '../../shared/utils/formatters.js'
 
 const getThStyle = (theme) => ({
     fontWeight: 700,
@@ -63,20 +65,6 @@ const getFilterMenuProps = (theme) => ({
     },
 })
 
-const ESTADO_ANTICIPO_COLORS = {
-    'pendiente': { bg: '#F3F4F6', color: '#6B7280' },
-    'entregado': { bg: '#E3F2FD', color: '#1565C0' },
-    'en legalización': { bg: '#FFF8E1', color: '#F57F17' },
-    'legalizado': { bg: '#E8F5E9', color: '#2E7D32' },
-    'excedente pendiente': { bg: '#FFF3E0', color: '#E65100' },
-    'cerrado': { bg: '#F3E5F5', color: '#6A1B9A' },
-}
-
-const getEstadoColor = (estado) => {
-    if (!estado) return { bg: '#F5F5F5', color: '#757575' }
-    return ESTADO_ANTICIPO_COLORS[estado.toLowerCase()] || { bg: '#F5F5F5', color: '#757575' }
-}
-
 const FILTROS_HABILITADO = [
     { value: 'todo', label: 'Todo' },
     { value: 'habilitado', label: 'Habilitado' },
@@ -97,12 +85,6 @@ const formatMoney = (val) => {
     const num = parseFloat(val || 0)
     if (isNaN(num)) return '$0'
     return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(num)
-}
-
-const formatFecha = (fecha) => {
-    if (!fecha) return '—'
-    const [y, m, d] = fecha.split('-')
-    return `${d}/${m}/${y}`
 }
 
 // ── Componente principal ─────────────────────────────────────────────────────

@@ -63,6 +63,8 @@ const FILTROS_HABILITADO = [
     { value: 'inhabilitado', label: 'Inhabilitado' },
 ]
 
+import { isVencido } from '../../shared/utils/formatters.js'
+
 const vehicleStatusLabel = (estado) => {
     switch (estado) {
         case 'Activo': return 'Activo'
@@ -72,11 +74,6 @@ const vehicleStatusLabel = (estado) => {
         case 'ocupado': return 'Ocupado'
         default: return estado
     }
-}
-
-const isVencido = (fecha) => {
-    if (!fecha) return false
-    return new Date(fecha) < new Date()
 }
 
 const ListarTransporte = () => {

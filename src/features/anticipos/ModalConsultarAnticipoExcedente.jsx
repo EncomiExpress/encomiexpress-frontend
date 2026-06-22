@@ -1,21 +1,15 @@
 import { useTheme } from '@mui/material/styles'
 import {
-    Box, Typography, Paper, Chip, Button, Dialog, DialogTitle, DialogContent, DialogActions, Avatar
+    Box, Typography, Paper, Chip, Button, Dialog, DialogTitle, DialogContent, DialogActions, Avatar, IconButton
 } from '@mui/material'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined'
 import RouteIcon from '@mui/icons-material/Route'
 import ImageIcon from '@mui/icons-material/Image'
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile'
-
-const ESTADO_ANTICIPO_COLORS = {
-    'pendiente': { bg: '#F3F4F6', color: '#6B7280' },
-    'entregado': { bg: '#E3F2FD', color: '#1565C0' },
-    'en legalización': { bg: '#FFF8E1', color: '#F57F17' },
-    'legalizado': { bg: '#E8F5E9', color: '#2E7D32' },
-    'excedente pendiente': { bg: '#FFF3E0', color: '#E65100' },
-    'cerrado': { bg: '#F3E5F5', color: '#6A1B9A' },
-}
+import CloseIcon from '@mui/icons-material/Close'
+import { getEstadoColorAnticipo } from '../../shared/utils/estadoColors.js'
+import { formatFecha } from '../../shared/utils/formatters.js'
 
 const formatMoney = (val) => {
     const num = parseFloat(val || 0)
@@ -23,14 +17,9 @@ const formatMoney = (val) => {
     return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(num)
 }
 
-const formatFecha = (fecha) => {
-    if (!fecha) return '—'
-    const [y, m, d] = fecha.split('-')
-    return `${d}/${m}/${y}`
-}
-
 const CampoFila = ({ label, value, esEstado, estadoValue }) => {
     const theme = useTheme()
+    const estadoColors = esEstado ? getEstadoColorAnticipo(estadoValue) : null
     return (
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
             <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>{label}</Typography>
@@ -39,8 +28,8 @@ const CampoFila = ({ label, value, esEstado, estadoValue }) => {
                     label={estadoValue}
                     size="small"
                     sx={{
-                        backgroundColor: ESTADO_ANTICIPO_COLORS[estadoValue]?.bg || '#F3F4F6',
-                        color: ESTADO_ANTICIPO_COLORS[estadoValue]?.color || '#9CA3AF',
+                        backgroundColor: estadoColors?.bg || '#F3F4F6',
+                        color: estadoColors?.color || '#9CA3AF',
                         fontWeight: 600, fontSize: '0.72rem',
                         height: 22, borderRadius: 10, border: 'none', textTransform: 'capitalize',
                     }}
@@ -76,7 +65,12 @@ const ModalConsultarAnticipoExcedente = ({ anticipo, conductores, rutas, onClose
 
     return (
         <Dialog open onClose={onClose} maxWidth="md" fullWidth
-            slotProps={{ paper: { sx: { borderRadius: 3, p: 3, backgroundColor: theme.palette.background.subtle } } }}>
+            slotProps={{ paper: { sx: { borderRadius: 3, p: 3, position: 'relative', backgroundColor: theme.palette.background.subtle } } }}>
+
+            <IconButton onClick={onClose} size="small"
+                sx={{ position: 'absolute', right: 12, top: 12, color: theme.palette.text.secondary, zIndex: 1 }}>
+                <CloseIcon fontSize="small" />
+            </IconButton>
 
             <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pb: 1 }}>
                 <Avatar sx={{ backgroundColor: '#FFCDD2', color: '#C62828', width: 36, height: 36 }}>

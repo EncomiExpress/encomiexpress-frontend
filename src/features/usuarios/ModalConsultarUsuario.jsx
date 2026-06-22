@@ -1,9 +1,10 @@
 import { useTheme } from '@mui/material/styles'
 import {
-    Box, Typography, Paper, Chip, Button, Dialog, Avatar
+    Box, Typography, Paper, Chip, Button, Dialog, Avatar, IconButton
 } from '@mui/material'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined'
+import CloseIcon from '@mui/icons-material/Close'
 
 const CampoFila = ({ label, value, esRol }) => {
     const theme = useTheme()
@@ -43,7 +44,12 @@ const ModalConsultarUsuario = ({ usuario, onClose }) => {
 
     return (
         <Dialog open onClose={onClose} maxWidth="md" fullWidth
-            slotProps={{ paper: { sx: { borderRadius: 3, p: 3, backgroundColor: theme.palette.background.subtle } } }}>
+            slotProps={{ paper: { sx: { borderRadius: 3, p: 3, position: 'relative', backgroundColor: theme.palette.background.subtle } } }}>
+
+            <IconButton onClick={onClose} size="small"
+                sx={{ position: 'absolute', right: 12, top: 12, color: theme.palette.text.secondary, zIndex: 1 }}>
+                <CloseIcon fontSize="small" />
+            </IconButton>
 
             <Paper elevation={0} sx={{ ...cardSx, mb: 2 }}>
                 <Box sx={tituloSx}>

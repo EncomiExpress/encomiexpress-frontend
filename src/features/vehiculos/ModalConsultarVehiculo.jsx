@@ -2,11 +2,13 @@ import { useTheme } from '@mui/material/styles'
 import { useState, useEffect } from 'react'
 import * as rutaService from '../../shared/services/rutaService'
 import {
-    Box, Typography, Paper, Chip, Button, Dialog, Avatar, CircularProgress,
+    Box, Typography, Paper, Chip, Button, Dialog, Avatar, IconButton, CircularProgress,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tabs, Tab
 } from '@mui/material'
 import SpeedOutlinedIcon from '@mui/icons-material/SpeedOutlined'
 import EventOutlinedIcon from '@mui/icons-material/EventOutlined'
+import CloseIcon from '@mui/icons-material/Close'
+import { isVencido } from '../../shared/utils/formatters.js'
 
 const vehicleStatusLabel = (estado) => {
     switch (estado) {
@@ -17,11 +19,6 @@ const vehicleStatusLabel = (estado) => {
         case 'ocupado': return 'Ocupado'
         default: return estado
     }
-}
-
-const isVencido = (fecha) => {
-    if (!fecha) return false
-    return new Date(fecha) < new Date()
 }
 
 const ModalConsultarVehiculo = ({ vehiculo, onClose }) => {
@@ -43,7 +40,12 @@ const ModalConsultarVehiculo = ({ vehiculo, onClose }) => {
 
     return (
         <Dialog open onClose={handleClose} maxWidth="md" fullWidth
-            slotProps={{ paper: { sx: { borderRadius: 3, backgroundColor: theme.palette.background.subtle } } }}>
+            slotProps={{ paper: { sx: { borderRadius: 3, position: 'relative', backgroundColor: theme.palette.background.subtle } } }}>
+
+            <IconButton onClick={handleClose} size="small"
+                sx={{ position: 'absolute', right: 12, top: 12, color: theme.palette.text.secondary, zIndex: 1 }}>
+                <CloseIcon fontSize="small" />
+            </IconButton>
 
             <Box sx={{ borderBottom: 1, borderColor: 'divider', px: 3, pt: 2, backgroundColor: theme.palette.background.paper }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>

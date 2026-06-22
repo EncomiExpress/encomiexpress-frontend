@@ -14,24 +14,11 @@ import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import { useAuth, ROLES } from '../../shared/contexts/AuthContext.jsx'
 import { formFieldStyles } from '../../shared/components/FormularioEstandarizado.jsx'
+import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 
 const DOMINIOS_EMAIL = ['@gmail.com', '@hotmail.com', '@outlook.com', '@yahoo.com', '@icloud.com', '@live.com']
 
 const steps = ['Datos Personales', 'Credenciales', 'Confirmación']
-
-const ConfirmRow = ({ label, value }) => {
-    const theme = useTheme()
-
-    return (
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, py: 0.9, overflow: 'hidden' }}>
-            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500, flexShrink: 0 }}>{label}</Typography>
-            <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary}
-                sx={{ textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
-                {value || '—'}
-            </Typography>
-        </Box>
-    )
-}
 
 const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
     const { tienePermiso, registrarUsuario, getRolesBackend } = useAuth()

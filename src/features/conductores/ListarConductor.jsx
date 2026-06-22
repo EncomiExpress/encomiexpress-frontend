@@ -24,6 +24,7 @@ import RegistrarConductor from './RegistrarConductor'
 import ActualizarConductor from './ActualizarConductor'
 import ModalBloqueoInhabilitacion from '../../shared/components/ModalBloqueoInhabilitacion'
 import ModalConsultarConductor from './ModalConsultarConductor'
+import { isVencido } from '../../shared/utils/formatters.js'
 
 const getThStyle = (theme) => ({
     fontWeight: 700,
@@ -58,11 +59,6 @@ const getFilterMenuProps = (theme) => ({
         },
     },
 })
-
-const isVencido = (fecha) => {
-    if (!fecha) return false
-    return new Date(fecha) < new Date()
-}
 
 const FILTROS = [
     { value: 'todo', label: 'Todo' },

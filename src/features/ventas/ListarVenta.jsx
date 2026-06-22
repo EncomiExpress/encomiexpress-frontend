@@ -23,6 +23,8 @@ import RegistrarVenta from './RegistrarVenta'
 import ActualizarVenta from './ActualizarVenta'
 import ModalBloqueoInhabilitacion from '../../shared/components/ModalBloqueoInhabilitacion'
 import ModalConsultarVenta from './ModalConsultarVenta'
+import { getEstadoColorVenta as getEstadoColor } from '../../shared/utils/estadoColors.js'
+import { formatRutaDestino } from '../../shared/utils/formatters.js'
 
 const getThStyle = (theme) => ({
     fontWeight: 700,
@@ -34,34 +36,10 @@ const getThStyle = (theme) => ({
     whiteSpace: 'nowrap',
 })
 
-const getEstadoColor = (estado, theme) => {
-    switch (estado?.toLowerCase()) {
-        case 'pendiente de recogida': return theme.palette.status.ventaPendiente
-        case 'en recogida': return theme.palette.status.ventaEnRecogida
-        case 'programada': return theme.palette.status.ventaProgramada
-        case 'en tránsito': return theme.palette.status.ventaEnTransito
-        case 'entregado': return theme.palette.status.ventaEntregadaAlt
-        case 'devuelto': return theme.palette.status.ventaDevueltaAlt
-        default: return theme.palette.status.neutral
-    }
-}
-
 const getPagoColor = (estadoPago, theme) =>
     estadoPago?.toLowerCase() === 'pagado'
         ? theme.palette.status.pagado
         : theme.palette.status.pendientePago
-
-const formatRutaDestino = (destino) => {
-    if (!destino) return '—'
-    if (typeof destino === 'string') return destino
-    if (typeof destino === 'object') {
-        if (destino.ciudad || destino.departamento) {
-            return `${destino.ciudad || ''}${destino.ciudad && destino.departamento ? ' — ' : ''}${destino.departamento || ''}`.trim() || '—'
-        }
-        return destino.nombre || String(destino.idDestino ?? destino.id ?? '—')
-    }
-    return String(destino)
-}
 
 const getFilterSelectSx = (theme) => ({
     fontSize: '0.82rem',

@@ -14,6 +14,7 @@ import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
 import RouteOutlinedIcon from '@mui/icons-material/RouteOutlined'
 import BarChartOutlinedIcon from '@mui/icons-material/BarChartOutlined'
+import { formatRutaDestino } from '../../shared/utils/formatters.js'
 
 const STATUS_LABEL = {
   'entregado': 'Entregado',
@@ -26,16 +27,6 @@ const STATUS_LABEL = {
 }
 
 const formatCOP = (n) => '$' + n.toLocaleString('es-CO')
-
-const formatRutaDestino = (destino) => {
-  if (!destino) return '—'
-  if (typeof destino === 'string') return destino
-  if (typeof destino === 'object') {
-    if (destino.ciudad || destino.departamento) return `${destino.ciudad} — ${destino.departamento}`
-    return destino.nombre || String(destino.idDestino ?? destino.id ?? '')
-  }
-  return String(destino)
-}
 
 const normalizeMonth = (dateString) => {
   const date = new Date(dateString)

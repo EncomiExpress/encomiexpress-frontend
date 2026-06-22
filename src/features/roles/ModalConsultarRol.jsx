@@ -1,9 +1,10 @@
 import { useTheme } from '@mui/material/styles'
 import {
-    Box, Typography, Paper, Chip, Button, Dialog, DialogTitle, DialogContent, DialogActions, Avatar
+    Box, Typography, Paper, Chip, Button, Dialog, DialogTitle, DialogContent, DialogActions, Avatar, IconButton
 } from '@mui/material'
 import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined'
 import SecurityOutlinedIcon from '@mui/icons-material/SecurityOutlined'
+import CloseIcon from '@mui/icons-material/Close'
 
 const ModalConsultarRol = ({ rol, onClose }) => {
     const theme = useTheme()
@@ -15,7 +16,12 @@ const ModalConsultarRol = ({ rol, onClose }) => {
 
     return (
         <Dialog open onClose={onClose} maxWidth="md" fullWidth
-            slotProps={{ paper: { sx: { borderRadius: 3, p: 3, backgroundColor: theme.palette.background.subtle } } }}>
+            slotProps={{ paper: { sx: { borderRadius: 3, p: 3, position: 'relative', backgroundColor: theme.palette.background.subtle } } }}>
+
+            <IconButton onClick={onClose} size="small"
+                sx={{ position: 'absolute', right: 12, top: 12, color: theme.palette.text.secondary, zIndex: 1 }}>
+                <CloseIcon fontSize="small" />
+            </IconButton>
 
             <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pb: 1 }}>
                 <Avatar sx={{ backgroundColor: avatarStyle.bg, color: avatarStyle.color, width: 36, height: 36 }}>

@@ -14,7 +14,7 @@ import {
   ArrowBack
 } from '@mui/icons-material'
 import { useAuth, ROLES } from '../../shared/contexts/AuthContext.jsx'
-import { API_URL } from '../../shared/config/api.js'
+import { recuperarPassword } from '../../shared/services/authService.js'
 import { LoadingScreen, TIPOS_CARGA } from '../../shared/components/LoadingScreen.jsx'
 import logo from '../../assets/logo.png'
 
@@ -115,13 +115,7 @@ const Login = () => {
     setRecuperarLoading(true)
     setRecuperarMensaje(null)
     try {
-      const res = await fetch(`${API_URL}/auth/recuperar-password`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: recuperarEmail })
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.message || 'Error al enviar el correo')
+      await recuperarPassword(recuperarEmail)
       setRecuperarMensaje({ tipo: 'success', texto: 'Se envió una contraseña temporal a tu correo.' })
     } catch (err) {
       setRecuperarMensaje({ tipo: 'error', texto: err.message || 'No se pudo enviar el correo.' })
