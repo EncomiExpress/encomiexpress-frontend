@@ -28,7 +28,7 @@ const getThStyle = (theme) => ({
     color: theme.palette.text.primary,
     letterSpacing: 0.5,
     py: 1.5,
-    borderBottom: `1px solid #E0E0E0`,
+    borderBottom: `1px solid ${theme.palette.divider}`,
     whiteSpace: 'nowrap',
 })
 
@@ -143,8 +143,6 @@ const ListarUsuario = () => {
     const safePage = Math.min(page, totalPages)
     const from = total === 0 ? 0 : (safePage - 1) * rowsPerPage + 1
     const to = Math.min(safePage * rowsPerPage, total)
-    const paginatedUsuarios = usuarios
-
     return (
         <Box sx={{ p: 3.5 }}>
             <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
@@ -261,7 +259,7 @@ const ListarUsuario = () => {
                                 width: 220,
                                 borderRadius: 4,
                                 '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
-                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#BDBDBD' },
+                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
                             }}
                             renderValue={(value) => value ? roles.find(r => r.id === value)?.nombre || 'Rol' : 'Todos los roles'}
                         >
@@ -373,7 +371,7 @@ const ListarUsuario = () => {
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                paginatedUsuarios.map(usuario => (
+                                usuarios.map(usuario => (
                                     <TableRow
                                         key={usuario.idUsuario}
                                         sx={{
@@ -496,7 +494,7 @@ const ListarUsuario = () => {
                                 borderRadius: 2,
                                 '& .MuiSelect-select': { py: 0.6, pl: 1.5, pr: '28px !important' },
                                 '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
-                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#BDBDBD' },
+                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
                                 '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                                     borderColor: theme.palette.primary.main,
                                     borderWidth: '1px',
@@ -574,7 +572,7 @@ const ListarUsuario = () => {
                             },
                             '& .MuiPaginationItem-root:hover:not(.Mui-selected)': {
                                 backgroundColor: theme.palette.background.subtle,
-                                borderColor: '#BDBDBD',
+                                borderColor: theme.palette.divider,
                             },
                         }}
                     />

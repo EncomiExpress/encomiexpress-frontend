@@ -5,7 +5,7 @@ import {
     Box, Typography, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, Chip, IconButton,
     TextField, InputAdornment, Select, MenuItem, FormControl,
-    Snackbar, Alert, Tooltip, Button, Dialog, DialogTitle, DialogContent, DialogActions,
+    Snackbar, Alert, Tooltip, Button,
     Avatar, CircularProgress, Pagination, TableSortLabel
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
@@ -28,6 +28,7 @@ import RegistrarRutaProgramacion from './RegistrarRutaProgramacion'
 import ActualizarRutaProgramacion from './ActualizarRutaProgramacion'
 import ModalBloqueoInhabilitacion from '../../shared/components/ModalBloqueoInhabilitacion'
 import ModalConsultarRutaProgramacion from './ModalConsultarRutaProgramacion'
+import ModalConfirmarEstado from './ModalConfirmarEstado'
 
 const getThStyle = (theme) => ({
     fontWeight: 700,
@@ -35,7 +36,7 @@ const getThStyle = (theme) => ({
     color: theme.palette.text.primary,
     letterSpacing: 0.5,
     py: 1.5,
-    borderBottom: `1px solid #E0E0E0`,
+    borderBottom: `1px solid ${theme.palette.divider}`,
     whiteSpace: 'nowrap',
 })
 
@@ -106,11 +107,9 @@ const ListarRutaProgramacion = () => {
     const [page, setPage] = useState(1)
     const [rowsPerPage, setRowsPerPage] = useState(5)
     const [sortBy, setSortBy] = useState({ field: 'fechaSalida', dir: 'desc' })
-    const [localLoading, setLocalLoading] = useState(false)
     const initialLoad = useRef(true)
 
     const { rutasProgramadas, total, fetchRutasProgramadas, updateEstado, toggleHabilitado, loading } = useRutaProgramacion()
-    const effectiveLoading = loading || localLoading
     const { getVehiculos } = useVehiculo()
     const { getConductores } = useConductor()
     const { destinos } = useDestino()
@@ -125,7 +124,7 @@ const ListarRutaProgramacion = () => {
     }, [usuario, navigate])
 
     useEffect(() => {
-        const t = setTimeout(() => { setDebouncedSearch(searchTerm); setLocalLoading(true) }, 300)
+        const t = setTimeout(() => setDebouncedSearch(searchTerm), 300)
         return () => clearTimeout(t)
     }, [searchTerm])
 
@@ -146,7 +145,7 @@ const ListarRutaProgramacion = () => {
     }, [fetchRutasProgramadas, page, rowsPerPage, debouncedSearch, filtroHabilitado, filtroEstadoRuta, filtroAnio, filtroMes, sortBy, usuario])
 
     useEffect(() => {
-        if (!loading) { setLocalLoading(false); initialLoad.current = false }
+        if (!loading) { initialLoad.current = false }
     }, [loading])
 
     const handleSort = (field) => {
@@ -214,7 +213,6 @@ const resolveDestino = (ruta) =>
 
     const totalPages = Math.max(1, Math.ceil(total / rowsPerPage))
     const safePage = Math.min(page, totalPages)
-    const paginatedRutas = rutasProgramadas
     const from = total === 0 ? 0 : (safePage - 1) * rowsPerPage + 1
     const to = Math.min(safePage * rowsPerPage, total)
 
@@ -475,7 +473,7 @@ const resolveDestino = (ruta) =>
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {effectiveLoading && initialLoad.current ? (
+                            {loading && initialLoad.current ? (
                                 <TableRow>
                                     <TableCell colSpan={8} align="center" sx={{ py: 7 }}>
                                         <CircularProgress size={28} sx={{ color: theme.palette.primary.main }} />
@@ -484,7 +482,7 @@ const resolveDestino = (ruta) =>
                                         </Typography>
                                     </TableCell>
                                 </TableRow>
-                            ) : !effectiveLoading && rutasProgramadas.length === 0 ? (
+                            ) : !loading && rutasProgramadas.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={8} align="center" sx={{ py: 7 }}>
                                         <Typography color={theme.palette.text.secondary} variant="body2">
@@ -497,7 +495,7 @@ const resolveDestino = (ruta) =>
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                paginatedRutas.map((ruta) => {
+                                rutasProgramadas.map((ruta) => {
                                     const id = getId(ruta)
                                     return (
                                         <TableRow
@@ -620,7 +618,7 @@ const resolveDestino = (ruta) =>
                                 borderRadius: 2,
                                 '& .MuiSelect-select': { py: 0.6, pl: 1.5, pr: '28px !important' },
                                 '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
-                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#BDBDBD' },
+                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
                                 '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                                     borderColor: theme.palette.primary.main,
                                     borderWidth: '1px',
@@ -683,7 +681,7 @@ const resolveDestino = (ruta) =>
                             },
                             '& .MuiPaginationItem-root:hover:not(.Mui-selected)': {
                                 backgroundColor: theme.palette.background.subtle,
-                                borderColor: '#BDBDBD',
+                                borderColor: theme.palette.divider,
                             },
                         }}
                     />
@@ -707,49 +705,17 @@ const resolveDestino = (ruta) =>
                 onSuccess={handleActualizarSuccess}
             />
 
-            <Dialog
+            <ModalConfirmarEstado
                 open={confirmEstado.open}
+                nuevoEstado={confirmEstado.nuevoEstado}
+                info={confirmEstado.info}
                 onClose={() => setConfirmEstado(c => ({ ...c, open: false }))}
-                maxWidth="xs"
-                fullWidth
-                slotProps={{ paper: { sx: { borderRadius: 3 } } }}
-            >
-                <DialogTitle sx={{ fontWeight: 700, fontSize: '1rem', pb: 0.5 }}>
-                    Confirmar cambio de estado
-                </DialogTitle>
-                <DialogContent>
-                    <Typography variant="body2" sx={{ mb: confirmEstado.info ? 1.5 : 0 }}>
-                        ¿Cambiar el estado a <strong>"{confirmEstado.nuevoEstado}"</strong>?
-                    </Typography>
-                    {confirmEstado.info && (
-                        <Typography variant="body2" color="text.secondary">
-                            {confirmEstado.info}
-                        </Typography>
-                    )}
-                </DialogContent>
-                <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
-                    <Button
-                        onClick={() => setConfirmEstado(c => ({ ...c, open: false }))}
-                        variant="outlined"
-                        size="small"
-                        sx={{ textTransform: 'none', borderRadius: 2 }}
-                    >
-                        Cancelar
-                    </Button>
-                    <Button
-                        onClick={() => {
-                            const { id, nuevoEstado } = confirmEstado
-                            setConfirmEstado({ open: false, id: null, nuevoEstado: null, info: '' })
-                            ejecutarCambioEstado(id, nuevoEstado)
-                        }}
-                        variant="contained"
-                        size="small"
-                        sx={{ textTransform: 'none', borderRadius: 2 }}
-                    >
-                        Confirmar
-                    </Button>
-                </DialogActions>
-            </Dialog>
+                onConfirm={() => {
+                    const { id, nuevoEstado } = confirmEstado
+                    setConfirmEstado({ open: false, id: null, nuevoEstado: null, info: '' })
+                    ejecutarCambioEstado(id, nuevoEstado)
+                }}
+            />
 
             <ModalBloqueoInhabilitacion
                 open={modalBloqueo.open}

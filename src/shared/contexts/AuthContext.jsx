@@ -1,5 +1,6 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+﻿import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { API_URL } from '../config/api.js'
+import { STORAGE_KEYS } from '../config/storageKeys.js'
 import * as rolService from '../services/rolService'
 import * as usuarioService from '../services/usuarioService'
 
@@ -90,8 +91,8 @@ export const AuthProvider = ({ children }) => {
     const handleSessionExpired = () => {
       // Limpiar credenciales del storage pero mantener `usuario` en estado
       // para que SessionExpiredDialog distinga entre "nunca logueado" y "expirado en uso"
-      localStorage.removeItem('token')
-      localStorage.removeItem('refreshToken')
+      localStorage.removeItem(STORAGE_KEYS.TOKEN)
+      localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN)
       setToken(null)
       setSessionExpired(true)
     }
@@ -110,8 +111,8 @@ export const AuthProvider = ({ children }) => {
   // Al iniciar, validar el token con el backend antes de restaurar la sesión
   useEffect(() => {
     const validateSession = async () => {
-      const tokenGuardado = localStorage.getItem('token')
-      const usuarioGuardado = localStorage.getItem('usuario')
+      const tokenGuardado = localStorage.getItem(STORAGE_KEYS.TOKEN)
+      const usuarioGuardado = localStorage.getItem(STORAGE_KEYS.USUARIO)
 
       if (!tokenGuardado || !usuarioGuardado) {
         setLoading(false)
@@ -125,9 +126,9 @@ export const AuthProvider = ({ children }) => {
 
         if (res.status === 401) {
           // Token expirado o inválido — limpiar sesión y marcar como expirada
-          localStorage.removeItem('token')
-          localStorage.removeItem('usuario')
-          localStorage.removeItem('refreshToken')
+          localStorage.removeItem(STORAGE_KEYS.TOKEN)
+          localStorage.removeItem(STORAGE_KEYS.USUARIO)
+          localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN)
           setSessionExpired(true)
           setLoading(false)
           return
@@ -184,14 +185,13 @@ export const AuthProvider = ({ children }) => {
 
       setSessionExpired(false)
       setToken(tokenNuevo)
-      localStorage.setItem('token', tokenNuevo)
-      localStorage.setItem('usuario', JSON.stringify(usuarioNormalizado))
-      if (refreshTokenNuevo) localStorage.setItem('refreshToken', refreshTokenNuevo)
+      localStorage.setItem(STORAGE_KEYS.TOKEN, tokenNuevo)
+      localStorage.setItem(STORAGE_KEYS.USUARIO, JSON.stringify(usuarioNormalizado))
+      if (refreshTokenNuevo) localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshTokenNuevo)
       setUsuario(usuarioNormalizado)
 
       return { success: true, usuario: usuarioNormalizado }
     } catch (err) {
-      console.error('Error en login:', err)
       return { success: false, mensaje: 'Error de conexión con el servidor' }
     }
   }
@@ -199,9 +199,9 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     setToken(null)
     setUsuario(null)
-    localStorage.removeItem('token')
-    localStorage.removeItem('refreshToken')
-    localStorage.removeItem('usuario')
+    localStorage.removeItem(STORAGE_KEYS.TOKEN)
+    localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN)
+    localStorage.removeItem(STORAGE_KEYS.USUARIO)
   }
 
   const tienePermiso = (permiso) => {
@@ -222,7 +222,7 @@ export const AuthProvider = ({ children }) => {
   }
 
   const refreshAccessToken = async () => {
-    const refreshTokenGuardado = localStorage.getItem('refreshToken')
+    const refreshTokenGuardado = localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN)
     if (!refreshTokenGuardado) {
       logout()
       return { success: false }
@@ -243,7 +243,7 @@ export const AuthProvider = ({ children }) => {
 
       const { token: nuevoToken } = data.data
       setToken(nuevoToken)
-      localStorage.setItem('token', nuevoToken)
+      localStorage.setItem(STORAGE_KEYS.TOKEN, nuevoToken)
 
       return { success: true }
     } catch {

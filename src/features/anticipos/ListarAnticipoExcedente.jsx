@@ -29,7 +29,7 @@ const getThStyle = (theme) => ({
     color: theme.palette.text.primary,
     letterSpacing: 0.5,
     py: 1.5,
-    borderBottom: `1px solid #E0E0E0`,
+    borderBottom: `1px solid ${theme.palette.divider}`,
     whiteSpace: 'nowrap',
 })
 
@@ -38,7 +38,7 @@ const getFilterSelectSx = (theme) => ({
     borderRadius: 4,
     '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
     '&:hover': { backgroundColor: 'transparent' },
-    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#BDBDBD' },
+    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
     '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
     '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` },
     '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
@@ -113,9 +113,7 @@ const ListarAnticipoExcedente = () => {
     const filterMenuProps = getFilterMenuProps(theme)
     const { anticipos, total, conductores, rutas, loading, fetchAnticipos, toggleHabilitado, cambiarEstado } = useAnticipos()
     const { tienePermiso, PERMISOS } = useAuth()
-    const [localLoading, setLocalLoading] = useState(false)
     const initialLoad = useRef(true)
-    const effectiveLoading = loading || localLoading
 
     const [busqueda, setBusqueda] = useState('')
     const [debouncedBusqueda, setDebouncedBusqueda] = useState('')
@@ -147,7 +145,7 @@ const ListarAnticipoExcedente = () => {
     }
 
     useEffect(() => {
-        const t = setTimeout(() => { setDebouncedBusqueda(busqueda); setLocalLoading(true) }, 300)
+        const t = setTimeout(() => setDebouncedBusqueda(busqueda), 300)
         return () => clearTimeout(t)
     }, [busqueda])
 
@@ -163,7 +161,7 @@ const ListarAnticipoExcedente = () => {
     }, [page, rowsPerPage, debouncedBusqueda, filtroHabilitado, filtroEstadoAnticipo, sortBy, fetchAnticipos])
 
     useEffect(() => {
-        if (!loading) { setLocalLoading(false); initialLoad.current = false }
+        if (!loading) { initialLoad.current = false }
     }, [loading])
 
     // Helpers para resolver nombres desde los arrays del contexto
@@ -392,7 +390,7 @@ const ListarAnticipoExcedente = () => {
                         </TableHead>
 
                         <TableBody>
-                            {effectiveLoading && initialLoad.current ? (
+                            {loading && initialLoad.current ? (
                                 <TableRow>
                                     <TableCell colSpan={8} align="center" sx={{ py: 7 }}>
                                         <CircularProgress size={28} sx={{ color: theme.palette.primary.main }} />
@@ -401,7 +399,7 @@ const ListarAnticipoExcedente = () => {
                                         </Typography>
                                     </TableCell>
                                 </TableRow>
-                            ) : !effectiveLoading && currentAnticipos.length === 0 ? (
+                            ) : !loading && currentAnticipos.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={8} align="center" sx={{ py: 7 }}>
                                         <Typography color={theme.palette.text.secondary} variant="body2">
@@ -514,7 +512,7 @@ const ListarAnticipoExcedente = () => {
                                                         color: theme.palette.text.primary,
                                                         fontSize: '0.72rem', fontWeight: 600,
                                                         height: 32, borderRadius: 1,
-                                                        border: '1px solid #E0E0E0',
+                                                        border: `1px solid ${theme.palette.divider}`,
                                                         '& .MuiSelect-select': { py: 0.8, px: 1, display: 'flex', alignItems: 'center' },
                                                         '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
                                                         '&:hover .MuiOutlinedInput-notchedOutline': { border: 'none' },
@@ -601,7 +599,7 @@ const ListarAnticipoExcedente = () => {
                                 fontSize: '0.82rem', borderRadius: 2,
                                 '& .MuiSelect-select': { py: 0.6, pl: 1.5, pr: '28px !important' },
                                 '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
-                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#BDBDBD' },
+                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
                                 '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
                                 '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` },
                                 '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
@@ -636,7 +634,7 @@ const ListarAnticipoExcedente = () => {
                                 '&:hover': { backgroundColor: theme.palette.primary.darker },
                             },
                             '& .MuiPaginationItem-root:hover:not(.Mui-selected)': {
-                                backgroundColor: theme.palette.background.subtle, borderColor: '#BDBDBD',
+                                backgroundColor: theme.palette.background.subtle, borderColor: theme.palette.divider,
                             },
                         }}
                     />

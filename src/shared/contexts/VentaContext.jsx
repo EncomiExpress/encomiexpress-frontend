@@ -35,11 +35,11 @@ export const VentaProvider = ({ children }) => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  const fetchVentas = useCallback(async (params = {}) => {
+  const fetchVentas = useCallback(async (signal, params = {}) => {
     setLoading(true)
     setError(null)
     try {
-      const res = await ventaService.getEncomiendas(undefined, params)
+      const res = await ventaService.getEncomiendas(signal, params)
       if (res?.success) {
         setVentas((res.data ?? []).map(normalize))
         setTotal(res.total ?? 0)
@@ -58,7 +58,9 @@ export const VentaProvider = ({ children }) => {
       setLoading(false)
       return
     }
-    fetchVentas()
+    const abortController = new AbortController()
+    fetchVentas(abortController.signal)
+    return () => abortController.abort()
   }, [token, fetchVentas])
 
   const agregarVenta = useCallback(async (datos) => {

@@ -28,7 +28,7 @@ const getThStyle = (theme) => ({
     color: theme.palette.text.primary,
     letterSpacing: 0.5,
     py: 1.5,
-    borderBottom: `1px solid #E0E0E0`,
+    borderBottom: `1px solid ${theme.palette.divider}`,
     whiteSpace: 'nowrap',
 })
 
@@ -37,7 +37,7 @@ const getFilterSelectSx = (theme) => ({
     borderRadius: 2,
     '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
     '&:hover': { backgroundColor: 'transparent' },
-    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#BDBDBD' },
+    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
     '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
     '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` },
     '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
@@ -168,8 +168,6 @@ const ListarRol = () => {
     const safePage = Math.min(page, totalPages)
     const from = total === 0 ? 0 : (safePage - 1) * rowsPerPage + 1
     const to = Math.min(safePage * rowsPerPage, total)
-    const paginatedRoles = roles
-
     return (
         <Box sx={{ p: 3.5 }}>
             <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
@@ -317,7 +315,7 @@ const ListarRol = () => {
                                         </Typography>
                                     </TableCell>
                                 </TableRow>
-                            ) : !loading && paginatedRoles.length === 0 ? (
+                            ) : !loading && roles.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={4} align="center" sx={{ py: 7 }}>
                                         <Typography color={theme.palette.text.secondary} variant="body2">
@@ -329,7 +327,7 @@ const ListarRol = () => {
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                paginatedRoles.map(rol => {
+                                roles.map(rol => {
                                     const rolStyle = (rol.habilitado !== false)
                                         ? (theme.palette.avatarDefault || theme.palette.roles.default)
                                         : (theme.palette.avatarDisabled || theme.palette.roles.default)
@@ -447,7 +445,7 @@ const ListarRol = () => {
                                 borderRadius: 2,
                                 '& .MuiSelect-select': { py: 0.6, pl: 1.5, pr: '28px !important' },
                                 '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
-                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#BDBDBD' },
+                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
                                 '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                                     borderColor: theme.palette.primary.main, borderWidth: '1px',
                                 },
@@ -498,7 +496,7 @@ const ListarRol = () => {
                             },
                             '& .MuiPaginationItem-root:hover:not(.Mui-selected)': {
                                 backgroundColor: theme.palette.background.subtle,
-                                borderColor: '#BDBDBD',
+                                borderColor: theme.palette.divider,
                             },
                         }}
                     />

@@ -163,10 +163,6 @@ const AppRoutes = () => {
       <Route path="/ventas/registrar" element={<PrivateRoute permisosRequeridos={[PERMISOS.REGISTRAR_VENTA]}><RegistrarVenta /></PrivateRoute>} />
       <Route path="/ventas/actualizar/:id" element={<PrivateRoute permisosRequeridos={[PERMISOS.ACTUALIZAR_VENTA]}><ActualizarVenta /></PrivateRoute>} />
 
-      {/* Encomiendas (placeholder - pendiente por implementar) */}
-      <Route path="/encomiendas/registrar" element={<div>Registrar Encomienda - En desarrollo</div>} />
-      <Route path="/encomiendas/listar" element={<div>Listar Encomiendas - En desarrollo</div>} />
-
       {/* Cualquier ruta no reconocida redirige al inicio */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

@@ -31,7 +31,7 @@ const getThStyle = (theme) => ({
     color: theme.palette.text.primary,
     letterSpacing: 0.5,
     py: 1.5,
-    borderBottom: `1px solid #E0E0E0`,
+    borderBottom: `1px solid ${theme.palette.divider}`,
     whiteSpace: 'nowrap',
 })
 
@@ -96,11 +96,9 @@ const ListarConductor = () => {
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [conductorEditar, setConductorEditar] = useState(null)
     const [sortBy, setSortBy] = useState({ field: 'nombre', dir: 'asc' })
-    const [localLoading, setLocalLoading] = useState(false)
     const initialLoad = useRef(true)
 
     const { conductores, total, loading, fetchConductores, updateEstado, toggleHabilitado } = useConductor()
-    const effectiveLoading = loading || localLoading
     const navigate = useNavigate()
 
     useEffect(() => {
@@ -110,7 +108,7 @@ const ListarConductor = () => {
     }, [usuario, navigate])
 
     useEffect(() => {
-      const t = setTimeout(() => { setDebouncedSearch(searchTerm); setLocalLoading(true) }, 300)
+      const t = setTimeout(() => setDebouncedSearch(searchTerm), 300)
       return () => clearTimeout(t)
     }, [searchTerm])
 
@@ -130,7 +128,7 @@ const ListarConductor = () => {
     }, [fetchConductoresBackend])
 
     useEffect(() => {
-      if (!loading) { setLocalLoading(false); initialLoad.current = false }
+      if (!loading) { initialLoad.current = false }
     }, [loading])
 
     const handleSort = (field) => {
@@ -298,7 +296,7 @@ const ListarConductor = () => {
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {effectiveLoading && initialLoad.current ? (
+                            {loading && initialLoad.current ? (
                                 <TableRow>
                                     <TableCell colSpan={8} align="center" sx={{ py: 7 }}>
                                         <CircularProgress size={28} sx={{ color: theme.palette.primary.main }} />
@@ -307,7 +305,7 @@ const ListarConductor = () => {
                                         </Typography>
                                     </TableCell>
                                 </TableRow>
-                            ) : !effectiveLoading && conductores.length === 0 ? (
+                            ) : !loading && conductores.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={8} align="center" sx={{ py: 7 }}>
                                         <Typography color={theme.palette.text.secondary} variant="body2">
@@ -398,7 +396,7 @@ const ListarConductor = () => {
                                                             sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}>
                                                             {conductor.habilitado
                                                                 ? <CheckBoxIcon sx={{ fontSize: 18, color: theme.palette.primary.main }} />
-                                                                : <CheckBoxOutlineBlankIcon sx={{ fontSize: 18, color: theme.palette.status?.disabled2?.color || '#9E9E9E' }} />}
+                                                                : <CheckBoxOutlineBlankIcon sx={{ fontSize: 18, color: theme.palette.status?.disabled2?.color || theme.palette.text.disabled }} />}
                                                         </IconButton>
                                                     </Tooltip>
                                                 )}
@@ -432,7 +430,7 @@ const ListarConductor = () => {
                                 borderRadius: 2,
                                 '& .MuiSelect-select': { py: 0.6, pl: 1.5, pr: '28px !important' },
                                 '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
-                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#BDBDBD' },
+                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
                                 '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                                     borderColor: theme.palette.primary.main,
                                     borderWidth: '1px',
@@ -510,7 +508,7 @@ const ListarConductor = () => {
                             },
                             '& .MuiPaginationItem-root:hover:not(.Mui-selected)': {
                                 backgroundColor: theme.palette.background.subtle,
-                                borderColor: '#BDBDBD',
+                                borderColor: theme.palette.divider,
                             },
                         }}
                     />

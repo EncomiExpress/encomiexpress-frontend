@@ -31,7 +31,7 @@ const formatRutaDestino = (destino) => {
   if (!destino) return '—'
   if (typeof destino === 'string') return destino
   if (typeof destino === 'object') {
-    if (destino.ciudad) return `${destino.ciudad} — ${destino.departamento}`
+    if (destino.ciudad || destino.departamento) return `${destino.ciudad} — ${destino.departamento}`
     return destino.nombre || String(destino.idDestino ?? destino.id ?? '')
   }
   return String(destino)

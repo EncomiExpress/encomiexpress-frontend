@@ -355,7 +355,7 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
 
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 4, py: 2.5, borderTop: `1px solid ${theme.palette.divider}`, backgroundColor: '#FAFAFA' }}>
                 <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined" startIcon={<ArrowBackOutlinedIcon />} disableRipple
-                    sx={{ textTransform: 'none', borderRadius: 2, borderColor: theme.palette.divider, color: theme.palette.text.primary, fontWeight: 500, '&:hover': { borderColor: '#BDBDBD', backgroundColor: theme.palette.background.subtle }, '&.Mui-disabled': { borderColor: theme.palette.divider, color: theme.palette.text.secondary } }}>
+                    sx={{ textTransform: 'none', borderRadius: 2, borderColor: theme.palette.divider, color: theme.palette.text.primary, fontWeight: 500, '&:hover': { borderColor: theme.palette.divider, backgroundColor: theme.palette.background.subtle }, '&.Mui-disabled': { borderColor: theme.palette.divider, color: theme.palette.text.secondary } }}>
                     Anterior
                 </Button>
                 <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
@@ -367,7 +367,7 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
                         variant="contained" disabled={submitting || (activeStep === steps.length - 1 && sinCambios)}
                         endIcon={activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <SaveOutlinedIcon />}
                         disableRipple
-                        sx={{ textTransform: 'none', borderRadius: 2, fontWeight: 600, backgroundColor: theme.palette.primary.main, boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`, '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}` }, '&.Mui-disabled': { backgroundColor: theme.palette.divider, color: '#9E9E9E' } }}>
+                        sx={{ textTransform: 'none', borderRadius: 2, fontWeight: 600, backgroundColor: theme.palette.primary.main, boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`, '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}` }, '&.Mui-disabled': { backgroundColor: theme.palette.divider, color: theme.palette.text.disabled } }}>
                         {activeStep < steps.length - 1 ? 'Siguiente' : submitting ? 'Guardando...' : sinCambios ? 'Sin cambios' : 'Guardar cambios'}
                     </Button>
                 </Box>

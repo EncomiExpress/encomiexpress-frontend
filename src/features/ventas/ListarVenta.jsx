@@ -67,7 +67,7 @@ const getFilterSelectSx = (theme) => ({
     fontSize: '0.82rem',
     borderRadius: 4,
     '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
-    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#BDBDBD' },
+    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
     '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
     '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` },
     '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
@@ -104,9 +104,7 @@ const ListarVenta = () => {
     const filterSelectSx = getFilterSelectSx(theme)
     const filterMenuProps = getFilterMenuProps(theme)
     const { ventas, total, loading, error, fetchVentas, cambiarEstadoVenta, actualizarVenta, toggleHabilitadoVenta } = useVentas()
-    const [localLoading, setLocalLoading] = useState(false)
     const initialLoad = useRef(true)
-    const effectiveLoading = loading || localLoading
 
     const [busqueda, setBusqueda] = useState('')
     const [debouncedBusqueda, setDebouncedBusqueda] = useState('')
@@ -125,7 +123,7 @@ const ListarVenta = () => {
     const [sortBy, setSortBy] = useState({ field: 'fechaRegistro', dir: 'desc' })
 
     useEffect(() => {
-      const t = setTimeout(() => { setDebouncedBusqueda(busqueda); setLocalLoading(true) }, 300)
+      const t = setTimeout(() => setDebouncedBusqueda(busqueda), 300)
       return () => clearTimeout(t)
     }, [busqueda])
 
@@ -147,7 +145,7 @@ const ListarVenta = () => {
     }, [fetchVentasBackend])
 
     useEffect(() => {
-      if (!loading) { setLocalLoading(false); initialLoad.current = false }
+      if (!loading) { initialLoad.current = false }
     }, [loading])
 
     const handleSort = (field) => {
@@ -446,7 +444,7 @@ const ListarVenta = () => {
                         </TableHead>
 
                         <TableBody>
-                            {effectiveLoading && initialLoad.current ? (
+                            {loading && initialLoad.current ? (
                                 <TableRow>
                                     <TableCell colSpan={8} align="center" sx={{ py: 7 }}>
                                         <CircularProgress size={28} sx={{ color: theme.palette.primary.main }} />
@@ -463,7 +461,7 @@ const ListarVenta = () => {
                                         </Typography>
                                     </TableCell>
                                 </TableRow>
-                            ) : !effectiveLoading && ventas.length === 0 ? (
+                            ) : !loading && ventas.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={8} align="center" sx={{ py: 7 }}>
                                         <Typography color={theme.palette.text.secondary} variant="body2">
@@ -723,7 +721,7 @@ const ListarVenta = () => {
     borderRadius: 4,
                                 '& .MuiSelect-select': { py: 0.6, pl: 1.5, pr: '28px !important' },
                                 '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
-                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#BDBDBD' },
+                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
                                 '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                                     borderColor: theme.palette.primary.main, borderWidth: '1px',
                                 },
@@ -770,7 +768,7 @@ const ListarVenta = () => {
                             },
                             '& .MuiPaginationItem-root:hover:not(.Mui-selected)': {
                                 backgroundColor: theme.palette.background.subtle,
-                                borderColor: '#BDBDBD',
+                                borderColor: theme.palette.divider,
                             },
                         }}
                     />

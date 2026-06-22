@@ -151,7 +151,7 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
                 key={moduloKey}
                 elevation={0}
                 sx={{
-                  border: '1px solid #E0E0E0',
+                  border: `1px solid ${theme.palette.divider}`,
                   borderRadius: 2,
                   mb: 1.5,
                   backgroundColor: '#F8F9FA'
@@ -163,7 +163,7 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     p: 1.5,
-                    borderBottom: '1px solid #E0E0E0',
+                    borderBottom: `1px solid ${theme.palette.divider}`,
                     backgroundColor: '#F8F9FA'
                   }}
                 >
@@ -263,7 +263,7 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
               backgroundColor: theme.palette.primary.main,
               boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
               '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}` },
-              '&.Mui-disabled': { backgroundColor: theme.palette.divider, color: '#9E9E9E' },
+              '&.Mui-disabled': { backgroundColor: theme.palette.divider, color: theme.palette.text.disabled },
             }}
           >
             {enviando ? 'Guardando...' : 'Guardar Cambios'}

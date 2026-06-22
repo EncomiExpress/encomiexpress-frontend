@@ -154,7 +154,9 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
             valorServicio: ventaData.valorServicio || '',
             impuestos: ventaData.impuestos || '',
             total: ventaData.total || '',
-            estadoPago: ventaData.estadoPago || 'Pendiente',
+            estadoPago: ventaData.estadoPago
+                ? ventaData.estadoPago.charAt(0).toUpperCase() + ventaData.estadoPago.slice(1)
+                : 'Pendiente',
         }
         setForm(datosForm)
         setFormOriginal(datosForm)
@@ -792,7 +794,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                     sx={{
                         textTransform: 'none', borderRadius: 2, borderColor: theme.palette.divider,
                         color: theme.palette.text.primary, fontWeight: 500,
-                        '&:hover': { borderColor: '#BDBDBD', backgroundColor: theme.palette.background.subtle },
+                        '&:hover': { borderColor: theme.palette.divider, backgroundColor: theme.palette.background.subtle },
                         '&.Mui-disabled': { borderColor: theme.palette.divider, color: theme.palette.text.secondary },
                     }}>
                     Anterior
@@ -816,7 +818,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                             backgroundColor: theme.palette.primary.main,
                             boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
                             '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}` },
-                            '&.Mui-disabled': { backgroundColor: theme.palette.divider, color: '#9E9E9E' },
+                            '&.Mui-disabled': { backgroundColor: theme.palette.divider, color: theme.palette.text.disabled },
                         }}>
                         {activeStep < steps.length - 1
                             ? 'Siguiente'

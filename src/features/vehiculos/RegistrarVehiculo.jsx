@@ -387,7 +387,7 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
           sx={{
             textTransform: 'none', borderRadius: 2, borderColor: theme.palette.divider,
             color: theme.palette.text.primary, fontWeight: 500,
-            '&:hover': { borderColor: '#BDBDBD', backgroundColor: theme.palette.background.subtle },
+            '&:hover': { borderColor: theme.palette.divider, backgroundColor: theme.palette.background.subtle },
             '&.Mui-disabled': { borderColor: theme.palette.divider, color: theme.palette.text.secondary },
           }}>
           Anterior

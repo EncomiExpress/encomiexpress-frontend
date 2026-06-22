@@ -33,7 +33,7 @@ const getThStyle = (theme) => ({
     color: theme.palette.text.primary,
     letterSpacing: 0.5,
     py: 1.5,
-    borderBottom: `1px solid #E0E0E0`,
+    borderBottom: `1px solid ${theme.palette.divider}`,
     whiteSpace: 'nowrap',
 })
 
@@ -111,11 +111,15 @@ const ListarTransporte = () => {
             .map(r => r.idVehiculo)
     )
 
+    const ESTADO_NORMALIZADO = { disponible: 'Activo' }
+
     const transportesConEstado = transportes.map(t => {
         const estaOcupado = vehiculosOcupadosIds.has(t.idVehiculo)
+        const estado = ESTADO_NORMALIZADO[t.estado] ?? t.estado
         return {
             ...t,
-            estadoEfectivo: estaOcupado ? 'ocupado' : t.estado,
+            estado,
+            estadoEfectivo: estaOcupado ? 'ocupado' : estado,
         }
     })
 
@@ -336,8 +340,8 @@ const ListarTransporte = () => {
                                 fontSize: '0.82rem',
                                 borderRadius: 4,
                                 backgroundColor: theme.palette.background.paper,
-                                '& .MuiOutlinedInput-notchedOutline': { borderColor: '#E0E0E0' },
-                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#BDBDBD' },
+                                '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
+                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
                                 '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
                             }}
                             MenuProps={filterMenuProps}
@@ -564,7 +568,7 @@ const ListarTransporte = () => {
                                 borderRadius: 2,
                                 '& .MuiSelect-select': { py: 0.6, pl: 1.5, pr: '28px !important' },
                                 '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
-                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#BDBDBD' },
+                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
                                 '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                                     borderColor: theme.palette.primary.main,
                                     borderWidth: '1px',
@@ -642,7 +646,7 @@ const ListarTransporte = () => {
                             },
                             '& .MuiPaginationItem-root:hover:not(.Mui-selected)': {
                                 backgroundColor: theme.palette.background.subtle,
-                                borderColor: '#BDBDBD',
+                                borderColor: theme.palette.divider,
                             },
                         }}
                     />

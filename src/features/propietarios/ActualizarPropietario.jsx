@@ -302,7 +302,7 @@ const ActualizarPropietario = ({ open, onClose, propietario: propietarioProp, on
         backgroundColor: theme.palette.primary.main,
         boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
         '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}` },
-        '&.Mui-disabled': { backgroundColor: theme.palette.divider, color: '#9E9E9E' },
+        '&.Mui-disabled': { backgroundColor: theme.palette.divider, color: theme.palette.text.disabled },
     }
 
     return (
@@ -350,7 +350,7 @@ const ActualizarPropietario = ({ open, onClose, propietario: propietarioProp, on
                     sx={{
                         textTransform: 'none', borderRadius: 2, borderColor: theme.palette.divider,
                         color: theme.palette.text.primary, fontWeight: 500,
-                        '&:hover': { borderColor: '#BDBDBD', backgroundColor: theme.palette.background.subtle },
+                        '&:hover': { borderColor: theme.palette.divider, backgroundColor: theme.palette.background.subtle },
                         '&.Mui-disabled': { borderColor: theme.palette.divider, color: theme.palette.text.secondary },
                     }}>
                     Anterior
