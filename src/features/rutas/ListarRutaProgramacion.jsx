@@ -301,7 +301,7 @@ const resolveDestino = (ruta) =>
                         Exportar
                     </Button>
 
-                    {tienePermiso(PERMISOS.REGISTRAR_RUTA_PROGRAMACION) && (
+                    {tienePermiso(PERMISOS.REGISTRAR_RUTA) && (
                         <Button
                             onClick={() => setModalRegistrarOpen(true)}
                             variant="contained"
@@ -540,7 +540,7 @@ const resolveDestino = (ruta) =>
                                             </TableCell>
                                             <TableCell sx={{ py: 1.5 }}>
                                                 <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                                    {tienePermiso(PERMISOS.CONSULTAR_RUTA_PROGRAMACION) && (
+                                                    {tienePermiso(PERMISOS.CONSULTAR_RUTA) && (
                                                         <Tooltip title="Ver detalle">
                                                             <IconButton
                                                                 size="small"
@@ -551,7 +551,7 @@ const resolveDestino = (ruta) =>
                                                             </IconButton>
                                                         </Tooltip>
                                                     )}
-                                                    {tienePermiso(PERMISOS.ACTUALIZAR_RUTA_PROGRAMACION) && (
+                                                    {tienePermiso(PERMISOS.ACTUALIZAR_RUTA) && (
                                                         <Tooltip title="Editar">
                                                             <IconButton
                                                                 size="small"
@@ -562,7 +562,7 @@ const resolveDestino = (ruta) =>
                                                             </IconButton>
                                                         </Tooltip>
                                                     )}
-                                                    {tienePermiso(PERMISOS.ACTUALIZAR_RUTA_PROGRAMACION) && (
+                                                    {tienePermiso(PERMISOS.ACTUALIZAR_RUTA) && (
                                                         <Tooltip title={ruta.habilitado !== false ? 'Inhabilitar' : 'Habilitar'}>
                                                             <IconButton
                                                                 size="small"

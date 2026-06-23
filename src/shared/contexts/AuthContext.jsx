@@ -22,10 +22,8 @@ export const MODULOS = {
   CONDUCTORES: { nombre: 'Conductores', permisos: ['listar_conductor', 'registrar_conductor', 'consultar_conductor', 'actualizar_conductor'] },
   DESTINOS: { nombre: 'Destinos', permisos: ['listar_destino', 'registrar_destino', 'consultar_destino', 'actualizar_destino'] },
   RUTAS: { nombre: 'Rutas', permisos: ['listar_ruta', 'registrar_ruta', 'consultar_ruta', 'actualizar_ruta'] },
-  RUTAS_PROGRAMACION: { nombre: 'Rutas Programación', permisos: ['listar_ruta_programacion', 'registrar_ruta_programacion', 'consultar_ruta_programacion', 'actualizar_ruta_programacion'] },
   ANTICIPOS: { nombre: 'Anticipos', permisos: ['listar_anticipo', 'registrar_anticipo', 'consultar_anticipo', 'actualizar_anticipo'] },
   VENTAS: { nombre: 'Ventas', permisos: ['listar_encomienda', 'registrar_encomienda', 'consultar_encomienda', 'actualizar_encomienda'] },
-  ENCOMIENDAS: { nombre: 'Encomiendas', permisos: ['listar_encomienda', 'registrar_encomienda', 'consultar_encomienda', 'actualizar_encomienda'] },
   TRANSPORTE: { nombre: 'Transporte', permisos: ['gestion_transporte'] },
 }
 
@@ -54,10 +52,6 @@ export const PERMISOS = {
   ACTUALIZAR_VEHICULO: 'actualizar_vehiculo',
   CONSULTAR_VEHICULO: 'consultar_vehiculo',
   GESTION_TRANSPORTE: 'gestion_transporte',
-  LISTAR_VENTA: 'listar_encomienda',
-  REGISTRAR_VENTA: 'registrar_encomienda',
-  ACTUALIZAR_VENTA: 'actualizar_encomienda',
-  CONSULTAR_VENTA: 'consultar_encomienda',
   LISTAR_ENCOMIENDA: 'listar_encomienda',
   REGISTRAR_ENCOMIENDA: 'registrar_encomienda',
   ACTUALIZAR_ENCOMIENDA: 'actualizar_encomienda',
@@ -74,10 +68,6 @@ export const PERMISOS = {
   REGISTRAR_RUTA: 'registrar_ruta',
   ACTUALIZAR_RUTA: 'actualizar_ruta',
   CONSULTAR_RUTA: 'consultar_ruta',
-  LISTAR_RUTA_PROGRAMACION: 'listar_ruta_programacion',
-  REGISTRAR_RUTA_PROGRAMACION: 'registrar_ruta_programacion',
-  ACTUALIZAR_RUTA_PROGRAMACION: 'actualizar_ruta_programacion',
-  CONSULTAR_RUTA_PROGRAMACION: 'consultar_ruta_programacion',
 }
 
 export const AuthProvider = ({ children }) => {

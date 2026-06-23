@@ -146,9 +146,9 @@ const AppRoutes = () => {
        <Route path="/transporte/rutas/actualizar/:id" element={<PrivateRoute permisosRequeridos={[PERMISOS.ACTUALIZAR_RUTA]}><ActualizarRutaProgramacion /></PrivateRoute>} />
 
       {/* Ventas */}
-      <Route path="/ventas/listar" element={<PrivateRoute permisosRequeridos={[PERMISOS.LISTAR_VENTA]}><ListarVenta /></PrivateRoute>} />
-      <Route path="/ventas/registrar" element={<PrivateRoute permisosRequeridos={[PERMISOS.REGISTRAR_VENTA]}><RegistrarVenta /></PrivateRoute>} />
-      <Route path="/ventas/actualizar/:id" element={<PrivateRoute permisosRequeridos={[PERMISOS.ACTUALIZAR_VENTA]}><ActualizarVenta /></PrivateRoute>} />
+      <Route path="/ventas/listar" element={<PrivateRoute permisosRequeridos={[PERMISOS.LISTAR_ENCOMIENDA]}><ListarVenta /></PrivateRoute>} />
+      <Route path="/ventas/registrar" element={<PrivateRoute permisosRequeridos={[PERMISOS.REGISTRAR_ENCOMIENDA]}><RegistrarVenta /></PrivateRoute>} />
+      <Route path="/ventas/actualizar/:id" element={<PrivateRoute permisosRequeridos={[PERMISOS.ACTUALIZAR_ENCOMIENDA]}><ActualizarVenta /></PrivateRoute>} />
 
       {/* Cualquier ruta no reconocida redirige al inicio */}
       <Route path="*" element={<Navigate to="/" replace />} />
