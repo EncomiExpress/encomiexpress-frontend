@@ -10,13 +10,17 @@ import {
   VisibilityOutlined as EyeIcon,
   VisibilityOffOutlined as EyeOffIcon,
   Close,
+  ViewSidebarOutlined as SidebarIcon,
+  ViewStreamOutlined as TopNavIcon,
 } from '@mui/icons-material'
+import logo from '../../assets/logo.png'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import { useNavigate } from 'react-router-dom'
 import { useDarkMode } from '../contexts/ThemeContext.jsx'
 import { fetchWithAuth } from '../services/authService'
 import { API_URL } from '../config/api.js'
 import LogoutConfirmDialog from './LogoutConfirmDialog.jsx'
+import useDateTime from '../hooks/useDateTime.js'
 
 const getGreeting = () => {
   const hour = new Date().getHours()
@@ -35,6 +39,11 @@ const THEME_OPTIONS = [
 const COLOR_OPTIONS = [
   { key: 'red',  label: 'Rojo', color: '#CC1818' },
   { key: 'blue', label: 'Azul', color: '#1A2E6E' },
+]
+
+const NAV_OPTIONS = [
+  { key: 'sidebar', label: 'Sidebar',  icon: SidebarIcon },
+  { key: 'topnav',  label: 'Top Nav',  icon: TopNavIcon  },
 ]
 
 // ─── PaletaAnimada ───────────────────────────────────────────────────────────
@@ -123,7 +132,7 @@ const PaletaAnimada = ({ isOpen, onClick, pal, darkMode }) => {
 // ─── Header ──────────────────────────────────────────────────────────────────
 
 const Header = ({ collapsed }) => {
-  const { darkMode, toggleDarkMode, paletteKey, togglePalette } = useDarkMode()
+  const { darkMode, toggleDarkMode, paletteKey, togglePalette, navLayout, setNavLayout } = useDarkMode()
   const theme = useTheme()
   const pal   = theme.palette
 
@@ -143,8 +152,9 @@ const Header = ({ collapsed }) => {
   const [cambiarMensaje,    setCambiarMensaje]    = useState(null) // { tipo: 'success'|'error', texto: '' }
 
   const { usuario, logout, token } = useAuth()
-  const navigate  = useNavigate()
-  const greeting  = getGreeting()
+  const navigate   = useNavigate()
+  const greeting   = getGreeting()
+  const dateTime   = useDateTime()
 
   const currentMode = darkMode ? 'dark' : 'light'
 
@@ -222,7 +232,7 @@ const Header = ({ collapsed }) => {
       <Box sx={{
         position: 'fixed',
         top: 4,
-        left: collapsed ? 70 : 250,
+        left: navLayout === 'topnav' ? 0 : (collapsed ? 70 : 250),
         right: 0,
         height: 68,
         backgroundColor: darkMode ? '#1E1E1E' : '#ffffff',
@@ -235,21 +245,48 @@ const Header = ({ collapsed }) => {
         transition: 'left 0.3s ease',
       }}>
 
-        {/* ── Saludo ── */}
-        <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'baseline', gap: 0.5 }}>
-          <Typography sx={{
-            fontSize: '1.4rem',
-            color: darkMode ? '#A0A0A0' : '#483c3a',
-            fontWeight: 500,
-            fontFamily: 'Cambria !important',
-            lineHeight: 1,
-          }}>
-            {greeting}
-          </Typography>
-          <Typography sx={{ fontSize: '1.3rem', color: darkMode ? '#FFFFFF' : '#212121', fontWeight: 600, ml: 0.5, fontFamily: 'Cambria !important' }}>
-            {usuario?.nombre || 'Usuario'}
-          </Typography>
-        </Box>
+        {/* ── Izquierda: logo (topnav) o saludo (sidebar) ── */}
+        {navLayout === 'topnav' ? (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Box component="img" src={logo} alt="EncomiExpress"
+              sx={{ height: 38, width: 'auto', objectFit: 'contain', userSelect: 'none' }}
+            />
+            <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'baseline', gap: 0.5 }}>
+              <Typography sx={{
+                fontSize: '1.2rem',
+                color: darkMode ? '#A0A0A0' : '#483c3a',
+                fontWeight: 500,
+                fontFamily: 'Cambria !important',
+                lineHeight: 1,
+              }}>
+                {greeting}
+              </Typography>
+              <Typography sx={{ fontSize: '1.15rem', color: darkMode ? '#FFFFFF' : '#212121', fontWeight: 600, ml: 0.5, fontFamily: 'Cambria !important' }}>
+                {usuario?.nombre || 'Usuario'}
+              </Typography>
+            </Box>
+          </Box>
+        ) : (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.1 }}>
+            <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'baseline', gap: 0.5 }}>
+              <Typography sx={{
+                fontSize: '1.4rem',
+                color: darkMode ? '#A0A0A0' : '#483c3a',
+                fontWeight: 500,
+                fontFamily: 'Cambria !important',
+                lineHeight: 1,
+              }}>
+                {greeting}
+              </Typography>
+              <Typography sx={{ fontSize: '1.3rem', color: darkMode ? '#FFFFFF' : '#212121', fontWeight: 600, ml: 0.5, fontFamily: 'Cambria !important' }}>
+                {usuario?.nombre || 'Usuario'}
+              </Typography>
+            </Box>
+            <Typography sx={{ fontSize: '0.75rem', color: darkMode ? '#666' : 'rgba(33,33,33,0.38)', fontWeight: 400, letterSpacing: '0.01em' }}>
+              {dateTime}
+            </Typography>
+          </Box>
+        )}
 
         {/* ── Acciones ── */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -370,7 +407,7 @@ const Header = ({ collapsed }) => {
               Personalizar
             </Typography>
             <Typography sx={{ fontSize: '0.8rem', color: labelColor, mb: 2.5 }}>
-              Tema y color del panel
+              Apariencia y navegación
             </Typography>
 
             {/* ── Sección: Tema ── */}
@@ -406,7 +443,7 @@ const Header = ({ collapsed }) => {
             <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.08em', color: labelColor, mb: 1.2 }}>
               Color
             </Typography>
-            <Box sx={{ display: 'flex', gap: 1 }}>
+            <Box sx={{ display: 'flex', gap: 1, mb: 2.5 }}>
               {COLOR_OPTIONS.map(({ key, label, color }) => {
                 const isActive = paletteKey === key
                 return (
@@ -429,6 +466,35 @@ const Header = ({ collapsed }) => {
                       {isActive && <CheckIcon sx={{ fontSize: '0.85rem', color: '#fff' }} />}
                     </Box>
                     <Typography sx={{ fontSize: '0.75rem', fontWeight: isActive ? 700 : 500, color: isActive ? color : (darkMode ? '#ccc' : '#374151') }}>
+                      {label}
+                    </Typography>
+                  </Box>
+                )
+              })}
+            </Box>
+
+            {/* ── Sección: Navegación ── */}
+            <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.08em', color: labelColor, mb: 1.2 }}>
+              Navegación
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              {NAV_OPTIONS.map(({ key, label, icon: Icon }) => {
+                const isActive = navLayout === key
+                return (
+                  <Box
+                    key={key}
+                    onClick={() => setNavLayout(key)}
+                    sx={{
+                      flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
+                      gap: 0.8, py: 1.5, borderRadius: '12px', cursor: isActive ? 'default' : 'pointer',
+                      border: `1.5px solid ${isActive ? activeOptionBorder : panelBorder}`,
+                      backgroundColor: isActive ? activeOptionBg : 'transparent',
+                      transition: 'all 0.18s ease',
+                      '&:hover': !isActive ? { backgroundColor: optionHover, borderColor: panelBorder } : {},
+                    }}
+                  >
+                    <Icon sx={{ fontSize: '1.2rem', color: isActive ? pal.primary.main : labelColor }} />
+                    <Typography sx={{ fontSize: '0.75rem', fontWeight: isActive ? 700 : 500, color: isActive ? pal.primary.main : (darkMode ? '#ccc' : '#374151') }}>
                       {label}
                     </Typography>
                   </Box>

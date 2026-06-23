@@ -41,7 +41,7 @@ const FILTROS = [
 const ListarUsuario = () => {
     const theme = useTheme()
     const thStyle = getThStyle(theme)
-    const { tienePermiso, PERMISOS, getUsuarios, getRolesBackend, habilitarInhabilitarUsuario } = useAuth()
+    const { tienePermiso, PERMISOS, getUsuarios, getRolesBackend, habilitarInhabilitarUsuario, usuario: usuarioActual } = useAuth()
 
     const [usuarios, setUsuarios] = useState([])
     const [loading, setLoading] = useState(true)
@@ -450,7 +450,7 @@ const ListarUsuario = () => {
                                                         </IconButton>
                                                     </Tooltip>
                                                 )}
-                                                {tienePermiso(PERMISOS.INHABILITAR_USUARIO) && usuario.rol?.nombre?.toLowerCase() !== 'admin' && (
+                                                {tienePermiso(PERMISOS.INHABILITAR_USUARIO) && usuario.idUsuario !== usuarioActual?.idUsuario && (
                                                     <Tooltip title={usuario.habilitado ? 'Inhabilitar' : 'Habilitar'}>
                                                         <IconButton
                                                             size="small"

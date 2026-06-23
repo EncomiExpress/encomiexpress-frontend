@@ -79,20 +79,7 @@ const PrivateRoute = ({ children, permisosRequeridos = [] }) => {
   }
 
   if (permisosRequeridos.length > 0 && !tieneAlgunPermiso(permisosRequeridos)) {
-    return (
-      <Box sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100vh',
-        p: 3,
-        textAlign: 'center'
-      }}>
-        <h2>Acceso Denegado</h2>
-        <p>No tienes permisos para acceder a esta sección.</p>
-      </Box>
-    )
+    return <Navigate to="/login" replace />
   }
 
   return <LayoutAdmin>{children}</LayoutAdmin>

@@ -34,7 +34,10 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
         const cargarRoles = async () => {
             const respuesta = await getRolesBackend({ habilitado: 'true' })
             if (respuesta.success) {
-                setRolesDisponibles(respuesta.data || [])
+                const filtrados = (respuesta.data || []).filter(r => r.nombre?.toLowerCase() !== 'conductor')
+                setRolesDisponibles(filtrados)
+                const adminRol = filtrados.find(r => r.nombre?.toLowerCase() === 'admin')
+                if (adminRol) setForm(prev => ({ ...prev, idRol: adminRol.idRol }))
             }
         }
         cargarRoles()

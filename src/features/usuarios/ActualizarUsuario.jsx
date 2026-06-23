@@ -73,7 +73,7 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
         const cargarRoles = async () => {
             const respuesta = await getRolesBackend({ habilitado: 'true' })
             if (respuesta.success) {
-                setRolesDisponibles(respuesta.data || [])
+                setRolesDisponibles((respuesta.data || []).filter(r => r.nombre?.toLowerCase() !== 'conductor'))
             }
         }
         cargarRoles()

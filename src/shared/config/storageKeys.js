@@ -4,4 +4,5 @@ export const STORAGE_KEYS = {
   USUARIO: 'usuario',
   DARK_MODE: 'darkMode',
   PALETTE_KEY: 'paletteKey',
+  NAV_LAYOUT: 'navLayout',
 }

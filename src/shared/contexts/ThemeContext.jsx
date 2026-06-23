@@ -7,8 +7,9 @@ import { STORAGE_KEYS } from '../config/storageKeys.js'
 const DarkModeContext = createContext()
 
 export const ThemeProviderWrapper = ({ children }) => {
-  const [darkMode,    setDarkMode]    = useState(() => localStorage.getItem(STORAGE_KEYS.DARK_MODE)    === 'true')
-  const [paletteKey,  setPaletteKey]  = useState(() => localStorage.getItem(STORAGE_KEYS.PALETTE_KEY)  || 'red')
+  const [darkMode,   setDarkMode]   = useState(() => localStorage.getItem(STORAGE_KEYS.DARK_MODE)   === 'true')
+  const [paletteKey, setPaletteKey] = useState(() => localStorage.getItem(STORAGE_KEYS.PALETTE_KEY) || 'red')
+  const [navLayout,  setNavLayoutState] = useState(() => localStorage.getItem(STORAGE_KEYS.NAV_LAYOUT) || 'sidebar')
 
   const toggleDarkMode = () =>
     setDarkMode(prev => {
@@ -17,11 +18,16 @@ export const ThemeProviderWrapper = ({ children }) => {
     })
 
   const togglePalette = (newPalette) =>
-  setPaletteKey(prev => {
-    const next = newPalette || (prev === 'red' ? 'blue' : 'red')
-    localStorage.setItem(STORAGE_KEYS.PALETTE_KEY, next)
-    return next
-  })
+    setPaletteKey(prev => {
+      const next = newPalette || (prev === 'red' ? 'blue' : 'red')
+      localStorage.setItem(STORAGE_KEYS.PALETTE_KEY, next)
+      return next
+    })
+
+  const setNavLayout = (layout) => {
+    localStorage.setItem(STORAGE_KEYS.NAV_LAYOUT, layout)
+    setNavLayoutState(layout)
+  }
 
   const theme = useMemo(
     () => getTheme(darkMode ? 'dark' : 'light', paletteKey),
@@ -29,7 +35,7 @@ export const ThemeProviderWrapper = ({ children }) => {
   )
 
   return (
-    <DarkModeContext.Provider value={{ darkMode, toggleDarkMode, paletteKey, togglePalette }}>
+    <DarkModeContext.Provider value={{ darkMode, toggleDarkMode, paletteKey, togglePalette, navLayout, setNavLayout }}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
         {children}

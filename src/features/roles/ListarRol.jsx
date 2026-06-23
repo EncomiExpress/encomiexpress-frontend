@@ -6,7 +6,8 @@ import {
     TableContainer, TableHead, TableRow, TextField,
     IconButton, Tooltip, InputAdornment,
     Button, Select, MenuItem, Pagination, Chip, Avatar, Snackbar, Alert,
-    TableSortLabel, CircularProgress
+    TableSortLabel, CircularProgress, Dialog, DialogTitle, DialogContent,
+    DialogContentText, DialogActions
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
@@ -71,7 +72,7 @@ const ListarRol = () => {
     const thStyle = getThStyle(theme)
     const filterSelectSx = getFilterSelectSx(theme)
     const filterMenuProps = getFilterMenuProps(theme)
-    const { tienePermiso, PERMISOS, getRolesBackend, toggleHabilitadoRol, eliminarRolBackend } = useAuth()
+    const { tienePermiso, PERMISOS, getRolesBackend, toggleHabilitadoRol, eliminarRolBackend, usuario: usuarioActual } = useAuth()
 
     const [roles, setRoles] = useState([])
     const [total, setTotal] = useState(0)
@@ -88,6 +89,7 @@ const ListarRol = () => {
     const [rolEditar, setRolEditar] = useState(null)
     const [rolConsulta, setRolConsulta] = useState(null)
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' })
+    const [confirmToggle, setConfirmToggle] = useState({ open: false, rolId: null, rolNombre: '', habilitadoActual: null })
 
     const puedeRegistrar = tienePermiso(PERMISOS.REGISTRAR_ROL)
 
@@ -128,17 +130,29 @@ const ListarRol = () => {
         setPage(1)
     }
 
-    const handleToggleHabilitado = async (id, habilitadoActual) => {
+    const handleToggleHabilitado = (id, rolNombre, habilitadoActual) => {
+        setConfirmToggle({ open: true, rolId: id, rolNombre, habilitadoActual })
+    }
+
+    const confirmarToggle = async () => {
+        const { rolId, rolNombre, habilitadoActual } = confirmToggle
+        setConfirmToggle({ open: false, rolId: null, rolNombre: '', habilitadoActual: null })
         try {
-            const respuesta = await toggleHabilitadoRol(id)
+            const respuesta = await toggleHabilitadoRol(rolId)
             if (respuesta.success) {
-                setRoles(prev => prev.map(r => r.id === id ? { ...r, habilitado: !habilitadoActual } : r))
-                setSnackbar({ open: true, message: `Rol ${!habilitadoActual ? 'habilitado' : 'inhabilitado'} correctamente`, severity: 'success' })
+                setRoles(prev => prev.map(r => r.id === rolId ? { ...r, habilitado: !habilitadoActual } : r))
+                setSnackbar({
+                    open: true,
+                    message: !habilitadoActual
+                        ? `Rol "${rolNombre}" habilitado. Todos sus usuarios han sido habilitados.`
+                        : `Rol "${rolNombre}" inhabilitado. Todos sus usuarios han sido inhabilitados.`,
+                    severity: 'success'
+                })
             } else {
                 setSnackbar({ open: true, message: respuesta.message || 'Error al cambiar estado', severity: 'error' })
             }
         } catch (error) {
-            setSnackbar({ open: true, message: 'Error al cambiar estado', severity: 'error' })
+            setSnackbar({ open: true, message: error?.message || 'Error al cambiar estado', severity: 'error' })
         }
     }
 
@@ -403,11 +417,11 @@ const ListarRol = () => {
                                                             </IconButton>
                                                         </Tooltip>
                                                     )}
-                                                    {tienePermiso(PERMISOS.INHABILITAR_ROL) && rol.id !== 1 && (
+                                                    {tienePermiso(PERMISOS.INHABILITAR_ROL) && rol.nombre !== usuarioActual?.rol && (
                                                         <Tooltip title={rol.habilitado ? 'Inhabilitar' : 'Habilitar'}>
                                                             <IconButton
                                                                 size="small"
-                                                                onClick={() => handleToggleHabilitado(rol.id, rol.habilitado)}
+                                                                onClick={() => handleToggleHabilitado(rol.id, rol.nombre, rol.habilitado)}
                                                                 sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
                                                             >
                                                                 {rol.habilitado ? <CheckBoxIcon sx={{ fontSize: 18, color: theme.palette.primary.main }} /> : <CheckBoxOutlineBlankIcon sx={{ fontSize: 18, color: theme.palette.status.disabled2.color }} />}
@@ -523,6 +537,45 @@ const ListarRol = () => {
                     setSnackbar({ open: true, message: 'Rol actualizado correctamente', severity: 'success' })
                 }}
             />
+
+            {/* ── Modal confirmación toggle rol ── */}
+            <Dialog
+                open={confirmToggle.open}
+                onClose={() => setConfirmToggle(s => ({ ...s, open: false }))}
+                slotProps={{ paper: { sx: { borderRadius: 3, maxWidth: 420 } } }}
+            >
+                <DialogTitle sx={{ fontWeight: 700, fontSize: '1rem', pb: 1 }}>
+                    {confirmToggle.habilitadoActual ? `¿Inhabilitar rol "${confirmToggle.rolNombre}"?` : `¿Habilitar rol "${confirmToggle.rolNombre}"?`}
+                </DialogTitle>
+                <DialogContent>
+                    <DialogContentText sx={{ fontSize: '0.875rem', color: 'text.secondary' }}>
+                        {confirmToggle.habilitadoActual
+                            ? <>Se inhabilitarán <strong>todos los usuarios</strong> registrados con este rol, excepto tu cuenta activa. Mientras el rol esté inhabilitado no podrán iniciar sesión.</>
+                            : <>Se habilitarán <strong>todos los usuarios</strong> registrados con este rol sin excepción. Volverán a tener acceso al sistema.</>
+                        }
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+                    <Button
+                        onClick={() => setConfirmToggle(s => ({ ...s, open: false }))}
+                        variant="outlined"
+                        size="small"
+                        sx={{ borderRadius: 2, textTransform: 'none' }}
+                    >
+                        Cancelar
+                    </Button>
+                    <Button
+                        onClick={confirmarToggle}
+                        variant="contained"
+                        size="small"
+                        color={confirmToggle.habilitadoActual ? 'error' : 'primary'}
+                        disableElevation
+                        sx={{ borderRadius: 2, textTransform: 'none' }}
+                    >
+                        {confirmToggle.habilitadoActual ? 'Inhabilitar' : 'Habilitar'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
 
             <Snackbar
                 open={snackbar.open}
