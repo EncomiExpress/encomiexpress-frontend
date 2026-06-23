@@ -5,6 +5,9 @@ import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined'
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
 import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined'
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined'
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
+import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined'
 import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined'
@@ -28,6 +31,7 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
     const [activeStep, setActiveStep] = useState(0)
     const [submitting, setSubmitting] = useState(false)
     const [exito, setExito] = useState(false)
+    const [showPassword, setShowPassword] = useState(false)
 
     const [form, setForm] = useState({
         tipoIdentificacion: '',
@@ -37,6 +41,7 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
         telefono: '',
         emailLocal: '',
         emailDominio: '@gmail.com',
+        password: '',
         licenciaConduccion: '',
         fechaVencimientoLicencia: ''
     })
@@ -78,6 +83,7 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
             if (!form.telefono.trim()) e.telefono = 'El teléfono es obligatorio'
             else if (!/^\d{10}$/.test(form.telefono)) e.telefono = 'El teléfono debe tener 10 dígitos'
             if (!form.emailLocal?.trim()) e.emailLocal = 'El correo es obligatorio'
+            if (!form.password || form.password.length < 6) e.password = 'La contraseña debe tener al menos 6 caracteres'
             if (!form.licenciaConduccion) e.licenciaConduccion = 'Selecciona una categoría de licencia'
             if (!form.fechaVencimientoLicencia) e.fechaVencimientoLicencia = 'La fecha de vencimiento es obligatoria'
         }
@@ -107,10 +113,11 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
             telefono: '',
             emailLocal: '',
             emailDominio: '@gmail.com',
-            direccion: '',
+            password: '',
             licenciaConduccion: '',
             fechaVencimientoLicencia: '',
         })
+        setShowPassword(false)
         setErrores({})
         setActiveStep(0)
         onClose()
@@ -214,6 +221,28 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
                                 htmlInput: { maxLength: 50 }
                             }}
                             sx={formFieldStyles} />
+                        <TextField fullWidth label="Contraseña inicial" name="password"
+                            type={showPassword ? 'text' : 'password'}
+                            value={form.password} onChange={handleChange} required
+                            error={!!errores.password} helperText={errores.password || 'Mínimo 6 caracteres. El conductor podrá cambiarla desde la app.'}
+                            slotProps={{
+                                input: {
+                                    startAdornment: (
+                                        <InputAdornment position="start">
+                                            <LockOutlinedIcon sx={{ color: '#94a3b8' }} />
+                                        </InputAdornment>
+                                    ),
+                                    endAdornment: (
+                                        <InputAdornment position="end">
+                                            <IconButton onClick={() => setShowPassword(p => !p)} edge="end" size="small" tabIndex={-1}>
+                                                {showPassword ? <VisibilityOffOutlinedIcon sx={{ fontSize: 20 }} /> : <VisibilityOutlinedIcon sx={{ fontSize: 20 }} />}
+                                            </IconButton>
+                                        </InputAdornment>
+                                    ),
+                                },
+                                htmlInput: { maxLength: 100 }
+                            }}
+                            sx={formFieldStyles} />
                         <FormSelect label="Licencia de Conducción" name="licenciaConduccion" value={form.licenciaConduccion}
                             onChange={handleChange} required error={errores.licenciaConduccion} helperText={errores.licenciaConduccion}>
                             <MenuItem value="A1">A1 - Motocicleta</MenuItem>
@@ -261,6 +290,7 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica los datos de licencia</Typography>
                                 <ConfirmRow label="Teléfono" value={form.telefono} />
                                 <ConfirmRow label="Correo" value={form.emailLocal + form.emailDominio} />
+                                <ConfirmRow label="Contraseña" value={'•'.repeat(form.password.length)} />
                                 <ConfirmRow label="Licencia" value={getLicenciaLabel(form.licenciaConduccion)} />
                                 <ConfirmRow label="Vencimiento" value={form.fechaVencimientoLicencia} />
                             </Paper>

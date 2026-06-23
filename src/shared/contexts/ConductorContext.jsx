@@ -83,6 +83,7 @@ export const ConductorProvider = ({ children }) => {
       apellido: nuevoConductor.apellido,
       telefono: nuevoConductor.telefono,
       email: nuevoConductor.email,
+      password: nuevoConductor.password,
       categoriaLicencia: nuevoConductor.licenciaConduccion,
       vencimientoLicencia: nuevoConductor.fechaVencimientoLicencia,
     }
