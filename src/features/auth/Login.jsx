@@ -15,7 +15,7 @@ import {
 } from '@mui/icons-material'
 import { useAuth, ROLES } from '../../shared/contexts/AuthContext.jsx'
 import { recuperarPassword } from '../../shared/services/authService.js'
-import { LoadingScreen, TIPOS_CARGA } from '../../shared/components/LoadingScreen.jsx'
+import LoadingScreen from '../../shared/components/LoadingScreen.jsx'
 import logo from '../../assets/logo.png'
 
 const Login = () => {
@@ -26,7 +26,6 @@ const Login = () => {
   const [openRegister, setOpenRegister] = useState(false)
   const [cargando, setCargando] = useState(false)
   const [apiCargando, setApiCargando] = useState(false)
-  const [tipoCarga, setTipoCarga] = useState(TIPOS_CARGA.CIRCULAR)
   const [registerData, setRegisterData] = useState({
     nombre: '',
     email: '',
@@ -63,16 +62,6 @@ const Login = () => {
       const resultado = await login(email, password)
 
       if (resultado.success) {
-        const rolUsuario = resultado.usuario?.rol?.nombre?.toLowerCase() || ''
-        let tipo = TIPOS_CARGA.CIRCULAR
-        if (rolUsuario.includes('admin') || rolUsuario.includes('administrador')) {
-          tipo = TIPOS_CARGA.CAMION
-        } else if (rolUsuario.includes('conductor')) {
-          tipo = TIPOS_CARGA.PULSO
-        } else if (rolUsuario.includes('vendedor') || rolUsuario.includes('venta')) {
-          tipo = TIPOS_CARGA.ESPIRAL
-        }
-        setTipoCarga(tipo)
         setApiCargando(false)
         setCargando(true)
 
@@ -124,18 +113,6 @@ const Login = () => {
     }
   }
 
-  const getMensajeCarga = () => {
-    switch (tipoCarga) {
-      case TIPOS_CARGA.CAMION:
-        return 'Preparando panel de administrador...'
-      case TIPOS_CARGA.PULSO:
-        return 'Cargando datos del conductor...'
-      case TIPOS_CARGA.ESPIRAL:
-        return 'Inicializando módulo de ventas...'
-      default:
-        return 'Iniciando sesión...'
-    }
-  }
 
   return (
     <Box
@@ -151,7 +128,7 @@ const Login = () => {
         overflow: 'hidden',
       }}
     >
-      {cargando && <LoadingScreen tipo={tipoCarga} mensaje={getMensajeCarga()} />}
+      {cargando && <LoadingScreen mensaje="Preparando panel de administrador..." />}
 
       <Box sx={{
         position: 'absolute', top: 0, left: 0, right: 0, height: 4,
