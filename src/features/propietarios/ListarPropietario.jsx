@@ -170,7 +170,7 @@ const ListarPropietario = () => {
                             boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
                             '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}` },
                         }}>
-                        Nuevo propietario
+                        Nuevo
                     </Button>
                 </Box>
             </Box>

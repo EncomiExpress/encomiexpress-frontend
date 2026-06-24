@@ -182,7 +182,7 @@ const ListarDestino = () => {
                                 '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}` },
                             }}
                         >
-                            Nuevo destino
+                            Nuevo
                         </Button>
                     )}
                 </Box>

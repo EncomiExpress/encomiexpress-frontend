@@ -281,7 +281,7 @@ const ListarTransporte = () => {
                                  },
                              }}
                          >
-                             Nuevo vehículo
+                             Nuevo
                          </Button>
                      )}
                  </Box>

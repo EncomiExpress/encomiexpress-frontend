@@ -257,7 +257,7 @@ const ListarVenta = () => {
                             },
                         }}
                     >
-                        Nueva venta
+                        Nuevo
                     </Button>
                 </Box>
             </Box>

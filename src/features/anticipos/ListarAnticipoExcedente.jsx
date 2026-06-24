@@ -240,7 +240,7 @@ const ListarAnticipoExcedente = () => {
                                 },
                             }}
                         >
-                            Nuevo anticipo
+                            Nuevo
                         </Button>
                     )}
                 </Box>

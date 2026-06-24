@@ -30,7 +30,7 @@ const getThStyle = (theme) => ({
     color: theme.palette.text.primary,
     letterSpacing: 0.5,
     py: 1.5,
-    borderBottom: `1px solid ${theme.palette.divider}`,
+    borderBottom: `1px solid #E0E0E0`,
     whiteSpace: 'nowrap',
 })
 
@@ -45,7 +45,9 @@ const ListarCliente = () => {
     const thStyle = getThStyle(theme)
     const { clientes, total, loading, error, fetchClientes, toggleHabilitadoCliente } = useClientes()
     const { tienePermiso, PERMISOS } = useAuth()
+    const [localLoading, setLocalLoading] = useState(false)
     const initialLoad = useRef(true)
+    const effectiveLoading = loading || localLoading
     const [busqueda, setBusqueda] = useState('')
     const [debouncedBusqueda, setDebouncedBusqueda] = useState('')
     const [filtroEstado, setFiltroEstado] = useState('todo')
@@ -74,7 +76,7 @@ const ListarCliente = () => {
     }
 
     useEffect(() => {
-        const t = setTimeout(() => setDebouncedBusqueda(busqueda), 300)
+        const t = setTimeout(() => { setDebouncedBusqueda(busqueda); setLocalLoading(true) }, 300)
         return () => clearTimeout(t)
     }, [busqueda])
 
@@ -100,7 +102,7 @@ const ListarCliente = () => {
     }, [page, rowsPerPage, filtroEstado, debouncedBusqueda, sortBy, fetchClientes])
 
     useEffect(() => {
-        if (!loading) { initialLoad.current = false }
+        if (!loading) { setLocalLoading(false); initialLoad.current = false }
     }, [loading])
 
     const handleToggleHabilitado = async (id, nuevoEstado) => {
@@ -126,6 +128,8 @@ const ListarCliente = () => {
     const totalActivos = clientes.filter(c => c.habilitado).length
     const totalInactivos = clientes.filter(c => !c.habilitado).length
     const hayFiltrosActivos = busqueda.trim() !== '' || filtroEstado !== 'todo'
+    const paginatedClientes = clientes
+
     return (
         <Box sx={{ p: 3.5 }}>
             <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
@@ -179,7 +183,7 @@ const ListarCliente = () => {
                                 },
                             }}
                         >
-                            Nuevo cliente
+                            Nuevo
                         </Button>
                     )}
                 </Box>
@@ -187,7 +191,7 @@ const ListarCliente = () => {
 
             {error && (
                 <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
-                    No se pudieron cargar los clientes. Verifica la conexión con el servidor.
+                    Error al cargar los clientes: {error}
                 </Alert>
             )}
 
@@ -298,7 +302,7 @@ const ListarCliente = () => {
                         </TableHead>
 
                         <TableBody>
-                            {loading && initialLoad.current ? (
+                            {effectiveLoading && initialLoad.current ? (
                                 <TableRow>
                                     <TableCell colSpan={5} align="center" sx={{ py: 7 }}>
                                         <CircularProgress size={28} sx={{ color: theme.palette.primary.main }} />
@@ -315,7 +319,7 @@ const ListarCliente = () => {
                                         </Typography>
                                     </TableCell>
                                 </TableRow>
-                            ) : !loading && clientes.length === 0 ? (
+                            ) : !effectiveLoading && clientes.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={5} align="center" sx={{ py: 7 }}>
                                         <Typography color={theme.palette.text.secondary} variant="body2">
@@ -329,7 +333,7 @@ const ListarCliente = () => {
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                clientes.map(cliente => (
+                                paginatedClientes.map(cliente => (
                                     <TableRow
                                         key={cliente.idCliente}
                                         sx={{
@@ -438,7 +442,7 @@ const ListarCliente = () => {
                                 borderRadius: 2,
                                 '& .MuiSelect-select': { py: 0.6, pl: 1.5, pr: '28px !important' },
                                 '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
-                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
+                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#BDBDBD' },
                                 '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                                     borderColor: theme.palette.primary.main,
                                     borderWidth: '1px',
@@ -516,7 +520,7 @@ const ListarCliente = () => {
                             },
                             '& .MuiPaginationItem-root:hover:not(.Mui-selected)': {
                                 backgroundColor: theme.palette.background.subtle,
-                                borderColor: theme.palette.divider,
+                                borderColor: '#BDBDBD',
                             },
                         }}
                     />

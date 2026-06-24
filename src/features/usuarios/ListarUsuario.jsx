@@ -196,7 +196,7 @@ const ListarUsuario = () => {
                                 },
                             }}
                         >
-                            Nuevo usuario
+                            Nuevo
                         </Button>
                     )}
                 </Box>

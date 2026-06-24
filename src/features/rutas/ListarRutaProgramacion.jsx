@@ -319,7 +319,7 @@ const resolveDestino = (ruta) =>
                                 },
                             }}
                         >
-                            Nueva ruta
+                            Nuevo
                         </Button>
                     )}
                 </Box>

@@ -210,7 +210,7 @@ const ListarRol = () => {
                             },
                         }}
                     >
-                        Nuevo rol
+                        Nuevo
                     </Button>
                 )}
             </Box>

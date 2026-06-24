@@ -221,7 +221,7 @@ const ListarConductor = () => {
                                 '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}` },
                             }}
                         >
-                            Nuevo conductor
+                            Nuevo
                         </Button>
                     )}
                 </Box>
