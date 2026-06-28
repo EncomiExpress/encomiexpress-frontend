@@ -2,7 +2,6 @@ import { useTheme } from '@mui/material/styles'
 import { useState, useEffect } from 'react'
 import * as rutaService from '../../shared/services/rutaService'
 import * as anticipoService from '../../shared/services/anticipoService'
-import * as vehiculoService from '../../shared/services/vehiculoService'
 import {
     Box, Typography, Paper, Chip, Button, Dialog, Avatar, IconButton, CircularProgress,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tabs, Tab
@@ -12,21 +11,14 @@ import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined
 import CloseIcon from '@mui/icons-material/Close'
 import { isVencido } from '../../shared/utils/formatters.js'
 
-const estadoColor = (estado, theme) => {
-    if (!estado) return theme.palette.text.secondary
-    switch (estado.toLowerCase()) {
-        case 'activo': return '#10b981'
-        case 'inactivo': return '#dc2626'
-        default: return theme.palette.text.secondary
-    }
-}
+const estadoEfectivoColor = (estadoEfectivo) =>
+    estadoEfectivo === 'en_ruta' ? '#3B82F6' : '#10b981'
 
 const ModalConsultarConductor = ({ conductor, onClose }) => {
     const theme = useTheme()
     const [tabIndex, setTabIndex] = useState(0)
     const [tabRutas, setTabRutas] = useState({ data: [], loading: false })
     const [tabAnticipos, setTabAnticipos] = useState({ data: [], loading: false })
-    const [tabVehiculos, setTabVehiculos] = useState({ data: [], loading: false })
 
     useEffect(() => {
         if (!conductor || tabIndex !== 1) return
@@ -42,14 +34,6 @@ const ModalConsultarConductor = ({ conductor, onClose }) => {
         anticipoService.getAnticipos(undefined, { idConductor: conductor.idConductor, limit: 100 })
             .then(res => setTabAnticipos({ data: res?.data || [], loading: false }))
             .catch(() => setTabAnticipos({ data: [], loading: false }))
-    }, [conductor, tabIndex])
-
-    useEffect(() => {
-        if (!conductor || tabIndex !== 3) return
-        setTabVehiculos({ data: [], loading: true })
-        vehiculoService.getVehiculos(undefined, { idConductor: conductor.idConductor, limit: 100 })
-            .then(res => setTabVehiculos({ data: res?.data || [], loading: false }))
-            .catch(() => setTabVehiculos({ data: [], loading: false }))
     }, [conductor, tabIndex])
 
     if (!conductor) return null
@@ -85,7 +69,6 @@ const ModalConsultarConductor = ({ conductor, onClose }) => {
                     <Tab label="Información" sx={{ textTransform: 'none', fontWeight: 600, fontSize: '0.875rem' }} />
                     <Tab label="Rutas" sx={{ textTransform: 'none', fontWeight: 600, fontSize: '0.875rem' }} />
                     <Tab label="Anticipos" sx={{ textTransform: 'none', fontWeight: 600, fontSize: '0.875rem' }} />
-                    <Tab label="Vehículos" sx={{ textTransform: 'none', fontWeight: 600, fontSize: '0.875rem' }} />
                 </Tabs>
             </Box>
 
@@ -119,9 +102,17 @@ const ModalConsultarConductor = ({ conductor, onClose }) => {
                                 </Box>
                                 <Box sx={{ gridColumn: '1 / -1' }}>
                                     <Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Estado</Typography>
-                                    <Typography variant="body2" fontWeight={500} color={estadoColor(conductor.estado, theme)}>
-                                        {conductor.estado ? conductor.estado.charAt(0).toUpperCase() + conductor.estado.slice(1) : '—'}
-                                    </Typography>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                                        <Box sx={{
+                                            width: 10, height: 10, borderRadius: '50%', flexShrink: 0,
+                                            ...(conductor.estadoEfectivo === 'en_ruta'
+                                                ? { backgroundColor: '#3B82F6', border: '2px solid #3B82F6' }
+                                                : { backgroundColor: 'transparent', border: '2px solid #10b981' })
+                                        }} />
+                                        <Typography variant="body2" fontWeight={500} color={estadoEfectivoColor(conductor.estadoEfectivo)}>
+                                            {conductor.estadoEfectivo === 'en_ruta' ? 'En Ruta' : 'Disponible'}
+                                        </Typography>
+                                    </Box>
                                 </Box>
                             </Box>
                         </Paper>
@@ -209,52 +200,6 @@ const ModalConsultarConductor = ({ conductor, onClose }) => {
                 </Box>
             )}
 
-            {tabIndex === 3 && (
-                <Box sx={{ p: 3 }}>
-                    <Typography variant="body2" color={theme.palette.text.secondary} sx={{ mb: 2 }}>Vehículos asignados a este conductor</Typography>
-                    {tabVehiculos.loading
-                        ? <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}><CircularProgress size={30} /></Box>
-                        : tabVehiculos.data.length === 0
-                        ? <Typography color="text.secondary" variant="body2" sx={{ py: 4, textAlign: 'center' }}>Sin vehículos registrados</Typography>
-                        : <TableContainer component={Paper} elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 2 }}>
-                            <Table size="small">
-                                <TableHead>
-                                    <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
-                                        <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Placa</TableCell>
-                                        <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Marca / Modelo</TableCell>
-                                        <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Tipo</TableCell>
-                                        <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Estado</TableCell>
-                                        <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Habilitado</TableCell>
-                                    </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                    {tabVehiculos.data.map(v => (
-                                        <TableRow key={v.idVehiculo} sx={{ '&:hover': { backgroundColor: theme.palette.background.subtle } }}>
-                                            <TableCell sx={{ fontSize: '0.82rem', fontWeight: 600 }}>{v.placa}</TableCell>
-                                            <TableCell sx={{ fontSize: '0.82rem' }}>{v.marca} {v.modelo}</TableCell>
-                                            <TableCell sx={{ fontSize: '0.82rem' }}>{v.tipo || '—'}</TableCell>
-                                            <TableCell>
-                                                <Chip label={v.estado || '—'} size="small" sx={{
-                                                    backgroundColor: v.estado === 'disponible' ? '#E3F2FD' : v.estado === 'ocupado' ? '#FFF3E0' : '#FCE4EC',
-                                                    color: v.estado === 'disponible' ? '#1565C0' : v.estado === 'ocupado' ? '#E65100' : '#C62828',
-                                                    fontWeight: 600, fontSize: '0.72rem'
-                                                }} />
-                                            </TableCell>
-                                            <TableCell>
-                                                <Chip label={v.habilitado ? 'Habilitado' : 'Inhabilitado'} size="small" sx={{
-                                                    backgroundColor: v.habilitado ? '#E8F5E9' : '#F5F5F5',
-                                                    color: v.habilitado ? '#2E7D32' : '#757575',
-                                                    fontWeight: 600, fontSize: '0.72rem'
-                                                }} />
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </TableContainer>
-                    }
-                </Box>
-            )}
 
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', px: 3, pb: 3 }}>
                 <Button onClick={handleClose} variant="contained" sx={{

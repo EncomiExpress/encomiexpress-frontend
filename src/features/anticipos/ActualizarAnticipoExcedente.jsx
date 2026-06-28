@@ -16,11 +16,10 @@ import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import { formatFecha } from '../../shared/utils/formatters.js'
 
 const ESTADO_COLORS = {
-    'entregado': { bg: '#E3F2FD', color: '#1565C0' },
-    'en legalización': { bg: '#FFF8E1', color: '#F57F17' },
-    'legalizado': { bg: '#E8F5E9', color: '#2E7D32' },
-    'excedente pendiente': { bg: '#FFF3E0', color: '#E65100' },
-    'cerrado': { bg: '#F3E5F5', color: '#6A1B9A' },
+    'Entregado':           { bg: '#F3E8FF', color: '#A855F7' },
+    'En Legalización':     { bg: '#DBEAFE', color: '#3B82F6' },
+    'Excedente pendiente': { bg: '#FEF3C7', color: '#F59E0B' },
+    'Completado':             { bg: '#F3E5F5', color: '#6A1B9A' },
 }
 
 const steps = ['Asignación', 'Estado y Fechas']
@@ -266,17 +265,16 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
                         <FormSelect
                             label="Estado"
                             name="estado"
-                            value={form?.estado || 'entregado'}
+                            value={form?.estado || 'Entregado'}
                             onChange={handleChange}
                             required
                             error={errores.estado}
                             helperText={errores.estado}
                         >
-                            <MenuItem value="entregado">Entregado</MenuItem>
-                            <MenuItem value="en legalización">En legalización</MenuItem>
-                            <MenuItem value="legalizado">Legalizado</MenuItem>
-                            <MenuItem value="excedente pendiente">Excedente pendiente</MenuItem>
-                            <MenuItem value="cerrado">Cerrado</MenuItem>
+                            <MenuItem value="Entregado" disabled={anticipoOriginal?.estado !== 'Entregado'}>Entregado</MenuItem>
+                            <MenuItem value="En Legalización">En Legalización</MenuItem>
+                            <MenuItem value="Excedente pendiente">Excedente pendiente</MenuItem>
+                            <MenuItem value="Cerrado">Cerrado</MenuItem>
                         </FormSelect>
 
                         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>

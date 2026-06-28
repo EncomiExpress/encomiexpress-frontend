@@ -1,6 +1,6 @@
-import { useTheme } from '@mui/material/styles'
+import { useTheme, alpha } from '@mui/material/styles'
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
     Box, Typography, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, Chip, IconButton,
@@ -19,11 +19,15 @@ import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank'
 import CheckBoxIcon from '@mui/icons-material/CheckBox'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import { useConductor } from '../../shared/contexts/ConductorContext.jsx'
+import { useRutaProgramacion } from '../../shared/contexts/RutaProgramacionContext.jsx'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
+import * as rutaService from '../../shared/services/rutaService'
+import { getPageOfConductor } from '../../shared/services/conductorService'
 import RegistrarConductor from './RegistrarConductor'
 import ActualizarConductor from './ActualizarConductor'
 import ModalBloqueoInhabilitacion from '../../shared/components/ModalBloqueoInhabilitacion'
 import ModalConsultarConductor from './ModalConsultarConductor'
+import ModalInhabilitarConductor from './ModalInhabilitarConductor'
 import { isVencido } from '../../shared/utils/formatters.js'
 
 const getThStyle = (theme) => ({
@@ -35,12 +39,6 @@ const getThStyle = (theme) => ({
     borderBottom: `1px solid ${theme.palette.divider}`,
     whiteSpace: 'nowrap',
 })
-
-// Los estados que acepta el backend
-const ESTADOS_CONDUCTOR = [
-    { value: 'activo', label: 'Activo' },
-    { value: 'inactivo', label: 'Inactivo' },
-]
 
 const getFilterMenuProps = (theme) => ({
     slotProps: {
@@ -66,25 +64,37 @@ const FILTROS = [
     { value: 'inhabilitado', label: 'Inhabilitado' },
 ]
 
-const estadoColor = (estado, theme) => {
-    if (!estado) return theme.palette.text.secondary
-    switch (estado.toLowerCase()) {
-        case 'activo': return '#10b981'
-        case 'inactivo': return '#dc2626'
-        default: return theme.palette.text.secondary
-    }
-}
 
 const ListarConductor = () => {
     const theme = useTheme()
     const thStyle = getThStyle(theme)
     const filterMenuProps = getFilterMenuProps(theme)
+    const [searchParams] = useSearchParams()
+    const highlightId = searchParams.get('highlight')
+    const highlightRef = useRef(null)
+    const hasScrolled = useRef(false)
+    const hasNavigated = useRef(false)
+    useEffect(() => {
+        if (highlightId && highlightRef.current && !hasScrolled.current) {
+            hasScrolled.current = true
+            setTimeout(() => highlightRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 400)
+        }
+    })
+    useEffect(() => {
+        if (!highlightId || hasNavigated.current) return
+        hasNavigated.current = true
+        getPageOfConductor(highlightId, rowsPerPage)
+            .then(res => { if (res?.data?.page) setPage(res.data.page) })
+            .catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [highlightId])
     const { tienePermiso, PERMISOS, usuario } = useAuth()
     const [searchTerm, setSearchTerm] = useState('')
     const [debouncedSearch, setDebouncedSearch] = useState('')
     const [conductorVer, setConductorVer] = useState(null)
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
     const [modalBloqueo, setModalBloqueo] = useState({ open: false, dependencias: [], mensaje: '' })
+    const [confirmToggle, setConfirmToggle] = useState({ open: false, idConductor: null, nombreCompleto: '', habilitadoActual: false })
     const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
     const [page, setPage] = useState(1)
     const [rowsPerPage, setRowsPerPage] = useState(5)
@@ -94,7 +104,8 @@ const ListarConductor = () => {
     const [sortBy, setSortBy] = useState({ field: 'nombre', dir: 'asc' })
     const initialLoad = useRef(true)
 
-    const { conductores, total, loading, fetchConductores, updateEstado, toggleHabilitado } = useConductor()
+    const { conductores, total, loading, error, fetchConductores, toggleHabilitado } = useConductor()
+    const { rutasProgramadas, fetchRutasProgramadas } = useRutaProgramacion()
     const navigate = useNavigate()
 
     useEffect(() => {
@@ -127,6 +138,25 @@ const ListarConductor = () => {
       if (!loading) { initialLoad.current = false }
     }, [loading])
 
+    useEffect(() => {
+      if (!usuario) return
+      if (rutasProgramadas.length === 0) fetchRutasProgramadas()
+    }, [usuario, rutasProgramadas.length, fetchRutasProgramadas])
+
+    const [conductoresEnRutaIds, setConductoresEnRutaIds] = useState(new Set())
+
+    useEffect(() => {
+      if (!usuario) return
+      rutaService.getRutas({ estado: 'En Curso', habilitado: 'true', limit: 100 })
+        .then(res => setConductoresEnRutaIds(new Set((res?.data || []).map(r => r.idConductor))))
+        .catch(() => {})
+    }, [usuario])
+
+    const conductoresConEstado = conductores.map(c => ({
+      ...c,
+      estadoEfectivo: conductoresEnRutaIds.has(c.idConductor) ? 'en_ruta' : 'disponible',
+    }))
+
     const handleSort = (field) => {
         setSortBy(prev => prev.field === field
             ? { field, dir: prev.dir === 'asc' ? 'desc' : 'asc' }
@@ -135,18 +165,19 @@ const ListarConductor = () => {
         setPage(1)
     }
 
-    const handleEstadoChange = async (id, nuevoEstado) => {
-        const success = await updateEstado(id, nuevoEstado)
-        if (success) {
-            setSnackbar({ open: true, message: `Estado actualizado a "${nuevoEstado}".`, severity: 'success' })
-        } else {
-            setSnackbar({ open: true, message: 'Error al actualizar el estado.', severity: 'error' })
-        }
+    const solicitarToggle = (conductor) => {
+        setConfirmToggle({
+            open: true,
+            idConductor: conductor.idConductor,
+            nombreCompleto: `${conductor.nombre} ${conductor.apellido}`,
+            habilitadoActual: conductor.habilitado,
+        })
     }
 
-    const handleToggleHabilitado = async (id, habilitadoActual) => {
+    const onConfirmar = async () => {
+        const { idConductor, habilitadoActual } = confirmToggle
         try {
-            await toggleHabilitado(id)
+            await toggleHabilitado(idConductor)
             setSnackbar({
                 open: true,
                 message: `Conductor ${habilitadoActual ? 'inhabilitado' : 'habilitado'} correctamente.`,
@@ -158,6 +189,7 @@ const ListarConductor = () => {
             } else {
                 setSnackbar({ open: true, message: err.message || 'Error al cambiar el estado', severity: 'error' })
             }
+            throw err
         }
     }
 
@@ -301,7 +333,20 @@ const ListarConductor = () => {
                                         </Typography>
                                     </TableCell>
                                 </TableRow>
-                            ) : !loading && conductores.length === 0 ? (
+                            ) : error ? (
+                                <TableRow>
+                                    <TableCell colSpan={8} align="center" sx={{ py: 5 }}>
+                                        <Typography color="error" variant="body2">
+                                            No se pudieron cargar los conductores. Verifica la conexión con el servidor.
+                                        </Typography>
+                                        {import.meta.env.DEV && (
+                                            <Box component="pre" sx={{ mt: 0.5, fontSize: 11, opacity: 0.7, whiteSpace: 'pre-wrap', m: 0 }}>
+                                                {String(error)}
+                                            </Box>
+                                        )}
+                                    </TableCell>
+                                </TableRow>
+                            ) : !loading && conductoresConEstado.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={8} align="center" sx={{ py: 7 }}>
                                         <Typography color={theme.palette.text.secondary} variant="body2">
@@ -314,9 +359,20 @@ const ListarConductor = () => {
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                conductores.map((conductor) => (
+                                conductoresConEstado.map((conductor) => {
+                                    const isHighlighted = highlightId && String(conductor.idConductor) === String(highlightId)
+                                    return (
                                     <TableRow key={conductor.idConductor}
-                                        sx={{ '&:hover': { backgroundColor: theme.palette.background.subtle }, transition: 'background-color 0.15s', opacity: conductor.habilitado ? 1 : 0.55 }}>
+                                        ref={isHighlighted ? highlightRef : null}
+                                        sx={{ '&:hover': { backgroundColor: theme.palette.background.subtle }, transition: 'background-color 0.15s', opacity: conductor.habilitado ? 1 : 0.55,
+                                            ...(isHighlighted && {
+                                                animation: 'highlightPulse 1.1s ease-in-out 4',
+                                                '@keyframes highlightPulse': {
+                                                    '0%, 100%': { backgroundColor: 'transparent' },
+                                                    '50%': { backgroundColor: alpha(theme.palette.primary.main, 0.13) },
+                                                },
+                                            }),
+                                        }}>
                                         {/* Nombre */}
                                         <TableCell>
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -350,21 +406,22 @@ const ListarConductor = () => {
                                                 variant={isVencido(conductor.fechaVencimientoLicencia) ? 'filled' : 'outlined'}
                                                 sx={{ fontSize: '0.7rem' }} />
                                         </TableCell>
-                                        {/* Estado operativo */}
+                                        {/* Estado operativo (automático — derivado de rutas) */}
                                         <TableCell sx={{ py: 1.5 }}>
-                                            <FormControl size="small" sx={{ minWidth: 110 }}>
-                                                <Select
-                                                    value={conductor.estado || 'activo'}
-                                                    onChange={(e) => handleEstadoChange(conductor.idConductor, e.target.value)}
-                                                    IconComponent={KeyboardArrowDownOutlinedIcon}
-                                                    sx={{ fontSize: '0.75rem', py: 0.5, color: estadoColor(conductor.estado, theme) }}
-                                                    MenuProps={filterMenuProps}
-                                                >
-                                                    {ESTADOS_CONDUCTOR.map(e => (
-                                                        <MenuItem key={e.value} value={e.value}>{e.label}</MenuItem>
-                                                    ))}
-                                                </Select>
-                                            </FormControl>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                <Box sx={{
+                                                    width: 10, height: 10, borderRadius: '50%', flexShrink: 0,
+                                                    ...(conductor.estadoEfectivo === 'en_ruta'
+                                                        ? { backgroundColor: '#3B82F6', border: '2px solid #3B82F6' }
+                                                        : { backgroundColor: 'transparent', border: '2px solid #10b981' })
+                                                }} />
+                                                <Typography variant="body2" sx={{
+                                                    fontSize: '0.82rem', fontWeight: 500,
+                                                    color: conductor.estadoEfectivo === 'en_ruta' ? '#3B82F6' : '#10b981',
+                                                }}>
+                                                    {conductor.estadoEfectivo === 'en_ruta' ? 'En Ruta' : 'Disponible'}
+                                                </Typography>
+                                            </Box>
                                         </TableCell>
                                         {/* Acciones */}
                                         <TableCell sx={{ py: 1.5 }}>
@@ -388,7 +445,7 @@ const ListarConductor = () => {
                                                 {tienePermiso(PERMISOS.ACTUALIZAR_CONDUCTOR) && (
                                                     <Tooltip title={conductor.habilitado ? 'Inhabilitar' : 'Habilitar'}>
                                                         <IconButton size="small"
-                                                            onClick={() => handleToggleHabilitado(conductor.idConductor, conductor.habilitado)}
+                                                            onClick={() => solicitarToggle(conductor)}
                                                             sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}>
                                                             {conductor.habilitado
                                                                 ? <CheckBoxIcon sx={{ fontSize: 18, color: theme.palette.primary.main }} />
@@ -399,7 +456,8 @@ const ListarConductor = () => {
                                             </Box>
                                         </TableCell>
                                     </TableRow>
-                                ))
+                                    )
+                                })
                             )}
                         </TableBody>
                     </Table>
@@ -533,6 +591,14 @@ const ListarConductor = () => {
                     fetchConductores()
                     setSnackbar({ open: true, message: 'Conductor actualizado correctamente', severity: 'success' })
                 }}
+            />
+
+            <ModalInhabilitarConductor
+                open={confirmToggle.open}
+                data={confirmToggle}
+                onClose={() => setConfirmToggle(s => ({ ...s, open: false }))}
+                onExited={() => setConfirmToggle({ open: false, idConductor: null, nombreCompleto: '', habilitadoActual: false })}
+                onConfirm={onConfirmar}
             />
 
             <ModalBloqueoInhabilitacion

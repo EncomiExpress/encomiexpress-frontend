@@ -1,5 +1,6 @@
-import { useTheme } from '@mui/material/styles'
+import { useTheme, alpha } from '@mui/material/styles'
 import { useState, useEffect, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useClientes } from '../../shared/contexts/ClienteContext.jsx'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
 import {
@@ -17,12 +18,13 @@ import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import ClearIcon from '@mui/icons-material/Clear'
-import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank'
-import CheckBoxIcon from '@mui/icons-material/CheckBox'
+import BlockOutlinedIcon from '@mui/icons-material/BlockOutlined'
+import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined'
 import RegistrarCliente from './RegistrarCliente'
 import ActualizarCliente from './ActualizarCliente'
-import ModalBloqueoInhabilitacion from '../../shared/components/ModalBloqueoInhabilitacion'
+import ModalInhabilitarCliente from './ModalInhabilitarCliente'
 import ModalConsultarCliente from './ModalConsultarCliente'
+import { getPageOfCliente } from '../../shared/services/clienteService'
 
 const getThStyle = (theme) => ({
     fontWeight: 700,
@@ -30,7 +32,7 @@ const getThStyle = (theme) => ({
     color: theme.palette.text.primary,
     letterSpacing: 0.5,
     py: 1.5,
-    borderBottom: `1px solid #E0E0E0`,
+    borderBottom: `1px solid ${theme.palette.divider}`,
     whiteSpace: 'nowrap',
 })
 
@@ -43,11 +45,15 @@ const FILTROS = [
 const ListarCliente = () => {
     const theme = useTheme()
     const thStyle = getThStyle(theme)
+    const [searchParams] = useSearchParams()
+    const highlightId = searchParams.get('highlight')
+    const highlightRef = useRef(null)
+    const hasScrolled = useRef(false)
+    const hasNavigated = useRef(false)
     const { clientes, total, loading, error, fetchClientes, toggleHabilitadoCliente } = useClientes()
     const { tienePermiso, PERMISOS } = useAuth()
-    const [localLoading, setLocalLoading] = useState(false)
     const initialLoad = useRef(true)
-    const effectiveLoading = loading || localLoading
+    const pendingConfirm = useRef(false)
     const [busqueda, setBusqueda] = useState('')
     const [debouncedBusqueda, setDebouncedBusqueda] = useState('')
     const [filtroEstado, setFiltroEstado] = useState('todo')
@@ -59,7 +65,23 @@ const ListarCliente = () => {
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [clienteEditar, setClienteEditar] = useState(null)
-    const [modalBloqueo, setModalBloqueo] = useState({ open: false, dependencias: [], mensaje: '' })
+    const [modalInhabilitar, setModalInhabilitar] = useState({ open: false, data: null })
+
+    useEffect(() => {
+        if (highlightId && highlightRef.current && !hasScrolled.current) {
+            hasScrolled.current = true
+            setTimeout(() => highlightRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 400)
+        }
+    })
+
+    useEffect(() => {
+        if (!highlightId || hasNavigated.current) return
+        hasNavigated.current = true
+        getPageOfCliente(highlightId, rowsPerPage)
+            .then(res => { if (res?.data?.page) setPage(res.data.page) })
+            .catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [highlightId])
 
     const handleSort = (field) => {
         setSortBy(prev => prev.field === field
@@ -76,7 +98,7 @@ const ListarCliente = () => {
     }
 
     useEffect(() => {
-        const t = setTimeout(() => { setDebouncedBusqueda(busqueda); setLocalLoading(true) }, 300)
+        const t = setTimeout(() => setDebouncedBusqueda(busqueda), 300)
         return () => clearTimeout(t)
     }, [busqueda])
 
@@ -102,21 +124,23 @@ const ListarCliente = () => {
     }, [page, rowsPerPage, filtroEstado, debouncedBusqueda, sortBy, fetchClientes])
 
     useEffect(() => {
-        if (!loading) { setLocalLoading(false); initialLoad.current = false }
+        if (!loading) initialLoad.current = false
     }, [loading])
 
-    const handleToggleHabilitado = async (id, nuevoEstado) => {
-        try {
-            await toggleHabilitadoCliente(id)
-            setSnackbar({ open: true, message: `Cliente ${nuevoEstado ? 'habilitado' : 'inhabilitado'} correctamente`, severity: 'success' })
-            await fetchClientes(undefined, { page, limit: rowsPerPage, habilitado: filtroEstado === 'todo' ? undefined : filtroEstado === 'habilitado' ? 'true' : 'false', q: busqueda.trim() || undefined, sortBy: `${sortBy.field}.${sortBy.dir}` })
-        } catch (err) {
-            if (err?.details?.length > 0) {
-                setModalBloqueo({ open: true, dependencias: err.details, mensaje: err.message })
-            } else {
-                setSnackbar({ open: true, message: err.message || 'Error al cambiar el estado', severity: 'error' })
+    const handleToggleHabilitado = (cliente) => {
+        setModalInhabilitar({
+            open: true,
+            data: {
+                idCliente: cliente.idCliente,
+                nombre: cliente.nombre,
+                apellido: cliente.apellido,
+                habilitadoActual: cliente.habilitado,
             }
-        }
+        })
+    }
+
+    const handleConfirmarToggle = () => {
+        pendingConfirm.current = true
     }
 
     const totalPages = Math.max(1, Math.ceil(total / rowsPerPage))
@@ -128,8 +152,6 @@ const ListarCliente = () => {
     const totalActivos = clientes.filter(c => c.habilitado).length
     const totalInactivos = clientes.filter(c => !c.habilitado).length
     const hayFiltrosActivos = busqueda.trim() !== '' || filtroEstado !== 'todo'
-    const paginatedClientes = clientes
-
     return (
         <Box sx={{ p: 3.5 }}>
             <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
@@ -189,11 +211,7 @@ const ListarCliente = () => {
                 </Box>
             </Box>
 
-            {error && (
-                <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
-                    Error al cargar los clientes: {error}
-                </Alert>
-            )}
+
 
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
                 <Box sx={{
@@ -302,7 +320,7 @@ const ListarCliente = () => {
                         </TableHead>
 
                         <TableBody>
-                            {effectiveLoading && initialLoad.current ? (
+                            {loading && initialLoad.current ? (
                                 <TableRow>
                                     <TableCell colSpan={5} align="center" sx={{ py: 7 }}>
                                         <CircularProgress size={28} sx={{ color: theme.palette.primary.main }} />
@@ -317,9 +335,14 @@ const ListarCliente = () => {
                                         <Typography color="error" variant="body2">
                                             No se pudieron cargar los clientes. Verifica la conexión con el servidor.
                                         </Typography>
+                                        {import.meta.env.DEV && (
+                                            <Box component="pre" sx={{ mt: 0.5, fontSize: 11, opacity: 0.7, whiteSpace: 'pre-wrap', m: 0 }}>
+                                                {String(error)}
+                                            </Box>
+                                        )}
                                     </TableCell>
                                 </TableRow>
-                            ) : !effectiveLoading && clientes.length === 0 ? (
+                            ) : !loading && clientes.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={5} align="center" sx={{ py: 7 }}>
                                         <Typography color={theme.palette.text.secondary} variant="body2">
@@ -333,13 +356,23 @@ const ListarCliente = () => {
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                paginatedClientes.map(cliente => (
+                                clientes.map(cliente => {
+                                    const isHighlighted = highlightId && String(cliente.idCliente) === String(highlightId)
+                                    return (
                                     <TableRow
                                         key={cliente.idCliente}
+                                        ref={isHighlighted ? highlightRef : null}
                                         sx={{
                                             '&:hover': { backgroundColor: theme.palette.background.subtle },
                                             transition: 'background-color 0.15s',
                                             opacity: cliente.habilitado ? 1 : 0.55,
+                                            ...(isHighlighted && {
+                                                animation: 'highlightPulse 1.1s ease-in-out 4',
+                                                '@keyframes highlightPulse': {
+                                                    '0%, 100%': { backgroundColor: 'transparent' },
+                                                    '50%': { backgroundColor: alpha(theme.palette.primary.main, 0.13) },
+                                                },
+                                            }),
                                         }}
                                     >
                                         <TableCell sx={{ py: 1.5 }}>
@@ -402,17 +435,21 @@ const ListarCliente = () => {
                                                     <Tooltip title={cliente.habilitado ? 'Inhabilitar' : 'Habilitar'}>
                                                         <IconButton
                                                             size="small"
-                                                            onClick={() => handleToggleHabilitado(cliente.idCliente, !cliente.habilitado)}
+                                                            onClick={() => handleToggleHabilitado(cliente)}
                                                             sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
                                                         >
-                                                            {cliente.habilitado ? <CheckBoxIcon sx={{ fontSize: 18, color: theme.palette.primary.main }} /> : <CheckBoxOutlineBlankIcon sx={{ fontSize: 18, color: theme.palette.status.disabled2.color }} />}
+                                                            {cliente.habilitado
+                                                                ? <BlockOutlinedIcon sx={{ fontSize: 18, color: theme.palette.primary.main }} />
+                                                                : <CheckCircleOutlinedIcon sx={{ fontSize: 18, color: '#059669' }} />
+                                                            }
                                                         </IconButton>
                                                     </Tooltip>
                                                 )}
                                             </Box>
                                         </TableCell>
                                     </TableRow>
-                                ))
+                                    )
+                                })
                             )}
                         </TableBody>
                     </Table>
@@ -442,7 +479,7 @@ const ListarCliente = () => {
                                 borderRadius: 2,
                                 '& .MuiSelect-select': { py: 0.6, pl: 1.5, pr: '28px !important' },
                                 '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
-                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#BDBDBD' },
+                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
                                 '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                                     borderColor: theme.palette.primary.main,
                                     borderWidth: '1px',
@@ -520,7 +557,7 @@ const ListarCliente = () => {
                             },
                             '& .MuiPaginationItem-root:hover:not(.Mui-selected)': {
                                 backgroundColor: theme.palette.background.subtle,
-                                borderColor: '#BDBDBD',
+                                borderColor: theme.palette.divider,
                             },
                         }}
                     />
@@ -529,12 +566,23 @@ const ListarCliente = () => {
 
             <ModalConsultarCliente cliente={clienteConsulta} onClose={() => setClienteConsulta(null)} />
 
-            <ModalBloqueoInhabilitacion
-                open={modalBloqueo.open}
-                onClose={() => setModalBloqueo({ open: false, dependencias: [], mensaje: '' })}
-                entidad="cliente"
-                mensaje={modalBloqueo.mensaje}
-                dependencias={modalBloqueo.dependencias}
+            <ModalInhabilitarCliente
+                open={modalInhabilitar.open}
+                data={modalInhabilitar.data}
+                onClose={() => setModalInhabilitar(s => ({ ...s, open: false }))}
+                onExited={() => {
+                    const data = modalInhabilitar.data
+                    const wasPending = pendingConfirm.current
+                    pendingConfirm.current = false
+                    setModalInhabilitar({ open: false, data: null })
+                    if (wasPending && data) {
+                        const habilitadoActual = data.habilitadoActual
+                        toggleHabilitadoCliente(data.idCliente)
+                            .then(() => setSnackbar({ open: true, message: `Cliente ${habilitadoActual ? 'inhabilitado' : 'habilitado'} correctamente`, severity: habilitadoActual ? 'warning' : 'success' }))
+                            .catch(() => {})
+                    }
+                }}
+                onConfirm={handleConfirmarToggle}
             />
 
             <RegistrarCliente

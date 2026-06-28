@@ -147,8 +147,8 @@ const ModalConsultarPropietario = ({ propietario, onClose }) => {
                                             <TableCell sx={{ fontSize: '0.82rem' }}>{v.tipo || '—'}</TableCell>
                                             <TableCell>
                                                 <Chip label={v.estado || '—'} size="small" sx={{
-                                                    backgroundColor: v.estado === 'disponible' ? '#E3F2FD' : v.estado === 'ocupado' ? '#FFF3E0' : '#FCE4EC',
-                                                    color: v.estado === 'disponible' ? '#1565C0' : v.estado === 'ocupado' ? '#E65100' : '#C62828',
+                                                    backgroundColor: v.estado === 'Disponible' ? '#E3F2FD' : v.estado === 'En Ruta' ? '#DBEAFE' : v.estado === 'Mantenimiento' ? '#FFF7ED' : '#FCE4EC',
+                                                    color: v.estado === 'Disponible' ? '#1565C0' : v.estado === 'En Ruta' ? '#3B82F6' : v.estado === 'Mantenimiento' ? '#EA580C' : '#C62828',
                                                     fontWeight: 600, fontSize: '0.72rem'
                                                 }} />
                                             </TableCell>

@@ -84,6 +84,9 @@ export const toggleHabilitadoConductor = async (id) => {
   });
 };
 
+export const getPageOfConductor = (id, limit = 10) =>
+  fetchWithAuth(`/conductores/${id}/page-of?limit=${limit}`)
+
 export default {
   getConductores,
   getConductorById,
@@ -91,5 +94,6 @@ export default {
   updateConductor,
   deleteConductor,
   toggleHabilitadoConductor,
+  getPageOfConductor,
 };
 

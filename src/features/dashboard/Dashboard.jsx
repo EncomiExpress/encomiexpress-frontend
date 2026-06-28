@@ -17,13 +17,10 @@ import BarChartOutlinedIcon from '@mui/icons-material/BarChartOutlined'
 import { formatRutaDestino } from '../../shared/utils/formatters.js'
 
 const STATUS_LABEL = {
-  'entregado': 'Entregado',
-  'en tránsito': 'En tránsito',
-  'pendiente de recogida': 'Pendiente',
-  'en recogida': 'En recogida',
-  'programada': 'Programada',
-  'devuelto': 'Devuelto',
-  'cancelado': 'Cancelado',
+  'Programada':  'Programada',
+  'En Tránsito': 'En Tránsito',
+  'Entregada':   'Entregada',
+  'Cancelada':   'Cancelada',
 }
 
 const formatCOP = (n) => '$' + n.toLocaleString('es-CO')
@@ -145,25 +142,19 @@ const Dashboard = () => {
 
   const enviosEstado = useMemo(() => {
     const statusColors = {
-      'entregado':             theme.palette.status.ventaEntregada.color,
-      'en tránsito':           theme.palette.status.ventaEnTransito.color,
-      'pendiente de recogida': theme.palette.status.ventaPendiente.color,
-      'en recogida':           theme.palette.status.ventaEnRecogida.color,
-      'programada':            theme.palette.status.ventaProgramada.color,
-      'devuelto':              theme.palette.status.ventaDevuelta.color,
-      'cancelado':             theme.palette.status.neutral.color,
+      'Entregada':   theme.palette.status.ventaEntregada.color,
+      'En Tránsito': theme.palette.status.ventaEnTransito.color,
+      'Programada':  theme.palette.status.ventaProgramada.color,
+      'Cancelada':   theme.palette.status.neutral.color,
     }
     const contador = {}
     ventas.forEach((venta) => {
       if (!isWithinRange(venta.fechaRegistro, filtroActivo.desde, filtroActivo.hasta)) return
-      const estadoKey = String(venta.estado || '').trim().toLowerCase()
+      const estadoKey = String(venta.estado || '').trim()
       if (!estadoKey) return
       contador[estadoKey] = (contador[estadoKey] || 0) + 1
     })
-    const orden = [
-      'entregado', 'en tránsito', 'pendiente de recogida',
-      'en recogida', 'programada', 'cancelado', 'devuelto',
-    ]
+    const orden = ['Entregada', 'En Tránsito', 'Programada', 'Cancelada']
     return orden
       .filter(key => contador[key])
       .map(key => ({

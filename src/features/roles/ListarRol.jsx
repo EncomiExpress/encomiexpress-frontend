@@ -6,8 +6,7 @@ import {
     TableContainer, TableHead, TableRow, TextField,
     IconButton, Tooltip, InputAdornment,
     Button, Select, MenuItem, Pagination, Chip, Avatar, Snackbar, Alert,
-    TableSortLabel, CircularProgress, Dialog, DialogTitle, DialogContent,
-    DialogContentText, DialogActions
+    TableSortLabel, CircularProgress
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
@@ -22,6 +21,7 @@ import RegistrarRol from './RegistrarRol'
 import ActualizarRol from './ActualizarRol'
 import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined'
 import ModalConsultarRol from './ModalConsultarRol'
+import ModalInhabilitarRol from './ModalInhabilitarRol'
 
 const getThStyle = (theme) => ({
     fontWeight: 700,
@@ -77,6 +77,7 @@ const ListarRol = () => {
     const [roles, setRoles] = useState([])
     const [total, setTotal] = useState(0)
     const [loading, setLoading] = useState(true)
+    const [error, setError] = useState(null)
     const initialLoad = useRef(true)
     const [busqueda, setBusqueda] = useState('')
     const [debouncedBusqueda, setDebouncedBusqueda] = useState('')
@@ -94,28 +95,34 @@ const ListarRol = () => {
     const puedeRegistrar = tienePermiso(PERMISOS.REGISTRAR_ROL)
 
     useEffect(() => {
-        const t = setTimeout(() => { setDebouncedBusqueda(busqueda); setLoading(true) }, 300)
+        const t = setTimeout(() => setDebouncedBusqueda(busqueda), 300)
         return () => clearTimeout(t)
     }, [busqueda])
 
     const cargarRoles = useCallback(async () => {
         setLoading(true)
-        const respuesta = await getRolesBackend({
-            page,
-            limit: rowsPerPage,
-            sortBy: `${sortBy.field}.${sortBy.dir}`,
-            habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
-            q: debouncedBusqueda.trim() || undefined,
-        })
-        if (respuesta.success) {
-            setRoles(respuesta.data || [])
-            setTotal(respuesta.total ?? (respuesta.data || []).length)
-        } else {
-            setRoles([])
-            setTotal(0)
+        setError(null)
+        try {
+            const respuesta = await getRolesBackend({
+                page,
+                limit: rowsPerPage,
+                sortBy: `${sortBy.field}.${sortBy.dir}`,
+                habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
+                q: debouncedBusqueda.trim() || undefined,
+            })
+            if (respuesta.success) {
+                setRoles(respuesta.data || [])
+                setTotal(respuesta.total ?? (respuesta.data || []).length)
+            } else {
+                setRoles([])
+                setTotal(0)
+            }
+        } catch (err) {
+            setError(err.message)
+        } finally {
+            setLoading(false)
+            initialLoad.current = false
         }
-        setLoading(false)
-        initialLoad.current = false
     }, [getRolesBackend, page, rowsPerPage, sortBy, filtroHabilitado, debouncedBusqueda])
 
     useEffect(() => {
@@ -134,25 +141,27 @@ const ListarRol = () => {
         setConfirmToggle({ open: true, rolId: id, rolNombre, habilitadoActual })
     }
 
-    const confirmarToggle = async () => {
+    const onConfirmar = async () => {
         const { rolId, rolNombre, habilitadoActual } = confirmToggle
-        setConfirmToggle({ open: false, rolId: null, rolNombre: '', habilitadoActual: null })
+        let respuesta
         try {
-            const respuesta = await toggleHabilitadoRol(rolId)
-            if (respuesta.success) {
-                setRoles(prev => prev.map(r => r.id === rolId ? { ...r, habilitado: !habilitadoActual } : r))
-                setSnackbar({
-                    open: true,
-                    message: !habilitadoActual
-                        ? `Rol "${rolNombre}" habilitado. Todos sus usuarios han sido habilitados.`
-                        : `Rol "${rolNombre}" inhabilitado. Todos sus usuarios han sido inhabilitados.`,
-                    severity: 'success'
-                })
-            } else {
-                setSnackbar({ open: true, message: respuesta.message || 'Error al cambiar estado', severity: 'error' })
-            }
+            respuesta = await toggleHabilitadoRol(rolId)
         } catch (error) {
             setSnackbar({ open: true, message: error?.message || 'Error al cambiar estado', severity: 'error' })
+            throw error
+        }
+        if (respuesta.success) {
+            setRoles(prev => prev.map(r => r.id === rolId ? { ...r, habilitado: !habilitadoActual } : r))
+            setSnackbar({
+                open: true,
+                message: !habilitadoActual
+                    ? `Rol "${rolNombre}" habilitado. Todos sus usuarios han sido habilitados.`
+                    : `Rol "${rolNombre}" inhabilitado. Todos sus usuarios han sido inhabilitados.`,
+                severity: 'success'
+            })
+        } else {
+            setSnackbar({ open: true, message: respuesta.message || 'Error al cambiar estado', severity: 'error' })
+            throw new Error(respuesta.message || 'Error al cambiar estado')
         }
     }
 
@@ -329,6 +338,19 @@ const ListarRol = () => {
                                         </Typography>
                                     </TableCell>
                                 </TableRow>
+                            ) : error ? (
+                                <TableRow>
+                                    <TableCell colSpan={4} align="center" sx={{ py: 5 }}>
+                                        <Typography color="error" variant="body2">
+                                            No se pudieron cargar los roles. Verifica la conexión con el servidor.
+                                        </Typography>
+                                        {import.meta.env.DEV && (
+                                            <Box component="pre" sx={{ mt: 0.5, fontSize: 11, opacity: 0.7, whiteSpace: 'pre-wrap', m: 0 }}>
+                                                {String(error)}
+                                            </Box>
+                                        )}
+                                    </TableCell>
+                                </TableRow>
                             ) : !loading && roles.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={4} align="center" sx={{ py: 7 }}>
@@ -417,7 +439,7 @@ const ListarRol = () => {
                                                             </IconButton>
                                                         </Tooltip>
                                                     )}
-                                                    {tienePermiso(PERMISOS.INHABILITAR_ROL) && rol.nombre !== usuarioActual?.rol && (
+                                                    {tienePermiso(PERMISOS.INHABILITAR_ROL) && (
                                                         <Tooltip title={rol.habilitado ? 'Inhabilitar' : 'Habilitar'}>
                                                             <IconButton
                                                                 size="small"
@@ -469,7 +491,29 @@ const ListarRol = () => {
                                 '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
                                 '& .MuiTouchRipple-root': { display: 'none' },
                             }}
-                            MenuProps={filterMenuProps}
+                            MenuProps={{
+                                slotProps: {
+                                    paper: {
+                                        sx: {
+                                            borderRadius: 2,
+                                            boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+                                            mt: 0.5,
+                                            minWidth: 80,
+                                            '& .MuiMenuItem-root': {
+                                                fontSize: '0.82rem',
+                                                py: 0.9,
+                                                px: 2,
+                                                display: 'flex',
+                                                justifyContent: 'space-between',
+                                                gap: 2,
+                                                '&:hover': { backgroundColor: theme.palette.primary.light },
+                                                '&.Mui-selected': { backgroundColor: 'transparent', fontWeight: 600, color: theme.palette.text.primary },
+                                                '&.Mui-selected:hover': { backgroundColor: theme.palette.primary.light },
+                                            },
+                                        },
+                                    },
+                                },
+                            }}
                         >
                             {[5, 10, 25].map(n => (
                                 <MenuItem key={n} value={n}>
@@ -538,44 +582,13 @@ const ListarRol = () => {
                 }}
             />
 
-            {/* ── Modal confirmación toggle rol ── */}
-            <Dialog
+            <ModalInhabilitarRol
                 open={confirmToggle.open}
+                data={confirmToggle}
                 onClose={() => setConfirmToggle(s => ({ ...s, open: false }))}
-                slotProps={{ paper: { sx: { borderRadius: 3, maxWidth: 420 } } }}
-            >
-                <DialogTitle sx={{ fontWeight: 700, fontSize: '1rem', pb: 1 }}>
-                    {confirmToggle.habilitadoActual ? `¿Inhabilitar rol "${confirmToggle.rolNombre}"?` : `¿Habilitar rol "${confirmToggle.rolNombre}"?`}
-                </DialogTitle>
-                <DialogContent>
-                    <DialogContentText sx={{ fontSize: '0.875rem', color: 'text.secondary' }}>
-                        {confirmToggle.habilitadoActual
-                            ? <>Se inhabilitarán <strong>todos los usuarios</strong> registrados con este rol, excepto tu cuenta activa. Mientras el rol esté inhabilitado no podrán iniciar sesión.</>
-                            : <>Se habilitarán <strong>todos los usuarios</strong> registrados con este rol sin excepción. Volverán a tener acceso al sistema.</>
-                        }
-                    </DialogContentText>
-                </DialogContent>
-                <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
-                    <Button
-                        onClick={() => setConfirmToggle(s => ({ ...s, open: false }))}
-                        variant="outlined"
-                        size="small"
-                        sx={{ borderRadius: 2, textTransform: 'none' }}
-                    >
-                        Cancelar
-                    </Button>
-                    <Button
-                        onClick={confirmarToggle}
-                        variant="contained"
-                        size="small"
-                        color={confirmToggle.habilitadoActual ? 'error' : 'primary'}
-                        disableElevation
-                        sx={{ borderRadius: 2, textTransform: 'none' }}
-                    >
-                        {confirmToggle.habilitadoActual ? 'Inhabilitar' : 'Habilitar'}
-                    </Button>
-                </DialogActions>
-            </Dialog>
+                onExited={() => setConfirmToggle({ open: false, rolId: null, rolNombre: '', habilitadoActual: null })}
+                onConfirm={onConfirmar}
+            />
 
             <Snackbar
                 open={snackbar.open}

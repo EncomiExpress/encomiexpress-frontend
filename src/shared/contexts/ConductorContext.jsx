@@ -140,14 +140,12 @@ export const ConductorProvider = ({ children }) => {
     throw new Error(response.message || 'Error al cambiar el estado')
   }, [])
 
-  // ─── Cambiar estado operativo (activo / inactivo) ─────────────────────────
+  // ─── Cambiar estado operativo (Disponible / En Ruta) ─────────────────────
   const updateEstado = useCallback(async (id, nuevoEstado) => {
-    let estadoBackend = nuevoEstado.toLowerCase()
-    if (estadoBackend === 'en ruta') estadoBackend = 'activo'
-    const response = await conductorService.cambiarEstadoConductor(id, estadoBackend)
+    const response = await conductorService.cambiarEstadoConductor(id, nuevoEstado)
     if (response.success) {
       setConductores(prev => prev.map(c =>
-        c.idConductor === id ? { ...c, estado: response.data.estado } : c
+        c.idConductor === id ? { ...c, estado: response.data.estadoActual } : c
       ))
       return true
     }

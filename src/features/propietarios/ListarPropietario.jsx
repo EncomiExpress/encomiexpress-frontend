@@ -23,6 +23,7 @@ import RegistrarPropietario from './RegistrarPropietario'
 import ActualizarPropietario from './ActualizarPropietario'
 import ModalBloqueoInhabilitacion from '../../shared/components/ModalBloqueoInhabilitacion'
 import ModalConsultarPropietario from './ModalConsultarPropietario'
+import ModalInhabilitarPropietario from './ModalInhabilitarPropietario'
 
 const getThStyle = (theme) => ({
     fontWeight: 700,
@@ -49,6 +50,7 @@ const ListarPropietario = () => {
     const [propietarioVer, setPropietarioVer] = useState(null)
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
     const [modalBloqueo, setModalBloqueo] = useState({ open: false, dependencias: [], mensaje: '' })
+    const [confirmToggle, setConfirmToggle] = useState({ open: false, idPropietario: null, nombreCompleto: '', habilitadoActual: false })
     const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
     const [page, setPage] = useState(1)
     const [rowsPerPage, setRowsPerPage] = useState(5)
@@ -98,21 +100,32 @@ const ListarPropietario = () => {
       }
     }, [usuario, navigate])
 
-    const handleToggleHabilitado = async (id, habilitadoActual) => {
-      try {
-        await toggleHabilitado(id)
-        setSnackbar({
-          open: true,
-          message: `Propietario ${habilitadoActual ? 'inhabilitado' : 'habilitado'} correctamente.`,
-          severity: 'success',
+    const solicitarToggle = (propietario) => {
+        setConfirmToggle({
+            open: true,
+            idPropietario: propietario.idPropietario,
+            nombreCompleto: `${propietario.nombre} ${propietario.apellido}`,
+            habilitadoActual: propietario.habilitado,
         })
-      } catch (err) {
-        if (err?.details?.length > 0) {
-          setModalBloqueo({ open: true, dependencias: err.details, mensaje: err.message })
-        } else {
-          setSnackbar({ open: true, message: err.message || 'Error al cambiar el estado', severity: 'error' })
+    }
+
+    const onConfirmar = async () => {
+        const { idPropietario, habilitadoActual } = confirmToggle
+        try {
+            await toggleHabilitado(idPropietario)
+            setSnackbar({
+                open: true,
+                message: `Propietario ${habilitadoActual ? 'inhabilitado' : 'habilitado'} correctamente.`,
+                severity: 'success',
+            })
+        } catch (err) {
+            if (err?.details?.length > 0) {
+                setModalBloqueo({ open: true, dependencias: err.details, mensaje: err.message })
+            } else {
+                setSnackbar({ open: true, message: err.message || 'Error al cambiar el estado', severity: 'error' })
+            }
+            throw err
         }
-      }
     }
 
     const limpiarFiltros = () => { setSearchTerm(''); setFiltroHabilitado('todo'); setPage(1) }
@@ -257,6 +270,11 @@ const ListarPropietario = () => {
                                 <TableRow>
                                     <TableCell colSpan={5} align="center" sx={{ py: 7 }}>
                                         <Typography color="error" variant="body2">No se pudieron cargar los propietarios. Verifica la conexión con el servidor.</Typography>
+                                        {import.meta.env.DEV && (
+                                            <Box component="pre" sx={{ mt: 0.5, fontSize: 11, opacity: 0.7, whiteSpace: 'pre-wrap', m: 0 }}>
+                                                {String(error)}
+                                            </Box>
+                                        )}
                                     </TableCell>
                                 </TableRow>
                             ) : !loading && propietarios.length === 0 ? (
@@ -317,7 +335,7 @@ const ListarPropietario = () => {
                                                 {tienePermiso(PERMISOS.GESTION_TRANSPORTE) && (
                                                     <Tooltip title={propietario.habilitado ? 'Inhabilitar' : 'Habilitar'}>
                                                         <IconButton size="small"
-                                                            onClick={() => handleToggleHabilitado(propietario.idPropietario, propietario.habilitado)}
+                                                            onClick={() => solicitarToggle(propietario)}
                                                             sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}>
                                                             {propietario.habilitado
                                                                 ? <CheckBoxIcon sx={{ fontSize: 18, color: theme.palette.primary.main }} />
@@ -464,6 +482,14 @@ const ListarPropietario = () => {
                     fetchPropietarios()
                     setSnackbar({ open: true, message: 'Propietario actualizado correctamente', severity: 'success' })
                 }}
+            />
+
+            <ModalInhabilitarPropietario
+                open={confirmToggle.open}
+                data={confirmToggle}
+                onClose={() => setConfirmToggle(s => ({ ...s, open: false }))}
+                onExited={() => setConfirmToggle({ open: false, idPropietario: null, nombreCompleto: '', habilitadoActual: false })}
+                onConfirm={onConfirmar}
             />
 
             <ModalBloqueoInhabilitacion

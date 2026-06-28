@@ -7,14 +7,10 @@ const VentaContext = createContext()
 export const useVentas = () => useContext(VentaContext)
 
 export const ESTADOS_ENCOMIENDA = [
-  'pendiente de recogida',
-  'en recogida',
-  'programada',
-  'en tránsito',
-  'entregado',
-  'devuelto',
-  'activo',
-  'inactivo',
+  'Programada',
+  'En Tránsito',
+  'Entregada',
+  'Cancelada',
 ]
 
 export const METODOS_PAGO = ['Contraentrega', 'Efectivo', 'Transferencia', 'Nequi']

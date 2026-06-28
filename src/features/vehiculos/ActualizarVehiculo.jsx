@@ -29,7 +29,7 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
     color: '',
     tipo: '',
     capacidad: '',
-    estado: 'Activo',
+    estado: 'Disponible',
     vencimientoSOAT: '',
     vencimientoRevisionTecnica: '',
     vencimientoSeguroTerceros: ''
@@ -142,9 +142,7 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
     'Camioneta', 'Camión', 'Furgón', 'Semi Trayler', 'Trayler', 'Motocicleta', 'Otro'
   ]
 
-  const estados = [
-    'Activo', 'Inactivo', 'Mantenimiento', 'En Reparación'
-  ]
+  const estados = ['Disponible', 'Mantenimiento']
 
   const renderStepContent = () => {
     switch (activeStep) {

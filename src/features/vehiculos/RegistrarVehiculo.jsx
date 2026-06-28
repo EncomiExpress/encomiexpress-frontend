@@ -21,7 +21,6 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
     color: '',
     tipo: '',
     capacidad: '',
-    estado: 'Activo',
     vencimientoSOAT: '',
     vencimientoRevisionTecnica: '',
     vencimientoSeguroTerceros: ''
@@ -57,7 +56,6 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
       color: '',
       tipo: '',
       capacidad: '',
-      estado: 'Activo',
       vencimientoSOAT: '',
       vencimientoRevisionTecnica: '',
       vencimientoSeguroTerceros: ''
@@ -81,7 +79,6 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
         color: formData.color.trim(),
         tipo: formData.tipo,
         capacidad: formData.capacidad ? parseFloat(formData.capacidad) : null,
-        estado: formData.estado,
         vencimientoSOAT: formData.vencimientoSOAT || null,
         vencimientoRevisionTecnica: formData.vencimientoRevisionTecnica || null,
         vencimientoSeguroTerceros: formData.vencimientoSeguroTerceros || null,
@@ -124,13 +121,6 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
     'Trayler',
     'Motocicleta',
     'Otro'
-  ]
-
-  const estados = [
-    'Activo',
-    'Inactivo',
-    'Mantenimiento',
-    'En Reparación'
   ]
 
   // Renderizar contenido del stepper
@@ -231,17 +221,6 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
                   </MenuItem>
                 ))}
             </FormSelect>
-            <FormSelect
-              label="Estado"
-              name="estado"
-              value={formData.estado}
-              onChange={handleChange}
-              required
-            >
-              {estados.map((estado) => (
-                <MenuItem key={estado} value={estado}>{estado}</MenuItem>
-              ))}
-            </FormSelect>
             <FormField
               label="Vencimiento SOAT"
               name="vencimientoSOAT"
@@ -288,7 +267,6 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
                 <ConfirmRow label="Color" value={formData.color} />
                 <ConfirmRow label="Tipo" value={formData.tipo} />
                 <ConfirmRow label="Capacidad" value={`${formData.capacidad} kg`} />
-                <ConfirmRow label="Estado" value={formData.estado} />
               </Paper>
               <Paper elevation={0} sx={{
                 flex: 1, minWidth: 0, borderRadius: 2, p: 2.5,

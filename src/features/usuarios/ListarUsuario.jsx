@@ -6,7 +6,7 @@ import {
     TableContainer, TableHead, TableRow, TextField,
     IconButton, Chip, Tooltip, InputAdornment,
     Button, Avatar, Select, MenuItem, Pagination, Snackbar, Alert,
-    CircularProgress, FormControl, TableSortLabel
+    CircularProgress, FormControl, TableSortLabel, Switch
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
@@ -16,11 +16,10 @@ import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import ClearIcon from '@mui/icons-material/Clear'
-import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank'
-import CheckBoxIcon from '@mui/icons-material/CheckBox'
 import RegistrarUsuario from './RegistrarUsuario'
 import ActualizarUsuario from './ActualizarUsuario'
 import ModalConsultarUsuario from './ModalConsultarUsuario'
+import ModalInhabilitarUsuario from './ModalInhabilitarUsuario'
 
 const getThStyle = (theme) => ({
     fontWeight: 700,
@@ -62,9 +61,10 @@ const ListarUsuario = () => {
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [usuarioEditar, setUsuarioEditar] = useState(null)
+    const [confirmToggle, setConfirmToggle] = useState({ open: false, idUsuario: null, nombreCompleto: '', habilitadoActual: false })
 
     useEffect(() => {
-        const t = setTimeout(() => { setDebouncedBusqueda(busqueda); setLoading(true) }, 300)
+        const t = setTimeout(() => setDebouncedBusqueda(busqueda), 300)
         return () => clearTimeout(t)
     }, [busqueda])
 
@@ -110,15 +110,26 @@ const ListarUsuario = () => {
 
     const puedeRegistrar = tienePermiso(PERMISOS.REGISTRAR_USUARIO)
 
-    const handleToggleHabilitado = async (id) => {
+    const solicitarToggle = (usuario) => {
+        setConfirmToggle({
+            open: true,
+            idUsuario: usuario.idUsuario,
+            nombreCompleto: `${usuario.nombre} ${usuario.apellido}`,
+            habilitadoActual: usuario.habilitado,
+        })
+    }
+
+    const onConfirmar = async () => {
+        const { idUsuario, habilitadoActual } = confirmToggle
         try {
-            await habilitarInhabilitarUsuario(id)
+            await habilitarInhabilitarUsuario(idUsuario)
             setUsuarios(prev => prev.map(u =>
-                u.idUsuario === id ? { ...u, habilitado: !u.habilitado } : u
+                u.idUsuario === idUsuario ? { ...u, habilitado: !u.habilitado } : u
             ))
-            setSnackbar({ open: true, message: `Usuario ${usuarios.find(u => u.idUsuario === id)?.habilitado ? 'inhabilitado' : 'habilitado'} correctamente`, severity: 'success' })
+            setSnackbar({ open: true, message: `Usuario ${habilitadoActual ? 'inhabilitado' : 'habilitado'} correctamente`, severity: 'success' })
         } catch (err) {
-            setSnackbar({ open: true, message: 'Error al cambiar el estado', severity: 'error' })
+            setSnackbar({ open: true, message: err?.message || 'Error al cambiar el estado', severity: 'error' })
+            throw err
         }
     }
 
@@ -202,11 +213,7 @@ const ListarUsuario = () => {
                 </Box>
             </Box>
 
-            {error && (
-                <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
-                    No se pudieron cargar los usuarios. Verifica la conexión con el servidor.
-                </Alert>
-            )}
+
 
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
@@ -355,6 +362,11 @@ const ListarUsuario = () => {
                                         <Typography color="error" variant="body2">
                                             No se pudieron cargar los usuarios. Verifica la conexión con el servidor.
                                         </Typography>
+                                        {import.meta.env.DEV && (
+                                            <Box component="pre" sx={{ mt: 0.5, fontSize: 11, opacity: 0.7, whiteSpace: 'pre-wrap', m: 0 }}>
+                                                {String(error)}
+                                            </Box>
+                                        )}
                                     </TableCell>
                                 </TableRow>
                             ) : !loading && usuarios.length === 0 ? (
@@ -452,13 +464,25 @@ const ListarUsuario = () => {
                                                 )}
                                                 {tienePermiso(PERMISOS.INHABILITAR_USUARIO) && usuario.idUsuario !== usuarioActual?.idUsuario && (
                                                     <Tooltip title={usuario.habilitado ? 'Inhabilitar' : 'Habilitar'}>
-                                                        <IconButton
+                                                        <Switch
                                                             size="small"
-                                                            onClick={() => handleToggleHabilitado(usuario.idUsuario)}
-                                                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
-                                                        >
-                                                            {usuario.habilitado ? <CheckBoxIcon sx={{ fontSize: 18, color: theme.palette.primary.main }} /> : <CheckBoxOutlineBlankIcon sx={{ fontSize: 18, color: theme.palette.status.disabled2.color }} />}
-                                                        </IconButton>
+                                                            checked={usuario.habilitado}
+                                                            onChange={() => solicitarToggle(usuario)}
+                                                            disableRipple
+                                                            sx={{
+                                                                ml: 0.5,
+                                                                '& .MuiSwitch-switchBase.Mui-checked': {
+                                                                    color: '#22c55e',
+                                                                    '&:hover': { backgroundColor: 'transparent' },
+                                                                },
+                                                                '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                                                                    backgroundColor: '#22c55e',
+                                                                },
+                                                                '& .MuiSwitch-switchBase': {
+                                                                    '&:hover': { backgroundColor: 'transparent' },
+                                                                },
+                                                            }}
+                                                        />
                                                     </Tooltip>
                                                 )}
                                             </Box>
@@ -598,6 +622,14 @@ const ListarUsuario = () => {
                     cargarUsuarios()
                     setSnackbar({ open: true, message: 'Usuario actualizado correctamente', severity: 'success' })
                 }}
+            />
+
+            <ModalInhabilitarUsuario
+                open={confirmToggle.open}
+                data={confirmToggle}
+                onClose={() => setConfirmToggle(s => ({ ...s, open: false }))}
+                onExited={() => setConfirmToggle({ open: false, idUsuario: null, nombreCompleto: '', habilitadoActual: false })}
+                onConfirm={onConfirmar}
             />
 
             <Snackbar

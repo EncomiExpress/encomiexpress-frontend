@@ -6,7 +6,7 @@ import {
     TableContainer, TableHead, TableRow, Chip, IconButton,
     TextField, InputAdornment, Snackbar, Alert,
     Tooltip, Button, Avatar, CircularProgress,
-    Select, MenuItem, FormControl, Pagination, TableSortLabel
+    Select, MenuItem, FormControl, Pagination, TableSortLabel,
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
@@ -23,8 +23,9 @@ import { useDestino } from '../../shared/contexts/DestinoContext.jsx'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
 import RegistrarDestino from './RegistrarDestino'
 import ActualizarDestino from './ActualizarDestino'
-import ModalBloqueoInhabilitacion from '../../shared/components/ModalBloqueoInhabilitacion'
 import ModalConsultarDestino from './ModalConsultarDestino'
+import ModalInhabilitarDestino from './ModalInhabilitarDestino'
+
 
 const getThStyle = (theme) => ({
     fontWeight: 700,
@@ -49,14 +50,13 @@ const ListarDestino = () => {
     const [debouncedSearch, setDebouncedSearch] = useState('')
     const [destinoVer, setDestinoVer] = useState(null)
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
-    const [modalBloqueo, setModalBloqueo] = useState({ open: false, dependencias: [], mensaje: '' })
+    const [confirmInhabilitar, setConfirmInhabilitar] = useState({ open: false, id: null, ciudad: '', habilitadoActual: null })
     const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
     const [page, setPage] = useState(1)
     const [rowsPerPage, setRowsPerPage] = useState(5)
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [destinoEditar, setDestinoEditar] = useState(null)
-    const [togglingId, setTogglingId] = useState(null)
     const [sortBy, setSortBy] = useState({ field: 'ciudad', dir: 'asc' })
     const initialLoad = useRef(true)
 
@@ -101,23 +101,22 @@ const ListarDestino = () => {
       }
     }, [usuario, navigate])
 
-    const handleToggleHabilitado = async (id, habilitadoActual) => {
-        setTogglingId(id)
+
+    const handleToggleHabilitado = (id, habilitadoActual, ciudad) => {
+        setConfirmInhabilitar({ open: true, id, ciudad: ciudad || '', habilitadoActual })
+    }
+
+    const onConfirmar = async () => {
         try {
-            const updated = await toggleHabilitado(id)
+            await toggleHabilitado(confirmInhabilitar.id)
             setSnackbar({
                 open: true,
-                message: `Destino ${updated.habilitado ? 'habilitado' : 'inhabilitado'} correctamente.`,
+                message: confirmInhabilitar.habilitadoActual ? 'Destino inhabilitado correctamente.' : 'Destino habilitado correctamente.',
                 severity: 'success',
             })
         } catch (err) {
-            if (err?.details?.length > 0) {
-                setModalBloqueo({ open: true, dependencias: err.details, mensaje: err.message })
-            } else {
-                setSnackbar({ open: true, message: err.message || 'No se pudo cambiar el estado del destino.', severity: 'error' })
-            }
-        } finally {
-            setTogglingId(null)
+            setSnackbar({ open: true, message: err.message || 'No se pudo cambiar el estado del destino.', severity: 'error' })
+            throw err
         }
     }
 
@@ -262,14 +261,13 @@ const ListarDestino = () => {
                                 </TableCell>
                                 <TableCell sx={thStyle}>Departamento</TableCell>
                                 <TableCell sx={thStyle}>Tarifa Base</TableCell>
-                                <TableCell sx={thStyle}>Estado</TableCell>
                                 <TableCell sx={{ ...thStyle, width: 130 }}>Acciones</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
                             {loading && initialLoad.current ? (
                                 <TableRow>
-                                    <TableCell colSpan={5} align="center" sx={{ py: 7 }}>
+                                    <TableCell colSpan={4} align="center" sx={{ py: 7 }}>
                                         <CircularProgress size={28} sx={{ color: theme.palette.primary.main }} />
                                         <Typography variant="body2" color={theme.palette.text.secondary} mt={1.5}>
                                             Cargando destinos...
@@ -278,13 +276,18 @@ const ListarDestino = () => {
                                 </TableRow>
                             ) : error ? (
                                 <TableRow>
-                                    <TableCell colSpan={5} align="center" sx={{ py: 7 }}>
+                                    <TableCell colSpan={4} align="center" sx={{ py: 7 }}>
                                         <Typography variant="body2" color="error">No se pudieron cargar los destinos. Verifica la conexión con el servidor.</Typography>
+                                        {import.meta.env.DEV && (
+                                            <Box component="pre" sx={{ mt: 0.5, fontSize: 11, opacity: 0.7, whiteSpace: 'pre-wrap', m: 0 }}>
+                                                {String(error)}
+                                            </Box>
+                                        )}
                                     </TableCell>
                                 </TableRow>
                             ) : !loading && destinos.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={5} align="center" sx={{ py: 7 }}>
+                                    <TableCell colSpan={4} align="center" sx={{ py: 7 }}>
                                         <Typography color={theme.palette.text.secondary} variant="body2">
                                             {filtroHabilitado !== 'todo'
                                                 ? 'No se encontraron destinos que coincidan con los filtros aplicados.'
@@ -336,19 +339,6 @@ const ListarDestino = () => {
                                             />
                                         </TableCell>
 
-                                        {/* Estado habilitado */}
-                                        <TableCell sx={{ py: 1.5 }}>
-                                            <Chip
-                                                label={destino.habilitado ? 'Habilitado' : 'Inhabilitado'}
-                                                size="small"
-                                                sx={{
-                                                    fontSize: '0.72rem', fontWeight: 600, height: 22, borderRadius: 10,
-                                                    backgroundColor: destino.habilitado ? theme.palette.status.success.bg : theme.palette.status.error.bg,
-                                                    color: destino.habilitado ? theme.palette.status.success.color : theme.palette.status.error.color,
-                                                }}
-                                            />
-                                        </TableCell>
-
                                         {/* Acciones */}
                                         <TableCell sx={{ py: 1.5 }}>
                                             <Box sx={{ display: 'flex', gap: 0.5 }}>
@@ -372,14 +362,11 @@ const ListarDestino = () => {
                                                 {tienePermiso(PERMISOS.ACTUALIZAR_DESTINO) && (
                                                     <Tooltip title={destino.habilitado ? 'Inhabilitar' : 'Habilitar'}>
                                                         <IconButton size="small"
-                                                            disabled={togglingId === destino.idDestino}
-                                                            onClick={() => handleToggleHabilitado(destino.idDestino, destino.habilitado)}
+                                                            onClick={() => handleToggleHabilitado(destino.idDestino, destino.habilitado, destino.ciudad)}
                                                             sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}>
-                                                            {togglingId === destino.idDestino
-                                                                ? <CircularProgress size={16} sx={{ color: theme.palette.primary.main }} />
-                                                                : destino.habilitado
-                                                                    ? <CheckBoxIcon sx={{ fontSize: 18, color: theme.palette.primary.main }} />
-                                                                    : <CheckBoxOutlineBlankIcon sx={{ fontSize: 18, color: theme.palette.status?.disabled2?.color || theme.palette.text.disabled }} />
+                                                            {destino.habilitado
+                                                                ? <CheckBoxIcon sx={{ fontSize: 18, color: theme.palette.primary.main }} />
+                                                                : <CheckBoxOutlineBlankIcon sx={{ fontSize: 18, color: theme.palette.status?.disabled2?.color || theme.palette.text.disabled }} />
                                                             }
                                                         </IconButton>
                                                     </Tooltip>
@@ -511,12 +498,12 @@ const ListarDestino = () => {
                 }}
             />
 
-            <ModalBloqueoInhabilitacion
-                open={modalBloqueo.open}
-                onClose={() => setModalBloqueo({ open: false, dependencias: [], mensaje: '' })}
-                entidad="destino"
-                mensaje={modalBloqueo.mensaje}
-                dependencias={modalBloqueo.dependencias}
+            <ModalInhabilitarDestino
+                open={confirmInhabilitar.open}
+                data={confirmInhabilitar}
+                onClose={() => setConfirmInhabilitar(s => ({ ...s, open: false }))}
+                onExited={() => setConfirmInhabilitar({ open: false, id: null, ciudad: '', habilitadoActual: null })}
+                onConfirm={onConfirmar}
             />
 
             <Snackbar open={snackbar.open} autoHideDuration={3000}

@@ -29,7 +29,6 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
         idRuta: '',
         valorAnticipo: '',
         valorGastado: '',
-        estado: 'entregado',
         soporte: '',
         fechaEntrega: '',
         fechaLegalizacion: '',
@@ -77,7 +76,6 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
         }
         if (step === 1) {
             if (!form.fechaEntrega) e.fechaEntrega = 'La fecha de entrega es obligatoria'
-            if (!form.estado) e.estado = 'Selecciona un estado'
         }
         return e
     }
@@ -215,22 +213,6 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
             case 1:
                 return (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                        <FormSelect
-                            label="Estado"
-                            name="estado"
-                            value={form.estado}
-                            onChange={handleChange}
-                            required
-                            error={errores.estado}
-                            helperText={errores.estado}
-                        >
-                            <MenuItem value="entregado">Entregado</MenuItem>
-                            <MenuItem value="en legalización">En legalización</MenuItem>
-                            <MenuItem value="legalizado">Legalizado</MenuItem>
-                            <MenuItem value="excedente pendiente">Excedente pendiente</MenuItem>
-                            <MenuItem value="cerrado">Cerrado</MenuItem>
-                        </FormSelect>
-
                         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                             <TextField
                                 fullWidth label="Fecha de entrega *" name="fechaEntrega" type="date"
@@ -289,7 +271,7 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
                                     <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Estado y Fechas</Typography>
                                 </Box>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica el estado y las fechas</Typography>
-                                <ConfirmRow label="Estado" value={form.estado} />
+                                <ConfirmRow label="Estado" value="Entregado" />
                                 <ConfirmRow label="F. Entrega" value={form.fechaEntrega || '—'} />
                                 <ConfirmRow label="F. Legalización" value={form.fechaLegalizacion || '—'} />
                                 <ConfirmRow label="F. Excedente" value={form.fechaEntregaExcedente || '—'} />

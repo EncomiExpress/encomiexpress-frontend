@@ -12,6 +12,7 @@ export const updateVehiculo = (id, datos) => fetchWithAuth(`/vehiculos/${id}`, {
 export const cambiarEstadoVehiculo = (id, estado) => fetchWithAuth(`/vehiculos/${id}/estado`, { method: 'PATCH', body: JSON.stringify({ estado }) })
 export const deleteVehiculo = (id) => fetchWithAuth(`/vehiculos/${id}`, { method: 'DELETE' })
 export const toggleHabilitadoVehiculo = (id) => fetchWithAuth(`/vehiculos/${id}/toggle-habilitado`, { method: 'PATCH' })
+export const getPageOfVehiculo = (id, limit = 10) => fetchWithAuth(`/vehiculos/${id}/page-of?limit=${limit}`)
 
-export default { getVehiculos, getVehiculoById, createVehiculo, updateVehiculo, deleteVehiculo, toggleHabilitadoVehiculo }
+export default { getVehiculos, getVehiculoById, createVehiculo, updateVehiculo, deleteVehiculo, toggleHabilitadoVehiculo, getPageOfVehiculo }
 

@@ -11,5 +11,6 @@ export const createRuta      = (datos)    => fetchWithAuth('/rutas',     { metho
 export const updateRuta      = (id, datos)=> fetchWithAuth(`/rutas/${id}`, { method: 'PUT', body: JSON.stringify(datos) })
 export const updateEstadoRuta= (id, estado) => fetchWithAuth(`/rutas/${id}/estado`, { method: 'PATCH', body: JSON.stringify({ estado }) })
 export const toggleHabilitadoRuta = (id) => fetchWithAuth(`/rutas/${id}/toggle-habilitado`, { method: 'PATCH' })
+export const getPageOfRuta = (id, limit = 10) => fetchWithAuth(`/rutas/${id}/page-of?limit=${limit}`)
 
-export default { getRutas, getRutaById, createRuta, updateRuta, updateEstadoRuta, toggleHabilitadoRuta }
+export default { getRutas, getRutaById, createRuta, updateRuta, updateEstadoRuta, toggleHabilitadoRuta, getPageOfRuta }

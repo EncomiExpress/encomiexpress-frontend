@@ -1,5 +1,6 @@
-import { useTheme } from '@mui/material/styles'
+import { useTheme, alpha } from '@mui/material/styles'
 import { useState, useEffect, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useAnticipos } from '../../shared/contexts/AnticipoExcedenteContext.jsx'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
 import {
@@ -7,7 +8,8 @@ import {
     TableContainer, TableHead, TableRow, TextField,
     IconButton, Chip, Tooltip, InputAdornment,
     Button, Avatar, Select, MenuItem, Pagination, Snackbar, Alert,
-    CircularProgress, FormControl, InputLabel, TableSortLabel
+    CircularProgress, FormControl, InputLabel, TableSortLabel,
+    Dialog, DialogTitle, DialogContent, DialogActions
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
@@ -16,13 +18,17 @@ import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import ClearIcon from '@mui/icons-material/Clear'
-import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank'
-import CheckBoxIcon from '@mui/icons-material/CheckBox'
+import BlockOutlinedIcon from '@mui/icons-material/BlockOutlined'
+import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined'
+import CloseIcon from '@mui/icons-material/Close'
+import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
+import TaskAltOutlinedIcon from '@mui/icons-material/TaskAltOutlined'
 import RegistrarAnticipoExcedente from './RegistrarAnticipoExcedente'
 import ActualizarAnticipoExcedente from './ActualizarAnticipoExcedente'
-import ModalBloqueoInhabilitacion from '../../shared/components/ModalBloqueoInhabilitacion'
+import ModalInhabilitarAnticipo from './ModalInhabilitarAnticipo'
 import ModalConsultarAnticipoExcedente from './ModalConsultarAnticipoExcedente'
-import { getEstadoColorAnticipo as getEstadoColor } from '../../shared/utils/estadoColors.js'
+import { getEstadoColorAnticipo as getEstadoColor, getAnticipoEstadoDot } from '../../shared/utils/estadoColors.js'
+import { getPageOfAnticipo } from '../../shared/services/anticipoService'
 import { formatFecha } from '../../shared/utils/formatters.js'
 
 const getThStyle = (theme) => ({
@@ -73,13 +79,31 @@ const FILTROS_HABILITADO = [
 
 const FILTROS_ANTICIPO = [
     { value: 'todos', label: 'Todos los estados' },
-    { value: 'pendiente', label: 'Pendiente' },
-    { value: 'entregado', label: 'Entregado' },
-    { value: 'en legalización', label: 'En legalización' },
-    { value: 'legalizado', label: 'Legalizado' },
-    { value: 'excedente pendiente', label: 'Excedente pendiente' },
-    { value: 'cerrado', label: 'Cerrado' },
+    { value: 'Entregado', label: 'Entregado' },
+    { value: 'En Legalización', label: 'En Legalización' },
+    { value: 'Excedente pendiente', label: 'Excedente pendiente' },
+    { value: 'Completado', label: 'Completado' },
 ]
+
+const AnticipoEstadoDot = ({ estado }) => {
+    const info = getAnticipoEstadoDot(estado)
+    if (info.type === 'symbol') {
+        return (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                <Box component="span" sx={{ width: 10, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: info.char === '✓' ? '0.8rem' : '0.85rem', color: info.color, lineHeight: 1, flexShrink: 0 }}>
+                    {info.char}
+                </Box>
+                <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: info.color }}>{info.label}</Typography>
+            </Box>
+        )
+    }
+    return (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+            <Box sx={{ width: 10, height: 10, borderRadius: '50%', flexShrink: 0, backgroundColor: info.fill ? info.color : 'transparent', border: `2px solid ${info.color}` }} />
+            <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: info.color }}>{info.label}</Typography>
+        </Box>
+    )
+}
 
 const formatMoney = (val) => {
     const num = parseFloat(val || 0)
@@ -93,9 +117,21 @@ const ListarAnticipoExcedente = () => {
     const thStyle = getThStyle(theme)
     const filterSelectSx = getFilterSelectSx(theme)
     const filterMenuProps = getFilterMenuProps(theme)
-    const { anticipos, total, conductores, rutas, loading, fetchAnticipos, toggleHabilitado, cambiarEstado } = useAnticipos()
+    const [searchParams] = useSearchParams()
+    const highlightId = searchParams.get('highlight')
+    const highlightRef = useRef(null)
+    const hasScrolled = useRef(false)
+    const hasNavigated = useRef(false)
+    useEffect(() => {
+        if (highlightId && highlightRef.current && !hasScrolled.current) {
+            hasScrolled.current = true
+            setTimeout(() => highlightRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 400)
+        }
+    })
+    const { anticipos, total, conductores, rutas, loading, error, fetchAnticipos, toggleHabilitado, cambiarEstado } = useAnticipos()
     const { tienePermiso, PERMISOS } = useAuth()
     const initialLoad = useRef(true)
+    const pendingConfirm = useRef(false)
 
     const [busqueda, setBusqueda] = useState('')
     const [debouncedBusqueda, setDebouncedBusqueda] = useState('')
@@ -105,11 +141,22 @@ const ListarAnticipoExcedente = () => {
     const [rowsPerPage, setRowsPerPage] = useState(5)
     const [anticipoConsulta, setAnticipoConsulta] = useState(null)
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
-    const [modalBloqueo, setModalBloqueo] = useState({ open: false, dependencias: [], mensaje: '' })
+    const [modalInhabilitar, setModalInhabilitar] = useState({ open: false, anticipo: null })
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [anticipoEditar, setAnticipoEditar] = useState(null)
     const [sortBy, setSortBy] = useState({ field: 'fechaEntrega', dir: 'desc' })
+    const [confirmLeg, setConfirmLeg] = useState({ open: false, id: null, nuevoEstado: null })
+    const [confirmDev, setConfirmDev] = useState({ open: false, id: null })
+
+    useEffect(() => {
+        if (!highlightId || hasNavigated.current) return
+        hasNavigated.current = true
+        getPageOfAnticipo(highlightId, rowsPerPage)
+            .then(res => { if (res?.data?.page) setPage(res.data.page) })
+            .catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [highlightId])
 
     const handleSort = (field) => {
         setSortBy(prev => prev.field === field
@@ -152,11 +199,6 @@ const ListarAnticipoExcedente = () => {
         return c ? c.nombre : '—'
     }
 
-    const getNombreRuta = (id) => {
-        const r = rutas.find(r => r.idRuta === parseInt(id))
-        return r ? r.nombre : '—'
-    }
-
     const currentAnticipos = anticipos
     const hayFiltrosActivos = busqueda.trim() !== '' || filtroHabilitado !== 'todo' || filtroEstadoAnticipo !== 'todos'
     const totalPages = Math.max(1, Math.ceil(total / rowsPerPage))
@@ -164,26 +206,34 @@ const ListarAnticipoExcedente = () => {
     const from = total === 0 ? 0 : (safePage - 1) * rowsPerPage + 1
     const to = Math.min(safePage * rowsPerPage, total)
 
-    const handleToggleHabilitado = async (id) => {
-        try {
-            await toggleHabilitado(id)
-            setSnackbar({ open: true, message: 'Estado de habilitación actualizado', severity: 'success' })
-        } catch (err) {
-            if (err?.details?.length > 0) {
-                setModalBloqueo({ open: true, dependencias: err.details, mensaje: err.message })
-            } else {
-                setSnackbar({ open: true, message: err.message || 'No se pudo cambiar el estado', severity: 'error' })
-            }
-        }
+    const handleToggleHabilitado = (anticipo) => {
+        setModalInhabilitar({ open: true, anticipo })
     }
 
-    const handleCambiarEstadoAnticipo = async (id, nuevoEstado) => {
+    const handleConfirmarToggle = () => {
+        pendingConfirm.current = true
+    }
+
+    const ejecutarCambioEstadoAnticipo = async (id, nuevoEstado) => {
         try {
             await cambiarEstado(id, nuevoEstado)
             setSnackbar({ open: true, message: 'Estado del anticipo actualizado', severity: 'success' })
         } catch (err) {
             setSnackbar({ open: true, message: err.message || 'No se pudo cambiar el estado', severity: 'error' })
         }
+    }
+
+    const handleCambiarEstadoAnticipo = (id, nuevoEstado) => {
+        if (nuevoEstado === 'En Legalización') {
+            setConfirmLeg({ open: true, id, nuevoEstado })
+            return
+        }
+        ejecutarCambioEstadoAnticipo(id, nuevoEstado)
+    }
+
+    const handleConfirmarDevolucion = async () => {
+        await ejecutarCambioEstadoAnticipo(confirmDev.id, 'Completado')
+        setConfirmDev({ open: false, id: null })
     }
 
     return (
@@ -381,6 +431,19 @@ const ListarAnticipoExcedente = () => {
                                         </Typography>
                                     </TableCell>
                                 </TableRow>
+                            ) : error ? (
+                                <TableRow>
+                                    <TableCell colSpan={8} align="center" sx={{ py: 5 }}>
+                                        <Typography color="error" variant="body2">
+                                            No se pudieron cargar los anticipos. Verifica la conexión con el servidor.
+                                        </Typography>
+                                        {import.meta.env.DEV && (
+                                            <Box component="pre" sx={{ mt: 0.5, fontSize: 11, opacity: 0.7, whiteSpace: 'pre-wrap', m: 0 }}>
+                                                {String(error)}
+                                            </Box>
+                                        )}
+                                    </TableCell>
+                                </TableRow>
                             ) : !loading && currentAnticipos.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={8} align="center" sx={{ py: 7 }}>
@@ -398,15 +461,23 @@ const ListarAnticipoExcedente = () => {
                                 currentAnticipos.map((anticipo) => {
                                     const excedente = parseFloat(anticipo.valorAnticipo || 0) - parseFloat(anticipo.valorGastado || 0)
                                     const nombreConductor = getNombreConductor(anticipo.idConductor)
-                                    const nombreRuta = getNombreRuta(anticipo.idRuta)
 
+                                    const isHighlighted = highlightId && String(anticipo.idAnticipoExcedente) === String(highlightId)
                                     return (
                                         <TableRow
                                             key={anticipo.idAnticipoExcedente}
+                                            ref={isHighlighted ? highlightRef : null}
                                             sx={{
                                                 '&:hover': { backgroundColor: theme.palette.background.subtle },
                                                 transition: 'background-color 0.15s',
                                                 opacity: anticipo.habilitado !== false ? 1 : 0.55,
+                                                ...(isHighlighted && {
+                                                    animation: 'highlightPulse 1.1s ease-in-out 4',
+                                                    '@keyframes highlightPulse': {
+                                                        '0%, 100%': { backgroundColor: 'transparent' },
+                                                        '50%': { backgroundColor: alpha(theme.palette.primary.main, 0.13) },
+                                                    },
+                                                }),
                                             }}
                                         >
                                             {/* Conductor */}
@@ -428,12 +499,18 @@ const ListarAnticipoExcedente = () => {
 
                                             {/* Ruta */}
                                             <TableCell sx={{ py: 1.5 }}>
-                                                <Typography variant="body2" color={theme.palette.text.secondary} fontSize="0.75rem">
-                                                    Ruta {anticipo.idRuta}
-                                                </Typography>
-                                                <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary} fontSize="0.8rem" noWrap>
-                                                    {nombreRuta}
-                                                </Typography>
+                                                {anticipo.ruta ? (
+                                                    <>
+                                                        <Typography variant="body2" sx={{ fontSize: '0.75rem', color: theme.palette.text.secondary, lineHeight: 1.2 }} noWrap>
+                                                            {anticipo.ruta.destino?.nombre || '—'}
+                                                        </Typography>
+                                                        <Typography variant="body2" fontWeight={500} sx={{ fontSize: '0.8rem', color: theme.palette.text.primary }} noWrap>
+                                                            {anticipo.ruta.nombreRuta || anticipo.ruta.vehiculo?.placa || '—'}
+                                                        </Typography>
+                                                    </>
+                                                ) : (
+                                                    <Typography variant="body2" sx={{ fontSize: '0.8rem', color: theme.palette.text.secondary }}>Sin ruta</Typography>
+                                                )}
                                             </TableCell>
 
                                             {/* Anticipo */}
@@ -469,55 +546,18 @@ const ListarAnticipoExcedente = () => {
                                                 {formatFecha(anticipo.fechaEntrega)}
                                             </TableCell>
 
-                                            {/* Estado (select inline) */}
+                                            {/* Estado */}
                                             <TableCell sx={{ py: 1.5, minWidth: 160 }}>
-                                                <Select
-                                                    value={anticipo.estado || 'entregado'}
-                                                    onChange={(e) => handleCambiarEstadoAnticipo(anticipo.idAnticipoExcedente, e.target.value)}
-                                                    size="small"
-                                                    fullWidth
-                                                    renderValue={(val) => {
-                                                        const style = getEstadoColor(val)
-                                                        return (
-                                                            <Box sx={{
-                                                                display: 'inline-flex', alignItems: 'center',
-                                                                backgroundColor: style.bg, color: style.color,
-                                                                px: 1.2, py: 0.2, borderRadius: 8, fontWeight: 600, fontSize: '0.7rem',
-                                                            }}>
-                                                                {String(val).charAt(0).toUpperCase() + String(val).slice(1)}
-                                                            </Box>
-                                                        )
-                                                    }}
-                                                    IconComponent={KeyboardArrowDownOutlinedIcon}
-                                                    sx={{
-                                                        backgroundColor: '#ffffff',
-                                                        color: theme.palette.text.primary,
-                                                        fontSize: '0.72rem', fontWeight: 600,
-                                                        height: 32, borderRadius: 1,
-                                                        border: `1px solid ${theme.palette.divider}`,
-                                                        '& .MuiSelect-select': { py: 0.8, px: 1, display: 'flex', alignItems: 'center' },
-                                                        '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
-                                                        '&:hover .MuiOutlinedInput-notchedOutline': { border: 'none' },
-                                                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': { border: 'none' },
-                                                        '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
-                                                    }}
-                                                    MenuProps={filterMenuProps}
-                                                >
-                                                    {FILTROS_ANTICIPO.filter(f => f.value !== 'todos').map(estado => {
-                                                        const style = getEstadoColor(estado.value)
-                                                        return (
-                                                            <MenuItem key={estado.value} value={estado.value} dense>
-                                                                <Box sx={{
-                                                                    display: 'inline-flex', alignItems: 'center',
-                                                                    backgroundColor: style.bg, color: style.color,
-                                                                    px: 1.2, py: 0.2, borderRadius: 8, fontWeight: 600, fontSize: '0.7rem',
-                                                                }}>
-                                                                    {estado.label}
-                                                                </Box>
-                                                            </MenuItem>
-                                                        )
-                                                    })}
-                                                </Select>
+                                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                                                    <AnticipoEstadoDot estado={anticipo.estado} />
+                                                    {anticipo.estado === 'Excedente pendiente' && tienePermiso(PERMISOS.ACTUALIZAR_ANTICIPO) && (
+                                                        <Button size="small" variant="outlined"
+                                                            onClick={() => setConfirmDev({ open: true, id: anticipo.idAnticipoExcedente })}
+                                                            sx={{ fontSize: '0.68rem', textTransform: 'none', fontWeight: 600, borderRadius: 1.5, px: 1, py: 0.2, borderColor: '#059669', color: '#059669', '&:hover': { backgroundColor: '#f0fdf4', borderColor: '#059669' }, lineHeight: 1.4 }}>
+                                                            Confirmar devolución
+                                                        </Button>
+                                                    )}
+                                                </Box>
                                             </TableCell>
 
                                             {/* Acciones */}
@@ -543,11 +583,11 @@ const ListarAnticipoExcedente = () => {
                                                     {tienePermiso(PERMISOS.ACTUALIZAR_ANTICIPO) && (
                                                         <Tooltip title={anticipo.habilitado !== false ? 'Inhabilitar' : 'Habilitar'}>
                                                             <IconButton size="small"
-                                                                onClick={() => handleToggleHabilitado(anticipo.idAnticipoExcedente)}
+                                                                onClick={() => handleToggleHabilitado(anticipo)}
                                                                 sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}>
                                                                 {anticipo.habilitado !== false
-                                                                    ? <CheckBoxIcon sx={{ fontSize: 18, color: theme.palette.primary.main }} />
-                                                                    : <CheckBoxOutlineBlankIcon sx={{ fontSize: 18, color: theme.palette.status?.disabled2?.color || '#9CA3AF' }} />
+                                                                    ? <BlockOutlinedIcon sx={{ fontSize: 18, color: theme.palette.primary.main }} />
+                                                                    : <CheckCircleOutlinedIcon sx={{ fontSize: 18, color: '#059669' }} />
                                                                 }
                                                             </IconButton>
                                                         </Tooltip>
@@ -587,12 +627,34 @@ const ListarAnticipoExcedente = () => {
                                 '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
                                 '& .MuiTouchRipple-root': { display: 'none' },
                             }}
-                            MenuProps={filterMenuProps}
+                            MenuProps={{
+                                slotProps: {
+                                    paper: {
+                                        sx: {
+                                            borderRadius: 2,
+                                            boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+                                            mt: 0.5,
+                                            minWidth: 80,
+                                            '& .MuiMenuItem-root': {
+                                                fontSize: '0.82rem',
+                                                py: 0.9,
+                                                px: 2,
+                                                display: 'flex',
+                                                justifyContent: 'space-between',
+                                                gap: 2,
+                                                '&:hover': { backgroundColor: theme.palette.primary.light },
+                                                '&.Mui-selected': { backgroundColor: 'transparent', fontWeight: 600, color: theme.palette.text.primary },
+                                                '&.Mui-selected:hover': { backgroundColor: theme.palette.primary.light },
+                                            },
+                                        },
+                                    },
+                                },
+                            }}
                         >
                             {[5, 10, 25].map(n => (
                                 <MenuItem key={n} value={n}>
                                     {n}
-                                    {rowsPerPage === n && <CheckBoxIcon sx={{ fontSize: 14, color: theme.palette.text.secondary }} />}
+                                    {rowsPerPage === n && <CheckOutlinedIcon sx={{ fontSize: 14, color: theme.palette.text.secondary }} />}
                                 </MenuItem>
                             ))}
                         </Select>
@@ -644,13 +706,116 @@ const ListarAnticipoExcedente = () => {
                 onSuccess={() => setSnackbar({ open: true, message: 'Anticipo actualizado correctamente', severity: 'success' })}
             />
 
-            <ModalBloqueoInhabilitacion
-                open={modalBloqueo.open}
-                onClose={() => setModalBloqueo({ open: false, dependencias: [], mensaje: '' })}
-                entidad="anticipo"
-                mensaje={modalBloqueo.mensaje}
-                dependencias={modalBloqueo.dependencias}
+            <ModalInhabilitarAnticipo
+                open={modalInhabilitar.open}
+                anticipo={modalInhabilitar.anticipo}
+                onClose={() => setModalInhabilitar(s => ({ ...s, open: false }))}
+                onExited={() => {
+                    const anticipo = modalInhabilitar.anticipo
+                    const wasPending = pendingConfirm.current
+                    pendingConfirm.current = false
+                    setModalInhabilitar({ open: false, anticipo: null })
+                    if (wasPending && anticipo) {
+                        const habilitadoActual = anticipo.habilitado === true
+                        toggleHabilitado(anticipo.idAnticipoExcedente)
+                            .then(() => setSnackbar({ open: true, message: habilitadoActual ? 'Anticipo inhabilitado' : 'Anticipo habilitado', severity: habilitadoActual ? 'warning' : 'success' }))
+                            .catch(() => {})
+                    }
+                }}
+                onConfirm={handleConfirmarToggle}
             />
+
+            {/* Modal confirmación cambio a "En Legalización" */}
+            <Dialog
+                open={confirmLeg.open}
+                onClose={() => setConfirmLeg({ open: false, id: null, nuevoEstado: null })}
+                maxWidth="xs"
+                fullWidth
+                slotProps={{ paper: { sx: { borderRadius: 3 } } }}
+            >
+                <DialogTitle sx={{ fontWeight: 700, fontSize: '1rem', pb: 0.5 }}>
+                    Confirmar cambio de estado
+                </DialogTitle>
+                <DialogContent>
+                    <Typography variant="body2" sx={{ mb: 1.5 }}>
+                        ¿Cambiar el estado a <strong>"En Legalización"</strong>?
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                        Una vez en legalización, el anticipo <strong>no puede volver a "Entregado"</strong>. Este cambio es irreversible.
+                    </Typography>
+                </DialogContent>
+                <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+                    <Button
+                        onClick={() => setConfirmLeg({ open: false, id: null, nuevoEstado: null })}
+                        variant="outlined" size="small"
+                        sx={{ textTransform: 'none', borderRadius: 2 }}
+                    >
+                        Cancelar
+                    </Button>
+                    <Button
+                        onClick={() => {
+                            const { id, nuevoEstado } = confirmLeg
+                            setConfirmLeg({ open: false, id: null, nuevoEstado: null })
+                            ejecutarCambioEstadoAnticipo(id, nuevoEstado)
+                        }}
+                        variant="contained" size="small"
+                        sx={{ textTransform: 'none', borderRadius: 2 }}
+                    >
+                        Confirmar
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Modal confirmación devolución de excedente */}
+            <Dialog
+                open={confirmDev.open}
+                onClose={() => setConfirmDev({ open: false, id: null })}
+                maxWidth="xs"
+                fullWidth
+                onClick={(e) => e.stopPropagation()}
+                slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}
+            >
+                <DialogContent sx={{ p: 3, pb: 2, textAlign: 'center', position: 'relative' }}>
+                    <IconButton onClick={() => setConfirmDev({ open: false, id: null })}
+                        sx={{ position: 'absolute', top: 8, right: 8, color: theme.palette.text.secondary }}>
+                        <CloseIcon />
+                    </IconButton>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5, pt: 2 }}>
+                        <Box sx={{ width: 67, height: 67, borderRadius: '50%', backgroundColor: '#05996922', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <TaskAltOutlinedIcon sx={{ fontSize: 35, color: '#059669' }} />
+                        </Box>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+                            <Typography fontWeight={700} fontSize="1.4rem" color={theme.palette.text.primary}>
+                                Confirmar devolución
+                            </Typography>
+                            <Typography fontSize="1rem" color={theme.palette.text.secondary}>
+                                ¿El conductor devolvió el excedente?
+                            </Typography>
+                        </Box>
+                    </Box>
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
+                        El anticipo pasará a <strong>Completado</strong>.
+                    </Typography>
+                </DialogContent>
+                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 3, px: 3, pt: 1, pb: 3 }}>
+                    <Button onClick={() => setConfirmDev({ open: false, id: null })} disableRipple sx={{
+                        textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500,
+                        borderRadius: 2, px: 3.5, py: 0.75, fontSize: '0.875rem',
+                        border: `1px solid ${theme.palette.divider}`,
+                        '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary },
+                    }}>
+                        Cancelar
+                    </Button>
+                    <Button onClick={handleConfirmarDevolucion} variant="contained" disableRipple sx={{
+                        textTransform: 'none', borderRadius: 2, fontWeight: 600,
+                        px: 5, py: 0.76, fontSize: '0.875rem',
+                        backgroundColor: '#059669',
+                        '&:hover': { backgroundColor: '#059669', filter: 'brightness(0.88)' },
+                    }}>
+                        Confirmar
+                    </Button>
+                </Box>
+            </Dialog>
 
             <Snackbar
                 open={snackbar.open}

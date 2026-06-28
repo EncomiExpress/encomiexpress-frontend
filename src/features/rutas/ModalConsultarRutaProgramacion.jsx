@@ -108,7 +108,7 @@ const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
                                 <Box sx={{ gridColumn: '1 / -1' }}>
                                     <Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Estado</Typography>
                                     <Typography variant="body2" fontWeight={500}
-                                        color={ruta.estado === 'Programada' ? '#3730A3' : ruta.estado === 'En Curso' ? '#1E40AF' : ruta.estado === 'Completada' ? '#065F46' : '#991B1B'}>
+                                        color={ruta.estado === 'Programada' ? '#A855F7' : ruta.estado === 'En Curso' ? '#3B82F6' : ruta.estado === 'Completada' ? '#059669' : '#71717A'}>
                                         {ruta.estado}
                                     </Typography>
                                 </Box>

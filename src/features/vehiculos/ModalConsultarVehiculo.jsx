@@ -10,15 +10,10 @@ import EventOutlinedIcon from '@mui/icons-material/EventOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import { isVencido } from '../../shared/utils/formatters.js'
 
-const vehicleStatusLabel = (estado) => {
-    switch (estado) {
-        case 'Activo': return 'Activo'
-        case 'Inactivo': return 'Inactivo'
-        case 'Mantenimiento': return 'Mantenimiento'
-        case 'En Reparación': return 'En Reparación'
-        case 'ocupado': return 'Ocupado'
-        default: return estado
-    }
+const vehicleEstadoColor = (estadoEfectivo) => {
+    if (estadoEfectivo === 'Disponible') return '#10b981'
+    if (estadoEfectivo === 'En Ruta') return '#3B82F6'
+    return '#ea580c'
 }
 
 const ModalConsultarVehiculo = ({ vehiculo, onClose }) => {
@@ -90,10 +85,19 @@ const ModalConsultarVehiculo = ({ vehiculo, onClose }) => {
                             <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mt: 2 }}>
                                 <Box>
                                     <Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Estado</Typography>
-                                    <Typography variant="body2" fontWeight={500}
-                                        color={vehiculo.estadoEfectivo === 'disponible' ? '#2E7D32' : vehiculo.estadoEfectivo === 'ocupado' ? '#E65100' : '#9ca3af'}>
-                                        {vehicleStatusLabel(vehiculo.estadoEfectivo)}
-                                    </Typography>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                                        <Box sx={{
+                                            width: 10, height: 10, borderRadius: '50%', flexShrink: 0,
+                                            ...(vehiculo.estadoEfectivo === 'Disponible'
+                                                ? { backgroundColor: 'transparent', border: '2px solid #10b981' }
+                                                : vehiculo.estadoEfectivo === 'En Ruta'
+                                                ? { backgroundColor: '#3B82F6', border: '2px solid #3B82F6' }
+                                                : { backgroundColor: '#ea580c', border: '2px solid #ea580c' })
+                                        }} />
+                                        <Typography variant="body2" fontWeight={500} color={vehicleEstadoColor(vehiculo.estadoEfectivo)}>
+                                            {vehiculo.estadoEfectivo}
+                                        </Typography>
+                                    </Box>
                                 </Box>
                                 <Box>
                                     <Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Venc. SOAT</Typography>

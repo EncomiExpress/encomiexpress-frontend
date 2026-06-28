@@ -2,7 +2,8 @@ import { useTheme } from '@mui/material/styles'
 import { useState, useEffect } from 'react'
 import {
     Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel,
-    Button, Alert, Snackbar, Dialog, DialogTitle, DialogContent, IconButton
+    Button, Alert, Snackbar, Dialog, DialogTitle, DialogContent, IconButton,
+    Autocomplete, TextField
 } from '@mui/material'
 import RouteOutlinedIcon from '@mui/icons-material/RouteOutlined'
 import EventOutlinedIcon from '@mui/icons-material/EventOutlined'
@@ -15,13 +16,13 @@ import { useRutaProgramacion } from '../../shared/contexts/RutaProgramacionConte
 import { useVehiculo } from '../../shared/contexts/VehiculoContext.jsx'
 import { useConductor } from '../../shared/contexts/ConductorContext.jsx'
 import { useDestino } from '../../shared/contexts/DestinoContext.jsx'
-import { FormField, FormSelect } from '../../shared/components/FormularioEstandarizado.jsx'
+import { FormField, FormSelect, formFieldStyles } from '../../shared/components/FormularioEstandarizado.jsx'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 
 const steps = ['Datos de la Ruta', 'Horario y Vehículo', 'Confirmación']
 
 const RegistrarRutaProgramacion = ({ open, onClose, onSuccess }) => {
-    const { registrarRutaProgramada } = useRutaProgramacion()
+    const { registrarRutaProgramada, rutasProgramadas } = useRutaProgramacion()
     const theme = useTheme()
     const { getVehiculosHabilitados } = useVehiculo()
     const { getConductoresHabilitados } = useConductor()
@@ -49,10 +50,24 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess }) => {
     })
 
     useEffect(() => {
-        setVehiculos(getVehiculosHabilitados())
-        setConductores(getConductoresHabilitados())
+        const vehiculosOcupadosIds = new Set(
+            rutasProgramadas
+                .filter(r => r.estado === 'En Curso' && r.habilitado !== false)
+                .map(r => r.idVehiculo)
+        )
+        const conductoresEnRutaIds = new Set(
+            rutasProgramadas
+                .filter(r => r.estado === 'En Curso' && r.habilitado !== false)
+                .map(r => r.idConductor)
+        )
+        setVehiculos(
+            getVehiculosHabilitados().filter(v => v.estado !== 'mantenimiento' && !vehiculosOcupadosIds.has(v.idVehiculo))
+        )
+        setConductores(
+            getConductoresHabilitados().filter(c => !conductoresEnRutaIds.has(c.idConductor))
+        )
         setDestinos(getDestinosHabilitados())
-    }, [getVehiculosHabilitados, getConductoresHabilitados, getDestinosHabilitados])
+    }, [getVehiculosHabilitados, getConductoresHabilitados, getDestinosHabilitados, rutasProgramadas])
 
     const handleChange = (e) => {
         const { name, value } = e.target
@@ -144,18 +159,54 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess }) => {
                         <FormField label="Nombre de la Ruta" name="nombreRuta" value={form.nombreRuta}
                             onChange={handleChange} required error={errores.nombreRuta} helperText={errores.nombreRuta}
                             icon={RouteOutlinedIcon} inputProps={{ maxLength: 100 }} placeholder="Ej: Ruta Medellín - Bogotá" />
-                        <FormSelect label="Vehículo" name="idVehiculo" value={form.idVehiculo}
-                            onChange={handleChange} required error={errores.idVehiculo} helperText={errores.idVehiculo}>
-                            {vehiculos.map((v) => (
-                                <MenuItem key={v.idVehiculo} value={v.idVehiculo}>{v.placa} - {v.marca} {v.modelo}</MenuItem>
-                            ))}
-                        </FormSelect>
-                        <FormSelect label="Conductor" name="idConductor" value={form.idConductor}
-                            onChange={handleChange} required error={errores.idConductor} helperText={errores.idConductor}>
-                            {conductores.map((c) => (
-                                <MenuItem key={c.idConductor} value={c.idConductor}>{c.nombre} {c.apellido}</MenuItem>
-                            ))}
-                        </FormSelect>
+                        <Autocomplete
+                            options={vehiculos}
+                            getOptionLabel={(v) => `${v.placa} — ${v.marca} ${v.modelo}`}
+                            isOptionEqualToValue={(opt, val) => opt.idVehiculo === val.idVehiculo}
+                            value={vehiculos.find(v => v.idVehiculo === parseInt(form.idVehiculo)) || null}
+                            onChange={(_, val) => handleChange({ target: { name: 'idVehiculo', value: val ? val.idVehiculo : '' } })}
+                            filterOptions={(opts, { inputValue }) => {
+                                if (!inputValue.trim()) {
+                                    return [...opts].sort((a, b) => b.idVehiculo - a.idVehiculo).slice(0, 5)
+                                }
+                                const q = inputValue.toLowerCase()
+                                return opts.filter(v =>
+                                    v.placa.toLowerCase().includes(q) ||
+                                    v.marca.toLowerCase().includes(q) ||
+                                    v.modelo.toLowerCase().includes(q)
+                                )
+                            }}
+                            noOptionsText="No hay vehículos disponibles"
+                            renderInput={(params) => (
+                                <TextField {...params} label="Vehículo *"
+                                    error={!!errores.idVehiculo} helperText={errores.idVehiculo}
+                                    sx={formFieldStyles} />
+                            )}
+                        />
+                        <Autocomplete
+                            options={conductores}
+                            getOptionLabel={(c) => `${c.nombre} ${c.apellido}`}
+                            isOptionEqualToValue={(opt, val) => opt.idConductor === val.idConductor}
+                            value={conductores.find(c => c.idConductor === parseInt(form.idConductor)) || null}
+                            onChange={(_, val) => handleChange({ target: { name: 'idConductor', value: val ? val.idConductor : '' } })}
+                            filterOptions={(opts, { inputValue }) => {
+                                if (!inputValue.trim()) {
+                                    return [...opts].sort((a, b) => b.idConductor - a.idConductor).slice(0, 5)
+                                }
+                                const q = inputValue.toLowerCase()
+                                return opts.filter(c =>
+                                    c.nombre.toLowerCase().includes(q) ||
+                                    c.apellido.toLowerCase().includes(q) ||
+                                    (c.numeroIdentificacion || '').toLowerCase().includes(q)
+                                )
+                            }}
+                            noOptionsText="No hay conductores disponibles"
+                            renderInput={(params) => (
+                                <TextField {...params} label="Conductor *"
+                                    error={!!errores.idConductor} helperText={errores.idConductor}
+                                    sx={formFieldStyles} />
+                            )}
+                        />
                         <FormSelect label="Destino" name="idDestino" value={form.idDestino}
                             onChange={handleChange} required error={errores.idDestino} helperText={errores.idDestino}>
                             {destinos.map((d) => (

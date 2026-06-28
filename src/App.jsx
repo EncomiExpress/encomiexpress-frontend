@@ -9,6 +9,7 @@ import { DestinoProvider } from './shared/contexts/DestinoContext'
 import { RutaProgramacionProvider } from './shared/contexts/RutaProgramacionContext'
 import { VentaProvider } from './shared/contexts/VentaContext'
 import AppRoutes from './AppRoutes'
+import SessionExpiredDialog from './shared/components/SessionExpiredDialog'
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
                     <VentaProvider>
                       <AnticipoExcedenteProvider>
                         <AppRoutes />
+                        <SessionExpiredDialog />
                       </AnticipoExcedenteProvider>
                     </VentaProvider>
                   </ClienteProvider>

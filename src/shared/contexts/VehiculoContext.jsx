@@ -73,11 +73,10 @@ export const VehiculoProvider = ({ children }) => {
   }, [])
 
   const updateEstado = useCallback(async (id, nuevoEstado) => {
-    const estadoBackend = nuevoEstado.toLowerCase()
-    const response = await vehiculoService.cambiarEstadoVehiculo(id, estadoBackend)
+    const response = await vehiculoService.cambiarEstadoVehiculo(id, nuevoEstado)
     if (response.success) {
       setVehiculos(prev => prev.map(v =>
-        v.idVehiculo === id ? { ...v, estado: response.data.estado, estadoEfectivo: response.data.estadoEfectivo } : v
+        v.idVehiculo === id ? { ...v, estado: response.data.estadoActual } : v
       ))
       return true
     }

@@ -15,3 +15,6 @@ export const updateCliente = (id, datos) =>
 export const toggleHabilitadoCliente = (id) =>
   fetchWithAuth(`/clientes/${id}/toggle-habilitado`, { method: 'PATCH' })
 
+export const getPageOfCliente = (id, limit = 10) =>
+  fetchWithAuth(`/clientes/${id}/page-of?limit=${limit}`)
+

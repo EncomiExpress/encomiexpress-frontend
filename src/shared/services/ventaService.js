@@ -24,6 +24,9 @@ export const toggleHabilitadoEncomienda = (id) =>
 export const cambiarEstadoEncomienda = (id, estado) =>
   fetchWithAuth(`/encomiendas/${id}/estado`, { method: 'PATCH', body: JSON.stringify({ estado }) })
 
+export const getPageOfEncomienda = (id, limit = 10) =>
+  fetchWithAuth(`/encomiendas/${id}/page-of?limit=${limit}`)
+
 // ── Rutas (para el selector de ruta en Registrar/Actualizar) ─────────────────
 
 export const getRutas = () =>

@@ -13,7 +13,7 @@ import { getEstadoColorVenta as getEstadoColor } from '../../shared/utils/estado
 import { formatRutaDestino } from '../../shared/utils/formatters.js'
 
 const getPagoColor = (estadoPago, theme) =>
-    estadoPago?.toLowerCase() === 'pagado'
+    estadoPago === 'Pagado'
         ? theme.palette.status.pagado
         : theme.palette.status.pendientePago
 

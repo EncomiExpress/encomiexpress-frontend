@@ -21,7 +21,7 @@ import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import { getEstadoColorVentaHex as getEstadoColor } from '../../shared/utils/estadoColors.js'
 
 const getPagoColor = (estadoPago) =>
-    estadoPago?.toLowerCase() === 'pagado'
+    estadoPago === 'Pagado'
         ? { bg: '#D1FAE5', color: '#065F46' }
         : { bg: '#FEE2E2', color: '#991B1B' }
 
@@ -67,7 +67,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
         fetchRutasProgramadas().catch(() => null)
     }, [fetchRutasProgramadas])
 
-    const estadosEncomienda = ['pendiente de recogida', 'en recogida', 'programada', 'en tránsito', 'entregado', 'devuelto']
+    const estadosEncomienda = ['Programada', 'En Tránsito', 'Entregada', 'Cancelada']
     const [estadoOriginal, setEstadoOriginal] = useState('')
 
     const [form, setForm] = useState({
@@ -132,14 +132,12 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                 ? ventaData.fechaEstimadaEntrega.split('T')[0]
                 : '',
             observaciones: ventaData.observaciones || '',
-            estado: ventaData.estado || 'pendiente de recogida',
+            estado: ventaData.estado || 'Programada',
             metodoPago: ventaData.metodoPago || '',
             valorServicio: ventaData.valorServicio || '',
             impuestos: ventaData.impuestos || '',
             total: ventaData.total || '',
-            estadoPago: ventaData.estadoPago
-                ? ventaData.estadoPago.charAt(0).toUpperCase() + ventaData.estadoPago.slice(1)
-                : 'Pendiente',
+            estadoPago: ventaData.estadoPago || 'Pendiente',
         }
         setForm(datosForm)
         setFormOriginal(datosForm)

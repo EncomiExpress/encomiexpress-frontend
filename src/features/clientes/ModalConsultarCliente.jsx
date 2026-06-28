@@ -126,8 +126,8 @@ const ModalConsultarCliente = ({ cliente, onClose }) => {
                                             <TableCell sx={{ fontSize: '0.82rem' }}>${Number(v.valorServicio || 0).toLocaleString('es-CO')}</TableCell>
                                             <TableCell>
                                                 <Chip label={v.estado} size="small" sx={{
-                                                    backgroundColor: v.estado === 'pendiente' ? '#FFF3E0' : v.estado === 'entregado' ? '#E8F5E9' : v.estado === 'en_ruta' ? '#E3F2FD' : '#F5F5F5',
-                                                    color: v.estado === 'pendiente' ? '#E65100' : v.estado === 'entregado' ? '#2E7D32' : v.estado === 'en_ruta' ? '#1565C0' : '#757575',
+                                                    backgroundColor: v.estado === 'Programada' ? '#E0E7FF' : v.estado === 'En Tránsito' ? '#CFFAFE' : v.estado === 'Entregada' ? '#E8F5E9' : v.estado === 'Cancelada' ? '#FEE2E2' : '#F5F5F5',
+                                                    color: v.estado === 'Programada' ? '#3730A3' : v.estado === 'En Tránsito' ? '#155E75' : v.estado === 'Entregada' ? '#065F46' : v.estado === 'Cancelada' ? '#991B1B' : '#757575',
                                                     fontWeight: 600, fontSize: '0.72rem'
                                                 }} />
                                             </TableCell>

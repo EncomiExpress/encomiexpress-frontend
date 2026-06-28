@@ -1,12 +1,13 @@
-import { useTheme } from '@mui/material/styles'
+import { useTheme, alpha } from '@mui/material/styles'
 import { useState, useEffect, useMemo, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
     Box, Typography, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, Chip, IconButton,
-    TextField, InputAdornment, Select, MenuItem, FormControl,
+    TextField, InputAdornment, Select, MenuItem, FormControl, Menu,
     Snackbar, Alert, Tooltip, Button,
-    Avatar, CircularProgress, Pagination, TableSortLabel
+    Avatar, CircularProgress, Pagination, TableSortLabel,
+    Dialog, DialogContent
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
@@ -19,6 +20,10 @@ import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank'
 import CheckBoxIcon from '@mui/icons-material/CheckBox'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
+import CloseIcon from '@mui/icons-material/Close'
+import DoNotDisturbOutlinedIcon from '@mui/icons-material/DoNotDisturbOutlined'
+import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
+import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import { useRutaProgramacion } from '../../shared/contexts/RutaProgramacionContext.jsx'
 import { useVehiculo } from '../../shared/contexts/VehiculoContext.jsx'
 import { useConductor } from '../../shared/contexts/ConductorContext.jsx'
@@ -26,10 +31,25 @@ import { useDestino } from '../../shared/contexts/DestinoContext.jsx'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
 import RegistrarRutaProgramacion from './RegistrarRutaProgramacion'
 import ActualizarRutaProgramacion from './ActualizarRutaProgramacion'
-import ModalBloqueoInhabilitacion from '../../shared/components/ModalBloqueoInhabilitacion'
 import ModalConsultarRutaProgramacion from './ModalConsultarRutaProgramacion'
 import ModalConfirmarEstado from './ModalConfirmarEstado'
-import { getEstadoColorRuta as getEstadoColor } from '../../shared/utils/estadoColors.js'
+import ModalInhabilitarRuta from './ModalInhabilitarRuta'
+import { getPageOfRuta } from '../../shared/services/rutaService'
+import { getEstadoColorRuta as getEstadoColor, getVehiculoEstadoDot, getConductorEstadoDot } from '../../shared/utils/estadoColors.js'
+
+const renderEstadoDot = (estado, getEstadoColor) => {
+    const color = getEstadoColor(estado).color
+    if (estado === 'Cancelada') {
+        return <Box component="span" sx={{ flexShrink: 0, width: 10, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '1rem', color, lineHeight: 1 }}>−</Box>
+    }
+    if (estado === 'Completada') {
+        return <Box component="span" sx={{ flexShrink: 0, width: 10, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.85rem', color, lineHeight: 1 }}>✓</Box>
+    }
+    if (estado === 'Programada') {
+        return <Box sx={{ width: 10, height: 10, borderRadius: '50%', flexShrink: 0, backgroundColor: 'transparent', border: `2px solid ${color}` }} />
+    }
+    return <Box sx={{ width: 10, height: 10, borderRadius: '50%', flexShrink: 0, backgroundColor: color, border: `2px solid ${color}` }} />
+}
 
 const getThStyle = (theme) => ({
     fontWeight: 700,
@@ -81,13 +101,20 @@ const ListarRutaProgramacion = () => {
     const thStyle = getThStyle(theme)
     const filterMenuProps = getFilterMenuProps(theme)
     const navigate = useNavigate()
+    const [searchParams] = useSearchParams()
+    const highlightId = searchParams.get('highlight')
+    const highlightRef = useRef(null)
+    const hasScrolled = useRef(false)
+    const hasNavigated = useRef(false)
     const { tienePermiso, PERMISOS, usuario } = useAuth()
     const [searchTerm, setSearchTerm]         = useState('')
     const [debouncedSearch, setDebouncedSearch] = useState('')
     const [rutaVer, setRutaVer]               = useState(null)
     const [snackbar, setSnackbar]             = useState({ open: false, message: '', severity: 'success' })
-    const [modalBloqueo, setModalBloqueo]     = useState({ open: false, dependencias: [], mensaje: '' })
-    const [confirmEstado, setConfirmEstado]   = useState({ open: false, id: null, nuevoEstado: null, info: '' })
+    const [confirmInhabilitar, setConfirmInhabilitar] = useState({ open: false, idRuta: null, nombreRuta: '', habilitadoActual: null, estadoRuta: null })
+    const [confirmEstado, setConfirmEstado]   = useState({ open: false, id: null, nuevoEstado: null, info: '', ruta: null, vehiculo: null, conductor: null, confirmed: false })
+    const [alertaBloqueo, setAlertaBloqueo]   = useState({ open: false, titulo: '', entidades: [] })
+    const [estadoMenu, setEstadoMenu]         = useState({ anchor: null, id: null, estadoActual: null })
     const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
     const [filtroEstadoRuta, setFiltroEstadoRuta] = useState('todo')
     const [filtroAnio, setFiltroAnio]         = useState('')
@@ -100,7 +127,7 @@ const ListarRutaProgramacion = () => {
     const [sortBy, setSortBy] = useState({ field: 'fechaSalida', dir: 'desc' })
     const initialLoad = useRef(true)
 
-    const { rutasProgramadas, total, fetchRutasProgramadas, updateEstado, toggleHabilitado, loading } = useRutaProgramacion()
+    const { rutasProgramadas, total, fetchRutasProgramadas, updateEstado, toggleHabilitado, loading, error } = useRutaProgramacion()
     const { getVehiculos } = useVehiculo()
     const { getConductores } = useConductor()
     const { destinos } = useDestino()
@@ -118,6 +145,22 @@ const ListarRutaProgramacion = () => {
         const t = setTimeout(() => setDebouncedSearch(searchTerm), 300)
         return () => clearTimeout(t)
     }, [searchTerm])
+
+    useEffect(() => {
+        if (highlightId && highlightRef.current && !hasScrolled.current) {
+            hasScrolled.current = true
+            setTimeout(() => highlightRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 400)
+        }
+    })
+
+    useEffect(() => {
+        if (!highlightId || hasNavigated.current) return
+        hasNavigated.current = true
+        getPageOfRuta(highlightId, rowsPerPage)
+            .then(res => { if (res?.data?.page) setPage(res.data.page) })
+            .catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [highlightId])
 
     const buildRutasParams = () => ({
         page,
@@ -222,37 +265,86 @@ const resolveDestino = (ruta) =>
 
     const handleEstadoChange = (id, nuevoEstado) => {
         const rutaActual = rutasProgramadas.find(r => getId(r) === id)
+        const vehiculo = getVehiculos().find(v => v.idVehiculo === rutaActual?.idVehiculo)
+        const conductor = getConductores().find(c => c.idConductor === rutaActual?.idConductor)
 
-        if (rutaActual?.estado === 'Completada') {
-            setSnackbar({ open: true, message: 'No se puede cambiar el estado de una ruta completada.', severity: 'warning' })
-            return
+        if (nuevoEstado === 'En Curso') {
+            const otraRutaVehiculo = rutasProgramadas.find(r =>
+                getId(r) !== id &&
+                r.idVehiculo === rutaActual?.idVehiculo &&
+                r.estado === 'En Curso' &&
+                r.habilitado !== false
+            )
+            const otraRutaConductor = rutasProgramadas.find(r =>
+                getId(r) !== id &&
+                r.idConductor === rutaActual?.idConductor &&
+                r.estado === 'En Curso' &&
+                r.habilitado !== false
+            )
+
+            const entidades = []
+            let vehiculoBlocked = false
+            let conductorBlocked = false
+
+            if (vehiculo?.estado === 'Mantenimiento') {
+                vehiculoBlocked = true
+                entidades.push({ tipo: 'vehiculo', etiqueta: vehiculo.placa || '', estado: vehiculo.estado, id: vehiculo.idVehiculo, mensaje: 'está en Mantenimiento y no puede asignarse a una ruta En Curso.' })
+            } else if (otraRutaVehiculo) {
+                vehiculoBlocked = true
+                entidades.push({ tipo: 'vehiculo', etiqueta: vehiculo?.placa || '', estado: vehiculo?.estado, id: vehiculo?.idVehiculo, mensaje: 'ya está asignado a otra ruta activa.' })
+            }
+
+            if (otraRutaConductor) {
+                conductorBlocked = true
+                const nombre = conductor?.nombre ? `${conductor.nombre} ${conductor.apellido || ''}`.trim() : 'Conductor'
+                entidades.push({ tipo: 'conductor', etiqueta: nombre, estado: conductor?.estado || 'en_ruta', id: conductor?.idConductor, mensaje: 'ya está asignado a otra ruta activa.' })
+            }
+
+            if (entidades.length > 0) {
+                setAlertaBloqueo({
+                    open: true,
+                    titulo: vehiculoBlocked && conductorBlocked
+                        ? 'Vehículo y conductor no disponibles'
+                        : vehiculoBlocked ? 'Vehículo no disponible'
+                        : 'Conductor no disponible',
+                    entidades,
+                })
+                return
+            }
         }
 
         const INFO_ESTADOS = {
-            'En Curso': 'El vehículo quedará marcado como "Ocupado". Si ya está en otra ruta activa, el cambio será bloqueado.',
-            'Completada': 'Una vez completada, el estado es irreversible y el vehículo quedará disponible.',
-            'Cancelada': `Si la ruta está en curso, el vehículo quedará disponible nuevamente.`,
+            'Programada': 'Las ventas seguirán asociadas bajo esta ruta. Deberá registrar un nuevo anticipo para el conductor si es necesario.',
+            'Completada': 'El vehículo y el conductor quedarán disponibles y las ventas asociadas pasarán a "Entregada".',
+            'Cancelada': 'El vehículo y el conductor quedarán disponibles, el anticipo pasará a "Excedente pendiente" y las ventas asociadas pasarán a "Cancelada".',
         }
-
         const info = INFO_ESTADOS[nuevoEstado] || ''
-        setConfirmEstado({ open: true, id, nuevoEstado, info })
+        setConfirmEstado({ open: true, id, nuevoEstado, info, ruta: rutaActual, vehiculo, conductor, confirmed: false })
     }
 
-    const handleToggleHabilitado = async (id) => {
+    const handleToggleHabilitado = (id) => {
         const rutaActual = rutasProgramadas.find(r => getId(r) === id)
+        setConfirmInhabilitar({
+            open: true,
+            idRuta: id,
+            nombreRuta: rutaActual?.nombreRuta || '',
+            habilitadoActual: rutaActual?.habilitado !== false,
+            estadoRuta: rutaActual?.estado || null,
+        })
+    }
+
+    const onConfirmarInhabilitar = async () => {
+        const { idRuta, habilitadoActual } = confirmInhabilitar
         try {
-            await toggleHabilitado(id)
+            await toggleHabilitado(idRuta)
             setSnackbar({
                 open: true,
-                message: `Ruta ${rutaActual?.habilitado ? 'inhabilitada' : 'habilitada'} correctamente.`,
-                severity: 'success'
+                message: `Ruta ${habilitadoActual ? 'inhabilitada' : 'habilitada'} correctamente.`,
+                severity: 'success',
             })
         } catch (err) {
-            if (err?.details?.length > 0) {
-                setModalBloqueo({ open: true, dependencias: err.details, mensaje: err.message })
-            } else {
-                setSnackbar({ open: true, message: err.message || 'Error al cambiar habilitado', severity: 'error' })
-            }
+            setSnackbar({ open: true, message: err.message || 'Error al cambiar habilitado', severity: 'error' })
+            throw err
         }
     }
 
@@ -473,6 +565,19 @@ const resolveDestino = (ruta) =>
                                         </Typography>
                                     </TableCell>
                                 </TableRow>
+                            ) : error ? (
+                                <TableRow>
+                                    <TableCell colSpan={8} align="center" sx={{ py: 5 }}>
+                                        <Typography color="error" variant="body2">
+                                            No se pudieron cargar las rutas. Verifica la conexión con el servidor.
+                                        </Typography>
+                                        {import.meta.env.DEV && (
+                                            <Box component="pre" sx={{ mt: 0.5, fontSize: 11, opacity: 0.7, whiteSpace: 'pre-wrap', m: 0 }}>
+                                                {String(error)}
+                                            </Box>
+                                        )}
+                                    </TableCell>
+                                </TableRow>
                             ) : !loading && rutasProgramadas.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={8} align="center" sx={{ py: 7 }}>
@@ -488,13 +593,22 @@ const resolveDestino = (ruta) =>
                             ) : (
                                 rutasProgramadas.map((ruta) => {
                                     const id = getId(ruta)
+                                    const isHighlighted = highlightId && String(id) === String(highlightId)
                                     return (
                                         <TableRow
                                             key={id}
+                                            ref={isHighlighted ? highlightRef : null}
                                             sx={{
                                                 '&:hover': { backgroundColor: theme.palette.background.subtle },
                                                 transition: 'background-color 0.15s',
                                                 opacity: ruta.habilitado !== false ? 1 : 0.55,
+                                                ...(isHighlighted && {
+                                                    animation: 'highlightPulse 1.1s ease-in-out 4',
+                                                    '@keyframes highlightPulse': {
+                                                        '0%, 100%': { backgroundColor: 'transparent' },
+                                                        '50%': { backgroundColor: alpha(theme.palette.primary.main, 0.13) },
+                                                    },
+                                                }),
                                             }}
                                         >
                                             <TableCell sx={{ py: 1.5, fontSize: '0.85rem' }}>
@@ -503,40 +617,100 @@ const resolveDestino = (ruta) =>
                                             <TableCell sx={{ py: 1.5 }}>{ruta.fechaSalida || '—'}</TableCell>
                                             <TableCell sx={{ py: 1.5 }}>{ruta.horaSalida || '—'}</TableCell>
                                             <TableCell sx={{ py: 1.5 }}>
-                                                <Chip
-                                                    label={resolveVehiculo(ruta)}
-                                                    size="small"
-                                                    sx={{
-                                                        fontWeight: 600,
-                                                        backgroundColor: '#FEF2F2',
-                                                        color: theme.palette.primary.main,
-                                                        fontSize: '0.75rem',
-                                                    }}
-                                                />
-                                            </TableCell>
-                                            <TableCell sx={{ py: 1.5 }}>{resolveConductor(ruta)}</TableCell>
-                                            <TableCell sx={{ py: 1.5 }}>{resolveDestino(ruta)}</TableCell>
-                                            <TableCell sx={{ py: 1.5 }}>
-                                                <FormControl size="small" sx={{ minWidth: 140 }}>
-                                                    <Select
-                                                        value={ruta.estado || 'Programada'}
-                                                        onChange={(e) => handleEstadoChange(id, e.target.value)}
-                                                        IconComponent={KeyboardArrowDownOutlinedIcon}
+                                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.4 }}>
+                                                    <Chip
+                                                        label={resolveVehiculo(ruta)}
+                                                        size="small"
                                                         sx={{
-                                                            fontSize: '0.75rem',
-                                                            py: 0.5,
-                                                            color: ruta.estado === 'Programada' ? '#3730A3' :
-                                                                   ruta.estado === 'En Curso'   ? '#1E40AF' :
-                                                                   ruta.estado === 'Completada' ? '#065F46' : '#991B1B',
                                                             fontWeight: 600,
+                                                            backgroundColor: '#FEF2F2',
+                                                            color: theme.palette.primary.main,
+                                                            fontSize: '0.75rem',
+                                                            width: 'fit-content',
                                                         }}
-                                                        MenuProps={filterMenuProps}
+                                                    />
+                                                    {getVehiculos().find(v => v.idVehiculo === ruta.idVehiculo)?.habilitado === false && ruta.estado === 'Programada' && (
+                                                        <Chip
+                                                            label="Reasignar vehículo"
+                                                            size="small"
+                                                            sx={{
+                                                                height: 18,
+                                                                fontSize: '0.65rem',
+                                                                fontWeight: 600,
+                                                                backgroundColor: alpha(theme.palette.warning.main, 0.12),
+                                                                color: theme.palette.warning.dark,
+                                                                border: `1px solid ${alpha(theme.palette.warning.main, 0.35)}`,
+                                                                width: 'fit-content',
+                                                                '& .MuiChip-label': { px: 0.8 },
+                                                            }}
+                                                        />
+                                                    )}
+                                                </Box>
+                                            </TableCell>
+                                            <TableCell sx={{ py: 1.5 }}>
+                                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.4 }}>
+                                                    <Typography sx={{ fontSize: '0.875rem' }}>{resolveConductor(ruta)}</Typography>
+                                                    {getConductores().find(c => c.idConductor === ruta.idConductor)?.habilitado === false && ruta.estado === 'Programada' && (
+                                                        <Chip
+                                                            label="Reasignar conductor"
+                                                            size="small"
+                                                            sx={{
+                                                                height: 18,
+                                                                fontSize: '0.65rem',
+                                                                fontWeight: 600,
+                                                                backgroundColor: alpha(theme.palette.warning.main, 0.12),
+                                                                color: theme.palette.warning.dark,
+                                                                border: `1px solid ${alpha(theme.palette.warning.main, 0.35)}`,
+                                                                width: 'fit-content',
+                                                                '& .MuiChip-label': { px: 0.8 },
+                                                            }}
+                                                        />
+                                                    )}
+                                                </Box>
+                                            </TableCell>
+                                            <TableCell sx={{ py: 1.5 }}>{resolveDestino(ruta)}</TableCell>
+                                            <TableCell sx={{ py: 1.5, minWidth: 150 }}>
+                                                {ruta.estado === 'Completada' ? (
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1, py: 0.6 }}>
+                                                        {renderEstadoDot('Completada', getEstadoColor)}
+                                                        <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: '#059669' }}>Completada</Typography>
+                                                    </Box>
+                                                ) : ruta.estado === 'En Curso' && ruta.pendienteLegalizacion ? (
+                                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                                                        <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', border: `1px solid ${theme.palette.divider}`, borderRadius: 1.5, overflow: 'hidden' }}>
+                                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1, py: 0.6, flex: 1 }}>
+                                                                {renderEstadoDot('En Curso', getEstadoColor)}
+                                                                <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: getEstadoColor('En Curso').color }}>
+                                                                    En Curso
+                                                                </Typography>
+                                                            </Box>
+                                                            <Box sx={{ width: '1px', height: 28, backgroundColor: theme.palette.divider, flexShrink: 0 }} />
+                                                            <Box
+                                                                onClick={() => handleEstadoChange(id, 'Cancelada')}
+                                                                sx={{ display: 'flex', alignItems: 'center', gap: 0.5, px: 0.75, py: 0.5, cursor: 'pointer' }}
+                                                            >
+                                                                {renderEstadoDot('Cancelada', getEstadoColor)}
+                                                                <Typography variant="body2" sx={{ fontSize: '0.72rem', fontWeight: 500, color: getEstadoColor('Cancelada').color }}>
+                                                                    Cancelada
+                                                                </Typography>
+                                                            </Box>
+                                                        </Box>
+                                                        <Typography sx={{ fontSize: '0.68rem', color: theme.palette.text.secondary, px: 0.5 }}>
+                                                            Legalización pendiente
+                                                        </Typography>
+                                                    </Box>
+                                                ) : (
+                                                    <Box
+                                                        onClick={(e) => setEstadoMenu({ anchor: e.currentTarget, id, estadoActual: ruta.estado || 'Programada' })}
+                                                        sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer', width: '100%', border: `1px solid ${theme.palette.divider}`, borderRadius: 1.5, px: 1, py: 0.6, '&:hover': { borderColor: theme.palette.text.secondary } }}
                                                     >
-                                                        {ESTADOS_RUTA.map(estado => (
-                                                            <MenuItem key={estado} value={estado}>{estado}</MenuItem>
-                                                        ))}
-                                                    </Select>
-                                                </FormControl>
+                                                        {renderEstadoDot(ruta.estado || 'Programada', getEstadoColor)}
+                                                        <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: getEstadoColor(ruta.estado).color }}>
+                                                            {ruta.estado || 'Programada'}
+                                                        </Typography>
+                                                        <KeyboardArrowDownOutlinedIcon sx={{ fontSize: 14, color: '#9CA3AF', ml: 'auto' }} />
+                                                    </Box>
+                                                )}
                                             </TableCell>
                                             <TableCell sx={{ py: 1.5 }}>
                                                 <Box sx={{ display: 'flex', gap: 0.5 }}>
@@ -700,21 +874,108 @@ const resolveDestino = (ruta) =>
                 open={confirmEstado.open}
                 nuevoEstado={confirmEstado.nuevoEstado}
                 info={confirmEstado.info}
+                ruta={confirmEstado.ruta}
+                vehiculo={confirmEstado.vehiculo}
+                conductor={confirmEstado.conductor}
                 onClose={() => setConfirmEstado(c => ({ ...c, open: false }))}
-                onConfirm={() => {
-                    const { id, nuevoEstado } = confirmEstado
-                    setConfirmEstado({ open: false, id: null, nuevoEstado: null, info: '' })
-                    ejecutarCambioEstado(id, nuevoEstado)
+                onConfirm={() => setConfirmEstado(c => ({ ...c, open: false, confirmed: true }))}
+                onExited={() => {
+                    const { id, nuevoEstado, confirmed } = confirmEstado
+                    setConfirmEstado({ open: false, id: null, nuevoEstado: null, info: '', ruta: null, vehiculo: null, conductor: null, confirmed: false })
+                    if (confirmed && id && nuevoEstado) ejecutarCambioEstado(id, nuevoEstado)
                 }}
             />
 
-            <ModalBloqueoInhabilitacion
-                open={modalBloqueo.open}
-                onClose={() => setModalBloqueo({ open: false, dependencias: [], mensaje: '' })}
-                entidad="ruta"
-                mensaje={modalBloqueo.mensaje}
-                dependencias={modalBloqueo.dependencias}
+            <ModalInhabilitarRuta
+                open={confirmInhabilitar.open}
+                data={confirmInhabilitar}
+                onClose={() => setConfirmInhabilitar(s => ({ ...s, open: false }))}
+                onExited={() => setConfirmInhabilitar({ open: false, idRuta: null, nombreRuta: '', habilitadoActual: null, estadoRuta: null })}
+                onConfirm={onConfirmarInhabilitar}
             />
+
+            <Dialog open={alertaBloqueo.open} onClose={() => setAlertaBloqueo(a => ({ ...a, open: false }))}
+                maxWidth="xs" fullWidth onClick={(e) => e.stopPropagation()}
+                slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}>
+                <DialogContent sx={{ p: 3, textAlign: 'center', position: 'relative' }}>
+                    <IconButton onClick={() => setAlertaBloqueo(a => ({ ...a, open: false }))}
+                        sx={{ position: 'absolute', top: 8, right: 8, color: theme.palette.text.secondary }}>
+                        <CloseIcon />
+                    </IconButton>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5, pt: 2 }}>
+                        <Box sx={{ width: 67, height: 67, borderRadius: '50%', backgroundColor: `${theme.palette.primary.main}22`,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <DoNotDisturbOutlinedIcon sx={{ fontSize: 35, color: theme.palette.primary.main }} />
+                        </Box>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5, width: '100%' }}>
+                            <Typography fontWeight={700} fontSize="1.4rem" color={theme.palette.text.primary}>
+                                {alertaBloqueo.titulo}
+                            </Typography>
+                            {alertaBloqueo.entidades.map((e, i) => {
+                                const dot = e.tipo === 'vehiculo' ? getVehiculoEstadoDot(e.estado) : getConductorEstadoDot(e.estado)
+                                return (
+                                    <Box key={i} sx={{ width: '100%', mt: i > 0 ? 1.5 : 0.5, textAlign: 'left' }}>
+                                        <Typography fontSize="0.95rem" color={theme.palette.text.secondary} sx={{ mb: 1, textAlign: 'center' }}>
+                                            {e.tipo === 'vehiculo'
+                                                ? <>El vehículo <strong>{e.etiqueta}</strong> {e.mensaje}</>
+                                                : <><strong>{e.etiqueta}</strong> {e.mensaje}</>
+                                            }
+                                        </Typography>
+                                        <Paper elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 2, overflow: 'hidden' }}>
+                                            <Box
+                                                onClick={() => e.id && window.open(`${e.tipo === 'vehiculo' ? '/vehiculos/listar' : '/transporte/conductores'}?highlight=${e.id}`, '_blank')}
+                                                sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1.5, py: 1, cursor: e.id ? 'pointer' : 'default', '&:hover': e.id ? { backgroundColor: theme.palette.action.hover } : {} }}>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                    {e.tipo === 'vehiculo'
+                                                        ? <DirectionsCarOutlinedIcon sx={{ fontSize: 16, color: theme.palette.text.secondary }} />
+                                                        : <PersonOutlinedIcon sx={{ fontSize: 16, color: theme.palette.text.secondary }} />
+                                                    }
+                                                    <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.8rem' }}>{e.etiqueta}</Typography>
+                                                </Box>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                                                    <Box sx={{ width: 9, height: 9, borderRadius: '50%', flexShrink: 0, backgroundColor: dot.fill ? dot.color : 'transparent', border: `2px solid ${dot.color}` }} />
+                                                    <Typography sx={{ fontSize: '0.8rem', fontWeight: 500, color: dot.color, whiteSpace: 'nowrap' }}>{dot.label}</Typography>
+                                                </Box>
+                                            </Box>
+                                        </Paper>
+                                    </Box>
+                                )
+                            })}
+                        </Box>
+                    </Box>
+                </DialogContent>
+                <Box sx={{ display: 'flex', justifyContent: 'center', pb: 3 }}>
+                    <Button onClick={() => setAlertaBloqueo(a => ({ ...a, open: false }))} variant="contained" disableRipple
+                        sx={{ textTransform: 'none', borderRadius: 2, fontWeight: 600, px: 5, py: 0.76,
+                            backgroundColor: theme.palette.primary.main,
+                            '&:hover': { backgroundColor: theme.palette.primary.main, filter: 'brightness(0.88)' } }}>
+                        Entendido
+                    </Button>
+                </Box>
+            </Dialog>
+
+            <Menu
+                anchorEl={estadoMenu.anchor}
+                open={Boolean(estadoMenu.anchor)}
+                onClose={() => setEstadoMenu(prev => ({ ...prev, anchor: null }))}
+                slotProps={{ paper: { sx: { borderRadius: 2, boxShadow: '0 4px 16px rgba(0,0,0,0.1)', minWidth: 160, mt: 0.5 } } }}
+            >
+                {ESTADOS_RUTA.filter(op => {
+                    if (op === estadoMenu.estadoActual) return false
+                    if (estadoMenu.estadoActual === 'Programada') return op === 'En Curso'
+                    if (estadoMenu.estadoActual === 'Cancelada') return op === 'Programada'
+                    if (estadoMenu.estadoActual === 'En Curso' && op === 'Programada') return false
+                    return true
+                }).map(op => (
+                    <MenuItem key={op} onClick={() => {
+                        setEstadoMenu(prev => ({ ...prev, anchor: null }))
+                        handleEstadoChange(estadoMenu.id, op)
+                    }} sx={{ fontSize: '0.82rem', gap: 1 }}>
+                        {renderEstadoDot(op, getEstadoColor)}
+                        {op}
+                    </MenuItem>
+                ))}
+            </Menu>
 
             <Snackbar
                 open={snackbar.open}

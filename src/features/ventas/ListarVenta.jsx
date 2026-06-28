@@ -1,12 +1,14 @@
-import { useTheme } from '@mui/material/styles'
+import { useTheme, alpha } from '@mui/material/styles'
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useVentas } from '../../shared/contexts/VentaContext.jsx'
 import {
     Box, Typography, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, TextField,
     IconButton, Chip, Tooltip, InputAdornment,
     Button, Avatar, Select, MenuItem, Pagination, Snackbar, Alert,
-    CircularProgress, FormControl, InputLabel, TableSortLabel
+    CircularProgress, FormControl, InputLabel, TableSortLabel,
+    Menu, Dialog, DialogContent
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
@@ -16,15 +18,46 @@ import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import ClearIcon from '@mui/icons-material/Clear'
-import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank'
-import CheckBoxIcon from '@mui/icons-material/CheckBox'
+import BlockOutlinedIcon from '@mui/icons-material/BlockOutlined'
+import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined'
+import CloseIcon from '@mui/icons-material/Close'
+import PaidOutlinedIcon from '@mui/icons-material/PaidOutlined'
+import SwapHorizOutlinedIcon from '@mui/icons-material/SwapHorizOutlined'
 import { ESTADOS_ENCOMIENDA, METODOS_PAGO, ESTADOS_PAGO } from '../../shared/contexts/VentaContext.jsx'
+import { getPageOfEncomienda } from '../../shared/services/ventaService'
 import RegistrarVenta from './RegistrarVenta'
 import ActualizarVenta from './ActualizarVenta'
-import ModalBloqueoInhabilitacion from '../../shared/components/ModalBloqueoInhabilitacion'
+import ModalInhabilitarVenta from './ModalInhabilitarVenta'
 import ModalConsultarVenta from './ModalConsultarVenta'
-import { getEstadoColorVenta as getEstadoColor } from '../../shared/utils/estadoColors.js'
+import { getVentaEstadoDot } from '../../shared/utils/estadoColors.js'
 import { formatRutaDestino } from '../../shared/utils/formatters.js'
+
+const VentaEstadoDot = ({ estado }) => {
+    const info = getVentaEstadoDot(estado)
+    return (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+            {info.type === 'circle' ? (
+                <Box sx={{
+                    width: 9, height: 9, borderRadius: '50%', flexShrink: 0,
+                    backgroundColor: info.fill ? info.color : 'transparent',
+                    border: `2px solid ${info.color}`,
+                }} />
+            ) : (
+                <Box sx={{
+                    width: 14, height: 14, display: 'flex', alignItems: 'center',
+                    justifyContent: 'center', flexShrink: 0,
+                    fontSize: info.char === '✓' ? '0.75rem' : '1rem',
+                    fontWeight: 700, color: info.color, lineHeight: 1,
+                }}>
+                    {info.char}
+                </Box>
+            )}
+            <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: info.color }}>
+                {info.label}
+            </Typography>
+        </Box>
+    )
+}
 
 const getThStyle = (theme) => ({
     fontWeight: 700,
@@ -36,10 +69,6 @@ const getThStyle = (theme) => ({
     whiteSpace: 'nowrap',
 })
 
-const getPagoColor = (estadoPago, theme) =>
-    estadoPago?.toLowerCase() === 'pagado'
-        ? theme.palette.status.pagado
-        : theme.palette.status.pendientePago
 
 const getFilterSelectSx = (theme) => ({
     fontSize: '0.82rem',
@@ -61,7 +90,7 @@ const getFilterMenuProps = (theme) => ({
                 mt: 0.5,
                 '& .MuiMenuItem-root': {
                     fontSize: '0.82rem',
-                    '&:hover': { backgroundColor: theme.palette.primary.light },
+                    '&:hover': { backgroundColor: theme.palette.action.hover },
                     '&.Mui-selected': { backgroundColor: 'transparent', fontWeight: 600, color: theme.palette.text.primary },
                     '&.Mui-selected:hover': { backgroundColor: theme.palette.primary.light },
                 },
@@ -81,8 +110,28 @@ const ListarVenta = () => {
     const thStyle = getThStyle(theme)
     const filterSelectSx = getFilterSelectSx(theme)
     const filterMenuProps = getFilterMenuProps(theme)
+    const [searchParams] = useSearchParams()
+    const highlightId = searchParams.get('highlight')
+    const highlightRef = useRef(null)
+    const hasScrolled = useRef(false)
+    const hasNavigated = useRef(false)
+    useEffect(() => {
+        if (highlightId && highlightRef.current && !hasScrolled.current) {
+            hasScrolled.current = true
+            setTimeout(() => highlightRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 400)
+        }
+    })
+    useEffect(() => {
+        if (!highlightId || hasNavigated.current) return
+        hasNavigated.current = true
+        getPageOfEncomienda(highlightId, rowsPerPage)
+            .then(res => { if (res?.data?.page) setPage(res.data.page) })
+            .catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [highlightId])
     const { ventas, total, loading, error, fetchVentas, cambiarEstadoVenta, actualizarVenta, toggleHabilitadoVenta } = useVentas()
     const initialLoad = useRef(true)
+    const pendingConfirm = useRef(false)
 
     const [busqueda, setBusqueda] = useState('')
     const [debouncedBusqueda, setDebouncedBusqueda] = useState('')
@@ -94,11 +143,17 @@ const ListarVenta = () => {
     const [rowsPerPage, setRowsPerPage] = useState(5)
     const [ventaConsulta, setVentaConsulta] = useState(null)
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
-    const [modalBloqueo, setModalBloqueo] = useState({ open: false, dependencias: [], mensaje: '' })
+    const [modalInhabilitar, setModalInhabilitar] = useState({ open: false, venta: null })
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [ventaEditar, setVentaEditar] = useState(null)
     const [sortBy, setSortBy] = useState({ field: 'fechaRegistro', dir: 'desc' })
+    const [pagoMenuAnchor, setPagoMenuAnchor] = useState(null)
+    const [pagoMenuId, setPagoMenuId] = useState(null)
+    const [confirmPago, setConfirmPago] = useState({ open: false, id: null })
+    const [estadoMenuAnchor, setEstadoMenuAnchor] = useState(null)
+    const [estadoMenuId, setEstadoMenuId] = useState(null)
+    const [confirmCancelar, setConfirmCancelar] = useState({ open: false, id: null })
 
     useEffect(() => {
       const t = setTimeout(() => setDebouncedBusqueda(busqueda), 300)
@@ -179,25 +234,22 @@ const ListarVenta = () => {
         }
     }
 
-    const handleToggleHabilitado = async (id) => {
-        try {
-            const actualizada = await toggleHabilitadoVenta(id)
-            setSnackbar({
-                open: true,
-                message: `Venta ${actualizada?.habilitado ? 'habilitada' : 'inhabilitada'} correctamente.`,
-                severity: 'success',
-            })
-        } catch (err) {
-            if (err?.details?.length > 0) {
-                setModalBloqueo({ open: true, dependencias: err.details, mensaje: err.message })
-            } else {
-                setSnackbar({
-                    open: true,
-                    message: err.message || 'Error al cambiar el estado de habilitación.',
-                    severity: 'error',
-                })
-            }
-        }
+    const handlePagoConfirm = async () => {
+        await handlePagoChange(confirmPago.id, 'Pagado')
+        setConfirmPago({ open: false, id: null })
+    }
+
+    const handleCancelarConfirm = async () => {
+        await handleEstadoChange(confirmCancelar.id, 'Cancelada')
+        setConfirmCancelar({ open: false, id: null })
+    }
+
+    const handleToggleHabilitado = (venta) => {
+        setModalInhabilitar({ open: true, venta })
+    }
+
+    const handleConfirmarToggle = () => {
+        pendingConfirm.current = true
     }
 
     const totalPages = Math.max(1, Math.ceil(total / rowsPerPage))
@@ -262,11 +314,7 @@ const ListarVenta = () => {
                 </Box>
             </Box>
 
-            {error && (
-                <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
-                    No se pudieron cargar las ventas. Verifica la conexión con el servidor.
-                </Alert>
-            )}
+
 
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
@@ -334,8 +382,8 @@ const ListarVenta = () => {
                             sx={filterSelectSx}
                             MenuProps={filterMenuProps}>
                             <MenuItem value="todos">Todos</MenuItem>
-                            <MenuItem value="pagado">Pagado</MenuItem>
-                            <MenuItem value="pendiente">Pendiente</MenuItem>
+                            <MenuItem value="Pagado">Pagado</MenuItem>
+                            <MenuItem value="Pendiente">Pendiente</MenuItem>
                         </Select>
                     </FormControl>
 
@@ -437,6 +485,11 @@ const ListarVenta = () => {
                                         <Typography color="error" variant="body2">
                                             No se pudieron cargar las ventas. Verifica la conexión con el servidor.
                                         </Typography>
+                                        {import.meta.env.DEV && (
+                                            <Box component="pre" sx={{ mt: 0.5, fontSize: 11, opacity: 0.7, whiteSpace: 'pre-wrap', m: 0 }}>
+                                                {String(error)}
+                                            </Box>
+                                        )}
                                     </TableCell>
                                 </TableRow>
                             ) : !loading && ventas.length === 0 ? (
@@ -454,15 +507,22 @@ const ListarVenta = () => {
                                 </TableRow>
                             ) : (
                                 ventas.map(venta => {
-                                    const estadoStyles = getEstadoColor(venta.estado, theme)
-                                    const pagoStyles = getPagoColor(venta.estadoPago, theme)
+                                    const isHighlighted = highlightId && String(venta.idEncomiendaVenta) === String(highlightId)
                                     return (
                                         <TableRow
                                             key={venta.idEncomiendaVenta}
+                                            ref={isHighlighted ? highlightRef : null}
                                             sx={{
                                                 '&:hover': { backgroundColor: theme.palette.background.subtle },
                                                 transition: 'background-color 0.15s',
                                                 opacity: venta.habilitado ? 1 : 0.55,
+                                                ...(isHighlighted && {
+                                                    animation: 'highlightPulse 1.1s ease-in-out 4',
+                                                    '@keyframes highlightPulse': {
+                                                        '0%, 100%': { backgroundColor: 'transparent' },
+                                                        '50%': { backgroundColor: alpha(theme.palette.primary.main, 0.13) },
+                                                    },
+                                                }),
                                             }}
                                         >
                                             <TableCell sx={{ py: 1.5 }}>
@@ -496,145 +556,72 @@ const ListarVenta = () => {
                                             </TableCell>
 
                                                                     <TableCell sx={{ fontSize: '0.85rem', color: theme.palette.text.primary, py: 1.5 }}>
-                                                {formatRutaDestino(venta.ruta?.destino)}
-                                            </TableCell>
-
-                                            <TableCell sx={{ py: 1.5, minWidth: 160 }}>
-                                                <Select
-                                                    value={venta.estado || ''}
-                                                    onChange={(e) => handleEstadoChange(venta.idEncomiendaVenta, e.target.value)}
-                                                    size="small"
-                                                    fullWidth
-                                                    renderValue={(val) => {
-                                                        const style = getEstadoColor(val, theme)
-                                                        return (
-                                                            <Box sx={{
-                                                                display: 'inline-flex',
-                                                                alignItems: 'center',
-                                                                backgroundColor: style.bg,
-                                                                color: style.color,
-                                                                px: 1.2,
-                                                                py: 0.2,
-                                                                borderRadius: 8,
+                                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                                                    <span>{formatRutaDestino(venta.ruta?.destino)}</span>
+                                                    {venta.estado === 'Programada' && venta.ruta?.estado === 'Cancelada' && (
+                                                        <Chip
+                                                            label="Ruta cancelada · Reasignar"
+                                                            size="small"
+                                                            sx={{
+                                                                backgroundColor: '#FFF7ED',
+                                                                color: '#EA580C',
                                                                 fontWeight: 600,
                                                                 fontSize: '0.7rem',
-                                                            }}>
-                                                                {val ? val.charAt(0).toUpperCase() + val.slice(1) : '—'}
-                                                            </Box>
-                                                        )
-                                                    }}
-                                                    IconComponent={KeyboardArrowDownOutlinedIcon}
-                                                    sx={{
-                                                        backgroundColor: theme.palette.background.paper,
-                                                        color: theme.palette.text.primary,
-                                                        fontSize: '0.72rem',
-                                                        fontWeight: 600,
-                                                        height: 32,
-                                                        borderRadius: 1,
-                                                        border: `1px solid ${theme.palette.divider}`,
-                                                        '& .MuiSelect-select': {
-                                                            py: 0.8,
-                                                            px: 1,
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                        },
-                                                        '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
-                                                        '&:hover .MuiOutlinedInput-notchedOutline': { border: 'none' },
-                                                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': { border: 'none' },
-                                                        '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
-                                                    }}
-                                                    MenuProps={filterMenuProps}
-                                                >
-                                                    {ESTADOS_ENCOMIENDA.map(estado => {
-                                                        const optionStyles = getEstadoColor(estado, theme)
-                                                        return (
-                                                            <MenuItem key={estado} value={estado} dense>
-                                                                <Box sx={{
-                                                                    display: 'inline-flex',
-                                                                    alignItems: 'center',
-                                                                    backgroundColor: optionStyles.bg,
-                                                                    color: optionStyles.color,
-                                                                    px: 1.2,
-                                                                    py: 0.2,
-                                                                    borderRadius: 8,
-                                                                    fontWeight: 600,
-                                                                    fontSize: '0.7rem',
-                                                                }}>
-                                                                    {estado.charAt(0).toUpperCase() + estado.slice(1)}
-                                                                </Box>
-                                                            </MenuItem>
-                                                        )
-                                                    })}
-                                                </Select>
+                                                                height: 20,
+                                                                width: 'fit-content',
+                                                            }}
+                                                        />
+                                                    )}
+                                                </Box>
                                             </TableCell>
 
-                                            <TableCell sx={{ py: 1.5, minWidth: 140 }}>
-                                                <Select
-                                                    value={venta.estadoPago || ESTADOS_PAGO[0]}
-                                                    onChange={(e) => handlePagoChange(venta.idEncomiendaVenta, e.target.value)}
-                                                    size="small"
-                                                    fullWidth
-                                                    renderValue={(val) => {
-                                                        const style = getPagoColor(val, theme)
-                                                        return (
-                                                            <Box sx={{
-                                                                display: 'inline-flex',
-                                                                alignItems: 'center',
-                                                                backgroundColor: style.bg,
-                                                                color: style.color,
-                                                                px: 1.2,
-                                                                py: 0.2,
-                                                                borderRadius: 8,
-                                                                fontWeight: 600,
-                                                                fontSize: '0.7rem',
-                                                            }}>
-                                                                {val}
-                                                            </Box>
-                                                        )
-                                                    }}
-                                                    IconComponent={KeyboardArrowDownOutlinedIcon}
-                                                    sx={{
-                                                        backgroundColor: theme.palette.background.paper,
-                                                        color: theme.palette.text.primary,
-                                                        fontSize: '0.72rem',
-                                                        fontWeight: 600,
-                                                        height: 32,
-                                                        borderRadius: 1,
-                                                        border: `1px solid ${theme.palette.divider}`,
-                                                        '& .MuiSelect-select': {
-                                                            py: 0.8,
-                                                            px: 1.3,
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                        },
-                                                        '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
-                                                        '&:hover .MuiOutlinedInput-notchedOutline': { border: 'none' },
-                                                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': { border: 'none' },
-                                                        '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
-                                                    }}
-                                                    MenuProps={filterMenuProps}
-                                                >
-                                                    {ESTADOS_PAGO.map(estado => {
-                                                        const optionStyles = getPagoColor(estado, theme)
-                                                        return (
-                                                            <MenuItem key={estado} value={estado} dense>
-                                                                <Box sx={{
-                                                                    display: 'inline-flex',
-                                                                    alignItems: 'center',
-                                                                    backgroundColor: optionStyles.bg,
-                                                                    color: optionStyles.color,
-                                                                    px: 1.2,
-                                                                    py: 0.2,
-                                                                    borderRadius: 8,
-                                                                    fontWeight: 600,
-                                                                    fontSize: '0.7rem',
-                                                                }}>
-                                                                    {estado}
-                                                                </Box>
-                                                            </MenuItem>
-                                                        )
-                                                    })}
-                                                </Select>
+                                            <TableCell sx={{ py: 1.5, minWidth: 155 }}>
+                                                {venta.estado === 'Programada' ? (
+                                                    <Box
+                                                        onClick={(e) => { e.stopPropagation(); setEstadoMenuAnchor(e.currentTarget); setEstadoMenuId(venta.idEncomiendaVenta) }}
+                                                        sx={{
+                                                            display: 'inline-flex', alignItems: 'center', gap: 0.5,
+                                                            border: `1px solid ${theme.palette.divider}`, borderRadius: 1.5,
+                                                            px: 1, py: 0.3, cursor: 'pointer',
+                                                            '&:hover': { backgroundColor: theme.palette.action.hover },
+                                                        }}
+                                                    >
+                                                        <VentaEstadoDot estado="Programada" />
+                                                        <KeyboardArrowDownOutlinedIcon sx={{ fontSize: 13, color: theme.palette.text.secondary }} />
+                                                    </Box>
+                                                ) : (
+                                                    <Box sx={{ pl: 1 }}><VentaEstadoDot estado={venta.estado} /></Box>
+                                                )}
+                                            </TableCell>
+
+                                            <TableCell sx={{ py: 1.5, minWidth: 130 }}>
+                                                {(venta.estadoPago === 'Pagado' || venta.estado === 'Cancelada') ? (
+                                                    venta.estadoPago === 'Pagado' ? (
+                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, pl: 1 }}>
+                                                            <Box sx={{ width: 9, height: 9, borderRadius: '50%', backgroundColor: '#059669', flexShrink: 0 }} />
+                                                            <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: '#059669' }}>Pagado</Typography>
+                                                        </Box>
+                                                    ) : (
+                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, pl: 1 }}>
+                                                            <Box sx={{ width: 9, height: 9, borderRadius: '50%', border: '2px solid #D97706', backgroundColor: 'transparent', flexShrink: 0 }} />
+                                                            <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: '#D97706' }}>Pendiente</Typography>
+                                                        </Box>
+                                                    )
+                                                ) : (
+                                                    <Box
+                                                        onClick={(e) => { e.stopPropagation(); setPagoMenuAnchor(e.currentTarget); setPagoMenuId(venta.idEncomiendaVenta) }}
+                                                        sx={{
+                                                            display: 'inline-flex', alignItems: 'center', gap: 0.75,
+                                                            border: `1px solid ${theme.palette.divider}`, borderRadius: 1.5,
+                                                            px: 1, py: 0.3, cursor: 'pointer',
+                                                            '&:hover': { backgroundColor: theme.palette.action.hover },
+                                                        }}
+                                                    >
+                                                        <Box sx={{ width: 9, height: 9, borderRadius: '50%', border: '2px solid #D97706', backgroundColor: 'transparent', flexShrink: 0 }} />
+                                                        <Typography variant="body2" sx={{ fontSize: '0.8rem', fontWeight: 500, color: '#D97706' }}>Pendiente</Typography>
+                                                        <KeyboardArrowDownOutlinedIcon sx={{ fontSize: 13, color: theme.palette.text.secondary, ml: 0.25 }} />
+                                                    </Box>
+                                                )}
                                             </TableCell>
 
                                             <TableCell sx={{ fontSize: '0.85rem', fontWeight: 600, color: theme.palette.primary.main, py: 1.5 }}>
@@ -645,24 +632,27 @@ const ListarVenta = () => {
                                                 <Box sx={{ display: 'flex', gap: 0.5 }}>
                                                     <Tooltip title="Ver detalle">
                                                         <IconButton size="small" onClick={() => setVentaConsulta(venta)}
-                                                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}>
+                                                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.action.hover } }}>
                                                             <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
                                                         </IconButton>
                                                     </Tooltip>
                                                     <Tooltip title="Editar">
                                                         <IconButton size="small"
                                                             onClick={() => { setVentaEditar(venta); setModalActualizarOpen(true) }}
-                                                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}>
+                                                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.action.hover } }}>
                                                             <EditOutlinedIcon sx={{ fontSize: 18 }} />
                                                         </IconButton>
                                                     </Tooltip>
                                                     <Tooltip title={venta.habilitado ? 'Inhabilitar' : 'Habilitar'}>
                                                         <IconButton
                                                             size="small"
-                                                            onClick={() => handleToggleHabilitado(venta.idEncomiendaVenta)}
-                                                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
+                                                            onClick={() => handleToggleHabilitado(venta)}
+                                                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.action.hover } }}
                                                         >
-                                                            {venta.habilitado ? <CheckBoxIcon sx={{ fontSize: 18, color: theme.palette.primary.main }} /> : <CheckBoxOutlineBlankIcon sx={{ fontSize: 18, color: theme.palette.status.disabled2.color }} />}
+                                                            {venta.habilitado
+                                                                ? <BlockOutlinedIcon sx={{ fontSize: 18, color: theme.palette.primary.main }} />
+                                                                : <CheckCircleOutlinedIcon sx={{ fontSize: 18, color: '#059669' }} />
+                                                            }
                                                         </IconButton>
                                                     </Tooltip>
                                                 </Box>
@@ -696,7 +686,7 @@ const ListarVenta = () => {
                             IconComponent={KeyboardArrowDownOutlinedIcon}
                             sx={{
                                 fontSize: '0.82rem',
-    borderRadius: 4,
+                                borderRadius: 2,
                                 '& .MuiSelect-select': { py: 0.6, pl: 1.5, pr: '28px !important' },
                                 '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
                                 '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
@@ -707,7 +697,29 @@ const ListarVenta = () => {
                                 '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
                                 '& .MuiTouchRipple-root': { display: 'none' },
                             }}
-                            MenuProps={filterMenuProps}
+                            MenuProps={{
+                                slotProps: {
+                                    paper: {
+                                        sx: {
+                                            borderRadius: 2,
+                                            boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+                                            mt: 0.5,
+                                            minWidth: 80,
+                                            '& .MuiMenuItem-root': {
+                                                fontSize: '0.82rem',
+                                                py: 0.9,
+                                                px: 2,
+                                                display: 'flex',
+                                                justifyContent: 'space-between',
+                                                gap: 2,
+                                                '&:hover': { backgroundColor: theme.palette.action.hover },
+                                                '&.Mui-selected': { backgroundColor: 'transparent', fontWeight: 600, color: theme.palette.text.primary },
+                                                '&.Mui-selected:hover': { backgroundColor: theme.palette.primary.light },
+                                            },
+                                        },
+                                    },
+                                },
+                            }}
                         >
                             {[5, 10, 25].map(n => (
                                 <MenuItem key={n} value={n}>
@@ -775,13 +787,180 @@ const ListarVenta = () => {
                 }}
             />
 
-            <ModalBloqueoInhabilitacion
-                open={modalBloqueo.open}
-                onClose={() => setModalBloqueo({ open: false, dependencias: [], mensaje: '' })}
-                entidad="venta"
-                mensaje={modalBloqueo.mensaje}
-                dependencias={modalBloqueo.dependencias}
+            <ModalInhabilitarVenta
+                open={modalInhabilitar.open}
+                venta={modalInhabilitar.venta}
+                onClose={() => setModalInhabilitar(s => ({ ...s, open: false }))}
+                onExited={() => {
+                    const venta = modalInhabilitar.venta
+                    const wasPending = pendingConfirm.current
+                    pendingConfirm.current = false
+                    setModalInhabilitar({ open: false, venta: null })
+                    if (wasPending && venta) {
+                        const habilitadoActual = venta.habilitado
+                        toggleHabilitadoVenta(venta.idEncomiendaVenta)
+                            .then(() => setSnackbar({ open: true, message: `Venta ${habilitadoActual ? 'inhabilitada' : 'habilitada'} correctamente.`, severity: habilitadoActual ? 'warning' : 'success' }))
+                            .catch(() => {})
+                    }
+                }}
+                onConfirm={handleConfirmarToggle}
             />
+
+            <Menu
+                anchorEl={estadoMenuAnchor}
+                open={Boolean(estadoMenuAnchor)}
+                onClose={() => { setEstadoMenuAnchor(null); setEstadoMenuId(null) }}
+                onClick={(e) => e.stopPropagation()}
+                autoFocus={false}
+                slotProps={{ paper: { sx: { borderRadius: 2, boxShadow: '0 4px 16px rgba(0,0,0,0.1)', mt: 0.5, minWidth: 150 } } }}
+            >
+                <MenuItem
+                    dense
+                    onClick={() => { const id = estadoMenuId; setEstadoMenuAnchor(null); setEstadoMenuId(null); setConfirmCancelar({ open: true, id }) }}
+                    sx={{ gap: 0.75, '&:hover': { backgroundColor: theme.palette.action.hover } }}
+                >
+                    <VentaEstadoDot estado="Cancelada" />
+                </MenuItem>
+            </Menu>
+
+            <Menu
+                anchorEl={pagoMenuAnchor}
+                open={Boolean(pagoMenuAnchor)}
+                onClose={() => { setPagoMenuAnchor(null); setPagoMenuId(null) }}
+                onClick={(e) => e.stopPropagation()}
+                autoFocus={false}
+                slotProps={{ paper: { sx: { borderRadius: 2, boxShadow: '0 4px 16px rgba(0,0,0,0.1)', mt: 0.5, minWidth: 130 } } }}
+            >
+                <MenuItem
+                    dense
+                    onClick={() => { setPagoMenuAnchor(null); setConfirmPago({ open: true, id: pagoMenuId }); setPagoMenuId(null) }}
+                    sx={{ gap: 0.75, '&:hover': { backgroundColor: theme.palette.action.hover } }}
+                >
+                    <Box sx={{ width: 9, height: 9, borderRadius: '50%', backgroundColor: '#059669', flexShrink: 0 }} />
+                    <Typography sx={{ fontSize: '0.82rem', fontWeight: 500 }}>Pagado</Typography>
+                </MenuItem>
+            </Menu>
+
+            <Dialog
+                open={confirmCancelar.open}
+                onClose={() => setConfirmCancelar({ open: false, id: null })}
+                maxWidth="xs"
+                fullWidth
+                onClick={(e) => e.stopPropagation()}
+                slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}
+            >
+                <DialogContent sx={{ p: 3, pb: 2, textAlign: 'center', position: 'relative' }}>
+                    <IconButton
+                        onClick={() => setConfirmCancelar({ open: false, id: null })}
+                        sx={{ position: 'absolute', top: 8, right: 8, color: theme.palette.text.secondary }}
+                    >
+                        <CloseIcon />
+                    </IconButton>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5, pt: 2 }}>
+                        <Box sx={{ width: 67, height: 67, borderRadius: '50%', backgroundColor: '#3F3F4622', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <SwapHorizOutlinedIcon sx={{ fontSize: 35, color: '#3F3F46' }} />
+                        </Box>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+                            <Typography fontWeight={700} fontSize="1.4rem" color={theme.palette.text.primary}>
+                                Cambiar estado
+                            </Typography>
+                            <Typography fontSize="1rem" color={theme.palette.text.secondary}>
+                                ¿Seguro que deseas cambiarlo a{' '}
+                                <Box component="span" sx={{ fontWeight: 700, color: '#3F3F46' }}>Cancelada</Box>?
+                            </Typography>
+                        </Box>
+                    </Box>
+                </DialogContent>
+                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 3, px: 3, pt: 1, pb: 3 }}>
+                    <Button
+                        onClick={() => setConfirmCancelar({ open: false, id: null })}
+                        disableRipple
+                        sx={{
+                            textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500,
+                            borderRadius: 2, px: 3.5, py: 0.75, fontSize: '0.875rem',
+                            border: `1px solid ${theme.palette.divider}`,
+                            '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary },
+                        }}
+                    >
+                        Cancelar
+                    </Button>
+                    <Button
+                        onClick={handleCancelarConfirm}
+                        variant="contained"
+                        disableRipple
+                        sx={{
+                            textTransform: 'none', borderRadius: 2, fontWeight: 600,
+                            px: 5, py: 0.76, fontSize: '0.875rem',
+                            backgroundColor: '#3F3F46',
+                            '&:hover': { backgroundColor: '#3F3F46', filter: 'brightness(0.88)' },
+                        }}
+                    >
+                        Confirmar
+                    </Button>
+                </Box>
+            </Dialog>
+
+            <Dialog
+                open={confirmPago.open}
+                onClose={() => setConfirmPago({ open: false, id: null })}
+                maxWidth="xs"
+                fullWidth
+                onClick={(e) => e.stopPropagation()}
+                slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}
+            >
+                <DialogContent sx={{ p: 3, pb: 2, textAlign: 'center', position: 'relative' }}>
+                    <IconButton
+                        onClick={() => setConfirmPago({ open: false, id: null })}
+                        sx={{ position: 'absolute', top: 8, right: 8, color: theme.palette.text.secondary }}
+                    >
+                        <CloseIcon />
+                    </IconButton>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5, pt: 2 }}>
+                        <Box sx={{ width: 67, height: 67, borderRadius: '50%', backgroundColor: '#05996920', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <PaidOutlinedIcon sx={{ fontSize: 35, color: '#059669' }} />
+                        </Box>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+                            <Typography fontWeight={700} fontSize="1.4rem" color={theme.palette.text.primary}>
+                                Confirmar pago
+                            </Typography>
+                            <Typography fontWeight={700} fontSize="0.8rem" color={theme.palette.text.secondary}>
+                                Estado irreversible.
+                            </Typography>
+                            <Typography fontSize="1rem" color={theme.palette.text.secondary}>
+                                ¿Marcar esta venta como{' '}
+                                <Box component="span" sx={{ fontWeight: 700, color: '#059669' }}>Pagada</Box>?
+                            </Typography>
+                        </Box>
+                    </Box>
+                </DialogContent>
+                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 3, px: 3, pt: 1, pb: 3 }}>
+                    <Button
+                        onClick={() => setConfirmPago({ open: false, id: null })}
+                        disableRipple
+                        sx={{
+                            textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500,
+                            borderRadius: 2, px: 3.5, py: 0.75, fontSize: '0.875rem',
+                            border: `1px solid ${theme.palette.divider}`,
+                            '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary },
+                        }}
+                    >
+                        Cancelar
+                    </Button>
+                    <Button
+                        onClick={handlePagoConfirm}
+                        variant="contained"
+                        disableRipple
+                        sx={{
+                            textTransform: 'none', borderRadius: 2, fontWeight: 600,
+                            px: 5, py: 0.76, fontSize: '0.875rem',
+                            backgroundColor: '#059669',
+                            '&:hover': { backgroundColor: '#059669', filter: 'brightness(0.88)' },
+                        }}
+                    >
+                        Confirmar
+                    </Button>
+                </Box>
+            </Dialog>
 
             <Snackbar
                 open={snackbar.open}
