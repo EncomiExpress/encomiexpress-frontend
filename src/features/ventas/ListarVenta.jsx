@@ -7,7 +7,7 @@ import {
     TableContainer, TableHead, TableRow, TextField,
     IconButton, Chip, Tooltip, InputAdornment,
     Button, Select, MenuItem, Pagination, Snackbar, Alert,
-    CircularProgress, FormControl, InputLabel, TableSortLabel,
+    CircularProgress, FormControl, TableSortLabel,
     Menu, Dialog, DialogContent
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
@@ -70,17 +70,6 @@ const getThStyle = (theme) => ({
 })
 
 
-const getFilterSelectSx = (theme) => ({
-    fontSize: '0.82rem',
-    borderRadius: 4,
-    '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
-    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
-    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
-    '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` },
-    '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
-    '& .MuiTouchRipple-root': { display: 'none' },
-})
-
 const getFilterMenuProps = (theme) => ({
     slotProps: {
         paper: {
@@ -89,8 +78,9 @@ const getFilterMenuProps = (theme) => ({
                 boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
                 mt: 0.5,
                 '& .MuiMenuItem-root': {
-                    fontSize: '0.82rem',
-                    '&:hover': { backgroundColor: theme.palette.action.hover },
+                    fontSize: '0.82rem', py: 0.9, px: 2,
+                    display: 'flex', justifyContent: 'space-between', gap: 2,
+                    '&:hover': { backgroundColor: theme.palette.primary.light },
                     '&.Mui-selected': { backgroundColor: 'transparent', fontWeight: 600, color: theme.palette.text.primary },
                     '&.Mui-selected:hover': { backgroundColor: theme.palette.primary.light },
                 },
@@ -108,7 +98,6 @@ const FILTROS_HABILITADO = [
 const ListarVenta = () => {
     const theme = useTheme()
     const thStyle = getThStyle(theme)
-    const filterSelectSx = getFilterSelectSx(theme)
     const filterMenuProps = getFilterMenuProps(theme)
     const [searchParams] = useSearchParams()
     const highlightId = searchParams.get('highlight')
@@ -137,9 +126,9 @@ const ListarVenta = () => {
     const [busqueda, setBusqueda] = useState('')
     const [debouncedBusqueda, setDebouncedBusqueda] = useState('')
     const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
-    const [filtroEstadoEncomienda, setFiltroEstadoEncomienda] = useState('todos')
-    const [filtroPago, setFiltroPago] = useState('todos')
-    const [filtroMetodoPago, setFiltroMetodoPago] = useState('todos')
+    const [filtroEstadoEncomienda, setFiltroEstadoEncomienda] = useState('')
+    const [filtroPago, setFiltroPago] = useState('')
+    const [filtroMetodoPago, setFiltroMetodoPago] = useState('')
     const [page, setPage] = useState(1)
     const [rowsPerPage, setRowsPerPage] = useState(5)
     const [ventaConsulta, setVentaConsulta] = useState(null)
@@ -166,9 +155,9 @@ const ListarVenta = () => {
         page,
         limit: rowsPerPage,
         sortBy: `${sortBy.field}.${sortBy.dir}`,
-        estado: filtroEstadoEncomienda === 'todos' ? undefined : filtroEstadoEncomienda,
-        estadoPago: filtroPago === 'todos' ? undefined : filtroPago,
-        metodoPago: filtroMetodoPago === 'todos' ? undefined : filtroMetodoPago,
+        estado: filtroEstadoEncomienda || undefined,
+        estadoPago: filtroPago || undefined,
+        metodoPago: filtroMetodoPago || undefined,
         habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
         q: debouncedBusqueda.trim() || undefined,
       })
@@ -193,13 +182,13 @@ const ListarVenta = () => {
     const limpiarFiltros = () => {
         setBusqueda('')
         setFiltroHabilitado('todo')
-        setFiltroEstadoEncomienda('todos')
-        setFiltroPago('todos')
-        setFiltroMetodoPago('todos')
+        setFiltroEstadoEncomienda('')
+        setFiltroPago('')
+        setFiltroMetodoPago('')
         setPage(1)
     }
 
-    const hayFiltrosActivos = busqueda || filtroHabilitado !== 'todo' || filtroEstadoEncomienda !== 'todos' || filtroPago !== 'todos' || filtroMetodoPago !== 'todos'
+    const hayFiltrosActivos = busqueda || filtroHabilitado !== 'todo' || filtroEstadoEncomienda !== '' || filtroPago !== '' || filtroMetodoPago !== ''
 
     const handleEstadoChange = async (id, nuevoEstado) => {
         try {
@@ -359,45 +348,86 @@ const ListarVenta = () => {
                         ))}
                     </Box>
 
-                    <FormControl size="small" sx={{ width: 160 }}>
-                        <InputLabel sx={{ fontSize: '0.82rem', '&.Mui-focused': { color: theme.palette.primary.main } }}>Estado encomienda</InputLabel>
-                        <Select value={filtroEstadoEncomienda} label="Estado encomienda"
+                    <FormControl size="small" sx={{ minWidth: 150 }}>
+                        <Select
+                            displayEmpty
+                            value={filtroEstadoEncomienda}
                             onChange={e => { setFiltroEstadoEncomienda(e.target.value); setPage(1) }}
+                            renderValue={v => v || 'Estado'}
                             IconComponent={KeyboardArrowDownOutlinedIcon}
-                            sx={filterSelectSx}
+                            sx={{
+                                fontSize: '0.82rem', borderRadius: 4,
+                                color: filtroEstadoEncomienda ? theme.palette.text.primary : theme.palette.text.secondary,
+                                '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
+                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
+                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
+                                '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` },
+                                '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
+                                '& .MuiTouchRipple-root': { display: 'none' },
+                            }}
                             MenuProps={filterMenuProps}>
-                            <MenuItem value="todos">Todos</MenuItem>
-                            {ESTADOS_ENCOMIENDA.map(estado => (
-                                <MenuItem key={estado} value={estado}>
-                                    {estado.charAt(0).toUpperCase() + estado.slice(1)}
+                            <MenuItem value="">Todos</MenuItem>
+                            {ESTADOS_ENCOMIENDA.map(e => (
+                                <MenuItem key={e} value={e}>
+                                    {e}
+                                    {filtroEstadoEncomienda === e && <CheckOutlinedIcon sx={{ fontSize: 14, color: theme.palette.text.secondary }} />}
                                 </MenuItem>
                             ))}
                         </Select>
                     </FormControl>
 
-                    <FormControl size="small" sx={{ minWidth: 130 }}>
-                        <InputLabel sx={{ fontSize: '0.82rem', '&.Mui-focused': { color: theme.palette.primary.main } }}>Estado pago</InputLabel>
-                        <Select value={filtroPago} label="Estado pago"
+                    <FormControl size="small" sx={{ minWidth: 140 }}>
+                        <Select
+                            displayEmpty
+                            value={filtroPago}
                             onChange={e => { setFiltroPago(e.target.value); setPage(1) }}
+                            renderValue={v => v || 'Pago'}
                             IconComponent={KeyboardArrowDownOutlinedIcon}
-                            sx={filterSelectSx}
+                            sx={{
+                                fontSize: '0.82rem', borderRadius: 4,
+                                color: filtroPago ? theme.palette.text.primary : theme.palette.text.secondary,
+                                '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
+                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
+                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
+                                '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` },
+                                '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
+                                '& .MuiTouchRipple-root': { display: 'none' },
+                            }}
                             MenuProps={filterMenuProps}>
-                            <MenuItem value="todos">Todos</MenuItem>
-                            <MenuItem value="Pagado">Pagado</MenuItem>
-                            <MenuItem value="Pendiente">Pendiente</MenuItem>
+                            <MenuItem value="">Todos</MenuItem>
+                            {ESTADOS_PAGO.map(e => (
+                                <MenuItem key={e} value={e}>
+                                    {e}
+                                    {filtroPago === e && <CheckOutlinedIcon sx={{ fontSize: 14, color: theme.palette.text.secondary }} />}
+                                </MenuItem>
+                            ))}
                         </Select>
                     </FormControl>
 
-                    <FormControl size="small" sx={{ minWidth: 140 }}>
-                        <InputLabel sx={{ fontSize: '0.82rem', '&.Mui-focused': { color: theme.palette.primary.main } }}>Método de pago</InputLabel>
-                        <Select value={filtroMetodoPago} label="Método de pago"
+                    <FormControl size="small" sx={{ minWidth: 150 }}>
+                        <Select
+                            displayEmpty
+                            value={filtroMetodoPago}
                             onChange={e => { setFiltroMetodoPago(e.target.value); setPage(1) }}
+                            renderValue={v => v || 'Método pago'}
                             IconComponent={KeyboardArrowDownOutlinedIcon}
-                            sx={filterSelectSx}
+                            sx={{
+                                fontSize: '0.82rem', borderRadius: 4,
+                                color: filtroMetodoPago ? theme.palette.text.primary : theme.palette.text.secondary,
+                                '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
+                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
+                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
+                                '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` },
+                                '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
+                                '& .MuiTouchRipple-root': { display: 'none' },
+                            }}
                             MenuProps={filterMenuProps}>
-                            <MenuItem value="todos">Todos</MenuItem>
+                            <MenuItem value="">Todos</MenuItem>
                             {METODOS_PAGO.map(mp => (
-                                <MenuItem key={mp} value={mp}>{mp}</MenuItem>
+                                <MenuItem key={mp} value={mp}>
+                                    {mp}
+                                    {filtroMetodoPago === mp && <CheckOutlinedIcon sx={{ fontSize: 14, color: theme.palette.text.secondary }} />}
+                                </MenuItem>
                             ))}
                         </Select>
                     </FormControl>
@@ -496,7 +526,7 @@ const ListarVenta = () => {
                                 <TableRow>
                                     <TableCell colSpan={7} align="center" sx={{ py: 7 }}>
                                         <Typography color={theme.palette.text.secondary} variant="body2">
-                                            {filtroHabilitado !== 'todo' || filtroEstadoEncomienda !== 'todos' || filtroPago !== 'todos' || filtroMetodoPago !== 'todos'
+                                            {filtroHabilitado !== 'todo' || filtroEstadoEncomienda !== '' || filtroPago !== '' || filtroMetodoPago !== ''
                                                 ? 'No se encontraron ventas que coincidan con los filtros aplicados.'
                                                 : debouncedBusqueda.trim()
                                                     ? 'No se encontraron ventas que coincidan con la búsqueda.'

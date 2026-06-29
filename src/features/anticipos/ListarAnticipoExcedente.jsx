@@ -8,7 +8,7 @@ import {
     TableContainer, TableHead, TableRow, TextField,
     IconButton, Chip, Tooltip, InputAdornment,
     Button, Select, MenuItem, Pagination, Snackbar, Alert,
-    CircularProgress, FormControl, InputLabel, TableSortLabel,
+    CircularProgress, FormControl, TableSortLabel,
     Dialog, DialogTitle, DialogContent, DialogActions
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
@@ -41,18 +41,6 @@ const getThStyle = (theme) => ({
     whiteSpace: 'nowrap',
 })
 
-const getFilterSelectSx = (theme) => ({
-    fontSize: '0.82rem',
-    borderRadius: 4,
-    '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
-    '&:hover': { backgroundColor: 'transparent' },
-    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
-    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
-    '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` },
-    '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
-    '& .MuiTouchRipple-root': { display: 'none' },
-})
-
 const getFilterMenuProps = (theme) => ({
     slotProps: {
         paper: {
@@ -61,7 +49,8 @@ const getFilterMenuProps = (theme) => ({
                 boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
                 mt: 0.5,
                 '& .MuiMenuItem-root': {
-                    fontSize: '0.82rem',
+                    fontSize: '0.82rem', py: 0.9, px: 2,
+                    display: 'flex', justifyContent: 'space-between', gap: 2,
                     '&:hover': { backgroundColor: theme.palette.primary.light },
                     '&.Mui-selected': { backgroundColor: 'transparent', fontWeight: 600, color: theme.palette.text.primary },
                     '&.Mui-selected:hover': { backgroundColor: theme.palette.primary.light },
@@ -77,14 +66,7 @@ const FILTROS_HABILITADO = [
     { value: 'inhabilitado', label: 'Inhabilitado' },
 ]
 
-const FILTROS_ANTICIPO = [
-    { value: 'todos', label: 'Todos los estados' },
-    { value: 'Entregado', label: 'Entregado' },
-    { value: 'En Legalización', label: 'En Legalización' },
-    { value: 'Excedente pendiente', label: 'Excedente pendiente' },
-    { value: 'Completado', label: 'Completado' },
-    { value: 'Cancelado', label: 'Cancelado' },
-]
+const ESTADOS_ANTICIPO = ['Entregado', 'En Legalización', 'Excedente pendiente', 'Completado']
 
 const AnticipoEstadoDot = ({ estado }) => {
     const info = getAnticipoEstadoDot(estado)
@@ -116,7 +98,6 @@ const formatMoney = (val) => {
 const ListarAnticipoExcedente = () => {
     const theme = useTheme()
     const thStyle = getThStyle(theme)
-    const filterSelectSx = getFilterSelectSx(theme)
     const filterMenuProps = getFilterMenuProps(theme)
     const [searchParams] = useSearchParams()
     const highlightId = searchParams.get('highlight')
@@ -137,7 +118,7 @@ const ListarAnticipoExcedente = () => {
     const [busqueda, setBusqueda] = useState('')
     const [debouncedBusqueda, setDebouncedBusqueda] = useState('')
     const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
-    const [filtroEstadoAnticipo, setFiltroEstadoAnticipo] = useState('todos')
+    const [filtroEstadoAnticipo, setFiltroEstadoAnticipo] = useState('')
     const [page, setPage] = useState(1)
     const [rowsPerPage, setRowsPerPage] = useState(5)
     const [anticipoConsulta, setAnticipoConsulta] = useState(null)
@@ -170,7 +151,7 @@ const ListarAnticipoExcedente = () => {
     const limpiarFiltros = () => {
         setBusqueda('')
         setFiltroHabilitado('todo')
-        setFiltroEstadoAnticipo('todos')
+        setFiltroEstadoAnticipo('')
         setPage(1)
     }
 
@@ -185,7 +166,7 @@ const ListarAnticipoExcedente = () => {
             limit: rowsPerPage,
             q: debouncedBusqueda.trim() || undefined,
             habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
-            estado: filtroEstadoAnticipo === 'todos' ? undefined : filtroEstadoAnticipo,
+            estado: filtroEstadoAnticipo || undefined,
             sortBy: `${sortBy.field}.${sortBy.dir}`,
         })
     }, [page, rowsPerPage, debouncedBusqueda, filtroHabilitado, filtroEstadoAnticipo, sortBy, fetchAnticipos])
@@ -201,7 +182,7 @@ const ListarAnticipoExcedente = () => {
     }
 
     const currentAnticipos = anticipos
-    const hayFiltrosActivos = busqueda.trim() !== '' || filtroHabilitado !== 'todo' || filtroEstadoAnticipo !== 'todos'
+    const hayFiltrosActivos = busqueda.trim() !== '' || filtroHabilitado !== 'todo' || filtroEstadoAnticipo !== ''
     const totalPages = Math.max(1, Math.ceil(total / rowsPerPage))
     const safePage = Math.min(page, totalPages)
     const from = total === 0 ? 0 : (safePage - 1) * rowsPerPage + 1
@@ -337,19 +318,30 @@ const ListarAnticipoExcedente = () => {
                         ))}
                     </Box>
 
-                    <FormControl size="small" sx={{ minWidth: 180 }}>
-                        <InputLabel sx={{ fontSize: '0.82rem', '&.Mui-focused': { color: theme.palette.primary.main } }}>Estado del anticipo</InputLabel>
+                    <FormControl size="small" sx={{ minWidth: 150 }}>
                         <Select
+                            displayEmpty
                             value={filtroEstadoAnticipo}
-                            label="Estado del anticipo"
                             onChange={e => { setFiltroEstadoAnticipo(e.target.value); setPage(1) }}
+                            renderValue={v => v || 'Estado'}
                             IconComponent={KeyboardArrowDownOutlinedIcon}
-                            sx={filterSelectSx}
+                            sx={{
+                                fontSize: '0.82rem', borderRadius: 4,
+                                color: filtroEstadoAnticipo ? theme.palette.text.primary : theme.palette.text.secondary,
+                                '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
+                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
+                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
+                                '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` },
+                                '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
+                                '& .MuiTouchRipple-root': { display: 'none' },
+                            }}
                             MenuProps={filterMenuProps}
                         >
-                            {FILTROS_ANTICIPO.map(f => (
-                                <MenuItem key={f.value} value={f.value} sx={{ fontSize: '0.8rem' }}>
-                                    {f.label}
+                            <MenuItem value="">Todos</MenuItem>
+                            {ESTADOS_ANTICIPO.map(e => (
+                                <MenuItem key={e} value={e}>
+                                    {e}
+                                    {filtroEstadoAnticipo === e && <CheckOutlinedIcon sx={{ fontSize: 14, color: theme.palette.text.secondary }} />}
                                 </MenuItem>
                             ))}
                         </Select>
@@ -449,7 +441,7 @@ const ListarAnticipoExcedente = () => {
                                 <TableRow>
                                     <TableCell colSpan={8} align="center" sx={{ py: 7 }}>
                                         <Typography color={theme.palette.text.secondary} variant="body2">
-                                            {filtroHabilitado !== 'todo' || filtroEstadoAnticipo !== 'todos'
+                                            {filtroHabilitado !== 'todo' || filtroEstadoAnticipo !== ''
                                                 ? 'No se encontraron anticipos que coincidan con los filtros aplicados.'
                                                 : debouncedBusqueda.trim()
                                                     ? 'No se encontraron anticipos que coincidan con la búsqueda.'

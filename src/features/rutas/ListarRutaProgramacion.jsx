@@ -176,6 +176,8 @@ const getFilterMenuProps = (theme) => ({
                 mt: 0.5,
                 '& .MuiMenuItem-root': {
                     fontSize: '0.82rem',
+                    py: 0.9, px: 2,
+                    display: 'flex', justifyContent: 'space-between', gap: 2,
                     '&:hover': { backgroundColor: theme.palette.primary.light },
                     '&.Mui-selected': { backgroundColor: 'transparent', fontWeight: 600, color: theme.palette.text.primary },
                     '&.Mui-selected:hover': { backgroundColor: theme.palette.primary.light },
@@ -214,7 +216,7 @@ const ListarRutaProgramacion = () => {
     const [alertaBloqueo, setAlertaBloqueo]   = useState({ open: false, titulo: '', entidades: [] })
     const [estadoMenu, setEstadoMenu]         = useState({ anchor: null, id: null, estadoActual: null })
     const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
-    const [filtroEstadoRuta, setFiltroEstadoRuta] = useState('todo')
+    const [filtroEstadoRuta, setFiltroEstadoRuta] = useState('')
     const [filtroAnio, setFiltroAnio]         = useState('')
     const [filtroMes, setFiltroMes]           = useState('')
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
@@ -265,7 +267,7 @@ const ListarRutaProgramacion = () => {
         limit: rowsPerPage,
         sortBy: `${sortBy.field}.${sortBy.dir}`,
         habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
-        estado: filtroEstadoRuta === 'todo' ? undefined : filtroEstadoRuta,
+        estado: filtroEstadoRuta || undefined,
         anio: filtroAnio || undefined,
         mes: filtroMes || undefined,
         q: debouncedSearch.trim() || undefined,
@@ -335,13 +337,13 @@ const resolveDestino = (ruta) =>
     const limpiarFiltros = () => {
         setSearchTerm('')
         setFiltroHabilitado('todo')
-        setFiltroEstadoRuta('todo')
+        setFiltroEstadoRuta('')
         setFiltroAnio('')
         setFiltroMes('')
         setPage(1)
     }
 
-    const hayFiltrosActivos = searchTerm.trim() !== '' || filtroHabilitado !== 'todo' || filtroEstadoRuta !== 'todo' || filtroAnio || filtroMes
+    const hayFiltrosActivos = searchTerm.trim() !== '' || filtroHabilitado !== 'todo' || filtroEstadoRuta !== '' || filtroAnio || filtroMes
 
     const totalPages = Math.max(1, Math.ceil(total / rowsPerPage))
     const safePage = Math.min(page, totalPages)
@@ -517,44 +519,75 @@ const resolveDestino = (ruta) =>
 
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, mb: 1.5, flexWrap: 'wrap' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-                    <Box sx={{
-                        display: 'inline-flex',
-                        backgroundColor: theme.palette.primary.light,
-                        borderRadius: 4,
-                        p: '4px',
-                        gap: '5px',
-                    }}>
-                        {FILTROS.map(f => (
-                            <Button
-                                key={f.value}
-                                onClick={() => { setFiltroHabilitado(f.value); setPage(1) }}
-                                size="small"
-                                disableElevation
-                                disableRipple
-                                sx={{
-                                    borderRadius: 3,
-                                    textTransform: 'none',
-                                    fontSize: '0.75rem',
-                                    px: 2,
-                                    py: 0.5,
-                                    minWidth: 0,
-                                    fontWeight: filtroHabilitado === f.value ? 600 : 400,
-                                    backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
-                                    color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.secondary,
-                                    boxShadow: filtroHabilitado === f.value
-                                        ? '0 1px 4px rgba(0,0,0,0.12)'
-                                        : 'none',
-                                    border: 'none',
-                                    '&:hover': {
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <Box sx={{
+                            display: 'inline-flex',
+                            backgroundColor: theme.palette.primary.light,
+                            borderRadius: 4,
+                            p: '4px',
+                            gap: '5px',
+                        }}>
+                            {FILTROS.map(f => (
+                                <Button
+                                    key={f.value}
+                                    onClick={() => { setFiltroHabilitado(f.value); setPage(1) }}
+                                    size="small"
+                                    disableElevation
+                                    disableRipple
+                                    sx={{
+                                        borderRadius: 3,
+                                        textTransform: 'none',
+                                        fontSize: '0.75rem',
+                                        px: 2,
+                                        py: 0.5,
+                                        minWidth: 0,
+                                        fontWeight: filtroHabilitado === f.value ? 600 : 400,
                                         backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
-                                        color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.medium,
+                                        color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.secondary,
+                                        boxShadow: filtroHabilitado === f.value
+                                            ? '0 1px 4px rgba(0,0,0,0.12)'
+                                            : 'none',
                                         border: 'none',
-                                    },
+                                        '&:hover': {
+                                            backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
+                                            color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.medium,
+                                            border: 'none',
+                                        },
+                                    }}
+                                >
+                                    {f.label}
+                                </Button>
+                            ))}
+                        </Box>
+
+                        <FormControl size="small" sx={{ minWidth: 140 }}>
+                            <Select
+                                displayEmpty
+                                value={filtroEstadoRuta}
+                                onChange={e => { setFiltroEstadoRuta(e.target.value); setPage(1) }}
+                                renderValue={v => v || 'Estado'}
+                                IconComponent={KeyboardArrowDownOutlinedIcon}
+                                sx={{
+                                    fontSize: '0.82rem', borderRadius: 4,
+                                    color: filtroEstadoRuta ? theme.palette.text.primary : theme.palette.text.secondary,
+                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
+                                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
+                                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
+                                    '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` },
+                                    '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
+                                    '& .MuiTouchRipple-root': { display: 'none' },
                                 }}
-                            >
-                                {f.label}
-                            </Button>
-                        ))}
+                                MenuProps={filterMenuProps}>
+                                <MenuItem value="">Todos</MenuItem>
+                                {ESTADOS_RUTA.map(e => (
+                                    <MenuItem key={e} value={e}>
+                                        {e}
+                                        {filtroEstadoRuta === e && <CheckOutlinedIcon sx={{ fontSize: 14, color: theme.palette.text.secondary }} />}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+
                     </Box>
 
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -678,7 +711,7 @@ const resolveDestino = (ruta) =>
                                 <TableRow>
                                     <TableCell colSpan={6} align="center" sx={{ py: 7 }}>
                                         <Typography color={theme.palette.text.secondary} variant="body2">
-                                            {filtroHabilitado !== 'todo' || filtroEstadoRuta !== 'todo' || filtroAnio !== '' || filtroMes !== ''
+                                            {filtroHabilitado !== 'todo' || filtroEstadoRuta !== '' || filtroAnio !== '' || filtroMes !== ''
                                                 ? 'No se encontraron rutas que coincidan con los filtros aplicados.'
                                                 : debouncedSearch.trim()
                                                     ? 'No se encontraron rutas que coincidan con la búsqueda.'
