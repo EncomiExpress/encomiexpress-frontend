@@ -30,7 +30,6 @@ import ActualizarVenta from './ActualizarVenta'
 import ModalInhabilitarVenta from './ModalInhabilitarVenta'
 import ModalConsultarVenta from './ModalConsultarVenta'
 import { getVentaEstadoDot } from '../../shared/utils/estadoColors.js'
-import { formatRutaDestino } from '../../shared/utils/formatters.js'
 
 const VentaEstadoDot = ({ estado }) => {
     const info = getVentaEstadoDot(estado)
@@ -543,7 +542,7 @@ const ListarVenta = () => {
                                             </TableCell>
 
                                             <TableCell sx={{ py: 1.5 }}>
-                                                <Typography variant="body2" fontWeight={600} color={theme.palette.secondary.main}>
+                                                <Typography variant="body2" fontWeight={600} color={theme.palette.primary.main}>
                                                     {venta.numeroGuia}
                                                 </Typography>
                                                 <Typography variant="caption" color={theme.palette.text.secondary}>
@@ -557,7 +556,7 @@ const ListarVenta = () => {
 
                                                                     <TableCell sx={{ fontSize: '0.85rem', color: theme.palette.text.primary, py: 1.5 }}>
                                                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                                                    <span>{formatRutaDestino(venta.ruta?.destino)}</span>
+                                                    <span>{venta.ruta?.nombreRuta || '—'}</span>
                                                     {venta.estado === 'Programada' && venta.ruta?.estado === 'Cancelada' && (
                                                         <Chip
                                                             label="Ruta cancelada · Reasignar"
@@ -624,8 +623,21 @@ const ListarVenta = () => {
                                                 )}
                                             </TableCell>
 
-                                            <TableCell sx={{ fontSize: '0.85rem', fontWeight: 600, color: theme.palette.primary.main, py: 1.5 }}>
-                                                ${venta.total?.toLocaleString()}
+                                            <TableCell sx={{ py: 1.5 }}>
+                                                <Chip
+                                                    label={venta.total !== undefined
+                                                        ? `$${Number(venta.total).toLocaleString('es-CO')}`
+                                                        : '—'}
+                                                    size="small"
+                                                    sx={{
+                                                        fontWeight: 600,
+                                                        backgroundColor: theme.palette.primary.light,
+                                                        color: theme.palette.primary.main,
+                                                        fontSize: '0.7rem',
+                                                        borderRadius: '2px',
+                                                        height: 24,
+                                                    }}
+                                                />
                                             </TableCell>
 
                                             <TableCell sx={{ py: 1.5 }}>

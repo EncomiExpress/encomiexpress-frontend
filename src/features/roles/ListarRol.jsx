@@ -5,7 +5,7 @@ import {
     Box, Typography, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, TextField,
     IconButton, Tooltip, InputAdornment,
-    Button, Select, MenuItem, Pagination, Chip, Avatar, Snackbar, Alert,
+    Button, Select, MenuItem, Pagination, Chip, Snackbar, Alert,
     TableSortLabel, CircularProgress
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
@@ -307,7 +307,7 @@ const ListarRol = () => {
                     <Table>
                         <TableHead>
                             <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
-                                <TableCell sx={thStyle}>
+                                <TableCell sx={{ ...thStyle, width: '30%' }}>
                                     <TableSortLabel
                                         active={sortBy.field === 'nombre'}
                                         direction={sortBy.field === 'nombre' ? sortBy.dir : 'asc'}
@@ -322,8 +322,8 @@ const ListarRol = () => {
                                         Rol
                                     </TableSortLabel>
                                 </TableCell>
-                                <TableCell sx={thStyle}>Descripción</TableCell>
-                                <TableCell sx={thStyle}>Permisos</TableCell>
+                                <TableCell sx={{ ...thStyle, width: '40%' }}>Descripción</TableCell>
+                                <TableCell sx={{ ...thStyle, width: '25%' }}>Permisos</TableCell>
                                 <TableCell sx={{ ...thStyle, width: 130 }}>Acciones</TableCell>
                             </TableRow>
                         </TableHead>
@@ -377,20 +377,9 @@ const ListarRol = () => {
                                             }}
                                         >
                                             <TableCell sx={{ py: 1.5 }}>
-                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                                    <Avatar sx={{
-                                                        width: 34, height: 34,
-                                                        backgroundColor: rolStyle.bg,
-                                                        fontSize: '0.73rem',
-                                                        fontWeight: 700,
-                                                        color: rolStyle.color,
-                                                    }}>
-                                                        {rol.nombre?.split(' ').map(n => n[0]).slice(0, 2).join('')}
-                                                    </Avatar>
-                                                    <Typography variant="body2" fontWeight={600} color={theme.palette.text.primary}>
-                                                        {rol.nombre}
-                                                    </Typography>
-                                                </Box>
+                                                <Typography variant="body2" fontWeight={600} color={theme.palette.text.primary}>
+                                                    {rol.nombre}
+                                                </Typography>
                                             </TableCell>
 
                                             <TableCell sx={{ py: 1.5 }}>
@@ -403,14 +392,15 @@ const ListarRol = () => {
                                                 <Chip
                                                     label={`${rol.permisos?.length || 0} permisos`}
                                                     size="small"
+                                                    variant="outlined"
                                                     sx={{
-                                                        backgroundColor: theme.palette.primary.main,
-                                                        color: 'white',
+                                                        backgroundColor: 'transparent',
+                                                        color: theme.palette.primary.main,
                                                         fontWeight: 600,
                                                         fontSize: '0.72rem',
                                                         height: 22,
                                                         borderRadius: 10,
-                                                        border: 'none',
+                                                        borderColor: theme.palette.divider,
                                                     }}
                                                 />
                                             </TableCell>

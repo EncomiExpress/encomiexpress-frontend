@@ -11,6 +11,7 @@ import {
 const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
   const [formData, setFormData] = useState({
     nombre: '',
+    descripcion: '',
     permisos: []
   })
   const [mensaje, setMensaje] = useState('')
@@ -25,6 +26,23 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
   const theme = useTheme()
 
   const modulos = Object.entries(MODULOS)
+
+  const getPermisoLabel = (permiso) => {
+    const labels = {
+      'listar_usuario': 'Listar', 'registrar_usuario': 'Registrar', 'consultar_usuario': 'Consultar', 'actualizar_usuario': 'Actualizar', 'inhabilitar_usuario': 'Inhabilitar',
+      'listar_rol': 'Listar', 'registrar_rol': 'Registrar', 'consultar_rol': 'Consultar', 'actualizar_rol': 'Actualizar', 'inhabilitar_rol': 'Inhabilitar',
+      'listar_cliente': 'Listar', 'registrar_cliente': 'Registrar', 'consultar_cliente': 'Consultar', 'actualizar_cliente': 'Actualizar', 'inhabilitar_cliente': 'Inhabilitar',
+      'listar_propietario': 'Listar', 'registrar_propietario': 'Registrar', 'consultar_propietario': 'Consultar', 'actualizar_propietario': 'Actualizar', 'inhabilitar_propietario': 'Inhabilitar',
+      'listar_vehiculo': 'Listar', 'registrar_vehiculo': 'Registrar', 'consultar_vehiculo': 'Consultar', 'actualizar_vehiculo': 'Actualizar',
+      'listar_conductor': 'Listar', 'registrar_conductor': 'Registrar', 'consultar_conductor': 'Consultar', 'actualizar_conductor': 'Actualizar',
+      'listar_destino': 'Listar', 'registrar_destino': 'Registrar', 'consultar_destino': 'Consultar', 'actualizar_destino': 'Actualizar',
+      'listar_ruta': 'Listar', 'registrar_ruta': 'Registrar', 'consultar_ruta': 'Consultar', 'actualizar_ruta': 'Actualizar',
+      'listar_anticipo': 'Listar', 'registrar_anticipo': 'Registrar', 'consultar_anticipo': 'Consultar', 'actualizar_anticipo': 'Actualizar',
+      'listar_encomienda': 'Listar', 'registrar_encomienda': 'Registrar', 'consultar_encomienda': 'Consultar', 'actualizar_encomienda': 'Actualizar',
+      'ver_dashboard': 'Ver',
+    }
+    return labels[permiso] || permiso
+  }
 
   // Cargar permisos disponibles desde el backend al montar
   useEffect(() => {
@@ -41,6 +59,7 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
     if (rolProp) {
       const nuevoForm = {
         nombre: rolProp.nombre || '',
+        descripcion: rolProp.descripcion || '',
         permisos: (rolProp.permisos || []).map(p => typeof p === 'string' ? p : p.nombre)
       }
       setFormData(nuevoForm)
@@ -54,6 +73,7 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
     if (formOriginal) {
       setSinCambios(
         formData.nombre === formOriginal.nombre &&
+        formData.descripcion === formOriginal.descripcion &&
         JSON.stringify(formData.permisos.sort()) === JSON.stringify(formOriginal.permisos.sort())
       )
     }
@@ -90,7 +110,7 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
         })
         .filter(id => id !== null)
 
-      const respuesta = await actualizarRolBackend(rolProp.idRol || rolProp.id, formData.nombre, idsPermisos, rolProp.habilitado)
+      const respuesta = await actualizarRolBackend(rolProp.idRol || rolProp.id, formData.nombre, formData.descripcion, idsPermisos, rolProp.habilitado)
 
       if (respuesta.success) {
         onSuccess && onSuccess()
@@ -138,10 +158,22 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
             label="Nombre del Rol"
             value={formData.nombre}
             onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-            placeholder="Ej: Administrador"
+            placeholder="Ej: Gerente, Supervisor, Asesor comercial"
           />
 
-          <Typography variant="subtitle1" sx={{ mt: 2, mb: 1, fontWeight: 700, color: theme.palette.text.primary }}>
+          <Box sx={{ mb: 2, mt: 2 }}>
+            <FormField
+              label="Descripción (opcional)"
+              name="descripcion"
+              value={formData.descripcion}
+              onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
+              placeholder="Descripción del rol"
+              multiline
+              rows={2}
+            />
+          </Box>
+
+          <Typography variant="subtitle1" sx={{ mt: 1, mb: 1, fontWeight: 700, color: theme.palette.text.primary }}>
             Permisos del Rol
           </Typography>
 
@@ -209,7 +241,7 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
                 <Box sx={{ p: 1.5, backgroundColor: 'white' }}>
                   <Grid container spacing={0.5}>
                     {modulo.permisos.map((permiso) => (
-                      <Grid size={{ xs: 6, sm: 4, md: 3 }} key={permiso}>
+                      <Grid size={{ xs: 6, sm: 4, md: 2 }} key={permiso}>
                         <FormControlLabel
                           control={
                             <Checkbox
@@ -229,7 +261,7 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
                           }
                           label={
                             <Typography variant="caption">
-                              {permiso.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
+                              {getPermisoLabel(permiso)}
                             </Typography>
                           }
                         />
@@ -244,17 +276,18 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
       </DialogContent>
       <Box sx={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        mb: 2, pt: 2, pr: 3, borderTop: `1px solid ${theme.palette.divider}`,
+        mb: 2, pt: 2, px: 3, borderTop: `1px solid ${theme.palette.divider}`,
       }}>
-        <Box />
-        <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
           <Button onClick={onClose} disableRipple
             sx={{
               textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 2,
+              border: `1px solid ${theme.palette.divider}`,
+              px: 2.5,
               '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary },
             }}>
             Cancelar
           </Button>
+        <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
           <Button onClick={handleSubmit} variant="contained" disableRipple
             disabled={enviando}
             endIcon={enviando ? undefined : <SaveOutlined />}

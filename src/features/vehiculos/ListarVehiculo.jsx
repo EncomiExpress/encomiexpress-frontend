@@ -68,6 +68,33 @@ const FILTROS_HABILITADO = [
     { value: 'inhabilitado', label: 'Inhabilitado' },
 ]
 
+const PlacaDisplay = ({ placa, theme }) => {
+    const letras = placa?.slice(0, 3) ?? ''
+    const numeros = placa?.slice(3) ?? ''
+    const c = theme.palette.primary.main
+    return (
+        <Box sx={{
+            position: 'relative',
+            width: 60,
+            height: 25,
+            backgroundColor: alpha(c, 0.07),
+            border: `1.5px solid ${alpha(c, 0.28)}`,
+            borderRadius: '4px',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+        }}>
+                <Typography sx={{ fontWeight: 800, fontSize: '0.8rem', color: c, lineHeight: 1, fontFamily: "'Arial Narrow', Arial, sans-serif" }}>
+                    {letras}
+                </Typography>
+                <Box sx={{ width: 3, height: 3, backgroundColor: alpha(c, 0.5), borderRadius: '50%', mx: '2px', flexShrink: 0 }} />
+                <Typography sx={{ fontWeight: 700, fontSize: '0.8rem', color: c, lineHeight: 1, fontFamily: "'Arial Narrow', Arial, sans-serif" }}>
+                    {numeros}
+                </Typography>
+        </Box>
+    )
+}
+
 const RutasMiniTabla = ({ rutas, theme }) => (
     <Paper elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 2, overflow: 'hidden', mt: 1.5 }}>
         <TableContainer sx={{ maxHeight: 140 }}>
@@ -544,16 +571,7 @@ const ListarTransporte = () => {
                                         }}
                                     >
                                         <TableCell sx={{ py: 1.5 }}>
-                                            <Chip
-                                                label={transporte.placa}
-                                                size="small"
-                                                sx={{
-                                                    fontWeight: 600,
-                                                    backgroundColor: '#FEF2F2',
-                                                    color: theme.palette.primary.main,
-                                                    fontSize: '0.75rem',
-                                                }}
-                                            />
+                                            <PlacaDisplay placa={transporte.placa} theme={theme} />
                                         </TableCell>
                                         <TableCell sx={{ py: 1.5 }}>{transporte.marca}</TableCell>
                                         <TableCell sx={{ py: 1.5 }}>{transporte.modelo}</TableCell>

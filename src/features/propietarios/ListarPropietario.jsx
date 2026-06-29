@@ -332,7 +332,7 @@ const ListarPropietario = () => {
                                                         <EditOutlinedIcon sx={{ fontSize: 18 }} />
                                                     </IconButton>
                                                 </Tooltip>
-                                                {tienePermiso(PERMISOS.GESTION_TRANSPORTE) && (
+                                                {tienePermiso(PERMISOS.INHABILITAR_PROPIETARIO) && (
                                                     <Tooltip title={propietario.habilitado ? 'Inhabilitar' : 'Habilitar'}>
                                                         <IconButton size="small"
                                                             onClick={() => solicitarToggle(propietario)}

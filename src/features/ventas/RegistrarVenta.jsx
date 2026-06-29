@@ -159,7 +159,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                 setForm(prev => ({
                     ...prev,
                     idRuta: value,
-                    destino: ruta.destino?.ciudad || 'Sin destino',
+                    destino: ruta.nombreRuta || 'Sin nombre',
                     valorServicio: tarifaBase,
                     impuestos,
                     total: tarifaBase + impuestos,
@@ -425,13 +425,15 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                             <FormSelect label="Ruta" name="idRuta" value={form.idRuta}
                                 onChange={handleChange} required error={errores.idRuta}>
-                                {rutasProgramadas
-                                    .filter(r => r.habilitado !== false)
-                                    .map(r => (
-                                        <MenuItem key={r.idRuta} value={r.idRuta}>
-                                            {r.destino?.ciudad || 'Sin destino'} — ${Number(r.destino?.tarifaBase || 0).toLocaleString()}
-                                        </MenuItem>
-                                    ))}
+                                {rutasProgramadas.filter(r => r.habilitado !== false).length === 0
+                                    ? <MenuItem disabled>No hay rutas programadas</MenuItem>
+                                    : rutasProgramadas
+                                        .filter(r => r.habilitado !== false)
+                                        .map(r => (
+                                            <MenuItem key={r.idRuta} value={r.idRuta}>
+                                                {r.nombreRuta || 'Sin nombre'} — ${Number(r.destino?.tarifaBase || 0).toLocaleString()}
+                                            </MenuItem>
+                                        ))}
                             </FormSelect>
                             <TextField fullWidth label="Fecha estimada de entrega" name="fechaEstimadaEntrega"
                                 type="date" value={form.fechaEstimadaEntrega} onChange={handleChange} required

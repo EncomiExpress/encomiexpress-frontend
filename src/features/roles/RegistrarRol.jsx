@@ -98,6 +98,7 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
       'listar_rol': 'Listar',
       'consultar_rol': 'Consultar',
       'actualizar_rol': 'Actualizar',
+      'inhabilitar_rol': 'Inhabilitar',
       'registrar_cliente': 'Registrar',
       'listar_cliente': 'Listar',
       'consultar_cliente': 'Consultar',
@@ -127,7 +128,12 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
       'listar_anticipo': 'Listar',
       'consultar_anticipo': 'Consultar',
       'actualizar_anticipo': 'Actualizar',
-      'registrar_venta': 'Registrar',
+      'listar_propietario': 'Listar',
+      'registrar_propietario': 'Registrar',
+      'consultar_propietario': 'Consultar',
+      'actualizar_propietario': 'Actualizar',
+      'inhabilitar_propietario': 'Inhabilitar',
+      'ver_dashboard': 'Ver',
     }
     return labels[permiso] || permiso
   }
@@ -173,7 +179,7 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
               name="nombre"
               value={formData.nombre}
               onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-              placeholder="Ej: Gerente, Vendedor, Conductor"
+              placeholder="Ej: Gerente, Supervisor, Asesor comercial"
               required
             />
           </Box>
@@ -258,7 +264,7 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
                 <Box sx={{ p: 1.5, backgroundColor: 'white' }}>
                   <Grid container spacing={0.5}>
                     {modulo.permisos.map((permiso) => (
-                      <Grid size={{ xs: 6, sm: 4, md: 3 }} key={permiso}>
+                      <Grid size={{ xs: 6, sm: 4, md: 2 }} key={permiso}>
                         <FormControlLabel
                           control={
                             <Checkbox
@@ -278,7 +284,7 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
                           }
                           label={
                             <Typography variant="caption">
-                              {permiso.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
+                              {getPermisoLabel(permiso)}
                             </Typography>
                           }
                         />
@@ -294,17 +300,18 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
 
       <Box sx={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        mb: 2, pt: 2, pr: 3, borderTop: `1px solid ${theme.palette.divider}`,
+        mb: 2, pt: 2, px: 3, borderTop: `1px solid ${theme.palette.divider}`,
       }}>
-        <Box />
-        <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
           <Button onClick={handleClose} disableRipple
             sx={{
               textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 2,
+              border: `1px solid ${theme.palette.divider}`,
+              px: 2.5,
               '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary },
             }}>
             Cancelar
           </Button>
+        <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
           <Button onClick={handleSubmit} variant="contained" disableRipple
             disabled={enviando}
             endIcon={enviando ? undefined : <CheckOutlined />}

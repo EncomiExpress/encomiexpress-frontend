@@ -126,9 +126,9 @@ const AppRoutes = () => {
       <Route path="/vehiculos/actualizar/:id" element={<PrivateRoute permisosRequeridos={[PERMISOS.ACTUALIZAR_VEHICULO]}><ActualizarVehiculo /></PrivateRoute>} />
 
        {/* Transporte - Propietarios */}
-       <Route path="/transporte/propietarios" element={<PrivateRoute permisosRequeridos={[PERMISOS.GESTION_TRANSPORTE]}><ListarPropietario /></PrivateRoute>} />
-       <Route path="/transporte/propietarios/registrar" element={<PrivateRoute permisosRequeridos={[PERMISOS.GESTION_TRANSPORTE]}><RegistrarPropietario /></PrivateRoute>} />
-       <Route path="/transporte/propietarios/actualizar/:id" element={<PrivateRoute permisosRequeridos={[PERMISOS.GESTION_TRANSPORTE]}><ActualizarPropietario /></PrivateRoute>} />
+       <Route path="/transporte/propietarios" element={<PrivateRoute permisosRequeridos={[PERMISOS.LISTAR_PROPIETARIO]}><ListarPropietario /></PrivateRoute>} />
+       <Route path="/transporte/propietarios/registrar" element={<PrivateRoute permisosRequeridos={[PERMISOS.REGISTRAR_PROPIETARIO]}><RegistrarPropietario /></PrivateRoute>} />
+       <Route path="/transporte/propietarios/actualizar/:id" element={<PrivateRoute permisosRequeridos={[PERMISOS.ACTUALIZAR_PROPIETARIO]}><ActualizarPropietario /></PrivateRoute>} />
 
        {/* Transporte - Conductores */}
        <Route path="/transporte/conductores" element={<PrivateRoute permisosRequeridos={[PERMISOS.LISTAR_CONDUCTOR]}><ListarConductor /></PrivateRoute>} />

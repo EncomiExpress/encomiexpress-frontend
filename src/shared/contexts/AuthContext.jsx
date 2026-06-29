@@ -14,17 +14,17 @@ export const ROLES = {
 }
 
 export const MODULOS = {
-  DASHBOARD: { nombre: 'Dashboard', permisos: ['ver_dashboard'] },
-  USUARIOS: { nombre: 'Usuarios', permisos: ['listar_usuario', 'registrar_usuario', 'consultar_usuario', 'actualizar_usuario', 'inhabilitar_usuario'] },
-  ROLES: { nombre: 'Roles', permisos: ['listar_rol', 'registrar_rol', 'consultar_rol', 'actualizar_rol', 'inhabilitar_rol'] },
-  CLIENTES: { nombre: 'Clientes', permisos: ['listar_cliente', 'registrar_cliente', 'consultar_cliente', 'actualizar_cliente', 'inhabilitar_cliente'] },
-  VEHICULOS: { nombre: 'Vehículos', permisos: ['listar_vehiculo', 'registrar_vehiculo', 'consultar_vehiculo', 'actualizar_vehiculo'] },
-  CONDUCTORES: { nombre: 'Conductores', permisos: ['listar_conductor', 'registrar_conductor', 'consultar_conductor', 'actualizar_conductor'] },
-  DESTINOS: { nombre: 'Destinos', permisos: ['listar_destino', 'registrar_destino', 'consultar_destino', 'actualizar_destino'] },
-  RUTAS: { nombre: 'Rutas', permisos: ['listar_ruta', 'registrar_ruta', 'consultar_ruta', 'actualizar_ruta'] },
-  ANTICIPOS: { nombre: 'Anticipos', permisos: ['listar_anticipo', 'registrar_anticipo', 'consultar_anticipo', 'actualizar_anticipo'] },
-  VENTAS: { nombre: 'Ventas', permisos: ['listar_encomienda', 'registrar_encomienda', 'consultar_encomienda', 'actualizar_encomienda'] },
-  TRANSPORTE: { nombre: 'Transporte', permisos: ['gestion_transporte'] },
+  DASHBOARD:     { nombre: 'Dashboard',     permisos: ['ver_dashboard'] },
+  ROLES:         { nombre: 'Roles',         permisos: ['listar_rol', 'registrar_rol', 'consultar_rol', 'actualizar_rol', 'inhabilitar_rol'] },
+  USUARIOS:      { nombre: 'Usuarios',      permisos: ['listar_usuario', 'registrar_usuario', 'consultar_usuario', 'actualizar_usuario', 'inhabilitar_usuario'] },
+  PROPIETARIOS:  { nombre: 'Propietarios',  permisos: ['listar_propietario', 'registrar_propietario', 'consultar_propietario', 'actualizar_propietario', 'inhabilitar_propietario'] },
+  CONDUCTORES:   { nombre: 'Conductores',   permisos: ['listar_conductor', 'registrar_conductor', 'consultar_conductor', 'actualizar_conductor'] },
+  VEHICULOS:   { nombre: 'Vehículos',   permisos: ['listar_vehiculo', 'registrar_vehiculo', 'consultar_vehiculo', 'actualizar_vehiculo'] },
+  DESTINOS:    { nombre: 'Destinos',    permisos: ['listar_destino', 'registrar_destino', 'consultar_destino', 'actualizar_destino'] },
+  RUTAS:       { nombre: 'Rutas',       permisos: ['listar_ruta', 'registrar_ruta', 'consultar_ruta', 'actualizar_ruta'] },
+  ANTICIPOS:   { nombre: 'Anticipos',   permisos: ['listar_anticipo', 'registrar_anticipo', 'consultar_anticipo', 'actualizar_anticipo'] },
+  CLIENTES:    { nombre: 'Clientes',    permisos: ['listar_cliente', 'registrar_cliente', 'consultar_cliente', 'actualizar_cliente', 'inhabilitar_cliente'] },
+  VENTAS:      { nombre: 'Ventas',      permisos: ['listar_encomienda', 'registrar_encomienda', 'consultar_encomienda', 'actualizar_encomienda'] },
 }
 
 export const PERMISOS = {
@@ -51,11 +51,15 @@ export const PERMISOS = {
   REGISTRAR_VEHICULO: 'registrar_vehiculo',
   ACTUALIZAR_VEHICULO: 'actualizar_vehiculo',
   CONSULTAR_VEHICULO: 'consultar_vehiculo',
-  GESTION_TRANSPORTE: 'gestion_transporte',
   LISTAR_ENCOMIENDA: 'listar_encomienda',
   REGISTRAR_ENCOMIENDA: 'registrar_encomienda',
   ACTUALIZAR_ENCOMIENDA: 'actualizar_encomienda',
   CONSULTAR_ENCOMIENDA: 'consultar_encomienda',
+  LISTAR_PROPIETARIO: 'listar_propietario',
+  REGISTRAR_PROPIETARIO: 'registrar_propietario',
+  ACTUALIZAR_PROPIETARIO: 'actualizar_propietario',
+  CONSULTAR_PROPIETARIO: 'consultar_propietario',
+  INHABILITAR_PROPIETARIO: 'inhabilitar_propietario',
   LISTAR_CONDUCTOR: 'listar_conductor',
   REGISTRAR_CONDUCTOR: 'registrar_conductor',
   ACTUALIZAR_CONDUCTOR: 'actualizar_conductor',
@@ -285,9 +289,9 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
-  const actualizarRolBackend = async (id, nombre, permisos, habilitado) => {
+  const actualizarRolBackend = async (id, nombre, descripcion, permisos, habilitado) => {
     try {
-      const data = await rolService.updateRol(id, nombre, permisos, habilitado)
+      const data = await rolService.updateRol(id, nombre, descripcion, permisos, habilitado)
       return { success: true, data: data.data, message: data.message }
     } catch (err) {
       return { success: false, message: err.message || 'Error de conexión' }

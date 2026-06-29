@@ -10,7 +10,6 @@ import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined'
 import PaymentOutlinedIcon from '@mui/icons-material/PaymentOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import { getEstadoColorVenta as getEstadoColor } from '../../shared/utils/estadoColors.js'
-import { formatRutaDestino } from '../../shared/utils/formatters.js'
 
 const getPagoColor = (estadoPago, theme) =>
     estadoPago === 'Pagado'
@@ -136,7 +135,7 @@ const ModalConsultarVenta = ({ venta, onClose }) => {
                     <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
                         Información de pago y ruta de envío
                     </Typography>
-                    <CampoFila label="Ruta" value={formatRutaDestino(venta.ruta?.destino)} />
+                    <CampoFila label="Ruta" value={venta.ruta?.nombreRuta || '—'} />
                     <CampoFila label="Método de pago" value={venta.metodoPago} />
                     <CampoFila label="Valor servicio" value={`$${venta.valorServicio?.toLocaleString()}`} />
                     <CampoFila label="Total" value={`$${venta.total?.toLocaleString()}`} />

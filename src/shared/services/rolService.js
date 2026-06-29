@@ -12,8 +12,8 @@ export const getPermisos = () => fetchWithAuth('/roles/permisos')
 export const createRol = (nombre, descripcion, permisos) =>
   fetchWithAuth('/roles', { method: 'POST', body: JSON.stringify({ nombre, descripcion, permisos }) })
 
-export const updateRol = (id, nombre, permisos, habilitado) =>
-  fetchWithAuth(`/roles/${id}`, { method: 'PUT', body: JSON.stringify({ nombre, permisos, habilitado }) })
+export const updateRol = (id, nombre, descripcion, permisos, habilitado) =>
+  fetchWithAuth(`/roles/${id}`, { method: 'PUT', body: JSON.stringify({ nombre, descripcion, permisos, habilitado }) })
 
 export const toggleHabilitadoRol = (id) =>
   fetchWithAuth(`/roles/${id}/toggle-habilitado`, { method: 'PATCH' })

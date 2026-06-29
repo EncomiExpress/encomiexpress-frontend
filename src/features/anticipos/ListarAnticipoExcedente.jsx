@@ -499,43 +499,62 @@ const ListarAnticipoExcedente = () => {
 
                                             {/* Ruta */}
                                             <TableCell sx={{ py: 1.5 }}>
-                                                {anticipo.ruta ? (
-                                                    <>
-                                                        <Typography variant="body2" sx={{ fontSize: '0.75rem', color: theme.palette.text.secondary, lineHeight: 1.2 }} noWrap>
-                                                            {anticipo.ruta.destino?.nombre || '—'}
-                                                        </Typography>
-                                                        <Typography variant="body2" fontWeight={500} sx={{ fontSize: '0.8rem', color: theme.palette.text.primary }} noWrap>
-                                                            {anticipo.ruta.nombreRuta || anticipo.ruta.vehiculo?.placa || '—'}
-                                                        </Typography>
-                                                    </>
-                                                ) : (
-                                                    <Typography variant="body2" sx={{ fontSize: '0.8rem', color: theme.palette.text.secondary }}>Sin ruta</Typography>
-                                                )}
+                                                <Typography variant="body2" fontWeight={500} sx={{ fontSize: '0.8rem', color: theme.palette.text.primary }} noWrap>
+                                                    {anticipo.ruta?.nombreRuta || '—'}
+                                                </Typography>
                                             </TableCell>
 
                                             {/* Anticipo */}
                                             <TableCell sx={{ py: 1.5 }}>
-                                                <Typography variant="body2" fontWeight={600} color={theme.palette.secondary.main} fontSize="0.82rem">
-                                                    {formatMoney(anticipo.valorAnticipo)}
-                                                </Typography>
+                                                <Chip
+                                                    label={formatMoney(anticipo.valorAnticipo)}
+                                                    size="small"
+                                                    sx={{
+                                                        fontWeight: 600,
+                                                        backgroundColor: alpha(theme.palette.secondary.main, 0.1),
+                                                        color: theme.palette.secondary.main,
+                                                        fontSize: '0.7rem',
+                                                        borderRadius: '2px',
+                                                        height: 24,
+                                                    }}
+                                                />
                                             </TableCell>
 
                                             {/* Gastado */}
                                             <TableCell sx={{ py: 1.5 }}>
-                                                <Typography variant="body2"
-                                                    color={anticipo.valorGastado ? theme.palette.text.primary : theme.palette.text.secondary}
-                                                    fontSize="0.82rem">
-                                                    {anticipo.valorGastado ? formatMoney(anticipo.valorGastado) : '—'}
-                                                </Typography>
+                                                {anticipo.valorGastado ? (
+                                                    <Chip
+                                                        label={`-${formatMoney(anticipo.valorGastado)}`}
+                                                        size="small"
+                                                        sx={{
+                                                            fontWeight: 600,
+                                                            backgroundColor: alpha(theme.palette.warning.main, 0.1),
+                                                            color: theme.palette.warning.dark,
+                                                            fontSize: '0.7rem',
+                                                            borderRadius: '2px',
+                                                            height: 24,
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <Typography variant="body2" color={theme.palette.text.secondary} fontSize="0.82rem">—</Typography>
+                                                )}
                                             </TableCell>
 
                                             {/* Excedente / Faltante */}
                                             <TableCell sx={{ py: 1.5 }}>
                                                 {anticipo.valorGastado ? (
-                                                    <Typography variant="body2" fontWeight={600} fontSize="0.82rem"
-                                                        color={excedente >= 0 ? '#2E7D32' : theme.palette.primary.main}>
-                                                        {excedente >= 0 ? '+' : '-'}{formatMoney(Math.abs(excedente))}
-                                                    </Typography>
+                                                    <Chip
+                                                        label={`${excedente >= 0 ? '+' : '-'}${formatMoney(Math.abs(excedente))}`}
+                                                        size="small"
+                                                        sx={{
+                                                            fontWeight: 600,
+                                                            backgroundColor: alpha(excedente >= 0 ? theme.palette.success.main : theme.palette.primary.main, 0.1),
+                                                            color: excedente >= 0 ? theme.palette.success.dark : theme.palette.primary.main,
+                                                            fontSize: '0.7rem',
+                                                            borderRadius: '2px',
+                                                            height: 24,
+                                                        }}
+                                                    />
                                                 ) : (
                                                     <Typography variant="body2" color={theme.palette.text.secondary} fontSize="0.82rem">—</Typography>
                                                 )}
