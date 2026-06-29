@@ -1,9 +1,8 @@
 import { useTheme } from '@mui/material/styles'
 import { useState, useEffect, useRef } from 'react'
-import { Box, TextField, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Snackbar, Alert, Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material'
-import { DirectionsCar, Person, Business, Event, Speed, SaveOutlined, ArrowBackOutlined, ArrowForwardOutlined, Close } from '@mui/icons-material'
+import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Snackbar, Alert, Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material'
+import { DirectionsCar, Business, Event, Speed, SaveOutlined, ArrowBackOutlined, ArrowForwardOutlined, Close } from '@mui/icons-material'
 import { useVehiculo } from '../../shared/contexts/VehiculoContext.jsx'
-import { useConductor } from '../../shared/contexts/ConductorContext.jsx'
 import { usePropietario } from '../../shared/contexts/PropietarioContext.jsx'
 import { 
   FormField, FormSelect,
@@ -17,17 +16,16 @@ const steps = ['Datos del Vehículo', 'Documentación y Estado', 'Confirmación'
 const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSuccess }) => {
   const { getVehiculoById, actualizarVehiculo } = useVehiculo()
   const theme = useTheme()
-  const { conductores } = useConductor()
   const { propietarios } = usePropietario()
-  
+
   const [formData, setFormData] = useState({
-    idConductor: '',
     idPropietario: '',
     placa: '',
     marca: '',
     modelo: '',
     color: '',
     tipo: '',
+    origen: 'Propio',
     capacidad: '',
     estado: 'Disponible',
     vencimientoSOAT: '',
@@ -77,8 +75,10 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
       if (!formData.capacidad) e.capacidad = 'La capacidad es obligatoria'
     }
     if (step === 1) {
-      if (!formData.idConductor) e.idConductor = 'El conductor es obligatorio'
       if (!formData.idPropietario) e.idPropietario = 'El propietario es obligatorio'
+      if (!formData.vencimientoSOAT) e.vencimientoSOAT = 'La fecha de vencimiento del SOAT es obligatoria'
+      if (!formData.vencimientoRevisionTecnica) e.vencimientoRevisionTecnica = 'La fecha de vencimiento de la Revisión Técnica es obligatoria'
+      if (!formData.vencimientoSeguroTerceros) e.vencimientoSeguroTerceros = 'La fecha de vencimiento del Seguro de Terceros es obligatoria'
     }
     return e
   }
@@ -119,7 +119,6 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
         idVehiculo: parseInt(transporteProp?.idVehiculo),
         ...formData,
         capacidad: parseFloat(formData.capacidad),
-        idConductor: parseInt(formData.idConductor),
         idPropietario: parseInt(formData.idPropietario)
       })
       setSuccess(true)
@@ -224,21 +223,14 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
         return (
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
             <FormSelect
-              label="Conductor"
-              name="idConductor"
-              value={formData.idConductor}
+              label="Origen"
+              name="origen"
+              value={formData.origen}
               onChange={handleChange}
               required
-              error={errores.idConductor}
-              helperText={errores.idConductor}
             >
-              {conductores
-                .filter(c => c.habilitado !== false)
-                .map((c) => (
-                  <MenuItem key={c.idConductor} value={c.idConductor}>
-                    {c.nombre} {c.apellido}
-                  </MenuItem>
-                ))}
+              <MenuItem value="Propio">Propio</MenuItem>
+              <MenuItem value="Tercerizado">Tercerizado</MenuItem>
             </FormSelect>
             <FormSelect
               label="Propietario"
@@ -274,7 +266,10 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
               type="date"
               value={formData.vencimientoSOAT}
               onChange={handleChange}
+              required
               icon={Event}
+              error={!!errores.vencimientoSOAT}
+              helperText={errores.vencimientoSOAT}
               InputLabelProps={{ shrink: true }}
             />
             <FormField
@@ -283,7 +278,10 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
               type="date"
               value={formData.vencimientoRevisionTecnica}
               onChange={handleChange}
+              required
               icon={Event}
+              error={!!errores.vencimientoRevisionTecnica}
+              helperText={errores.vencimientoRevisionTecnica}
               InputLabelProps={{ shrink: true }}
             />
             <FormField
@@ -292,7 +290,10 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
               type="date"
               value={formData.vencimientoSeguroTerceros}
               onChange={handleChange}
+              required
               icon={Event}
+              error={!!errores.vencimientoSeguroTerceros}
+              helperText={errores.vencimientoSeguroTerceros}
               InputLabelProps={{ shrink: true }}
             />
           </Box>
@@ -330,7 +331,7 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
                   <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Documentación y Estado</Typography>
                 </Box>
                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la documentación</Typography>
-                <ConfirmRow label="Conductor" value={(() => { const c = conductores.find(c => c.idConductor === formData.idConductor); return c ? `${c.nombre} ${c.apellido}` : '—' })()} />
+                <ConfirmRow label="Origen" value={formData.origen} />
                 <ConfirmRow label="Propietario" value={(() => { const p = propietarios.find(p => p.idPropietario === formData.idPropietario); return p ? `${p.nombre} ${p.apellido}` : '—' })()} />
                 <ConfirmRow label="Estado" value={formData.estado} />
                 <ConfirmRow label="SOAT" value={formData.vencimientoSOAT} />

@@ -61,7 +61,12 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
         if (name === 'nombre' || name === 'apellido') {
             value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
         }
-        if (name === 'numeroIdentificacion' || name === 'telefono') {
+        if (name === 'numeroIdentificacion') {
+            value = form.tipoIdentificacion === 'NIT'
+                ? value.replace(/[^0-9-]/g, '')
+                : value.replace(/[^0-9]/g, '')
+        }
+        if (name === 'telefono') {
             value = value.replace(/[^0-9]/g, '')
         }
         if (name === 'emailLocal') {
@@ -79,12 +84,13 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
         const soloNumeros = /^\d+$/
 
         if (step === 0) {
+            const esNIT = form.tipoIdentificacion === 'NIT'
             if (!form.tipoIdentificacion) e.tipoIdentificacion = 'Selecciona un tipo de documento'
             if (!form.numeroIdentificacion.trim()) e.numeroIdentificacion = 'El número de documento es obligatorio'
-            else if (!soloNumeros.test(form.numeroIdentificacion)) e.numeroIdentificacion = 'Solo se permiten números'
-            if (!form.nombre.trim()) e.nombre = 'El nombre es obligatorio'
-            else if (!soloLetras.test(form.nombre)) e.nombre = 'El nombre solo puede contener letras'
-            if (form.tipoIdentificacion !== 'NIT' && !form.apellido?.trim()) e.apellido = 'El apellido es obligatorio'
+            else if (!esNIT && !soloNumeros.test(form.numeroIdentificacion)) e.numeroIdentificacion = 'Solo se permiten números'
+            if (!form.nombre.trim()) e.nombre = esNIT ? 'La razón social es obligatoria' : 'El nombre es obligatorio'
+            else if (!esNIT && !soloLetras.test(form.nombre)) e.nombre = 'El nombre solo puede contener letras'
+            if (!esNIT && !form.apellido?.trim()) e.apellido = 'El apellido es obligatorio'
         }
 
         if (step === 1) {
@@ -114,6 +120,7 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
             const { emailLocal, emailDominio, ...resto } = form
             await registrarPropietario({
                 ...resto,
+                apellido: form.tipoIdentificacion === 'NIT' ? '' : form.apellido,
                 email: emailLocal ? emailLocal + emailDominio : '',
             })
             setExito(true)
@@ -151,14 +158,18 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
                             onChange={handleChange} required error={errores.numeroIdentificacion}
                             helperText={errores.numeroIdentificacion} icon={BadgeOutlinedIcon}
                             inputProps={{ maxLength: 15 }} />
-                        <FormField label="Nombres" name="nombre" value={form.nombre} onChange={handleChange}
-                            required error={errores.nombre} helperText={errores.nombre} icon={PersonOutlinedIcon}
+                        <FormField
+                            label={form.tipoIdentificacion === 'NIT' ? 'Razón Social' : 'Nombres'}
+                            name="nombre" value={form.nombre} onChange={handleChange}
+                            required error={errores.nombre} helperText={errores.nombre}
+                            icon={form.tipoIdentificacion === 'NIT' ? BusinessOutlinedIcon : PersonOutlinedIcon}
                             inputProps={{ maxLength: 50 }}
-                            placeholder={form.tipoIdentificacion === 'NIT' ? 'Razón Social' : 'Ej: Carlos'} />
-                        <FormField label="Apellidos" name="apellido" value={form.apellido} onChange={handleChange}
-                            error={errores.apellido} helperText={errores.apellido} icon={PersonOutlinedIcon}
-                            inputProps={{ maxLength: 50 }}
-                            placeholder={form.tipoIdentificacion === 'NIT' ? 'Opcional' : 'Ej: Gómez López'} />
+                            placeholder={form.tipoIdentificacion === 'NIT' ? 'Ej: Transportes XYZ S.A.S' : 'Ej: Carlos'} />
+                        {form.tipoIdentificacion !== 'NIT' && (
+                            <FormField label="Apellidos" name="apellido" value={form.apellido} onChange={handleChange}
+                                required error={errores.apellido} helperText={errores.apellido} icon={PersonOutlinedIcon}
+                                inputProps={{ maxLength: 50 }} placeholder="Ej: Gómez López" />
+                        )}
                     </Box>
                 )
             case 1:
@@ -200,8 +211,9 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
                         <FormSelect label="Tipo de flota" name="tipoFlota" value={form.tipoFlota}
                             onChange={handleChange} error={errores.tipoFlota} helperText={errores.tipoFlota}>
                             <MenuItem value="">Sin especificar</MenuItem>
-                            <MenuItem value="Liviana">Liviana</MenuItem>
-                            <MenuItem value="Pesada">Pesada</MenuItem>
+                            <MenuItem value="Carga Liviana">Carga Liviana</MenuItem>
+                            <MenuItem value="Carga Pesada">Carga Pesada</MenuItem>
+                            <MenuItem value="Pasajeros">Pasajeros</MenuItem>
                             <MenuItem value="Mixta">Mixta</MenuItem>
                         </FormSelect>
                     </Box>
@@ -223,8 +235,10 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la información personal</Typography>
                                 <ConfirmRow label="Tipo de documento" value={getTipoLabel(form.tipoIdentificacion)} />
                                 <ConfirmRow label="N° de documento" value={form.numeroIdentificacion} />
-                                <ConfirmRow label="Nombre" value={form.nombre} />
-                                <ConfirmRow label="Apellido" value={form.apellido || 'N/A'} />
+                                <ConfirmRow label={form.tipoIdentificacion === 'NIT' ? 'Razón Social' : 'Nombre'} value={form.nombre} />
+                                {form.tipoIdentificacion !== 'NIT' && (
+                                    <ConfirmRow label="Apellido" value={form.apellido || 'N/A'} />
+                                )}
                             </Paper>
                             <Paper elevation={0} sx={{ flex: 1, minWidth: 0, borderRadius: 2, p: 2.5, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white' }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>

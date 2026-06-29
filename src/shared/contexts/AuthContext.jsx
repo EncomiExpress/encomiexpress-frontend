@@ -14,17 +14,17 @@ export const ROLES = {
 }
 
 export const MODULOS = {
-  DASHBOARD:     { nombre: 'Dashboard',     permisos: ['ver_dashboard'] },
-  ROLES:         { nombre: 'Roles',         permisos: ['listar_rol', 'registrar_rol', 'consultar_rol', 'actualizar_rol', 'inhabilitar_rol'] },
-  USUARIOS:      { nombre: 'Usuarios',      permisos: ['listar_usuario', 'registrar_usuario', 'consultar_usuario', 'actualizar_usuario', 'inhabilitar_usuario'] },
-  PROPIETARIOS:  { nombre: 'Propietarios',  permisos: ['listar_propietario', 'registrar_propietario', 'consultar_propietario', 'actualizar_propietario', 'inhabilitar_propietario'] },
-  CONDUCTORES:   { nombre: 'Conductores',   permisos: ['listar_conductor', 'registrar_conductor', 'consultar_conductor', 'actualizar_conductor'] },
-  VEHICULOS:   { nombre: 'Vehículos',   permisos: ['listar_vehiculo', 'registrar_vehiculo', 'consultar_vehiculo', 'actualizar_vehiculo'] },
-  DESTINOS:    { nombre: 'Destinos',    permisos: ['listar_destino', 'registrar_destino', 'consultar_destino', 'actualizar_destino'] },
-  RUTAS:       { nombre: 'Rutas',       permisos: ['listar_ruta', 'registrar_ruta', 'consultar_ruta', 'actualizar_ruta'] },
-  ANTICIPOS:   { nombre: 'Anticipos',   permisos: ['listar_anticipo', 'registrar_anticipo', 'consultar_anticipo', 'actualizar_anticipo'] },
-  CLIENTES:    { nombre: 'Clientes',    permisos: ['listar_cliente', 'registrar_cliente', 'consultar_cliente', 'actualizar_cliente', 'inhabilitar_cliente'] },
-  VENTAS:      { nombre: 'Ventas',      permisos: ['listar_encomienda', 'registrar_encomienda', 'consultar_encomienda', 'actualizar_encomienda'] },
+  DASHBOARD:    { nombre: 'Dashboard',    listar: null,                  permisos: ['ver_dashboard'] },
+  ROLES:        { nombre: 'Roles',        listar: 'listar_rol',          permisos: ['registrar_rol', 'consultar_rol', 'actualizar_rol', 'inhabilitar_rol'] },
+  USUARIOS:     { nombre: 'Usuarios',     listar: 'listar_usuario',      permisos: ['registrar_usuario', 'consultar_usuario', 'actualizar_usuario', 'inhabilitar_usuario'] },
+  PROPIETARIOS: { nombre: 'Propietarios', listar: 'listar_propietario',  permisos: ['registrar_propietario', 'consultar_propietario', 'actualizar_propietario', 'inhabilitar_propietario'] },
+  CONDUCTORES:  { nombre: 'Conductores',  listar: 'listar_conductor',    permisos: ['registrar_conductor', 'consultar_conductor', 'actualizar_conductor', 'inhabilitar_conductor'] },
+  VEHICULOS:    { nombre: 'Vehículos',    listar: 'listar_vehiculo',     permisos: ['registrar_vehiculo', 'consultar_vehiculo', 'actualizar_vehiculo', 'inhabilitar_vehiculo'] },
+  DESTINOS:     { nombre: 'Destinos',     listar: 'listar_destino',      permisos: ['registrar_destino', 'consultar_destino', 'actualizar_destino', 'inhabilitar_destino'] },
+  RUTAS:        { nombre: 'Rutas',        listar: 'listar_ruta',         permisos: ['registrar_ruta', 'consultar_ruta', 'actualizar_ruta', 'inhabilitar_ruta'] },
+  ANTICIPOS:    { nombre: 'Anticipos',    listar: 'listar_anticipo',     permisos: ['registrar_anticipo', 'consultar_anticipo', 'actualizar_anticipo', 'inhabilitar_anticipo'] },
+  CLIENTES:     { nombre: 'Clientes',     listar: 'listar_cliente',      permisos: ['registrar_cliente', 'consultar_cliente', 'actualizar_cliente', 'inhabilitar_cliente'] },
+  VENTAS:       { nombre: 'Ventas',       listar: 'listar_venta',        permisos: ['registrar_venta', 'consultar_venta', 'actualizar_venta', 'inhabilitar_venta'] },
 }
 
 export const PERMISOS = {
@@ -51,10 +51,10 @@ export const PERMISOS = {
   REGISTRAR_VEHICULO: 'registrar_vehiculo',
   ACTUALIZAR_VEHICULO: 'actualizar_vehiculo',
   CONSULTAR_VEHICULO: 'consultar_vehiculo',
-  LISTAR_ENCOMIENDA: 'listar_encomienda',
-  REGISTRAR_ENCOMIENDA: 'registrar_encomienda',
-  ACTUALIZAR_ENCOMIENDA: 'actualizar_encomienda',
-  CONSULTAR_ENCOMIENDA: 'consultar_encomienda',
+  LISTAR_VENTA: 'listar_venta',
+  REGISTRAR_VENTA: 'registrar_venta',
+  ACTUALIZAR_VENTA: 'actualizar_venta',
+  CONSULTAR_VENTA: 'consultar_venta',
   LISTAR_PROPIETARIO: 'listar_propietario',
   REGISTRAR_PROPIETARIO: 'registrar_propietario',
   ACTUALIZAR_PROPIETARIO: 'actualizar_propietario',
@@ -72,6 +72,12 @@ export const PERMISOS = {
   REGISTRAR_RUTA: 'registrar_ruta',
   ACTUALIZAR_RUTA: 'actualizar_ruta',
   CONSULTAR_RUTA: 'consultar_ruta',
+  INHABILITAR_CONDUCTOR: 'inhabilitar_conductor',
+  INHABILITAR_VEHICULO: 'inhabilitar_vehiculo',
+  INHABILITAR_DESTINO: 'inhabilitar_destino',
+  INHABILITAR_RUTA: 'inhabilitar_ruta',
+  INHABILITAR_ANTICIPO: 'inhabilitar_anticipo',
+  INHABILITAR_VENTA: 'inhabilitar_venta',
 }
 
 export const AuthProvider = ({ children }) => {
@@ -136,9 +142,21 @@ export const AuthProvider = ({ children }) => {
           return
         }
 
-        // Token válido — restaurar sesión
-        setToken(tokenGuardado)
-        setUsuario(JSON.parse(usuarioGuardado))
+        // Token válido — usar datos frescos del backend para reflejar cambios de permisos
+        const profileData = await res.json()
+        if (profileData.success && profileData.data) {
+          const perfilFresco = profileData.data
+          const rolNombre = typeof perfilFresco.rol === 'string'
+            ? perfilFresco.rol
+            : perfilFresco.rol?.nombre || null
+          const usuarioActualizado = { ...perfilFresco, rol: rolNombre ? { nombre: rolNombre } : null }
+          setToken(tokenGuardado)
+          setUsuario(usuarioActualizado)
+          localStorage.setItem(STORAGE_KEYS.USUARIO, JSON.stringify(usuarioActualizado))
+        } else {
+          setToken(tokenGuardado)
+          setUsuario(JSON.parse(usuarioGuardado))
+        }
       } catch {
         // Error de red — restaurar sesión de todos modos para no desloguear sin razón
         setToken(tokenGuardado)

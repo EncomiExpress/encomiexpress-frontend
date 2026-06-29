@@ -25,7 +25,36 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
   const { getPermisosBackend, actualizarRolBackend } = useAuth()
   const theme = useTheme()
 
-  const modulos = Object.entries(MODULOS)
+  const modulos = Object.entries(MODULOS).filter(([key]) => key !== 'ROLES')
+
+  const toggleModulo = (modulo, todosSeleccionados) => {
+    if (todosSeleccionados) {
+      setFormData(prev => ({
+        ...prev,
+        permisos: prev.permisos.filter(p => !modulo.permisos.includes(p) && p !== modulo.listar)
+      }))
+    } else {
+      const extras = modulo.listar ? [modulo.listar] : []
+      setFormData(prev => ({
+        ...prev,
+        permisos: [...new Set([...prev.permisos, ...modulo.permisos, ...extras])]
+      }))
+    }
+  }
+
+  const togglePermiso = (modulo, permiso, checked) => {
+    let nuevos = checked
+      ? [...formData.permisos, permiso]
+      : formData.permisos.filter(p => p !== permiso)
+    if (modulo.listar) {
+      if (checked && !nuevos.includes(modulo.listar)) {
+        nuevos = [...nuevos, modulo.listar]
+      } else if (!checked && !modulo.permisos.some(p => nuevos.includes(p))) {
+        nuevos = nuevos.filter(p => p !== modulo.listar)
+      }
+    }
+    setFormData({ ...formData, permisos: nuevos })
+  }
 
   const getPermisoLabel = (permiso) => {
     const labels = {
@@ -33,12 +62,12 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
       'listar_rol': 'Listar', 'registrar_rol': 'Registrar', 'consultar_rol': 'Consultar', 'actualizar_rol': 'Actualizar', 'inhabilitar_rol': 'Inhabilitar',
       'listar_cliente': 'Listar', 'registrar_cliente': 'Registrar', 'consultar_cliente': 'Consultar', 'actualizar_cliente': 'Actualizar', 'inhabilitar_cliente': 'Inhabilitar',
       'listar_propietario': 'Listar', 'registrar_propietario': 'Registrar', 'consultar_propietario': 'Consultar', 'actualizar_propietario': 'Actualizar', 'inhabilitar_propietario': 'Inhabilitar',
-      'listar_vehiculo': 'Listar', 'registrar_vehiculo': 'Registrar', 'consultar_vehiculo': 'Consultar', 'actualizar_vehiculo': 'Actualizar',
-      'listar_conductor': 'Listar', 'registrar_conductor': 'Registrar', 'consultar_conductor': 'Consultar', 'actualizar_conductor': 'Actualizar',
-      'listar_destino': 'Listar', 'registrar_destino': 'Registrar', 'consultar_destino': 'Consultar', 'actualizar_destino': 'Actualizar',
-      'listar_ruta': 'Listar', 'registrar_ruta': 'Registrar', 'consultar_ruta': 'Consultar', 'actualizar_ruta': 'Actualizar',
-      'listar_anticipo': 'Listar', 'registrar_anticipo': 'Registrar', 'consultar_anticipo': 'Consultar', 'actualizar_anticipo': 'Actualizar',
-      'listar_encomienda': 'Listar', 'registrar_encomienda': 'Registrar', 'consultar_encomienda': 'Consultar', 'actualizar_encomienda': 'Actualizar',
+      'listar_vehiculo': 'Listar', 'registrar_vehiculo': 'Registrar', 'consultar_vehiculo': 'Consultar', 'actualizar_vehiculo': 'Actualizar', 'inhabilitar_vehiculo': 'Inhabilitar',
+      'listar_conductor': 'Listar', 'registrar_conductor': 'Registrar', 'consultar_conductor': 'Consultar', 'actualizar_conductor': 'Actualizar', 'inhabilitar_conductor': 'Inhabilitar',
+      'listar_destino': 'Listar', 'registrar_destino': 'Registrar', 'consultar_destino': 'Consultar', 'actualizar_destino': 'Actualizar', 'inhabilitar_destino': 'Inhabilitar',
+      'listar_ruta': 'Listar', 'registrar_ruta': 'Registrar', 'consultar_ruta': 'Consultar', 'actualizar_ruta': 'Actualizar', 'inhabilitar_ruta': 'Inhabilitar',
+      'listar_anticipo': 'Listar', 'registrar_anticipo': 'Registrar', 'consultar_anticipo': 'Consultar', 'actualizar_anticipo': 'Actualizar', 'inhabilitar_anticipo': 'Inhabilitar',
+      'listar_venta': 'Listar', 'registrar_venta': 'Registrar', 'consultar_venta': 'Consultar', 'actualizar_venta': 'Actualizar', 'inhabilitar_venta': 'Inhabilitar',
       'ver_dashboard': 'Ver',
     }
     return labels[permiso] || permiso
@@ -215,17 +244,7 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
                         }
                         onChange={() => {
                           const todosSeleccionados = modulo.permisos.every(p => formData.permisos.includes(p))
-                          if (todosSeleccionados) {
-                            setFormData(prev => ({
-                              ...prev,
-                              permisos: prev.permisos.filter(p => !modulo.permisos.includes(p))
-                            }))
-                          } else {
-                            setFormData(prev => ({
-                              ...prev,
-                              permisos: [...new Set([...prev.permisos, ...modulo.permisos])]
-                            }))
-                          }
+                          toggleModulo(modulo, todosSeleccionados)
                         }}
                         sx={{
                           color: theme.palette.primary.main,
@@ -241,17 +260,12 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
                 <Box sx={{ p: 1.5, backgroundColor: 'white' }}>
                   <Grid container spacing={0.5}>
                     {modulo.permisos.map((permiso) => (
-                      <Grid size={{ xs: 6, sm: 4, md: 2 }} key={permiso}>
+                      <Grid size={{ xs: 6, sm: 4, md: 3 }} key={permiso}>
                         <FormControlLabel
                           control={
                             <Checkbox
                               checked={formData.permisos.includes(permiso)}
-                              onChange={(e) => {
-                                const newPermisos = e.target.checked
-                                  ? [...formData.permisos, permiso]
-                                  : formData.permisos.filter(p => p !== permiso)
-                                setFormData({ ...formData, permisos: newPermisos })
-                              }}
+                              onChange={(e) => togglePermiso(modulo, permiso, e.target.checked)}
                               sx={{
                                 color: theme.palette.primary.main,
                                 '&.Mui-checked': { color: theme.palette.primary.main }

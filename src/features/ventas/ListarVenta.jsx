@@ -6,7 +6,7 @@ import {
     Box, Typography, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, TextField,
     IconButton, Chip, Tooltip, InputAdornment,
-    Button, Avatar, Select, MenuItem, Pagination, Snackbar, Alert,
+    Button, Select, MenuItem, Pagination, Snackbar, Alert,
     CircularProgress, FormControl, InputLabel, TableSortLabel,
     Menu, Dialog, DialogContent
 } from '@mui/material'
@@ -24,6 +24,7 @@ import CloseIcon from '@mui/icons-material/Close'
 import PaidOutlinedIcon from '@mui/icons-material/PaidOutlined'
 import SwapHorizOutlinedIcon from '@mui/icons-material/SwapHorizOutlined'
 import { ESTADOS_ENCOMIENDA, METODOS_PAGO, ESTADOS_PAGO } from '../../shared/contexts/VentaContext.jsx'
+import { useAuth, PERMISOS } from '../../shared/contexts/AuthContext.jsx'
 import { getPageOfEncomienda } from '../../shared/services/ventaService'
 import RegistrarVenta from './RegistrarVenta'
 import ActualizarVenta from './ActualizarVenta'
@@ -129,6 +130,7 @@ const ListarVenta = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [highlightId])
     const { ventas, total, loading, error, fetchVentas, cambiarEstadoVenta, actualizarVenta, toggleHabilitadoVenta } = useVentas()
+    const { tienePermiso } = useAuth()
     const initialLoad = useRef(true)
     const pendingConfirm = useRef(false)
 
@@ -443,10 +445,11 @@ const ListarVenta = () => {
                     <Table>
                         <TableHead>
                             <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
-                                <TableCell sx={thStyle}>Remitente</TableCell>
                                 <TableCell sx={thStyle}>Guía</TableCell>
-                                <TableCell sx={thStyle}>Destinatario</TableCell>
-                                <TableCell sx={thStyle}>Ruta</TableCell>
+                                <TableCell sx={thStyle}>Remitente / Destinatario</TableCell>
+                                <TableCell sx={thStyle}>Destino</TableCell>
+                                <TableCell sx={thStyle}>Total</TableCell>
+                                <TableCell sx={thStyle}>Estado pago</TableCell>
                                 <TableCell sx={thStyle}>
                                     <TableSortLabel
                                         active={sortBy.field === 'estado'}
@@ -462,8 +465,6 @@ const ListarVenta = () => {
                                         Estado
                                     </TableSortLabel>
                                 </TableCell>
-                                <TableCell sx={thStyle}>Pago</TableCell>
-                                <TableCell sx={thStyle}>Total</TableCell>
                                 <TableCell sx={{ ...thStyle, width: 130 }}>Acciones</TableCell>
                             </TableRow>
                         </TableHead>
@@ -471,7 +472,7 @@ const ListarVenta = () => {
                         <TableBody>
                             {loading && initialLoad.current ? (
                                 <TableRow>
-                                    <TableCell colSpan={8} align="center" sx={{ py: 7 }}>
+                                    <TableCell colSpan={7} align="center" sx={{ py: 7 }}>
                                         <CircularProgress size={28} sx={{ color: theme.palette.primary.main }} />
                                         <Typography variant="body2" color={theme.palette.text.secondary} mt={1.5}>
                                             Cargando ventas...
@@ -480,7 +481,7 @@ const ListarVenta = () => {
                                 </TableRow>
                             ) : error ? (
                                 <TableRow>
-                                    <TableCell colSpan={8} align="center" sx={{ py: 5 }}>
+                                    <TableCell colSpan={7} align="center" sx={{ py: 5 }}>
                                         <Typography color="error" variant="body2">
                                             No se pudieron cargar las ventas. Verifica la conexión con el servidor.
                                         </Typography>
@@ -493,7 +494,7 @@ const ListarVenta = () => {
                                 </TableRow>
                             ) : !loading && ventas.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={8} align="center" sx={{ py: 7 }}>
+                                    <TableCell colSpan={7} align="center" sx={{ py: 7 }}>
                                         <Typography color={theme.palette.text.secondary} variant="body2">
                                             {filtroHabilitado !== 'todo' || filtroEstadoEncomienda !== 'todos' || filtroPago !== 'todos' || filtroMetodoPago !== 'todos'
                                                 ? 'No se encontraron ventas que coincidan con los filtros aplicados.'
@@ -524,23 +525,7 @@ const ListarVenta = () => {
                                                 }),
                                             }}
                                         >
-                                            <TableCell sx={{ py: 1.5 }}>
-                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                                    <Avatar sx={{
-                                                        width: 34, height: 34,
-                                                        backgroundColor: venta.habilitado ? theme.palette.avatarDefault.bg : theme.palette.avatarDisabled.bg,
-                                                        fontSize: '0.73rem',
-                                                        fontWeight: 700,
-                                                        color: venta.habilitado ? theme.palette.avatarDefault.color : theme.palette.avatarDisabled.color,
-                                                    }}>
-                                                        {venta.cliente?.nombre?.[0]}{venta.cliente?.apellido?.[0]}
-                                                    </Avatar>
-                                                    <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary} noWrap>
-                                                        {venta.cliente?.nombre} {venta.cliente?.apellido}
-                                                    </Typography>
-                                                </Box>
-                                            </TableCell>
-
+                                            {/* Guía + fecha */}
                                             <TableCell sx={{ py: 1.5 }}>
                                                 <Typography variant="body2" fontWeight={600} color={theme.palette.primary.main}>
                                                     {venta.numeroGuia}
@@ -550,49 +535,59 @@ const ListarVenta = () => {
                                                 </Typography>
                                             </TableCell>
 
-                                            <TableCell sx={{ fontSize: '0.85rem', color: theme.palette.text.primary, py: 1.5 }}>
-                                                {venta.destinatario?.nombreDestinatario}
+                                            {/* Remitente / Destinatario */}
+                                            <TableCell sx={{ py: 1.5 }}>
+                                                <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary} noWrap>
+                                                    {venta.cliente?.nombre} {venta.cliente?.apellido}
+                                                </Typography>
+                                                <Typography variant="caption" color={theme.palette.text.secondary} noWrap>
+                                                    → {venta.destinatario?.nombreDestinatario || '—'}
+                                                </Typography>
                                             </TableCell>
 
-                                                                    <TableCell sx={{ fontSize: '0.85rem', color: theme.palette.text.primary, py: 1.5 }}>
-                                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                                                    <span>{venta.ruta?.nombreRuta || '—'}</span>
-                                                    {venta.estado === 'Programada' && venta.ruta?.estado === 'Cancelada' && (
-                                                        <Chip
-                                                            label="Ruta cancelada · Reasignar"
-                                                            size="small"
-                                                            sx={{
-                                                                backgroundColor: '#FFF7ED',
-                                                                color: '#EA580C',
-                                                                fontWeight: 600,
-                                                                fontSize: '0.7rem',
-                                                                height: 20,
-                                                                width: 'fit-content',
-                                                            }}
-                                                        />
-                                                    )}
-                                                </Box>
-                                            </TableCell>
-
-                                            <TableCell sx={{ py: 1.5, minWidth: 155 }}>
-                                                {venta.estado === 'Programada' ? (
-                                                    <Box
-                                                        onClick={(e) => { e.stopPropagation(); setEstadoMenuAnchor(e.currentTarget); setEstadoMenuId(venta.idEncomiendaVenta) }}
+                                            {/* Destino (via ruta → destino) */}
+                                            <TableCell sx={{ py: 1.5 }}>
+                                                <Typography variant="body2" color={theme.palette.text.primary}>
+                                                    {venta.ruta?.destino?.ciudad || '—'}
+                                                </Typography>
+                                                {venta.estado === 'Programada' && venta.ruta?.estado === 'Cancelada' && (
+                                                    <Chip
+                                                        label="Ruta cancelada · Reasignar"
+                                                        size="small"
                                                         sx={{
-                                                            display: 'inline-flex', alignItems: 'center', gap: 0.5,
-                                                            border: `1px solid ${theme.palette.divider}`, borderRadius: 1.5,
-                                                            px: 1, py: 0.3, cursor: 'pointer',
-                                                            '&:hover': { backgroundColor: theme.palette.action.hover },
+                                                            backgroundColor: '#FFF7ED',
+                                                            color: '#EA580C',
+                                                            fontWeight: 600,
+                                                            fontSize: '0.7rem',
+                                                            height: 20,
+                                                            mt: 0.5,
                                                         }}
-                                                    >
-                                                        <VentaEstadoDot estado="Programada" />
-                                                        <KeyboardArrowDownOutlinedIcon sx={{ fontSize: 13, color: theme.palette.text.secondary }} />
-                                                    </Box>
-                                                ) : (
-                                                    <Box sx={{ pl: 1 }}><VentaEstadoDot estado={venta.estado} /></Box>
+                                                    />
                                                 )}
                                             </TableCell>
 
+                                            {/* Total + método de pago */}
+                                            <TableCell sx={{ py: 1.5 }}>
+                                                <Chip
+                                                    label={venta.total !== undefined
+                                                        ? `$${Number(venta.total).toLocaleString('es-CO')}`
+                                                        : '—'}
+                                                    size="small"
+                                                    sx={{
+                                                        fontWeight: 600,
+                                                        backgroundColor: theme.palette.primary.light,
+                                                        color: theme.palette.primary.main,
+                                                        fontSize: '0.7rem',
+                                                        borderRadius: '2px',
+                                                        height: 24,
+                                                    }}
+                                                />
+                                                <Typography variant="caption" color={theme.palette.text.secondary} sx={{ display: 'block', mt: 0.5 }}>
+                                                    {venta.metodoPago || '—'}
+                                                </Typography>
+                                            </TableCell>
+
+                                            {/* Estado pago */}
                                             <TableCell sx={{ py: 1.5, minWidth: 130 }}>
                                                 {(venta.estadoPago === 'Pagado' || venta.estado === 'Cancelada') ? (
                                                     venta.estadoPago === 'Pagado' ? (
@@ -623,21 +618,24 @@ const ListarVenta = () => {
                                                 )}
                                             </TableCell>
 
-                                            <TableCell sx={{ py: 1.5 }}>
-                                                <Chip
-                                                    label={venta.total !== undefined
-                                                        ? `$${Number(venta.total).toLocaleString('es-CO')}`
-                                                        : '—'}
-                                                    size="small"
-                                                    sx={{
-                                                        fontWeight: 600,
-                                                        backgroundColor: theme.palette.primary.light,
-                                                        color: theme.palette.primary.main,
-                                                        fontSize: '0.7rem',
-                                                        borderRadius: '2px',
-                                                        height: 24,
-                                                    }}
-                                                />
+                                            {/* Estado envío */}
+                                            <TableCell sx={{ py: 1.5, minWidth: 155 }}>
+                                                {venta.estado === 'Programada' ? (
+                                                    <Box
+                                                        onClick={(e) => { e.stopPropagation(); setEstadoMenuAnchor(e.currentTarget); setEstadoMenuId(venta.idEncomiendaVenta) }}
+                                                        sx={{
+                                                            display: 'inline-flex', alignItems: 'center', gap: 0.5,
+                                                            border: `1px solid ${theme.palette.divider}`, borderRadius: 1.5,
+                                                            px: 1, py: 0.3, cursor: 'pointer',
+                                                            '&:hover': { backgroundColor: theme.palette.action.hover },
+                                                        }}
+                                                    >
+                                                        <VentaEstadoDot estado="Programada" />
+                                                        <KeyboardArrowDownOutlinedIcon sx={{ fontSize: 13, color: theme.palette.text.secondary }} />
+                                                    </Box>
+                                                ) : (
+                                                    <Box sx={{ pl: 1 }}><VentaEstadoDot estado={venta.estado} /></Box>
+                                                )}
                                             </TableCell>
 
                                             <TableCell sx={{ py: 1.5 }}>
@@ -655,6 +653,7 @@ const ListarVenta = () => {
                                                             <EditOutlinedIcon sx={{ fontSize: 18 }} />
                                                         </IconButton>
                                                     </Tooltip>
+                                                    {tienePermiso(PERMISOS.INHABILITAR_VENTA) && (
                                                     <Tooltip title={venta.habilitado ? 'Inhabilitar' : 'Habilitar'}>
                                                         <IconButton
                                                             size="small"
@@ -667,6 +666,7 @@ const ListarVenta = () => {
                                                             }
                                                         </IconButton>
                                                     </Tooltip>
+                                                    )}
                                                 </Box>
                                             </TableCell>
                                         </TableRow>

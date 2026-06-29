@@ -1,9 +1,8 @@
 import { useTheme } from '@mui/material/styles'
 import { useState } from 'react'
 import { Box, Paper, TextField, Typography, MenuItem, Dialog, DialogTitle, DialogContent, Stepper, Step, StepLabel, Snackbar, Alert, IconButton, Button } from '@mui/material'
-import { DirectionsCar, Person, Business, Event, Speed, Close, ArrowBackOutlined, ArrowForwardOutlined, CheckOutlined } from '@mui/icons-material'
+import { DirectionsCar, Business, Event, Speed, Close, ArrowBackOutlined, ArrowForwardOutlined, CheckOutlined } from '@mui/icons-material'
 import { useVehiculo } from '../../shared/contexts/VehiculoContext.jsx'
-import { useConductor } from '../../shared/contexts/ConductorContext.jsx'
 import { usePropietario } from '../../shared/contexts/PropietarioContext.jsx'
 import { FormField, FormSelect, FormAlert } from '../../shared/components/FormularioEstandarizado.jsx'
 
@@ -13,13 +12,13 @@ const steps = ['Datos del Vehículo', 'Documentación y Estado', 'Confirmación'
 
 const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
-    idConductor: '',
     idPropietario: '',
     placa: '',
     marca: '',
     modelo: '',
     color: '',
     tipo: '',
+    origen: 'Propio',
     capacidad: '',
     vencimientoSOAT: '',
     vencimientoRevisionTecnica: '',
@@ -32,7 +31,6 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
    
   const { registrarVehiculo } = useVehiculo()
   const theme = useTheme()
-  const { conductores } = useConductor()
   const { propietarios } = usePropietario()
 
   const handleChange = (e) => {
@@ -48,13 +46,13 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
 
   const handleClose = () => {
     setFormData({
-      idConductor: '',
       idPropietario: '',
       placa: '',
       marca: '',
       modelo: '',
       color: '',
       tipo: '',
+      origen: 'Propio',
       capacidad: '',
       vencimientoSOAT: '',
       vencimientoRevisionTecnica: '',
@@ -71,7 +69,6 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
     setError('')
     try {
       const payload = {
-        idConductor: formData.idConductor ? parseInt(formData.idConductor, 10) : null,
         idPropietario: formData.idPropietario ? parseInt(formData.idPropietario, 10) : null,
         placa: formData.placa.trim(),
         marca: formData.marca.trim(),
@@ -104,8 +101,20 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
       }
     }
     if (activeStep === 1) {
-      if (!formData.idConductor || !formData.idPropietario) {
-        setError('Debes asignar un conductor y un propietario')
+      if (!formData.idPropietario) {
+        setError('Debes asignar un propietario')
+        return
+      }
+      if (!formData.vencimientoSOAT) {
+        setError('La fecha de vencimiento del SOAT es obligatoria')
+        return
+      }
+      if (!formData.vencimientoRevisionTecnica) {
+        setError('La fecha de vencimiento de la Revisión Técnico-Mecánica es obligatoria')
+        return
+      }
+      if (!formData.vencimientoSeguroTerceros) {
+        setError('La fecha de vencimiento del Seguro de Terceros es obligatoria')
         return
       }
     }
@@ -192,19 +201,14 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
         return (
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
             <FormSelect
-              label="Conductor"
-              name="idConductor"
-              value={formData.idConductor}
+              label="Origen"
+              name="origen"
+              value={formData.origen}
               onChange={handleChange}
               required
             >
-              {conductores
-                .filter(c => c.habilitado !== false)
-                .map((c) => (
-                  <MenuItem key={c.idConductor} value={c.idConductor}>
-                    {c.nombre} {c.apellido}
-                  </MenuItem>
-                ))}
+              <MenuItem value="Propio">Propio</MenuItem>
+              <MenuItem value="Tercerizado">Tercerizado</MenuItem>
             </FormSelect>
             <FormSelect
               label="Propietario"
@@ -227,6 +231,7 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
               type="date"
               value={formData.vencimientoSOAT}
               onChange={handleChange}
+              required
               icon={Event}
             />
             <FormField
@@ -235,6 +240,7 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
               type="date"
               value={formData.vencimientoRevisionTecnica}
               onChange={handleChange}
+              required
               icon={Event}
             />
             <FormField
@@ -243,6 +249,7 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
               type="date"
               value={formData.vencimientoSeguroTerceros}
               onChange={handleChange}
+              required
               icon={Event}
             />
           </Box>
@@ -274,11 +281,11 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
                 backgroundColor: 'white', overflow: 'hidden',
               }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                  <Person sx={{ fontSize: 20, color: theme.palette.text.primary }} />
-                  <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Asignación y Estado</Typography>
+                  <Event sx={{ fontSize: 20, color: theme.palette.text.primary }} />
+                  <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Propietario y Documentación</Typography>
                 </Box>
-                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica conductor, propietario y fechas</Typography>
-                <ConfirmRow label="Conductor" value={(() => { const c = conductores.find(c => c.idConductor === formData.idConductor); return c ? `${c.nombre} ${c.apellido}` : '—' })()} />
+                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica propietario y fechas de vencimiento</Typography>
+                <ConfirmRow label="Origen" value={formData.origen} />
                 <ConfirmRow label="Propietario" value={(() => { const p = propietarios.find(p => p.idPropietario === formData.idPropietario); return p ? `${p.nombre} ${p.apellido}` : '—' })()} />
                 <ConfirmRow label="SOAT" value={formData.vencimientoSOAT || '—'} />
                 <ConfirmRow label="Revisión Técnica" value={formData.vencimientoRevisionTecnica || '—'} />

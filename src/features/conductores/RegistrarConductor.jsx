@@ -43,6 +43,7 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
         emailDominio: '@gmail.com',
         password: '',
         licenciaConduccion: '',
+        numeroLicencia: '',
         fechaVencimientoLicencia: ''
     })
 
@@ -115,6 +116,7 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
             emailDominio: '@gmail.com',
             password: '',
             licenciaConduccion: '',
+            numeroLicencia: '',
             fechaVencimientoLicencia: '',
         })
         setShowPassword(false)
@@ -132,7 +134,7 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
                 ...resto,
                 email: emailLocal ? emailLocal + emailDominio : '',
                 habilitado: true,
-                estado: 'Activo'
+                estado: 'Disponible'
             })
             setExito(true)
             setTimeout(() => {
@@ -256,6 +258,9 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
                             <MenuItem value="D2">D2 - Bus grande</MenuItem>
                             <MenuItem value="E">E - Remolque</MenuItem>
                         </FormSelect>
+                        <FormField label="N° de Licencia" name="numeroLicencia" value={form.numeroLicencia}
+                            onChange={handleChange} icon={BadgeOutlinedIcon}
+                            inputProps={{ maxLength: 20 }} placeholder="Ej: 123456789" />
                         <FormField label="Fecha Vencimiento Licencia" name="fechaVencimientoLicencia" type="date"
                             value={form.fechaVencimientoLicencia} onChange={handleChange}
                             required error={errores.fechaVencimientoLicencia} helperText={errores.fechaVencimientoLicencia}
@@ -291,7 +296,8 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
                                 <ConfirmRow label="Teléfono" value={form.telefono} />
                                 <ConfirmRow label="Correo" value={form.emailLocal + form.emailDominio} />
                                 <ConfirmRow label="Contraseña" value={'•'.repeat(form.password.length)} />
-                                <ConfirmRow label="Licencia" value={getLicenciaLabel(form.licenciaConduccion)} />
+                                <ConfirmRow label="Categoría licencia" value={getLicenciaLabel(form.licenciaConduccion)} />
+                                <ConfirmRow label="N° de licencia" value={form.numeroLicencia || '—'} />
                                 <ConfirmRow label="Vencimiento" value={form.fechaVencimientoLicencia} />
                             </Paper>
                         </Box>

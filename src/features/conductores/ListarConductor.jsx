@@ -48,7 +48,8 @@ const getFilterMenuProps = (theme) => ({
                 boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
                 mt: 0.5,
                 '& .MuiMenuItem-root': {
-                    fontSize: '0.82rem',
+                    fontSize: '0.82rem', py: 0.9, px: 2,
+                    display: 'flex', justifyContent: 'space-between', gap: 2,
                     '&:hover': { backgroundColor: theme.palette.primary.light },
                     '&.Mui-selected': { backgroundColor: 'transparent', fontWeight: 600, color: theme.palette.text.primary },
                     '&.Mui-selected:hover': { backgroundColor: theme.palette.primary.light },
@@ -63,6 +64,8 @@ const FILTROS = [
     { value: 'habilitado', label: 'Habilitado' },
     { value: 'inhabilitado', label: 'Inhabilitado' },
 ]
+
+const ESTADOS_CONDUCTOR = ['Disponible', 'En Ruta']
 
 
 const ListarConductor = () => {
@@ -96,6 +99,7 @@ const ListarConductor = () => {
     const [modalBloqueo, setModalBloqueo] = useState({ open: false, dependencias: [], mensaje: '' })
     const [confirmToggle, setConfirmToggle] = useState({ open: false, idConductor: null, nombreCompleto: '', habilitadoActual: false })
     const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
+    const [filtroEstado, setFiltroEstado] = useState('')
     const [page, setPage] = useState(1)
     const [rowsPerPage, setRowsPerPage] = useState(5)
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
@@ -123,12 +127,12 @@ const ListarConductor = () => {
       fetchConductores(undefined, {
         page,
         limit: rowsPerPage,
-        estado: undefined,
+        estado: filtroEstado || undefined,
         habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
         sortBy: `${sortBy.field}.${sortBy.dir}`,
         q: debouncedSearch.trim() || undefined,
       })
-    }, [page, rowsPerPage, filtroHabilitado, debouncedSearch, sortBy, fetchConductores])
+    }, [page, rowsPerPage, filtroHabilitado, filtroEstado, debouncedSearch, sortBy, fetchConductores])
 
     useEffect(() => {
       fetchConductoresBackend()
@@ -193,9 +197,9 @@ const ListarConductor = () => {
         }
     }
 
-    const limpiarFiltros = () => { setSearchTerm(''); setFiltroHabilitado('todo'); setPage(1) }
+    const limpiarFiltros = () => { setSearchTerm(''); setFiltroHabilitado('todo'); setFiltroEstado(''); setPage(1) }
     const limpiarBusqueda = () => { setSearchTerm(''); setPage(1) }
-    const hayFiltrosActivos = searchTerm.trim() !== '' || filtroHabilitado !== 'todo'
+    const hayFiltrosActivos = searchTerm.trim() !== '' || filtroHabilitado !== 'todo' || filtroEstado !== ''
 
     const totalPages = Math.max(1, Math.ceil(total / rowsPerPage))
     const safePage = Math.min(page, totalPages)
@@ -260,22 +264,52 @@ const ListarConductor = () => {
             </Box>
 
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
-                <Box sx={{ display: 'inline-flex', backgroundColor: theme.palette.primary.light, borderRadius: 4, p: '4px', gap: '5px' }}>
-                    {FILTROS.map(f => (
-                        <Button key={f.value} onClick={() => { setFiltroHabilitado(f.value); setPage(1) }}
-                            size="small" disableElevation disableRipple
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <Box sx={{ display: 'inline-flex', backgroundColor: theme.palette.primary.light, borderRadius: 4, p: '4px', gap: '5px' }}>
+                        {FILTROS.map(f => (
+                            <Button key={f.value} onClick={() => { setFiltroHabilitado(f.value); setPage(1) }}
+                                size="small" disableElevation disableRipple
+                                sx={{
+                                    borderRadius: 3, textTransform: 'none', fontSize: '0.75rem', px: 2, py: 0.5, minWidth: 0,
+                                    fontWeight: filtroHabilitado === f.value ? 600 : 400,
+                                    backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
+                                    color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.secondary,
+                                    boxShadow: filtroHabilitado === f.value ? '0 1px 4px rgba(0,0,0,0.12)' : 'none',
+                                    border: 'none',
+                                    '&:hover': { backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent', color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.medium, border: 'none' },
+                                }}>
+                                {f.label}
+                            </Button>
+                        ))}
+                    </Box>
+                    <FormControl size="small" sx={{ minWidth: 150 }}>
+                        <Select
+                            displayEmpty
+                            value={filtroEstado}
+                            onChange={e => { setFiltroEstado(e.target.value); setPage(1) }}
+                            renderValue={v => v || 'Estado'}
+                            IconComponent={KeyboardArrowDownOutlinedIcon}
                             sx={{
-                                borderRadius: 3, textTransform: 'none', fontSize: '0.75rem', px: 2, py: 0.5, minWidth: 0,
-                                fontWeight: filtroHabilitado === f.value ? 600 : 400,
-                                backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
-                                color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.secondary,
-                                boxShadow: filtroHabilitado === f.value ? '0 1px 4px rgba(0,0,0,0.12)' : 'none',
-                                border: 'none',
-                                '&:hover': { backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent', color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.medium, border: 'none' },
-                            }}>
-                            {f.label}
-                        </Button>
-                    ))}
+                                fontSize: '0.82rem',
+                                borderRadius: 4,
+                                color: filtroEstado ? theme.palette.text.primary : theme.palette.text.secondary,
+                                '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
+                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
+                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
+                                '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` },
+                                '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
+                                '& .MuiTouchRipple-root': { display: 'none' },
+                            }}
+                            MenuProps={filterMenuProps}>
+                            <MenuItem value="">Todos</MenuItem>
+                            {ESTADOS_CONDUCTOR.map(e => (
+                                <MenuItem key={e} value={e}>
+                                    {e}
+                                    {filtroEstado === e && <CheckOutlinedIcon sx={{ fontSize: 14, color: theme.palette.text.secondary }} />}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
                 </Box>
 
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
@@ -394,17 +428,26 @@ const ListarConductor = () => {
                                         <TableCell sx={{ py: 1.5 }}>{conductor.email || '-'}</TableCell>
                                         {/* Licencia */}
                                         <TableCell sx={{ py: 1.5 }}>
-                                            <Chip label={conductor.licenciaConduccion || '-'} size="small"
-                                                sx={{ fontWeight: 600, backgroundColor: '#FEF2F2', color: theme.palette.primary.main, fontSize: '0.7rem' }} />
+                                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.4 }}>
+                                                <Chip label={conductor.licenciaConduccion || '—'} size="small"
+                                                    sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.main, fontSize: '0.7rem', alignSelf: 'flex-start' }} />
+                                                {conductor.numeroLicencia && (
+                                                    <Typography variant="caption" color={theme.palette.text.secondary} sx={{ lineHeight: 1.2 }}>
+                                                        {conductor.numeroLicencia}
+                                                    </Typography>
+                                                )}
+                                            </Box>
                                         </TableCell>
                                         {/* Vencimiento */}
                                         <TableCell sx={{ py: 1.5 }}>
                                             <Chip
                                                 label={conductor.fechaVencimientoLicencia ? new Date(conductor.fechaVencimientoLicencia).toLocaleDateString() : 'N/A'}
                                                 size="small"
-                                                color={isVencido(conductor.fechaVencimientoLicencia) ? 'error' : 'success'}
                                                 variant={isVencido(conductor.fechaVencimientoLicencia) ? 'filled' : 'outlined'}
-                                                sx={{ fontSize: '0.7rem' }} />
+                                                sx={isVencido(conductor.fechaVencimientoLicencia)
+                                                    ? { fontSize: '0.7rem', backgroundColor: theme.palette.primary.main, color: 'white', borderColor: theme.palette.primary.main }
+                                                    : { fontSize: '0.7rem', color: theme.palette.primary.main, borderColor: theme.palette.primary.main }
+                                                } />
                                         </TableCell>
                                         {/* Estado operativo (automático — derivado de rutas) */}
                                         <TableCell sx={{ py: 1.5 }}>
@@ -442,7 +485,7 @@ const ListarConductor = () => {
                                                         </IconButton>
                                                     </Tooltip>
                                                 )}
-                                                {tienePermiso(PERMISOS.ACTUALIZAR_CONDUCTOR) && (
+                                                {tienePermiso(PERMISOS.INHABILITAR_CONDUCTOR) && (
                                                     <Tooltip title={conductor.habilitado ? 'Inhabilitar' : 'Habilitar'}>
                                                         <IconButton size="small"
                                                             onClick={() => solicitarToggle(conductor)}

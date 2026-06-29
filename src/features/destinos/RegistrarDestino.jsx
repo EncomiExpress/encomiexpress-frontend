@@ -16,13 +16,7 @@ import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 
 const steps = ['Ubicación', 'Tarifa', 'Confirmación']
 
-const departamentos = [
-    'Antioquia', 'Atlántico', 'Bogotá D.C.', 'Bolívar', 'Boyacá',
-    'Caldas', 'Caquetá', 'Casanare', 'Cauca', 'Cundinamarca',
-    'Chocó', 'Huila', 'La Guajira', 'Magdalena', 'Meta',
-    'Nariño', 'Norte de Santander', 'Quindío', 'Risaralda',
-    'Santander', 'Sucre', 'Tolima', 'Valle del Cauca'
-]
+const departamentos = ['Antioquia', 'Córdoba']
 
 const RegistrarDestino = ({ open, onClose, onSuccess }) => {
     const { registrarDestino } = useDestino()

@@ -79,6 +79,7 @@ export const getAnticipoEstadoDot = (estado) => {
         case 'En Legalización':    return { type: 'circle', fill: true,  color: '#3B82F6', label: 'En Legalización' }
         case 'Excedente pendiente': return { type: 'symbol', char: '!',  color: '#F59E0B', label: 'Excedente pendiente' }
         case 'Completado':         return { type: 'symbol', char: '✓',  color: '#059669', label: 'Completado' }
+        case 'Cancelado':          return { type: 'symbol', char: '−',  color: '#3F3F46', label: 'Cancelado' }
         default:                   return { type: 'circle', fill: false, color: '#9CA3AF', label: estado || '—' }
     }
 }

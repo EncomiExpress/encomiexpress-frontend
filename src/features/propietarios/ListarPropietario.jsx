@@ -1,6 +1,7 @@
 import { useTheme } from '@mui/material/styles'
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { alpha } from '@mui/material/styles'
 import {
     Box, Typography, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, Chip, IconButton,
@@ -24,6 +25,7 @@ import ActualizarPropietario from './ActualizarPropietario'
 import ModalBloqueoInhabilitacion from '../../shared/components/ModalBloqueoInhabilitacion'
 import ModalConsultarPropietario from './ModalConsultarPropietario'
 import ModalInhabilitarPropietario from './ModalInhabilitarPropietario'
+import { getPageOfPropietario } from '../../shared/services/propietarioService'
 
 const getThStyle = (theme) => ({
     fontWeight: 700,
@@ -41,10 +43,31 @@ const FILTROS = [
     { value: 'inhabilitado', label: 'Inhabilitado' },
 ]
 
+const TIPOS_FLOTA = ['Carga Liviana', 'Carga Pesada', 'Pasajeros', 'Mixta']
+
 const ListarPropietario = () => {
     const theme = useTheme()
     const thStyle = getThStyle(theme)
     const navigate = useNavigate()
+    const [searchParams] = useSearchParams()
+    const highlightId = searchParams.get('highlight')
+    const highlightRef = useRef(null)
+    const hasScrolled = useRef(false)
+    const hasNavigated = useRef(false)
+    useEffect(() => {
+        if (highlightId && highlightRef.current && !hasScrolled.current) {
+            hasScrolled.current = true
+            setTimeout(() => highlightRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 400)
+        }
+    })
+    useEffect(() => {
+        if (!highlightId || hasNavigated.current) return
+        hasNavigated.current = true
+        getPageOfPropietario(highlightId, rowsPerPage)
+            .then(res => { if (res?.data?.page) setPage(res.data.page) })
+            .catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [highlightId])
     const [searchTerm, setSearchTerm] = useState('')
     const [debouncedSearch, setDebouncedSearch] = useState('')
     const [propietarioVer, setPropietarioVer] = useState(null)
@@ -52,6 +75,7 @@ const ListarPropietario = () => {
     const [modalBloqueo, setModalBloqueo] = useState({ open: false, dependencias: [], mensaje: '' })
     const [confirmToggle, setConfirmToggle] = useState({ open: false, idPropietario: null, nombreCompleto: '', habilitadoActual: false })
     const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
+    const [filtroTipoFlota, setFiltroTipoFlota] = useState('')
     const [page, setPage] = useState(1)
     const [rowsPerPage, setRowsPerPage] = useState(5)
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
@@ -73,10 +97,11 @@ const ListarPropietario = () => {
         page,
         limit: rowsPerPage,
         habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
+        tipoFlota: filtroTipoFlota || undefined,
         sortBy: `${sortBy.field}.${sortBy.dir}`,
         q: debouncedSearch.trim() || undefined,
       })
-    }, [page, rowsPerPage, filtroHabilitado, debouncedSearch, sortBy, fetchPropietarios])
+    }, [page, rowsPerPage, filtroHabilitado, filtroTipoFlota, debouncedSearch, sortBy, fetchPropietarios])
 
     useEffect(() => {
       fetchPropietariosBackend()
@@ -128,9 +153,9 @@ const ListarPropietario = () => {
         }
     }
 
-    const limpiarFiltros = () => { setSearchTerm(''); setFiltroHabilitado('todo'); setPage(1) }
+    const limpiarFiltros = () => { setSearchTerm(''); setFiltroHabilitado('todo'); setFiltroTipoFlota(''); setPage(1) }
     const limpiarBusqueda = () => { setSearchTerm(''); setPage(1) }
-    const hayFiltrosActivos = searchTerm.trim() !== '' || filtroHabilitado !== 'todo'
+    const hayFiltrosActivos = searchTerm.trim() !== '' || filtroHabilitado !== 'todo' || filtroTipoFlota !== ''
 
     const totalPages = Math.max(1, Math.ceil(total / rowsPerPage))
     const safePage = Math.min(page, totalPages)
@@ -189,21 +214,68 @@ const ListarPropietario = () => {
             </Box>
 
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
-                <Box sx={{ display: 'inline-flex', backgroundColor: theme.palette.primary.light, borderRadius: 4, p: '4px', gap: '5px' }}>
-                    {FILTROS.map(f => (
-                        <Button key={f.value} onClick={() => { setFiltroHabilitado(f.value); setPage(1) }} size="small" disableElevation disableRipple
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <Box sx={{ display: 'inline-flex', backgroundColor: theme.palette.primary.light, borderRadius: 4, p: '4px', gap: '5px' }}>
+                        {FILTROS.map(f => (
+                            <Button key={f.value} onClick={() => { setFiltroHabilitado(f.value); setPage(1) }} size="small" disableElevation disableRipple
+                                sx={{
+                                    borderRadius: 3, textTransform: 'none', fontSize: '0.75rem', px: 2, py: 0.5, minWidth: 0,
+                                    fontWeight: filtroHabilitado === f.value ? 600 : 400,
+                                    backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
+                                    color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.secondary,
+                                    boxShadow: filtroHabilitado === f.value ? '0 1px 4px rgba(0,0,0,0.12)' : 'none',
+                                    border: 'none',
+                                    '&:hover': { backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent', border: 'none' },
+                                }}>
+                                {f.label}
+                            </Button>
+                        ))}
+                    </Box>
+                    <FormControl size="small" sx={{ minWidth: 160 }}>
+                        <Select
+                            displayEmpty
+                            value={filtroTipoFlota}
+                            onChange={e => { setFiltroTipoFlota(e.target.value); setPage(1) }}
+                            renderValue={v => v || 'Tipo de flota'}
+                            IconComponent={KeyboardArrowDownOutlinedIcon}
                             sx={{
-                                borderRadius: 3, textTransform: 'none', fontSize: '0.75rem', px: 2, py: 0.5, minWidth: 0,
-                                fontWeight: filtroHabilitado === f.value ? 600 : 400,
-                                backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
-                                color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.secondary,
-                                boxShadow: filtroHabilitado === f.value ? '0 1px 4px rgba(0,0,0,0.12)' : 'none',
-                                border: 'none',
-                                '&:hover': { backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent', border: 'none' },
+                                fontSize: '0.82rem',
+                                borderRadius: 4,
+                                color: filtroTipoFlota ? theme.palette.text.primary : theme.palette.text.secondary,
+                                '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
+                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
+                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
+                                '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` },
+                                '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
+                                '& .MuiTouchRipple-root': { display: 'none' },
+                            }}
+                            MenuProps={{
+                                slotProps: {
+                                    paper: {
+                                        sx: {
+                                            borderRadius: 2,
+                                            boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+                                            mt: 0.5,
+                                            '& .MuiMenuItem-root': {
+                                                fontSize: '0.82rem', py: 0.9, px: 2,
+                                                display: 'flex', justifyContent: 'space-between', gap: 2,
+                                                '&:hover': { backgroundColor: theme.palette.primary.light },
+                                                '&.Mui-selected': { backgroundColor: 'transparent', fontWeight: 600 },
+                                                '&.Mui-selected:hover': { backgroundColor: theme.palette.primary.light },
+                                            },
+                                        },
+                                    },
+                                },
                             }}>
-                            {f.label}
-                        </Button>
-                    ))}
+                            <MenuItem value="">Todos</MenuItem>
+                            {TIPOS_FLOTA.map(t => (
+                                <MenuItem key={t} value={t}>
+                                    {t}
+                                    {filtroTipoFlota === t && <CheckOutlinedIcon sx={{ fontSize: 14, color: theme.palette.text.secondary }} />}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
                 </Box>
 
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
@@ -253,13 +325,14 @@ const ListarPropietario = () => {
                                 <TableCell sx={thStyle}>Identificación</TableCell>
                                 <TableCell sx={thStyle}>Teléfono</TableCell>
                                 <TableCell sx={thStyle}>Email</TableCell>
+                                <TableCell sx={thStyle}>Tipo Flota</TableCell>
                                 <TableCell sx={{ ...thStyle, width: 130 }}>Acciones</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
                             {loading && initialLoad.current ? (
                                 <TableRow>
-                                    <TableCell colSpan={5} align="center" sx={{ py: 7 }}>
+                                    <TableCell colSpan={6} align="center" sx={{ py: 7 }}>
                                         <CircularProgress size={28} sx={{ color: theme.palette.primary.main }} />
                                         <Typography variant="body2" color={theme.palette.text.secondary} mt={1.5}>
                                             Cargando propietarios...
@@ -268,7 +341,7 @@ const ListarPropietario = () => {
                                 </TableRow>
                             ) : error ? (
                                 <TableRow>
-                                    <TableCell colSpan={5} align="center" sx={{ py: 7 }}>
+                                    <TableCell colSpan={6} align="center" sx={{ py: 7 }}>
                                         <Typography color="error" variant="body2">No se pudieron cargar los propietarios. Verifica la conexión con el servidor.</Typography>
                                         {import.meta.env.DEV && (
                                             <Box component="pre" sx={{ mt: 0.5, fontSize: 11, opacity: 0.7, whiteSpace: 'pre-wrap', m: 0 }}>
@@ -279,7 +352,7 @@ const ListarPropietario = () => {
                                 </TableRow>
                             ) : !loading && propietarios.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={5} align="center" sx={{ py: 7 }}>
+                                    <TableCell colSpan={6} align="center" sx={{ py: 7 }}>
                                         <Typography color={theme.palette.text.secondary} variant="body2">
                                             {filtroHabilitado !== 'todo'
                                                 ? 'No se encontraron propietarios que coincidan con los filtros aplicados.'
@@ -290,12 +363,22 @@ const ListarPropietario = () => {
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                propietarios.map((propietario) => (
+                                propietarios.map((propietario) => {
+                                    const isHighlighted = highlightId && String(propietario.idPropietario) === String(highlightId)
+                                    return (
                                     <TableRow key={propietario.idPropietario}
+                                        ref={isHighlighted ? highlightRef : null}
                                         sx={{
                                             '&:hover': { backgroundColor: theme.palette.background.subtle },
                                             transition: 'background-color 0.15s',
                                             opacity: propietario.habilitado ? 1 : 0.55,
+                                            ...(isHighlighted && {
+                                                animation: 'highlightPulse 1.1s ease-in-out 4',
+                                                '@keyframes highlightPulse': {
+                                                    '0%, 100%': { backgroundColor: 'transparent' },
+                                                    '50%': { backgroundColor: alpha(theme.palette.primary.main, 0.13) },
+                                                },
+                                            }),
                                         }}>
                                         <TableCell>
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -317,6 +400,13 @@ const ListarPropietario = () => {
                                         </TableCell>
                                         <TableCell sx={{ py: 1.5 }}>{propietario.telefono || '—'}</TableCell>
                                         <TableCell sx={{ py: 1.5 }}>{propietario.email || '—'}</TableCell>
+                                        <TableCell sx={{ py: 1.5 }}>
+                                            <Chip
+                                                label={propietario.tipoFlota || '—'}
+                                                size="small"
+                                                sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.main, fontSize: '0.7rem' }}
+                                            />
+                                        </TableCell>
                                         <TableCell sx={{ py: 1.5 }}>
                                             <Box sx={{ display: 'flex', gap: 0.5 }}>
                                                 <Tooltip title="Ver detalle">
@@ -346,7 +436,8 @@ const ListarPropietario = () => {
                                             </Box>
                                         </TableCell>
                                     </TableRow>
-                                ))
+                                    )
+                                })
                             )}
                         </TableBody>
                     </Table>

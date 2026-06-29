@@ -11,6 +11,7 @@ export const createDestino = (datos) => fetchWithAuth('/destinos', { method: 'PO
 export const updateDestino = (id, datos) => fetchWithAuth(`/destinos/${id}`, { method: 'PUT', body: JSON.stringify(datos) })
 export const deleteDestino = (id) => fetchWithAuth(`/destinos/${id}`, { method: 'DELETE' })
 export const toggleHabilitadoDestino = (id) => fetchWithAuth(`/destinos/${id}/toggle-habilitado`, { method: 'PATCH' })
+export const getPageOfDestino = (id, limit = 10) => fetchWithAuth(`/destinos/${id}/page-of?limit=${limit}`)
 
 export default { getDestinos, getDestinoById, createDestino, updateDestino, deleteDestino, toggleHabilitadoDestino }
 

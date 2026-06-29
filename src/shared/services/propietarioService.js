@@ -68,6 +68,9 @@ export const toggleHabilitadoPropietario = async (id) => {
   });
 };
 
+export const getPageOfPropietario = (id, limit = 10) =>
+  fetchWithAuth(`/propietarios/${id}/page-of?limit=${limit}`)
+
 export default {
   getPropietarios,
   getPropietarioById,
@@ -75,5 +78,6 @@ export default {
   updatePropietario,
   deletePropietario,
   toggleHabilitadoPropietario,
+  getPageOfPropietario,
 };
 

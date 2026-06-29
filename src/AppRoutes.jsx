@@ -1,5 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
-import { Box } from '@mui/material'
+import { Box, Paper, Typography } from '@mui/material'
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined'
+import { useTheme } from '@mui/material/styles'
 import LayoutAdmin from './shared/components/LayoutAdmin.jsx'
 import { useAuth } from './shared/contexts/AuthContext.jsx'
 import { PERMISOS } from './shared/contexts/AuthContext.jsx'
@@ -65,11 +67,35 @@ import RegistrarVenta from './features/ventas/RegistrarVenta.jsx'
 import ListarVenta from './features/ventas/ListarVenta.jsx'
 import ActualizarVenta from './features/ventas/ActualizarVenta.jsx'
 
+const SinPermisos = () => {
+  const theme = useTheme()
+  return (
+    <Paper elevation={3} sx={{
+      p: 5, borderRadius: 3, textAlign: 'center', maxWidth: 360,
+      border: `1px solid ${theme.palette.divider}`,
+      backgroundColor: theme.palette.background.paper,
+    }}>
+      <Box sx={{
+        width: 56, height: 56, borderRadius: '50%', mx: 'auto', mb: 2,
+        backgroundColor: theme.palette.background.subtle,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        <LockOutlinedIcon sx={{ fontSize: 26, color: theme.palette.text.secondary }} />
+      </Box>
+      <Typography fontWeight={700} fontSize="1.05rem" color={theme.palette.text.primary} mb={0.75}>
+        Acceso restringido
+      </Typography>
+      <Typography variant="body2" color={theme.palette.text.secondary}>
+        No tienes permisos para acceder a esta sección.
+      </Typography>
+    </Paper>
+  )
+}
+
 // Componente wrapper para rutas privadas con LayoutAdmin
 const PrivateRoute = ({ children, permisosRequeridos = [] }) => {
   const { usuario, loading, tieneAlgunPermiso } = useAuth()
 
-  // Esperar a que AuthContext restaure la sesión desde localStorage
   if (loading) {
     return null
   }
@@ -79,7 +105,22 @@ const PrivateRoute = ({ children, permisosRequeridos = [] }) => {
   }
 
   if (permisosRequeridos.length > 0 && !tieneAlgunPermiso(permisosRequeridos)) {
-    return <Navigate to="/login" replace />
+    return (
+      <LayoutAdmin>
+        <Box sx={{ position: 'relative', overflow: 'hidden', flex: 1 }}>
+          <Box sx={{ filter: 'blur(5px)', pointerEvents: 'none', userSelect: 'none', opacity: 0.55 }}>
+            {children}
+          </Box>
+          <Box sx={{
+            position: 'absolute', inset: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            backgroundColor: 'rgba(0,0,0,0.08)',
+          }}>
+            <SinPermisos />
+          </Box>
+        </Box>
+      </LayoutAdmin>
+    )
   }
 
   return <LayoutAdmin>{children}</LayoutAdmin>
@@ -146,9 +187,9 @@ const AppRoutes = () => {
        <Route path="/transporte/rutas/actualizar/:id" element={<PrivateRoute permisosRequeridos={[PERMISOS.ACTUALIZAR_RUTA]}><ActualizarRutaProgramacion /></PrivateRoute>} />
 
       {/* Ventas */}
-      <Route path="/ventas/listar" element={<PrivateRoute permisosRequeridos={[PERMISOS.LISTAR_ENCOMIENDA]}><ListarVenta /></PrivateRoute>} />
-      <Route path="/ventas/registrar" element={<PrivateRoute permisosRequeridos={[PERMISOS.REGISTRAR_ENCOMIENDA]}><RegistrarVenta /></PrivateRoute>} />
-      <Route path="/ventas/actualizar/:id" element={<PrivateRoute permisosRequeridos={[PERMISOS.ACTUALIZAR_ENCOMIENDA]}><ActualizarVenta /></PrivateRoute>} />
+      <Route path="/ventas/listar" element={<PrivateRoute permisosRequeridos={[PERMISOS.LISTAR_VENTA]}><ListarVenta /></PrivateRoute>} />
+      <Route path="/ventas/registrar" element={<PrivateRoute permisosRequeridos={[PERMISOS.REGISTRAR_VENTA]}><RegistrarVenta /></PrivateRoute>} />
+      <Route path="/ventas/actualizar/:id" element={<PrivateRoute permisosRequeridos={[PERMISOS.ACTUALIZAR_VENTA]}><ActualizarVenta /></PrivateRoute>} />
 
       {/* Cualquier ruta no reconocida redirige al inicio */}
       <Route path="*" element={<Navigate to="/" replace />} />

@@ -15,6 +15,7 @@ const normalizarConductor = (c) => ({
   tipoIdentificacion: c.usuario?.tipoIdentificacion || c.tipoIdentificacion || '',
   numeroIdentificacion: c.usuario?.numeroIdentificacion || c.numeroIdentificacion || '',
   licenciaConduccion: c.categoriaLicencia || '',
+  numeroLicencia: c.numeroLicencia || '',
   fechaVencimientoLicencia: c.vencimientoLicencia || '',
 })
 
@@ -85,6 +86,7 @@ export const ConductorProvider = ({ children }) => {
       email: nuevoConductor.email,
       password: nuevoConductor.password,
       categoriaLicencia: nuevoConductor.licenciaConduccion,
+      numeroLicencia: nuevoConductor.numeroLicencia || null,
       vencimientoLicencia: nuevoConductor.fechaVencimientoLicencia,
     }
     const response = await conductorService.createConductor(payload)

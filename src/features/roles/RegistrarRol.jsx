@@ -22,7 +22,36 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
   const [error, setError] = useState('')
   const [permisosDisponibles, setPermisosDisponibles] = useState([])
 
-  const modulos = Object.entries(MODULOS)
+  const modulos = Object.entries(MODULOS).filter(([key]) => key !== 'ROLES')
+
+  const toggleModulo = (modulo, todosSeleccionados) => {
+    if (todosSeleccionados) {
+      setFormData(prev => ({
+        ...prev,
+        permisos: prev.permisos.filter(p => !modulo.permisos.includes(p) && p !== modulo.listar)
+      }))
+    } else {
+      const extras = modulo.listar ? [modulo.listar] : []
+      setFormData(prev => ({
+        ...prev,
+        permisos: [...new Set([...prev.permisos, ...modulo.permisos, ...extras])]
+      }))
+    }
+  }
+
+  const togglePermiso = (modulo, permiso, checked) => {
+    let nuevos = checked
+      ? [...formData.permisos, permiso]
+      : formData.permisos.filter(p => p !== permiso)
+    if (modulo.listar) {
+      if (checked && !nuevos.includes(modulo.listar)) {
+        nuevos = [...nuevos, modulo.listar]
+      } else if (!checked && !modulo.permisos.some(p => nuevos.includes(p))) {
+        nuevos = nuevos.filter(p => p !== modulo.listar)
+      }
+    }
+    setFormData({ ...formData, permisos: nuevos })
+  }
 
   // Cargar permisos disponibles desde el backend al montar
   useEffect(() => {
@@ -108,26 +137,32 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
       'listar_vehiculo': 'Listar',
       'consultar_vehiculo': 'Consultar',
       'actualizar_vehiculo': 'Actualizar',
+      'inhabilitar_vehiculo': 'Inhabilitar',
       'registrar_conductor': 'Registrar',
       'listar_conductor': 'Listar',
       'consultar_conductor': 'Consultar',
       'actualizar_conductor': 'Actualizar',
+      'inhabilitar_conductor': 'Inhabilitar',
       'registrar_destino': 'Registrar',
       'listar_destino': 'Listar',
       'consultar_destino': 'Consultar',
       'actualizar_destino': 'Actualizar',
+      'inhabilitar_destino': 'Inhabilitar',
       'registrar_ruta': 'Registrar',
       'listar_ruta': 'Listar',
       'consultar_ruta': 'Consultar',
       'actualizar_ruta': 'Actualizar',
-      'registrar_encomienda': 'Registrar',
-      'listar_encomienda': 'Listar',
-      'consultar_encomienda': 'Consultar',
-      'actualizar_encomienda': 'Actualizar',
+      'inhabilitar_ruta': 'Inhabilitar',
+      'registrar_venta': 'Registrar',
+      'listar_venta': 'Listar',
+      'consultar_venta': 'Consultar',
+      'actualizar_venta': 'Actualizar',
+      'inhabilitar_venta': 'Inhabilitar',
       'registrar_anticipo': 'Registrar',
       'listar_anticipo': 'Listar',
       'consultar_anticipo': 'Consultar',
       'actualizar_anticipo': 'Actualizar',
+      'inhabilitar_anticipo': 'Inhabilitar',
       'listar_propietario': 'Listar',
       'registrar_propietario': 'Registrar',
       'consultar_propietario': 'Consultar',
@@ -238,17 +273,7 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
                         }
                         onChange={() => {
                           const todosSeleccionados = modulo.permisos.every(p => formData.permisos.includes(p))
-                          if (todosSeleccionados) {
-                            setFormData(prev => ({
-                              ...prev,
-                              permisos: prev.permisos.filter(p => !modulo.permisos.includes(p))
-                            }))
-                          } else {
-                            setFormData(prev => ({
-                              ...prev,
-                              permisos: [...new Set([...prev.permisos, ...modulo.permisos])]
-                            }))
-                          }
+                          toggleModulo(modulo, todosSeleccionados)
                         }}
                         sx={{
                           color: theme.palette.primary.main,
@@ -264,17 +289,12 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
                 <Box sx={{ p: 1.5, backgroundColor: 'white' }}>
                   <Grid container spacing={0.5}>
                     {modulo.permisos.map((permiso) => (
-                      <Grid size={{ xs: 6, sm: 4, md: 2 }} key={permiso}>
+                      <Grid size={{ xs: 6, sm: 4, md: 3 }} key={permiso}>
                         <FormControlLabel
                           control={
                             <Checkbox
                               checked={formData.permisos.includes(permiso)}
-                              onChange={(e) => {
-                                const newPermisos = e.target.checked
-                                  ? [...formData.permisos, permiso]
-                                  : formData.permisos.filter(p => p !== permiso)
-                                setFormData({ ...formData, permisos: newPermisos })
-                              }}
+                              onChange={(e) => togglePermiso(modulo, permiso, e.target.checked)}
                               sx={{
                                 color: theme.palette.primary.main,
                                 '&.Mui-checked': { color: theme.palette.primary.main }

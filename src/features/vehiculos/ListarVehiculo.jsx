@@ -52,7 +52,8 @@ const getFilterMenuProps = (theme) => ({
                 boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
                 mt: 0.5,
                 '& .MuiMenuItem-root': {
-                    fontSize: '0.82rem',
+                    fontSize: '0.82rem', py: 0.9, px: 2,
+                    display: 'flex', justifyContent: 'space-between', gap: 2,
                     '&:hover': { backgroundColor: theme.palette.primary.light },
                     '&.Mui-selected': { backgroundColor: 'transparent', fontWeight: 600, color: theme.palette.text.primary },
                     '&.Mui-selected:hover': { backgroundColor: theme.palette.primary.light },
@@ -67,6 +68,9 @@ const FILTROS_HABILITADO = [
     { value: 'habilitado', label: 'Habilitado' },
     { value: 'inhabilitado', label: 'Inhabilitado' },
 ]
+
+const ESTADOS_VEHICULO = ['Disponible', 'Mantenimiento', 'En Ruta']
+const TIPOS_VEHICULO = ['Camioneta', 'Camión', 'Furgón', 'Semi Trayler', 'Trayler', 'Motocicleta', 'Otro']
 
 const PlacaDisplay = ({ placa, theme }) => {
     const letras = placa?.slice(0, 3) ?? ''
@@ -162,7 +166,8 @@ const ListarTransporte = () => {
     const [confirmInhabilitar, setConfirmInhabilitar] = useState({ open: false, id: null, habilitadoActual: null, placa: '', estadoVehiculo: null })
     const [rutasMantenimiento, setRutasMantenimiento] = useState({ data: [], loading: false })
     const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
-    const [filtroEstadoVehiculo, setFiltroEstadoVehiculo] = useState('todo')
+    const [filtroEstadoVehiculo, setFiltroEstadoVehiculo] = useState('')
+    const [filtroTipo, setFiltroTipo] = useState('')
     const [page, setPage] = useState(1)
     const [rowsPerPage, setRowsPerPage] = useState(5)
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
@@ -210,7 +215,8 @@ const ListarTransporte = () => {
                 await fetchVehiculos(undefined, {
                     page,
                     limit: rowsPerPage,
-                    estado: filtroEstadoVehiculo === 'todo' ? undefined : filtroEstadoVehiculo,
+                    estado: filtroEstadoVehiculo === '' || filtroEstadoVehiculo === 'En Ruta' ? undefined : filtroEstadoVehiculo,
+                    tipo: filtroTipo || undefined,
                     habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
                     sortBy: `${sortBy.field}.${sortBy.dir}`,
                     q: debouncedSearch.trim() || undefined,
@@ -223,7 +229,7 @@ const ListarTransporte = () => {
         }
         doFetch()
         return () => { cancelled = true }
-    }, [usuario, navigate, page, rowsPerPage, filtroEstadoVehiculo, filtroHabilitado, debouncedSearch, sortBy, fetchVehiculos])
+    }, [usuario, navigate, page, rowsPerPage, filtroEstadoVehiculo, filtroTipo, filtroHabilitado, debouncedSearch, sortBy, fetchVehiculos])
 
     const handleSort = (field) => {
         setSortBy(prev => prev.field === field
@@ -301,7 +307,7 @@ const ListarTransporte = () => {
             (filtroHabilitado === 'habilitado' && t.habilitado !== false) ||
             (filtroHabilitado === 'inhabilitado' && t.habilitado === false)
 
-        const coincideEstado = filtroEstadoVehiculo === 'todo' || t.estadoEfectivo === filtroEstadoVehiculo
+        const coincideEstado = filtroEstadoVehiculo === '' || t.estadoEfectivo === filtroEstadoVehiculo
 
         return coincideBusqueda && coincideHabilitado && coincideEstado
     })
@@ -309,7 +315,8 @@ const ListarTransporte = () => {
     const limpiarFiltros = () => {
         setSearchTerm('')
         setFiltroHabilitado('todo')
-        setFiltroEstadoVehiculo('todo')
+        setFiltroEstadoVehiculo('')
+        setFiltroTipo('')
         setPage(1)
     }
 
@@ -318,7 +325,7 @@ const ListarTransporte = () => {
         setPage(1)
     }
 
-    const hayFiltrosActivos = searchTerm.trim() !== '' || filtroHabilitado !== 'todo' || filtroEstadoVehiculo !== 'todo'
+    const hayFiltrosActivos = searchTerm.trim() !== '' || filtroHabilitado !== 'todo' || filtroEstadoVehiculo !== '' || filtroTipo !== ''
 
     const totalPages = Math.max(1, Math.ceil(totalBackend / rowsPerPage))
     const safePage = Math.min(page, totalPages)
@@ -424,26 +431,58 @@ const ListarTransporte = () => {
                         ))}
                     </Box>
 
-                    <FormControl size="small" sx={{ minWidth: 160 }}>
+                    <FormControl size="small" sx={{ minWidth: 150 }}>
                         <Select
+                            displayEmpty
                             value={filtroEstadoVehiculo}
                             onChange={e => { setFiltroEstadoVehiculo(e.target.value); setPage(1) }}
+                            renderValue={v => v || 'Estado'}
                             IconComponent={KeyboardArrowDownOutlinedIcon}
-                            displayEmpty
                             sx={{
-                                fontSize: '0.82rem',
-                                borderRadius: 4,
-                                backgroundColor: theme.palette.background.paper,
+                                fontSize: '0.82rem', borderRadius: 4,
+                                color: filtroEstadoVehiculo ? theme.palette.text.primary : theme.palette.text.secondary,
                                 '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
                                 '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
                                 '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
+                                '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` },
+                                '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
+                                '& .MuiTouchRipple-root': { display: 'none' },
                             }}
-                            MenuProps={filterMenuProps}
-                        >
-                            <MenuItem value="todo" sx={{ fontSize: '0.82rem' }}>Todos los estados</MenuItem>
-                            <MenuItem value="Disponible" sx={{ fontSize: '0.82rem' }}>Disponible</MenuItem>
-                            <MenuItem value="Mantenimiento" sx={{ fontSize: '0.82rem' }}>Mantenimiento</MenuItem>
-                            <MenuItem value="En Ruta" sx={{ fontSize: '0.82rem' }}>En Ruta</MenuItem>
+                            MenuProps={filterMenuProps}>
+                            <MenuItem value="">Todos</MenuItem>
+                            {ESTADOS_VEHICULO.map(e => (
+                                <MenuItem key={e} value={e}>
+                                    {e}
+                                    {filtroEstadoVehiculo === e && <CheckOutlinedIcon sx={{ fontSize: 14, color: theme.palette.text.secondary }} />}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                    <FormControl size="small" sx={{ minWidth: 150 }}>
+                        <Select
+                            displayEmpty
+                            value={filtroTipo}
+                            onChange={e => { setFiltroTipo(e.target.value); setPage(1) }}
+                            renderValue={v => v || 'Tipo'}
+                            IconComponent={KeyboardArrowDownOutlinedIcon}
+                            sx={{
+                                fontSize: '0.82rem', borderRadius: 4,
+                                color: filtroTipo ? theme.palette.text.primary : theme.palette.text.secondary,
+                                '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
+                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
+                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
+                                '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` },
+                                '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
+                                '& .MuiTouchRipple-root': { display: 'none' },
+                            }}
+                            MenuProps={filterMenuProps}>
+                            <MenuItem value="">Todos</MenuItem>
+                            {TIPOS_VEHICULO.map(t => (
+                                <MenuItem key={t} value={t}>
+                                    {t}
+                                    {filtroTipo === t && <CheckOutlinedIcon sx={{ fontSize: 14, color: theme.palette.text.secondary }} />}
+                                </MenuItem>
+                            ))}
                         </Select>
                     </FormControl>
                 </Box>
@@ -507,18 +546,19 @@ const ListarTransporte = () => {
                                 </TableCell>
                                 <TableCell sx={thStyle}>Marca</TableCell>
                                 <TableCell sx={thStyle}>Modelo</TableCell>
-                                <TableCell sx={thStyle}>Color</TableCell>
                                 <TableCell sx={thStyle}>Tipo</TableCell>
-                                <TableCell sx={thStyle}>Capacidad</TableCell>
-                                <TableCell sx={thStyle}>Estado</TableCell>
+                                <TableCell sx={thStyle}>Propietario</TableCell>
                                 <TableCell sx={thStyle}>SOAT</TableCell>
+                                <TableCell sx={thStyle}>Rev. Técnica</TableCell>
+                                <TableCell sx={thStyle}>Seg. Terceros</TableCell>
+                                <TableCell sx={thStyle}>Estado</TableCell>
                                 <TableCell sx={{ ...thStyle, width: 130 }}>Acciones</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
                             {loading && initialLoad.current ? (
                                 <TableRow>
-                                    <TableCell colSpan={9} align="center" sx={{ py: 7 }}>
+                                    <TableCell colSpan={10} align="center" sx={{ py: 7 }}>
                                         <CircularProgress size={28} sx={{ color: theme.palette.primary.main }} />
                                         <Typography variant="body2" color={theme.palette.text.secondary} mt={1.5}>
                                             Cargando vehículos...
@@ -527,7 +567,7 @@ const ListarTransporte = () => {
                                 </TableRow>
                             ) : error ? (
                                 <TableRow>
-                                    <TableCell colSpan={9} align="center" sx={{ py: 5 }}>
+                                    <TableCell colSpan={10} align="center" sx={{ py: 5 }}>
                                         <Typography color="error" variant="body2">
                                             No se pudieron cargar los vehículos. Verifica la conexión con el servidor.
                                         </Typography>
@@ -540,9 +580,9 @@ const ListarTransporte = () => {
                                 </TableRow>
                             ) : !loading && filteredTransportes.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={9} align="center" sx={{ py: 7 }}>
+                                    <TableCell colSpan={10} align="center" sx={{ py: 7 }}>
                                         <Typography color={theme.palette.text.secondary} variant="body2">
-                                            {filtroEstadoVehiculo !== 'todo' || filtroHabilitado !== 'todo'
+                                            {filtroEstadoVehiculo !== '' || filtroTipo !== '' || filtroHabilitado !== 'todo'
                                                 ? 'No se encontraron vehículos que coincidan con los filtros aplicados.'
                                                 : debouncedSearch.trim()
                                                     ? 'No se encontraron vehículos que coincidan con la búsqueda.'
@@ -575,9 +615,51 @@ const ListarTransporte = () => {
                                         </TableCell>
                                         <TableCell sx={{ py: 1.5 }}>{transporte.marca}</TableCell>
                                         <TableCell sx={{ py: 1.5 }}>{transporte.modelo}</TableCell>
-                                        <TableCell sx={{ py: 1.5 }}>{transporte.color}</TableCell>
-                                        <TableCell sx={{ py: 1.5 }}>{transporte.tipo}</TableCell>
-                                        <TableCell sx={{ py: 1.5 }}>{transporte.capacidad} kg</TableCell>
+                                        <TableCell sx={{ py: 1.5 }}>
+                                            <Chip
+                                                label={transporte.tipo || '—'}
+                                                size="small"
+                                                sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.main, fontSize: '0.7rem' }}
+                                            />
+                                        </TableCell>
+                                        <TableCell sx={{ py: 1.5 }}>
+                                            {transporte.propietario
+                                                ? `${transporte.propietario.nombre} ${transporte.propietario.apellido}`
+                                                : '—'}
+                                        </TableCell>
+                                        <TableCell sx={{ py: 1.5 }}>
+                                            <Chip
+                                                label={transporte.vencimientoSOAT ? new Date(transporte.vencimientoSOAT).toLocaleDateString() : 'N/A'}
+                                                size="small"
+                                                variant={isVencido(transporte.vencimientoSOAT) ? 'filled' : 'outlined'}
+                                                sx={isVencido(transporte.vencimientoSOAT)
+                                                    ? { fontSize: '0.7rem', backgroundColor: theme.palette.primary.main, color: 'white', borderColor: theme.palette.primary.main }
+                                                    : { fontSize: '0.7rem', color: theme.palette.primary.main, borderColor: theme.palette.primary.main }
+                                                }
+                                            />
+                                        </TableCell>
+                                        <TableCell sx={{ py: 1.5 }}>
+                                            <Chip
+                                                label={transporte.vencimientoRevisionTecnica ? new Date(transporte.vencimientoRevisionTecnica).toLocaleDateString() : 'N/A'}
+                                                size="small"
+                                                variant={isVencido(transporte.vencimientoRevisionTecnica) ? 'filled' : 'outlined'}
+                                                sx={isVencido(transporte.vencimientoRevisionTecnica)
+                                                    ? { fontSize: '0.7rem', backgroundColor: theme.palette.primary.main, color: 'white', borderColor: theme.palette.primary.main }
+                                                    : { fontSize: '0.7rem', color: theme.palette.primary.main, borderColor: theme.palette.primary.main }
+                                                }
+                                            />
+                                        </TableCell>
+                                        <TableCell sx={{ py: 1.5 }}>
+                                            <Chip
+                                                label={transporte.vencimientoSeguroTerceros ? new Date(transporte.vencimientoSeguroTerceros).toLocaleDateString() : 'N/A'}
+                                                size="small"
+                                                variant={isVencido(transporte.vencimientoSeguroTerceros) ? 'filled' : 'outlined'}
+                                                sx={isVencido(transporte.vencimientoSeguroTerceros)
+                                                    ? { fontSize: '0.7rem', backgroundColor: theme.palette.primary.main, color: 'white', borderColor: theme.palette.primary.main }
+                                                    : { fontSize: '0.7rem', color: theme.palette.primary.main, borderColor: theme.palette.primary.main }
+                                                }
+                                            />
+                                        </TableCell>
                                         <TableCell sx={{ py: 1.5 }}>
                                             {transporte.estadoEfectivo === 'En Ruta' ? (
                                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1, py: 0.6 }}>
@@ -606,15 +688,6 @@ const ListarTransporte = () => {
                                             )}
                                         </TableCell>
                                         <TableCell sx={{ py: 1.5 }}>
-                                            <Chip
-                                                label={transporte.vencimientoSOAT ? new Date(transporte.vencimientoSOAT).toLocaleDateString() : 'N/A'}
-                                                size="small"
-                                                color={isVencido(transporte.vencimientoSOAT) ? 'error' : 'success'}
-                                                variant={isVencido(transporte.vencimientoSOAT) ? 'filled' : 'outlined'}
-                                                sx={{ fontSize: '0.7rem' }}
-                                            />
-                                        </TableCell>
-                                        <TableCell sx={{ py: 1.5 }}>
                                             <Box sx={{ display: 'flex', gap: 0.5 }}>
                                                 {tienePermiso(PERMISOS.CONSULTAR_VEHICULO) && (
                                                     <Tooltip title="Ver detalle">
@@ -638,7 +711,7 @@ const ListarTransporte = () => {
                                                         </IconButton>
                                                     </Tooltip>
                                                 )}
-                                                {tienePermiso(PERMISOS.ACTUALIZAR_VEHICULO) && (
+                                                {tienePermiso(PERMISOS.INHABILITAR_VEHICULO) && (
                                                     <Tooltip title={transporte.habilitado !== false ? 'Inhabilitar' : 'Habilitar'}>
                                                         <IconButton
                                                             size="small"

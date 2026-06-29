@@ -7,7 +7,7 @@ import {
     Box, Typography, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, TextField,
     IconButton, Chip, Tooltip, InputAdornment,
-    Button, Avatar, Select, MenuItem, Pagination, Snackbar, Alert,
+    Button, Select, MenuItem, Pagination, Snackbar, Alert,
     CircularProgress, FormControl, InputLabel, TableSortLabel,
     Dialog, DialogTitle, DialogContent, DialogActions
 } from '@mui/material'
@@ -83,6 +83,7 @@ const FILTROS_ANTICIPO = [
     { value: 'En Legalización', label: 'En Legalización' },
     { value: 'Excedente pendiente', label: 'Excedente pendiente' },
     { value: 'Completado', label: 'Completado' },
+    { value: 'Cancelado', label: 'Cancelado' },
 ]
 
 const AnticipoEstadoDot = ({ estado }) => {
@@ -482,19 +483,9 @@ const ListarAnticipoExcedente = () => {
                                         >
                                             {/* Conductor */}
                                             <TableCell sx={{ py: 1.5 }}>
-                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                                    <Avatar sx={{
-                                                        width: 34, height: 34,
-                                                        backgroundColor: anticipo.habilitado !== false ? theme.palette.avatarDefault.bg : theme.palette.avatarDisabled.bg,
-                                                        fontSize: '0.73rem', fontWeight: 700,
-                                                        color: anticipo.habilitado !== false ? theme.palette.avatarDefault.color : theme.palette.avatarDisabled.color,
-                                                    }}>
-                                                        {nombreConductor.split(' ').map(n => n[0]).slice(0, 2).join('')}
-                                                    </Avatar>
-                                                    <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary} noWrap>
-                                                        {nombreConductor}
-                                                    </Typography>
-                                                </Box>
+                                                <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary} noWrap>
+                                                    {nombreConductor}
+                                                </Typography>
                                             </TableCell>
 
                                             {/* Ruta */}
@@ -599,7 +590,7 @@ const ListarAnticipoExcedente = () => {
                                                             </IconButton>
                                                         </Tooltip>
                                                     )}
-                                                    {tienePermiso(PERMISOS.ACTUALIZAR_ANTICIPO) && (
+                                                    {tienePermiso(PERMISOS.INHABILITAR_ANTICIPO) && (
                                                         <Tooltip title={anticipo.habilitado !== false ? 'Inhabilitar' : 'Habilitar'}>
                                                             <IconButton size="small"
                                                                 onClick={() => handleToggleHabilitado(anticipo)}

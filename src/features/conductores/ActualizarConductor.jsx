@@ -43,6 +43,7 @@ const FORM_INICIAL = {
     emailLocal: '',
     emailDominio: '@gmail.com',
     licenciaConduccion: '',
+    numeroLicencia: '',
     fechaVencimientoLicencia: ''
 }
 
@@ -92,6 +93,7 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
                 emailLocal,
                 emailDominio,
                 licenciaConduccion: conductor.licenciaConduccion || conductor.categoriaLicencia || '',
+                numeroLicencia: conductor.numeroLicencia || '',
                 fechaVencimientoLicencia: conductor.fechaVencimientoLicencia || conductor.vencimientoLicencia || '',
             }
             setForm(datosForm)
@@ -157,15 +159,15 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
         setApiError(null)
 
         try {
-            const { emailLocal, emailDominio, licenciaConduccion, fechaVencimientoLicencia, ...resto } = form
+            const { emailLocal, emailDominio, licenciaConduccion, numeroLicencia, fechaVencimientoLicencia, ...resto } = form
 
             await actualizarConductorApi(
                 parseInt(conductorProp?.idConductor),
                 {
                     ...resto,
                     email: emailLocal ? emailLocal + emailDominio : '',
-                    // El backend espera "categoriaLicencia" y "vencimientoLicencia"
                     categoriaLicencia: licenciaConduccion,
+                    numeroLicencia: numeroLicencia || null,
                     vencimientoLicencia: fechaVencimientoLicencia,
                 }
             )
@@ -245,6 +247,9 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
                             <MenuItem value="D2">D2 - Bus grande</MenuItem>
                             <MenuItem value="E">E - Remolque</MenuItem>
                         </FormSelect>
+                        <FormField label="N° de Licencia" name="numeroLicencia" value={form.numeroLicencia}
+                            onChange={handleChange} icon={BadgeOutlinedIcon}
+                            inputProps={{ maxLength: 20 }} placeholder="Ej: 123456789" />
                         <FormField label="Fecha Vencimiento Licencia" name="fechaVencimientoLicencia" type="date"
                             value={form.fechaVencimientoLicencia} onChange={handleChange}
                             required error={errores.fechaVencimientoLicencia} helperText={errores.fechaVencimientoLicencia}
@@ -284,7 +289,8 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica los datos de licencia</Typography>
                                 <ConfirmRow label="Teléfono" value={form.telefono} />
                                 <ConfirmRow label="Correo" value={form.emailLocal + form.emailDominio} />
-                                <ConfirmRow label="Licencia" value={getLicenciaLabel(form.licenciaConduccion)} />
+                                <ConfirmRow label="Categoría licencia" value={getLicenciaLabel(form.licenciaConduccion)} />
+                                <ConfirmRow label="N° de licencia" value={form.numeroLicencia || '—'} />
                                 <ConfirmRow label="Vencimiento" value={form.fechaVencimientoLicencia} />
                             </Paper>
                         </Box>

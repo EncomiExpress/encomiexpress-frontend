@@ -141,6 +141,14 @@ const PlacaDisplay = ({ placa, theme }) => {
     )
 }
 
+const formatHora12 = (hora) => {
+    if (!hora) return null
+    const [h, m] = hora.split(':').map(Number)
+    const periodo = h >= 12 ? 'PM' : 'AM'
+    const h12 = h % 12 || 12
+    return `${h12}:${String(m).padStart(2, '0')} ${periodo}`
+}
+
 const getThStyle = (theme) => ({
     fontWeight: 700,
     fontSize: '0.80rem',
@@ -303,7 +311,7 @@ const ListarRutaProgramacion = () => {
     }
 const getDestinoNombre = (id) => {
   const d = destinos.find(d => d.idDestino === id);
-  return d ? (d.nombre || `${d.departamento} - ${d.ciudad}`) : 'N/A';
+  return d ? (d.nombre || `${d.ciudad}, ${d.departamento}`) : 'N/A';
 };
 
     // Si la API devuelve los datos relacionados embebidos, los usamos directamente
@@ -319,7 +327,7 @@ const getDestinoNombre = (id) => {
 
 const resolveDestino = (ruta) =>
   ruta.destino
-    ? `${ruta.destino.departamento} - ${ruta.destino.ciudad}`
+    ? `${ruta.destino.ciudad}, ${ruta.destino.departamento}`
     : getDestinoNombre(ruta.idDestino);
 
     const getId = (ruta) => ruta.idRuta ?? ruta.idRutaProgramada
@@ -634,13 +642,11 @@ const resolveDestino = (ruta) =>
                                             '&.Mui-active .MuiTableSortLabel-icon': { opacity: 1 },
                                         }}
                                     >
-                                        Fecha
+                                        Fecha y hora salida
                                     </TableSortLabel>
                                 </TableCell>
-                                <TableCell sx={thStyle}>Hora Salida</TableCell>
                                 <TableCell sx={thStyle}>Vehículo</TableCell>
                                 <TableCell sx={thStyle}>Conductor</TableCell>
-                                <TableCell sx={thStyle}>Destino</TableCell>
                                 <TableCell sx={thStyle}>Estado</TableCell>
                                 <TableCell sx={{ ...thStyle, width: 130 }}>Acciones</TableCell>
                             </TableRow>
@@ -648,7 +654,7 @@ const resolveDestino = (ruta) =>
                         <TableBody>
                             {loading && initialLoad.current ? (
                                 <TableRow>
-                                    <TableCell colSpan={8} align="center" sx={{ py: 7 }}>
+                                    <TableCell colSpan={6} align="center" sx={{ py: 7 }}>
                                         <CircularProgress size={28} sx={{ color: theme.palette.primary.main }} />
                                         <Typography variant="body2" color={theme.palette.text.secondary} mt={1.5}>
                                             Cargando rutas...
@@ -657,7 +663,7 @@ const resolveDestino = (ruta) =>
                                 </TableRow>
                             ) : error ? (
                                 <TableRow>
-                                    <TableCell colSpan={8} align="center" sx={{ py: 5 }}>
+                                    <TableCell colSpan={6} align="center" sx={{ py: 5 }}>
                                         <Typography color="error" variant="body2">
                                             No se pudieron cargar las rutas. Verifica la conexión con el servidor.
                                         </Typography>
@@ -670,7 +676,7 @@ const resolveDestino = (ruta) =>
                                 </TableRow>
                             ) : !loading && rutasProgramadas.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={8} align="center" sx={{ py: 7 }}>
+                                    <TableCell colSpan={6} align="center" sx={{ py: 7 }}>
                                         <Typography color={theme.palette.text.secondary} variant="body2">
                                             {filtroHabilitado !== 'todo' || filtroEstadoRuta !== 'todo' || filtroAnio !== '' || filtroMes !== ''
                                                 ? 'No se encontraron rutas que coincidan con los filtros aplicados.'
@@ -704,8 +710,12 @@ const resolveDestino = (ruta) =>
                                             <TableCell sx={{ py: 1.5, fontSize: '0.85rem' }}>
                                                 {ruta.nombreRuta || '—'}
                                             </TableCell>
-                                            <TableCell sx={{ py: 1.5 }}>{ruta.fechaSalida || '—'}</TableCell>
-                                            <TableCell sx={{ py: 1.5 }}>{ruta.horaSalida || '—'}</TableCell>
+                                            <TableCell sx={{ py: 1.5 }}>
+                                                <Typography sx={{ fontSize: '0.875rem' }}>{ruta.fechaSalida || '—'}</Typography>
+                                                {ruta.horaSalida && (
+                                                    <Typography sx={{ fontSize: '0.75rem', color: theme.palette.text.secondary }}>{formatHora12(ruta.horaSalida)}</Typography>
+                                                )}
+                                            </TableCell>
                                             <TableCell sx={{ py: 1.5 }}>
                                                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.4 }}>
                                                     <PlacaDisplay placa={resolveVehiculo(ruta)} theme={theme} />
@@ -746,16 +756,6 @@ const resolveDestino = (ruta) =>
                                                             }}
                                                         />
                                                     )}
-                                                </Box>
-                                            </TableCell>
-                                            <TableCell sx={{ py: 1.5 }}>
-                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                                                    <Box sx={{ width: 20, height: 20, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                        <NacionSVG color={theme.palette.primary.main} />
-                                                    </Box>
-                                                    <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary} noWrap>
-                                                        {resolveDestino(ruta)}
-                                                    </Typography>
                                                 </Box>
                                             </TableCell>
                                             <TableCell sx={{ py: 1.5, minWidth: 150 }}>
@@ -825,7 +825,7 @@ const resolveDestino = (ruta) =>
                                                             </IconButton>
                                                         </Tooltip>
                                                     )}
-                                                    {tienePermiso(PERMISOS.ACTUALIZAR_RUTA) && (
+                                                    {tienePermiso(PERMISOS.INHABILITAR_RUTA) && (
                                                         <Tooltip title={ruta.habilitado !== false ? 'Inhabilitar' : 'Habilitar'}>
                                                             <IconButton
                                                                 size="small"

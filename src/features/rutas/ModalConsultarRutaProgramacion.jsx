@@ -1,4 +1,4 @@
-import { useTheme } from '@mui/material/styles'
+import { useTheme, alpha } from '@mui/material/styles'
 import { useState, useEffect } from 'react'
 import * as ventaService from '../../shared/services/ventaService'
 import * as anticipoService from '../../shared/services/anticipoService'
@@ -6,12 +6,53 @@ import { useVehiculo } from '../../shared/contexts/VehiculoContext.jsx'
 import { useConductor } from '../../shared/contexts/ConductorContext.jsx'
 import { useDestino } from '../../shared/contexts/DestinoContext.jsx'
 import {
-    Box, Typography, Paper, Chip, Button, Dialog, Avatar, IconButton, CircularProgress,
+    Box, Typography, Paper, Chip, Button, Dialog, IconButton, CircularProgress,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tabs, Tab
 } from '@mui/material'
 import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
-import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined'
+import AccessTimeOutlinedIcon from '@mui/icons-material/AccessTimeOutlined'
 import CloseIcon from '@mui/icons-material/Close'
+import RouteIcon from '@mui/icons-material/Route'
+import { getEstadoColorRuta, getAnticipoEstadoDot, getVentaEstadoDot } from '../../shared/utils/estadoColors.js'
+
+const formatHora12 = (hora) => {
+    if (!hora) return null
+    const [h, m] = hora.split(':').map(Number)
+    const periodo = h >= 12 ? 'PM' : 'AM'
+    const h12 = h % 12 || 12
+    return `${h12}:${String(m).padStart(2, '0')} ${periodo}`
+}
+
+const renderEstadoRuta = (estado) => {
+    const color = getEstadoColorRuta(estado).color
+    if (estado === 'Cancelada')
+        return <Box component="span" sx={{ flexShrink: 0, width: 10, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '1rem', color, lineHeight: 1 }}>−</Box>
+    if (estado === 'Completada')
+        return <Box component="span" sx={{ flexShrink: 0, width: 10, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.85rem', color, lineHeight: 1 }}>✓</Box>
+    if (estado === 'Programada')
+        return <Box sx={{ width: 10, height: 10, borderRadius: '50%', flexShrink: 0, backgroundColor: 'transparent', border: `2px solid ${color}` }} />
+    return <Box sx={{ width: 10, height: 10, borderRadius: '50%', flexShrink: 0, backgroundColor: color, border: `2px solid ${color}` }} />
+}
+
+const CampoFila = ({ label, value, esChip }) => {
+    const theme = useTheme()
+    return (
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
+            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>{label}</Typography>
+            {esChip ? (
+                <Chip
+                    label={value || '—'}
+                    size="small"
+                    sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.main, fontSize: '0.7rem' }}
+                />
+            ) : (
+                <Typography variant="body2" fontWeight={500} color={theme.palette.text.medium}>
+                    {value ?? '—'}
+                </Typography>
+            )}
+        </Box>
+    )
+}
 
 const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
     const theme = useTheme()
@@ -48,9 +89,9 @@ const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
         return c ? `${c.nombre} ${c.apellido}` : 'N/A'
     }
     const resolveDestino = (r) => {
-        if (r.destino) return `${r.destino.departamento} - ${r.destino.ciudad}`
+        if (r.destino) return `${r.destino.ciudad}, ${r.destino.departamento}`
         const d = destinos.find(d => d.idDestino === r.idDestino)
-        return d ? (d.nombre || `${d.departamento} - ${d.ciudad}`) : 'N/A'
+        return d ? `${d.ciudad}, ${d.departamento}` : 'N/A'
     }
 
     const handleClose = () => { setTabIndex(0); onClose() }
@@ -66,14 +107,19 @@ const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
 
             <Box sx={{ borderBottom: 1, borderColor: 'divider', px: 3, pt: 2, backgroundColor: theme.palette.background.paper }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
-                    <Avatar sx={{ backgroundColor: '#FFCDD2', color: '#C62828', width: 40, height: 40, fontSize: '0.9rem', fontWeight: 700 }}>
-                        {ruta.nombreRuta?.[0] || 'R'}
-                    </Avatar>
+                    <Box sx={{
+                        width: 40, height: 40, borderRadius: '10px', flexShrink: 0,
+                        backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                        border: `1.5px solid ${alpha(theme.palette.primary.main, 0.22)}`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                        <RouteIcon sx={{ fontSize: 22, color: theme.palette.primary.main }} />
+                    </Box>
                     <Box>
                         <Typography fontWeight={700} fontSize="1rem" color={theme.palette.text.primary}>
                             {ruta.nombreRuta || 'Ruta Programada'}
                         </Typography>
-                        <Typography variant="caption" color={theme.palette.text.secondary}>{ruta.fechaSalida}</Typography>
+                        <Typography variant="caption" color={theme.palette.text.secondary}>{resolveDestino(ruta)}</Typography>
                     </Box>
                 </Box>
                 <Tabs value={tabIndex} onChange={(_, v) => setTabIndex(v)} textColor="primary" indicatorColor="primary">
@@ -86,39 +132,61 @@ const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
             {tabIndex === 0 && (
                 <Box sx={{ p: 3 }}>
                     <Box sx={{ display: 'flex', gap: 2 }}>
-                        <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white', flex: 1 }}>
+                        <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: theme.palette.background.paper, flex: 1 }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                                 <DirectionsCarOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
                                 <Typography fontWeight={700} fontSize="0.95rem">Vehículo y Conductor</Typography>
                             </Box>
-                            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mt: 2 }}>
-                                <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Vehículo</Typography><Typography variant="body2" fontWeight={500}>{resolveVehiculo(ruta)}</Typography></Box>
-                                <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Conductor</Typography><Typography variant="body2" fontWeight={500}>{resolveConductor(ruta)}</Typography></Box>
+                            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
+                                Recursos asignados a esta ruta
+                            </Typography>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
+                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Vehículo</Typography>
+                                <Chip label={resolveVehiculo(ruta) || '—'} size="small"
+                                    onClick={() => window.open(`/vehiculos/listar?highlight=${ruta.idVehiculo}`, '_blank')}
+                                    sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.main, fontSize: '0.7rem', cursor: 'pointer', '&:hover': { filter: 'brightness(0.92)' } }} />
+                            </Box>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
+                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Conductor</Typography>
+                                <Typography variant="body2" fontWeight={500}
+                                    onClick={() => window.open(`/transporte/conductores?highlight=${ruta.idConductor}`, '_blank')}
+                                    sx={{ color: theme.palette.primary.main, cursor: 'pointer', textDecoration: 'underline', textDecorationStyle: 'dotted', '&:hover': { opacity: 0.75 } }}>
+                                    {resolveConductor(ruta)}
+                                </Typography>
                             </Box>
                         </Paper>
-                        <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white', flex: 1 }}>
+
+                        <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: theme.palette.background.paper, flex: 1 }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                <LocationOnOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
+                                <AccessTimeOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
                                 <Typography fontWeight={700} fontSize="0.95rem">Ruta y Horarios</Typography>
                             </Box>
-                            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mt: 2 }}>
-                                <Box sx={{ gridColumn: '1 / -1' }}><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Destino</Typography><Typography variant="body2" fontWeight={500}>{resolveDestino(ruta)}</Typography></Box>
-                                <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Fecha Salida</Typography><Typography variant="body2" fontWeight={500}>{ruta.fechaSalida}</Typography></Box>
-                                <Box><Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Hora Salida</Typography><Typography variant="body2" fontWeight={500}>{ruta.horaSalida || '—'}</Typography></Box>
-                                <Box sx={{ gridColumn: '1 / -1' }}>
-                                    <Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Estado</Typography>
-                                    <Typography variant="body2" fontWeight={500}
-                                        color={ruta.estado === 'Programada' ? '#A855F7' : ruta.estado === 'En Curso' ? '#3B82F6' : ruta.estado === 'Completada' ? '#059669' : '#71717A'}>
-                                        {ruta.estado}
+                            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
+                                Destino, fechas y estado de la ruta
+                            </Typography>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
+                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Destino</Typography>
+                                <Chip label={resolveDestino(ruta) || '—'} size="small"
+                                    onClick={() => window.open(`/transporte/destinos?highlight=${ruta.idDestino}`, '_blank')}
+                                    sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.main, fontSize: '0.7rem', cursor: 'pointer', '&:hover': { filter: 'brightness(0.92)' } }} />
+                            </Box>
+                            <CampoFila label="Fecha salida" value={ruta.fechaSalida || '—'} />
+                            <CampoFila label="Hora salida" value={formatHora12(ruta.horaSalida) || '—'} />
+                            {ruta.horaLlegadaEstimada && (
+                                <CampoFila label="Hora llegada est." value={formatHora12(ruta.horaLlegadaEstimada)} />
+                            )}
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
+                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Estado</Typography>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                                    {renderEstadoRuta(ruta.estado)}
+                                    <Typography variant="body2" fontWeight={500} color={theme.palette.text.medium}>
+                                        {ruta.estado || '—'}
                                     </Typography>
                                 </Box>
-                                {ruta.observaciones && (
-                                    <Box sx={{ gridColumn: '1 / -1' }}>
-                                        <Typography variant="caption" color={theme.palette.text.secondary} fontWeight={600}>Observaciones</Typography>
-                                        <Typography variant="body2" fontWeight={500}>{ruta.observaciones}</Typography>
-                                    </Box>
-                                )}
                             </Box>
+                            {ruta.observaciones && (
+                                <CampoFila label="Observaciones" value={ruta.observaciones} />
+                            )}
                         </Paper>
                     </Box>
                 </Box>
@@ -126,12 +194,14 @@ const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
 
             {tabIndex === 1 && (
                 <Box sx={{ p: 3 }}>
-                    <Typography variant="body2" color={theme.palette.text.secondary} sx={{ mb: 2 }}>Encomiendas registradas en esta ruta</Typography>
+                    <Typography variant="body2" color={theme.palette.text.secondary} sx={{ mb: 2 }}>
+                        Encomiendas registradas en esta ruta
+                    </Typography>
                     {tabEncomiendas.loading
                         ? <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}><CircularProgress size={30} /></Box>
                         : tabEncomiendas.data.length === 0
                         ? <Typography color="text.secondary" variant="body2" sx={{ py: 4, textAlign: 'center' }}>Sin encomiendas registradas</Typography>
-                        : <TableContainer component={Paper} elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 2 }}>
+                        : <TableContainer component={Paper} elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 2, maxHeight: 230, overflowY: 'auto' }}>
                             <Table size="small">
                                 <TableHead>
                                     <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
@@ -143,16 +213,25 @@ const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
                                 </TableHead>
                                 <TableBody>
                                     {tabEncomiendas.data.map(v => (
-                                        <TableRow key={v.idEncomiendaVenta} sx={{ '&:hover': { backgroundColor: theme.palette.background.subtle } }}>
+                                        <TableRow key={v.idEncomiendaVenta}
+                                            onClick={() => window.open(`/ventas/listar?highlight=${v.idEncomiendaVenta}`, '_blank')}
+                                            sx={{ cursor: 'pointer', '&:hover': { backgroundColor: theme.palette.background.subtle } }}>
                                             <TableCell sx={{ fontSize: '0.82rem', fontWeight: 600 }}>{v.numeroGuia || `#${v.idEncomiendaVenta}`}</TableCell>
                                             <TableCell sx={{ fontSize: '0.82rem' }}>{v.cliente ? `${v.cliente.nombre} ${v.cliente.apellido}` : '—'}</TableCell>
                                             <TableCell sx={{ fontSize: '0.82rem' }}>${Number(v.valorServicio || 0).toLocaleString('es-CO')}</TableCell>
                                             <TableCell>
-                                                <Chip label={v.estado} size="small" sx={{
-                                                    backgroundColor: v.estado === 'pendiente' ? '#FFF3E0' : v.estado === 'entregado' ? '#E8F5E9' : '#E3F2FD',
-                                                    color: v.estado === 'pendiente' ? '#E65100' : v.estado === 'entregado' ? '#2E7D32' : '#1565C0',
-                                                    fontWeight: 600, fontSize: '0.72rem'
-                                                }} />
+                                                {(() => {
+                                                    const info = getVentaEstadoDot(v.estado)
+                                                    return (
+                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                                                            {info.type === 'symbol'
+                                                                ? <Box component="span" sx={{ width: 10, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: info.char === '✓' ? '0.8rem' : '0.85rem', color: info.color, lineHeight: 1, flexShrink: 0 }}>{info.char}</Box>
+                                                                : <Box sx={{ width: 10, height: 10, borderRadius: '50%', flexShrink: 0, backgroundColor: info.fill ? info.color : 'transparent', border: `2px solid ${info.color}` }} />
+                                                            }
+                                                            <Typography fontSize="0.82rem" color={theme.palette.text.primary}>{info.label}</Typography>
+                                                        </Box>
+                                                    )
+                                                })()}
                                             </TableCell>
                                         </TableRow>
                                     ))}
@@ -165,36 +244,43 @@ const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
 
             {tabIndex === 2 && (
                 <Box sx={{ p: 3 }}>
-                    <Typography variant="body2" color={theme.palette.text.secondary} sx={{ mb: 2 }}>Anticipos asociados a esta ruta</Typography>
+                    <Typography variant="body2" color={theme.palette.text.secondary} sx={{ mb: 2 }}>
+                        Anticipos asociados a esta ruta
+                    </Typography>
                     {tabAnticipos.loading
                         ? <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}><CircularProgress size={30} /></Box>
                         : tabAnticipos.data.length === 0
                         ? <Typography color="text.secondary" variant="body2" sx={{ py: 4, textAlign: 'center' }}>Sin anticipos registrados</Typography>
-                        : <TableContainer component={Paper} elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 2 }}>
+                        : <TableContainer component={Paper} elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 2, maxHeight: 230, overflowY: 'auto' }}>
                             <Table size="small">
                                 <TableHead>
                                     <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
-                                        <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>#</TableCell>
                                         <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Valor</TableCell>
                                         <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Gastado</TableCell>
                                         <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Estado</TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
-                                    {tabAnticipos.data.map(a => (
-                                        <TableRow key={a.idAnticipoExcedente} sx={{ '&:hover': { backgroundColor: theme.palette.background.subtle } }}>
-                                            <TableCell sx={{ fontSize: '0.82rem', fontWeight: 600 }}>{a.idAnticipoExcedente}</TableCell>
-                                            <TableCell sx={{ fontSize: '0.82rem' }}>${Number(a.valorAnticipo).toLocaleString('es-CO')}</TableCell>
-                                            <TableCell sx={{ fontSize: '0.82rem' }}>${Number(a.valorGastado || 0).toLocaleString('es-CO')}</TableCell>
-                                            <TableCell>
-                                                <Chip label={a.estado} size="small" sx={{
-                                                    backgroundColor: a.estado === 'pendiente' ? '#FFF3E0' : a.estado === 'liquidado' ? '#E8F5E9' : '#E3F2FD',
-                                                    color: a.estado === 'pendiente' ? '#E65100' : a.estado === 'liquidado' ? '#2E7D32' : '#1565C0',
-                                                    fontWeight: 600, fontSize: '0.72rem'
-                                                }} />
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
+                                    {tabAnticipos.data.map(a => {
+                                        const info = getAnticipoEstadoDot(a.estado)
+                                        return (
+                                            <TableRow key={a.idAnticipoExcedente}
+                                                onClick={() => window.open(`/anticipos/listar?highlight=${a.idAnticipoExcedente}`, '_blank')}
+                                                sx={{ cursor: 'pointer', '&:hover': { backgroundColor: theme.palette.background.subtle } }}>
+                                                <TableCell sx={{ fontSize: '0.82rem' }}>${Number(a.valorAnticipo).toLocaleString('es-CO')}</TableCell>
+                                                <TableCell sx={{ fontSize: '0.82rem' }}>${Number(a.valorGastado || 0).toLocaleString('es-CO')}</TableCell>
+                                                <TableCell>
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                                                        {info.type === 'symbol'
+                                                            ? <Box component="span" sx={{ width: 10, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: info.char === '✓' ? '0.8rem' : '0.85rem', color: info.color, lineHeight: 1, flexShrink: 0 }}>{info.char}</Box>
+                                                            : <Box sx={{ width: 10, height: 10, borderRadius: '50%', flexShrink: 0, backgroundColor: info.fill ? info.color : 'transparent', border: `2px solid ${info.color}` }} />
+                                                        }
+                                                        <Typography fontSize="0.82rem" color={theme.palette.text.primary}>{info.label}</Typography>
+                                                    </Box>
+                                                </TableCell>
+                                            </TableRow>
+                                        )
+                                    })}
                                 </TableBody>
                             </Table>
                         </TableContainer>

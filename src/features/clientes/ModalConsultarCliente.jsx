@@ -2,13 +2,14 @@ import { useTheme } from '@mui/material/styles'
 import { useState, useEffect } from 'react'
 import * as ventaService from '../../shared/services/ventaService'
 import {
-    Box, Typography, Paper, Chip, Button, Dialog, Avatar, IconButton,
+    Box, Typography, Paper, Button, Dialog, Avatar, IconButton,
     Tabs, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
     CircularProgress
 } from '@mui/material'
 import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import CloseIcon from '@mui/icons-material/Close'
+import { getVentaEstadoDot } from '../../shared/utils/estadoColors.js'
 
 const CampoFila = ({ label, value }) => {
     const theme = useTheme()
@@ -36,7 +37,7 @@ const ModalConsultarCliente = ({ cliente, onClose }) => {
     }, [cliente, tabIndex])
 
     if (!cliente) return null
-    const cardSx = { borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white' }
+    const cardSx = { borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: theme.palette.background.paper }
 
     const handleClose = () => { setTabIndex(0); onClose() }
 
@@ -108,7 +109,7 @@ const ModalConsultarCliente = ({ cliente, onClose }) => {
                         ? <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}><CircularProgress size={30} /></Box>
                         : tabVentas.data.length === 0
                         ? <Typography color="text.secondary" variant="body2" sx={{ py: 4, textAlign: 'center' }}>Sin encomiendas registradas</Typography>
-                        : <TableContainer component={Paper} elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 2 }}>
+                        : <TableContainer component={Paper} elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 2, maxHeight: 230, overflowY: 'auto' }}>
                             <Table size="small">
                                 <TableHead>
                                     <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
@@ -119,20 +120,27 @@ const ModalConsultarCliente = ({ cliente, onClose }) => {
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
-                                    {tabVentas.data.map(v => (
-                                        <TableRow key={v.idEncomiendaVenta} sx={{ '&:hover': { backgroundColor: theme.palette.background.subtle } }}>
-                                            <TableCell sx={{ fontSize: '0.82rem', fontWeight: 600 }}>{v.numeroGuia || `#${v.idEncomiendaVenta}`}</TableCell>
-                                            <TableCell sx={{ fontSize: '0.82rem' }}>{v.ruta?.destino?.ciudad || '—'}</TableCell>
-                                            <TableCell sx={{ fontSize: '0.82rem' }}>${Number(v.valorServicio || 0).toLocaleString('es-CO')}</TableCell>
-                                            <TableCell>
-                                                <Chip label={v.estado} size="small" sx={{
-                                                    backgroundColor: v.estado === 'Programada' ? '#E0E7FF' : v.estado === 'En Tránsito' ? '#CFFAFE' : v.estado === 'Entregada' ? '#E8F5E9' : v.estado === 'Cancelada' ? '#FEE2E2' : '#F5F5F5',
-                                                    color: v.estado === 'Programada' ? '#3730A3' : v.estado === 'En Tránsito' ? '#155E75' : v.estado === 'Entregada' ? '#065F46' : v.estado === 'Cancelada' ? '#991B1B' : '#757575',
-                                                    fontWeight: 600, fontSize: '0.72rem'
-                                                }} />
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
+                                    {tabVentas.data.map(v => {
+                                        const info = getVentaEstadoDot(v.estado)
+                                        return (
+                                            <TableRow key={v.idEncomiendaVenta}
+                                                onClick={() => window.open(`/ventas/listar?highlight=${v.idEncomiendaVenta}`, '_blank')}
+                                                sx={{ cursor: 'pointer', '&:hover': { backgroundColor: theme.palette.background.subtle } }}>
+                                                <TableCell sx={{ fontSize: '0.82rem', fontWeight: 600 }}>{v.numeroGuia || `#${v.idEncomiendaVenta}`}</TableCell>
+                                                <TableCell sx={{ fontSize: '0.82rem' }}>{v.ruta?.destino?.ciudad || '—'}</TableCell>
+                                                <TableCell sx={{ fontSize: '0.82rem' }}>${Number(v.valorServicio || 0).toLocaleString('es-CO')}</TableCell>
+                                                <TableCell>
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                                                        {info.type === 'symbol'
+                                                            ? <Box component="span" sx={{ width: 10, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: info.char === '✓' ? '0.8rem' : '0.85rem', color: info.color, lineHeight: 1, flexShrink: 0 }}>{info.char}</Box>
+                                                            : <Box sx={{ width: 10, height: 10, borderRadius: '50%', flexShrink: 0, backgroundColor: info.fill ? info.color : 'transparent', border: `2px solid ${info.color}` }} />
+                                                        }
+                                                        <Typography fontSize="0.82rem" color={theme.palette.text.primary}>{info.label}</Typography>
+                                                    </Box>
+                                                </TableCell>
+                                            </TableRow>
+                                        )
+                                    })}
                                 </TableBody>
                             </Table>
                         </TableContainer>
