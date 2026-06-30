@@ -185,9 +185,11 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', paddingTop: 20 }}>
           <FormField
             label="Nombre del Rol"
+            name="nombre"
             value={formData.nombre}
             onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
             placeholder="Ej: Gerente, Supervisor, Asesor comercial"
+            inputProps={{ maxLength: 50 }}
           />
 
           <Box sx={{ mb: 2, mt: 2 }}>
@@ -199,6 +201,8 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
               placeholder="Descripción del rol"
               multiline
               rows={2}
+              inputProps={{ maxLength: 200 }}
+              helperText={`${formData.descripcion.length}/200`}
             />
           </Box>
 

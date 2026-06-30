@@ -216,6 +216,7 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
               onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
               placeholder="Ej: Gerente, Supervisor, Asesor comercial"
               required
+              inputProps={{ maxLength: 50 }}
             />
           </Box>
 
@@ -228,6 +229,8 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
               placeholder="Descripción del rol"
               multiline
               rows={2}
+              inputProps={{ maxLength: 200 }}
+              helperText={`${formData.descripcion.length}/200`}
             />
           </Box>
 

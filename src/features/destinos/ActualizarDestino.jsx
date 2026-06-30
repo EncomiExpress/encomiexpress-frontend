@@ -17,6 +17,7 @@ import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 const steps = ['Ubicación', 'Tarifa', 'Confirmación']
 
 const departamentos = ['Antioquia', 'Córdoba']
+const TARIFA_MAX = 999999999
 
 const ActualizarDestino = ({ open, onClose, destino, onSuccess }) => {
     const { actualizarDestino } = useDestino()
@@ -52,13 +53,17 @@ const ActualizarDestino = ({ open, onClose, destino, onSuccess }) => {
     }, [destino, open])
 
     const handleChange = (e) => {
-        const { name, value } = e.target
-        if (name === 'tarifaBase') {
-            const filtered = value.replace(/[^0-9.]/g, '')
-            setForm(prev => ({ ...prev, [name]: filtered }))
-        } else {
-            setForm(prev => ({ ...prev, [name]: value }))
+        const { name } = e.target
+        let { value } = e.target
+        if (name === 'ciudad') {
+            value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
         }
+        if (name === 'tarifaBase') {
+            value = value.replace(/[^0-9.]/g, '')
+            const num = parseFloat(value)
+            if (!isNaN(num) && num > TARIFA_MAX) return
+        }
+        setForm(prev => ({ ...prev, [name]: value }))
         setErrores(prev => ({ ...prev, [name]: '' }))
         setApiError(null)
         setSinCambios(false)
@@ -75,6 +80,8 @@ const ActualizarDestino = ({ open, onClose, destino, onSuccess }) => {
                 e.tarifaBase = 'La tarifa base es obligatoria'
             } else if (isNaN(Number(form.tarifaBase)) || Number(form.tarifaBase) < 0) {
                 e.tarifaBase = 'La tarifa base debe ser un número positivo'
+            } else if (Number(form.tarifaBase) > TARIFA_MAX) {
+                e.tarifaBase = `La tarifa base no puede ser mayor a $${TARIFA_MAX.toLocaleString('es-CO')}`
             }
         }
         return e

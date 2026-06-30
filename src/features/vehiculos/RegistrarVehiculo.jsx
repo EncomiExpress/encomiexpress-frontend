@@ -1,19 +1,21 @@
 import { useTheme } from '@mui/material/styles'
 import { useState } from 'react'
-import { Box, Paper, Typography, MenuItem, Dialog, DialogTitle, DialogContent, Stepper, Step, StepLabel, Snackbar, Alert, IconButton, Button } from '@mui/material'
+import { Box, Paper, Typography, MenuItem, Dialog, DialogTitle, DialogContent, Stepper, Step, StepLabel, Snackbar, Alert, IconButton, Button, Autocomplete, TextField } from '@mui/material'
 import {
   DirectionsCarOutlined, BadgeOutlined, SellOutlined, InvertColorsOutlined,
   EventOutlined, SpeedOutlined, Close, ArrowBackOutlined, ArrowForwardOutlined, CheckOutlined
 } from '@mui/icons-material'
 import { useVehiculo } from '../../shared/contexts/VehiculoContext.jsx'
 import { usePropietario } from '../../shared/contexts/PropietarioContext.jsx'
-import { FormField, FormSelect } from '../../shared/components/FormularioEstandarizado.jsx'
+import { FormField, FormSelect, formFieldStyles } from '../../shared/components/FormularioEstandarizado.jsx'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
+import { normalizarTexto } from '../../shared/utils/duplicados.js'
 
 const steps = ['Datos del Vehículo', 'Documentación y Estado', 'Confirmación']
 
 const TIPOS_VEHICULO = ['Camioneta', 'Camión', 'Furgón', 'Semi Trayler', 'Trayler', 'Motocicleta', 'Otro']
 const hoyISO = () => new Date().toISOString().split('T')[0]
+const CAPACIDAD_MAX = 999999
 
 const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
@@ -47,6 +49,10 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
     if (name === 'marca') value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
     if (name === 'modelo') value = value.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚüÜñÑ\s\-]/g, '')
     if (name === 'color') value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
+    if (name === 'capacidad' && value !== '') {
+      const num = parseFloat(value)
+      if (!isNaN(num) && num > CAPACIDAD_MAX) return
+    }
 
     setFormData(prev => ({ ...prev, [name]: value }))
     setErrores(prev => ({ ...prev, [name]: '' }))
@@ -78,6 +84,7 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
       if (!formData.tipo) e.tipo = 'El tipo de vehículo es obligatorio'
       if (!formData.capacidad) e.capacidad = 'La capacidad es obligatoria'
       else if (parseFloat(formData.capacidad) <= 0) e.capacidad = 'La capacidad debe ser mayor a 0'
+      else if (parseFloat(formData.capacidad) > CAPACIDAD_MAX) e.capacidad = `La capacidad no puede ser mayor a ${CAPACIDAD_MAX.toLocaleString('es-CO')} kg`
     }
     if (activeStep === 1) {
       if (!formData.idPropietario) e.idPropietario = 'Debes asignar un propietario'
@@ -156,12 +163,33 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
               <MenuItem value="Propio">Propio</MenuItem>
               <MenuItem value="Tercerizado">Tercerizado</MenuItem>
             </FormSelect>
-            <FormSelect label="Propietario" name="idPropietario" value={formData.idPropietario}
-              onChange={handleChange} required shrink error={errores.idPropietario} helperText={errores.idPropietario}>
-              {propietarios.filter(p => p.habilitado !== false).map((p) => (
-                <MenuItem key={p.idPropietario} value={p.idPropietario}>{p.nombre} {p.apellido}</MenuItem>
-              ))}
-            </FormSelect>
+            <Autocomplete
+              options={propietarios.filter(p => p.habilitado !== false)}
+              getOptionLabel={(p) => `${p.nombre} ${p.apellido} — ${p.numeroIdentificacion}`}
+              isOptionEqualToValue={(opt, val) => opt.idPropietario === val.idPropietario}
+              value={propietarios.find(p => p.idPropietario === formData.idPropietario) || null}
+              onChange={(_, val) => handleChange({ target: { name: 'idPropietario', value: val ? val.idPropietario : '' } })}
+              filterOptions={(opts, { inputValue }) => {
+                if (!inputValue.trim()) {
+                  return [...opts].sort((a, b) => b.idPropietario - a.idPropietario).slice(0, 5)
+                }
+                const q = normalizarTexto(inputValue)
+                return opts.filter(p =>
+                  normalizarTexto(p.nombre).includes(q) ||
+                  normalizarTexto(p.apellido).includes(q) ||
+                  normalizarTexto(`${p.nombre} ${p.apellido}`).includes(q) ||
+                  normalizarTexto(p.numeroIdentificacion || '').includes(q) ||
+                  normalizarTexto(p.telefono || '').includes(q)
+                )
+              }}
+              noOptionsText="No se encontraron propietarios"
+              renderInput={(params) => (
+                <TextField {...params} label="Propietario *"
+                  error={!!errores.idPropietario} helperText={errores.idPropietario || 'Busca por documento, nombre, apellido o teléfono'}
+                  slotProps={{ inputLabel: { shrink: true } }}
+                  sx={formFieldStyles} />
+              )}
+            />
             <FormField label="Vencimiento SOAT" name="vencimientoSOAT" type="date"
               value={formData.vencimientoSOAT} onChange={handleChange} required icon={EventOutlined}
               inputProps={{ min: hoyISO() }}

@@ -8,6 +8,8 @@ import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
 import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined'
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
+import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined'
 import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined'
 import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined'
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined'
@@ -19,6 +21,8 @@ import * as usuarioService from '../../shared/services/usuarioService.js'
 import { hayNombreDuplicado, MENSAJE_NOMBRE_DUPLICADO } from '../../shared/utils/duplicados.js'
 
 const DOMINIOS_EMAIL = ['@gmail.com', '@hotmail.com', '@outlook.com', '@yahoo.com', '@icloud.com', '@live.com']
+const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s]).{8,16}$/
+const PASSWORD_HELP = '8-16 caracteres, con mayúsculas, minúsculas, números y un carácter especial (sin @)'
 
 const steps = ['Datos Personales', 'Credenciales', 'Confirmación']
 
@@ -73,6 +77,8 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
     const [sinCambios, setSinCambios] = useState(false)
     const [rolesDisponibles, setRolesDisponibles] = useState([])
     const [avisoNombreDuplicado, setAvisoNombreDuplicado] = useState('')
+    const [showPassword, setShowPassword] = useState(false)
+    const [showConfirmarPassword, setShowConfirmarPassword] = useState(false)
 
     useEffect(() => {
         const cargarRoles = async () => {
@@ -151,9 +157,8 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
     const maxLengthDoc = esDocAlfanumerico(form.tipoIdentificacion) ? 12 : 10
 
     const docHelperText = () => {
-        if (form.tipoIdentificacion === 'CC') return 'Solo dígitos, entre 3 y 10'
         if (esDocAlfanumerico(form.tipoIdentificacion)) return 'Alfanumérico, hasta 12 caracteres'
-        if (form.tipoIdentificacion) return 'Solo dígitos, hasta 10'
+        if (form.tipoIdentificacion) return 'Solo dígitos, entre 3 y 10'
         return 'Sin puntos ni comas'
     }
 
@@ -178,6 +183,9 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
             setApiError(null)
             setSinCambios(false)
             return
+        }
+        if (name === 'password' || name === 'confirmarPassword') {
+            value = value.replace(/@/g, '')
         }
         if (name === 'emailLocal') {
             value = value.replace(/[^a-zA-Z0-9._-]/g, '')
@@ -228,10 +236,8 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
                     e.numeroIdentificacion = 'Solo letras y números, sin caracteres especiales'
             } else if (!soloNumeros.test(form.numeroIdentificacion)) {
                 e.numeroIdentificacion = 'Solo se permiten dígitos'
-            } else if (form.tipoIdentificacion === 'CC' && (form.numeroIdentificacion.length < 3 || form.numeroIdentificacion.length > 10)) {
-                e.numeroIdentificacion = 'La CC debe tener entre 3 y 10 dígitos'
-            } else if (form.numeroIdentificacion.length > 10) {
-                e.numeroIdentificacion = 'Máximo 10 dígitos'
+            } else if (form.numeroIdentificacion.length < 3 || form.numeroIdentificacion.length > 10) {
+                e.numeroIdentificacion = 'Debe tener entre 3 y 10 dígitos'
             }
         }
 
@@ -243,8 +249,8 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
 
             if (!form.idRol) e.idRol = 'Selecciona un rol'
 
-            if (form.password && form.password.length < 6) {
-                e.password = 'La contraseña debe tener al menos 6 caracteres'
+            if (form.password && !PASSWORD_REGEX.test(form.password)) {
+                e.password = PASSWORD_HELP
             }
             if (form.password && form.password !== form.confirmarPassword) {
                 e.confirmarPassword = 'Las contraseñas no coinciden'
@@ -335,7 +341,6 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
                             sx={formFieldStyles}>
                             <MenuItem value="CC">Cédula de Ciudadanía (CC)</MenuItem>
                             <MenuItem value="TI">Tarjeta de Identidad (TI)</MenuItem>
-                            <MenuItem value="NIT">NIT (Persona Jurídica)</MenuItem>
                             <MenuItem value="CE">Cédula Extranjería (CE)</MenuItem>
                             <MenuItem value="PAS">Pasaporte</MenuItem>
                         </TextField>
@@ -347,7 +352,10 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
                         <TextField fullWidth label="Nombres" name="nombre" value={form.nombre} onChange={handleChange}
                             onBlur={verificarNombreDuplicado}
                             error={!!errores.nombre} helperText={errores.nombre || 'Solo letras'}
-                            slotProps={{ input: { startAdornment: <InputAdornment position="start"><PersonOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment>, sx: { pl: 1.5 }, htmlInput: { maxLength: 50 } } }}
+                            slotProps={{
+                                input: { startAdornment: <InputAdornment position="start"><PersonOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment>, sx: { pl: 1.5 } },
+                                htmlInput: { maxLength: 50 }
+                            }}
                             sx={formFieldStyles} />
                         <TextField fullWidth label="Apellidos" name="apellido" value={form.apellido} onChange={handleChange}
                             onBlur={verificarNombreDuplicado}
@@ -408,8 +416,9 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
                             {rolesDisponibles.map((rol) => (
                                 <MenuItem key={rol.idRol} value={rol.idRol} sx={{ p: 0, justifyContent: 'flex-start', my: 0.5 }}>
                                     <Box sx={{
-                                        backgroundColor: theme.palette.primary.main,
-                                        color: 'white',
+                                        backgroundColor: 'transparent',
+                                        color: theme.palette.primary.main,
+                                        border: `1px solid ${theme.palette.divider}`,
                                         px: 1.5,
                                         py: 0.3,
                                         borderRadius: 8,
@@ -424,15 +433,41 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
                             ))}
                         </TextField>
                         <Box sx={{ gridColumn: '1 / -1', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
-                            <TextField fullWidth label="Nueva contraseña" name="password" type="password"
+                            <TextField fullWidth label="Nueva contraseña" name="password" type={showPassword ? 'text' : 'password'}
                                 value={form.password} onChange={handleChange}
-                                error={!!errores.password} helperText={errores.password || 'Dejar vacío para mantener la actual'}
-                                slotProps={{ input: { startAdornment: <InputAdornment position="start"><LockOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment>, sx: { pl: 1.5 } } }}
+                                error={!!errores.password} helperText={errores.password || (form.password ? PASSWORD_HELP : 'Dejar vacío para mantener la actual')}
+                                slotProps={{
+                                    input: {
+                                        startAdornment: <InputAdornment position="start"><LockOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment>,
+                                        endAdornment: (
+                                            <InputAdornment position="end">
+                                                <IconButton onClick={() => setShowPassword(!showPassword)} edge="end" sx={{ color: '#94a3b8' }}>
+                                                    {showPassword ? <VisibilityOffOutlinedIcon /> : <VisibilityOutlinedIcon />}
+                                                </IconButton>
+                                            </InputAdornment>
+                                        ),
+                                        sx: { pl: 1.5 }
+                                    },
+                                    htmlInput: { maxLength: 16 }
+                                }}
                                 sx={formFieldStyles} />
-                            <TextField fullWidth label="Confirmar contraseña" name="confirmarPassword" type="password"
+                            <TextField fullWidth label="Confirmar contraseña" name="confirmarPassword" type={showConfirmarPassword ? 'text' : 'password'}
                                 value={form.confirmarPassword} onChange={handleChange}
                                 error={!!errores.confirmarPassword} helperText={errores.confirmarPassword}
-                                slotProps={{ input: { startAdornment: <InputAdornment position="start"><LockOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment>, sx: { pl: 1.5 } } }}
+                                slotProps={{
+                                    input: {
+                                        startAdornment: <InputAdornment position="start"><LockOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment>,
+                                        endAdornment: (
+                                            <InputAdornment position="end">
+                                                <IconButton onClick={() => setShowConfirmarPassword(!showConfirmarPassword)} edge="end" sx={{ color: '#94a3b8' }}>
+                                                    {showConfirmarPassword ? <VisibilityOffOutlinedIcon /> : <VisibilityOutlinedIcon />}
+                                                </IconButton>
+                                            </InputAdornment>
+                                        ),
+                                        sx: { pl: 1.5 }
+                                    },
+                                    htmlInput: { maxLength: 16 }
+                                }}
                                 sx={formFieldStyles} />
                         </Box>
                     </Box>

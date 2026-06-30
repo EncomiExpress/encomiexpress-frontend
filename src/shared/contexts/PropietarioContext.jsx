@@ -34,13 +34,13 @@ export const PropietarioProvider = ({ children }) => {
   useEffect(() => {
     if (!token) return
     const abortController = new AbortController()
-    fetchPropietarios(abortController.signal)
+    fetchPropietarios(abortController.signal, { limit: 1000 })
     return () => abortController.abort()
   }, [fetchPropietarios, token])
 
   // Re-fetch cuando un vehículo cambia de propietario
   useEffect(() => {
-    const handler = () => fetchPropietarios()
+    const handler = () => fetchPropietarios(undefined, { limit: 1000 })
     window.addEventListener('vehiculo:toggled', handler)
     return () => window.removeEventListener('vehiculo:toggled', handler)
   }, [fetchPropietarios])

@@ -1,25 +1,21 @@
 import { useTheme } from '@mui/material/styles'
 import { useState, useEffect, useRef } from 'react'
-import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Snackbar, Alert, Dialog, DialogTitle, DialogContent, IconButton, TextField } from '@mui/material'
+import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Snackbar, Alert, Dialog, DialogTitle, DialogContent, IconButton, TextField, Autocomplete } from '@mui/material'
 import {
   DirectionsCarOutlined, BadgeOutlined, SellOutlined, InvertColorsOutlined,
   EventOutlined, SpeedOutlined, SaveOutlined, ArrowBackOutlined, ArrowForwardOutlined, Close
 } from '@mui/icons-material'
-import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import { useVehiculo } from '../../shared/contexts/VehiculoContext.jsx'
 import { usePropietario } from '../../shared/contexts/PropietarioContext.jsx'
 import { FormField, FormSelect, formFieldStyles } from '../../shared/components/FormularioEstandarizado.jsx'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
+import { normalizarTexto } from '../../shared/utils/duplicados.js'
 
-const steps = ['Datos del Vehículo', 'Documentación y Estado', 'Confirmación']
+const steps = ['Datos del Vehículo', 'Documentación', 'Confirmación']
 
 const TIPOS_VEHICULO = ['Camioneta', 'Camión', 'Furgón', 'Semi Trayler', 'Trayler', 'Motocicleta', 'Otro']
 const hoyISO = () => new Date().toISOString().split('T')[0]
-
-const ESTADOS_VEHICULO = [
-  { value: 'Disponible', color: '#2e7d32', bg: '#e8f5e9' },
-  { value: 'Mantenimiento', color: '#e65100', bg: '#fff3e0' },
-]
+const CAPACIDAD_MAX = 999999
 
 const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSuccess }) => {
   const { getVehiculoById, actualizarVehiculo } = useVehiculo()
@@ -28,7 +24,7 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
 
   const [formData, setFormData] = useState({
     idPropietario: '', placa: '', marca: '', modelo: '', color: '',
-    tipo: '', origen: 'Propio', capacidad: '', estado: 'Disponible',
+    tipo: '', origen: 'Propio', capacidad: '',
     vencimientoSOAT: '', vencimientoRevisionTecnica: '', vencimientoSeguroTerceros: ''
   })
   const [errores, setErrores] = useState({})
@@ -60,6 +56,10 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
     if (name === 'marca') value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
     if (name === 'modelo') value = value.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚüÜñÑ\s\-]/g, '')
     if (name === 'color') value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
+    if (name === 'capacidad' && value !== '') {
+      const num = parseFloat(value)
+      if (!isNaN(num) && num > CAPACIDAD_MAX) return
+    }
 
     setFormData(prev => ({ ...prev, [name]: value }))
     setErrores(prev => ({ ...prev, [name]: '' }))
@@ -77,6 +77,7 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
       if (!formData.tipo) e.tipo = 'El tipo de vehículo es obligatorio'
       if (!formData.capacidad) e.capacidad = 'La capacidad es obligatoria'
       else if (parseFloat(formData.capacidad) <= 0) e.capacidad = 'La capacidad debe ser mayor a 0'
+      else if (parseFloat(formData.capacidad) > CAPACIDAD_MAX) e.capacidad = `La capacidad no puede ser mayor a ${CAPACIDAD_MAX.toLocaleString('es-CO')} kg`
     }
     if (step === 1) {
       if (!formData.idPropietario) e.idPropietario = 'El propietario es obligatorio'
@@ -132,8 +133,6 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
     return original !== actual
   }) : false
 
-  const estadoActual = ESTADOS_VEHICULO.find(e => e.value === formData.estado)
-
   const renderStepContent = () => {
     switch (activeStep) {
       case 0:
@@ -172,39 +171,33 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
               <MenuItem value="Propio">Propio</MenuItem>
               <MenuItem value="Tercerizado">Tercerizado</MenuItem>
             </FormSelect>
-            <FormSelect label="Propietario" name="idPropietario" value={formData.idPropietario}
-              onChange={handleChange} required shrink error={errores.idPropietario} helperText={errores.idPropietario}>
-              {propietarios.filter(p => p.habilitado !== false).map((p) => (
-                <MenuItem key={p.idPropietario} value={p.idPropietario}>{p.nombre} {p.apellido}</MenuItem>
-              ))}
-            </FormSelect>
-            <TextField fullWidth select label="Estado" name="estado" value={formData.estado}
-              onChange={handleChange}
-              slotProps={{
-                select: {
-                  IconComponent: KeyboardArrowDownOutlinedIcon,
-                  renderValue: (val) => {
-                    const est = ESTADOS_VEHICULO.find(e => e.value === val)
-                    if (!est) return val
-                    return (
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: est.color, flexShrink: 0 }} />
-                        <Typography component="span" sx={{ fontSize: '0.875rem', color: est.color, fontWeight: 500 }}>{est.value}</Typography>
-                      </Box>
-                    )
-                  }
+            <Autocomplete
+              options={propietarios.filter(p => p.habilitado !== false)}
+              getOptionLabel={(p) => `${p.nombre} ${p.apellido} — ${p.numeroIdentificacion}`}
+              isOptionEqualToValue={(opt, val) => opt.idPropietario === val.idPropietario}
+              value={propietarios.find(p => p.idPropietario === formData.idPropietario) || null}
+              onChange={(_, val) => handleChange({ target: { name: 'idPropietario', value: val ? val.idPropietario : '' } })}
+              filterOptions={(opts, { inputValue }) => {
+                if (!inputValue.trim()) {
+                  return [...opts].sort((a, b) => b.idPropietario - a.idPropietario).slice(0, 5)
                 }
+                const q = normalizarTexto(inputValue)
+                return opts.filter(p =>
+                  normalizarTexto(p.nombre).includes(q) ||
+                  normalizarTexto(p.apellido).includes(q) ||
+                  normalizarTexto(`${p.nombre} ${p.apellido}`).includes(q) ||
+                  normalizarTexto(p.numeroIdentificacion || '').includes(q) ||
+                  normalizarTexto(p.telefono || '').includes(q)
+                )
               }}
-              sx={formFieldStyles}>
-              {ESTADOS_VEHICULO.map(({ value, color }) => (
-                <MenuItem key={value} value={value}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: color, flexShrink: 0 }} />
-                    <Typography sx={{ fontSize: '0.875rem', color }}>{value}</Typography>
-                  </Box>
-                </MenuItem>
-              ))}
-            </TextField>
+              noOptionsText="No se encontraron propietarios"
+              renderInput={(params) => (
+                <TextField {...params} label="Propietario *"
+                  error={!!errores.idPropietario} helperText={errores.idPropietario || 'Busca por documento, nombre, apellido o teléfono'}
+                  slotProps={{ inputLabel: { shrink: true } }}
+                  sx={formFieldStyles} />
+              )}
+            />
             <FormField label="Vencimiento SOAT" name="vencimientoSOAT" type="date"
               value={formData.vencimientoSOAT} onChange={handleChange} required icon={EventOutlined}
               inputProps={{ min: hoyISO() }}
@@ -247,12 +240,11 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
               <Paper elevation={0} sx={{ flex: 1, minWidth: 0, borderRadius: 2, p: 2.5, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white', overflow: 'hidden' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                   <EventOutlined sx={{ fontSize: 20, color: theme.palette.text.primary }} />
-                  <Typography fontWeight={700} fontSize="0.95rem">Documentación y Estado</Typography>
+                  <Typography fontWeight={700} fontSize="0.95rem">Documentación</Typography>
                 </Box>
                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la documentación</Typography>
                 <ConfirmRow label="Origen" value={formData.origen} />
                 <ConfirmRow label="Propietario" value={(() => { const p = propietarios.find(p => p.idPropietario === formData.idPropietario); return p ? `${p.nombre} ${p.apellido}` : '—' })()} />
-                <ConfirmRow label="Estado" value={formData.estado} />
                 <ConfirmRow label="SOAT" value={formData.vencimientoSOAT} />
                 <ConfirmRow label="Revisión Técnica" value={formData.vencimientoRevisionTecnica} />
                 <ConfirmRow label="Seguro Terceros" value={formData.vencimientoSeguroTerceros} />
