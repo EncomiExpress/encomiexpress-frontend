@@ -1,6 +1,7 @@
 import { useTheme } from '@mui/material/styles'
 import { TextField, Button, Box, Typography, Select, MenuItem, FormControl, InputLabel, InputAdornment, IconButton, Alert, FormHelperText } from '@mui/material'
 import { SaveOutlined, VisibilityOutlined, VisibilityOffOutlined } from '@mui/icons-material'
+import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import { useState } from 'react'
 
 export const formFieldStyles = (theme) => ({
@@ -23,6 +24,7 @@ export const FormField = ({
   name,
   value,
   onChange,
+  onBlur,
   type = 'text',
   required = false,
   placeholder,
@@ -44,6 +46,7 @@ export const FormField = ({
       type={type}
       value={value}
       onChange={onChange}
+      onBlur={onBlur}
       required={required}
       placeholder={placeholder}
       error={!!error}
@@ -71,15 +74,16 @@ export const FormField = ({
   )
 }
 
-export const FormSelect = ({ 
-  label, 
-  name, 
-  value, 
-  onChange, 
-  required = false, 
-  error, 
-  helperText, 
-  children 
+export const FormSelect = ({
+  label,
+  name,
+  value,
+  onChange,
+  required = false,
+  error,
+  helperText,
+  shrink = false,
+  children
 }) => {
   const theme = useTheme()
 
@@ -96,12 +100,14 @@ export const FormSelect = ({
 
   return (
     <FormControl fullWidth required={required} error={!!error} sx={formSelectStyles}>
-      <InputLabel sx={{ '&.Mui-focused': { color: theme.palette.primary.main } }}>{label}</InputLabel>
+      <InputLabel shrink={shrink || undefined} sx={{ '&.Mui-focused': { color: theme.palette.primary.main } }}>{label}</InputLabel>
       <Select
         name={name}
         value={value}
         label={label}
         onChange={onChange}
+        displayEmpty={shrink}
+        IconComponent={KeyboardArrowDownOutlinedIcon}
       >
         {children}
       </Select>

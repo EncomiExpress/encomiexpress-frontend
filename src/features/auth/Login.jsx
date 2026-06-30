@@ -23,6 +23,7 @@ const Login = () => {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
+  const [camposError, setCamposError] = useState({ email: '', password: '' })
   const [openRegister, setOpenRegister] = useState(false)
   const [cargando, setCargando] = useState(false)
   const [apiCargando, setApiCargando] = useState(false)
@@ -53,9 +54,23 @@ const Login = () => {
     }
   }, [usuario, loading, cargando, apiCargando, navigate])
 
+  const validarFormulario = () => {
+    const errores = { email: '', password: '' }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+    if (!email.trim()) errores.email = 'El correo es obligatorio'
+    else if (!emailRegex.test(email.trim())) errores.email = 'Ingresa un correo válido (ejemplo@dominio.com)'
+
+    if (!password) errores.password = 'La contraseña es obligatoria'
+
+    setCamposError(errores)
+    return !errores.email && !errores.password
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
+    if (!validarFormulario()) return
     setApiCargando(true)
 
     try {
@@ -250,9 +265,11 @@ const Login = () => {
               label="Correo electrónico"
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => { setEmail(e.target.value); setCamposError(prev => ({ ...prev, email: '' })); setError('') }}
               required
               placeholder="correo@ejemplo.com"
+              error={!!camposError.email}
+              helperText={camposError.email}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -261,7 +278,7 @@ const Login = () => {
                 ),
               }}
               sx={{
-                mb: 3,
+                mb: 1.5,
                 '& .MuiOutlinedInput-root': {
                   '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main },
                 },
@@ -273,9 +290,11 @@ const Login = () => {
               label="Contraseña"
               type={showPassword ? 'text' : 'password'}
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => { setPassword(e.target.value); setCamposError(prev => ({ ...prev, password: '' })); setError('') }}
               required
               placeholder="••••••"
+              error={!!camposError.password}
+              helperText={camposError.password}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">

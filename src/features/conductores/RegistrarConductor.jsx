@@ -18,8 +18,11 @@ import CloseIcon from '@mui/icons-material/Close'
 import { useConductor } from '../../shared/contexts/ConductorContext.jsx'
 import { FormField, FormSelect, formFieldStyles } from '../../shared/components/FormularioEstandarizado.jsx'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
+import * as conductorService from '../../shared/services/conductorService.js'
+import { hayNombreDuplicado, MENSAJE_NOMBRE_DUPLICADO } from '../../shared/utils/duplicados.js'
 
 const DOMINIOS_EMAIL = ['@gmail.com', '@hotmail.com', '@outlook.com', '@yahoo.com', '@icloud.com', '@live.com']
+const hoyISO = () => new Date().toISOString().split('T')[0]
 
 const steps = ['Datos Personales', 'Licencia de Conducción', 'Confirmación']
 
@@ -32,6 +35,7 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
     const [submitting, setSubmitting] = useState(false)
     const [exito, setExito] = useState(false)
     const [showPassword, setShowPassword] = useState(false)
+    const [avisoNombreDuplicado, setAvisoNombreDuplicado] = useState('')
 
     const [form, setForm] = useState({
         tipoIdentificacion: '',
@@ -66,6 +70,24 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
         setApiError(null)
     }
 
+    const verificarNombreDuplicado = async () => {
+        if (!form.nombre.trim() || !form.apellido.trim()) {
+            setAvisoNombreDuplicado('')
+            return
+        }
+        try {
+            const res = await conductorService.getConductores(undefined, { q: form.apellido.trim(), limit: 20 })
+            if (!res?.success) return
+            const duplicado = hayNombreDuplicado(res.data, form.nombre, form.apellido, {
+                getNombre: (r) => r.usuario?.nombre,
+                getApellido: (r) => r.usuario?.apellido,
+            })
+            setAvisoNombreDuplicado(duplicado ? MENSAJE_NOMBRE_DUPLICADO : '')
+        } catch {
+            // Si falla la verificación no bloqueamos el flujo de registro
+        }
+    }
+
     const validarPaso = (step) => {
         const e = {}
         const soloLetras = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/
@@ -87,6 +109,7 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
             if (!form.password || form.password.length < 6) e.password = 'La contraseña debe tener al menos 6 caracteres'
             if (!form.licenciaConduccion) e.licenciaConduccion = 'Selecciona una categoría de licencia'
             if (!form.fechaVencimientoLicencia) e.fechaVencimientoLicencia = 'La fecha de vencimiento es obligatoria'
+            else if (form.fechaVencimientoLicencia < hoyISO()) e.fechaVencimientoLicencia = 'La fecha de vencimiento no puede ser anterior a hoy'
         }
 
         return e
@@ -161,7 +184,16 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
     }
 
     const getLicenciaLabel = (lic) => {
-        const licencias = { 'A1': 'A1 - Motocicleta', 'A2': 'A2 - Motocicleta alta cilindrada', 'B1': 'B1 - Automóvil', 'B2': 'B2 - Camioneta', 'C1': 'C1 - Camión pequeño', 'C2': 'C2 - Camión grande', 'C3': 'C3 - Tractocamión', 'D1': 'D1 - Bus pequeño', 'D2': 'D2 - Bus grande', 'E': 'E - Remolque' }
+        const licencias = {
+            'A1': 'A1 - Motocicleta hasta 125 c.c.',
+            'A2': 'A2 - Motocicleta de más de 125 c.c.',
+            'B1': 'B1 - Automóvil, camioneta o microbús (particular)',
+            'B2': 'B2 - Camión rígido, buseta o bus (particular)',
+            'B3': 'B3 - Vehículo articulado (particular)',
+            'C1': 'C1 - Automóvil, camioneta o microbús (servicio público)',
+            'C2': 'C2 - Camión rígido, buseta o bus (servicio público)',
+            'C3': 'C3 - Vehículo articulado (servicio público)',
+        }
         return licencias[lic] || lic
     }
 
@@ -170,24 +202,35 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
             case 0:
                 return (
                     <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
-                        <FormSelect label="Tipo de documento" name="tipoIdentificacion" value={form.tipoIdentificacion}
-                            onChange={handleChange} required error={errores.tipoIdentificacion} helperText={errores.tipoIdentificacion}>
+                        <TextField fullWidth select label="Tipo de documento *" name="tipoIdentificacion"
+                            value={form.tipoIdentificacion} onChange={handleChange}
+                            error={!!errores.tipoIdentificacion} helperText={errores.tipoIdentificacion}
+                            slotProps={{
+                                input: { startAdornment: <InputAdornment position="start"><BadgeOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment> },
+                                select: { IconComponent: KeyboardArrowDownOutlinedIcon },
+                            }}
+                            sx={formFieldStyles}>
                             <MenuItem value="CC">Cédula de Ciudadanía (CC)</MenuItem>
                             <MenuItem value="CE">Cédula Extranjería (CE)</MenuItem>
                             <MenuItem value="TI">Tarjeta de Identidad (TI)</MenuItem>
                             <MenuItem value="RC">Registro Civil (RC)</MenuItem>
                             <MenuItem value="PAS">Pasaporte</MenuItem>
-                        </FormSelect>
+                        </TextField>
                         <FormField label="Número de documento" name="numeroIdentificacion" value={form.numeroIdentificacion}
                             onChange={handleChange} required error={errores.numeroIdentificacion}
                             helperText={errores.numeroIdentificacion} icon={BadgeOutlinedIcon}
                             inputProps={{ maxLength: 15 }} />
                         <FormField label="Nombres" name="nombre" value={form.nombre} onChange={handleChange}
+                            onBlur={verificarNombreDuplicado}
                             required error={errores.nombre} helperText={errores.nombre} icon={PersonOutlinedIcon}
                             inputProps={{ maxLength: 50 }} placeholder="Ej: Juan" />
                         <FormField label="Apellidos" name="apellido" value={form.apellido} onChange={handleChange}
+                            onBlur={verificarNombreDuplicado}
                             required error={errores.apellido} helperText={errores.apellido} icon={PersonOutlinedIcon}
                             inputProps={{ maxLength: 50 }} placeholder="Ej: Gómez López" />
+                        {avisoNombreDuplicado && (
+                            <Alert severity="warning" sx={{ gridColumn: '1 / -1' }}>{avisoNombreDuplicado}</Alert>
+                        )}
                     </Box>
                 )
             case 1:
@@ -247,22 +290,22 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
                             sx={formFieldStyles} />
                         <FormSelect label="Licencia de Conducción" name="licenciaConduccion" value={form.licenciaConduccion}
                             onChange={handleChange} required error={errores.licenciaConduccion} helperText={errores.licenciaConduccion}>
-                            <MenuItem value="A1">A1 - Motocicleta</MenuItem>
-                            <MenuItem value="A2">A2 - Motocicleta alta cilindrada</MenuItem>
-                            <MenuItem value="B1">B1 - Automóvil</MenuItem>
-                            <MenuItem value="B2">B2 - Camioneta</MenuItem>
-                            <MenuItem value="C1">C1 - Camión pequeño</MenuItem>
-                            <MenuItem value="C2">C2 - Camión grande</MenuItem>
-                            <MenuItem value="C3">C3 - Tractocamión</MenuItem>
-                            <MenuItem value="D1">D1 - Bus pequeño</MenuItem>
-                            <MenuItem value="D2">D2 - Bus grande</MenuItem>
-                            <MenuItem value="E">E - Remolque</MenuItem>
+                            <MenuItem value="A1">A1 - Motocicleta hasta 125 c.c.</MenuItem>
+                            <MenuItem value="A2">A2 - Motocicleta de más de 125 c.c.</MenuItem>
+                            <MenuItem value="B1">B1 - Automóvil, camioneta o microbús (particular)</MenuItem>
+                            <MenuItem value="B2">B2 - Camión rígido, buseta o bus (particular)</MenuItem>
+                            <MenuItem value="B3">B3 - Vehículo articulado (particular)</MenuItem>
+                            <MenuItem value="C1">C1 - Automóvil, camioneta o microbús (servicio público)</MenuItem>
+                            <MenuItem value="C2">C2 - Camión rígido, buseta o bus (servicio público)</MenuItem>
+                            <MenuItem value="C3">C3 - Vehículo articulado (servicio público)</MenuItem>
                         </FormSelect>
                         <FormField label="N° de Licencia" name="numeroLicencia" value={form.numeroLicencia}
                             onChange={handleChange} icon={BadgeOutlinedIcon}
-                            inputProps={{ maxLength: 20 }} placeholder="Ej: 123456789" />
+                            inputProps={{ maxLength: 20 }} placeholder="Ej: 123456789"
+                            helperText="Opcional" />
                         <FormField label="Fecha Vencimiento Licencia" name="fechaVencimientoLicencia" type="date"
                             value={form.fechaVencimientoLicencia} onChange={handleChange}
+                            inputProps={{ min: hoyISO() }}
                             required error={errores.fechaVencimientoLicencia} helperText={errores.fechaVencimientoLicencia}
                             icon={EventOutlinedIcon} InputLabelProps={{ shrink: true }} />
                     </Box>

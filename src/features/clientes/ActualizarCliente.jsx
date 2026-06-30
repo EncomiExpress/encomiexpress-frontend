@@ -15,6 +15,8 @@ import CloseIcon from '@mui/icons-material/Close'
 import { useClientes } from '../../shared/contexts/ClienteContext.jsx'
 import { FormField, FormSelect, formFieldStyles } from '../../shared/components/FormularioEstandarizado.jsx'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
+import * as clienteService from '../../shared/services/clienteService.js'
+import { hayNombreDuplicado, MENSAJE_NOMBRE_DUPLICADO } from '../../shared/utils/duplicados.js'
 
 const DOMINIOS_EMAIL = ['@gmail.com', '@hotmail.com', '@outlook.com', '@yahoo.com', '@icloud.com', '@live.com']
 
@@ -30,6 +32,7 @@ const ActualizarCliente = ({ open, onClose, cliente: clienteProp, onSuccess }) =
     const [submitting, setSubmitting] = useState(false)
     const [formOriginal, setFormOriginal] = useState(null)
     const [sinCambios, setSinCambios] = useState(false)
+    const [avisoNombreDuplicado, setAvisoNombreDuplicado] = useState('')
     const cargado = useRef(false)
 
     const [form, setForm] = useState({
@@ -88,6 +91,24 @@ const ActualizarCliente = ({ open, onClose, cliente: clienteProp, onSuccess }) =
         setErrores(prev => ({ ...prev, [name]: '' }))
         setApiError(null)
         setSinCambios(false)
+    }
+
+    const verificarNombreDuplicado = async () => {
+        if (!form.nombre.trim() || !form.apellido.trim()) {
+            setAvisoNombreDuplicado('')
+            return
+        }
+        try {
+            const res = await clienteService.getClientes(undefined, { q: form.apellido.trim(), limit: 20 })
+            if (!res?.success) return
+            const duplicado = hayNombreDuplicado(res.data, form.nombre, form.apellido, {
+                excludeId: form.idCliente,
+                getId: (r) => r.idCliente,
+            })
+            setAvisoNombreDuplicado(duplicado ? MENSAJE_NOMBRE_DUPLICADO : '')
+        } catch {
+            // Si falla la verificación no bloqueamos el flujo de edición
+        }
     }
 
     const validarPaso = (step) => {
@@ -197,11 +218,16 @@ const ActualizarCliente = ({ open, onClose, cliente: clienteProp, onSuccess }) =
                             helperText={errores.numeroIdentificacion} icon={BadgeOutlinedIcon}
                             inputProps={{ maxLength: 15 }} />
                         <FormField label="Nombres" name="nombre" value={form.nombre} onChange={handleChange}
+                            onBlur={verificarNombreDuplicado}
                             required error={errores.nombre} helperText={errores.nombre} icon={PersonOutlinedIcon}
                             inputProps={{ maxLength: 50 }} />
                         <FormField label="Apellidos" name="apellido" value={form.apellido} onChange={handleChange}
+                            onBlur={verificarNombreDuplicado}
                             required error={errores.apellido} helperText={errores.apellido} icon={PersonOutlinedIcon}
                             inputProps={{ maxLength: 50 }} />
+                        {avisoNombreDuplicado && (
+                            <Alert severity="warning" sx={{ gridColumn: '1 / -1' }}>{avisoNombreDuplicado}</Alert>
+                        )}
                     </Box>
                 )
             case 1:

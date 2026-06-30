@@ -1,6 +1,6 @@
 import { useTheme } from '@mui/material/styles'
 import { useEffect, useState } from 'react'
-import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, Snackbar, TextField, Autocomplete, Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material'
+import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, Snackbar, TextField, Autocomplete, Dialog, DialogTitle, DialogContent, IconButton, Divider } from '@mui/material'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined'
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
@@ -19,7 +19,7 @@ import { useRutaProgramacion } from '../../shared/contexts/RutaProgramacionConte
 import { FormField, FormSelect, formFieldStyles } from '../../shared/components/FormularioEstandarizado.jsx'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 
-const steps = ['Remitente', 'Destinatario', 'Paquete', 'Envío', 'Pago', 'Confirmación']
+const steps = ['Partes', 'Paquete', 'Envío', 'Pago', 'Confirmación']
 
 const RegistrarVenta = ({ open, onClose, onSuccess }) => {
     const { agregarVenta } = useVentas()
@@ -38,12 +38,6 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
 
     const [form, setForm] = useState({
         idCliente: '',
-        numeroIdentificacion: '',
-        nombreRemitente: '',
-        apellidoRemitente: '',
-        telefonoRemitente: '',
-        emailRemitente: '',
-        direccionRemitente: '',
         nombreDestinatario: '',
         telefonoDestinatario: '',
         direccionDestinatario: '',
@@ -67,30 +61,15 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
     const handleClose = () => {
         setForm({
             idCliente: '',
-            numeroIdentificacion: '',
-            nombreRemitente: '',
-            apellidoRemitente: '',
-            telefonoRemitente: '',
-            emailRemitente: '',
-            direccionRemitente: '',
             nombreDestinatario: '',
             telefonoDestinatario: '',
             direccionDestinatario: '',
             descripcionContenido: '',
-            peso: '',
-            alto: '',
-            ancho: '',
-            profundidad: '',
-            valorDeclarado: '',
-            idRuta: '',
-            destino: '',
-            fechaEstimadaEntrega: '',
-            observaciones: '',
-            metodoPago: '',
-            estadoPago: 'Pendiente',
-            valorServicio: '',
-            impuestos: '',
-            total: '',
+            peso: '', alto: '', ancho: '', profundidad: '',
+            valorDeclarado: '', idRuta: '', destino: '',
+            fechaEstimadaEntrega: '', observaciones: '',
+            metodoPago: '', estadoPago: 'Pendiente',
+            valorServicio: '', impuestos: '', total: '',
         })
         setErrores({})
         setApiError(null)
@@ -107,48 +86,24 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
         const { name } = e.target
         let { value } = e.target
 
-        // Bloquear valores numéricos fuera de rango
         if (name in NUMERIC_LIMITS && value !== '') {
             const num = parseFloat(value)
             if (!isNaN(num) && (num > NUMERIC_LIMITS[name] || num < 0)) return
         }
-
-        // Solo letras y espacios en campos de nombre
-        if (['nombreRemitente', 'apellidoRemitente', 'nombreDestinatario', 'descripcionContenido'].includes(name)) {
+        if (name === 'nombreDestinatario') {
             value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
         }
-        // Solo dígitos en teléfonos e identificación
-        if (['telefonoRemitente', 'telefonoDestinatario', 'numeroIdentificacion'].includes(name)) {
+        if (name === 'telefonoDestinatario') {
             value = value.replace(/[^0-9]/g, '')
         }
-        // Solo letras sin tildes, números, puntos, guiones y guiones bajos en el correo
-        if (name === 'emailRemitente') {
-            value = value.replace(/[^a-zA-Z0-9._-]/g, '')
-        }
-        // Solo letras sin tildes, números, espacios y caracteres especiales básicos en dirección
-        if (name === 'direccionRemitente' || name === 'direccionDestinatario') {
+        if (name === 'direccionDestinatario') {
             value = value.replace(/[^a-zA-Z0-9\s,.\-#\/']/g, '')
         }
-        // Solo letras, números, espacios y caracteres básicos en observaciones
+        if (name === 'descripcionContenido') {
+            value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
+        }
         if (name === 'observaciones') {
             value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ0-9\s,.-]/g, '')
-        }
-
-        if (name === 'idCliente') {
-            const cliente = clientes.find(c => c.idCliente === parseInt(value))
-            if (cliente) {
-                setForm(prev => ({
-                    ...prev,
-                    idCliente: value,
-                    numeroIdentificacion: cliente.numeroIdentificacion,
-                    nombreRemitente: cliente.nombre,
-                    apellidoRemitente: cliente.apellido,
-                    telefonoRemitente: cliente.telefono,
-                    emailRemitente: cliente.email,
-                    direccionRemitente: cliente.direccion,
-                }))
-            }
-            return
         }
 
         if (name === 'idRuta') {
@@ -184,23 +139,9 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
     const validarPaso = (step) => {
         const e = {}
         const soloLetras = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/
-        const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
         if (step === 0) {
-            if (!form.idCliente) e.idCliente = 'Selecciona un cliente'
-            if (!form.numeroIdentificacion) e.numeroIdentificacion = 'El número de identificación es obligatorio'
-            if (!form.nombreRemitente.trim()) e.nombreRemitente = 'El nombre es obligatorio'
-            else if (!soloLetras.test(form.nombreRemitente)) e.nombreRemitente = 'Solo se permiten letras'
-            if (!form.apellidoRemitente.trim()) e.apellidoRemitente = 'El apellido es obligatorio'
-            else if (!soloLetras.test(form.apellidoRemitente)) e.apellidoRemitente = 'Solo se permiten letras'
-            if (!form.telefonoRemitente.trim()) e.telefonoRemitente = 'El teléfono es obligatorio'
-            else if (!/^\d{10}$/.test(form.telefonoRemitente)) e.telefonoRemitente = 'Debe tener 10 dígitos'
-            if (!form.emailRemitente.trim()) e.emailRemitente = 'El correo es obligatorio'
-            else if (!emailValido.test(form.emailRemitente)) e.emailRemitente = 'Correo inválido'
-            if (!form.direccionRemitente.trim()) e.direccionRemitente = 'La dirección es obligatoria'
-        }
-
-        if (step === 1) {
+            if (!form.idCliente) e.idCliente = 'Selecciona un cliente remitente'
             if (!form.nombreDestinatario.trim()) e.nombreDestinatario = 'El nombre es obligatorio'
             else if (!soloLetras.test(form.nombreDestinatario)) e.nombreDestinatario = 'Solo se permiten letras'
             if (!form.telefonoDestinatario.trim()) e.telefonoDestinatario = 'El teléfono es obligatorio'
@@ -208,7 +149,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
             if (!form.direccionDestinatario.trim()) e.direccionDestinatario = 'La dirección es obligatoria'
         }
 
-        if (step === 2) {
+        if (step === 1) {
             if (!form.descripcionContenido.trim()) e.descripcionContenido = 'La descripción es obligatoria'
             else if (form.descripcionContenido.length > 300) e.descripcionContenido = 'Máximo 300 caracteres'
 
@@ -220,33 +161,27 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
             const altoNum = parseFloat(form.alto)
             if (!form.alto) e.alto = 'El alto es obligatorio'
             else if (isNaN(altoNum) || altoNum <= 0) e.alto = 'Debe ser un número mayor a 0'
-            else if (altoNum > 9999) e.alto = 'Máximo 9999 cm'
 
             const anchoNum = parseFloat(form.ancho)
             if (!form.ancho) e.ancho = 'El ancho es obligatorio'
             else if (isNaN(anchoNum) || anchoNum <= 0) e.ancho = 'Debe ser un número mayor a 0'
-            else if (anchoNum > 9999) e.ancho = 'Máximo 9999 cm'
 
             const profNum = parseFloat(form.profundidad)
             if (!form.profundidad) e.profundidad = 'La profundidad es obligatoria'
             else if (isNaN(profNum) || profNum <= 0) e.profundidad = 'Debe ser un número mayor a 0'
-            else if (profNum > 9999) e.profundidad = 'Máximo 9999 cm'
 
             if (form.valorDeclarado) {
                 const vdNum = parseFloat(form.valorDeclarado)
                 if (isNaN(vdNum) || vdNum < 0) e.valorDeclarado = 'Debe ser un número positivo'
-                else if (vdNum > 999999999) e.valorDeclarado = 'Valor demasiado alto'
             }
-
-            if (form.observaciones && form.observaciones.length > 500) e.observaciones = 'Máximo 500 caracteres'
         }
 
-        if (step === 3) {
+        if (step === 2) {
             if (!form.idRuta) e.idRuta = 'Selecciona una ruta'
             if (!form.fechaEstimadaEntrega) e.fechaEstimadaEntrega = 'La fecha es obligatoria'
         }
 
-        if (step === 4) {
+        if (step === 3) {
             if (!form.metodoPago) e.metodoPago = 'Selecciona un método de pago'
         }
 
@@ -268,7 +203,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
         setSubmitting(true)
         setApiError(null)
         try {
-            const payload = {
+            await agregarVenta({
                 idCliente: parseInt(form.idCliente),
                 idRuta: parseInt(form.idRuta),
                 destinatario: {
@@ -290,13 +225,9 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                 valorServicio: parseFloat(form.valorServicio) || 0,
                 impuestos: parseFloat(form.impuestos) || 0,
                 estadoPago: form.estadoPago,
-            }
-            await agregarVenta(payload)
+            })
             setExito(true)
-            setTimeout(() => {
-                handleClose()
-                if (onSuccess) onSuccess()
-            }, 1500)
+            setTimeout(() => { handleClose(); if (onSuccess) onSuccess() }, 1500)
         } catch (err) {
             setApiError(err.message || 'Error al registrar la venta.')
         } finally {
@@ -304,13 +235,12 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
         }
     }
 
-    const handleCancelar = () => handleClose()
+    const clienteSeleccionado = clientes.find(c => c.idCliente === parseInt(form.idCliente))
 
     const cardSx = {
         flex: 1, minWidth: 0, borderRadius: 2, p: 2.5,
         border: `1px solid ${theme.palette.divider}`,
-        backgroundColor: 'white',
-        overflow: 'hidden',
+        backgroundColor: 'white', overflow: 'hidden',
     }
 
     const renderStepContent = () => {
@@ -318,75 +248,95 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
             case 0:
                 return (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                        <Autocomplete
-                            options={clientes.filter(c => c.habilitado)}
-                            getOptionLabel={(option) => `${option.nombre} ${option.apellido} — ${option.numeroIdentificacion}`}
-                            value={clientes.find(c => c.idCliente === parseInt(form.idCliente)) || null}
-                            onChange={(_, newValue) => {
-                                handleChange({ target: { name: 'idCliente', value: newValue ? newValue.idCliente : '' } })
-                            }}
-                            noOptionsText="No se encontraron clientes"
-                            renderInput={(params) => (
-                                <TextField {...params} label="Cliente *"
-                                    error={!!errores.idCliente} helperText={errores.idCliente}
-                                    InputLabelProps={{ shrink: !!form.idCliente }}
-                                    sx={formFieldStyles} />
+                        {/* Remitente — solo seleccionar cliente */}
+                        <Box>
+                            <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1.5, color: theme.palette.text.primary }}>
+                                Remitente
+                            </Typography>
+                            <Autocomplete
+                                options={clientes.filter(c => c.habilitado)}
+                                getOptionLabel={(option) => `${option.nombre} ${option.apellido} — ${option.numeroIdentificacion}`}
+                                value={clienteSeleccionado || null}
+                                onChange={(_, newValue) => {
+                                    if (newValue) {
+                                        setForm(prev => ({ ...prev, idCliente: newValue.idCliente }))
+                                    } else {
+                                        setForm(prev => ({ ...prev, idCliente: '' }))
+                                    }
+                                    setErrores(prev => ({ ...prev, idCliente: '' }))
+                                }}
+                                noOptionsText="No se encontraron clientes"
+                                renderInput={(params) => (
+                                    <TextField {...params} label="Cliente *"
+                                        error={!!errores.idCliente} helperText={errores.idCliente || 'Busca por nombre o número de documento'}
+                                        slotProps={{ inputLabel: { shrink: true } }}
+                                        sx={formFieldStyles} />
+                                )}
+                            />
+                            {clienteSeleccionado && (
+                                <Paper elevation={0} sx={{
+                                    mt: 1.5, p: 1.5, borderRadius: 2,
+                                    border: `1px solid ${theme.palette.divider}`,
+                                    backgroundColor: theme.palette.background.default,
+                                }}>
+                                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.75 }}>
+                                        <Typography variant="body2">
+                                            <Box component="span" sx={{ fontWeight: 600, color: theme.palette.text.secondary, mr: 0.5 }}>Nombre:</Box>
+                                            {clienteSeleccionado.nombre} {clienteSeleccionado.apellido}
+                                        </Typography>
+                                        <Typography variant="body2">
+                                            <Box component="span" sx={{ fontWeight: 600, color: theme.palette.text.secondary, mr: 0.5 }}>ID:</Box>
+                                            {clienteSeleccionado.numeroIdentificacion}
+                                        </Typography>
+                                        <Typography variant="body2">
+                                            <Box component="span" sx={{ fontWeight: 600, color: theme.palette.text.secondary, mr: 0.5 }}>Teléfono:</Box>
+                                            {clienteSeleccionado.telefono}
+                                        </Typography>
+                                        <Typography variant="body2">
+                                            <Box component="span" sx={{ fontWeight: 600, color: theme.palette.text.secondary, mr: 0.5 }}>Correo:</Box>
+                                            {clienteSeleccionado.email}
+                                        </Typography>
+                                        {clienteSeleccionado.direccion && (
+                                            <Box sx={{ gridColumn: '1 / -1' }}>
+                                                <Typography variant="body2">
+                                                    <Box component="span" sx={{ fontWeight: 600, color: theme.palette.text.secondary, mr: 0.5 }}>Dirección:</Box>
+                                                    {clienteSeleccionado.direccion}
+                                                </Typography>
+                                            </Box>
+                                        )}
+                                    </Box>
+                                </Paper>
                             )}
-                        />
-                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
-                            <FormField label="Nombres" name="nombreRemitente" value={form.nombreRemitente}
-                                onChange={handleChange} required error={errores.nombreRemitente}
-                                helperText={errores.nombreRemitente} icon={PersonOutlinedIcon}
-                                inputProps={{ maxLength: 50 }} />
-                            <FormField label="Apellidos" name="apellidoRemitente" value={form.apellidoRemitente}
-                                onChange={handleChange} required error={errores.apellidoRemitente}
-                                helperText={errores.apellidoRemitente} icon={PersonOutlinedIcon}
-                                inputProps={{ maxLength: 50 }} />
-                            <FormField label="Número de identificación" name="numeroIdentificacion" value={form.numeroIdentificacion}
-                                onChange={handleChange} required error={errores.numeroIdentificacion}
-                                helperText={errores.numeroIdentificacion} icon={BadgeOutlinedIcon}
-                                inputProps={{ maxLength: 15 }} />
-                            <FormField label="Teléfono" name="telefonoRemitente" value={form.telefonoRemitente}
-                                onChange={handleChange} required error={errores.telefonoRemitente}
-                                helperText={errores.telefonoRemitente || 'Número de 10 dígitos'} icon={PhoneOutlinedIcon}
-                                inputProps={{ maxLength: 10 }} />
-                            <Box sx={{ gridColumn: '1 / -1' }}>
-                                <FormField label="Correo electrónico" name="emailRemitente" type="email" value={form.emailRemitente}
-                                    onChange={handleChange} required error={errores.emailRemitente}
-                                    helperText={errores.emailRemitente} icon={EmailOutlinedIcon}
-                                    inputProps={{ maxLength: 100 }} />
-                            </Box>
-                            <Box sx={{ gridColumn: '1 / -1' }}>
-                                <FormField label="Dirección" name="direccionRemitente" value={form.direccionRemitente}
-                                    onChange={handleChange} required error={errores.direccionRemitente}
-                                    placeholder="Ej: Calle 45 #20-10"
-                                    helperText={errores.direccionRemitente || `${(form.direccionRemitente || '').length}/200`}
-                                    icon={HomeOutlinedIcon} inputProps={{ maxLength: 200 }} />
+                        </Box>
+
+                        <Divider />
+
+                        {/* Destinatario */}
+                        <Box>
+                            <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1.5, color: theme.palette.text.primary }}>
+                                Destinatario
+                            </Typography>
+                            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
+                                <FormField label="Nombre completo" name="nombreDestinatario" value={form.nombreDestinatario}
+                                    onChange={handleChange} required error={errores.nombreDestinatario}
+                                    helperText={errores.nombreDestinatario} icon={PersonOutlinedIcon}
+                                    inputProps={{ maxLength: 50 }} />
+                                <FormField label="Teléfono" name="telefonoDestinatario" value={form.telefonoDestinatario}
+                                    onChange={handleChange} required error={errores.telefonoDestinatario}
+                                    helperText={errores.telefonoDestinatario || 'Número de 10 dígitos'} icon={PhoneOutlinedIcon}
+                                    inputProps={{ maxLength: 10 }} />
+                                <Box sx={{ gridColumn: '1 / -1' }}>
+                                    <FormField label="Dirección de entrega" name="direccionDestinatario" value={form.direccionDestinatario}
+                                        onChange={handleChange} required error={errores.direccionDestinatario}
+                                        placeholder="Ej: Cra 23 #80-5"
+                                        helperText={errores.direccionDestinatario || `${(form.direccionDestinatario || '').length}/300`}
+                                        icon={HomeOutlinedIcon} multiline rows={2} inputProps={{ maxLength: 300 }} />
+                                </Box>
                             </Box>
                         </Box>
                     </Box>
                 )
             case 1:
-                return (
-                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
-                        <FormField label="Nombre completo" name="nombreDestinatario" value={form.nombreDestinatario}
-                            onChange={handleChange} required error={errores.nombreDestinatario}
-                            helperText={errores.nombreDestinatario} icon={PersonOutlinedIcon}
-                            inputProps={{ maxLength: 50 }} />
-                        <FormField label="Teléfono" name="telefonoDestinatario" value={form.telefonoDestinatario}
-                            onChange={handleChange} required error={errores.telefonoDestinatario}
-                            helperText={errores.telefonoDestinatario || 'Número de 10 dígitos'} icon={PhoneOutlinedIcon}
-                            inputProps={{ maxLength: 10 }} />
-                        <Box sx={{ gridColumn: '1 / -1' }}>
-                            <FormField label="Dirección de entrega" name="direccionDestinatario" value={form.direccionDestinatario}
-                                onChange={handleChange} required error={errores.direccionDestinatario}
-                                placeholder="Ej: Cra 23 #80-5"
-                                helperText={errores.direccionDestinatario || `${(form.direccionDestinatario || '').length}/300`}
-                                icon={HomeOutlinedIcon} multiline rows={2} inputProps={{ maxLength: 300 }} />
-                        </Box>
-                    </Box>
-                )
-            case 2:
                 return (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                         <FormField label="Descripción del contenido" name="descripcionContenido" value={form.descripcionContenido}
@@ -419,12 +369,12 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                         </Box>
                     </Box>
                 )
-            case 3:
+            case 2:
                 return (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                             <FormSelect label="Ruta" name="idRuta" value={form.idRuta}
-                                onChange={handleChange} required error={errores.idRuta}>
+                                onChange={handleChange} required error={errores.idRuta} helperText={errores.idRuta}>
                                 {rutasProgramadas.filter(r => r.habilitado !== false).length === 0
                                     ? <MenuItem disabled>No hay rutas programadas</MenuItem>
                                     : rutasProgramadas
@@ -443,12 +393,12 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                         </Box>
                         <FormField label="Observaciones" name="observaciones" value={form.observaciones}
                             onChange={handleChange} multiline rows={2}
-                            helperText={errores.observaciones || `Opcional ${(form.observaciones || '').length}/500`}
+                            helperText={errores.observaciones || `Opcional · ${(form.observaciones || '').length}/500`}
                             error={errores.observaciones}
                             inputProps={{ maxLength: 500 }} />
                     </Box>
                 )
-            case 4:
+            case 3:
                 return (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                         <FormSelect label="Método de pago" name="metodoPago" value={form.metodoPago}
@@ -467,11 +417,11 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                                 value={form.impuestos} onChange={handleChange}
                                 inputProps={{ min: 0, step: 1 }} />
                             <FormField label="Total a pagar ($)" name="total" type="number"
-                                value={form.total} onChange={handleChange} disabled={true} />
+                                value={form.total} onChange={handleChange} disabled />
                         </Box>
                     </Box>
                 )
-            case 5:
+            case 4:
                 return (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                         {apiError && (
@@ -483,19 +433,21 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                             <Paper elevation={0} sx={cardSx}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                                     <AssignmentIndOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
-                                    <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Datos del Remitente</Typography>
+                                    <Typography fontWeight={700} fontSize="0.95rem">Remitente</Typography>
                                 </Box>
-                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la información del remitente</Typography>
-                                <ConfirmRow label="Nombre" value={`${form.nombreRemitente} ${form.apellidoRemitente}`} />
-                                <ConfirmRow label="Identificación" value={form.numeroIdentificacion} />
-                                <ConfirmRow label="Teléfono" value={form.telefonoRemitente} />
+                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Información del cliente</Typography>
+                                {clienteSeleccionado && <>
+                                    <ConfirmRow label="Nombre" value={`${clienteSeleccionado.nombre} ${clienteSeleccionado.apellido}`} />
+                                    <ConfirmRow label="Identificación" value={clienteSeleccionado.numeroIdentificacion} />
+                                    <ConfirmRow label="Teléfono" value={clienteSeleccionado.telefono} />
+                                </>}
                             </Paper>
                             <Paper elevation={0} sx={cardSx}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                                     <PersonOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
-                                    <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Datos del Destinatario</Typography>
+                                    <Typography fontWeight={700} fontSize="0.95rem">Destinatario</Typography>
                                 </Box>
-                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la información del destinatario</Typography>
+                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Información del destinatario</Typography>
                                 <ConfirmRow label="Nombre" value={form.nombreDestinatario} />
                                 <ConfirmRow label="Teléfono" value={form.telefonoDestinatario} />
                                 <ConfirmRow label="Dirección" value={form.direccionDestinatario} />
@@ -505,9 +457,9 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                             <Paper elevation={0} sx={cardSx}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                                     <Inventory2OutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
-                                    <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Características del Paquete</Typography>
+                                    <Typography fontWeight={700} fontSize="0.95rem">Paquete</Typography>
                                 </Box>
-                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica los datos del paquete</Typography>
+                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Características del paquete</Typography>
                                 <ConfirmRow label="Contenido" value={form.descripcionContenido} />
                                 <ConfirmRow label="Peso" value={form.peso ? `${form.peso} kg` : null} />
                                 <ConfirmRow label="Dimensiones" value={form.alto ? `${form.alto}×${form.ancho}×${form.profundidad} cm` : null} />
@@ -516,7 +468,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                             <Paper elevation={0} sx={cardSx}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                                     <PaymentOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
-                                    <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Envío y Pago</Typography>
+                                    <Typography fontWeight={700} fontSize="0.95rem">Envío y Pago</Typography>
                                 </Box>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Ruta, fechas y valores</Typography>
                                 <ConfirmRow label="Ruta" value={form.destino} />
@@ -537,9 +489,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
             slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}>
             <DialogTitle sx={{ m: 0, p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${theme.palette.divider}` }}>
                 <Box>
-                    <Typography variant="h6" fontWeight={700}>
-                        Registrar Venta
-                    </Typography>
+                    <Typography variant="h6" fontWeight={700}>Registrar Venta</Typography>
                     <Typography variant="body2" color={theme.palette.text.secondary}>
                         Complete los datos de la nueva encomienda paso a paso.
                     </Typography>
@@ -549,7 +499,6 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                 </IconButton>
             </DialogTitle>
             <DialogContent sx={{ p: 3, pt: 1.5 }}>
-
                 <Box sx={{ mb: 3 }}>
                     <Stepper activeStep={activeStep} alternativeLabel
                         sx={{
@@ -564,12 +513,10 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                             '& .MuiStepLabel-label': { fontSize: '0.8rem', color: theme.palette.text.secondary, mt: 0.5 },
                             '& .MuiStepLabel-label.Mui-active': { color: theme.palette.text.primary, fontWeight: 600 },
                             '& .MuiStepLabel-label.Mui-completed': { color: theme.palette.primary.main, fontWeight: 500 },
-                        }}
-                    >
+                        }}>
                         {steps.map(label => <Step key={label}><StepLabel>{label}</StepLabel></Step>)}
                     </Stepper>
                 </Box>
-
                 <Box sx={{ px: 4, py: 2 }}>
                     <Box sx={{ maxWidth: 700, mx: 'auto' }}>
                         {renderStepContent()}
@@ -592,7 +539,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                     Anterior
                 </Button>
                 <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
-                    <Button onClick={handleCancelar} disableRipple
+                    <Button onClick={handleClose} disableRipple
                         sx={{
                             textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 2,
                             '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary },
@@ -601,8 +548,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                     </Button>
                     <Button
                         onClick={activeStep < steps.length - 1 ? handleNext : handleSubmit}
-                        variant="contained"
-                        disabled={submitting}
+                        variant="contained" disabled={submitting}
                         endIcon={activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <CheckOutlinedIcon />}
                         disableRipple
                         sx={{
@@ -610,11 +556,9 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                             backgroundColor: theme.palette.primary.main,
                             boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
                             '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}` },
+                            '&.Mui-disabled': { backgroundColor: '#e0e0e0', color: '#9e9e9e' },
                         }}>
-                        {activeStep < steps.length - 1
-                            ? 'Siguiente'
-                            : submitting ? 'Registrando...' : 'Registrar'
-                        }
+                        {activeStep < steps.length - 1 ? 'Siguiente' : submitting ? 'Registrando...' : 'Registrar'}
                     </Button>
                 </Box>
             </Box>
@@ -629,4 +573,3 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
 }
 
 export default RegistrarVenta
-

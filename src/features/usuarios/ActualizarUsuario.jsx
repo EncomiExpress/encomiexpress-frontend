@@ -1,5 +1,6 @@
 import { useTheme } from '@mui/material/styles'
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Dialog, DialogTitle, DialogContent, IconButton, Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Snackbar, Alert, TextField, Select, InputAdornment, CircularProgress } from '@mui/material'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined'
@@ -14,6 +15,8 @@ import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import { useAuth, ROLES } from '../../shared/contexts/AuthContext.jsx'
 import { formFieldStyles } from '../../shared/components/FormularioEstandarizado.jsx'
+import * as usuarioService from '../../shared/services/usuarioService.js'
+import { hayNombreDuplicado, MENSAJE_NOMBRE_DUPLICADO } from '../../shared/utils/duplicados.js'
 
 const DOMINIOS_EMAIL = ['@gmail.com', '@hotmail.com', '@outlook.com', '@yahoo.com', '@icloud.com', '@live.com']
 
@@ -60,6 +63,7 @@ const ConfirmRow = ({ label, valueOriginal, valueActual }) => {
 const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) => {
     const { actualizarUsuario, getRolesBackend } = useAuth()
     const theme = useTheme()
+    const navigate = useNavigate()
     const [exito, setExito] = useState(false)
     const [apiError, setApiError] = useState(null)
     const [errores, setErrores] = useState({})
@@ -68,6 +72,7 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
     const [formOriginal, setFormOriginal] = useState(null)
     const [sinCambios, setSinCambios] = useState(false)
     const [rolesDisponibles, setRolesDisponibles] = useState([])
+    const [avisoNombreDuplicado, setAvisoNombreDuplicado] = useState('')
 
     useEffect(() => {
         const cargarRoles = async () => {
@@ -142,6 +147,16 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
         }
     }, [open, usuarioProp])
 
+    const esDocAlfanumerico = (tipo) => ['CE', 'PAS'].includes(tipo)
+    const maxLengthDoc = esDocAlfanumerico(form.tipoIdentificacion) ? 12 : 10
+
+    const docHelperText = () => {
+        if (form.tipoIdentificacion === 'CC') return 'Solo dígitos, entre 3 y 10'
+        if (esDocAlfanumerico(form.tipoIdentificacion)) return 'Alfanumérico, hasta 12 caracteres'
+        if (form.tipoIdentificacion) return 'Solo dígitos, hasta 10'
+        return 'Sin puntos ni comas'
+    }
+
     const handleChange = (e) => {
         const { name } = e.target
         let { value } = e.target
@@ -149,8 +164,20 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
         if (name === 'nombre' || name === 'apellido') {
             value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
         }
-        if (name === 'numeroIdentificacion' || name === 'telefono') {
+        if (name === 'telefono') {
             value = value.replace(/[^0-9]/g, '')
+        }
+        if (name === 'numeroIdentificacion') {
+            value = esDocAlfanumerico(form.tipoIdentificacion)
+                ? value.replace(/[^a-zA-Z0-9]/g, '')
+                : value.replace(/[^0-9]/g, '')
+        }
+        if (name === 'tipoIdentificacion') {
+            setForm(prev => ({ ...prev, tipoIdentificacion: value, numeroIdentificacion: '' }))
+            setErrores(prev => ({ ...prev, tipoIdentificacion: '', numeroIdentificacion: '' }))
+            setApiError(null)
+            setSinCambios(false)
+            return
         }
         if (name === 'emailLocal') {
             value = value.replace(/[^a-zA-Z0-9._-]/g, '')
@@ -160,6 +187,24 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
         setErrores(prev => ({ ...prev, [name]: '' }))
         setApiError(null)
         setSinCambios(false)
+    }
+
+    const verificarNombreDuplicado = async () => {
+        if (!form.nombre.trim() || !form.apellido.trim()) {
+            setAvisoNombreDuplicado('')
+            return
+        }
+        try {
+            const res = await usuarioService.getUsuarios({ q: form.apellido.trim(), limit: 20 })
+            if (!res?.success) return
+            const duplicado = hayNombreDuplicado(res.data, form.nombre, form.apellido, {
+                excludeId: usuarioProp?.idUsuario,
+                getId: (r) => r.idUsuario,
+            })
+            setAvisoNombreDuplicado(duplicado ? MENSAJE_NOMBRE_DUPLICADO : '')
+        } catch {
+            // Si falla la verificación no bloqueamos el flujo de edición
+        }
     }
 
     const validarPaso = (step) => {
@@ -176,8 +221,18 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
 
             if (!form.tipoIdentificacion) e.tipoIdentificacion = 'Selecciona un tipo de documento'
 
-            if (!form.numeroIdentificacion.trim()) e.numeroIdentificacion = 'El número de documento es obligatorio'
-            else if (!soloNumeros.test(form.numeroIdentificacion)) e.numeroIdentificacion = 'Solo se permiten números'
+            if (!form.numeroIdentificacion.trim()) {
+                e.numeroIdentificacion = 'El número de documento es obligatorio'
+            } else if (esDocAlfanumerico(form.tipoIdentificacion)) {
+                if (!/^[a-zA-Z0-9]+$/.test(form.numeroIdentificacion))
+                    e.numeroIdentificacion = 'Solo letras y números, sin caracteres especiales'
+            } else if (!soloNumeros.test(form.numeroIdentificacion)) {
+                e.numeroIdentificacion = 'Solo se permiten dígitos'
+            } else if (form.tipoIdentificacion === 'CC' && (form.numeroIdentificacion.length < 3 || form.numeroIdentificacion.length > 10)) {
+                e.numeroIdentificacion = 'La CC debe tener entre 3 y 10 dígitos'
+            } else if (form.numeroIdentificacion.length > 10) {
+                e.numeroIdentificacion = 'Máximo 10 dígitos'
+            }
         }
 
         if (step === 1) {
@@ -273,7 +328,10 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
                         <TextField fullWidth select label="Tipo de documento" name="tipoIdentificacion"
                             value={form.tipoIdentificacion} onChange={handleChange}
                             error={!!errores.tipoIdentificacion} helperText={errores.tipoIdentificacion}
-                            slotProps={{ input: { startAdornment: <InputAdornment position="start"><BadgeOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment> } }}
+                            slotProps={{
+                                input: { startAdornment: <InputAdornment position="start"><BadgeOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment> },
+                                select: { IconComponent: KeyboardArrowDownOutlinedIcon }
+                            }}
                             sx={formFieldStyles}>
                             <MenuItem value="CC">Cédula de Ciudadanía (CC)</MenuItem>
                             <MenuItem value="TI">Tarjeta de Identidad (TI)</MenuItem>
@@ -283,17 +341,22 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
                         </TextField>
                         <TextField fullWidth label="Número de documento" name="numeroIdentificacion"
                             value={form.numeroIdentificacion} onChange={handleChange}
-                            error={!!errores.numeroIdentificacion} helperText={errores.numeroIdentificacion || 'Sin puntos ni comas'}
-                            slotProps={{ input: { startAdornment: <InputAdornment position="start"><BadgeOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment>, sx: { pl: 1.5 } }, htmlInput: { maxLength: 15 } }}
+                            error={!!errores.numeroIdentificacion} helperText={errores.numeroIdentificacion || docHelperText()}
+                            slotProps={{ input: { startAdornment: <InputAdornment position="start"><BadgeOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment>, sx: { pl: 1.5 } }, htmlInput: { maxLength: maxLengthDoc } }}
                             sx={formFieldStyles} />
                         <TextField fullWidth label="Nombres" name="nombre" value={form.nombre} onChange={handleChange}
+                            onBlur={verificarNombreDuplicado}
                             error={!!errores.nombre} helperText={errores.nombre || 'Solo letras'}
                             slotProps={{ input: { startAdornment: <InputAdornment position="start"><PersonOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment>, sx: { pl: 1.5 }, htmlInput: { maxLength: 50 } } }}
                             sx={formFieldStyles} />
                         <TextField fullWidth label="Apellidos" name="apellido" value={form.apellido} onChange={handleChange}
+                            onBlur={verificarNombreDuplicado}
                             error={!!errores.apellido} helperText={errores.apellido || 'Solo letras'}
                             slotProps={{ input: { startAdornment: <InputAdornment position="start"><PersonOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment>, sx: { pl: 1.5 } }, htmlInput: { maxLength: 50 } }}
                             sx={formFieldStyles} />
+                        {avisoNombreDuplicado && (
+                            <Alert severity="warning" sx={{ gridColumn: '1 / -1' }}>{avisoNombreDuplicado}</Alert>
+                        )}
                     </Box>
                 )
             case 1:
@@ -331,7 +394,15 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
                             }}
                             sx={formFieldStyles} />
                         <TextField fullWidth select label="Rol" name="idRol" value={form.idRol} onChange={handleChange}
-                            error={!!errores.idRol} helperText={errores.idRol}
+                            error={!!errores.idRol} helperText={errores.idRol || (
+                                <>
+                                    ¿Buscas registrar un conductor? Hazlo desde el módulo de{' '}
+                                    <Box component="span" onClick={() => navigate('/transporte/conductores')}
+                                        sx={{ color: theme.palette.primary.main, fontWeight: 600, textDecoration: 'underline', cursor: 'pointer' }}>
+                                        Conductores
+                                    </Box>
+                                </>
+                            )}
                             slotProps={{ input: { startAdornment: <InputAdornment position="start"><AssignmentIndOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment> } }}
                             sx={formFieldStyles}>
                             {rolesDisponibles.map((rol) => (

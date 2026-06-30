@@ -19,8 +19,11 @@ import CloseIcon from '@mui/icons-material/Close'
 import { usePropietario } from '../../shared/contexts/PropietarioContext.jsx'
 import { FormField, FormSelect, formFieldStyles } from '../../shared/components/FormularioEstandarizado.jsx'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
+import * as propietarioService from '../../shared/services/propietarioService.js'
+import { hayNombreDuplicado, MENSAJE_NOMBRE_DUPLICADO } from '../../shared/utils/duplicados.js'
 
 const DOMINIOS_EMAIL = ['@gmail.com', '@hotmail.com', '@outlook.com', '@yahoo.com', '@icloud.com', '@live.com']
+const DOMINIO_OTRO = '__otro__'
 
 const steps = ['Datos Personales', 'Contacto y Vehículo', 'Confirmación']
 
@@ -44,6 +47,7 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
     const [activeStep, setActiveStep] = useState(0)
     const [submitting, setSubmitting] = useState(false)
     const [exito, setExito] = useState(false)
+    const [avisoNombreDuplicado, setAvisoNombreDuplicado] = useState('')
     const [form, setForm] = useState(EMPTY_FORM)
 
     const handleClose = () => {
@@ -72,10 +76,29 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
         if (name === 'emailLocal') {
             value = value.replace(/[^a-zA-Z0-9._-]/g, '')
         }
+        if (name === 'emailDominio') {
+            if (value === DOMINIO_OTRO) value = '@'
+            else if (!DOMINIOS_EMAIL.includes(value)) value = '@' + value.replace(/@/g, '').replace(/[^a-zA-Z0-9.-]/g, '')
+        }
 
         setForm(prev => ({ ...prev, [name]: value }))
         setErrores(prev => ({ ...prev, [name]: '' }))
         setApiError(null)
+    }
+
+    const verificarNombreDuplicado = async () => {
+        if (form.tipoIdentificacion === 'NIT' || !form.nombre.trim() || !form.apellido.trim()) {
+            setAvisoNombreDuplicado('')
+            return
+        }
+        try {
+            const res = await propietarioService.getPropietarios(undefined, { q: form.apellido.trim(), limit: 20 })
+            if (!res?.success) return
+            const duplicado = hayNombreDuplicado(res.data, form.nombre, form.apellido)
+            setAvisoNombreDuplicado(duplicado ? MENSAJE_NOMBRE_DUPLICADO : '')
+        } catch {
+            // Si falla la verificación no bloqueamos el flujo de registro
+        }
     }
 
     const validarPaso = (step) => {
@@ -97,6 +120,7 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
             if (!form.telefono.trim()) e.telefono = 'El teléfono es obligatorio'
             else if (!/^\d{10}$/.test(form.telefono)) e.telefono = 'El teléfono debe tener 10 dígitos'
             if (!form.emailLocal?.trim()) e.emailLocal = 'El correo es obligatorio'
+            else if (!/^@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(form.emailDominio)) e.emailLocal = 'El dominio del correo no es válido (ej: @empresa.com)'
         }
 
         return e
@@ -145,15 +169,21 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
             case 0:
                 return (
                     <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
-                        <FormSelect label="Tipo de documento" name="tipoIdentificacion" value={form.tipoIdentificacion}
-                            onChange={handleChange} required error={errores.tipoIdentificacion} helperText={errores.tipoIdentificacion}>
+                        <TextField fullWidth select label="Tipo de documento *" name="tipoIdentificacion"
+                            value={form.tipoIdentificacion} onChange={handleChange}
+                            error={!!errores.tipoIdentificacion} helperText={errores.tipoIdentificacion}
+                            slotProps={{
+                                input: { startAdornment: <InputAdornment position="start"><BadgeOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment> },
+                                select: { IconComponent: KeyboardArrowDownOutlinedIcon },
+                            }}
+                            sx={formFieldStyles}>
                             <MenuItem value="CC">Cédula de Ciudadanía (CC)</MenuItem>
                             <MenuItem value="NIT">NIT (Persona Jurídica)</MenuItem>
                             <MenuItem value="CE">Cédula Extranjería (CE)</MenuItem>
                             <MenuItem value="TI">Tarjeta de Identidad (TI)</MenuItem>
                             <MenuItem value="RC">Registro Civil (RC)</MenuItem>
                             <MenuItem value="PAS">Pasaporte</MenuItem>
-                        </FormSelect>
+                        </TextField>
                         <FormField label="Número de documento" name="numeroIdentificacion" value={form.numeroIdentificacion}
                             onChange={handleChange} required error={errores.numeroIdentificacion}
                             helperText={errores.numeroIdentificacion} icon={BadgeOutlinedIcon}
@@ -161,14 +191,19 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
                         <FormField
                             label={form.tipoIdentificacion === 'NIT' ? 'Razón Social' : 'Nombres'}
                             name="nombre" value={form.nombre} onChange={handleChange}
+                            onBlur={verificarNombreDuplicado}
                             required error={errores.nombre} helperText={errores.nombre}
                             icon={form.tipoIdentificacion === 'NIT' ? BusinessOutlinedIcon : PersonOutlinedIcon}
                             inputProps={{ maxLength: 50 }}
                             placeholder={form.tipoIdentificacion === 'NIT' ? 'Ej: Transportes XYZ S.A.S' : 'Ej: Carlos'} />
                         {form.tipoIdentificacion !== 'NIT' && (
                             <FormField label="Apellidos" name="apellido" value={form.apellido} onChange={handleChange}
+                                onBlur={verificarNombreDuplicado}
                                 required error={errores.apellido} helperText={errores.apellido} icon={PersonOutlinedIcon}
                                 inputProps={{ maxLength: 50 }} placeholder="Ej: Gómez López" />
+                        )}
+                        {avisoNombreDuplicado && (
+                            <Alert severity="warning" sx={{ gridColumn: '1 / -1' }}>{avisoNombreDuplicado}</Alert>
                         )}
                     </Box>
                 )
@@ -190,15 +225,32 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
                                     ),
                                     endAdornment: (
                                         <InputAdornment position="end">
-                                            <Select name="emailDominio" value={form.emailDominio}
-                                                onChange={handleChange} variant="standard" disableUnderline
-                                                IconComponent={KeyboardArrowDownOutlinedIcon}
-                                                sx={{
-                                                    fontSize: '1rem', color: theme.palette.text.secondary,
-                                                    '& .MuiSelect-select': { py: 0, pl: 0.5, pr: '22px !important' }
-                                                }}>
-                                                {DOMINIOS_EMAIL.map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
-                                            </Select>
+                                            {!DOMINIOS_EMAIL.includes(form.emailDominio) ? (
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
+                                                    <Box component="input" name="emailDominio" value={form.emailDominio}
+                                                        onChange={handleChange} placeholder="@empresa.com" maxLength={40}
+                                                        sx={{
+                                                            border: 'none', outline: 'none', background: 'transparent',
+                                                            fontSize: '1rem', fontFamily: 'inherit', color: theme.palette.text.secondary,
+                                                            width: 110, p: 0,
+                                                        }} />
+                                                    <IconButton size="small" sx={{ p: 0.3 }}
+                                                        onClick={() => handleChange({ target: { name: 'emailDominio', value: '@gmail.com' } })}>
+                                                        <CloseIcon sx={{ fontSize: 14, color: '#94a3b8' }} />
+                                                    </IconButton>
+                                                </Box>
+                                            ) : (
+                                                <Select name="emailDominio" value={form.emailDominio}
+                                                    onChange={handleChange} variant="standard" disableUnderline
+                                                    IconComponent={KeyboardArrowDownOutlinedIcon}
+                                                    sx={{
+                                                        fontSize: '1rem', color: theme.palette.text.secondary,
+                                                        '& .MuiSelect-select': { py: 0, pl: 0.5, pr: '22px !important' }
+                                                    }}>
+                                                    {DOMINIOS_EMAIL.map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
+                                                    <MenuItem value={DOMINIO_OTRO}>Otro...</MenuItem>
+                                                </Select>
+                                            )}
                                         </InputAdornment>
                                     ),
                                 },
@@ -207,13 +259,14 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
                             sx={formFieldStyles} />
                         <FormField label="Tarjeta de propiedad" name="tarjetaPropiedad" value={form.tarjetaPropiedad}
                             onChange={handleChange} icon={DirectionsCarOutlinedIcon}
-                            inputProps={{ maxLength: 50 }} placeholder="Ej: 123456789" />
+                            inputProps={{ maxLength: 50 }} placeholder="Ej: 123456789"
+                            helperText="Opcional" />
                         <FormSelect label="Tipo de flota" name="tipoFlota" value={form.tipoFlota}
-                            onChange={handleChange} error={errores.tipoFlota} helperText={errores.tipoFlota}>
+                            onChange={handleChange} helperText="Opcional">
                             <MenuItem value="">Sin especificar</MenuItem>
+                            <MenuItem value="Mensajería">Mensajería</MenuItem>
                             <MenuItem value="Carga Liviana">Carga Liviana</MenuItem>
                             <MenuItem value="Carga Pesada">Carga Pesada</MenuItem>
-                            <MenuItem value="Pasajeros">Pasajeros</MenuItem>
                             <MenuItem value="Mixta">Mixta</MenuItem>
                         </FormSelect>
                     </Box>

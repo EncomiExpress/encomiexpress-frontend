@@ -287,6 +287,7 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
                             <TextField
                                 fullWidth label="Fecha de legalización" name="fechaLegalizacion" type="date"
                                 value={form?.fechaLegalizacion || ''} onChange={handleChange}
+                                helperText="Opcional"
                                 slotProps={{ inputLabel: { shrink: true } }} sx={formFieldStyles}
                             />
                         </Box>
@@ -294,6 +295,7 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
                         <TextField
                             fullWidth label="Fecha entrega excedente" name="fechaEntregaExcedente" type="date"
                             value={form?.fechaEntregaExcedente || ''} onChange={handleChange}
+                            helperText="Opcional"
                             slotProps={{ inputLabel: { shrink: true } }} sx={formFieldStyles}
                         />
 
@@ -305,6 +307,7 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
                             multiline rows={3}
                             placeholder="Agrega alguna observación si es necesario..."
                             inputProps={{ maxLength: 500 }}
+                            helperText={`Opcional · ${form?.soporte?.length || 0}/500`}
                         />
                     </Box>
                 )

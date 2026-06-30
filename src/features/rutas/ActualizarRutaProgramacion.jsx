@@ -19,7 +19,7 @@ import { useDestino } from '../../shared/contexts/DestinoContext.jsx'
 import { FormField, FormSelect, formFieldStyles } from '../../shared/components/FormularioEstandarizado.jsx'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 
-const steps = ['Datos de la Ruta', 'Horario y Vehículo', 'Confirmación']
+const steps = ['Datos de la Ruta', 'Horario', 'Confirmación']
 
 const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
     const { actualizarRutaProgramada, rutasProgramadas } = useRutaProgramacion()
@@ -190,30 +190,14 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
                         <FormField label="Nombre de la Ruta" name="nombreRuta" value={form.nombreRuta}
                             onChange={handleChange} required error={errores.nombreRuta} helperText={errores.nombreRuta}
                             icon={RouteOutlinedIcon} inputProps={{ maxLength: 100 }} placeholder="Ej: Ruta Medellín - Bogotá" />
-                        <Autocomplete
-                            options={vehiculos}
-                            getOptionLabel={(v) => `${v.placa} — ${v.marca} ${v.modelo}`}
-                            isOptionEqualToValue={(opt, val) => opt.idVehiculo === val.idVehiculo}
-                            value={vehiculos.find(v => v.idVehiculo === parseInt(form.idVehiculo)) || null}
-                            onChange={(_, val) => handleChange({ target: { name: 'idVehiculo', value: val ? val.idVehiculo : '' } })}
-                            filterOptions={(opts, { inputValue }) => {
-                                if (!inputValue.trim()) {
-                                    return [...opts].sort((a, b) => b.idVehiculo - a.idVehiculo).slice(0, 5)
-                                }
-                                const q = inputValue.toLowerCase()
-                                return opts.filter(v =>
-                                    v.placa.toLowerCase().includes(q) ||
-                                    v.marca.toLowerCase().includes(q) ||
-                                    v.modelo.toLowerCase().includes(q)
-                                )
-                            }}
-                            noOptionsText="No hay vehículos disponibles"
-                            renderInput={(params) => (
-                                <TextField {...params} label="Vehículo *"
-                                    error={!!errores.idVehiculo} helperText={errores.idVehiculo}
-                                    sx={formFieldStyles} />
-                            )}
-                        />
+                        <FormSelect label="Destino" name="idDestino" value={form.idDestino}
+                            onChange={handleChange} required error={errores.idDestino} helperText={errores.idDestino}>
+                            {destinos.map((d) => (
+                                <MenuItem key={d.idDestino} value={d.idDestino}>
+                                    {d.nombre ? `${d.nombre} - ${d.ciudad}` : `${d.departamento} - ${d.ciudad}`}
+                                </MenuItem>
+                            ))}
+                        </FormSelect>
                         <Autocomplete
                             options={conductores}
                             getOptionLabel={(c) => `${c.nombre} ${c.apellido}`}
@@ -238,14 +222,30 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
                                     sx={formFieldStyles} />
                             )}
                         />
-                        <FormSelect label="Destino" name="idDestino" value={form.idDestino}
-                            onChange={handleChange} required error={errores.idDestino} helperText={errores.idDestino}>
-                            {destinos.map((d) => (
-                                <MenuItem key={d.idDestino} value={d.idDestino}>
-                                    {d.nombre ? `${d.nombre} - ${d.ciudad}` : `${d.departamento} - ${d.ciudad}`}
-                                </MenuItem>
-                            ))}
-                        </FormSelect>
+                        <Autocomplete
+                            options={vehiculos}
+                            getOptionLabel={(v) => `${v.placa} — ${v.marca} ${v.modelo}`}
+                            isOptionEqualToValue={(opt, val) => opt.idVehiculo === val.idVehiculo}
+                            value={vehiculos.find(v => v.idVehiculo === parseInt(form.idVehiculo)) || null}
+                            onChange={(_, val) => handleChange({ target: { name: 'idVehiculo', value: val ? val.idVehiculo : '' } })}
+                            filterOptions={(opts, { inputValue }) => {
+                                if (!inputValue.trim()) {
+                                    return [...opts].sort((a, b) => b.idVehiculo - a.idVehiculo).slice(0, 5)
+                                }
+                                const q = inputValue.toLowerCase()
+                                return opts.filter(v =>
+                                    v.placa.toLowerCase().includes(q) ||
+                                    v.marca.toLowerCase().includes(q) ||
+                                    v.modelo.toLowerCase().includes(q)
+                                )
+                            }}
+                            noOptionsText="No hay vehículos disponibles"
+                            renderInput={(params) => (
+                                <TextField {...params} label="Vehículo *"
+                                    error={!!errores.idVehiculo} helperText={errores.idVehiculo}
+                                    sx={formFieldStyles} />
+                            )}
+                        />
                     </Box>
                 )
             case 1:
@@ -258,11 +258,13 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
                             onChange={handleChange} required error={errores.horaSalida} helperText={errores.horaSalida}
                             icon={ScheduleOutlinedIcon} InputLabelProps={{ shrink: true }} />
                         <FormField label="Hora Estimada de Llegada" name="horaLlegadaEstimada" type="time" value={form.horaLlegadaEstimada}
-                            onChange={handleChange} icon={ScheduleOutlinedIcon} InputLabelProps={{ shrink: true }} />
+                            onChange={handleChange} icon={ScheduleOutlinedIcon} InputLabelProps={{ shrink: true }}
+                            helperText="Opcional" />
                         <FormField label="Observaciones" name="observaciones" value={form.observaciones}
                             onChange={handleChange} icon={RouteOutlinedIcon}
                             inputProps={{ maxLength: 500 }} placeholder="Ej: Salida por puerta norte"
-                            multiline rows={2} />
+                            multiline rows={2}
+                            helperText={`Opcional · ${form.observaciones?.length || 0}/500`} />
                     </Box>
                 )
             case 2:
