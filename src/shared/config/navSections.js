@@ -12,20 +12,15 @@ import {
   ReceiptOutlined as SalesIcon,
 } from '@mui/icons-material'
 
+export const DASHBOARD_ITEM = { id: 'dashboard', label: 'Dashboard', icon: DashboardIcon, path: '/dashboard' }
+
 export const SECTIONS = [
-  {
-    id: 'inicio',
-    label: 'Inicio',
-    items: [
-      { id: 'dashboard', label: 'Dashboard', icon: DashboardIcon, path: '/dashboard' },
-    ],
-  },
   {
     id: 'gestion',
     label: 'Gestión',
     items: [
-      { id: 'roles',     label: 'Roles',     icon: RolesIcon,     path: '/roles/listar' },
-      { id: 'usuarios',  label: 'Usuarios',  icon: GroupAddIcon,  path: '/usuarios/listar' },
+      { id: 'roles',    label: 'Roles',    icon: RolesIcon,   path: '/roles/listar' },
+      { id: 'usuarios', label: 'Usuarios', icon: GroupAddIcon, path: '/usuarios/listar' },
     ],
   },
   {

@@ -11,7 +11,8 @@ import {
   Login as LoginIcon,
   Person,
   Badge,
-  ArrowBack
+  ArrowBack,
+  LockResetOutlined as LockResetIcon,
 } from '@mui/icons-material'
 import { useAuth, ROLES } from '../../shared/contexts/AuthContext.jsx'
 import { recuperarPassword } from '../../shared/services/authService.js'
@@ -41,13 +42,12 @@ const Login = () => {
   const [openRecuperar, setOpenRecuperar]       = useState(false)
   const [recuperarEmail, setRecuperarEmail]     = useState('')
   const [recuperarLoading, setRecuperarLoading] = useState(false)
-  const [recuperarMensaje, setRecuperarMensaje] = useState(null) // { tipo, texto }
+  const [recuperarMensaje, setRecuperarMensaje] = useState(null)
 
   const { login, registrarUsuario, usuario, loading, sessionExpired } = useAuth()
   const navigate = useNavigate()
   const theme = useTheme()
 
-  // No navegar mientras cargando=true para que el LoadingScreen dure sus 2.5s completos
   useEffect(() => {
     if (!loading && !cargando && !apiCargando && usuario) {
       navigate('/dashboard', { replace: true })
@@ -57,12 +57,9 @@ const Login = () => {
   const validarFormulario = () => {
     const errores = { email: '', password: '' }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
     if (!email.trim()) errores.email = 'El correo es obligatorio'
     else if (!emailRegex.test(email.trim())) errores.email = 'Ingresa un correo válido (ejemplo@dominio.com)'
-
     if (!password) errores.password = 'La contraseña es obligatoria'
-
     setCamposError(errores)
     return !errores.email && !errores.password
   }
@@ -72,17 +69,12 @@ const Login = () => {
     setError('')
     if (!validarFormulario()) return
     setApiCargando(true)
-
     try {
       const resultado = await login(email, password)
-
       if (resultado.success) {
         setApiCargando(false)
         setCargando(true)
-
-        setTimeout(() => {
-          navigate('/dashboard', { replace: true })
-        }, 2500)
+        setTimeout(() => { navigate('/dashboard', { replace: true }) }, 2500)
       } else {
         setApiCargando(false)
         setError(resultado.mensaje)
@@ -128,27 +120,22 @@ const Login = () => {
     }
   }
 
-
   return (
-    <Box
-      sx={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: theme.palette.background.default,
-        py: 4,
-        px: 2,
-        position: 'relative',
-        overflow: 'hidden',
-      }}
-    >
+    <Box sx={{
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: theme.palette.background.default,
+      py: 4, px: 2,
+      position: 'relative',
+      overflow: 'hidden',
+    }}>
       {cargando && <LoadingScreen mensaje="Preparando panel de administrador..." />}
 
       <Box sx={{
         position: 'absolute', top: 0, left: 0, right: 0, height: 4,
-        background: theme.palette.gradient.navbar,
-        zIndex: 20,
+        background: theme.palette.gradient.navbar, zIndex: 20,
       }} />
 
       <Box sx={{ position: 'absolute', bottom: -80, left: -80, zIndex: 0, opacity: 0.12, transform: 'rotate(-5deg)' }}>
@@ -174,67 +161,34 @@ const Login = () => {
       </Box>
 
       <Button
-        component={Link}
-        to="/"
-        startIcon={<ArrowBack />}
+        component={Link} to="/" startIcon={<ArrowBack />}
         sx={{
-          position: 'absolute',
-          top: 20,
-          left: 24,
-          color: theme.palette.text.secondary,
-          textTransform: 'none',
-          fontWeight: 600,
-          fontSize: '0.85rem',
-          borderRadius: 2,
-          px: 2,
-          py: 0.8,
+          position: 'absolute', top: 20, left: 24,
+          color: theme.palette.text.secondary, textTransform: 'none',
+          fontWeight: 600, fontSize: '0.85rem', borderRadius: 2, px: 2, py: 0.8,
           border: `1px solid ${theme.palette.divider}`,
-          backgroundColor: theme.palette.background.paper,
-          zIndex: 20,
-          '&:hover': {
-            backgroundColor: theme.palette.background.subtle,
-            borderColor: theme.palette.divider,
-            color: theme.palette.primary.main,
-          },
+          backgroundColor: theme.palette.background.paper, zIndex: 20,
+          '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.primary.main },
           transition: 'all 0.2s ease',
         }}
       >
         Volver al inicio
       </Button>
 
-      <Paper
-        elevation={0}
-        sx={{
-          p: 0,
-          width: '100%',
-          maxWidth: 440,
-          borderRadius: 4,
-          backgroundColor: theme.palette.background.paper,
-          border: `1px solid ${theme.palette.divider}`,
-          overflow: 'hidden',
-          position: 'relative',
-          zIndex: 10,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-        }}
-      >
+      <Paper elevation={0} sx={{
+        p: 0, width: '100%', maxWidth: 440, borderRadius: 4,
+        backgroundColor: theme.palette.background.paper,
+        border: `1px solid ${theme.palette.divider}`,
+        overflow: 'hidden', position: 'relative', zIndex: 10,
+        boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+      }}>
         <Box sx={{
-          px: 4,
-          py: 4,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 1.5,
+          px: 4, py: 4, display: 'flex', flexDirection: 'column',
+          alignItems: 'center', gap: 1.5,
           backgroundColor: theme.palette.background.paper,
           borderBottom: `1px solid ${theme.palette.divider}`,
         }}>
-          <Box sx={{
-            width: 140,
-            height: 100,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            overflow: 'hidden',
-          }}>
+          <Box sx={{ width: 140, height: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
             <img src={logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </Box>
           <Box sx={{ textAlign: 'center' }}>
@@ -254,53 +208,29 @@ const Login = () => {
             </Alert>
           )}
           {error && (
-            <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
-              {error}
-            </Alert>
+            <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>{error}</Alert>
           )}
 
           <form onSubmit={handleSubmit}>
             <TextField
-              fullWidth
-              label="Correo electrónico"
-              type="email"
-              value={email}
-              onChange={(e) => { setEmail(e.target.value); setCamposError(prev => ({ ...prev, email: '' })); setError('') }}
-              required
-              placeholder="correo@ejemplo.com"
-              error={!!camposError.email}
-              helperText={camposError.email}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Email sx={{ color: '#8b8382' }} />
-                  </InputAdornment>
-                ),
-              }}
+              fullWidth label="Correo electrónico" type="email"
+              value={email} onChange={(e) => { setEmail(e.target.value); setCamposError(prev => ({ ...prev, email: '' })); setError('') }}
+              required placeholder="correo@ejemplo.com"
+              error={!!camposError.email} helperText={camposError.email}
+              InputProps={{ startAdornment: <InputAdornment position="start"><Email sx={{ color: '#8b8382' }} /></InputAdornment> }}
               sx={{
                 mb: 1.5,
-                '& .MuiOutlinedInput-root': {
-                  '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main },
-                },
+                '& .MuiOutlinedInput-root': { '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main } },
                 '& .MuiInputLabel-root.Mui-focused': { color: theme.palette.primary.main },
               }}
             />
             <TextField
-              fullWidth
-              label="Contraseña"
-              type={showPassword ? 'text' : 'password'}
-              value={password}
-              onChange={(e) => { setPassword(e.target.value); setCamposError(prev => ({ ...prev, password: '' })); setError('') }}
-              required
-              placeholder="••••••"
-              error={!!camposError.password}
-              helperText={camposError.password}
+              fullWidth label="Contraseña" type={showPassword ? 'text' : 'password'}
+              value={password} onChange={(e) => { setPassword(e.target.value); setCamposError(prev => ({ ...prev, password: '' })); setError('') }}
+              required placeholder="••••••"
+              error={!!camposError.password} helperText={camposError.password}
               InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Lock sx={{ color: '#8b8382' }} />
-                  </InputAdornment>
-                ),
+                startAdornment: <InputAdornment position="start"><Lock sx={{ color: '#8b8382' }} /></InputAdornment>,
                 endAdornment: (
                   <InputAdornment position="end">
                     <IconButton onClick={() => setShowPassword(!showPassword)} edge="end" sx={{ color: '#8b8382' }}>
@@ -311,9 +241,7 @@ const Login = () => {
               }}
               sx={{
                 mb: 2,
-                '& .MuiOutlinedInput-root': {
-                  '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main },
-                },
+                '& .MuiOutlinedInput-root': { '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main } },
                 '& .MuiInputLabel-root.Mui-focused': { color: theme.palette.primary.main },
               }}
             />
@@ -323,10 +251,8 @@ const Login = () => {
               <Typography
                 onClick={() => { setRecuperarEmail(''); setRecuperarMensaje(null); setOpenRecuperar(true) }}
                 sx={{
-                  fontSize: '0.8rem',
-                  color: theme.palette.secondary.main,
-                  fontWeight: 600,
-                  cursor: 'pointer',
+                  fontSize: '0.8rem', color: theme.palette.secondary.main,
+                  fontWeight: 600, cursor: 'pointer',
                   '&:hover': { textDecoration: 'underline' },
                 }}
               >
@@ -335,24 +261,13 @@ const Login = () => {
             </Box>
 
             <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              size="large"
-              endIcon={<LoginIcon />}
-              disabled={cargando || apiCargando}
+              type="submit" fullWidth variant="contained" size="large"
+              endIcon={<LoginIcon />} disabled={cargando || apiCargando}
               sx={{
-                backgroundColor: theme.palette.primary.main,
-                borderRadius: 2,
-                py: 1.5,
-                fontWeight: 700,
-                fontSize: '1rem',
-                textTransform: 'none',
+                backgroundColor: theme.palette.primary.main, borderRadius: 2,
+                py: 1.5, fontWeight: 700, fontSize: '1rem', textTransform: 'none',
                 boxShadow: `0 4px 14px ${theme.palette.primary.main}4D`,
-                '&:hover': {
-                  backgroundColor: theme.palette.primary.dark,
-                  boxShadow: `0 6px 20px ${theme.palette.primary.main}66`,
-                },
+                '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: `0 6px 20px ${theme.palette.primary.main}66` },
               }}
             >
               {cargando || apiCargando ? 'Ingresando...' : 'Iniciar Sesión'}
@@ -378,14 +293,43 @@ const Login = () => {
       </Paper>
 
       {/* ── Dialog recuperar contraseña ── */}
-      <Dialog open={openRecuperar} onClose={() => !recuperarLoading && setOpenRecuperar(false)} maxWidth="xs" fullWidth>
-        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.1rem', color: theme.palette.text.dark }}>
-          Recuperar contraseña
-        </DialogTitle>
-        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '8px !important' }}>
-          <Typography sx={{ color: theme.palette.text.secondary, fontSize: '0.88rem' }}>
-            Ingresa tu correo y te enviaremos una contraseña temporal.
-          </Typography>
+      <Dialog
+        open={openRecuperar}
+        onClose={() => !recuperarLoading && setOpenRecuperar(false)}
+        maxWidth="xs" fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 4,
+            overflow: 'hidden',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+            border: `1px solid ${theme.palette.divider}`,
+          }
+        }}
+      >
+{/* Cabecera con ícono */}
+        <Box sx={{
+          px: 3, pt: 3, pb: 2,
+          display: 'flex', alignItems: 'center', gap: 2,
+          borderBottom: `1px solid ${theme.palette.divider}`,
+        }}>
+          <Box sx={{
+            width: 42, height: 42, borderRadius: '12px',
+            backgroundColor: theme.palette.secondary.main + '18',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+          }}>
+            <LockResetIcon sx={{ fontSize: '1.4rem', color: theme.palette.secondary.main }} />
+          </Box>
+          <Box>
+            <Typography sx={{ fontWeight: 700, fontSize: '1rem', color: theme.palette.text.dark, lineHeight: 1.2 }}>
+              Recuperar contraseña
+            </Typography>
+            <Typography sx={{ fontSize: '0.78rem', color: theme.palette.text.secondary, mt: 0.3 }}>
+              Te enviaremos acceso temporal a tu correo
+            </Typography>
+          </Box>
+        </Box>
+
+        <DialogContent sx={{ px: 3, pt: 2.5, pb: 1 }}>
           <TextField
             label="Correo electrónico"
             type="email"
@@ -394,19 +338,38 @@ const Login = () => {
             value={recuperarEmail}
             onChange={(e) => setRecuperarEmail(e.target.value)}
             disabled={recuperarLoading}
+            placeholder="correo@ejemplo.com"
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Email sx={{ fontSize: '1rem', color: '#8b8382' }} />
+                </InputAdornment>
+              ),
+            }}
+            sx={{
+              '& .MuiOutlinedInput-root': { '&.Mui-focused fieldset': { borderColor: theme.palette.secondary.main } },
+              '& .MuiInputLabel-root.Mui-focused': { color: theme.palette.secondary.main },
+            }}
           />
           {recuperarMensaje && (
-            <Alert severity={recuperarMensaje.tipo} sx={{ fontSize: '0.82rem' }}>
+            <Alert severity={recuperarMensaje.tipo} sx={{ mt: 2, fontSize: '0.82rem', borderRadius: 2 }}>
               {recuperarMensaje.texto}
             </Alert>
           )}
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2.5, pt: 1, gap: 1.5 }}>
+
+        <DialogActions sx={{ px: 3, pb: 3, pt: 2, gap: 1.5 }}>
           <Button
             onClick={() => setOpenRecuperar(false)}
             disabled={recuperarLoading}
             disableRipple
-            sx={{ textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 1.5 }}
+            sx={{
+              textTransform: 'none', fontWeight: 500, borderRadius: 2,
+              color: theme.palette.text.secondary,
+              border: `1px solid ${theme.palette.divider}`,
+              px: 2.5,
+              '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.dark },
+            }}
           >
             Cancelar
           </Button>
@@ -416,12 +379,20 @@ const Login = () => {
             disableRipple
             disabled={recuperarLoading || !recuperarEmail}
             sx={{
-              textTransform: 'none', borderRadius: 1.5, fontWeight: 600, minWidth: 100,
+              textTransform: 'none', borderRadius: 2, fontWeight: 600,
+              minWidth: 110, px: 2.5,
               backgroundColor: theme.palette.secondary.main,
-              '&:hover': { backgroundColor: theme.palette.secondary.dark },
+              boxShadow: `0 4px 14px ${theme.palette.secondary.main}4D`,
+              '&:hover': {
+                backgroundColor: theme.palette.secondary.dark,
+                boxShadow: `0 6px 20px ${theme.palette.secondary.main}66`,
+              },
             }}
           >
-            {recuperarLoading ? <CircularProgress size={18} sx={{ color: '#fff' }} /> : 'Enviar'}
+            {recuperarLoading
+              ? <><CircularProgress size={14} sx={{ color: '#fff', mr: 1 }} /> Enviando...</>
+              : 'Enviar acceso'
+            }
           </Button>
         </DialogActions>
       </Dialog>

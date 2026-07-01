@@ -16,7 +16,7 @@ import logoEE from '../../assets/logoEE.png'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import { useDarkMode } from '../contexts/ThemeContext.jsx'
 import LogoutConfirmDialog from './LogoutConfirmDialog.jsx'
-import { SECTIONS } from '../config/navSections.js'
+import { SECTIONS, DASHBOARD_ITEM } from '../config/navSections.js'
 
 // ─── NavItem ─────────────────────────────────────────────────────────────────
 
@@ -167,21 +167,17 @@ const Sidebar = ({ collapsed, onToggleCollapsed }) => {
 
   const TRANSITION = '0.35s cubic-bezier(0.4, 0, 0.2, 1)'
 
-  // ── Objeto de colores del sidebar ────────────────────────────────────────
   const colors = darkMode
     ? {
         bg:           pal.background.paper,
         border:       pal.divider,
-        // ── color de paleta — viene del tema ──
         primary:      pal.primary.main,
         activeBg:     pal.primary.activeBg,
         activeGrad:   pal.primary.activeGrad,
         avatarBg:     pal.primary.main,
-        // ── hover — viene del tema ──
         hoverBg:      pal.primary.hoverBg,
         hoverIcon:    pal.primary.hoverIcon,
         hoverText:    pal.primary.hoverText,
-        // ── textos e iconos neutros ──
         icon:         pal.text.icon,
         nav:          pal.text.nav,
         muted:        '#808080',
@@ -193,16 +189,13 @@ const Sidebar = ({ collapsed, onToggleCollapsed }) => {
     : {
         bg:           pal.background.paper,
         border:       'rgba(26,46,110,0.1)',
-        // ── color de paleta — viene del tema ──
         primary:      pal.primary.main,
         activeBg:     pal.primary.activeBg,
         activeGrad:   pal.primary.activeGrad,
         avatarBg:     pal.primary.main,
-        // ── hover — viene del tema ──
         hoverBg:      pal.primary.hoverBg,
         hoverIcon:    pal.primary.hoverIcon,
         hoverText:    pal.primary.hoverText,
-        // ── textos e iconos neutros ──
         icon:         pal.text.icon,
         nav:          pal.text.nav,
         muted:        'rgba(33,33,33,0.45)',
@@ -250,7 +243,6 @@ const Sidebar = ({ collapsed, onToggleCollapsed }) => {
           height: collapsed ? 44 : 'auto',
           transition: `width ${TRANSITION}, max-width ${TRANSITION}, height ${TRANSITION}`,
         }}>
-          {/* Logo completo */}
           <Box
             component="img"
             src={logo}
@@ -265,7 +257,6 @@ const Sidebar = ({ collapsed, onToggleCollapsed }) => {
               top: 0, left: 0,
             }}
           />
-          {/* Logo EE */}
           <Box
             component="img"
             src={logoEE}
@@ -282,7 +273,6 @@ const Sidebar = ({ collapsed, onToggleCollapsed }) => {
           />
         </Box>
 
-        {/* Botón toggle con recorrido animado */}
         <IconButton
           onClick={onToggleCollapsed}
           size="small"
@@ -307,6 +297,14 @@ const Sidebar = ({ collapsed, onToggleCollapsed }) => {
         '&::-webkit-scrollbar': { width: 4 },
         '&::-webkit-scrollbar-thumb': { background: colors.divider, borderRadius: 2 },
       }}>
+
+        {/* ── Dashboard suelto ── */}
+        <Box sx={{ mb: 1 }}>
+          <NavItem item={DASHBOARD_ITEM} depth={0} location={location}
+            collapsed={collapsed} darkMode={darkMode} colors={colors} />
+        </Box>
+
+        {/* ── Secciones ── */}
         {SECTIONS.map((section) => (
           <Box key={section.id}>
             <SectionLabel
@@ -342,7 +340,6 @@ const Sidebar = ({ collapsed, onToggleCollapsed }) => {
         position: 'relative',
         transition: `height ${TRANSITION}`,
       }}>
-        {/* Avatar */}
         <Box sx={{
           position: 'absolute',
           top:  collapsed ? 14 : '50%',
@@ -361,7 +358,6 @@ const Sidebar = ({ collapsed, onToggleCollapsed }) => {
           </Typography>
         </Box>
 
-        {/* Nombre + rol */}
         <Box sx={{
           position: 'absolute',
           top: '50%', left: 66,
@@ -380,7 +376,6 @@ const Sidebar = ({ collapsed, onToggleCollapsed }) => {
           </Typography>
         </Box>
 
-        {/* Logout */}
         <Tooltip title="Cerrar sesión" placement={collapsed ? 'right' : 'top'}>
           <Box
             onClick={() => setOpenLogoutDialog(true)}
@@ -405,12 +400,12 @@ const Sidebar = ({ collapsed, onToggleCollapsed }) => {
         </Tooltip>
       </Box>
 
-       {/* ── Dialog logout ── */}
-        <LogoutConfirmDialog
-          open={openLogoutDialog}
-          onClose={() => setOpenLogoutDialog(false)}
-          onConfirm={() => { logout(); navigate('/'); setOpenLogoutDialog(false) }}
-        />
+      {/* ── Dialog logout ── */}
+      <LogoutConfirmDialog
+        open={openLogoutDialog}
+        onClose={() => setOpenLogoutDialog(false)}
+        onConfirm={() => { logout(); navigate('/'); setOpenLogoutDialog(false) }}
+      />
     </Box>
   )
 }
