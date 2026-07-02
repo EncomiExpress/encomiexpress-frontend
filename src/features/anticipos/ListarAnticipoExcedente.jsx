@@ -183,6 +183,20 @@ const ListarAnticipoExcedente = () => {
 
     const currentAnticipos = anticipos
     const hayFiltrosActivos = busqueda.trim() !== '' || filtroHabilitado !== 'todo' || filtroEstadoAnticipo !== ''
+
+    const handleExportar = () => {
+        const rows = currentAnticipos.map(anticipo => ({
+            'ID': anticipo.idAnticipoExcedente || anticipo.idAnticipo,
+            'Conductor': getNombreConductor(anticipo.idConductor),
+            'Ruta': anticipo.ruta?.nombreRuta || anticipo.idRuta || '-',
+            'Monto': anticipo.monto || anticipo.valor,
+            'Fecha de entrega': anticipo.fechaEntrega,
+            'Estado': anticipo.estado,
+            'Habilitado': anticipo.habilitado === false ? 'No' : 'Sí',
+        }))
+
+        exportToExcel({ data: rows, fileName: 'anticipos', sheetName: 'Anticipos' })
+    }
     const totalPages = Math.max(1, Math.ceil(total / rowsPerPage))
     const safePage = Math.min(page, totalPages)
     const from = total === 0 ? 0 : (safePage - 1) * rowsPerPage + 1
@@ -232,6 +246,7 @@ const ListarAnticipoExcedente = () => {
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Button
+                        onClick={handleExportar}
                         variant="contained"
                         startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 18 }} />}
                         sx={{

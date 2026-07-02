@@ -186,6 +186,19 @@ const Dashboard = () => {
   const maxEnvios = enviosEstado.length > 0 ? Math.max(...enviosEstado.map(e => e.count)) : 1
   const maxIngreso = ingresosMes.length > 0 ? Math.max(...ingresosMes.map(m => m.valor)) : 1
 
+  const handleExportar = () => {
+    const rows = ventas.map(venta => ({
+      'ID': venta.idEncomiendaVenta || venta.idVenta,
+      'Cliente': venta.cliente?.nombre || venta.idCliente || '-',
+      'Estado': venta.estado,
+      'Estado de pago': venta.estadoPago,
+      'Valor': venta.valorTotal || venta.valor || venta.precio,
+      'Fecha': venta.fechaRegistro || venta.fechaSalida,
+    }))
+
+    exportToExcel({ data: rows, fileName: 'dashboard', sheetName: 'Dashboard' })
+  }
+
   return (
     <Box sx={{ p: { xs: 2, md: 3 }, display: 'flex', flexDirection: 'column', gap: 2 }}>
 
@@ -199,6 +212,7 @@ const Dashboard = () => {
           </Typography>
         </Box>
         <Button
+          onClick={handleExportar}
           variant="contained"
           startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 18 }} />}
           sx={{

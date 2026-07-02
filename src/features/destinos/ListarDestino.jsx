@@ -26,6 +26,7 @@ import RegistrarDestino from './RegistrarDestino'
 import ActualizarDestino from './ActualizarDestino'
 import ModalConsultarDestino from './ModalConsultarDestino'
 import ModalInhabilitarDestino from './ModalInhabilitarDestino'
+import { exportToExcel } from '../../shared/utils/exportExcel.js'
 
 
 const NacionSVG = ({ color }) => (
@@ -231,6 +232,19 @@ const ListarDestino = () => {
 
     const limpiarFiltros = () => { setSearchTerm(''); setFiltroHabilitado('todo'); setFiltroDepartamento(''); setPage(1) }
     const limpiarBusqueda = () => { setSearchTerm(''); setPage(1) }
+
+    const handleExportar = () => {
+        const rows = destinos.map(destino => ({
+            'ID': destino.idDestino,
+            'Ciudad': destino.ciudad,
+            'Departamento': destino.departamento,
+            'Dirección': destino.direccion,
+            'Estado': destino.habilitado === false ? 'Inhabilitado' : 'Habilitado',
+        }))
+
+        exportToExcel({ data: rows, fileName: 'destinos', sheetName: 'Destinos' })
+    }
+
     const hayFiltrosActivos = searchTerm.trim() !== '' || filtroHabilitado !== 'todo' || filtroDepartamento !== ''
 
     const totalPages = Math.max(1, Math.ceil(total / rowsPerPage))
@@ -253,6 +267,7 @@ const ListarDestino = () => {
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Button
+                        onClick={handleExportar}
                         variant="contained"
                         startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 18 }} />}
                         sx={{

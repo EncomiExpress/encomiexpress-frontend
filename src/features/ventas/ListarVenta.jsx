@@ -31,6 +31,7 @@ import ActualizarVenta from './ActualizarVenta'
 import ModalInhabilitarVenta from './ModalInhabilitarVenta'
 import ModalConsultarVenta from './ModalConsultarVenta'
 import { getVentaEstadoDot } from '../../shared/utils/estadoColors.js'
+import { exportToExcel } from '../../shared/utils/exportExcel.js'
 
 const VentaEstadoDot = ({ estado }) => {
     const info = getVentaEstadoDot(estado)
@@ -190,6 +191,21 @@ const ListarVenta = () => {
 
     const hayFiltrosActivos = busqueda || filtroHabilitado !== 'todo' || filtroEstadoEncomienda !== '' || filtroPago !== '' || filtroMetodoPago !== ''
 
+    const handleExportar = () => {
+        const rows = ventas.map(venta => ({
+            'ID': venta.idEncomiendaVenta || venta.idVenta,
+            'Cliente': venta.cliente?.nombre || venta.idCliente || '-',
+            'Destino': venta.destino?.ciudad || venta.destino?.nombre || '-',
+            'Estado': venta.estado,
+            'Estado de pago': venta.estadoPago,
+            'Método de pago': venta.metodoPago,
+            'Valor': venta.valorTotal || venta.valor || venta.precio,
+            'Habilitado': venta.habilitado === false ? 'No' : 'Sí',
+        }))
+
+        exportToExcel({ data: rows, fileName: 'ventas', sheetName: 'Ventas' })
+    }
+
     const handleEstadoChange = async (id, nuevoEstado) => {
         try {
             await cambiarEstadoVenta(id, nuevoEstado)
@@ -260,6 +276,7 @@ const ListarVenta = () => {
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Button
+                        onClick={handleExportar}
                         variant="contained"
                         startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 18 }} />}
                         sx={{

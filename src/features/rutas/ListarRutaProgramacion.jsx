@@ -36,6 +36,7 @@ import ModalConfirmarEstado from './ModalConfirmarEstado'
 import ModalInhabilitarRuta from './ModalInhabilitarRuta'
 import { getPageOfRuta } from '../../shared/services/rutaService'
 import { getEstadoColorRuta as getEstadoColor, getVehiculoEstadoDot, getConductorEstadoDot } from '../../shared/utils/estadoColors.js'
+import { exportToExcel } from '../../shared/utils/exportExcel.js'
 
 const renderEstadoDot = (estado, getEstadoColor) => {
     const color = getEstadoColor(estado).color
@@ -343,6 +344,21 @@ const resolveDestino = (ruta) =>
         setPage(1)
     }
 
+    const handleExportar = () => {
+        const rows = rutasProgramadas.map(ruta => ({
+            'ID': getId(ruta),
+            'Ruta': ruta.nombreRuta || `Ruta ${getId(ruta)}`,
+            'Destino': resolveDestino(ruta),
+            'Vehículo': resolveVehiculo(ruta),
+            'Conductor': resolveConductor(ruta),
+            'Fecha salida': ruta.fechaSalida,
+            'Estado': ruta.estado,
+            'Habilitado': ruta.habilitado === false ? 'No' : 'Sí',
+        }))
+
+        exportToExcel({ data: rows, fileName: 'rutas', sheetName: 'Rutas' })
+    }
+
     const hayFiltrosActivos = searchTerm.trim() !== '' || filtroHabilitado !== 'todo' || filtroEstadoRuta !== '' || filtroAnio || filtroMes
 
     const totalPages = Math.max(1, Math.ceil(total / rowsPerPage))
@@ -471,6 +487,7 @@ const resolveDestino = (ruta) =>
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Button
+                        onClick={handleExportar}
                         variant="contained"
                         startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 18 }} />}
                         sx={{

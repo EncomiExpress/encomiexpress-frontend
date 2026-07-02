@@ -20,6 +20,7 @@ import RegistrarUsuario from './RegistrarUsuario'
 import ActualizarUsuario from './ActualizarUsuario'
 import ModalConsultarUsuario from './ModalConsultarUsuario'
 import ModalInhabilitarUsuario from './ModalInhabilitarUsuario'
+import { exportToExcel } from '../../shared/utils/exportExcel.js'
 
 const getToggleCss = (primaryColor) => `
   .ee-toggle {
@@ -246,6 +247,22 @@ const ListarUsuario = () => {
         setPage(1)
     }
 
+    const handleExportar = () => {
+        const rows = usuarios.map(usuario => ({
+            'ID': usuario.idUsuario,
+            'Nombre': `${usuario.nombre || ''} ${usuario.apellido || ''}`.trim(),
+            'Email': usuario.email,
+            'Rol': usuario.rol?.nombre || usuario.idRol || '-',
+            'Estado': usuario.habilitado === false ? 'Inhabilitado' : 'Habilitado',
+        }))
+
+        exportToExcel({
+            data: rows,
+            fileName: 'usuarios',
+            sheetName: 'Usuarios',
+        })
+    }
+
     const hayFiltrosActivos = busqueda.trim() !== '' || filtroHabilitado !== 'todo' || filtroRol !== ''
 
     const totalPages = Math.max(1, Math.ceil(total / rowsPerPage))
@@ -266,6 +283,7 @@ const ListarUsuario = () => {
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Button
+                        onClick={handleExportar}
                         variant="contained"
                         startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 18 }} />}
                         sx={{

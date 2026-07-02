@@ -29,6 +29,7 @@ import ModalBloqueoInhabilitacion from '../../shared/components/ModalBloqueoInha
 import ModalConsultarConductor from './ModalConsultarConductor'
 import ModalInhabilitarConductor from './ModalInhabilitarConductor'
 import { isVencido } from '../../shared/utils/formatters.js'
+import { exportToExcel } from '../../shared/utils/exportExcel.js'
 
 const getThStyle = (theme) => ({
     fontWeight: 700,
@@ -199,6 +200,20 @@ const ListarConductor = () => {
 
     const limpiarFiltros = () => { setSearchTerm(''); setFiltroHabilitado('todo'); setFiltroEstado(''); setPage(1) }
     const limpiarBusqueda = () => { setSearchTerm(''); setPage(1) }
+
+    const handleExportar = () => {
+        const rows = conductoresConEstado.map(conductor => ({
+            'ID': conductor.idConductor,
+            'Nombre': `${conductor.nombre || ''} ${conductor.apellido || ''}`.trim(),
+            'Email': conductor.email,
+            'Teléfono': conductor.telefono,
+            'Estado': conductor.estadoEfectivo === 'en_ruta' ? 'En Ruta' : 'Disponible',
+            'Habilitado': conductor.habilitado === false ? 'No' : 'Sí',
+        }))
+
+        exportToExcel({ data: rows, fileName: 'conductores', sheetName: 'Conductores' })
+    }
+
     const hayFiltrosActivos = searchTerm.trim() !== '' || filtroHabilitado !== 'todo' || filtroEstado !== ''
 
     const totalPages = Math.max(1, Math.ceil(total / rowsPerPage))
@@ -220,6 +235,7 @@ const ListarConductor = () => {
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Button
+                        onClick={handleExportar}
                         variant="contained"
                         startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 18 }} />}
                         sx={{

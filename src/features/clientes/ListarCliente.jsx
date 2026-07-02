@@ -151,6 +151,20 @@ const ListarCliente = () => {
     const totalClientes = total
     const totalActivos = clientes.filter(c => c.habilitado).length
     const totalInactivos = clientes.filter(c => !c.habilitado).length
+
+    const handleExportar = () => {
+        const rows = clientes.map(cliente => ({
+            'ID': cliente.idCliente,
+            'Nombre': `${cliente.nombre || ''} ${cliente.apellido || ''}`.trim(),
+            'Email': cliente.email,
+            'Teléfono': cliente.telefono,
+            'Dirección': cliente.direccion,
+            'Estado': cliente.habilitado === false ? 'Inhabilitado' : 'Habilitado',
+        }))
+
+        exportToExcel({ data: rows, fileName: 'clientes', sheetName: 'Clientes' })
+    }
+
     const hayFiltrosActivos = busqueda.trim() !== '' || filtroEstado !== 'todo'
     return (
         <Box sx={{ p: 3.5 }}>
@@ -165,6 +179,7 @@ const ListarCliente = () => {
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Button
+                        onClick={handleExportar}
                         variant="contained"
                         startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 18 }} />}
                         sx={{

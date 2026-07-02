@@ -33,6 +33,7 @@ import { getPageOfVehiculo } from '../../shared/services/vehiculoService.js'
 import { getRutas } from '../../shared/services/rutaService'
 import { getEstadoColorRuta } from '../../shared/utils/estadoColors.js'
 import { isVencido } from '../../shared/utils/formatters.js'
+import { exportToExcel } from '../../shared/utils/exportExcel.js'
 
 const getThStyle = (theme) => ({
     fontWeight: 700,
@@ -320,6 +321,20 @@ const ListarTransporte = () => {
         setPage(1)
     }
 
+    const handleExportar = () => {
+        const rows = filteredTransportes.map(vehiculo => ({
+            'ID': vehiculo.idVehiculo,
+            'Placa': vehiculo.placa,
+            'Marca': vehiculo.marca,
+            'Modelo': vehiculo.modelo,
+            'Tipo': vehiculo.tipo,
+            'Estado': vehiculo.estadoEfectivo || vehiculo.estado,
+            'Habilitado': vehiculo.habilitado === false ? 'No' : 'Sí',
+        }))
+
+        exportToExcel({ data: rows, fileName: 'vehiculos', sheetName: 'Vehículos' })
+    }
+
     const limpiarBusqueda = () => {
         setSearchTerm('')
         setPage(1)
@@ -345,6 +360,7 @@ const ListarTransporte = () => {
                  </Box>
                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                      <Button
+                         onClick={handleExportar}
                          variant="contained"
                          startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 18 }} />}
                          sx={{

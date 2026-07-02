@@ -26,6 +26,7 @@ import ModalBloqueoInhabilitacion from '../../shared/components/ModalBloqueoInha
 import ModalConsultarPropietario from './ModalConsultarPropietario'
 import ModalInhabilitarPropietario from './ModalInhabilitarPropietario'
 import { getPageOfPropietario } from '../../shared/services/propietarioService'
+import { exportToExcel } from '../../shared/utils/exportExcel.js'
 
 const getThStyle = (theme) => ({
     fontWeight: 700,
@@ -155,6 +156,20 @@ const ListarPropietario = () => {
 
     const limpiarFiltros = () => { setSearchTerm(''); setFiltroHabilitado('todo'); setFiltroTipoFlota(''); setPage(1) }
     const limpiarBusqueda = () => { setSearchTerm(''); setPage(1) }
+
+    const handleExportar = () => {
+        const rows = propietarios.map(propietario => ({
+            'ID': propietario.idPropietario,
+            'Nombre': `${propietario.nombre || ''} ${propietario.apellido || ''}`.trim(),
+            'Email': propietario.email,
+            'Teléfono': propietario.telefono,
+            'Tipo de flota': propietario.tipoFlota,
+            'Estado': propietario.habilitado === false ? 'Inhabilitado' : 'Habilitado',
+        }))
+
+        exportToExcel({ data: rows, fileName: 'propietarios', sheetName: 'Propietarios' })
+    }
+
     const hayFiltrosActivos = searchTerm.trim() !== '' || filtroHabilitado !== 'todo' || filtroTipoFlota !== ''
 
     const totalPages = Math.max(1, Math.ceil(total / rowsPerPage))
@@ -175,6 +190,7 @@ const ListarPropietario = () => {
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Button
+                        onClick={handleExportar}
                         variant="contained"
                         startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 18 }} />}
                         sx={{
