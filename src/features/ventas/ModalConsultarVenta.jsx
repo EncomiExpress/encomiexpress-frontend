@@ -41,12 +41,6 @@ const ModalConsultarVenta = ({ venta, onClose }) => {
 
     const estadoInfo = getVentaEstadoDot(venta.estado)
     const esPagado = venta.estadoPago === 'Pagado'
-    const pagoInfo = {
-        color: esPagado ? '#059669' : '#D97706',
-        fill: esPagado,
-        type: 'circle',
-    }
-
     const dim = venta.paquete
         ? [venta.paquete.alto, venta.paquete.ancho, venta.paquete.profundidad].every(v => v != null)
             ? `${venta.paquete.alto}×${venta.paquete.ancho}×${venta.paquete.profundidad} cm`

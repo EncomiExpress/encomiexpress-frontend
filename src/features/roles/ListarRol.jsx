@@ -15,8 +15,7 @@ import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import ClearIcon from '@mui/icons-material/Clear'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
-import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank'
-import CheckBoxIcon from '@mui/icons-material/CheckBox'
+import ToggleSwitch from '../../shared/components/ToggleSwitch.jsx'
 import RegistrarRol from './RegistrarRol'
 import ActualizarRol from './ActualizarRol'
 import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined'
@@ -33,46 +32,10 @@ const getThStyle = (theme) => ({
     whiteSpace: 'nowrap',
 })
 
-const getFilterSelectSx = (theme) => ({
-    fontSize: '0.82rem',
-    borderRadius: 2,
-    '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
-    '&:hover': { backgroundColor: 'transparent' },
-    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
-    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
-    '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` },
-    '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
-    '& .MuiTouchRipple-root': { display: 'none' },
-})
-
-const getFilterMenuProps = (theme) => ({
-    slotProps: {
-        paper: {
-            sx: {
-                borderRadius: 2,
-                boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
-                mt: 0.5,
-                '& .MuiMenuItem-root': {
-                    fontSize: '0.82rem',
-                    '&:hover': { backgroundColor: theme.palette.primary.light },
-                    '&.Mui-selected': { backgroundColor: 'transparent', fontWeight: 600, color: theme.palette.text.primary },
-                    '&.Mui-selected:hover': { backgroundColor: theme.palette.primary.light },
-                },
-            },
-        },
-    },
-})
-
-const getRolColor = (theme, nombre) => {
-    return theme.palette.avatarDefault || theme.palette.roles.default
-}
-
 const ListarRol = () => {
     const theme = useTheme()
     const thStyle = getThStyle(theme)
-    const filterSelectSx = getFilterSelectSx(theme)
-    const filterMenuProps = getFilterMenuProps(theme)
-    const { tienePermiso, PERMISOS, getRolesBackend, toggleHabilitadoRol, eliminarRolBackend, usuario: usuarioActual } = useAuth()
+    const { tienePermiso, PERMISOS, getRolesBackend, toggleHabilitadoRol } = useAuth()
 
     const [roles, setRoles] = useState([])
     const [total, setTotal] = useState(0)
@@ -165,27 +128,6 @@ const ListarRol = () => {
         }
     }
 
-    const handleEliminarRol = async (id) => {
-        try {
-            const respuesta = await eliminarRolBackend(id)
-            if (respuesta.success) {
-                cargarRoles()
-                setSnackbar({ open: true, message: respuesta.message, severity: 'success' })
-            } else {
-                setSnackbar({ open: true, message: respuesta.message || 'Error al eliminar el rol', severity: 'error' })
-            }
-        } catch (error) {
-            setSnackbar({ open: true, message: 'Error al eliminar el rol', severity: 'error' })
-        }
-    }
-
-    const limpiarFiltros = () => {
-        setBusqueda('')
-        setFiltroHabilitado('todo')
-        setPage(1)
-    }
-
-    const hayFiltrosActivos = busqueda.trim() !== '' || filtroHabilitado !== 'todo'
 
     const totalPages = Math.max(1, Math.ceil(total / rowsPerPage))
     const safePage = Math.min(page, totalPages)
@@ -364,9 +306,6 @@ const ListarRol = () => {
                                 </TableRow>
                             ) : (
                                 roles.map(rol => {
-                                    const rolStyle = (rol.habilitado !== false)
-                                        ? (theme.palette.avatarDefault || theme.palette.roles.default)
-                                        : (theme.palette.avatarDisabled || theme.palette.roles.default)
                                     return (
                                         <TableRow
                                             key={rol.id}
@@ -376,7 +315,7 @@ const ListarRol = () => {
                                                 opacity: rol.habilitado !== false ? 1 : 0.55,
                                             }}
                                         >
-                                            <TableCell sx={{ py: 1.5 }}>
+                                            <TableCell>
                                                 <Typography variant="body2" fontWeight={600} color={theme.palette.text.primary}>
                                                     {rol.nombre}
                                                 </Typography>
@@ -430,15 +369,7 @@ const ListarRol = () => {
                                                         </Tooltip>
                                                     )}
                                                     {tienePermiso(PERMISOS.INHABILITAR_ROL) && (
-                                                        <Tooltip title={rol.habilitado ? 'Inhabilitar' : 'Habilitar'}>
-                                                            <IconButton
-                                                                size="small"
-                                                                onClick={() => handleToggleHabilitado(rol.id, rol.nombre, rol.habilitado)}
-                                                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
-                                                            >
-                                                                {rol.habilitado ? <CheckBoxIcon sx={{ fontSize: 18, color: theme.palette.primary.main }} /> : <CheckBoxOutlineBlankIcon sx={{ fontSize: 18, color: theme.palette.status.disabled2.color }} />}
-                                                            </IconButton>
-                                                        </Tooltip>
+                                                        <ToggleSwitch id={rol.id} checked={rol.habilitado} onChange={() => handleToggleHabilitado(rol.id, rol.nombre, rol.habilitado)} />
                                                     )}
                                                 </Box>
                                             </TableCell>

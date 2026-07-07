@@ -203,7 +203,7 @@ export const AuthProvider = ({ children }) => {
       setUsuario(usuarioNormalizado)
 
       return { success: true, usuario: usuarioNormalizado }
-    } catch (err) {
+    } catch {
       return { success: false, mensaje: 'Error de conexión con el servidor' }
     }
   }

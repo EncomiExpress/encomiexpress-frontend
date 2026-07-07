@@ -15,6 +15,7 @@ import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined
 import RouteOutlinedIcon from '@mui/icons-material/RouteOutlined'
 import BarChartOutlinedIcon from '@mui/icons-material/BarChartOutlined'
 import { formatRutaDestino } from '../../shared/utils/formatters.js'
+import { exportToExcel } from '../../shared/utils/exportExcel.js'
 
 const STATUS_LABEL = {
   'Programada':  'Programada',

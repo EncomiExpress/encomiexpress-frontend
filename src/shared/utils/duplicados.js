@@ -20,3 +20,15 @@ export const hayNombreDuplicado = (registros, nombre, apellido, opciones = {}) =
 }
 
 export const MENSAJE_NOMBRE_DUPLICADO = 'Ya existe un registro con este nombre y apellido. Verifica que no sea un duplicado.'
+
+export const hayDocumentoDuplicado = (registros, numeroIdentificacion, opciones = {}) => {
+    const { getDoc = (r) => r.numeroIdentificacion, getId, excludeId } = opciones
+    const doc = (numeroIdentificacion || '').trim().toLowerCase()
+    if (!doc) return false
+    return (registros || []).some(r => {
+        if (excludeId !== undefined && getId && getId(r) === excludeId) return false
+        return (getDoc(r) || '').trim().toLowerCase() === doc
+    })
+}
+
+export const MENSAJE_DOC_DUPLICADO = 'Ya existe un registro con este número de documento. Verifica que no sea un duplicado.'

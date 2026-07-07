@@ -1,11 +1,9 @@
 import { useTheme } from '@mui/material/styles'
 import { useState, useEffect } from 'react'
-import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, Snackbar, TextField, Autocomplete, Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material'
+import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, Snackbar, TextField, Autocomplete, Dialog, DialogTitle, DialogContent, IconButton, Divider } from '@mui/material'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
-import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined'
-import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
-import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined'
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined'
+import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined'
 import PaymentOutlinedIcon from '@mui/icons-material/PaymentOutlined'
 import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined'
@@ -16,41 +14,17 @@ import CloseIcon from '@mui/icons-material/Close'
 import { useVentas } from '../../shared/contexts/VentaContext.jsx'
 import { useClientes } from '../../shared/contexts/ClienteContext.jsx'
 import { useRutaProgramacion } from '../../shared/contexts/RutaProgramacionContext.jsx'
-import { FormField, FormSelect, formFieldStyles } from '../../shared/components/FormularioEstandarizado.jsx'
+import { FormField, FormSelect } from '../../shared/components/FormularioEstandarizado.jsx'
+import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
-import { getEstadoColorVentaHex as getEstadoColor } from '../../shared/utils/estadoColors.js'
+import { normalizarTexto } from '../../shared/utils/duplicados.js'
 
-const getPagoColor = (estadoPago) =>
-    estadoPago === 'Pagado'
-        ? { bg: '#D1FAE5', color: '#065F46' }
-        : { bg: '#FEE2E2', color: '#991B1B' }
+const steps = ['Partes', 'Paquete', 'Envío', 'Pago', 'Confirmación']
 
-const steps = ['Remitente', 'Destinatario', 'Paquete', 'Envío', 'Pago', 'Confirmación']
-
-const ConfirmRowChip = ({ label, value, colors }) => {
-    const theme = useTheme()
-    return (
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, py: 0.9, overflow: 'hidden' }}>
-            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500, flexShrink: 0 }}>{label}</Typography>
-            <Box sx={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                backgroundColor: colors?.bg || '#F3F4F6',
-                color: colors?.color || '#6B7280',
-                px: 1.5,
-                py: 0.3,
-                borderRadius: 10,
-                fontWeight: 600,
-                fontSize: '0.75rem',
-            }}>
-                {value || '—'}
-            </Box>
-        </Box>
-    )
-}
+const hoyISO = () => new Date().toISOString().split('T')[0]
 
 const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
-    const { actualizarVenta, cambiarEstadoVenta } = useVentas()
+    const { actualizarVenta } = useVentas()
     const theme = useTheme()
     const { clientes } = useClientes()
     const { rutasProgramadas, fetchRutasProgramadas } = useRutaProgramacion()
@@ -59,25 +33,18 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
     const [activeStep, setActiveStep] = useState(0)
     const [submitting, setSubmitting] = useState(false)
     const [exito, setExito] = useState(false)
+    const [clienteInput, setClienteInput] = useState('')
+    const [rutaInput, setRutaInput] = useState('')
     const [ventaOriginal, setVentaOriginal] = useState(null)
     const [formOriginal, setFormOriginal] = useState(null)
     const [sinCambios, setSinCambios] = useState(false)
 
     useEffect(() => {
-        fetchRutasProgramadas().catch(() => null)
+        fetchRutasProgramadas({ limit: 1000 }).catch(() => null)
     }, [fetchRutasProgramadas])
-
-    const estadosEncomienda = ['Programada', 'En Tránsito', 'Entregada', 'Cancelada']
-    const [estadoOriginal, setEstadoOriginal] = useState('')
 
     const [form, setForm] = useState({
         idCliente: '',
-        numeroIdentificacion: '',
-        nombreRemitente: '',
-        apellidoRemitente: '',
-        telefonoRemitente: '',
-        emailRemitente: '',
-        direccionRemitente: '',
         nombreDestinatario: '',
         telefonoDestinatario: '',
         direccionDestinatario: '',
@@ -91,12 +58,10 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
         destino: '',
         fechaEstimadaEntrega: '',
         observaciones: '',
-        estado: '',
         metodoPago: '',
         valorServicio: '',
         impuestos: '',
         total: '',
-        estadoPago: '',
     })
 
     useEffect(() => {
@@ -108,15 +73,8 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
         setVentaOriginal(ventaData)
         const destinatario = ventaData.destinatarios?.[0] || null
         const paquete = ventaData.paquetes?.[0] || null
-        setEstadoOriginal(ventaData.estado || '')
         const datosForm = {
             idCliente: ventaData.cliente?.id || ventaData.idCliente || '',
-            numeroIdentificacion: ventaData.cliente?.numeroIdentificacion || '',
-            nombreRemitente: ventaData.cliente?.nombre || '',
-            apellidoRemitente: ventaData.cliente?.apellido || '',
-            telefonoRemitente: ventaData.cliente?.telefono || '',
-            emailRemitente: ventaData.cliente?.email || '',
-            direccionRemitente: ventaData.cliente?.direccion || '',
             nombreDestinatario: destinatario?.nombreDestinatario || '',
             telefonoDestinatario: destinatario?.telefonoDestinatario || '',
             direccionDestinatario: destinatario?.direccionDestinatario || '',
@@ -132,16 +90,29 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                 ? ventaData.fechaEstimadaEntrega.split('T')[0]
                 : '',
             observaciones: ventaData.observaciones || '',
-            estado: ventaData.estado || 'Programada',
             metodoPago: ventaData.metodoPago || '',
             valorServicio: ventaData.valorServicio || '',
             impuestos: ventaData.impuestos || '',
             total: ventaData.total || '',
-            estadoPago: ventaData.estadoPago || 'Pendiente',
         }
         setForm(datosForm)
         setFormOriginal(datosForm)
+        const c = ventaData.cliente
+        if (c) {
+            const nombre = c.apellido ? `${c.nombre} ${c.apellido}` : c.nombre || ''
+            setClienteInput(nombre ? `${nombre} — ${c.numeroIdentificacion || ''}` : '')
+        } else {
+            setClienteInput('')
+        }
+        const r = ventaData.ruta
+        if (r) {
+            setRutaInput(`${r.nombreRuta || 'Sin nombre'} — $${Number(r.destino?.tarifaBase || 0).toLocaleString()}`)
+        } else {
+            setRutaInput('')
+        }
     }, [venta])
+
+    const clienteSeleccionado = clientes.find(c => c.idCliente === parseInt(form.idCliente))
 
     const NUMERIC_LIMITS = {
         peso: 9999, alto: 9999, ancho: 9999, profundidad: 9999,
@@ -151,65 +122,25 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
     const handleChange = (e) => {
         let { name, value } = e.target
 
-        // Bloquear valores numéricos fuera de rango
-        if (name in NUMERIC_LIMITS && value !== '') {
-            const num = parseFloat(value)
-            if (!isNaN(num) && (num > NUMERIC_LIMITS[name] || num < 0)) return
+        if (name in NUMERIC_LIMITS) {
+            value = value.replace(/[^0-9.]/g, '')
+            if (value !== '') {
+                const num = parseFloat(value)
+                if (!isNaN(num) && (num > NUMERIC_LIMITS[name] || num < 0)) return
+            }
         }
 
-        // Solo letras y espacios en campos de nombre
-        if (['nombreRemitente', 'apellidoRemitente', 'nombreDestinatario', 'descripcionContenido'].includes(name)) {
+        if (['nombreDestinatario', 'descripcionContenido'].includes(name)) {
             value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
         }
-        // Solo dígitos en teléfonos e identificación
-        if (['telefonoRemitente', 'telefonoDestinatario', 'numeroIdentificacion'].includes(name)) {
+        if (name === 'telefonoDestinatario') {
             value = value.replace(/[^0-9]/g, '')
         }
-        // Solo letras sin tildes, números, puntos, guiones y guiones bajos en el correo
-        if (name === 'emailRemitente') {
-            value = value.replace(/[^a-zA-Z0-9._-]/g, '')
+        if (name === 'direccionDestinatario') {
+            value = value.replace(/[^a-zA-Z0-9\s,.\-#/']/g, '')
         }
-        // Solo letras sin tildes, números, espacios y caracteres especiales básicos en dirección
-        if (name === 'direccionRemitente' || name === 'direccionDestinatario') {
-            value = value.replace(/[^a-zA-Z0-9\s,.\-#\/']/g, '')
-        }
-        // Solo letras, números, espacios y caracteres básicos en observaciones
         if (name === 'observaciones') {
             value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ0-9\s,.-]/g, '')
-        }
-
-        if (name === 'idCliente') {
-            const cliente = clientes.find(c => c.idCliente === parseInt(value))
-            if (cliente) {
-                setForm(prev => ({
-                    ...prev,
-                    idCliente: value,
-                    numeroIdentificacion: cliente.numeroIdentificacion,
-                    nombreRemitente: cliente.nombre,
-                    apellidoRemitente: cliente.apellido,
-                    telefonoRemitente: cliente.telefono,
-                    emailRemitente: cliente.email,
-                    direccionRemitente: cliente.direccion,
-                }))
-            }
-            return
-        }
-
-        if (name === 'idRuta') {
-            const ruta = rutasProgramadas.find(r => r.idRuta === parseInt(value))
-            if (ruta) {
-                const tarifaBase = Number(ruta.destino?.tarifaBase || 0)
-                const impuestos = Math.round(tarifaBase * 0.10)
-                setForm(prev => ({
-                    ...prev,
-                    idRuta: value,
-                    destino: ruta.nombreRuta || 'Sin nombre',
-                    valorServicio: tarifaBase,
-                    impuestos,
-                    total: tarifaBase + impuestos,
-                }))
-            }
-            return
         }
 
         setForm(prev => {
@@ -228,29 +159,18 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
 
     const validarPaso = (step) => {
         const e = {}
-        const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+        const soloLetras = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/
 
         if (step === 0) {
-            if (!form.idCliente) e.idCliente = 'Selecciona un cliente'
-            if (!form.numeroIdentificacion) e.numeroIdentificacion = 'El número de identificación es obligatorio'
-            if (!form.nombreRemitente.trim()) e.nombreRemitente = 'El nombre es obligatorio'
-            if (!form.apellidoRemitente.trim()) e.apellidoRemitente = 'El apellido es obligatorio'
-            if (!form.telefonoRemitente.trim()) e.telefonoRemitente = 'El teléfono es obligatorio'
-            else if (!/^\d{10}$/.test(form.telefonoRemitente)) e.telefonoRemitente = 'Debe tener 10 dígitos'
-            if (!form.emailRemitente.trim()) e.emailRemitente = 'El correo es obligatorio'
-            else if (!emailValido.test(form.emailRemitente)) e.emailRemitente = 'Correo inválido'
-            if (!form.direccionRemitente.trim()) e.direccionRemitente = 'La dirección es obligatoria'
-        }
-
-        if (step === 1) {
+            if (!form.idCliente) e.idCliente = 'Selecciona un cliente remitente'
             if (!form.nombreDestinatario.trim()) e.nombreDestinatario = 'El nombre es obligatorio'
+            else if (!soloLetras.test(form.nombreDestinatario)) e.nombreDestinatario = 'Solo se permiten letras'
             if (!form.telefonoDestinatario.trim()) e.telefonoDestinatario = 'El teléfono es obligatorio'
             else if (!/^\d{10}$/.test(form.telefonoDestinatario)) e.telefonoDestinatario = 'Debe tener 10 dígitos'
             if (!form.direccionDestinatario.trim()) e.direccionDestinatario = 'La dirección es obligatoria'
-            else if (form.direccionDestinatario.length > 300) e.direccionDestinatario = 'Máximo 300 caracteres'
         }
 
-        if (step === 2) {
+        if (step === 1) {
             if (!form.descripcionContenido.trim()) e.descripcionContenido = 'La descripción es obligatoria'
             else if (form.descripcionContenido.length > 300) e.descripcionContenido = 'Máximo 300 caracteres'
 
@@ -283,11 +203,13 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
             if (form.observaciones && form.observaciones.length > 500) e.observaciones = 'Máximo 500 caracteres'
         }
 
-        if (step === 3) {
+        if (step === 2) {
             if (!form.fechaEstimadaEntrega) e.fechaEstimadaEntrega = 'La fecha es obligatoria'
+            else if (ventaOriginal?.estado === 'Programada' && form.fechaEstimadaEntrega < hoyISO())
+                e.fechaEstimadaEntrega = 'La fecha de entrega no puede ser anterior a hoy'
         }
 
-        if (step === 4) {
+        if (step === 3) {
             if (!form.metodoPago) e.metodoPago = 'Selecciona un método de pago'
         }
 
@@ -306,7 +228,6 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
     const handleBack = () => setActiveStep(prev => prev - 1)
 
     const handleSubmit = async () => {
-        // Verificar si hubo cambios comparado con los datos originales
         if (formOriginal) {
             const hayCambios = Object.keys(form).some(key => {
                 const original = formOriginal[key] !== undefined ? String(formOriginal[key]) : ''
@@ -316,7 +237,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
 
             if (!hayCambios) {
                 setSinCambios(true)
-                setActiveStep(5) // Ir al paso de confirmación para mostrar la alerta
+                setActiveStep(4)
                 return
             }
         }
@@ -327,21 +248,16 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
         try {
             const numId = venta?.idEncomiendaVenta || venta?.id
             const payload = {
-                // TODO: habilitar cuando el módulo de rutas esté implementado
-                // ...(form.idRuta && { idRuta: parseInt(form.idRuta) }),
                 fechaEstimadaEntrega: form.fechaEstimadaEntrega || null,
                 observaciones: form.observaciones || null,
                 metodoPago: form.metodoPago,
                 valorServicio: parseFloat(form.valorServicio) || 0,
                 impuestos: parseFloat(form.impuestos) || 0,
-                estadoPago: form.estadoPago,
-                // Datos del destinatario
                 destinatario: {
                     nombreDestinatario: form.nombreDestinatario,
                     telefonoDestinatario: form.telefonoDestinatario || null,
                     direccionDestinatario: form.direccionDestinatario || null,
                 },
-                // Datos del paquete
                 paquetes: [{
                     descripcionContenido: form.descripcionContenido || null,
                     peso: form.peso ? parseFloat(form.peso) : null,
@@ -352,11 +268,6 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                 }],
             }
             await actualizarVenta(numId, payload)
-
-            // Si el estado cambió, lo actualizamos por separado
-            if (form.estado && form.estado !== estadoOriginal) {
-                await cambiarEstadoVenta(numId, form.estado).catch(() => null)
-            }
 
             setExito(true)
             setTimeout(() => {
@@ -377,8 +288,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
     const cardSx = {
         flex: 1, minWidth: 0, borderRadius: 2, p: 2.5,
         border: `1px solid ${theme.palette.divider}`,
-        backgroundColor: 'white',
-        overflow: 'hidden',
+        backgroundColor: 'white', overflow: 'hidden',
     }
 
     const renderStepContent = () => {
@@ -386,73 +296,115 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
             case 0:
                 return (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                        <Autocomplete
-                            options={clientes.filter(c => c.habilitado)}
-                            getOptionLabel={(option) => `${option.nombre} ${option.apellido} — ${option.numeroIdentificacion}`}
-                            value={clientes.find(c => c.idCliente === parseInt(form.idCliente)) || null}
-                            onChange={(_, newValue) => {
-                                handleChange({ target: { name: 'idCliente', value: newValue ? newValue.idCliente : '' } })
-                            }}
-                            noOptionsText="No se encontraron clientes"
-                            renderInput={(params) => (
-                                <TextField {...params} label="Cliente *"
-                                    error={!!errores.idCliente} helperText={errores.idCliente}
-                                    InputLabelProps={{ shrink: !!form.idCliente }}
-                                    sx={formFieldStyles} />
+                        {/* Remitente */}
+                        <Box>
+                            <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1.5, color: theme.palette.text.primary }}>
+                                Remitente
+                            </Typography>
+                            <Autocomplete
+                                options={clientes.filter(c => c.habilitado)}
+                                getOptionLabel={(option) => {
+                                    const nombre = option.apellido ? `${option.nombre} ${option.apellido}` : option.nombre
+                                    return `${nombre} — ${option.numeroIdentificacion}`
+                                }}
+                                isOptionEqualToValue={(opt, val) => opt.idCliente === val.idCliente}
+                                filterOptions={(opts, { inputValue }) => {
+                                    if (!inputValue.trim()) return [...opts].sort((a, b) => b.idCliente - a.idCliente).slice(0, 5)
+                                    const q = normalizarTexto(inputValue)
+                                    return opts.filter(c =>
+                                        normalizarTexto(c.nombre || '').includes(q) ||
+                                        normalizarTexto(c.apellido || '').includes(q) ||
+                                        normalizarTexto(c.numeroIdentificacion || '').includes(q)
+                                    )
+                                }}
+                                value={clienteSeleccionado || null}
+                                inputValue={clienteInput}
+                                onInputChange={(_, val, reason) => {
+                                    if (reason === 'input') {
+                                        setClienteInput(val.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ0-9\s-]/g, ''))
+                                    } else if (reason === 'reset') {
+                                        setClienteInput(val)
+                                    } else if (reason === 'clear') {
+                                        setClienteInput('')
+                                    }
+                                }}
+                                onChange={(_, newValue) => {
+                                    setForm(prev => ({ ...prev, idCliente: newValue ? newValue.idCliente : '' }))
+                                    setErrores(prev => ({ ...prev, idCliente: '' }))
+                                    setSinCambios(false)
+                                }}
+                                noOptionsText="No se encontraron clientes"
+                                renderInput={(params) => (
+                                    <TextField {...params} label="Cliente *"
+                                        error={!!errores.idCliente} helperText={errores.idCliente || 'Busca por nombre, apellido o documento'}
+                                        slotProps={{ inputLabel: { shrink: true }, htmlInput: { ...params.inputProps, maxLength: 100 } }}
+                                        sx={formFieldStyles} />
+                                )}
+                            />
+                            {clienteSeleccionado && (
+                                <Paper elevation={0} sx={{
+                                    mt: 1.5, p: 1.5, borderRadius: 2,
+                                    border: `1px solid ${theme.palette.divider}`,
+                                    backgroundColor: theme.palette.background.default,
+                                }}>
+                                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.75 }}>
+                                        <Typography variant="body2">
+                                            <Box component="span" sx={{ fontWeight: 600, color: theme.palette.text.secondary, mr: 0.5 }}>Nombre:</Box>
+                                            {clienteSeleccionado.nombre} {clienteSeleccionado.apellido}
+                                        </Typography>
+                                        <Typography variant="body2">
+                                            <Box component="span" sx={{ fontWeight: 600, color: theme.palette.text.secondary, mr: 0.5 }}>ID:</Box>
+                                            {clienteSeleccionado.numeroIdentificacion}
+                                        </Typography>
+                                        <Typography variant="body2">
+                                            <Box component="span" sx={{ fontWeight: 600, color: theme.palette.text.secondary, mr: 0.5 }}>Teléfono:</Box>
+                                            {clienteSeleccionado.telefono}
+                                        </Typography>
+                                        <Typography variant="body2">
+                                            <Box component="span" sx={{ fontWeight: 600, color: theme.palette.text.secondary, mr: 0.5 }}>Correo:</Box>
+                                            {clienteSeleccionado.email}
+                                        </Typography>
+                                        {clienteSeleccionado.direccion && (
+                                            <Box sx={{ gridColumn: '1 / -1' }}>
+                                                <Typography variant="body2">
+                                                    <Box component="span" sx={{ fontWeight: 600, color: theme.palette.text.secondary, mr: 0.5 }}>Dirección:</Box>
+                                                    {clienteSeleccionado.direccion}
+                                                </Typography>
+                                            </Box>
+                                        )}
+                                    </Box>
+                                </Paper>
                             )}
-                        />
-                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
-                            <FormField label="Nombres" name="nombreRemitente" value={form.nombreRemitente}
-                                onChange={handleChange} required error={errores.nombreRemitente}
-                                helperText={errores.nombreRemitente} icon={PersonOutlinedIcon}
-                                inputProps={{ maxLength: 50 }} />
-                            <FormField label="Apellidos" name="apellidoRemitente" value={form.apellidoRemitente}
-                                onChange={handleChange} required error={errores.apellidoRemitente}
-                                helperText={errores.apellidoRemitente} icon={PersonOutlinedIcon}
-                                inputProps={{ maxLength: 50 }} />
-                            <FormField label="Número de identificación" name="numeroIdentificacion" value={form.numeroIdentificacion}
-                                onChange={handleChange} required error={errores.numeroIdentificacion}
-                                helperText={errores.numeroIdentificacion} icon={BadgeOutlinedIcon}
-                                inputProps={{ maxLength: 15 }} />
-                            <FormField label="Teléfono" name="telefonoRemitente" value={form.telefonoRemitente}
-                                onChange={handleChange} required error={errores.telefonoRemitente}
-                                helperText={errores.telefonoRemitente || 'Número de 10 dígitos'} icon={PhoneOutlinedIcon}
-                                inputProps={{ maxLength: 10 }} />
-                            <Box sx={{ gridColumn: '1 / -1' }}>
-                                <FormField label="Correo electrónico" name="emailRemitente" type="email" value={form.emailRemitente}
-                                    onChange={handleChange} required error={errores.emailRemitente}
-                                    helperText={errores.emailRemitente} icon={EmailOutlinedIcon}
-                                    inputProps={{ maxLength: 100 }} />
-                            </Box>
-                            <Box sx={{ gridColumn: '1 / -1' }}>
-                                <FormField label="Dirección" name="direccionRemitente" value={form.direccionRemitente}
-                                    onChange={handleChange} required error={errores.direccionRemitente}
-                                    helperText={errores.direccionRemitente || `${(form.direccionRemitente || '').length}/200`} icon={HomeOutlinedIcon}
-                                    inputProps={{ maxLength: 200 }} />
+                        </Box>
+
+                        <Divider />
+
+                        {/* Destinatario */}
+                        <Box>
+                            <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1.5, color: theme.palette.text.primary }}>
+                                Destinatario
+                            </Typography>
+                            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
+                                <FormField label="Nombre completo" name="nombreDestinatario" value={form.nombreDestinatario}
+                                    onChange={handleChange} required error={errores.nombreDestinatario}
+                                    helperText={errores.nombreDestinatario} icon={PersonOutlinedIcon}
+                                    placeholder="Ej: Juan Pérez" inputProps={{ maxLength: 50 }} />
+                                <FormField label="Teléfono" name="telefonoDestinatario" value={form.telefonoDestinatario}
+                                    onChange={handleChange} required error={errores.telefonoDestinatario}
+                                    helperText={errores.telefonoDestinatario || 'Número de 10 dígitos'} icon={PhoneOutlinedIcon}
+                                    inputProps={{ maxLength: 10 }} />
+                                <Box sx={{ gridColumn: '1 / -1' }}>
+                                    <FormField label="Dirección de entrega" name="direccionDestinatario" value={form.direccionDestinatario}
+                                        onChange={handleChange} required error={errores.direccionDestinatario}
+                                        placeholder="Ej: Cra 23 #80-5"
+                                        helperText={errores.direccionDestinatario || `${(form.direccionDestinatario || '').length}/300`}
+                                        icon={HomeOutlinedIcon} multiline rows={2} inputProps={{ maxLength: 300 }} />
+                                </Box>
                             </Box>
                         </Box>
                     </Box>
                 )
             case 1:
-                return (
-                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
-                        <FormField label="Nombre completo" name="nombreDestinatario" value={form.nombreDestinatario}
-                            onChange={handleChange} required error={errores.nombreDestinatario}
-                            helperText={errores.nombreDestinatario} icon={PersonOutlinedIcon}
-                            inputProps={{ maxLength: 50 }} />
-                        <FormField label="Teléfono" name="telefonoDestinatario" value={form.telefonoDestinatario}
-                            onChange={handleChange} required error={errores.telefonoDestinatario}
-                            helperText={errores.telefonoDestinatario || 'Número de 10 dígitos'} icon={PhoneOutlinedIcon}
-                            inputProps={{ maxLength: 10 }} />
-                        <Box sx={{ gridColumn: '1 / -1' }}>
-                            <FormField label="Dirección de entrega" name="direccionDestinatario" value={form.direccionDestinatario}
-                                onChange={handleChange} required error={errores.direccionDestinatario}
-                                helperText={errores.direccionDestinatario || `${(form.direccionDestinatario || '').length}/300`} icon={HomeOutlinedIcon} multiline rows={2}
-                                inputProps={{ maxLength: 300 }} />
-                        </Box>
-                    </Box>
-                )
-            case 2:
                 return (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                         <FormField label="Descripción del contenido" name="descripcionContenido" value={form.descripcionContenido}
@@ -460,139 +412,121 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                             helperText={errores.descripcionContenido || `${(form.descripcionContenido || '').length}/300`}
                             multiline rows={2} inputProps={{ maxLength: 300 }} />
                         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2.5 }}>
-                            <FormField label="Peso (kg)" name="peso" type="number" value={form.peso}
+                            <FormField label="Peso (kg)" name="peso" value={form.peso}
                                 onChange={handleChange} required error={errores.peso}
-                                helperText={errores.peso || 'Ej: 1.5'}
-                                inputProps={{ min: 0.01, max: 9999, step: 0.01 }} />
-                            <FormField label="Alto (cm)" name="alto" type="number" value={form.alto}
+                                placeholder="Ej: 1.5" helperText={errores.peso || 'Ej: 1.5'}
+                                inputProps={{ maxLength: 7 }} />
+                            <FormField label="Alto (cm)" name="alto" value={form.alto}
                                 onChange={handleChange} required error={errores.alto}
-                                helperText={errores.alto || 'Ej: 30'}
-                                inputProps={{ min: 1, max: 9999, step: 1 }} />
-                            <FormField label="Ancho (cm)" name="ancho" type="number" value={form.ancho}
+                                placeholder="Ej: 30" helperText={errores.alto || 'Ej: 30'}
+                                inputProps={{ maxLength: 4 }} />
+                            <FormField label="Ancho (cm)" name="ancho" value={form.ancho}
                                 onChange={handleChange} required error={errores.ancho}
-                                helperText={errores.ancho || 'Ej: 20'}
-                                inputProps={{ min: 1, max: 9999, step: 1 }} />
+                                placeholder="Ej: 20" helperText={errores.ancho || 'Ej: 20'}
+                                inputProps={{ maxLength: 4 }} />
                         </Box>
                         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
-                            <FormField label="Profundidad (cm)" name="profundidad" type="number" value={form.profundidad}
+                            <FormField label="Profundidad (cm)" name="profundidad" value={form.profundidad}
                                 onChange={handleChange} required error={errores.profundidad}
-                                helperText={errores.profundidad || 'Ej: 15'}
-                                inputProps={{ min: 1, max: 9999, step: 1 }} />
-                            <FormField label="Valor declarado ($)" name="valorDeclarado" type="number" value={form.valorDeclarado}
+                                placeholder="Ej: 15" helperText={errores.profundidad || 'Ej: 15'}
+                                inputProps={{ maxLength: 4 }} />
+                            <FormField label="Valor declarado ($)" name="valorDeclarado" value={form.valorDeclarado}
                                 onChange={handleChange} helperText={errores.valorDeclarado || 'Opcional'}
-                                error={errores.valorDeclarado}
-                                inputProps={{ min: 0, max: 999999999, step: 1 }} />
+                                placeholder="Ej: 50000" error={errores.valorDeclarado}
+                                inputProps={{ maxLength: 9 }} />
                         </Box>
                     </Box>
                 )
-            case 3:
+            case 2:
                 return (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
-                            <FormSelect label="Ruta" name="idRuta" value={form.idRuta}
-                                onChange={handleChange} required error={errores.idRuta}>
-                                {rutasProgramadas.filter(r => r.habilitado !== false).length === 0
-                                    ? <MenuItem disabled>No hay rutas programadas</MenuItem>
-                                    : rutasProgramadas
-                                        .filter(r => r.habilitado !== false)
-                                        .map(r => (
-                                            <MenuItem key={r.idRuta} value={r.idRuta}>
-                                                {r.nombreRuta || 'Sin nombre'} — ${Number(r.destino?.tarifaBase || 0).toLocaleString()}
-                                            </MenuItem>
-                                        ))}
-                            </FormSelect>
+                            <Autocomplete
+                                options={rutasProgramadas.filter(r => r.habilitado !== false)}
+                                getOptionLabel={(option) => `${option.nombreRuta || 'Sin nombre'} — $${Number(option.destino?.tarifaBase || 0).toLocaleString()}`}
+                                isOptionEqualToValue={(opt, val) => opt.idRuta === val.idRuta}
+                                filterOptions={(opts, { inputValue }) => {
+                                    if (!inputValue.trim()) return [...opts].sort((a, b) => b.idRuta - a.idRuta).slice(0, 5)
+                                    const q = normalizarTexto(inputValue)
+                                    return opts.filter(r =>
+                                        normalizarTexto(r.nombreRuta || '').includes(q) ||
+                                        normalizarTexto(r.destino?.ciudad || '').includes(q) ||
+                                        normalizarTexto(r.destino?.departamento || '').includes(q)
+                                    )
+                                }}
+                                value={rutasProgramadas.find(r => r.idRuta === parseInt(form.idRuta)) || null}
+                                inputValue={rutaInput}
+                                onInputChange={(_, val, reason) => {
+                                    if (reason === 'input') {
+                                        setRutaInput(val.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ0-9\s-]/g, ''))
+                                    } else if (reason === 'reset') {
+                                        setRutaInput(val)
+                                    } else if (reason === 'clear') {
+                                        setRutaInput('')
+                                    }
+                                }}
+                                onChange={(_, newValue) => {
+                                    if (newValue) {
+                                        const tarifaBase = Number(newValue.destino?.tarifaBase || 0)
+                                        const impuestos = Math.round(tarifaBase * 0.10)
+                                        setForm(prev => ({
+                                            ...prev,
+                                            idRuta: newValue.idRuta,
+                                            destino: newValue.nombreRuta || 'Sin nombre',
+                                            valorServicio: tarifaBase,
+                                            impuestos,
+                                            total: tarifaBase + impuestos,
+                                        }))
+                                    } else {
+                                        setForm(prev => ({ ...prev, idRuta: '', destino: '' }))
+                                    }
+                                    setErrores(prev => ({ ...prev, idRuta: '' }))
+                                    setApiError(null)
+                                    setSinCambios(false)
+                                }}
+                                noOptionsText="No se encontraron rutas"
+                                renderInput={(params) => (
+                                    <TextField {...params} label="Ruta *"
+                                        error={!!errores.idRuta} helperText={errores.idRuta || 'Busca por nombre de ruta o destino'}
+                                        slotProps={{ inputLabel: { shrink: true }, htmlInput: { ...params.inputProps, maxLength: 100 } }}
+                                        sx={formFieldStyles} />
+                                )}
+                            />
                             <TextField fullWidth label="Fecha estimada de entrega" name="fechaEstimadaEntrega"
                                 type="date" value={form.fechaEstimadaEntrega} onChange={handleChange} required
-                                error={!!errores.fechaEstimadaEntrega} helperText={errores.fechaEstimadaEntrega}
-                                slotProps={{ inputLabel: { shrink: true } }}
+                                error={!!errores.fechaEstimadaEntrega}
+                                helperText={errores.fechaEstimadaEntrega || (ventaOriginal?.estado === 'Programada' ? 'No puede ser anterior a hoy' : undefined)}
+                                slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: ventaOriginal?.estado === 'Programada' ? hoyISO() : undefined } }}
                                 sx={formFieldStyles} />
-                            <FormSelect label="Estado de la encomienda" name="estado" value={form.estado} onChange={handleChange}>
-                                {estadosEncomienda.map(e => {
-                                    const styles = getEstadoColor(e)
-                                    return (
-                                        <MenuItem key={e} value={e}>
-                                            <Box sx={{
-                                                display: 'inline-flex',
-                                                alignItems: 'center',
-                                                backgroundColor: styles.bg,
-                                                color: styles.color,
-                                                px: 1.5,
-                                                py: 0.3,
-                                                borderRadius: 10,
-                                                fontWeight: 600,
-                                                fontSize: '0.75rem',
-                                            }}>
-                                                {e.charAt(0).toUpperCase() + e.slice(1)}
-                                            </Box>
-                                        </MenuItem>
-                                    )
-                                })}
-                            </FormSelect>
                         </Box>
                         <FormField label="Observaciones" name="observaciones" value={form.observaciones}
                             onChange={handleChange} multiline rows={2}
-                            helperText={errores.observaciones || `Opcional ${(form.observaciones || '').length}/500`}
+                            helperText={errores.observaciones || `Opcional · ${(form.observaciones || '').length}/500`}
                             error={errores.observaciones}
                             inputProps={{ maxLength: 500 }} />
                     </Box>
                 )
-            case 4:
+            case 3:
                 return (
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
-                            <FormSelect label="Método de pago" name="metodoPago" value={form.metodoPago}
-                                onChange={handleChange} required error={errores.metodoPago}>
-                                <MenuItem value="Contraentrega">Contraentrega</MenuItem>
-                                <MenuItem value="Efectivo">Efectivo</MenuItem>
-                                <MenuItem value="Transferencia">Transferencia</MenuItem>
-                                <MenuItem value="Nequi">Nequi</MenuItem>
-                            </FormSelect>
-                            <FormSelect label="Estado de pago" name="estadoPago" value={form.estadoPago} onChange={handleChange}>
-                                <MenuItem value="Pendiente">
-                                    <Box sx={{
-                                        display: 'inline-flex',
-                                        alignItems: 'center',
-                                        backgroundColor: '#FEE2E2',
-                                        color: '#991B1B',
-                                        px: 1.5,
-                                        py: 0.3,
-                                        borderRadius: 10,
-                                        fontWeight: 600,
-                                        fontSize: '0.75rem',
-                                    }}>
-                                        Pendiente
-                                    </Box>
-                                </MenuItem>
-                                <MenuItem value="Pagado">
-                                    <Box sx={{
-                                        display: 'inline-flex',
-                                        alignItems: 'center',
-                                        backgroundColor: '#D1FAE5',
-                                        color: '#065F46',
-                                        px: 1.5,
-                                        py: 0.3,
-                                        borderRadius: 10,
-                                        fontWeight: 600,
-                                        fontSize: '0.75rem',
-                                    }}>
-                                        Pagado
-                                    </Box>
-                                </MenuItem>
-                            </FormSelect>
-                        </Box>
-                        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2.5 }}>
-                            <FormField label="Valor del servicio ($)" name="valorServicio" type="number"
-                                value={form.valorServicio} onChange={handleChange}
-                                inputProps={{ min: 0, step: 1 }} />
-                            <FormField label="Impuestos ($)" name="impuestos" type="number"
-                                value={form.impuestos} onChange={handleChange}
-                                inputProps={{ min: 0, step: 1 }} />
-                            <FormField label="Total a pagar ($)" name="total" type="number"
-                                value={form.total} onChange={handleChange} disabled={true} />
-                        </Box>
+                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
+                        <FormSelect label="Método de pago" name="metodoPago" value={form.metodoPago}
+                            onChange={handleChange} required error={errores.metodoPago}>
+                            <MenuItem value="Contraentrega">Contraentrega</MenuItem>
+                            <MenuItem value="Efectivo">Efectivo</MenuItem>
+                            <MenuItem value="Transferencia">Transferencia</MenuItem>
+                            <MenuItem value="Nequi">Nequi</MenuItem>
+                        </FormSelect>
+                        <FormField label="Valor del servicio ($)" name="valorServicio"
+                            value={form.valorServicio} onChange={handleChange}
+                            inputProps={{ maxLength: 9 }} />
+                        <FormField label="Impuestos ($)" name="impuestos"
+                            value={form.impuestos} onChange={handleChange}
+                            inputProps={{ maxLength: 9 }} />
+                        <FormField label="Total a pagar ($)" name="total"
+                            value={form.total} onChange={handleChange} disabled={true} />
                     </Box>
                 )
-            case 5:
+            case 4:
                 return (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                         {sinCambios && (
@@ -612,9 +546,11 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                                     <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Remitente</Typography>
                                 </Box>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la información del remitente</Typography>
-                                <ConfirmRow label="Nombre" value={`${form.nombreRemitente} ${form.apellidoRemitente}`} />
-                                <ConfirmRow label="Identificación" value={form.numeroIdentificacion} />
-                                <ConfirmRow label="Teléfono" value={form.telefonoRemitente} />
+                                {clienteSeleccionado && <>
+                                    <ConfirmRow label="Nombre" value={`${clienteSeleccionado.nombre} ${clienteSeleccionado.apellido || ''}`.trim()} />
+                                    <ConfirmRow label="Identificación" value={clienteSeleccionado.numeroIdentificacion} />
+                                    <ConfirmRow label="Teléfono" value={clienteSeleccionado.telefono} />
+                                </>}
                             </Paper>
                             <Paper elevation={0} sx={cardSx}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
@@ -644,12 +580,10 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                                     <PaymentOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
                                     <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Envío y Pago</Typography>
                                 </Box>
-                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Ruta, estado y valores</Typography>
+                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Ruta y valores</Typography>
                                 <ConfirmRow label="Ruta" value={form.destino} />
                                 <ConfirmRow label="Fecha entrega" value={form.fechaEstimadaEntrega} />
-                                <ConfirmRowChip label="Estado" value={form.estado?.charAt(0).toUpperCase() + form.estado?.slice(1)} colors={getEstadoColor(form.estado)} />
                                 <ConfirmRow label="Método de pago" value={form.metodoPago} />
-                                <ConfirmRowChip label="Estado de pago" value={form.estadoPago} colors={getPagoColor(form.estadoPago)} />
                                 <ConfirmRow label="Total" value={form.total ? `$${parseFloat(form.total).toLocaleString()}` : null} />
                             </Paper>
                         </Box>
@@ -667,13 +601,9 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                 <DialogTitle sx={{ m: 0, p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                         <Box sx={{
-                            width: 40,
-                            height: 40,
-                            borderRadius: 2,
+                            width: 40, height: 40, borderRadius: 2,
                             background: theme.palette.gradient.primary,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
                         }}>
                             <AssignmentIndOutlinedIcon sx={{ color: 'white', fontSize: 22 }} />
                         </Box>
@@ -699,13 +629,9 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                 <DialogTitle sx={{ m: 0, p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                         <Box sx={{
-                            width: 40,
-                            height: 40,
-                            borderRadius: 2,
+                            width: 40, height: 40, borderRadius: 2,
                             background: theme.palette.gradient.primary,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
                         }}>
                             <AssignmentIndOutlinedIcon sx={{ color: 'white', fontSize: 22 }} />
                         </Box>
@@ -727,9 +653,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
             slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}>
             <DialogTitle sx={{ m: 0, p: 2, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${theme.palette.divider}` }}>
                 <Box>
-                    <Typography variant="h6" fontWeight={700}>
-                        Editar Venta
-                    </Typography>
+                    <Typography variant="h6" fontWeight={700}>Editar Venta</Typography>
                     <Typography variant="body2" color={theme.palette.text.secondary}>
                         {ventaOriginal?.numeroGuia
                             ? `Modificando guía: ${ventaOriginal.numeroGuia}`
@@ -742,25 +666,24 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                 </IconButton>
             </DialogTitle>
             <DialogContent sx={{ p: 3, pt: 1.5 }}>
-
-                <Stepper activeStep={activeStep} alternativeLabel
-                    sx={{
-                        mb: 3, mt: 2,
-                        '& .MuiStepIcon-root': { color: theme.palette.divider },
-                        '& .MuiStepIcon-root.Mui-active': { color: theme.palette.primary.main },
-                        '& .MuiStepIcon-root.Mui-completed': { color: theme.palette.primary.main },
-                        '& .MuiStepIcon-text': { fill: 'white', fontSize: '0.7rem', fontWeight: 700 },
-                        '& .MuiStepConnector-line': { borderColor: theme.palette.divider },
-                        '& .MuiStepConnector-root.Mui-active .MuiStepConnector-line': { borderColor: theme.palette.primary.main },
-                        '& .MuiStepConnector-root.Mui-completed .MuiStepConnector-line': { borderColor: theme.palette.primary.main },
-                        '& .MuiStepLabel-label': { fontSize: '0.8rem', color: theme.palette.text.secondary, mt: 0.5 },
-                        '& .MuiStepLabel-label.Mui-active': { color: theme.palette.text.primary, fontWeight: 600 },
-                        '& .MuiStepLabel-label.Mui-completed': { color: theme.palette.primary.main, fontWeight: 500 },
-                    }}
-                >
-                    {steps.map(label => <Step key={label}><StepLabel>{label}</StepLabel></Step>)}
-                </Stepper>
-
+                <Box sx={{ mb: 3 }}>
+                    <Stepper activeStep={activeStep} alternativeLabel
+                        sx={{
+                            mb: 3, mt: 2,
+                            '& .MuiStepIcon-root': { color: theme.palette.divider },
+                            '& .MuiStepIcon-root.Mui-active': { color: theme.palette.primary.main },
+                            '& .MuiStepIcon-root.Mui-completed': { color: theme.palette.primary.main },
+                            '& .MuiStepIcon-text': { fill: 'white', fontSize: '0.7rem', fontWeight: 700 },
+                            '& .MuiStepConnector-line': { borderColor: theme.palette.divider },
+                            '& .MuiStepConnector-root.Mui-active .MuiStepConnector-line': { borderColor: theme.palette.primary.main },
+                            '& .MuiStepConnector-root.Mui-completed .MuiStepConnector-line': { borderColor: theme.palette.primary.main },
+                            '& .MuiStepLabel-label': { fontSize: '0.8rem', color: theme.palette.text.secondary, mt: 0.5 },
+                            '& .MuiStepLabel-label.Mui-active': { color: theme.palette.text.primary, fontWeight: 600 },
+                            '& .MuiStepLabel-label.Mui-completed': { color: theme.palette.primary.main, fontWeight: 500 },
+                        }}>
+                        {steps.map(label => <Step key={label}><StepLabel>{label}</StepLabel></Step>)}
+                    </Stepper>
+                </Box>
                 <Box sx={{ px: 4, py: 2 }}>
                     <Box sx={{ maxWidth: 700, mx: 'auto' }}>
                         {renderStepContent()}
@@ -821,4 +744,3 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
 }
 
 export default ActualizarVenta
-

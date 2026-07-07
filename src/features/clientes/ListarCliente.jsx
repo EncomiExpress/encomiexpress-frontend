@@ -18,13 +18,13 @@ import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import ClearIcon from '@mui/icons-material/Clear'
-import BlockOutlinedIcon from '@mui/icons-material/BlockOutlined'
-import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined'
+import ToggleSwitch from '../../shared/components/ToggleSwitch.jsx'
 import RegistrarCliente from './RegistrarCliente'
 import ActualizarCliente from './ActualizarCliente'
 import ModalInhabilitarCliente from './ModalInhabilitarCliente'
 import ModalConsultarCliente from './ModalConsultarCliente'
 import { getPageOfCliente } from '../../shared/services/clienteService'
+import { exportToExcel } from '../../shared/utils/exportExcel.js'
 
 const getThStyle = (theme) => ({
     fontWeight: 700,
@@ -91,19 +91,12 @@ const ListarCliente = () => {
         setPage(1)
     }
 
-    const limpiarFiltros = () => {
-        setBusqueda('')
-        setFiltroEstado('todo')
-        setPage(1)
-    }
-
     useEffect(() => {
         const t = setTimeout(() => setDebouncedBusqueda(busqueda), 300)
         return () => clearTimeout(t)
     }, [busqueda])
 
     useEffect(() => {
-        let active = true
         const controller = new AbortController()
 
         const cargar = async () => {
@@ -118,7 +111,6 @@ const ListarCliente = () => {
 
         cargar()
         return () => {
-            active = false
             controller.abort()
         }
     }, [page, rowsPerPage, filtroEstado, debouncedBusqueda, sortBy, fetchClientes])
@@ -148,10 +140,6 @@ const ListarCliente = () => {
     const from = total === 0 ? 0 : (safePage - 1) * rowsPerPage + 1
     const to = Math.min(safePage * rowsPerPage, total)
 
-    const totalClientes = total
-    const totalActivos = clientes.filter(c => c.habilitado).length
-    const totalInactivos = clientes.filter(c => !c.habilitado).length
-
     const handleExportar = () => {
         const rows = clientes.map(cliente => ({
             'ID': cliente.idCliente,
@@ -165,7 +153,6 @@ const ListarCliente = () => {
         exportToExcel({ data: rows, fileName: 'clientes', sheetName: 'Clientes' })
     }
 
-    const hayFiltrosActivos = busqueda.trim() !== '' || filtroEstado !== 'todo'
     return (
         <Box sx={{ p: 3.5 }}>
             <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
@@ -390,7 +377,7 @@ const ListarCliente = () => {
                                             }),
                                         }}
                                     >
-                                        <TableCell sx={{ py: 1.5 }}>
+                                        <TableCell>
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                                                 <Avatar sx={{
                                                     width: 34, height: 34,
@@ -447,18 +434,7 @@ const ListarCliente = () => {
                                                     </Tooltip>
                                                 )}
                                                 {tienePermiso(PERMISOS.INHABILITAR_CLIENTE) && (
-                                                    <Tooltip title={cliente.habilitado ? 'Inhabilitar' : 'Habilitar'}>
-                                                        <IconButton
-                                                            size="small"
-                                                            onClick={() => handleToggleHabilitado(cliente)}
-                                                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
-                                                        >
-                                                            {cliente.habilitado
-                                                                ? <BlockOutlinedIcon sx={{ fontSize: 18, color: theme.palette.primary.main }} />
-                                                                : <CheckCircleOutlinedIcon sx={{ fontSize: 18, color: '#059669' }} />
-                                                            }
-                                                        </IconButton>
-                                                    </Tooltip>
+                                                    <ToggleSwitch id={cliente.idCliente} checked={cliente.habilitado} onChange={() => handleToggleHabilitado(cliente)} />
                                                 )}
                                             </Box>
                                         </TableCell>

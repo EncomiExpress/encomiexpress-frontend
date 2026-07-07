@@ -280,9 +280,6 @@ const buildDarkPalette = (t) => ({
 //  Paletas concretas (las que se usan hoy)
 // ─────────────────────────────────────────────
 
-const lightPalette = buildLightPalette(tokens.red.light)
-const darkPalette  = buildDarkPalette(tokens.red.dark)
-
 // ─────────────────────────────────────────────
 //  getTheme — hoy acepta solo mode,
 //  en el futuro aceptará también { palette: 'red'|'blue' }

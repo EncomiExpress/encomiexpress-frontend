@@ -1,4 +1,4 @@
-import { useTheme } from '@mui/material/styles'
+﻿import { useTheme } from '@mui/material/styles'
 import { useState } from 'react'
 import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, Snackbar, TextField, Select, InputAdornment, Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
@@ -11,14 +11,17 @@ import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined
 import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined'
 import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
+import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import { useClientes } from '../../shared/contexts/ClienteContext.jsx'
-import { FormField, FormSelect, formFieldStyles } from '../../shared/components/FormularioEstandarizado.jsx'
+import { FormField } from '../../shared/components/FormularioEstandarizado.jsx'
+import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import * as clienteService from '../../shared/services/clienteService.js'
-import { hayNombreDuplicado, MENSAJE_NOMBRE_DUPLICADO } from '../../shared/utils/duplicados.js'
+import { hayNombreDuplicado, MENSAJE_NOMBRE_DUPLICADO, hayDocumentoDuplicado, MENSAJE_DOC_DUPLICADO } from '../../shared/utils/duplicados.js'
 
 const DOMINIOS_EMAIL = ['@gmail.com', '@hotmail.com', '@outlook.com', '@yahoo.com', '@icloud.com', '@live.com']
+const DOMINIO_OTRO = '__otro__'
 
 const steps = ['Datos Personales', 'Información de Contacto', 'Confirmación']
 
@@ -31,6 +34,7 @@ const RegistrarCliente = ({ open, onClose, onSuccess }) => {
     const [submitting, setSubmitting] = useState(false)
     const [exito, setExito] = useState(false)
     const [avisoNombreDuplicado, setAvisoNombreDuplicado] = useState('')
+    const [avisoDocDuplicado, setAvisoDocDuplicado] = useState('')
 
     const [form, setForm] = useState({
         nombre: '',
@@ -62,24 +66,56 @@ const RegistrarCliente = ({ open, onClose, onSuccess }) => {
         onClose()
     }
 
+    const esDocAlfanumerico = (tipo) => ['CE', 'PAS'].includes(tipo)
+    const getMaxLengthDoc = () => {
+        if (form.tipoIdentificacion === 'NIT') return 15
+        if (esDocAlfanumerico(form.tipoIdentificacion)) return 12
+        return 10
+    }
+    const docHelperText = () => {
+        if (form.tipoIdentificacion === 'NIT') return 'Números con guión, hasta 15 caracteres'
+        if (esDocAlfanumerico(form.tipoIdentificacion)) return 'Alfanumérico, hasta 12 caracteres'
+        if (form.tipoIdentificacion) return 'Solo dígitos, entre 3 y 10'
+        return ''
+    }
+
     const handleChange = (e) => {
         const { name } = e.target
         let { value } = e.target
 
-        // Solo letras y espacios en nombres
-        if (name === 'nombre' || name === 'apellido') {
+        if (name === 'tipoIdentificacion') {
+            setForm(prev => ({ ...prev, tipoIdentificacion: value, numeroIdentificacion: '' }))
+            setErrores(prev => ({ ...prev, tipoIdentificacion: '', numeroIdentificacion: '' }))
+            setAvisoDocDuplicado('')
+            setApiError(null)
+            return
+        }
+        if (name === 'nombre') {
+            if (form.tipoIdentificacion !== 'NIT') value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
+        }
+        if (name === 'apellido') {
             value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
         }
-        // Solo dígitos en campos numéricos
-        if (name === 'numeroIdentificacion' || name === 'telefono') {
+        if (name === 'numeroIdentificacion') {
+            setAvisoDocDuplicado('')
+            if (form.tipoIdentificacion === 'NIT') {
+                value = value.replace(/[^0-9-]/g, '')
+            } else if (esDocAlfanumerico(form.tipoIdentificacion)) {
+                value = value.replace(/[^a-zA-Z0-9]/g, '')
+            } else {
+                value = value.replace(/[^0-9]/g, '')
+            }
+        }
+        if (name === 'telefono') {
             value = value.replace(/[^0-9]/g, '')
         }
-        // Solo letras sin tildes, números, puntos, guiones y guiones bajos en el local del correo
         if (name === 'emailLocal') {
             value = value.replace(/[^a-zA-Z0-9._-]/g, '')
         }
-
-        // Solo letras sin tildes, números, espacios y caracteres especiales básicos en dirección
+        if (name === 'emailDominio') {
+            if (value === DOMINIO_OTRO) value = '@'
+            else if (!DOMINIOS_EMAIL.includes(value)) value = '@' + value.replace(/@/g, '').replace(/[^a-zA-Z0-9.-]/g, '')
+        }
         if (name === 'direccion') {
             value = value.replace(/[^a-zA-Z0-9\s,.\-#/' ]/g, '')
         }
@@ -89,8 +125,23 @@ const RegistrarCliente = ({ open, onClose, onSuccess }) => {
         setApiError(null)
     }
 
+    const verificarDocumentoDuplicado = async () => {
+        if (!form.numeroIdentificacion.trim() || form.numeroIdentificacion.length < 3) {
+            setAvisoDocDuplicado('')
+            return
+        }
+        try {
+            const res = await clienteService.getClientes(undefined, { q: form.numeroIdentificacion.trim(), limit: 10 })
+            if (!res?.success) return
+            const duplicado = hayDocumentoDuplicado(res.data, form.numeroIdentificacion)
+            setAvisoDocDuplicado(duplicado ? MENSAJE_DOC_DUPLICADO : '')
+        } catch {
+            // Si falla la verificación no bloqueamos el flujo
+        }
+    }
+
     const verificarNombreDuplicado = async () => {
-        if (!form.nombre.trim() || !form.apellido.trim()) {
+        if (form.tipoIdentificacion === 'NIT' || !form.nombre.trim() || !form.apellido.trim()) {
             setAvisoNombreDuplicado('')
             return
         }
@@ -108,19 +159,29 @@ const RegistrarCliente = ({ open, onClose, onSuccess }) => {
         const e = {}
         const soloLetras = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/
         const soloNumeros = /^\d+$/
-        const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
         if (step === 0) {
+            const esNIT = form.tipoIdentificacion === 'NIT'
             if (!form.tipoIdentificacion) e.tipoIdentificacion = 'Selecciona un tipo de documento'
 
-            if (!form.numeroIdentificacion.trim()) e.numeroIdentificacion = 'El número de documento es obligatorio'
-            else if (!soloNumeros.test(form.numeroIdentificacion)) e.numeroIdentificacion = 'Solo se permiten números'
+            if (!form.numeroIdentificacion.trim()) {
+                e.numeroIdentificacion = 'El número de documento es obligatorio'
+            } else if (!esNIT && esDocAlfanumerico(form.tipoIdentificacion)) {
+                if (!/^[a-zA-Z0-9]+$/.test(form.numeroIdentificacion))
+                    e.numeroIdentificacion = 'Solo letras y números, sin caracteres especiales'
+            } else if (!esNIT) {
+                if (!soloNumeros.test(form.numeroIdentificacion)) {
+                    e.numeroIdentificacion = 'Solo se permiten dígitos'
+                } else if (form.numeroIdentificacion.length < 3 || form.numeroIdentificacion.length > 10) {
+                    e.numeroIdentificacion = 'Debe tener entre 3 y 10 dígitos'
+                }
+            }
 
-            if (!form.nombre.trim()) e.nombre = 'El nombre es obligatorio'
-            else if (!soloLetras.test(form.nombre)) e.nombre = 'El nombre solo puede contener letras'
+            if (!form.nombre.trim()) e.nombre = esNIT ? 'La razón social es obligatoria' : 'El nombre es obligatorio'
+            else if (!esNIT && !soloLetras.test(form.nombre)) e.nombre = 'El nombre solo puede contener letras'
 
-            if (!form.apellido.trim()) e.apellido = 'El apellido es obligatorio'
-            else if (!soloLetras.test(form.apellido)) e.apellido = 'El apellido solo puede contener letras'
+            if (!esNIT && !form.apellido.trim()) e.apellido = 'El apellido es obligatorio'
+            else if (!esNIT && form.apellido.trim() && !soloLetras.test(form.apellido)) e.apellido = 'El apellido solo puede contener letras'
         }
 
         if (step === 1) {
@@ -128,6 +189,7 @@ const RegistrarCliente = ({ open, onClose, onSuccess }) => {
             else if (!/^\d{10}$/.test(form.telefono)) e.telefono = 'El teléfono debe tener exactamente 10 dígitos'
 
             if (!form.emailLocal.trim()) e.emailLocal = 'El correo es obligatorio'
+            else if (!/^@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(form.emailDominio)) e.emailLocal = 'El dominio del correo no es válido (ej: @empresa.com)'
 
             if (!form.direccion.trim()) e.direccion = 'La dirección es obligatoria'
         }
@@ -151,7 +213,7 @@ const RegistrarCliente = ({ open, onClose, onSuccess }) => {
         setApiError(null)
         try {
             const { emailLocal, emailDominio, ...resto } = form
-            await agregarCliente({ ...resto, email: emailLocal + emailDominio })
+            await agregarCliente({ ...resto, email: emailLocal + emailDominio, apellido: form.tipoIdentificacion === 'NIT' ? '' : form.apellido })
             setExito(true)
             setTimeout(() => {
                 handleClose()
@@ -178,27 +240,42 @@ const RegistrarCliente = ({ open, onClose, onSuccess }) => {
             case 0:
                 return (
                     <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
-                        <FormSelect label="Tipo de documento" name="tipoIdentificacion" value={form.tipoIdentificacion}
-                            onChange={handleChange} required error={errores.tipoIdentificacion} helperText={errores.tipoIdentificacion}>
+                        <TextField fullWidth select label="Tipo de documento *" name="tipoIdentificacion"
+                            value={form.tipoIdentificacion} onChange={handleChange}
+                            error={!!errores.tipoIdentificacion} helperText={errores.tipoIdentificacion}
+                            slotProps={{
+                                input: { startAdornment: <InputAdornment position="start"><BadgeOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment> },
+                                select: { IconComponent: KeyboardArrowDownOutlinedIcon },
+                            }}
+                            sx={formFieldStyles}>
                             <MenuItem value="CC">Cédula de Ciudadanía (CC)</MenuItem>
-                            <MenuItem value="TI">Tarjeta de Identidad (TI)</MenuItem>
                             <MenuItem value="NIT">NIT (Persona Jurídica)</MenuItem>
-                            <MenuItem value="CE">Cédula Extranjería (CE)</MenuItem>
-                            <MenuItem value="RC">Registro Civil (RC)</MenuItem>
+                            <MenuItem value="TI">Tarjeta de Identidad (TI)</MenuItem>
+                            <MenuItem value="CE">Cédula de Extranjería (CE)</MenuItem>
                             <MenuItem value="PAS">Pasaporte</MenuItem>
-                        </FormSelect>
+                            <MenuItem value="RC">Registro Civil (RC)</MenuItem>
+                        </TextField>
                         <FormField label="Número de documento" name="numeroIdentificacion" value={form.numeroIdentificacion}
-                            onChange={handleChange} required error={errores.numeroIdentificacion}
-                            helperText={errores.numeroIdentificacion} icon={BadgeOutlinedIcon}
-                            inputProps={{ maxLength: 15 }} />
-                        <FormField label="Nombres" name="nombre" value={form.nombre} onChange={handleChange}
+                            onChange={handleChange} onBlur={verificarDocumentoDuplicado} required error={errores.numeroIdentificacion}
+                            helperText={errores.numeroIdentificacion || docHelperText()} icon={BadgeOutlinedIcon}
+                            inputProps={{ maxLength: getMaxLengthDoc() }} />
+                        <FormField
+                            label={form.tipoIdentificacion === 'NIT' ? 'Razón Social' : 'Nombres'}
+                            name="nombre" value={form.nombre} onChange={handleChange}
                             onBlur={verificarNombreDuplicado}
-                            required error={errores.nombre} helperText={errores.nombre} icon={PersonOutlinedIcon}
-                            inputProps={{ maxLength: 50 }} />
-                        <FormField label="Apellidos" name="apellido" value={form.apellido} onChange={handleChange}
-                            onBlur={verificarNombreDuplicado}
-                            required error={errores.apellido} helperText={errores.apellido} icon={PersonOutlinedIcon}
-                            inputProps={{ maxLength: 50 }} />
+                            required error={errores.nombre} helperText={errores.nombre}
+                            icon={form.tipoIdentificacion === 'NIT' ? BusinessOutlinedIcon : PersonOutlinedIcon}
+                            inputProps={{ maxLength: 50 }}
+                            placeholder={form.tipoIdentificacion === 'NIT' ? 'Ej: Transportes XYZ S.A.S' : 'Ej: Juan'} />
+                        {form.tipoIdentificacion !== 'NIT' && (
+                            <FormField label="Apellidos" name="apellido" value={form.apellido} onChange={handleChange}
+                                onBlur={verificarNombreDuplicado}
+                                required error={errores.apellido} helperText={errores.apellido} icon={PersonOutlinedIcon}
+                                inputProps={{ maxLength: 50 }} placeholder="Ej: Gómez López" />
+                        )}
+                        {avisoDocDuplicado && (
+                            <Alert severity="warning" sx={{ gridColumn: '1 / -1' }}>{avisoDocDuplicado}</Alert>
+                        )}
                         {avisoNombreDuplicado && (
                             <Alert severity="warning" sx={{ gridColumn: '1 / -1' }}>{avisoNombreDuplicado}</Alert>
                         )}
@@ -222,15 +299,32 @@ const RegistrarCliente = ({ open, onClose, onSuccess }) => {
                                     ),
                                     endAdornment: (
                                         <InputAdornment position="end">
-                                            <Select name="emailDominio" value={form.emailDominio}
-                                                onChange={handleChange} variant="standard" disableUnderline
-                                                IconComponent={KeyboardArrowDownOutlinedIcon}
-                                                sx={{
-                                                    fontSize: '1rem', color: theme.palette.text.secondary,
-                                                    '& .MuiSelect-select': { py: 0, pl: 0.5, pr: '22px !important' }
-                                                }}>
-                                                {DOMINIOS_EMAIL.map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
-                                            </Select>
+                                            {!DOMINIOS_EMAIL.includes(form.emailDominio) ? (
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
+                                                    <Box component="input" name="emailDominio" value={form.emailDominio}
+                                                        onChange={handleChange} placeholder="@empresa.com" maxLength={40}
+                                                        sx={{
+                                                            border: 'none', outline: 'none', background: 'transparent',
+                                                            fontSize: '1rem', fontFamily: 'inherit', color: theme.palette.text.secondary,
+                                                            width: 110, p: 0,
+                                                        }} />
+                                                    <IconButton size="small" sx={{ p: 0.3 }}
+                                                        onClick={() => handleChange({ target: { name: 'emailDominio', value: '@gmail.com' } })}>
+                                                        <CloseIcon sx={{ fontSize: 14, color: '#94a3b8' }} />
+                                                    </IconButton>
+                                                </Box>
+                                            ) : (
+                                                <Select name="emailDominio" value={form.emailDominio}
+                                                    onChange={handleChange} variant="standard" disableUnderline
+                                                    IconComponent={KeyboardArrowDownOutlinedIcon}
+                                                    sx={{
+                                                        fontSize: '1rem', color: theme.palette.text.secondary,
+                                                        '& .MuiSelect-select': { py: 0, pl: 0.5, pr: '22px !important' }
+                                                    }}>
+                                                    {DOMINIOS_EMAIL.map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
+                                                    <MenuItem value={DOMINIO_OTRO}>Otro...</MenuItem>
+                                                </Select>
+                                            )}
                                         </InputAdornment>
                                     ),
                                 },
@@ -260,8 +354,8 @@ const RegistrarCliente = ({ open, onClose, onSuccess }) => {
                                     <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Datos Personales</Typography>
                                 </Box>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la información personal</Typography>
-                                <ConfirmRow label="Nombre" value={form.nombre} />
-                                <ConfirmRow label="Apellido" value={form.apellido} />
+                                <ConfirmRow label={form.tipoIdentificacion === 'NIT' ? 'Razón Social' : 'Nombre'} value={form.nombre} />
+                                {form.tipoIdentificacion !== 'NIT' && <ConfirmRow label="Apellido" value={form.apellido} />}
                                 <ConfirmRow label="Tipo de documento" value={form.tipoIdentificacion} />
                                 <ConfirmRow label="N° de documento" value={form.numeroIdentificacion} />
                             </Paper>

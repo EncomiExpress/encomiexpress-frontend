@@ -1,4 +1,4 @@
-import { useTheme } from '@mui/material/styles'
+﻿import { useTheme } from '@mui/material/styles'
 import { useState, useEffect, useRef } from 'react'
 import {
     Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel,
@@ -17,10 +17,11 @@ import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined'
 import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import { usePropietario } from '../../shared/contexts/PropietarioContext.jsx'
-import { FormField, FormSelect, formFieldStyles } from '../../shared/components/FormularioEstandarizado.jsx'
+import { FormField, FormSelect } from '../../shared/components/FormularioEstandarizado.jsx'
+import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import * as propietarioService from '../../shared/services/propietarioService.js'
-import { hayNombreDuplicado, MENSAJE_NOMBRE_DUPLICADO } from '../../shared/utils/duplicados.js'
+import { hayNombreDuplicado, MENSAJE_NOMBRE_DUPLICADO, hayDocumentoDuplicado, MENSAJE_DOC_DUPLICADO } from '../../shared/utils/duplicados.js'
 
 const DOMINIOS_EMAIL = ['@gmail.com', '@hotmail.com', '@outlook.com', '@yahoo.com', '@icloud.com', '@live.com']
 const DOMINIO_OTRO = '__otro__'
@@ -50,6 +51,7 @@ const ActualizarPropietario = ({ open, onClose, propietario: propietarioProp, on
     const [formOriginal, setFormOriginal] = useState(null)
     const [sinCambios, setSinCambios] = useState(false)
     const [avisoNombreDuplicado, setAvisoNombreDuplicado] = useState('')
+    const [avisoDocDuplicado, setAvisoDocDuplicado] = useState('')
     const [form, setForm] = useState(EMPTY_FORM)
     const cargado = useRef(false)
 
@@ -86,15 +88,41 @@ const ActualizarPropietario = ({ open, onClose, propietario: propietarioProp, on
         setFormOriginal(datosForm)
     }, [open, propietarioProp, propietarios])
 
+    const esDocAlfanumerico = (tipo) => ['CE', 'PAS'].includes(tipo)
+    const getMaxLengthDoc = () => {
+        if (form.tipoIdentificacion === 'NIT') return 15
+        if (esDocAlfanumerico(form.tipoIdentificacion)) return 12
+        return 10
+    }
+    const docHelperText = () => {
+        if (form.tipoIdentificacion === 'NIT') return 'Números con guión, hasta 15 caracteres'
+        if (esDocAlfanumerico(form.tipoIdentificacion)) return 'Alfanumérico, hasta 12 caracteres'
+        if (form.tipoIdentificacion) return 'Solo dígitos, entre 3 y 10'
+        return ''
+    }
+
     const handleChange = (e) => {
         const { name } = e.target
         let { value } = e.target
 
+        if (name === 'tipoIdentificacion') {
+            setForm(prev => ({ ...prev, tipoIdentificacion: value, numeroIdentificacion: '' }))
+            setErrores(prev => ({ ...prev, tipoIdentificacion: '', numeroIdentificacion: '' }))
+            setAvisoDocDuplicado('')
+            setApiError(null)
+            setSinCambios(false)
+            return
+        }
+        if (name === 'numeroIdentificacion') setAvisoDocDuplicado('')
         if (name === 'nombre' || name === 'apellido') value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
         if (name === 'numeroIdentificacion') {
-            value = form.tipoIdentificacion === 'NIT'
-                ? value.replace(/[^0-9-]/g, '')
-                : value.replace(/[^0-9]/g, '')
+            if (form.tipoIdentificacion === 'NIT') {
+                value = value.replace(/[^0-9-]/g, '')
+            } else if (esDocAlfanumerico(form.tipoIdentificacion)) {
+                value = value.replace(/[^a-zA-Z0-9]/g, '')
+            } else {
+                value = value.replace(/[^0-9]/g, '')
+            }
         }
         if (name === 'telefono') value = value.replace(/[^0-9]/g, '')
         if (name === 'emailLocal') value = value.replace(/[^a-zA-Z0-9._-]/g, '')
@@ -107,6 +135,24 @@ const ActualizarPropietario = ({ open, onClose, propietario: propietarioProp, on
         setErrores(prev => ({ ...prev, [name]: '' }))
         setApiError(null)
         setSinCambios(false)
+    }
+
+    const verificarDocumentoDuplicado = async () => {
+        if (!form.numeroIdentificacion.trim() || form.numeroIdentificacion.length < 3) {
+            setAvisoDocDuplicado('')
+            return
+        }
+        try {
+            const res = await propietarioService.getPropietarios(undefined, { q: form.numeroIdentificacion.trim(), limit: 10 })
+            if (!res?.success) return
+            const duplicado = hayDocumentoDuplicado(res.data, form.numeroIdentificacion, {
+                excludeId: propietarioProp?.idPropietario,
+                getId: (r) => r.idPropietario,
+            })
+            setAvisoDocDuplicado(duplicado ? MENSAJE_DOC_DUPLICADO : '')
+        } catch {
+            // Si falla la verificación no bloqueamos el flujo
+        }
     }
 
     const verificarNombreDuplicado = async () => {
@@ -135,8 +181,18 @@ const ActualizarPropietario = ({ open, onClose, propietario: propietarioProp, on
         if (step === 0) {
             const esNIT = form.tipoIdentificacion === 'NIT'
             if (!form.tipoIdentificacion) e.tipoIdentificacion = 'Selecciona un tipo de documento'
-            if (!form.numeroIdentificacion.trim()) e.numeroIdentificacion = 'El número de documento es obligatorio'
-            else if (!esNIT && !soloNumeros.test(form.numeroIdentificacion)) e.numeroIdentificacion = 'Solo se permiten números'
+            if (!form.numeroIdentificacion.trim()) {
+                e.numeroIdentificacion = 'El número de documento es obligatorio'
+            } else if (!esNIT && esDocAlfanumerico(form.tipoIdentificacion)) {
+                if (!/^[a-zA-Z0-9]+$/.test(form.numeroIdentificacion))
+                    e.numeroIdentificacion = 'Solo letras y números, sin caracteres especiales'
+            } else if (!esNIT) {
+                if (!soloNumeros.test(form.numeroIdentificacion)) {
+                    e.numeroIdentificacion = 'Solo se permiten dígitos'
+                } else if (form.numeroIdentificacion.length < 3 || form.numeroIdentificacion.length > 10) {
+                    e.numeroIdentificacion = 'Debe tener entre 3 y 10 dígitos'
+                }
+            }
             if (!form.nombre.trim()) e.nombre = esNIT ? 'La razón social es obligatoria' : 'El nombre es obligatorio'
             else if (!esNIT && !soloLetras.test(form.nombre)) e.nombre = 'El nombre solo puede contener letras'
             if (!esNIT && !form.apellido?.trim()) e.apellido = 'El apellido es obligatorio'
@@ -223,15 +279,15 @@ const ActualizarPropietario = ({ open, onClose, propietario: propietarioProp, on
                             sx={formFieldStyles}>
                             <MenuItem value="CC">Cédula de Ciudadanía (CC)</MenuItem>
                             <MenuItem value="NIT">NIT (Persona Jurídica)</MenuItem>
-                            <MenuItem value="CE">Cédula Extranjería (CE)</MenuItem>
                             <MenuItem value="TI">Tarjeta de Identidad (TI)</MenuItem>
-                            <MenuItem value="RC">Registro Civil (RC)</MenuItem>
+                            <MenuItem value="CE">Cédula de Extranjería (CE)</MenuItem>
                             <MenuItem value="PAS">Pasaporte</MenuItem>
+                            <MenuItem value="RC">Registro Civil (RC)</MenuItem>
                         </TextField>
                         <FormField label="Número de documento" name="numeroIdentificacion" value={form.numeroIdentificacion}
-                            onChange={handleChange} required error={errores.numeroIdentificacion}
-                            helperText={errores.numeroIdentificacion} icon={BadgeOutlinedIcon}
-                            inputProps={{ maxLength: 15 }} />
+                            onChange={handleChange} onBlur={verificarDocumentoDuplicado} required error={errores.numeroIdentificacion}
+                            helperText={errores.numeroIdentificacion || docHelperText()} icon={BadgeOutlinedIcon}
+                            inputProps={{ maxLength: getMaxLengthDoc() }} />
                         <FormField
                             label={form.tipoIdentificacion === 'NIT' ? 'Razón Social' : 'Nombres'}
                             name="nombre" value={form.nombre} onChange={handleChange}
@@ -245,6 +301,9 @@ const ActualizarPropietario = ({ open, onClose, propietario: propietarioProp, on
                                 onBlur={verificarNombreDuplicado}
                                 required error={errores.apellido} helperText={errores.apellido} icon={PersonOutlinedIcon}
                                 inputProps={{ maxLength: 50 }} placeholder="Ej: Gómez López" />
+                        )}
+                        {avisoDocDuplicado && (
+                            <Alert severity="warning" sx={{ gridColumn: '1 / -1' }}>{avisoDocDuplicado}</Alert>
                         )}
                         {avisoNombreDuplicado && (
                             <Alert severity="warning" sx={{ gridColumn: '1 / -1' }}>{avisoNombreDuplicado}</Alert>

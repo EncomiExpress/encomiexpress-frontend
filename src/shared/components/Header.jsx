@@ -362,7 +362,8 @@ const Header = ({ collapsed }) => {
 
             <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.08em', color: labelColor, mb: 1.2 }}>Tema</Typography>
             <Box sx={{ display: 'flex', gap: 1, mb: 2.5 }}>
-              {THEME_OPTIONS.map(({ key, label, icon: Icon }) => {
+              {THEME_OPTIONS.map(({ key, label, icon }) => {
+                const Icon = icon
                 const isActive = currentMode === key
                 return (
                   <Box key={key} onClick={() => { if (!isActive) toggleDarkMode() }}
@@ -394,7 +395,8 @@ const Header = ({ collapsed }) => {
 
             <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.08em', color: labelColor, mb: 1.2 }}>Navegación</Typography>
             <Box sx={{ display: 'flex', gap: 1 }}>
-              {NAV_OPTIONS.map(({ key, label, icon: Icon }) => {
+              {NAV_OPTIONS.map(({ key, label, icon }) => {
+                const Icon = icon
                 const isActive = navLayout === key
                 return (
                   <Box key={key} onClick={() => setNavLayout(key)}

@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { useTheme } from '@mui/material/styles'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { Box, Paper, Typography } from '@mui/material'
 import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material'
 import { useDarkMode } from '../contexts/ThemeContext.jsx'

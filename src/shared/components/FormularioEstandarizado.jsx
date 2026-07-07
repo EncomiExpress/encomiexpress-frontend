@@ -3,21 +3,7 @@ import { TextField, Button, Box, Typography, Select, MenuItem, FormControl, Inpu
 import { SaveOutlined, VisibilityOutlined, VisibilityOffOutlined } from '@mui/icons-material'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import { useState } from 'react'
-
-export const formFieldStyles = (theme) => ({
-  '& .MuiOutlinedInput-root': {
-    borderRadius: 2,
-    '& fieldset': { borderColor: theme.palette.divider },
-    '&:hover fieldset': { borderColor: theme.palette.primary.main },
-    '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` },
-    '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
-    '& input:-webkit-autofill': {
-      WebkitBoxShadow: `0 0 0 1000px ${theme.palette.primary.light} inset`,
-      WebkitTextFillColor: theme.palette.text.primary,
-    },
-  },
-  '& .MuiInputLabel-root.Mui-focused': { color: theme.palette.primary.main },
-})
+import { formFieldStyles } from '../utils/formStyles.js'
 
 export const FormField = ({
   label,
@@ -250,7 +236,8 @@ export const FormAlert = ({ severity = 'error', children, onClose }) => {
   )
 }
 
-export const FormHeader = ({ icon: Icon, title, subtitle }) => {
+export const FormHeader = ({ icon, title, subtitle }) => {
+  const Icon = icon
   const theme = useTheme()
 
   return (

@@ -40,7 +40,7 @@ export const ClienteProvider = ({ children }) => {
         }
 
         const abortController = new AbortController()
-        fetchClientes(abortController.signal)
+        fetchClientes(abortController.signal, { limit: 1000 })
 
         return () => abortController.abort()
     }, [token, fetchClientes])

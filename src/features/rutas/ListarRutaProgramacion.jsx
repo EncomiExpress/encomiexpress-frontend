@@ -17,8 +17,7 @@ import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDown
 import ClearIcon from '@mui/icons-material/Clear'
 import RouteIcon from '@mui/icons-material/Route'
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
-import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank'
-import CheckBoxIcon from '@mui/icons-material/CheckBox'
+import ToggleSwitch from '../../shared/components/ToggleSwitch.jsx'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import DoNotDisturbOutlinedIcon from '@mui/icons-material/DoNotDisturbOutlined'
@@ -233,9 +232,6 @@ const ListarRutaProgramacion = () => {
     const { getConductores } = useConductor()
     const { destinos } = useDestino()
 
-    const ahora      = new Date()
-    const anioActual = ahora.getFullYear()
-
     useEffect(() => {
       if (!usuario) {
         navigate('/login')
@@ -277,6 +273,7 @@ const ListarRutaProgramacion = () => {
     useEffect(() => {
         if (!usuario) return
         fetchRutasProgramadas(buildRutasParams())
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [fetchRutasProgramadas, page, rowsPerPage, debouncedSearch, filtroHabilitado, filtroEstadoRuta, filtroAnio, filtroMes, sortBy, usuario])
 
     useEffect(() => {
@@ -335,15 +332,6 @@ const resolveDestino = (ruta) =>
 
     const getId = (ruta) => ruta.idRuta ?? ruta.idRutaProgramada
 
-    const limpiarFiltros = () => {
-        setSearchTerm('')
-        setFiltroHabilitado('todo')
-        setFiltroEstadoRuta('')
-        setFiltroAnio('')
-        setFiltroMes('')
-        setPage(1)
-    }
-
     const handleExportar = () => {
         const rows = rutasProgramadas.map(ruta => ({
             'ID': getId(ruta),
@@ -359,8 +347,6 @@ const resolveDestino = (ruta) =>
         exportToExcel({ data: rows, fileName: 'rutas', sheetName: 'Rutas' })
     }
 
-    const hayFiltrosActivos = searchTerm.trim() !== '' || filtroHabilitado !== 'todo' || filtroEstadoRuta !== '' || filtroAnio || filtroMes
-
     const totalPages = Math.max(1, Math.ceil(total / rowsPerPage))
     const safePage = Math.min(page, totalPages)
     const from = total === 0 ? 0 : (safePage - 1) * rowsPerPage + 1
@@ -372,7 +358,7 @@ const resolveDestino = (ruta) =>
             setSnackbar({ open: true, message: `Estado actualizado a "${nuevoEstado}".`, severity: 'success' })
         } catch (err) {
             if (err?.details?.length > 0) {
-                setModalBloqueo({ open: true, dependencias: err.details, mensaje: err.message })
+                setSnackbar({ open: true, message: err.message || 'Error al actualizar estado', severity: 'error' })
             } else {
                 setSnackbar({ open: true, message: err.message || 'Error al actualizar estado', severity: 'error' })
             }
@@ -876,17 +862,7 @@ const resolveDestino = (ruta) =>
                                                         </Tooltip>
                                                     )}
                                                     {tienePermiso(PERMISOS.INHABILITAR_RUTA) && (
-                                                        <Tooltip title={ruta.habilitado !== false ? 'Inhabilitar' : 'Habilitar'}>
-                                                            <IconButton
-                                                                size="small"
-                                                                onClick={() => handleToggleHabilitado(id)}
-                                                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
-                                                            >
-                                                                {ruta.habilitado !== false
-                                                                    ? <CheckBoxIcon sx={{ fontSize: 18, color: theme.palette.primary.main }} />
-                                                                    : <CheckBoxOutlineBlankIcon sx={{ fontSize: 18, color: theme.palette.status?.disabled2?.color }} />}
-                                                            </IconButton>
-                                                        </Tooltip>
+                                                        <ToggleSwitch id={id} checked={ruta.habilitado !== false} onChange={() => handleToggleHabilitado(id)} />
                                                     )}
                                                 </Box>
                                             </TableCell>

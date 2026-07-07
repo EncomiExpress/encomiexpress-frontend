@@ -1,4 +1,4 @@
-import { useTheme } from '@mui/material/styles'
+﻿import { useTheme } from '@mui/material/styles'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Dialog, DialogTitle, DialogContent, IconButton, Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, Snackbar, TextField, Select, InputAdornment, CircularProgress } from '@mui/material'
@@ -16,10 +16,10 @@ import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import { useAuth, ROLES } from '../../shared/contexts/AuthContext.jsx'
-import { formFieldStyles } from '../../shared/components/FormularioEstandarizado.jsx'
+import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import * as usuarioService from '../../shared/services/usuarioService.js'
-import { hayNombreDuplicado, MENSAJE_NOMBRE_DUPLICADO } from '../../shared/utils/duplicados.js'
+import { hayNombreDuplicado, MENSAJE_NOMBRE_DUPLICADO, hayDocumentoDuplicado, MENSAJE_DOC_DUPLICADO } from '../../shared/utils/duplicados.js'
 
 const DOMINIOS_EMAIL = ['@gmail.com', '@hotmail.com', '@outlook.com', '@yahoo.com', '@icloud.com', '@live.com']
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s]).{8,16}$/
@@ -38,6 +38,7 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
     const [exito, setExito] = useState(false)
     const [rolesDisponibles, setRolesDisponibles] = useState([])
     const [avisoNombreDuplicado, setAvisoNombreDuplicado] = useState('')
+    const [avisoDocDuplicado, setAvisoDocDuplicado] = useState('')
     const [showPassword, setShowPassword] = useState(false)
     const [showConfirmarPassword, setShowConfirmarPassword] = useState(false)
 
@@ -94,9 +95,11 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
         if (name === 'tipoIdentificacion') {
             setForm(prev => ({ ...prev, tipoIdentificacion: value, numeroIdentificacion: '' }))
             setErrores(prev => ({ ...prev, tipoIdentificacion: '', numeroIdentificacion: '' }))
+            setAvisoDocDuplicado('')
             setApiError(null)
             return
         }
+        if (name === 'numeroIdentificacion') setAvisoDocDuplicado('')
         if (name === 'password' || name === 'confirmarPassword') {
             value = value.replace(/@/g, '')
         }
@@ -107,6 +110,21 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
         setForm(prev => ({ ...prev, [name]: value }))
         setErrores(prev => ({ ...prev, [name]: '' }))
         setApiError(null)
+    }
+
+    const verificarDocumentoDuplicado = async () => {
+        if (!form.numeroIdentificacion.trim() || form.numeroIdentificacion.length < 3) {
+            setAvisoDocDuplicado('')
+            return
+        }
+        try {
+            const res = await usuarioService.getUsuarios({ q: form.numeroIdentificacion.trim(), limit: 10 })
+            if (!res?.success) return
+            const duplicado = hayDocumentoDuplicado(res.data, form.numeroIdentificacion)
+            setAvisoDocDuplicado(duplicado ? MENSAJE_DOC_DUPLICADO : '')
+        } catch {
+            // Si falla la verificación no bloqueamos el flujo
+        }
     }
 
     const verificarNombreDuplicado = async () => {
@@ -183,7 +201,7 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
         setSubmitting(true)
         setApiError(null)
         try {
-            const { emailLocal, emailDominio, password, confirmarPassword, ...resto } = form
+            const { emailLocal, emailDominio, password, confirmarPassword: _confirmarPassword, ...resto } = form
             const datosBackend = {
                 ...resto,
                 password,
@@ -243,7 +261,7 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
                 return (
                     <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                         <TextField fullWidth select label="Tipo de documento" name="tipoIdentificacion"
-                            value={form.tipoIdentificacion} onChange={handleChange}
+                            value={form.tipoIdentificacion} onChange={handleChange} required
                             error={!!errores.tipoIdentificacion} helperText={errores.tipoIdentificacion}
                             slotProps={{
                                 input: { startAdornment: <InputAdornment position="start"><BadgeOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment> },
@@ -256,7 +274,7 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
                             <MenuItem value="PAS">Pasaporte</MenuItem>
                         </TextField>
                         <TextField fullWidth label="Número de documento" name="numeroIdentificacion"
-                            value={form.numeroIdentificacion} onChange={handleChange}
+                            value={form.numeroIdentificacion} onChange={handleChange} onBlur={verificarDocumentoDuplicado} required
                             error={!!errores.numeroIdentificacion} helperText={errores.numeroIdentificacion || docHelperText()}
                             slotProps={{
                                 input: { startAdornment: <InputAdornment position="start"><BadgeOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment>, sx: { pl: 1.5 } },
@@ -264,21 +282,24 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
                             }}
                             sx={formFieldStyles} />
                         <TextField fullWidth label="Nombres" name="nombre" value={form.nombre} onChange={handleChange}
-                            onBlur={verificarNombreDuplicado}
-                            error={!!errores.nombre} helperText={errores.nombre || 'Solo letras'}
+                            onBlur={verificarNombreDuplicado} required placeholder="Ej: Juan"
+                            error={!!errores.nombre} helperText={errores.nombre}
                             slotProps={{
                                 input: { startAdornment: <InputAdornment position="start"><PersonOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment>, sx: { pl: 1.5 } },
                                 htmlInput: { maxLength: 50 }
                             }}
                             sx={formFieldStyles} />
                         <TextField fullWidth label="Apellidos" name="apellido" value={form.apellido} onChange={handleChange}
-                            onBlur={verificarNombreDuplicado}
-                            error={!!errores.apellido} helperText={errores.apellido || 'Solo letras'}
+                            onBlur={verificarNombreDuplicado} required placeholder="Ej: Gómez López"
+                            error={!!errores.apellido} helperText={errores.apellido}
                             slotProps={{
                                 input: { startAdornment: <InputAdornment position="start"><PersonOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment>, sx: { pl: 1.5 } },
                                 htmlInput: { maxLength: 50 }
                             }}
                             sx={formFieldStyles} />
+                        {avisoDocDuplicado && (
+                            <Alert severity="warning" sx={{ gridColumn: '1 / -1' }}>{avisoDocDuplicado}</Alert>
+                        )}
                         {avisoNombreDuplicado && (
                             <Alert severity="warning" sx={{ gridColumn: '1 / -1' }}>{avisoNombreDuplicado}</Alert>
                         )}
@@ -287,7 +308,7 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
             case 1:
                 return (
                     <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
-                        <TextField fullWidth label="Teléfono" name="telefono" value={form.telefono} onChange={handleChange}
+                        <TextField fullWidth label="Teléfono" name="telefono" value={form.telefono} onChange={handleChange} required
                             error={!!errores.telefono} helperText={errores.telefono || 'Número de 10 dígitos'}
                             slotProps={{
                                 input: { startAdornment: <InputAdornment position="start"><PhoneOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment>, sx: { pl: 1.5 } },
@@ -321,7 +342,7 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
                                 htmlInput: { maxLength: 50 }
                             }}
                             sx={formFieldStyles} />
-                        <TextField fullWidth select label="Rol" name="idRol" value={form.idRol} onChange={handleChange}
+                        <TextField fullWidth select label="Rol" name="idRol" value={form.idRol} onChange={handleChange} required
                             error={!!errores.idRol} helperText={errores.idRol || (
                                 <>
                                     ¿Buscas registrar un conductor? Hazlo desde el módulo de{' '}
@@ -354,7 +375,7 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
                         </TextField>
                         <Box sx={{ gridColumn: '1 / -1', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                             <TextField fullWidth label="Contraseña" name="password" type={showPassword ? 'text' : 'password'}
-                                value={form.password} onChange={handleChange}
+                                value={form.password} onChange={handleChange} required
                                 error={!!errores.password} helperText={errores.password || PASSWORD_HELP}
                                 slotProps={{
                                     input: {
@@ -372,7 +393,7 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
                                 }}
                                 sx={formFieldStyles} />
                             <TextField fullWidth label="Confirmar contraseña" name="confirmarPassword" type={showConfirmarPassword ? 'text' : 'password'}
-                                value={form.confirmarPassword} onChange={handleChange}
+                                value={form.confirmarPassword} onChange={handleChange} required
                                 error={!!errores.confirmarPassword} helperText={errores.confirmarPassword}
                                 slotProps={{
                                     input: {

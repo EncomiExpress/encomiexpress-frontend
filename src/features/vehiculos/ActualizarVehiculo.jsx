@@ -1,4 +1,4 @@
-import { useTheme } from '@mui/material/styles'
+﻿import { useTheme } from '@mui/material/styles'
 import { useState, useEffect, useRef } from 'react'
 import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Snackbar, Alert, Dialog, DialogTitle, DialogContent, IconButton, TextField, Autocomplete } from '@mui/material'
 import {
@@ -7,7 +7,8 @@ import {
 } from '@mui/icons-material'
 import { useVehiculo } from '../../shared/contexts/VehiculoContext.jsx'
 import { usePropietario } from '../../shared/contexts/PropietarioContext.jsx'
-import { FormField, FormSelect, formFieldStyles } from '../../shared/components/FormularioEstandarizado.jsx'
+import { FormField, FormSelect } from '../../shared/components/FormularioEstandarizado.jsx'
+import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import { normalizarTexto } from '../../shared/utils/duplicados.js'
 
@@ -52,13 +53,16 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
     const { name } = e.target
     let { value } = e.target
 
-    if (name === 'placa') value = value.toUpperCase().replace(/[^A-Z0-9\-]/g, '')
+    if (name === 'placa') value = value.toUpperCase().replace(/[^A-Z0-9-]/g, '')
     if (name === 'marca') value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
-    if (name === 'modelo') value = value.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚüÜñÑ\s\-]/g, '')
+    if (name === 'modelo') value = value.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚüÜñÑ\s-]/g, '')
     if (name === 'color') value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
-    if (name === 'capacidad' && value !== '') {
-      const num = parseFloat(value)
-      if (!isNaN(num) && num > CAPACIDAD_MAX) return
+    if (name === 'capacidad') {
+      value = value.replace(/[^0-9.]/g, '')
+      if (value !== '') {
+        const num = parseFloat(value)
+        if (!isNaN(num) && num > CAPACIDAD_MAX) return
+      }
     }
 
     setFormData(prev => ({ ...prev, [name]: value }))
@@ -120,7 +124,7 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
       })
       setSuccess(true)
       setTimeout(() => { onClose(); if (onSuccess) onSuccess() }, 1500)
-    } catch (err) {
+    } catch {
       setApiError('Error al actualizar el vehículo')
     } finally {
       setSubmitting(false)
@@ -140,28 +144,28 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
             <FormField label="Placa" name="placa" value={formData.placa} onChange={handleChange} required
               placeholder="Ej: ABC-1234" icon={BadgeOutlined}
-              error={errores.placa} helperText={errores.placa || 'Letras y números, sin espacios'}
+              error={errores.placa} helperText={errores.placa}
               inputProps={{ maxLength: 8 }} />
             <FormField label="Marca" name="marca" value={formData.marca} onChange={handleChange} required
               placeholder="Ej: Toyota" icon={SellOutlined}
-              error={errores.marca} helperText={errores.marca || 'Solo letras'}
+              error={errores.marca} helperText={errores.marca}
               inputProps={{ maxLength: 30 }} />
             <FormField label="Modelo" name="modelo" value={formData.modelo} onChange={handleChange} required
               placeholder="Ej: Hilux" icon={DirectionsCarOutlined}
-              error={errores.modelo} helperText={errores.modelo || 'Letras y números'}
+              error={errores.modelo} helperText={errores.modelo}
               inputProps={{ maxLength: 30 }} />
             <FormField label="Color" name="color" value={formData.color} onChange={handleChange} required
               placeholder="Ej: Blanco" icon={InvertColorsOutlined}
-              error={errores.color} helperText={errores.color || 'Solo letras'}
+              error={errores.color} helperText={errores.color}
               inputProps={{ maxLength: 20 }} />
             <FormSelect label="Tipo de Vehículo" name="tipo" value={formData.tipo} onChange={handleChange} required
-              shrink error={errores.tipo} helperText={errores.tipo}>
+              error={errores.tipo} helperText={errores.tipo}>
               {TIPOS_VEHICULO.map((t) => <MenuItem key={t} value={t}>{t}</MenuItem>)}
             </FormSelect>
-            <FormField label="Capacidad (kg)" name="capacidad" type="number" value={formData.capacidad}
+            <FormField label="Capacidad (kg)" name="capacidad" value={formData.capacidad}
               onChange={handleChange} required placeholder="Ej: 1500" icon={SpeedOutlined}
-              error={errores.capacidad} helperText={errores.capacidad || 'Peso máximo en kilogramos'}
-              inputProps={{ min: 1, max: 999999 }} />
+              error={errores.capacidad} helperText={errores.capacidad}
+              inputProps={{ maxLength: 6 }} />
           </Box>
         )
       case 1:
@@ -194,7 +198,7 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
               renderInput={(params) => (
                 <TextField {...params} label="Propietario *"
                   error={!!errores.idPropietario} helperText={errores.idPropietario || 'Busca por documento, nombre, apellido o teléfono'}
-                  slotProps={{ inputLabel: { shrink: true } }}
+                  slotProps={{ inputLabel: { shrink: true }, htmlInput: { ...params.inputProps, maxLength: 80 } }}
                   sx={formFieldStyles} />
               )}
             />

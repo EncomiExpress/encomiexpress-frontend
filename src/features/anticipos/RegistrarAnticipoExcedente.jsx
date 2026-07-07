@@ -1,18 +1,22 @@
-import { useTheme } from '@mui/material/styles'
+﻿import { useTheme } from '@mui/material/styles'
 import { useState } from 'react'
 import {
-    Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel,
-    Button, Alert, Snackbar, TextField, Dialog, DialogTitle, DialogContent, IconButton
+    Box, Typography, Paper, Stepper, Step, StepLabel,
+    Button, Alert, Snackbar, TextField, Dialog, DialogTitle, DialogContent, IconButton,
+    Autocomplete
 } from '@mui/material'
 import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined'
 import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined'
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
+import AttachMoneyOutlinedIcon from '@mui/icons-material/AttachMoneyOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import { useAnticipos } from '../../shared/contexts/AnticipoExcedenteContext.jsx'
-import { FormField, FormSelect, formFieldStyles } from '../../shared/components/FormularioEstandarizado.jsx'
+import { FormField } from '../../shared/components/FormularioEstandarizado.jsx'
+import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
+import { normalizarTexto } from '../../shared/utils/duplicados.js'
 
 const steps = ['Asignación', 'Estado y Fechas']
 
@@ -23,6 +27,8 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
     const [activeStep, setActiveStep] = useState(0)
     const [submitting, setSubmitting] = useState(false)
     const [exito, setExito] = useState(false)
+    const [conductorInput, setConductorInput] = useState('')
+    const [rutaInput, setRutaInput] = useState('')
 
     const formInicial = {
         idConductor: '',
@@ -41,6 +47,8 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
         setForm(formInicial)
         setErrores({})
         setActiveStep(0)
+        setConductorInput('')
+        setRutaInput('')
         onClose()
     }
 
@@ -50,9 +58,10 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
         const { name } = e.target
         let { value } = e.target
 
-        if (name in NUMERIC_LIMITS && value !== '') {
+        if (name in NUMERIC_LIMITS) {
+            value = value.replace(/[^0-9.]/g, '')
             const num = parseFloat(value)
-            if (!isNaN(num) && (num > NUMERIC_LIMITS[name] || num < 0)) return
+            if (!isNaN(num) && num > NUMERIC_LIMITS[name]) return
         }
 
         if (name === 'soporte') {
@@ -76,6 +85,10 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
         }
         if (step === 1) {
             if (!form.fechaEntrega) e.fechaEntrega = 'La fecha de entrega es obligatoria'
+            if (form.fechaLegalizacion && form.fechaEntrega && form.fechaLegalizacion < form.fechaEntrega)
+                e.fechaLegalizacion = 'La fecha de legalización no puede ser anterior a la fecha de entrega'
+            if (form.fechaEntregaExcedente && form.fechaEntrega && form.fechaEntregaExcedente < form.fechaEntrega)
+                e.fechaEntregaExcedente = 'La fecha de entrega del excedente no puede ser anterior a la fecha de entrega'
         }
         return e
     }
@@ -132,59 +145,82 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
             case 0:
                 return (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                        <FormSelect
-                            label="Conductor"
-                            name="idConductor"
-                            value={form.idConductor}
-                            onChange={handleChange}
-                            required
-                            error={errores.idConductor}
-                            helperText={errores.idConductor}
-                        >
-                            {conductores.map(c => (
-                                <MenuItem key={c.idConductor} value={c.idConductor}>
-                                    {c.nombre}
-                                </MenuItem>
-                            ))}
-                        </FormSelect>
+                        <Autocomplete
+                            options={conductores}
+                            getOptionLabel={(c) => c.nombre}
+                            isOptionEqualToValue={(opt, val) => opt.idConductor === val.idConductor}
+                            value={conductores.find(c => c.idConductor === parseInt(form.idConductor)) || null}
+                            inputValue={conductorInput}
+                            onInputChange={(_, newVal, reason) => {
+                                if (reason === 'input') setConductorInput(newVal.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ0-9\s]/g, ''))
+                                else setConductorInput(newVal)
+                            }}
+                            onChange={(_, val) => handleChange({ target: { name: 'idConductor', value: val ? val.idConductor : '' } })}
+                            filterOptions={(opts, { inputValue }) => {
+                                if (!inputValue.trim()) return [...opts].sort((a, b) => b.idConductor - a.idConductor).slice(0, 5)
+                                const q = normalizarTexto(inputValue)
+                                return opts.filter(c =>
+                                    normalizarTexto(c.nombre).includes(q) ||
+                                    normalizarTexto(c.numeroIdentificacion || '').includes(q)
+                                )
+                            }}
+                            noOptionsText="No se encontraron conductores"
+                            renderInput={(params) => (
+                                <TextField {...params} label="Conductor *"
+                                    error={!!errores.idConductor} helperText={errores.idConductor || 'Busca por nombre, apellido o documento'}
+                                    slotProps={{ inputLabel: { shrink: true }, htmlInput: { ...params.inputProps, maxLength: 80 } }}
+                                    sx={formFieldStyles} />
+                            )}
+                        />
 
-                        <FormSelect
-                            label="Ruta"
-                            name="idRuta"
-                            value={form.idRuta}
-                            onChange={handleChange}
-                            required
-                            error={errores.idRuta}
-                            helperText={errores.idRuta}
-                        >
-                            {rutas.map(r => (
-                                <MenuItem key={r.idRuta} value={r.idRuta}>
-                                    {r.nombre}
-                                </MenuItem>
-                            ))}
-                        </FormSelect>
+                        <Autocomplete
+                            options={rutas}
+                            getOptionLabel={(r) => r.nombre}
+                            isOptionEqualToValue={(opt, val) => opt.idRuta === val.idRuta}
+                            value={rutas.find(r => r.idRuta === parseInt(form.idRuta)) || null}
+                            inputValue={rutaInput}
+                            onInputChange={(_, newVal, reason) => {
+                                if (reason === 'input') setRutaInput(newVal.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ0-9\s\-_]/g, ''))
+                                else setRutaInput(newVal)
+                            }}
+                            onChange={(_, val) => handleChange({ target: { name: 'idRuta', value: val ? val.idRuta : '' } })}
+                            filterOptions={(opts, { inputValue }) => {
+                                if (!inputValue.trim()) return [...opts].sort((a, b) => b.idRuta - a.idRuta).slice(0, 5)
+                                const q = normalizarTexto(inputValue)
+                                return opts.filter(r => normalizarTexto(r.nombre).includes(q))
+                            }}
+                            noOptionsText="No se encontraron rutas"
+                            renderInput={(params) => (
+                                <TextField {...params} label="Ruta *"
+                                    error={!!errores.idRuta} helperText={errores.idRuta || 'Busca por nombre de la ruta'}
+                                    slotProps={{ inputLabel: { shrink: true }, htmlInput: { ...params.inputProps, maxLength: 100 } }}
+                                    sx={formFieldStyles} />
+                            )}
+                        />
 
                         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                             <FormField
-                                label="Valor del anticipo"
+                                label="Valor del anticipo (COP)"
                                 name="valorAnticipo"
-                                type="number"
                                 value={form.valorAnticipo}
                                 onChange={handleChange}
                                 required
+                                icon={AttachMoneyOutlinedIcon}
+                                placeholder="Ej: 500000"
                                 error={errores.valorAnticipo}
-                                helperText={errores.valorAnticipo || 'Ej: 500000'}
-                                inputProps={{ min: 0, max: 999999999, step: 1 }}
+                                helperText={errores.valorAnticipo || 'Valor en pesos colombianos'}
+                                inputProps={{ maxLength: 12 }}
                             />
                             <FormField
-                                label="Valor gastado"
+                                label="Valor gastado (COP)"
                                 name="valorGastado"
-                                type="number"
                                 value={form.valorGastado}
                                 onChange={handleChange}
+                                icon={AttachMoneyOutlinedIcon}
+                                placeholder="Ej: 500000"
                                 error={errores.valorGastado}
                                 helperText={errores.valorGastado || 'Diligenciar al legalizar'}
-                                inputProps={{ min: 0, max: 999999999, step: 1 }}
+                                inputProps={{ maxLength: 12 }}
                             />
                         </Box>
 
@@ -215,7 +251,7 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                             <TextField
-                                fullWidth label="Fecha de entrega *" name="fechaEntrega" type="date"
+                                fullWidth label="Fecha de entrega" name="fechaEntrega" type="date"
                                 value={form.fechaEntrega} onChange={handleChange} required
                                 error={!!errores.fechaEntrega} helperText={errores.fechaEntrega}
                                 slotProps={{ inputLabel: { shrink: true } }} sx={formFieldStyles}
@@ -223,16 +259,16 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
                             <TextField
                                 fullWidth label="Fecha de legalización" name="fechaLegalizacion" type="date"
                                 value={form.fechaLegalizacion} onChange={handleChange}
-                                helperText="Opcional"
-                                slotProps={{ inputLabel: { shrink: true } }} sx={formFieldStyles}
+                                error={!!errores.fechaLegalizacion} helperText={errores.fechaLegalizacion || 'Opcional'}
+                                slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: form.fechaEntrega || undefined } }} sx={formFieldStyles}
                             />
                         </Box>
 
                         <TextField
                             fullWidth label="Fecha entrega excedente" name="fechaEntregaExcedente" type="date"
                             value={form.fechaEntregaExcedente} onChange={handleChange}
-                            helperText="Opcional"
-                            slotProps={{ inputLabel: { shrink: true } }} sx={formFieldStyles}
+                            error={!!errores.fechaEntregaExcedente} helperText={errores.fechaEntregaExcedente || 'Opcional'}
+                            slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: form.fechaEntrega || undefined } }} sx={formFieldStyles}
                         />
 
                         <FormField

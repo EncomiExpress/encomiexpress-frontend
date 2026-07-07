@@ -1,4 +1,4 @@
-import * as XLSX from 'xlsx'
+import ExcelJS from 'exceljs'
 
 const normalizeValue = (value) => {
   if (value === null || value === undefined || value === '') return ''
@@ -18,16 +18,35 @@ const normalizeRow = (row) =>
     Object.entries(row).map(([key, value]) => [key, normalizeValue(value)])
   )
 
+const addSheet = (workbook, name, rows) => {
+  const normalizedRows = rows.map(normalizeRow)
+  const worksheet = workbook.addWorksheet(name.slice(0, 31))
+  worksheet.columns = Object.keys(normalizedRows[0] || {}).map((key) => ({ header: key, key }))
+  worksheet.addRows(normalizedRows)
+}
+
 const buildWorkbook = (sheets) => {
-  const workbook = XLSX.utils.book_new()
-  sheets.forEach(({ name, rows }) => {
-    const worksheet = XLSX.utils.json_to_sheet(rows.map(normalizeRow))
-    XLSX.utils.book_append_sheet(workbook, worksheet, name.slice(0, 31))
-  })
+  const workbook = new ExcelJS.Workbook()
+  sheets.forEach(({ name, rows }) => addSheet(workbook, name, rows))
   return workbook
 }
 
-export const exportToExcel = ({ data = [], fileName = 'reporte', sheetName = 'Datos', sheets = null }) => {
+const downloadWorkbook = async (workbook, safeFileName) => {
+  const buffer = await workbook.xlsx.writeBuffer()
+  const blob = new Blob([buffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `${safeFileName}.xlsx`
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(url)
+}
+
+export const exportToExcel = async ({ data = [], fileName = 'reporte', sheetName = 'Datos', sheets = null }) => {
   const workbook = sheets && Array.isArray(sheets) && sheets.length > 0
     ? buildWorkbook(sheets)
     : buildWorkbook([{ name: sheetName, rows: data }])
@@ -38,5 +57,5 @@ export const exportToExcel = ({ data = [], fileName = 'reporte', sheetName = 'Da
     .replace(/_+/g, '_')
     .replace(/^_|_$/g, '') || 'reporte'
 
-  XLSX.writeFile(workbook, `${safeFileName}.xlsx`)
+  await downloadWorkbook(workbook, safeFileName)
 }

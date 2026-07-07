@@ -55,7 +55,7 @@ export const AnticipoExcedenteProvider = ({ children }) => {
   // independientemente de si el array ya tiene datos en el contexto padre
   useEffect(() => {
     if (token) {
-      fetchRutasProgramadas()
+      fetchRutasProgramadas({ limit: 1000 })
     }
   }, [token]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -66,6 +66,7 @@ export const AnticipoExcedenteProvider = ({ children }) => {
       c.nombre && c.apellido
         ? `${c.nombre} ${c.apellido}`
         : c.nombre || `Conductor ${c.idConductor}`,
+    numeroIdentificacion: c.numeroIdentificacion || '',
   }))
 
   // Normalizar rutas para el selector: { idRuta, nombre }

@@ -17,8 +17,7 @@ import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDown
 import ClearIcon from '@mui/icons-material/Clear'
 import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
-import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank'
-import CheckBoxIcon from '@mui/icons-material/CheckBox'
+import ToggleSwitch from '../../shared/components/ToggleSwitch.jsx'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import SwapHorizOutlinedIcon from '@mui/icons-material/SwapHorizOutlined'
 import CloseIcon from '@mui/icons-material/Close'
@@ -313,14 +312,6 @@ const ListarTransporte = () => {
         return coincideBusqueda && coincideHabilitado && coincideEstado
     })
 
-    const limpiarFiltros = () => {
-        setSearchTerm('')
-        setFiltroHabilitado('todo')
-        setFiltroEstadoVehiculo('')
-        setFiltroTipo('')
-        setPage(1)
-    }
-
     const handleExportar = () => {
         const rows = filteredTransportes.map(vehiculo => ({
             'ID': vehiculo.idVehiculo,
@@ -339,8 +330,6 @@ const ListarTransporte = () => {
         setSearchTerm('')
         setPage(1)
     }
-
-    const hayFiltrosActivos = searchTerm.trim() !== '' || filtroHabilitado !== 'todo' || filtroEstadoVehiculo !== '' || filtroTipo !== ''
 
     const totalPages = Math.max(1, Math.ceil(totalBackend / rowsPerPage))
     const safePage = Math.min(page, totalPages)
@@ -626,7 +615,7 @@ const ListarTransporte = () => {
                                             }),
                                         }}
                                     >
-                                        <TableCell sx={{ py: 1.5 }}>
+                                        <TableCell>
                                             <PlacaDisplay placa={transporte.placa} theme={theme} />
                                         </TableCell>
                                         <TableCell sx={{ py: 1.5 }}>{transporte.marca}</TableCell>
@@ -728,15 +717,7 @@ const ListarTransporte = () => {
                                                     </Tooltip>
                                                 )}
                                                 {tienePermiso(PERMISOS.INHABILITAR_VEHICULO) && (
-                                                    <Tooltip title={transporte.habilitado !== false ? 'Inhabilitar' : 'Habilitar'}>
-                                                        <IconButton
-                                                            size="small"
-                                                            onClick={() => handleToggleHabilitado(transporte.idVehiculo, transporte.habilitado, transporte.estadoEfectivo, transporte.placa)}
-                                                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
-                                                        >
-                                                            {transporte.habilitado !== false ? <CheckBoxIcon sx={{ fontSize: 18, color: theme.palette.primary.main }} /> : <CheckBoxOutlineBlankIcon sx={{ fontSize: 18, color: theme.palette.status.disabled2.color }} />}
-                                                        </IconButton>
-                                                    </Tooltip>
+                                                    <ToggleSwitch id={transporte.idVehiculo} checked={transporte.habilitado !== false} onChange={() => handleToggleHabilitado(transporte.idVehiculo, transporte.habilitado, transporte.estadoEfectivo, transporte.placa)} />
                                                 )}
                                             </Box>
                                         </TableCell>

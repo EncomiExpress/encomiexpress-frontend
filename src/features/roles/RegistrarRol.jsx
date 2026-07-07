@@ -98,7 +98,7 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
       } else {
         setError(respuesta.message || 'Error al registrar el rol')
       }
-    } catch (err) {
+    } catch {
       setError('Error al registrar el rol')
     } finally {
       setEnviando(false)

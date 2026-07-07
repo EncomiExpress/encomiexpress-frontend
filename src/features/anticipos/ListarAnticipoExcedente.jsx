@@ -18,8 +18,7 @@ import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import ClearIcon from '@mui/icons-material/Clear'
-import BlockOutlinedIcon from '@mui/icons-material/BlockOutlined'
-import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined'
+import ToggleSwitch from '../../shared/components/ToggleSwitch.jsx'
 import CloseIcon from '@mui/icons-material/Close'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import TaskAltOutlinedIcon from '@mui/icons-material/TaskAltOutlined'
@@ -27,9 +26,10 @@ import RegistrarAnticipoExcedente from './RegistrarAnticipoExcedente'
 import ActualizarAnticipoExcedente from './ActualizarAnticipoExcedente'
 import ModalInhabilitarAnticipo from './ModalInhabilitarAnticipo'
 import ModalConsultarAnticipoExcedente from './ModalConsultarAnticipoExcedente'
-import { getEstadoColorAnticipo as getEstadoColor, getAnticipoEstadoDot } from '../../shared/utils/estadoColors.js'
+import { getAnticipoEstadoDot } from '../../shared/utils/estadoColors.js'
 import { getPageOfAnticipo } from '../../shared/services/anticipoService'
 import { formatFecha } from '../../shared/utils/formatters.js'
+import { exportToExcel } from '../../shared/utils/exportExcel.js'
 
 const getThStyle = (theme) => ({
     fontWeight: 700,
@@ -148,13 +148,6 @@ const ListarAnticipoExcedente = () => {
         setPage(1)
     }
 
-    const limpiarFiltros = () => {
-        setBusqueda('')
-        setFiltroHabilitado('todo')
-        setFiltroEstadoAnticipo('')
-        setPage(1)
-    }
-
     useEffect(() => {
         const t = setTimeout(() => setDebouncedBusqueda(busqueda), 300)
         return () => clearTimeout(t)
@@ -182,8 +175,6 @@ const ListarAnticipoExcedente = () => {
     }
 
     const currentAnticipos = anticipos
-    const hayFiltrosActivos = busqueda.trim() !== '' || filtroHabilitado !== 'todo' || filtroEstadoAnticipo !== ''
-
     const handleExportar = () => {
         const rows = currentAnticipos.map(anticipo => ({
             'ID': anticipo.idAnticipoExcedente || anticipo.idAnticipo,
@@ -217,14 +208,6 @@ const ListarAnticipoExcedente = () => {
         } catch (err) {
             setSnackbar({ open: true, message: err.message || 'No se pudo cambiar el estado', severity: 'error' })
         }
-    }
-
-    const handleCambiarEstadoAnticipo = (id, nuevoEstado) => {
-        if (nuevoEstado === 'En Legalización') {
-            setConfirmLeg({ open: true, id, nuevoEstado })
-            return
-        }
-        ejecutarCambioEstadoAnticipo(id, nuevoEstado)
     }
 
     const handleConfirmarDevolucion = async () => {
@@ -489,21 +472,21 @@ const ListarAnticipoExcedente = () => {
                                             }}
                                         >
                                             {/* Conductor */}
-                                            <TableCell sx={{ py: 1.5 }}>
+                                            <TableCell>
                                                 <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary} noWrap>
                                                     {nombreConductor}
                                                 </Typography>
                                             </TableCell>
 
                                             {/* Ruta */}
-                                            <TableCell sx={{ py: 1.5 }}>
+                                            <TableCell sx={{ py: 2.5 }}>
                                                 <Typography variant="body2" fontWeight={500} sx={{ fontSize: '0.8rem', color: theme.palette.text.primary }} noWrap>
                                                     {anticipo.ruta?.nombreRuta || '—'}
                                                 </Typography>
                                             </TableCell>
 
                                             {/* Anticipo */}
-                                            <TableCell sx={{ py: 1.5 }}>
+                                            <TableCell sx={{ py: 2.5 }}>
                                                 <Chip
                                                     label={formatMoney(anticipo.valorAnticipo)}
                                                     size="small"
@@ -519,7 +502,7 @@ const ListarAnticipoExcedente = () => {
                                             </TableCell>
 
                                             {/* Gastado */}
-                                            <TableCell sx={{ py: 1.5 }}>
+                                            <TableCell sx={{ py: 2.5 }}>
                                                 {anticipo.valorGastado ? (
                                                     <Chip
                                                         label={`-${formatMoney(anticipo.valorGastado)}`}
@@ -539,7 +522,7 @@ const ListarAnticipoExcedente = () => {
                                             </TableCell>
 
                                             {/* Excedente / Faltante */}
-                                            <TableCell sx={{ py: 1.5 }}>
+                                            <TableCell sx={{ py: 2.5 }}>
                                                 {anticipo.valorGastado ? (
                                                     <Chip
                                                         label={`${excedente >= 0 ? '+' : '-'}${formatMoney(Math.abs(excedente))}`}
@@ -578,7 +561,7 @@ const ListarAnticipoExcedente = () => {
                                             </TableCell>
 
                                             {/* Acciones */}
-                                            <TableCell sx={{ py: 1.5 }}>
+                                            <TableCell sx={{ py: 2.5 }}>
                                                 <Box sx={{ display: 'flex', gap: 0.5 }}>
                                                     {tienePermiso(PERMISOS.CONSULTAR_ANTICIPO) && (
                                                         <Tooltip title="Ver detalle">
@@ -598,16 +581,7 @@ const ListarAnticipoExcedente = () => {
                                                         </Tooltip>
                                                     )}
                                                     {tienePermiso(PERMISOS.INHABILITAR_ANTICIPO) && (
-                                                        <Tooltip title={anticipo.habilitado !== false ? 'Inhabilitar' : 'Habilitar'}>
-                                                            <IconButton size="small"
-                                                                onClick={() => handleToggleHabilitado(anticipo)}
-                                                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}>
-                                                                {anticipo.habilitado !== false
-                                                                    ? <BlockOutlinedIcon sx={{ fontSize: 18, color: theme.palette.primary.main }} />
-                                                                    : <CheckCircleOutlinedIcon sx={{ fontSize: 18, color: '#059669' }} />
-                                                                }
-                                                            </IconButton>
-                                                        </Tooltip>
+                                                        <ToggleSwitch id={anticipo.idAnticipoExcedente} checked={anticipo.habilitado !== false} onChange={() => handleToggleHabilitado(anticipo)} />
                                                     )}
                                                 </Box>
                                             </TableCell>

@@ -14,7 +14,6 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
     descripcion: '',
     permisos: []
   })
-  const [mensaje, setMensaje] = useState('')
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [sinCambios, setSinCambios] = useState(false)
@@ -147,7 +146,7 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
       } else {
         setError(respuesta.message || 'Error al actualizar el rol')
       }
-    } catch (err) {
+    } catch {
       setError('Error al actualizar el rol')
     } finally {
       setEnviando(false)

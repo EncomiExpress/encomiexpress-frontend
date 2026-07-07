@@ -1,4 +1,4 @@
-import { useTheme } from '@mui/material/styles'
+﻿import { useTheme } from '@mui/material/styles'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Dialog, DialogTitle, DialogContent, IconButton, Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Snackbar, Alert, TextField, Select, InputAdornment, CircularProgress } from '@mui/material'
@@ -16,9 +16,9 @@ import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined'
 import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import { useAuth, ROLES } from '../../shared/contexts/AuthContext.jsx'
-import { formFieldStyles } from '../../shared/components/FormularioEstandarizado.jsx'
+import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import * as usuarioService from '../../shared/services/usuarioService.js'
-import { hayNombreDuplicado, MENSAJE_NOMBRE_DUPLICADO } from '../../shared/utils/duplicados.js'
+import { hayNombreDuplicado, MENSAJE_NOMBRE_DUPLICADO, hayDocumentoDuplicado, MENSAJE_DOC_DUPLICADO } from '../../shared/utils/duplicados.js'
 
 const DOMINIOS_EMAIL = ['@gmail.com', '@hotmail.com', '@outlook.com', '@yahoo.com', '@icloud.com', '@live.com']
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s]).{8,16}$/
@@ -41,7 +41,7 @@ const HighlightText = ({ original, actual, color }) => {
         const actChar = actual?.[i] || ''
 
         if (origChar !== actChar) {
-            parts.push(<span key={i} style={{ backgroundColor: color, fontWeight: 700 }}>{actChar}</span>)
+            parts.push(<span key={i} style={{ backgroundColor: highlightColor, fontWeight: 700 }}>{actChar}</span>)
         } else {
             parts.push(<span key={i}>{actChar}</span>)
         }
@@ -77,6 +77,7 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
     const [sinCambios, setSinCambios] = useState(false)
     const [rolesDisponibles, setRolesDisponibles] = useState([])
     const [avisoNombreDuplicado, setAvisoNombreDuplicado] = useState('')
+    const [avisoDocDuplicado, setAvisoDocDuplicado] = useState('')
     const [showPassword, setShowPassword] = useState(false)
     const [showConfirmarPassword, setShowConfirmarPassword] = useState(false)
 
@@ -173,6 +174,7 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
             value = value.replace(/[^0-9]/g, '')
         }
         if (name === 'numeroIdentificacion') {
+            setAvisoDocDuplicado('')
             value = esDocAlfanumerico(form.tipoIdentificacion)
                 ? value.replace(/[^a-zA-Z0-9]/g, '')
                 : value.replace(/[^0-9]/g, '')
@@ -180,6 +182,7 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
         if (name === 'tipoIdentificacion') {
             setForm(prev => ({ ...prev, tipoIdentificacion: value, numeroIdentificacion: '' }))
             setErrores(prev => ({ ...prev, tipoIdentificacion: '', numeroIdentificacion: '' }))
+            setAvisoDocDuplicado('')
             setApiError(null)
             setSinCambios(false)
             return
@@ -195,6 +198,24 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
         setErrores(prev => ({ ...prev, [name]: '' }))
         setApiError(null)
         setSinCambios(false)
+    }
+
+    const verificarDocumentoDuplicado = async () => {
+        if (!form.numeroIdentificacion.trim() || form.numeroIdentificacion.length < 3) {
+            setAvisoDocDuplicado('')
+            return
+        }
+        try {
+            const res = await usuarioService.getUsuarios({ q: form.numeroIdentificacion.trim(), limit: 10 })
+            if (!res?.success) return
+            const duplicado = hayDocumentoDuplicado(res.data, form.numeroIdentificacion, {
+                excludeId: usuarioProp?.idUsuario,
+                getId: (r) => r.idUsuario,
+            })
+            setAvisoDocDuplicado(duplicado ? MENSAJE_DOC_DUPLICADO : '')
+        } catch {
+            // Si falla la verificación no bloqueamos el flujo
+        }
     }
 
     const verificarNombreDuplicado = async () => {
@@ -332,7 +353,7 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
                 return (
                     <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                         <TextField fullWidth select label="Tipo de documento" name="tipoIdentificacion"
-                            value={form.tipoIdentificacion} onChange={handleChange}
+                            value={form.tipoIdentificacion} onChange={handleChange} required
                             error={!!errores.tipoIdentificacion} helperText={errores.tipoIdentificacion}
                             slotProps={{
                                 input: { startAdornment: <InputAdornment position="start"><BadgeOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment> },
@@ -345,23 +366,27 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
                             <MenuItem value="PAS">Pasaporte</MenuItem>
                         </TextField>
                         <TextField fullWidth label="Número de documento" name="numeroIdentificacion"
-                            value={form.numeroIdentificacion} onChange={handleChange}
+                            value={form.numeroIdentificacion} onChange={handleChange} required
                             error={!!errores.numeroIdentificacion} helperText={errores.numeroIdentificacion || docHelperText()}
+                            onBlur={verificarDocumentoDuplicado}
                             slotProps={{ input: { startAdornment: <InputAdornment position="start"><BadgeOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment>, sx: { pl: 1.5 } }, htmlInput: { maxLength: maxLengthDoc } }}
                             sx={formFieldStyles} />
                         <TextField fullWidth label="Nombres" name="nombre" value={form.nombre} onChange={handleChange}
-                            onBlur={verificarNombreDuplicado}
-                            error={!!errores.nombre} helperText={errores.nombre || 'Solo letras'}
+                            onBlur={verificarNombreDuplicado} required placeholder="Ej: Juan"
+                            error={!!errores.nombre} helperText={errores.nombre}
                             slotProps={{
                                 input: { startAdornment: <InputAdornment position="start"><PersonOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment>, sx: { pl: 1.5 } },
                                 htmlInput: { maxLength: 50 }
                             }}
                             sx={formFieldStyles} />
                         <TextField fullWidth label="Apellidos" name="apellido" value={form.apellido} onChange={handleChange}
-                            onBlur={verificarNombreDuplicado}
-                            error={!!errores.apellido} helperText={errores.apellido || 'Solo letras'}
+                            onBlur={verificarNombreDuplicado} required placeholder="Ej: Gómez López"
+                            error={!!errores.apellido} helperText={errores.apellido}
                             slotProps={{ input: { startAdornment: <InputAdornment position="start"><PersonOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment>, sx: { pl: 1.5 } }, htmlInput: { maxLength: 50 } }}
                             sx={formFieldStyles} />
+                        {avisoDocDuplicado && (
+                            <Alert severity="warning" sx={{ gridColumn: '1 / -1' }}>{avisoDocDuplicado}</Alert>
+                        )}
                         {avisoNombreDuplicado && (
                             <Alert severity="warning" sx={{ gridColumn: '1 / -1' }}>{avisoNombreDuplicado}</Alert>
                         )}
@@ -370,7 +395,7 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
             case 1:
                 return (
                     <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
-                        <TextField fullWidth label="Teléfono" name="telefono" value={form.telefono} onChange={handleChange}
+                        <TextField fullWidth label="Teléfono" name="telefono" value={form.telefono} onChange={handleChange} required
                             error={!!errores.telefono} helperText={errores.telefono || 'Número de 10 dígitos'}
                             slotProps={{ input: { startAdornment: <InputAdornment position="start"><PhoneOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment>, sx: { pl: 1.5 } }, htmlInput: { maxLength: 10 } }}
                             sx={formFieldStyles} />
@@ -401,7 +426,7 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
                                 htmlInput: { maxLength: 50 }
                             }}
                             sx={formFieldStyles} />
-                        <TextField fullWidth select label="Rol" name="idRol" value={form.idRol} onChange={handleChange}
+                        <TextField fullWidth select label="Rol" name="idRol" value={form.idRol} onChange={handleChange} required
                             error={!!errores.idRol} helperText={errores.idRol || (
                                 <>
                                     ¿Buscas registrar un conductor? Hazlo desde el módulo de{' '}
@@ -473,8 +498,6 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
                     </Box>
                 )
             case 2:
-                const cambios = getCamposCambiados()
-                const hayCambiosVisuales = Object.values(cambios).some(Boolean)
                 return (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                         {sinCambios && (

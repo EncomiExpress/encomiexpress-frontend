@@ -40,6 +40,7 @@ const ModalInhabilitarAnticipo = ({ open, anticipo, onClose, onExited, onConfirm
             await onConfirm()
             onClose()
         } catch {
+            // error manejado por el padre
         } finally {
             setConfirming(false)
         }

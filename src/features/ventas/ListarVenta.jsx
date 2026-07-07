@@ -18,8 +18,7 @@ import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import ClearIcon from '@mui/icons-material/Clear'
-import BlockOutlinedIcon from '@mui/icons-material/BlockOutlined'
-import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined'
+import ToggleSwitch from '../../shared/components/ToggleSwitch.jsx'
 import CloseIcon from '@mui/icons-material/Close'
 import PaidOutlinedIcon from '@mui/icons-material/PaidOutlined'
 import SwapHorizOutlinedIcon from '@mui/icons-material/SwapHorizOutlined'
@@ -179,17 +178,6 @@ const ListarVenta = () => {
         )
         setPage(1)
     }
-
-    const limpiarFiltros = () => {
-        setBusqueda('')
-        setFiltroHabilitado('todo')
-        setFiltroEstadoEncomienda('')
-        setFiltroPago('')
-        setFiltroMetodoPago('')
-        setPage(1)
-    }
-
-    const hayFiltrosActivos = busqueda || filtroHabilitado !== 'todo' || filtroEstadoEncomienda !== '' || filtroPago !== '' || filtroMetodoPago !== ''
 
     const handleExportar = () => {
         const rows = ventas.map(venta => ({
@@ -701,18 +689,7 @@ const ListarVenta = () => {
                                                         </IconButton>
                                                     </Tooltip>
                                                     {tienePermiso(PERMISOS.INHABILITAR_VENTA) && (
-                                                    <Tooltip title={venta.habilitado ? 'Inhabilitar' : 'Habilitar'}>
-                                                        <IconButton
-                                                            size="small"
-                                                            onClick={() => handleToggleHabilitado(venta)}
-                                                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.action.hover } }}
-                                                        >
-                                                            {venta.habilitado
-                                                                ? <BlockOutlinedIcon sx={{ fontSize: 18, color: theme.palette.primary.main }} />
-                                                                : <CheckCircleOutlinedIcon sx={{ fontSize: 18, color: '#059669' }} />
-                                                            }
-                                                        </IconButton>
-                                                    </Tooltip>
+                                                    <ToggleSwitch id={venta.idEncomiendaVenta} checked={venta.habilitado} onChange={() => handleToggleHabilitado(venta)} />
                                                     )}
                                                 </Box>
                                             </TableCell>

@@ -7,7 +7,7 @@ import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import * as ventaService from '../../shared/services/ventaService'
 import * as anticipoService from '../../shared/services/anticipoService'
-import { getEstadoColorRuta, getEstadoColorVentaHex, getEstadoColorAnticipo, getVentaEstadoDot, getAnticipoEstadoDot } from '../../shared/utils/estadoColors.js'
+import { getEstadoColorRuta, getEstadoColorAnticipo, getVentaEstadoDot, getAnticipoEstadoDot } from '../../shared/utils/estadoColors.js'
 
 const vehiculoDot = (estado) => {
     if (estado === 'En Ruta')       return { color: '#3B82F6', fill: true,  label: 'En Ruta' }

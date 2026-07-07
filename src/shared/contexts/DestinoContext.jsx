@@ -48,7 +48,7 @@ export const DestinoProvider = ({ children }) => {
     if (!token) return
 
     const abortController = new AbortController()
-    fetchDestinos(abortController.signal)
+    fetchDestinos(abortController.signal, { limit: 1000 })
 
     return () => abortController.abort()
   }, [token, fetchDestinos]);

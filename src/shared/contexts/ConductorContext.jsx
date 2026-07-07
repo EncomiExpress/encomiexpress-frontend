@@ -47,7 +47,7 @@ export const ConductorProvider = ({ children }) => {
   useEffect(() => {
     if (!token) return
     const abortController = new AbortController()
-    fetchConductores(abortController.signal)
+    fetchConductores(abortController.signal, { limit: 1000 })
     return () => abortController.abort()
   }, [fetchConductores, token])
 

@@ -48,7 +48,6 @@ const Register = () => {
     if (usuario) {
       navigate('/dashboard')
     }
-  const theme = useTheme()
   }, [usuario, navigate])
 
   const handleChange = (e) => {

@@ -15,8 +15,7 @@ import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import ClearIcon from '@mui/icons-material/Clear'
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
-import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank'
-import CheckBoxIcon from '@mui/icons-material/CheckBox'
+import ToggleSwitch from '../../shared/components/ToggleSwitch.jsx'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import { useConductor } from '../../shared/contexts/ConductorContext.jsx'
 import { useRutaProgramacion } from '../../shared/contexts/RutaProgramacionContext.jsx'
@@ -198,7 +197,6 @@ const ListarConductor = () => {
         }
     }
 
-    const limpiarFiltros = () => { setSearchTerm(''); setFiltroHabilitado('todo'); setFiltroEstado(''); setPage(1) }
     const limpiarBusqueda = () => { setSearchTerm(''); setPage(1) }
 
     const handleExportar = () => {
@@ -213,8 +211,6 @@ const ListarConductor = () => {
 
         exportToExcel({ data: rows, fileName: 'conductores', sheetName: 'Conductores' })
     }
-
-    const hayFiltrosActivos = searchTerm.trim() !== '' || filtroHabilitado !== 'todo' || filtroEstado !== ''
 
     const totalPages = Math.max(1, Math.ceil(total / rowsPerPage))
     const safePage = Math.min(page, totalPages)
@@ -502,15 +498,7 @@ const ListarConductor = () => {
                                                     </Tooltip>
                                                 )}
                                                 {tienePermiso(PERMISOS.INHABILITAR_CONDUCTOR) && (
-                                                    <Tooltip title={conductor.habilitado ? 'Inhabilitar' : 'Habilitar'}>
-                                                        <IconButton size="small"
-                                                            onClick={() => solicitarToggle(conductor)}
-                                                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}>
-                                                            {conductor.habilitado
-                                                                ? <CheckBoxIcon sx={{ fontSize: 18, color: theme.palette.primary.main }} />
-                                                                : <CheckBoxOutlineBlankIcon sx={{ fontSize: 18, color: theme.palette.status?.disabled2?.color || theme.palette.text.disabled }} />}
-                                                        </IconButton>
-                                                    </Tooltip>
+                                                    <ToggleSwitch id={conductor.idConductor} checked={conductor.habilitado} onChange={() => solicitarToggle(conductor)} />
                                                 )}
                                             </Box>
                                         </TableCell>

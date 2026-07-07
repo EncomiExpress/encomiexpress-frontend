@@ -16,8 +16,7 @@ import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
 import ClearIcon from '@mui/icons-material/Clear'
 import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined'
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
-import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank'
-import CheckBoxIcon from '@mui/icons-material/CheckBox'
+import ToggleSwitch from '../../shared/components/ToggleSwitch.jsx'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import { useDestino } from '../../shared/contexts/DestinoContext.jsx'
@@ -230,9 +229,6 @@ const ListarDestino = () => {
         }
     }
 
-    const limpiarFiltros = () => { setSearchTerm(''); setFiltroHabilitado('todo'); setFiltroDepartamento(''); setPage(1) }
-    const limpiarBusqueda = () => { setSearchTerm(''); setPage(1) }
-
     const handleExportar = () => {
         const rows = destinos.map(destino => ({
             'ID': destino.idDestino,
@@ -244,8 +240,6 @@ const ListarDestino = () => {
 
         exportToExcel({ data: rows, fileName: 'destinos', sheetName: 'Destinos' })
     }
-
-    const hayFiltrosActivos = searchTerm.trim() !== '' || filtroHabilitado !== 'todo' || filtroDepartamento !== ''
 
     const totalPages = Math.max(1, Math.ceil(total / rowsPerPage))
     const safePage = Math.min(page, totalPages)
@@ -528,16 +522,7 @@ const ListarDestino = () => {
                                                     </Tooltip>
                                                 )}
                                                 {tienePermiso(PERMISOS.INHABILITAR_DESTINO) && (
-                                                    <Tooltip title={destino.habilitado ? 'Inhabilitar' : 'Habilitar'}>
-                                                        <IconButton size="small"
-                                                            onClick={() => handleToggleHabilitado(destino.idDestino, destino.habilitado, destino.ciudad)}
-                                                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}>
-                                                            {destino.habilitado
-                                                                ? <CheckBoxIcon sx={{ fontSize: 18, color: theme.palette.primary.main }} />
-                                                                : <CheckBoxOutlineBlankIcon sx={{ fontSize: 18, color: theme.palette.status?.disabled2?.color || theme.palette.text.disabled }} />
-                                                            }
-                                                        </IconButton>
-                                                    </Tooltip>
+                                                    <ToggleSwitch id={destino.idDestino} checked={destino.habilitado} onChange={() => handleToggleHabilitado(destino.idDestino, destino.habilitado, destino.ciudad)} />
                                                 )}
                                             </Box>
                                         </TableCell>

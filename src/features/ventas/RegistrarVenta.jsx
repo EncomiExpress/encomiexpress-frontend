@@ -1,4 +1,4 @@
-import { useTheme } from '@mui/material/styles'
+﻿import { useTheme } from '@mui/material/styles'
 import { useEffect, useState } from 'react'
 import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, Snackbar, TextField, Autocomplete, Dialog, DialogTitle, DialogContent, IconButton, Divider } from '@mui/material'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
@@ -16,8 +16,10 @@ import CloseIcon from '@mui/icons-material/Close'
 import { useVentas } from '../../shared/contexts/VentaContext.jsx'
 import { useClientes } from '../../shared/contexts/ClienteContext.jsx'
 import { useRutaProgramacion } from '../../shared/contexts/RutaProgramacionContext.jsx'
-import { FormField, FormSelect, formFieldStyles } from '../../shared/components/FormularioEstandarizado.jsx'
+import { FormField, FormSelect } from '../../shared/components/FormularioEstandarizado.jsx'
+import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
+import { normalizarTexto } from '../../shared/utils/duplicados.js'
 
 const steps = ['Partes', 'Paquete', 'Envío', 'Pago', 'Confirmación']
 
@@ -31,9 +33,11 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
     const [activeStep, setActiveStep] = useState(0)
     const [submitting, setSubmitting] = useState(false)
     const [exito, setExito] = useState(false)
+    const [clienteInput, setClienteInput] = useState('')
+    const [rutaInput, setRutaInput] = useState('')
 
     useEffect(() => {
-        fetchRutasProgramadas().catch(() => null)
+        fetchRutasProgramadas({ limit: 1000 }).catch(() => null)
     }, [fetchRutasProgramadas])
 
     const [form, setForm] = useState({
@@ -49,6 +53,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
         valorDeclarado: '',
         idRuta: '',
         destino: '',
+        fechaSalidaRuta: '',
         fechaEstimadaEntrega: '',
         observaciones: '',
         metodoPago: '',
@@ -66,7 +71,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
             direccionDestinatario: '',
             descripcionContenido: '',
             peso: '', alto: '', ancho: '', profundidad: '',
-            valorDeclarado: '', idRuta: '', destino: '',
+            valorDeclarado: '', idRuta: '', destino: '', fechaSalidaRuta: '',
             fechaEstimadaEntrega: '', observaciones: '',
             metodoPago: '', estadoPago: 'Pendiente',
             valorServicio: '', impuestos: '', total: '',
@@ -74,6 +79,8 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
         setErrores({})
         setApiError(null)
         setActiveStep(0)
+        setClienteInput('')
+        setRutaInput('')
         onClose()
     }
 
@@ -86,9 +93,12 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
         const { name } = e.target
         let { value } = e.target
 
-        if (name in NUMERIC_LIMITS && value !== '') {
-            const num = parseFloat(value)
-            if (!isNaN(num) && (num > NUMERIC_LIMITS[name] || num < 0)) return
+        if (name in NUMERIC_LIMITS) {
+            value = value.replace(/[^0-9.]/g, '')
+            if (value !== '') {
+                const num = parseFloat(value)
+                if (!isNaN(num) && (num > NUMERIC_LIMITS[name] || num < 0)) return
+            }
         }
         if (name === 'nombreDestinatario') {
             value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
@@ -97,30 +107,13 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
             value = value.replace(/[^0-9]/g, '')
         }
         if (name === 'direccionDestinatario') {
-            value = value.replace(/[^a-zA-Z0-9\s,.\-#\/']/g, '')
+            value = value.replace(/[^a-zA-Z0-9\s,.\-#/']/g, '')
         }
         if (name === 'descripcionContenido') {
             value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
         }
         if (name === 'observaciones') {
             value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ0-9\s,.-]/g, '')
-        }
-
-        if (name === 'idRuta') {
-            const ruta = rutasProgramadas.find(r => r.idRuta === parseInt(value))
-            if (ruta) {
-                const tarifaBase = Number(ruta.destino?.tarifaBase || 0)
-                const impuestos = Math.round(tarifaBase * 0.10)
-                setForm(prev => ({
-                    ...prev,
-                    idRuta: value,
-                    destino: ruta.nombreRuta || 'Sin nombre',
-                    valorServicio: tarifaBase,
-                    impuestos,
-                    total: tarifaBase + impuestos,
-                }))
-            }
-            return
         }
 
         setForm(prev => {
@@ -179,6 +172,8 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
         if (step === 2) {
             if (!form.idRuta) e.idRuta = 'Selecciona una ruta'
             if (!form.fechaEstimadaEntrega) e.fechaEstimadaEntrega = 'La fecha es obligatoria'
+            else if (form.fechaSalidaRuta && form.fechaEstimadaEntrega < form.fechaSalidaRuta)
+                e.fechaEstimadaEntrega = 'No puede ser anterior a la fecha de salida de la ruta'
         }
 
         if (step === 3) {
@@ -255,21 +250,40 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                             </Typography>
                             <Autocomplete
                                 options={clientes.filter(c => c.habilitado)}
-                                getOptionLabel={(option) => `${option.nombre} ${option.apellido} — ${option.numeroIdentificacion}`}
+                                getOptionLabel={(option) => {
+                                    const nombre = option.apellido ? `${option.nombre} ${option.apellido}` : option.nombre
+                                    return `${nombre} — ${option.numeroIdentificacion}`
+                                }}
+                                isOptionEqualToValue={(opt, val) => opt.idCliente === val.idCliente}
+                                filterOptions={(opts, { inputValue }) => {
+                                    if (!inputValue.trim()) return [...opts].sort((a, b) => b.idCliente - a.idCliente).slice(0, 5)
+                                    const q = normalizarTexto(inputValue)
+                                    return opts.filter(c =>
+                                        normalizarTexto(c.nombre || '').includes(q) ||
+                                        normalizarTexto(c.apellido || '').includes(q) ||
+                                        normalizarTexto(c.numeroIdentificacion || '').includes(q)
+                                    )
+                                }}
                                 value={clienteSeleccionado || null}
-                                onChange={(_, newValue) => {
-                                    if (newValue) {
-                                        setForm(prev => ({ ...prev, idCliente: newValue.idCliente }))
-                                    } else {
-                                        setForm(prev => ({ ...prev, idCliente: '' }))
+                                inputValue={clienteInput}
+                                onInputChange={(_, val, reason) => {
+                                    if (reason === 'input') {
+                                        setClienteInput(val.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ0-9\s-]/g, ''))
+                                    } else if (reason === 'reset') {
+                                        setClienteInput(val)
+                                    } else if (reason === 'clear') {
+                                        setClienteInput('')
                                     }
+                                }}
+                                onChange={(_, newValue) => {
+                                    setForm(prev => ({ ...prev, idCliente: newValue ? newValue.idCliente : '' }))
                                     setErrores(prev => ({ ...prev, idCliente: '' }))
                                 }}
                                 noOptionsText="No se encontraron clientes"
                                 renderInput={(params) => (
                                     <TextField {...params} label="Cliente *"
-                                        error={!!errores.idCliente} helperText={errores.idCliente || 'Busca por nombre o número de documento'}
-                                        slotProps={{ inputLabel: { shrink: true } }}
+                                        error={!!errores.idCliente} helperText={errores.idCliente || 'Busca por nombre, apellido o documento'}
+                                        slotProps={{ inputLabel: { shrink: true }, htmlInput: { ...params.inputProps, maxLength: 100 } }}
                                         sx={formFieldStyles} />
                                 )}
                             />
@@ -320,7 +334,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                                 <FormField label="Nombre completo" name="nombreDestinatario" value={form.nombreDestinatario}
                                     onChange={handleChange} required error={errores.nombreDestinatario}
                                     helperText={errores.nombreDestinatario} icon={PersonOutlinedIcon}
-                                    inputProps={{ maxLength: 50 }} />
+                                    placeholder="Ej: Juan Pérez" inputProps={{ maxLength: 50 }} />
                                 <FormField label="Teléfono" name="telefonoDestinatario" value={form.telefonoDestinatario}
                                     onChange={handleChange} required error={errores.telefonoDestinatario}
                                     helperText={errores.telefonoDestinatario || 'Número de 10 dígitos'} icon={PhoneOutlinedIcon}
@@ -344,28 +358,28 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                             helperText={errores.descripcionContenido || `${form.descripcionContenido.length}/300`}
                             multiline rows={2} inputProps={{ maxLength: 300 }} />
                         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2.5 }}>
-                            <FormField label="Peso (kg)" name="peso" type="number" value={form.peso}
+                            <FormField label="Peso (kg)" name="peso" value={form.peso}
                                 onChange={handleChange} required error={errores.peso}
-                                helperText={errores.peso || 'Ej: 1.5'}
-                                inputProps={{ min: 0.01, max: 9999, step: 0.01 }} />
-                            <FormField label="Alto (cm)" name="alto" type="number" value={form.alto}
+                                placeholder="Ej: 1.5" helperText={errores.peso || 'Ej: 1.5'}
+                                inputProps={{ maxLength: 7 }} />
+                            <FormField label="Alto (cm)" name="alto" value={form.alto}
                                 onChange={handleChange} required error={errores.alto}
-                                helperText={errores.alto || 'Ej: 30'}
-                                inputProps={{ min: 1, max: 9999, step: 1 }} />
-                            <FormField label="Ancho (cm)" name="ancho" type="number" value={form.ancho}
+                                placeholder="Ej: 30" helperText={errores.alto || 'Ej: 30'}
+                                inputProps={{ maxLength: 4 }} />
+                            <FormField label="Ancho (cm)" name="ancho" value={form.ancho}
                                 onChange={handleChange} required error={errores.ancho}
-                                helperText={errores.ancho || 'Ej: 20'}
-                                inputProps={{ min: 1, max: 9999, step: 1 }} />
+                                placeholder="Ej: 20" helperText={errores.ancho || 'Ej: 20'}
+                                inputProps={{ maxLength: 4 }} />
                         </Box>
                         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
-                            <FormField label="Profundidad (cm)" name="profundidad" type="number" value={form.profundidad}
+                            <FormField label="Profundidad (cm)" name="profundidad" value={form.profundidad}
                                 onChange={handleChange} required error={errores.profundidad}
-                                helperText={errores.profundidad || 'Ej: 15'}
-                                inputProps={{ min: 1, max: 9999, step: 1 }} />
-                            <FormField label="Valor declarado ($)" name="valorDeclarado" type="number" value={form.valorDeclarado}
+                                placeholder="Ej: 15" helperText={errores.profundidad || 'Ej: 15'}
+                                inputProps={{ maxLength: 4 }} />
+                            <FormField label="Valor declarado ($)" name="valorDeclarado" value={form.valorDeclarado}
                                 onChange={handleChange} helperText={errores.valorDeclarado || 'Opcional'}
-                                error={errores.valorDeclarado}
-                                inputProps={{ min: 0, max: 999999999, step: 1 }} />
+                                placeholder="Ej: 50000" error={errores.valorDeclarado}
+                                inputProps={{ maxLength: 9 }} />
                         </Box>
                     </Box>
                 )
@@ -373,22 +387,65 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                 return (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
-                            <FormSelect label="Ruta" name="idRuta" value={form.idRuta}
-                                onChange={handleChange} required error={errores.idRuta} helperText={errores.idRuta}>
-                                {rutasProgramadas.filter(r => r.habilitado !== false).length === 0
-                                    ? <MenuItem disabled>No hay rutas programadas</MenuItem>
-                                    : rutasProgramadas
-                                        .filter(r => r.habilitado !== false)
-                                        .map(r => (
-                                            <MenuItem key={r.idRuta} value={r.idRuta}>
-                                                {r.nombreRuta || 'Sin nombre'} — ${Number(r.destino?.tarifaBase || 0).toLocaleString()}
-                                            </MenuItem>
-                                        ))}
-                            </FormSelect>
+                            <Autocomplete
+                                options={rutasProgramadas.filter(r => r.habilitado !== false)}
+                                getOptionLabel={(option) => `${option.nombreRuta || 'Sin nombre'} — $${Number(option.destino?.tarifaBase || 0).toLocaleString()}`}
+                                isOptionEqualToValue={(opt, val) => opt.idRuta === val.idRuta}
+                                filterOptions={(opts, { inputValue }) => {
+                                    if (!inputValue.trim()) return [...opts].sort((a, b) => b.idRuta - a.idRuta).slice(0, 5)
+                                    const q = normalizarTexto(inputValue)
+                                    return opts.filter(r =>
+                                        normalizarTexto(r.nombreRuta || '').includes(q) ||
+                                        normalizarTexto(r.destino?.ciudad || '').includes(q) ||
+                                        normalizarTexto(r.destino?.departamento || '').includes(q)
+                                    )
+                                }}
+                                value={rutasProgramadas.find(r => r.idRuta === parseInt(form.idRuta)) || null}
+                                inputValue={rutaInput}
+                                onInputChange={(_, val, reason) => {
+                                    if (reason === 'input') {
+                                        setRutaInput(val.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ0-9\s-]/g, ''))
+                                    } else if (reason === 'reset') {
+                                        setRutaInput(val)
+                                    } else if (reason === 'clear') {
+                                        setRutaInput('')
+                                    }
+                                }}
+                                onChange={(_, newValue) => {
+                                    if (newValue) {
+                                        const tarifaBase = Number(newValue.destino?.tarifaBase || 0)
+                                        const impuestos = Math.round(tarifaBase * 0.10)
+                                        const fechaSalida = newValue.fechaSalida || ''
+                                        setForm(prev => ({
+                                            ...prev,
+                                            idRuta: newValue.idRuta,
+                                            destino: newValue.nombreRuta || 'Sin nombre',
+                                            fechaSalidaRuta: fechaSalida,
+                                            fechaEstimadaEntrega: prev.fechaEstimadaEntrega && fechaSalida && prev.fechaEstimadaEntrega < fechaSalida
+                                                ? '' : prev.fechaEstimadaEntrega,
+                                            valorServicio: tarifaBase,
+                                            impuestos,
+                                            total: tarifaBase + impuestos,
+                                        }))
+                                    } else {
+                                        setForm(prev => ({ ...prev, idRuta: '', destino: '', fechaSalidaRuta: '' }))
+                                    }
+                                    setErrores(prev => ({ ...prev, idRuta: '', fechaEstimadaEntrega: '' }))
+                                    setApiError(null)
+                                }}
+                                noOptionsText="No se encontraron rutas"
+                                renderInput={(params) => (
+                                    <TextField {...params} label="Ruta *"
+                                        error={!!errores.idRuta} helperText={errores.idRuta || 'Busca por nombre de ruta o destino'}
+                                        slotProps={{ inputLabel: { shrink: true }, htmlInput: { ...params.inputProps, maxLength: 100 } }}
+                                        sx={formFieldStyles} />
+                                )}
+                            />
                             <TextField fullWidth label="Fecha estimada de entrega" name="fechaEstimadaEntrega"
                                 type="date" value={form.fechaEstimadaEntrega} onChange={handleChange} required
-                                error={!!errores.fechaEstimadaEntrega} helperText={errores.fechaEstimadaEntrega}
-                                slotProps={{ inputLabel: { shrink: true } }}
+                                error={!!errores.fechaEstimadaEntrega}
+                                helperText={errores.fechaEstimadaEntrega || (form.fechaSalidaRuta ? `Desde el ${form.fechaSalidaRuta}` : 'Selecciona primero una ruta')}
+                                slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: form.fechaSalidaRuta || undefined } }}
                                 sx={formFieldStyles} />
                         </Box>
                         <FormField label="Observaciones" name="observaciones" value={form.observaciones}
@@ -400,7 +457,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                 )
             case 3:
                 return (
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                         <FormSelect label="Método de pago" name="metodoPago" value={form.metodoPago}
                             onChange={handleChange} required error={errores.metodoPago}
                             helperText={errores.metodoPago}>
@@ -409,16 +466,14 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                             <MenuItem value="Transferencia">Transferencia</MenuItem>
                             <MenuItem value="Nequi">Nequi</MenuItem>
                         </FormSelect>
-                        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2.5 }}>
-                            <FormField label="Valor del servicio ($)" name="valorServicio" type="number"
-                                value={form.valorServicio} onChange={handleChange}
-                                inputProps={{ min: 0, step: 1 }} />
-                            <FormField label="Impuestos ($)" name="impuestos" type="number"
-                                value={form.impuestos} onChange={handleChange}
-                                inputProps={{ min: 0, step: 1 }} />
-                            <FormField label="Total a pagar ($)" name="total" type="number"
-                                value={form.total} onChange={handleChange} disabled />
-                        </Box>
+                        <FormField label="Valor del servicio ($)" name="valorServicio"
+                            value={form.valorServicio} onChange={handleChange}
+                            inputProps={{ maxLength: 9 }} />
+                        <FormField label="Impuestos ($)" name="impuestos"
+                            value={form.impuestos} onChange={handleChange}
+                            inputProps={{ maxLength: 9 }} />
+                        <FormField label="Total a pagar ($)" name="total"
+                            value={form.total} onChange={handleChange} disabled />
                     </Box>
                 )
             case 4:

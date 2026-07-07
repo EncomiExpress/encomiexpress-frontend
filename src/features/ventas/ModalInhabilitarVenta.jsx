@@ -39,6 +39,7 @@ const ModalInhabilitarVenta = ({ open, venta, onClose, onExited, onConfirm }) =>
             await onConfirm()
             onClose()
         } catch {
+            // error manejado por el padre
         } finally {
             setConfirming(false)
         }

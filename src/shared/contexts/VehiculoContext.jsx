@@ -40,7 +40,7 @@ export const VehiculoProvider = ({ children }) => {
   useEffect(() => {
     if (!token) return
     const abortController = new AbortController()
-    fetchVehiculos(abortController.signal)
+    fetchVehiculos(abortController.signal, { limit: 1000 })
     return () => abortController.abort()
   }, [fetchVehiculos, token])
 

@@ -14,8 +14,7 @@ import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
 import ClearIcon from '@mui/icons-material/Clear'
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
-import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank'
-import CheckBoxIcon from '@mui/icons-material/CheckBox'
+import ToggleSwitch from '../../shared/components/ToggleSwitch.jsx'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import { usePropietario } from '../../shared/contexts/PropietarioContext.jsx'
@@ -154,9 +153,6 @@ const ListarPropietario = () => {
         }
     }
 
-    const limpiarFiltros = () => { setSearchTerm(''); setFiltroHabilitado('todo'); setFiltroTipoFlota(''); setPage(1) }
-    const limpiarBusqueda = () => { setSearchTerm(''); setPage(1) }
-
     const handleExportar = () => {
         const rows = propietarios.map(propietario => ({
             'ID': propietario.idPropietario,
@@ -169,8 +165,6 @@ const ListarPropietario = () => {
 
         exportToExcel({ data: rows, fileName: 'propietarios', sheetName: 'Propietarios' })
     }
-
-    const hayFiltrosActivos = searchTerm.trim() !== '' || filtroHabilitado !== 'todo' || filtroTipoFlota !== ''
 
     const totalPages = Math.max(1, Math.ceil(total / rowsPerPage))
     const safePage = Math.min(page, totalPages)
@@ -439,15 +433,7 @@ const ListarPropietario = () => {
                                                     </IconButton>
                                                 </Tooltip>
                                                 {tienePermiso(PERMISOS.INHABILITAR_PROPIETARIO) && (
-                                                    <Tooltip title={propietario.habilitado ? 'Inhabilitar' : 'Habilitar'}>
-                                                        <IconButton size="small"
-                                                            onClick={() => solicitarToggle(propietario)}
-                                                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}>
-                                                            {propietario.habilitado
-                                                                ? <CheckBoxIcon sx={{ fontSize: 18, color: theme.palette.primary.main }} />
-                                                                : <CheckBoxOutlineBlankIcon sx={{ fontSize: 18, color: theme.palette.status?.disabled2?.color || theme.palette.text.disabled }} />}
-                                                        </IconButton>
-                                                    </Tooltip>
+                                                    <ToggleSwitch id={propietario.idPropietario} checked={propietario.habilitado} onChange={() => solicitarToggle(propietario)} />
                                                 )}
                                             </Box>
                                         </TableCell>
