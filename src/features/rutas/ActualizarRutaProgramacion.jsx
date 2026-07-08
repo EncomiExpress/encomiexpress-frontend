@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import {
     Box, Typography, Paper, Stepper, Step, StepLabel,
-    Button, Alert, Snackbar, Dialog, DialogTitle, DialogContent, IconButton,
+    Button, Alert, Dialog, DialogTitle, DialogContent, IconButton,
     Autocomplete, TextField
 } from '@mui/material'
 import RouteOutlinedIcon from '@mui/icons-material/RouteOutlined'
@@ -12,11 +12,14 @@ import CloseIcon from '@mui/icons-material/Close'
 import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined'
 import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined'
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined'
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import { useRutaProgramacion } from '../../shared/contexts/RutaProgramacionContext.jsx'
 import { useVehiculo } from '../../shared/contexts/VehiculoContext.jsx'
 import { useConductor } from '../../shared/contexts/ConductorContext.jsx'
 import { useDestino } from '../../shared/contexts/DestinoContext.jsx'
+import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { FormField } from '../../shared/components/FormularioEstandarizado.jsx'
+import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import { normalizarTexto } from '../../shared/utils/duplicados.js'
@@ -31,6 +34,7 @@ const steps = ['Datos de la Ruta', 'Horario', 'Confirmación']
 
 const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
     const { actualizarRutaProgramada } = useRutaProgramacion()
+    const { showToast } = useToast()
     const theme = useTheme()
     const { getVehiculosHabilitados } = useVehiculo()
     const { getConductoresHabilitados } = useConductor()
@@ -40,7 +44,6 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
     const [apiError, setApiError]       = useState(null)
     const [activeStep, setActiveStep]   = useState(0)
     const [submitting, setSubmitting]   = useState(false)
-    const [exito, setExito]             = useState(false)
     const [originalData, setOriginalData] = useState(null)
     const [sinCambios, setSinCambios]   = useState(false)
     const [destinoInput, setDestinoInput]     = useState('')
@@ -143,10 +146,10 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
                 idDestino:   parseInt(form.idDestino),
                 observaciones: form.observaciones || ''
             })
-            setExito(true)
+            showToast('¡Ruta actualizada exitosamente!', 'success')
             setTimeout(() => { handleClose(); onSuccess?.() }, 1500)
         } catch (err) {
-            setApiError(err.message || 'Error al actualizar la ruta')
+            setApiError(getErrorMessage(err, 'Error al actualizar la ruta'))
         } finally {
             setSubmitting(false)
         }
@@ -173,15 +176,15 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
 
     const getVehiculoLabel = (id) => {
         const v = vehiculos.find(x => x.idVehiculo === parseInt(id))
-        return v ? `${v.placa} - ${v.marca} ${v.modelo}` : id
+        return v ? `${v.placa} - ${v.marca} ${v.modelo}` : '—'
     }
     const getConductorLabel = (id) => {
         const c = conductores.find(x => x.idConductor === parseInt(id))
-        return c ? `${c.nombre} ${c.apellido}` : id
+        return c ? `${c.nombre} ${c.apellido}` : '—'
     }
     const getDestinoLabel = (id) => {
         const d = destinos.find(x => x.idDestino === parseInt(id))
-        return d ? (d.nombre ? `${d.nombre} - ${d.ciudad}` : `${d.departamento} - ${d.ciudad}`) : id
+        return d ? (d.nombre ? `${d.nombre} - ${d.ciudad}` : `${d.departamento} - ${d.ciudad}`) : '—'
     }
 
     const renderStepContent = () => {
@@ -296,9 +299,27 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
                             helperText={`Opcional · ${form.observaciones?.length || 0}/500`} />
                     </Box>
                 )
-            case 2:
+            case 2: {
+                const sonDistintos = (a, b) => String(a ?? '') !== String(b ?? '')
+                const camposComparados = originalData ? [
+                    [form.nombreRuta, originalData.nombreRuta],
+                    [form.idVehiculo, originalData.idVehiculo],
+                    [form.idConductor, originalData.idConductor],
+                    [form.idDestino, originalData.idDestino],
+                    [form.fechaSalida, originalData.fechaSalida],
+                    [form.horaSalida, originalData.horaSalida],
+                    [form.horaLlegadaEstimada, originalData.horaLlegadaEstimada],
+                    [form.observaciones, originalData.observaciones],
+                ] : []
+                const totalModificados = camposComparados.filter(([a, b]) => sonDistintos(a, b)).length
+
                 return (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        {totalModificados > 0 && (
+                            <Alert severity="info" icon={<EditOutlinedIcon fontSize="inherit" />} sx={{ borderRadius: 2 }}>
+                                Se {totalModificados === 1 ? 'modificó' : 'modificaron'} {totalModificados} {totalModificados === 1 ? 'campo' : 'campos'}: revísalo{totalModificados === 1 ? '' : 's'} antes de guardar.
+                            </Alert>
+                        )}
                         {sinCambios && (
                             <Alert severity="warning" sx={{ borderRadius: 2 }} onClose={() => setSinCambios(false)}>
                                 No has realizado ningún cambio. Los datos ya están actualizados.
@@ -316,10 +337,10 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
                                     <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Datos de la Ruta</Typography>
                                 </Box>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la información de la ruta</Typography>
-                                <ConfirmRow label="Nombre"    value={form.nombreRuta} />
-                                <ConfirmRow label="Vehículo"  value={getVehiculoLabel(form.idVehiculo)} />
-                                <ConfirmRow label="Conductor" value={getConductorLabel(form.idConductor)} />
-                                <ConfirmRow label="Destino"   value={getDestinoLabel(form.idDestino)} />
+                                <ConfirmRow label="Nombre"    value={form.nombreRuta} previousValue={originalData?.nombreRuta} />
+                                <ConfirmRow label="Vehículo"  value={getVehiculoLabel(form.idVehiculo)} previousValue={originalData ? getVehiculoLabel(originalData.idVehiculo) : undefined} />
+                                <ConfirmRow label="Conductor" value={getConductorLabel(form.idConductor)} previousValue={originalData ? getConductorLabel(originalData.idConductor) : undefined} />
+                                <ConfirmRow label="Destino"   value={getDestinoLabel(form.idDestino)} previousValue={originalData ? getDestinoLabel(originalData.idDestino) : undefined} />
                             </Paper>
                             <Paper elevation={0} sx={cardSx}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
@@ -327,13 +348,14 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
                                     <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Horario</Typography>
                                 </Box>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica el horario</Typography>
-                                <ConfirmRow label="Fecha"        value={form.fechaSalida} />
-                                <ConfirmRow label="Hora Salida"  value={form.horaSalida} />
-                                <ConfirmRow label="Hora Llegada" value={form.horaLlegadaEstimada || 'N/A'} />
+                                <ConfirmRow label="Fecha"        value={form.fechaSalida} previousValue={originalData?.fechaSalida} />
+                                <ConfirmRow label="Hora Salida"  value={form.horaSalida} previousValue={originalData?.horaSalida} />
+                                <ConfirmRow label="Hora Llegada" value={form.horaLlegadaEstimada || 'N/A'} previousValue={originalData?.horaLlegadaEstimada || 'N/A'} />
                             </Paper>
                         </Box>
                     </Box>
                 )
+            }
             default: return null
         }
     }
@@ -377,12 +399,6 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
                     </Box>
                 </Box>
             </DialogContent>
-
-            <Snackbar open={exito} autoHideDuration={2500} onClose={() => setExito(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-                <Alert severity="success" variant="filled" sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }} onClose={() => setExito(false)}>
-                    ¡Ruta actualizada exitosamente!
-                </Alert>
-            </Snackbar>
 
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 4, py: 2.5, borderTop: `1px solid ${theme.palette.divider}` }}>
                 <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined"

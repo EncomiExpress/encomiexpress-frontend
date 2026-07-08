@@ -1,13 +1,15 @@
 ﻿import { useTheme } from '@mui/material/styles'
 import { useState, useEffect, useRef } from 'react'
-import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Snackbar, Alert, Dialog, DialogTitle, DialogContent, IconButton, TextField, Autocomplete } from '@mui/material'
+import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, Dialog, DialogTitle, DialogContent, IconButton, TextField, Autocomplete } from '@mui/material'
 import {
   DirectionsCarOutlined, BadgeOutlined, SellOutlined, InvertColorsOutlined,
-  EventOutlined, SpeedOutlined, SaveOutlined, ArrowBackOutlined, ArrowForwardOutlined, Close
+  EventOutlined, SpeedOutlined, SaveOutlined, ArrowBackOutlined, ArrowForwardOutlined, Close, EditOutlined
 } from '@mui/icons-material'
 import { useVehiculo } from '../../shared/contexts/VehiculoContext.jsx'
 import { usePropietario } from '../../shared/contexts/PropietarioContext.jsx'
+import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { FormField, FormSelect } from '../../shared/components/FormularioEstandarizado.jsx'
+import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import { normalizarTexto } from '../../shared/utils/duplicados.js'
@@ -20,6 +22,7 @@ const CAPACIDAD_MAX = 999999
 
 const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSuccess }) => {
   const { getVehiculoById, actualizarVehiculo } = useVehiculo()
+  const { showToast } = useToast()
   const theme = useTheme()
   const { propietarios } = usePropietario()
 
@@ -30,7 +33,6 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
   })
   const [errores, setErrores] = useState({})
   const [apiError, setApiError] = useState('')
-  const [success, setSuccess] = useState(false)
   const [activeStep, setActiveStep] = useState(0)
   const [formOriginal, setFormOriginal] = useState(null)
   const [sinCambios, setSinCambios] = useState(false)
@@ -122,20 +124,14 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
         capacidad: parseFloat(formData.capacidad),
         idPropietario: parseInt(formData.idPropietario)
       })
-      setSuccess(true)
+      showToast('¡Vehículo actualizado exitosamente!', 'success')
       setTimeout(() => { onClose(); if (onSuccess) onSuccess() }, 1500)
-    } catch {
-      setApiError('Error al actualizar el vehículo')
+    } catch (err) {
+      setApiError(getErrorMessage(err, 'Error al actualizar el vehículo'))
     } finally {
       setSubmitting(false)
     }
   }
-
-  const hayCambiosActuales = formOriginal ? Object.keys(formData).some(key => {
-    const original = formOriginal[key] !== undefined ? String(formOriginal[key]) : ''
-    const actual = formData[key] !== undefined ? String(formData[key]) : ''
-    return original !== actual
-  }) : false
 
   const renderStepContent = () => {
     switch (activeStep) {
@@ -216,9 +212,34 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
               error={errores.vencimientoSeguroTerceros} helperText={errores.vencimientoSeguroTerceros} />
           </Box>
         )
-      case 2:
+      case 2: {
+        const getNombrePropietario = (id) => {
+          const p = propietarios.find(p => p.idPropietario === id)
+          return p ? `${p.nombre} ${p.apellido}` : '—'
+        }
+        const sonDistintos = (a, b) => String(a ?? '') !== String(b ?? '')
+        const camposComparados = formOriginal ? [
+          [formData.placa, formOriginal.placa],
+          [formData.marca, formOriginal.marca],
+          [formData.modelo, formOriginal.modelo],
+          [formData.color, formOriginal.color],
+          [formData.tipo, formOriginal.tipo],
+          [formData.capacidad, formOriginal.capacidad],
+          [formData.origen, formOriginal.origen],
+          [formData.idPropietario, formOriginal.idPropietario],
+          [formData.vencimientoSOAT, formOriginal.vencimientoSOAT],
+          [formData.vencimientoRevisionTecnica, formOriginal.vencimientoRevisionTecnica],
+          [formData.vencimientoSeguroTerceros, formOriginal.vencimientoSeguroTerceros],
+        ] : []
+        const totalModificados = camposComparados.filter(([a, b]) => sonDistintos(a, b)).length
+
         return (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {totalModificados > 0 && (
+              <Alert severity="info" icon={<EditOutlined fontSize="inherit" />} sx={{ borderRadius: 2 }}>
+                Se {totalModificados === 1 ? 'modificó' : 'modificaron'} {totalModificados} {totalModificados === 1 ? 'campo' : 'campos'}: revísalo{totalModificados === 1 ? '' : 's'} antes de guardar.
+              </Alert>
+            )}
             {sinCambios && (
               <Alert severity="warning" sx={{ borderRadius: 2 }} onClose={() => setSinCambios(false)}>
                 No has realizado ningún cambio. Los datos ya están actualizados.
@@ -234,12 +255,12 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
                   <Typography fontWeight={700} fontSize="0.95rem">Datos del Vehículo</Typography>
                 </Box>
                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la información del vehículo</Typography>
-                <ConfirmRow label="Placa" value={formData.placa} />
-                <ConfirmRow label="Marca" value={formData.marca} />
-                <ConfirmRow label="Modelo" value={formData.modelo} />
-                <ConfirmRow label="Color" value={formData.color} />
-                <ConfirmRow label="Tipo" value={formData.tipo} />
-                <ConfirmRow label="Capacidad" value={formData.capacidad ? `${formData.capacidad} kg` : ''} />
+                <ConfirmRow label="Placa" value={formData.placa} previousValue={formOriginal?.placa} />
+                <ConfirmRow label="Marca" value={formData.marca} previousValue={formOriginal?.marca} />
+                <ConfirmRow label="Modelo" value={formData.modelo} previousValue={formOriginal?.modelo} />
+                <ConfirmRow label="Color" value={formData.color} previousValue={formOriginal?.color} />
+                <ConfirmRow label="Tipo" value={formData.tipo} previousValue={formOriginal?.tipo} />
+                <ConfirmRow label="Capacidad" value={formData.capacidad ? `${formData.capacidad} kg` : ''} previousValue={formOriginal?.capacidad ? `${formOriginal.capacidad} kg` : undefined} />
               </Paper>
               <Paper elevation={0} sx={{ flex: 1, minWidth: 0, borderRadius: 2, p: 2.5, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white', overflow: 'hidden' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
@@ -247,15 +268,16 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
                   <Typography fontWeight={700} fontSize="0.95rem">Documentación</Typography>
                 </Box>
                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la documentación</Typography>
-                <ConfirmRow label="Origen" value={formData.origen} />
-                <ConfirmRow label="Propietario" value={(() => { const p = propietarios.find(p => p.idPropietario === formData.idPropietario); return p ? `${p.nombre} ${p.apellido}` : '—' })()} />
-                <ConfirmRow label="SOAT" value={formData.vencimientoSOAT} />
-                <ConfirmRow label="Revisión Técnica" value={formData.vencimientoRevisionTecnica} />
-                <ConfirmRow label="Seguro Terceros" value={formData.vencimientoSeguroTerceros} />
+                <ConfirmRow label="Origen" value={formData.origen} previousValue={formOriginal?.origen} />
+                <ConfirmRow label="Propietario" value={getNombrePropietario(formData.idPropietario)} previousValue={formOriginal ? getNombrePropietario(formOriginal.idPropietario) : undefined} />
+                <ConfirmRow label="SOAT" value={formData.vencimientoSOAT} previousValue={formOriginal?.vencimientoSOAT} />
+                <ConfirmRow label="Revisión Técnica" value={formData.vencimientoRevisionTecnica} previousValue={formOriginal?.vencimientoRevisionTecnica} />
+                <ConfirmRow label="Seguro Terceros" value={formData.vencimientoSeguroTerceros} previousValue={formOriginal?.vencimientoSeguroTerceros} />
               </Paper>
             </Box>
           </Box>
         )
+      }
       default:
         return null
     }
@@ -324,7 +346,7 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
           <Button
             onClick={activeStep < steps.length - 1 ? handleNext : handleSubmit}
             variant="contained"
-            disabled={submitting || (activeStep === steps.length - 1 && !hayCambiosActuales)}
+            disabled={submitting || (activeStep === steps.length - 1 && sinCambios)}
             endIcon={activeStep < steps.length - 1 ? <ArrowForwardOutlined /> : <SaveOutlined />}
             disableRipple
             sx={{
@@ -334,16 +356,10 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
               '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}` },
               '&.Mui-disabled': { backgroundColor: '#e0e0e0', color: '#9e9e9e' },
             }}>
-            {activeStep < steps.length - 1 ? 'Siguiente' : submitting ? 'Guardando...' : !hayCambiosActuales ? 'Sin cambios' : 'Guardar cambios'}
+            {activeStep < steps.length - 1 ? 'Siguiente' : submitting ? 'Guardando...' : sinCambios ? 'Sin cambios' : 'Guardar cambios'}
           </Button>
         </Box>
       </Box>
-
-      <Snackbar open={success} autoHideDuration={2500} onClose={() => setSuccess(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-        <Alert severity="success" variant="filled" sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }} onClose={() => setSuccess(false)}>
-          ¡Vehículo actualizado exitosamente!
-        </Alert>
-      </Snackbar>
     </Dialog>
   )
 }

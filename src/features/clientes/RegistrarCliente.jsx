@@ -1,6 +1,6 @@
 ﻿import { useTheme } from '@mui/material/styles'
 import { useState } from 'react'
-import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, Snackbar, TextField, Select, InputAdornment, Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material'
+import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, TextField, Select, InputAdornment, Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined'
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
@@ -14,7 +14,9 @@ import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import { useClientes } from '../../shared/contexts/ClienteContext.jsx'
+import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { FormField } from '../../shared/components/FormularioEstandarizado.jsx'
+import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import * as clienteService from '../../shared/services/clienteService.js'
@@ -27,12 +29,12 @@ const steps = ['Datos Personales', 'Información de Contacto', 'Confirmación']
 
 const RegistrarCliente = ({ open, onClose, onSuccess }) => {
     const { agregarCliente } = useClientes()
+    const { showToast } = useToast()
     const theme = useTheme()
     const [errores, setErrores] = useState({})
     const [apiError, setApiError] = useState(null)
     const [activeStep, setActiveStep] = useState(0)
     const [submitting, setSubmitting] = useState(false)
-    const [exito, setExito] = useState(false)
     const [avisoNombreDuplicado, setAvisoNombreDuplicado] = useState('')
     const [avisoDocDuplicado, setAvisoDocDuplicado] = useState('')
 
@@ -214,13 +216,13 @@ const RegistrarCliente = ({ open, onClose, onSuccess }) => {
         try {
             const { emailLocal, emailDominio, ...resto } = form
             await agregarCliente({ ...resto, email: emailLocal + emailDominio, apellido: form.tipoIdentificacion === 'NIT' ? '' : form.apellido })
-            setExito(true)
+            showToast('¡Cliente registrado exitosamente!', 'success')
             setTimeout(() => {
                 handleClose()
                 if (onSuccess) onSuccess()
             }, 1500)
         } catch (err) {
-            setApiError(err.message)
+            setApiError(getErrorMessage(err, 'Error al registrar el cliente'))
         } finally {
             setSubmitting(false)
         }
@@ -418,12 +420,6 @@ const RegistrarCliente = ({ open, onClose, onSuccess }) => {
                     </Box>
                 </Box>
             </DialogContent>
-
-            <Snackbar open={exito} autoHideDuration={2500} onClose={() => setExito(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-                <Alert severity="success" variant="filled" sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }} onClose={() => setExito(false)}>
-                    ¡Cliente registrado exitosamente!
-                </Alert>
-            </Snackbar>
 
             <Box sx={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',

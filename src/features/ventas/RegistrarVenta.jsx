@@ -1,6 +1,6 @@
 ﻿import { useTheme } from '@mui/material/styles'
 import { useEffect, useState } from 'react'
-import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, Snackbar, TextField, Autocomplete, Dialog, DialogTitle, DialogContent, IconButton, Divider } from '@mui/material'
+import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, TextField, Autocomplete, Dialog, DialogTitle, DialogContent, IconButton, Divider } from '@mui/material'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined'
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
@@ -16,7 +16,9 @@ import CloseIcon from '@mui/icons-material/Close'
 import { useVentas } from '../../shared/contexts/VentaContext.jsx'
 import { useClientes } from '../../shared/contexts/ClienteContext.jsx'
 import { useRutaProgramacion } from '../../shared/contexts/RutaProgramacionContext.jsx'
+import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { FormField, FormSelect } from '../../shared/components/FormularioEstandarizado.jsx'
+import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import { normalizarTexto } from '../../shared/utils/duplicados.js'
@@ -25,6 +27,7 @@ const steps = ['Partes', 'Paquete', 'Envío', 'Pago', 'Confirmación']
 
 const RegistrarVenta = ({ open, onClose, onSuccess }) => {
     const { agregarVenta } = useVentas()
+    const { showToast } = useToast()
     const theme = useTheme()
     const { clientes } = useClientes()
     const { rutasProgramadas, fetchRutasProgramadas } = useRutaProgramacion()
@@ -32,7 +35,6 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
     const [apiError, setApiError] = useState(null)
     const [activeStep, setActiveStep] = useState(0)
     const [submitting, setSubmitting] = useState(false)
-    const [exito, setExito] = useState(false)
     const [clienteInput, setClienteInput] = useState('')
     const [rutaInput, setRutaInput] = useState('')
 
@@ -221,10 +223,10 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                 impuestos: parseFloat(form.impuestos) || 0,
                 estadoPago: form.estadoPago,
             })
-            setExito(true)
+            showToast('¡Venta registrada exitosamente!', 'success')
             setTimeout(() => { handleClose(); if (onSuccess) onSuccess() }, 1500)
         } catch (err) {
-            setApiError(err.message || 'Error al registrar la venta.')
+            setApiError(getErrorMessage(err, 'Error al registrar la venta.'))
         } finally {
             setSubmitting(false)
         }
@@ -617,12 +619,6 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                     </Button>
                 </Box>
             </Box>
-
-            <Snackbar open={exito} autoHideDuration={2500} onClose={() => setExito(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-                <Alert severity="success" variant="filled" sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }} onClose={() => setExito(false)}>
-                    ¡Venta registrada exitosamente!
-                </Alert>
-            </Snackbar>
         </Dialog>
     )
 }

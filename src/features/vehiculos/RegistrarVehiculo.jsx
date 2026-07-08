@@ -1,13 +1,15 @@
 ﻿import { useTheme } from '@mui/material/styles'
 import { useState } from 'react'
-import { Box, Paper, Typography, MenuItem, Dialog, DialogTitle, DialogContent, Stepper, Step, StepLabel, Snackbar, Alert, IconButton, Button, Autocomplete, TextField } from '@mui/material'
+import { Box, Paper, Typography, MenuItem, Dialog, DialogTitle, DialogContent, Stepper, Step, StepLabel, Alert, IconButton, Button, Autocomplete, TextField } from '@mui/material'
 import {
   DirectionsCarOutlined, BadgeOutlined, SellOutlined, InvertColorsOutlined,
   EventOutlined, SpeedOutlined, Close, ArrowBackOutlined, ArrowForwardOutlined, CheckOutlined
 } from '@mui/icons-material'
 import { useVehiculo } from '../../shared/contexts/VehiculoContext.jsx'
 import { usePropietario } from '../../shared/contexts/PropietarioContext.jsx'
+import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { FormField, FormSelect } from '../../shared/components/FormularioEstandarizado.jsx'
+import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import { normalizarTexto } from '../../shared/utils/duplicados.js'
@@ -32,9 +34,9 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
     vencimientoRevisionTecnica: '',
     vencimientoSeguroTerceros: ''
   })
+  const { showToast } = useToast()
   const [errores, setErrores] = useState({})
   const [apiError, setApiError] = useState('')
-  const [success, setSuccess] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [activeStep, setActiveStep] = useState(0)
 
@@ -73,7 +75,6 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
     })
     setErrores({})
     setApiError('')
-    setSuccess('')
     setActiveStep(0)
     onClose()
   }
@@ -120,10 +121,10 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
         vencimientoRevisionTecnica: formData.vencimientoRevisionTecnica || null,
         vencimientoSeguroTerceros: formData.vencimientoSeguroTerceros || null,
       })
-      setSuccess('¡Vehículo registrado exitosamente!')
+      showToast('¡Vehículo registrado exitosamente!', 'success')
       setTimeout(() => { handleClose(); if (onSuccess) onSuccess() }, 1500)
-    } catch {
-      setApiError('Error al registrar el vehículo')
+    } catch (err) {
+      setApiError(getErrorMessage(err, 'Error al registrar el vehículo'))
     } finally {
       setSubmitting(false)
     }
@@ -321,12 +322,6 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
           </Button>
         </Box>
       </Box>
-
-      <Snackbar open={!!success} autoHideDuration={2500} onClose={() => setSuccess('')} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-        <Alert severity="success" variant="filled" sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }} onClose={() => setSuccess('')}>
-          {success}
-        </Alert>
-      </Snackbar>
     </Dialog>
   )
 }

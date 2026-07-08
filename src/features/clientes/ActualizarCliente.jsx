@@ -1,6 +1,6 @@
 ﻿import { useTheme } from '@mui/material/styles'
 import { useState, useEffect, useRef } from 'react'
-import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Snackbar, Alert, TextField, Select, InputAdornment, Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material'
+import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, TextField, Select, InputAdornment, Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined'
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
@@ -13,8 +13,11 @@ import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined'
 import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined'
 import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined'
 import CloseIcon from '@mui/icons-material/Close'
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import { useClientes } from '../../shared/contexts/ClienteContext.jsx'
+import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { FormField } from '../../shared/components/FormularioEstandarizado.jsx'
+import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import * as clienteService from '../../shared/services/clienteService.js'
@@ -27,8 +30,8 @@ const steps = ['Datos Personales', 'Información de Contacto', 'Confirmación']
 
 const ActualizarCliente = ({ open, onClose, cliente: clienteProp, onSuccess }) => {
     const { clientes, loading, actualizarCliente } = useClientes()
+    const { showToast } = useToast()
     const theme = useTheme()
-    const [exito, setExito] = useState(false)
     const [apiError, setApiError] = useState(null)
     const [errores, setErrores] = useState({})
     const [activeStep, setActiveStep] = useState(0)
@@ -246,13 +249,13 @@ const ActualizarCliente = ({ open, onClose, cliente: clienteProp, onSuccess }) =
         try {
             const { emailLocal, emailDominio, ...resto } = form
             await actualizarCliente({ ...resto, email: emailLocal + emailDominio, apellido: form.tipoIdentificacion === 'NIT' ? '' : form.apellido })
-            setExito(true)
+            showToast('¡Cliente actualizado exitosamente!', 'success')
             setTimeout(() => {
                 onClose()
                 if (onSuccess) onSuccess()
             }, 1500)
         } catch (err) {
-            setApiError(err.message)
+            setApiError(getErrorMessage(err, 'Error al actualizar el cliente'))
         } finally {
             setSubmitting(false)
         }
@@ -374,9 +377,28 @@ const ActualizarCliente = ({ open, onClose, cliente: clienteProp, onSuccess }) =
                         </Box>
                     </Box>
                 )
-            case 2:
+            case 2: {
+                const emailActual = form.emailLocal + form.emailDominio
+                const emailOriginal = formOriginal ? formOriginal.emailLocal + formOriginal.emailDominio : undefined
+                const sonDistintos = (a, b) => String(a ?? '') !== String(b ?? '')
+                const camposComparados = [
+                    [form.nombre, formOriginal?.nombre],
+                    ...(form.tipoIdentificacion !== 'NIT' ? [[form.apellido, formOriginal?.apellido]] : []),
+                    [form.tipoIdentificacion, formOriginal?.tipoIdentificacion],
+                    [form.numeroIdentificacion, formOriginal?.numeroIdentificacion],
+                    [form.telefono, formOriginal?.telefono],
+                    [emailActual, emailOriginal],
+                    [form.direccion, formOriginal?.direccion],
+                ]
+                const totalModificados = formOriginal ? camposComparados.filter(([a, b]) => sonDistintos(a, b)).length : 0
+
                 return (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        {totalModificados > 0 && (
+                            <Alert severity="info" icon={<EditOutlinedIcon fontSize="inherit" />} sx={{ borderRadius: 2 }}>
+                                Se {totalModificados === 1 ? 'modificó' : 'modificaron'} {totalModificados} {totalModificados === 1 ? 'campo' : 'campos'}: revísalo{totalModificados === 1 ? '' : 's'} antes de guardar.
+                            </Alert>
+                        )}
                         {sinCambios && (
                             <Alert severity="warning" sx={{ borderRadius: 2 }} onClose={() => setSinCambios(false)}>
                                 No has realizado ningún cambio. Los datos ya están actualizados.
@@ -394,10 +416,10 @@ const ActualizarCliente = ({ open, onClose, cliente: clienteProp, onSuccess }) =
                                     <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Datos Personales</Typography>
                                 </Box>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la información personal</Typography>
-                                <ConfirmRow label={form.tipoIdentificacion === 'NIT' ? 'Razón Social' : 'Nombre'} value={form.nombre} />
-                                {form.tipoIdentificacion !== 'NIT' && <ConfirmRow label="Apellido" value={form.apellido} />}
-                                <ConfirmRow label="Tipo de documento" value={form.tipoIdentificacion} />
-                                <ConfirmRow label="N° de documento" value={form.numeroIdentificacion} />
+                                <ConfirmRow label={form.tipoIdentificacion === 'NIT' ? 'Razón Social' : 'Nombre'} value={form.nombre} previousValue={formOriginal?.nombre} />
+                                {form.tipoIdentificacion !== 'NIT' && <ConfirmRow label="Apellido" value={form.apellido} previousValue={formOriginal?.apellido} />}
+                                <ConfirmRow label="Tipo de documento" value={form.tipoIdentificacion} previousValue={formOriginal?.tipoIdentificacion} />
+                                <ConfirmRow label="N° de documento" value={form.numeroIdentificacion} previousValue={formOriginal?.numeroIdentificacion} />
                             </Paper>
                             <Paper elevation={0} sx={cardSx}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
@@ -405,13 +427,14 @@ const ActualizarCliente = ({ open, onClose, cliente: clienteProp, onSuccess }) =
                                     <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Información de Contacto</Typography>
                                 </Box>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica los datos de contacto</Typography>
-                                <ConfirmRow label="Teléfono" value={form.telefono} />
-                                <ConfirmRow label="Correo" value={form.emailLocal + form.emailDominio} />
-                                <ConfirmRow label="Dirección" value={form.direccion} />
+                                <ConfirmRow label="Teléfono" value={form.telefono} previousValue={formOriginal?.telefono} />
+                                <ConfirmRow label="Correo" value={emailActual} previousValue={emailOriginal} />
+                                <ConfirmRow label="Dirección" value={form.direccion} previousValue={formOriginal?.direccion} />
                             </Paper>
                         </Box>
                     </Box>
                 )
+            }
             default:
                 return null
         }
@@ -500,12 +523,6 @@ const ActualizarCliente = ({ open, onClose, cliente: clienteProp, onSuccess }) =
                     </Button>
                 </Box>
             </Box>
-
-            <Snackbar open={exito} autoHideDuration={2500} onClose={() => setExito(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-                <Alert severity="success" variant="filled" sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }} onClose={() => setExito(false)}>
-                    ¡Cliente actualizado exitosamente!
-                </Alert>
-            </Snackbar>
         </Dialog>
     )
 }

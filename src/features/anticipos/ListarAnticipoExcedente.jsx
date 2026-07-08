@@ -3,11 +3,12 @@ import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useAnticipos } from '../../shared/contexts/AnticipoExcedenteContext.jsx'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
+import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import {
     Box, Typography, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, TextField,
     IconButton, Chip, Tooltip, InputAdornment,
-    Button, Select, MenuItem, Pagination, Snackbar, Alert,
+    Button, Select, MenuItem, Pagination,
     CircularProgress, FormControl, TableSortLabel,
     Dialog, DialogTitle, DialogContent, DialogActions
 } from '@mui/material'
@@ -122,7 +123,7 @@ const ListarAnticipoExcedente = () => {
     const [page, setPage] = useState(1)
     const [rowsPerPage, setRowsPerPage] = useState(5)
     const [anticipoConsulta, setAnticipoConsulta] = useState(null)
-    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
+    const { showToast } = useToast()
     const [modalInhabilitar, setModalInhabilitar] = useState({ open: false, anticipo: null })
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
@@ -204,9 +205,9 @@ const ListarAnticipoExcedente = () => {
     const ejecutarCambioEstadoAnticipo = async (id, nuevoEstado) => {
         try {
             await cambiarEstado(id, nuevoEstado)
-            setSnackbar({ open: true, message: 'Estado del anticipo actualizado', severity: 'success' })
+            showToast('Estado del anticipo actualizado', 'success')
         } catch (err) {
-            setSnackbar({ open: true, message: err.message || 'No se pudo cambiar el estado', severity: 'error' })
+            showToast(err.message || 'No se pudo cambiar el estado', 'error')
         }
     }
 
@@ -687,14 +688,14 @@ const ListarAnticipoExcedente = () => {
             <RegistrarAnticipoExcedente
                 open={modalRegistrarOpen}
                 onClose={() => setModalRegistrarOpen(false)}
-                onSuccess={() => setSnackbar({ open: true, message: 'Anticipo registrado correctamente', severity: 'success' })}
+                onSuccess={() => showToast('Anticipo registrado correctamente', 'success')}
             />
 
             <ActualizarAnticipoExcedente
                 open={modalActualizarOpen}
                 onClose={() => { setModalActualizarOpen(false); setAnticipoEditar(null) }}
                 anticipo={anticipoEditar}
-                onSuccess={() => setSnackbar({ open: true, message: 'Anticipo actualizado correctamente', severity: 'success' })}
+                onSuccess={() => showToast('Anticipo actualizado correctamente', 'success')}
             />
 
             <ModalInhabilitarAnticipo
@@ -709,7 +710,7 @@ const ListarAnticipoExcedente = () => {
                     if (wasPending && anticipo) {
                         const habilitadoActual = anticipo.habilitado === true
                         toggleHabilitado(anticipo.idAnticipoExcedente)
-                            .then(() => setSnackbar({ open: true, message: habilitadoActual ? 'Anticipo inhabilitado' : 'Anticipo habilitado', severity: habilitadoActual ? 'warning' : 'success' }))
+                            .then(() => showToast(habilitadoActual ? 'Anticipo inhabilitado' : 'Anticipo habilitado', habilitadoActual ? 'warning' : 'success'))
                             .catch(() => {})
                     }
                 }}
@@ -808,17 +809,6 @@ const ListarAnticipoExcedente = () => {
                 </Box>
             </Dialog>
 
-            <Snackbar
-                open={snackbar.open}
-                autoHideDuration={3000}
-                onClose={() => setSnackbar({ ...snackbar, open: false })}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-            >
-                <Alert severity={snackbar.severity} variant="filled"
-                    sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }}>
-                    {snackbar.message}
-                </Alert>
-            </Snackbar>
         </Box>
     )
 }

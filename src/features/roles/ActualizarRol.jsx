@@ -1,8 +1,9 @@
 import { useTheme } from '@mui/material/styles'
 import { useState, useEffect } from 'react'
-import { Box, Typography, Paper, FormControlLabel, Checkbox, Grid, Alert, Snackbar, Dialog, DialogTitle, DialogContent, IconButton, Button } from '@mui/material'
+import { Box, Typography, Paper, FormControlLabel, Checkbox, Grid, Alert, Dialog, DialogTitle, DialogContent, IconButton, Button } from '@mui/material'
 import { Security, Close, SaveOutlined } from '@mui/icons-material'
 import { MODULOS, ROLES, useAuth } from '../../shared/contexts/AuthContext.jsx'
+import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import {
   FormField, PrimaryButton, SecondaryButton,
   FormButtonGroup
@@ -69,7 +70,7 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
       'listar_venta': 'Listar', 'registrar_venta': 'Registrar', 'consultar_venta': 'Consultar', 'actualizar_venta': 'Actualizar', 'inhabilitar_venta': 'Inhabilitar',
       'ver_dashboard': 'Ver',
     }
-    return labels[permiso] || permiso
+    return labels[permiso] || permiso.replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase())
   }
 
   // Cargar permisos disponibles desde el backend al montar
@@ -126,7 +127,6 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
       return
     }
 
-    setMensaje('')
     setError('')
     setEnviando(true)
     try {
@@ -146,8 +146,8 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
       } else {
         setError(respuesta.message || 'Error al actualizar el rol')
       }
-    } catch {
-      setError('Error al actualizar el rol')
+    } catch (err) {
+      setError(getErrorMessage(err, 'Error al actualizar el rol'))
     } finally {
       setEnviando(false)
     }

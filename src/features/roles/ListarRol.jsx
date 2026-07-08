@@ -1,11 +1,12 @@
 import { useTheme } from '@mui/material/styles'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth, PERMISOS } from '../../shared/contexts/AuthContext.jsx'
+import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import {
     Box, Typography, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, TextField,
     IconButton, Tooltip, InputAdornment,
-    Button, Select, MenuItem, Pagination, Chip, Snackbar, Alert,
+    Button, Select, MenuItem, Pagination, Chip,
     TableSortLabel, CircularProgress
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
@@ -52,7 +53,7 @@ const ListarRol = () => {
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [rolEditar, setRolEditar] = useState(null)
     const [rolConsulta, setRolConsulta] = useState(null)
-    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' })
+    const { showToast } = useToast()
     const [confirmToggle, setConfirmToggle] = useState({ open: false, rolId: null, rolNombre: '', habilitadoActual: null })
 
     const puedeRegistrar = tienePermiso(PERMISOS.REGISTRAR_ROL)
@@ -110,20 +111,19 @@ const ListarRol = () => {
         try {
             respuesta = await toggleHabilitadoRol(rolId)
         } catch (error) {
-            setSnackbar({ open: true, message: error?.message || 'Error al cambiar estado', severity: 'error' })
+            showToast(error?.message || 'Error al cambiar estado', 'error')
             throw error
         }
         if (respuesta.success) {
             setRoles(prev => prev.map(r => r.id === rolId ? { ...r, habilitado: !habilitadoActual } : r))
-            setSnackbar({
-                open: true,
-                message: !habilitadoActual
+            showToast(
+                !habilitadoActual
                     ? `Rol "${rolNombre}" habilitado. Todos sus usuarios han sido habilitados.`
                     : `Rol "${rolNombre}" inhabilitado. Todos sus usuarios han sido inhabilitados.`,
-                severity: 'success'
-            })
+                'success'
+            )
         } else {
-            setSnackbar({ open: true, message: respuesta.message || 'Error al cambiar estado', severity: 'error' })
+            showToast(respuesta.message || 'Error al cambiar estado', 'error')
             throw new Error(respuesta.message || 'Error al cambiar estado')
         }
     }
@@ -489,7 +489,7 @@ const ListarRol = () => {
                 onClose={() => setModalRegistrarOpen(false)}
                 onSuccess={() => {
                     cargarRoles()
-                    setSnackbar({ open: true, message: 'Rol registrado correctamente', severity: 'success' })
+                    showToast('Rol registrado correctamente', 'success')
                 }}
             />
 
@@ -499,7 +499,7 @@ const ListarRol = () => {
                 rol={rolEditar}
                 onSuccess={() => {
                     cargarRoles()
-                    setSnackbar({ open: true, message: 'Rol actualizado correctamente', severity: 'success' })
+                    showToast('Rol actualizado correctamente', 'success')
                 }}
             />
 
@@ -511,26 +511,6 @@ const ListarRol = () => {
                 onConfirm={onConfirmar}
             />
 
-            <Snackbar
-                open={snackbar.open}
-                autoHideDuration={3000}
-                onClose={() => setSnackbar(s => ({ ...s, open: false }))}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-            >
-                <Alert
-                    severity={snackbar.severity}
-                    variant="filled"
-                    sx={{
-                        fontWeight: 600,
-                        borderRadius: 2,
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                        fontSize: '0.85rem',
-                    }}
-                    onClose={() => setSnackbar(s => ({ ...s, open: false }))}
-                >
-                    {snackbar.message}
-                </Alert>
-            </Snackbar>
         </Box>
     )
 }

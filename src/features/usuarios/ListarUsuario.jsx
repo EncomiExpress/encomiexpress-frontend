@@ -1,11 +1,12 @@
 import { useTheme } from '@mui/material/styles'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
+import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import {
     Box, Typography, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, TextField,
     IconButton, Chip, Tooltip, InputAdornment,
-    Button, Avatar, Select, MenuItem, Pagination, Snackbar, Alert,
+    Button, Avatar, Select, MenuItem, Pagination,
     CircularProgress, FormControl, TableSortLabel
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
@@ -81,7 +82,7 @@ const ListarUsuario = () => {
     const [page, setPage] = useState(1)
     const [rowsPerPage, setRowsPerPage] = useState(5)
     const [usuarioConsulta, setUsuarioConsulta] = useState(null)
-    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
+    const { showToast } = useToast()
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [usuarioEditar, setUsuarioEditar] = useState(null)
@@ -150,9 +151,9 @@ const ListarUsuario = () => {
             setUsuarios(prev => prev.map(u =>
                 u.idUsuario === idUsuario ? { ...u, habilitado: !u.habilitado } : u
             ))
-            setSnackbar({ open: true, message: `Usuario ${habilitadoActual ? 'inhabilitado' : 'habilitado'} correctamente`, severity: 'success' })
+            showToast(`Usuario ${habilitadoActual ? 'inhabilitado' : 'habilitado'} correctamente`, 'success')
         } catch (err) {
-            setSnackbar({ open: true, message: err?.message || 'Error al cambiar el estado', severity: 'error' })
+            showToast(err?.message || 'Error al cambiar el estado', 'error')
             throw err
         }
     }
@@ -494,15 +495,25 @@ const ListarUsuario = () => {
                                                     </Tooltip>
                                                 )}
                                                 {tienePermiso(PERMISOS.ACTUALIZAR_USUARIO) && (
-                                                    <Tooltip title="Editar">
-                                                        <IconButton
-                                                            size="small"
-                                                            onClick={() => { setUsuarioEditar(usuario); setModalActualizarOpen(true) }}
-                                                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
-                                                        >
-                                                            <EditOutlinedIcon sx={{ fontSize: 18 }} />
-                                                        </IconButton>
-                                                    </Tooltip>
+                                                    usuario.rol?.nombre?.toLowerCase() === 'conductor' ? (
+                                                        <Tooltip title="Este usuario es un conductor: actualízalo desde el módulo de Conductores">
+                                                            <span>
+                                                                <IconButton size="small" disabled>
+                                                                    <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                                                                </IconButton>
+                                                            </span>
+                                                        </Tooltip>
+                                                    ) : (
+                                                        <Tooltip title="Editar">
+                                                            <IconButton
+                                                                size="small"
+                                                                onClick={() => { setUsuarioEditar(usuario); setModalActualizarOpen(true) }}
+                                                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
+                                                            >
+                                                                <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                    )
                                                 )}
                                                 {tienePermiso(PERMISOS.INHABILITAR_USUARIO) && usuario.idUsuario !== usuarioActual?.idUsuario && (
                                                     <ToggleSwitch id={usuario.idUsuario} checked={usuario.habilitado} onChange={() => solicitarToggle(usuario)} />
@@ -632,7 +643,7 @@ const ListarUsuario = () => {
                 onClose={() => setModalRegistrarOpen(false)}
                 onSuccess={() => {
                     cargarUsuarios()
-                    setSnackbar({ open: true, message: 'Usuario registrado correctamente', severity: 'success' })
+                    showToast('Usuario registrado correctamente', 'success')
                 }}
             />
 
@@ -642,7 +653,7 @@ const ListarUsuario = () => {
                 usuario={usuarioEditar}
                 onSuccess={() => {
                     cargarUsuarios()
-                    setSnackbar({ open: true, message: 'Usuario actualizado correctamente', severity: 'success' })
+                    showToast('Usuario actualizado correctamente', 'success')
                 }}
             />
 
@@ -653,27 +664,6 @@ const ListarUsuario = () => {
                 onExited={() => setConfirmToggle({ open: false, idUsuario: null, nombreCompleto: '', habilitadoActual: false })}
                 onConfirm={onConfirmar}
             />
-
-            <Snackbar
-                open={snackbar.open}
-                autoHideDuration={3000}
-                onClose={() => setSnackbar(s => ({ ...s, open: false }))}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-            >
-                <Alert
-                    severity={snackbar.severity}
-                    variant="filled"
-                    sx={{
-                        fontWeight: 600,
-                        borderRadius: 2,
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                        fontSize: '0.85rem',
-                    }}
-                    onClose={() => setSnackbar(s => ({ ...s, open: false }))}
-                >
-                    {snackbar.message}
-                </Alert>
-            </Snackbar>
         </Box>
     )
 }

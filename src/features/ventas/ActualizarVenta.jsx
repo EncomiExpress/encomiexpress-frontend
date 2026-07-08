@@ -1,6 +1,6 @@
 import { useTheme } from '@mui/material/styles'
 import { useState, useEffect } from 'react'
-import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, Snackbar, TextField, Autocomplete, Dialog, DialogTitle, DialogContent, IconButton, Divider } from '@mui/material'
+import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, TextField, Autocomplete, Dialog, DialogTitle, DialogContent, IconButton, Divider } from '@mui/material'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined'
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
@@ -11,10 +11,13 @@ import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined'
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined'
 import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined'
 import CloseIcon from '@mui/icons-material/Close'
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import { useVentas } from '../../shared/contexts/VentaContext.jsx'
 import { useClientes } from '../../shared/contexts/ClienteContext.jsx'
 import { useRutaProgramacion } from '../../shared/contexts/RutaProgramacionContext.jsx'
+import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { FormField, FormSelect } from '../../shared/components/FormularioEstandarizado.jsx'
+import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import { normalizarTexto } from '../../shared/utils/duplicados.js'
@@ -25,6 +28,7 @@ const hoyISO = () => new Date().toISOString().split('T')[0]
 
 const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
     const { actualizarVenta } = useVentas()
+    const { showToast } = useToast()
     const theme = useTheme()
     const { clientes } = useClientes()
     const { rutasProgramadas, fetchRutasProgramadas } = useRutaProgramacion()
@@ -32,7 +36,6 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
     const [apiError, setApiError] = useState(null)
     const [activeStep, setActiveStep] = useState(0)
     const [submitting, setSubmitting] = useState(false)
-    const [exito, setExito] = useState(false)
     const [clienteInput, setClienteInput] = useState('')
     const [rutaInput, setRutaInput] = useState('')
     const [ventaOriginal, setVentaOriginal] = useState(null)
@@ -269,13 +272,13 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
             }
             await actualizarVenta(numId, payload)
 
-            setExito(true)
+            showToast('¡Venta actualizada exitosamente!', 'success')
             setTimeout(() => {
                 if (onClose) onClose()
                 if (onSuccess) onSuccess()
             }, 1500)
         } catch (err) {
-            setApiError(err.message || 'Error al actualizar la venta.')
+            setApiError(getErrorMessage(err, 'Error al actualizar la venta.'))
         } finally {
             setSubmitting(false)
         }
@@ -526,9 +529,43 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                             value={form.total} onChange={handleChange} disabled={true} />
                     </Box>
                 )
-            case 4:
+            case 4: {
+                const clienteOriginal = formOriginal ? clientes.find(c => c.idCliente === parseInt(formOriginal.idCliente)) : null
+                const dimensionesActual = form.alto ? `${form.alto}×${form.ancho}×${form.profundidad} cm` : null
+                const dimensionesOriginal = formOriginal?.alto ? `${formOriginal.alto}×${formOriginal.ancho}×${formOriginal.profundidad} cm` : undefined
+                const valorDeclaradoActual = form.valorDeclarado ? `$${parseFloat(form.valorDeclarado).toLocaleString()}` : '$0'
+                const valorDeclaradoOriginal = formOriginal ? (formOriginal.valorDeclarado ? `$${parseFloat(formOriginal.valorDeclarado).toLocaleString()}` : '$0') : undefined
+                const totalActual = form.total ? `$${parseFloat(form.total).toLocaleString()}` : null
+                const totalOriginal = formOriginal ? (formOriginal.total ? `$${parseFloat(formOriginal.total).toLocaleString()}` : null) : undefined
+
+                const sonDistintos = (a, b) => String(a ?? '') !== String(b ?? '')
+                const camposComparados = formOriginal ? [
+                    [form.idCliente, formOriginal.idCliente],
+                    [form.nombreDestinatario, formOriginal.nombreDestinatario],
+                    [form.telefonoDestinatario, formOriginal.telefonoDestinatario],
+                    [form.direccionDestinatario, formOriginal.direccionDestinatario],
+                    [form.descripcionContenido, formOriginal.descripcionContenido],
+                    [form.peso, formOriginal.peso],
+                    [form.alto, formOriginal.alto],
+                    [form.ancho, formOriginal.ancho],
+                    [form.profundidad, formOriginal.profundidad],
+                    [form.valorDeclarado, formOriginal.valorDeclarado],
+                    [form.idRuta, formOriginal.idRuta],
+                    [form.fechaEstimadaEntrega, formOriginal.fechaEstimadaEntrega],
+                    [form.observaciones, formOriginal.observaciones],
+                    [form.metodoPago, formOriginal.metodoPago],
+                    [form.valorServicio, formOriginal.valorServicio],
+                    [form.impuestos, formOriginal.impuestos],
+                ] : []
+                const totalModificados = camposComparados.filter(([a, b]) => sonDistintos(a, b)).length
+
                 return (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        {totalModificados > 0 && (
+                            <Alert severity="info" icon={<EditOutlinedIcon fontSize="inherit" />} sx={{ borderRadius: 2 }}>
+                                Se {totalModificados === 1 ? 'modificó' : 'modificaron'} {totalModificados} {totalModificados === 1 ? 'campo' : 'campos'}: revísalo{totalModificados === 1 ? '' : 's'} antes de guardar.
+                            </Alert>
+                        )}
                         {sinCambios && (
                             <Alert severity="warning" sx={{ borderRadius: 2 }} onClose={() => setSinCambios(false)}>
                                 No has realizado ningún cambio. Los datos ya están actualizados.
@@ -547,9 +584,9 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                                 </Box>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la información del remitente</Typography>
                                 {clienteSeleccionado && <>
-                                    <ConfirmRow label="Nombre" value={`${clienteSeleccionado.nombre} ${clienteSeleccionado.apellido || ''}`.trim()} />
-                                    <ConfirmRow label="Identificación" value={clienteSeleccionado.numeroIdentificacion} />
-                                    <ConfirmRow label="Teléfono" value={clienteSeleccionado.telefono} />
+                                    <ConfirmRow label="Nombre" value={`${clienteSeleccionado.nombre} ${clienteSeleccionado.apellido || ''}`.trim()} previousValue={clienteOriginal ? `${clienteOriginal.nombre} ${clienteOriginal.apellido || ''}`.trim() : undefined} />
+                                    <ConfirmRow label="Identificación" value={clienteSeleccionado.numeroIdentificacion} previousValue={clienteOriginal?.numeroIdentificacion} />
+                                    <ConfirmRow label="Teléfono" value={clienteSeleccionado.telefono} previousValue={clienteOriginal?.telefono} />
                                 </>}
                             </Paper>
                             <Paper elevation={0} sx={cardSx}>
@@ -558,9 +595,9 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                                     <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Destinatario</Typography>
                                 </Box>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la información del destinatario</Typography>
-                                <ConfirmRow label="Nombre" value={form.nombreDestinatario} />
-                                <ConfirmRow label="Teléfono" value={form.telefonoDestinatario} />
-                                <ConfirmRow label="Dirección" value={form.direccionDestinatario} />
+                                <ConfirmRow label="Nombre" value={form.nombreDestinatario} previousValue={formOriginal?.nombreDestinatario} />
+                                <ConfirmRow label="Teléfono" value={form.telefonoDestinatario} previousValue={formOriginal?.telefonoDestinatario} />
+                                <ConfirmRow label="Dirección" value={form.direccionDestinatario} previousValue={formOriginal?.direccionDestinatario} />
                             </Paper>
                         </Box>
                         <Box sx={{ display: 'flex', gap: 2 }}>
@@ -570,10 +607,10 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                                     <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Paquete</Typography>
                                 </Box>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica los datos del paquete</Typography>
-                                <ConfirmRow label="Contenido" value={form.descripcionContenido} />
-                                <ConfirmRow label="Peso" value={form.peso ? `${form.peso} kg` : null} />
-                                <ConfirmRow label="Dimensiones" value={form.alto ? `${form.alto}×${form.ancho}×${form.profundidad} cm` : null} />
-                                <ConfirmRow label="Valor declarado" value={form.valorDeclarado ? `$${parseFloat(form.valorDeclarado).toLocaleString()}` : '$0'} />
+                                <ConfirmRow label="Contenido" value={form.descripcionContenido} previousValue={formOriginal?.descripcionContenido} />
+                                <ConfirmRow label="Peso" value={form.peso ? `${form.peso} kg` : null} previousValue={formOriginal ? (formOriginal.peso ? `${formOriginal.peso} kg` : null) : undefined} />
+                                <ConfirmRow label="Dimensiones" value={dimensionesActual} previousValue={dimensionesOriginal} />
+                                <ConfirmRow label="Valor declarado" value={valorDeclaradoActual} previousValue={valorDeclaradoOriginal} />
                             </Paper>
                             <Paper elevation={0} sx={cardSx}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
@@ -581,14 +618,15 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                                     <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Envío y Pago</Typography>
                                 </Box>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Ruta y valores</Typography>
-                                <ConfirmRow label="Ruta" value={form.destino} />
-                                <ConfirmRow label="Fecha entrega" value={form.fechaEstimadaEntrega} />
-                                <ConfirmRow label="Método de pago" value={form.metodoPago} />
-                                <ConfirmRow label="Total" value={form.total ? `$${parseFloat(form.total).toLocaleString()}` : null} />
+                                <ConfirmRow label="Ruta" value={form.destino} previousValue={formOriginal?.destino} />
+                                <ConfirmRow label="Fecha entrega" value={form.fechaEstimadaEntrega} previousValue={formOriginal?.fechaEstimadaEntrega} />
+                                <ConfirmRow label="Método de pago" value={form.metodoPago} previousValue={formOriginal?.metodoPago} />
+                                <ConfirmRow label="Total" value={totalActual} previousValue={totalOriginal} />
                             </Paper>
                         </Box>
                     </Box>
                 )
+            }
             default:
                 return null
         }
@@ -733,12 +771,6 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                     </Button>
                 </Box>
             </Box>
-
-            <Snackbar open={exito} autoHideDuration={2500} onClose={() => setExito(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-                <Alert severity="success" variant="filled" sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }} onClose={() => setExito(false)}>
-                    ¡Venta actualizada exitosamente!
-                </Alert>
-            </Snackbar>
         </Dialog>
     )
 }

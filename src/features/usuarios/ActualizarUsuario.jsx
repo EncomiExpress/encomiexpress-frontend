@@ -1,7 +1,7 @@
 ﻿import { useTheme } from '@mui/material/styles'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Dialog, DialogTitle, DialogContent, IconButton, Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Snackbar, Alert, TextField, Select, InputAdornment, CircularProgress } from '@mui/material'
+import { Dialog, DialogTitle, DialogContent, IconButton, Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, TextField, Select, InputAdornment, CircularProgress } from '@mui/material'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined'
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
@@ -15,8 +15,12 @@ import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined'
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined'
 import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined'
 import CloseIcon from '@mui/icons-material/Close'
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import { useAuth, ROLES } from '../../shared/contexts/AuthContext.jsx'
+import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { formFieldStyles } from '../../shared/utils/formStyles.js'
+import { getErrorMessage } from '../../shared/utils/errorMessage.js'
+import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import * as usuarioService from '../../shared/services/usuarioService.js'
 import { hayNombreDuplicado, MENSAJE_NOMBRE_DUPLICADO, hayDocumentoDuplicado, MENSAJE_DOC_DUPLICADO } from '../../shared/utils/duplicados.js'
 
@@ -26,49 +30,11 @@ const PASSWORD_HELP = '8-16 caracteres, con mayúsculas, minúsculas, números y
 
 const steps = ['Datos Personales', 'Credenciales', 'Confirmación']
 
-const HighlightText = ({ original, actual, color }) => {
-    const theme = useTheme()
-    const highlightColor = color || theme.palette.primary.main
-    if (original === actual) {
-        return <>{actual || '—'}</>
-    }
-
-    const maxLen = Math.max(original?.length || 0, actual?.length || 0)
-    const parts = []
-
-    for (let i = 0; i < maxLen; i++) {
-        const origChar = original?.[i] || ''
-        const actChar = actual?.[i] || ''
-
-        if (origChar !== actChar) {
-            parts.push(<span key={i} style={{ backgroundColor: highlightColor, fontWeight: 700 }}>{actChar}</span>)
-        } else {
-            parts.push(<span key={i}>{actChar}</span>)
-        }
-    }
-
-    return <>{parts}</>
-}
-
-const ConfirmRow = ({ label, valueOriginal, valueActual }) => {
-    const theme = useTheme()
-    const changed = valueOriginal !== valueActual
-    return (
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, py: 0.9, overflow: 'hidden' }}>
-            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500, flexShrink: 0 }}>{label}</Typography>
-            <Typography variant="body2" fontWeight={changed ? 700 : 500} color={changed ? theme.palette.primary.main : theme.palette.text.primary}
-                sx={{ textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0, backgroundColor: changed ? theme.palette.primary.light + '22' : 'transparent', px: changed ? 1 : 0, borderRadius: changed ? 1 : 0 }}>
-                <HighlightText original={valueOriginal} actual={valueActual} />
-            </Typography>
-        </Box>
-    )
-}
-
 const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) => {
     const { actualizarUsuario, getRolesBackend } = useAuth()
+    const { showToast } = useToast()
     const theme = useTheme()
     const navigate = useNavigate()
-    const [exito, setExito] = useState(false)
     const [apiError, setApiError] = useState(null)
     const [errores, setErrores] = useState({})
     const [activeStep, setActiveStep] = useState(0)
@@ -326,13 +292,13 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
             }
 
             await actualizarUsuario(usuarioProp.idUsuario, datosBackend)
-            setExito(true)
+            showToast('¡Usuario actualizado exitosamente!', 'success')
             setTimeout(() => {
                 onClose()
                 if (onSuccess) onSuccess()
             }, 1500)
         } catch (err) {
-            setApiError(err.message)
+            setApiError(getErrorMessage(err, 'Error al actualizar el usuario'))
         } finally {
             setSubmitting(false)
         }
@@ -497,9 +463,18 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
                         </Box>
                     </Box>
                 )
-            case 2:
+            case 2: {
+                const cambios = getCamposCambiados()
+                const totalModificados = Object.values(cambios).filter(Boolean).length
+                const getNombreRol = (idRol) => rolesDisponibles.find(r => r.idRol === parseInt(idRol))?.nombre || '—'
+
                 return (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        {totalModificados > 0 && (
+                            <Alert severity="info" icon={<EditOutlinedIcon fontSize="inherit" />} sx={{ borderRadius: 2 }}>
+                                Se {totalModificados === 1 ? 'modificó' : 'modificaron'} {totalModificados} {totalModificados === 1 ? 'campo' : 'campos'}: revísalo{totalModificados === 1 ? '' : 's'} antes de guardar.
+                            </Alert>
+                        )}
                         {sinCambios && (
                             <Alert severity="warning" sx={{ borderRadius: 2 }} onClose={() => setSinCambios(false)}>
                                 No has realizado ningún cambio. Los datos ya están actualizados.
@@ -518,10 +493,10 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
                                         <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Datos Personales</Typography>
                                     </Box>
                                     <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la información personal</Typography>
-                                    <ConfirmRow label="Tipo de documento" valueOriginal={formOriginal.tipoIdentificacion} valueActual={form.tipoIdentificacion} />
-                                    <ConfirmRow label="N° de documento" valueOriginal={formOriginal.numeroIdentificacion} valueActual={form.numeroIdentificacion} />
-                                    <ConfirmRow label="Nombre" valueOriginal={formOriginal.nombre} valueActual={form.nombre} />
-                                    <ConfirmRow label="Apellido" valueOriginal={formOriginal.apellido} valueActual={form.apellido} />
+                                    <ConfirmRow label="Tipo de documento" value={form.tipoIdentificacion} previousValue={formOriginal.tipoIdentificacion} />
+                                    <ConfirmRow label="N° de documento" value={form.numeroIdentificacion} previousValue={formOriginal.numeroIdentificacion} />
+                                    <ConfirmRow label="Nombre" value={form.nombre} previousValue={formOriginal.nombre} />
+                                    <ConfirmRow label="Apellido" value={form.apellido} previousValue={formOriginal.apellido} />
                                 </Paper>
                                 <Paper elevation={0} sx={cardSx}>
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
@@ -529,15 +504,16 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
                                         <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Credenciales</Typography>
                                     </Box>
                                     <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica los datos de acceso</Typography>
-                                    <ConfirmRow label="Teléfono" valueOriginal={formOriginal.telefono} valueActual={form.telefono} />
-                                    <ConfirmRow label="Correo" valueOriginal={(formOriginal.emailLocal || '') + (formOriginal.emailDominio || '')} valueActual={form.emailLocal + form.emailDominio} />
-                                    <ConfirmRow label="Rol" valueOriginal={rolesDisponibles.find(r => r.idRol === parseInt(formOriginal.idRol))?.nombre || formOriginal.idRol} valueActual={rolesDisponibles.find(r => r.idRol === parseInt(form.idRol))?.nombre || form.idRol} />
-                                    <ConfirmRow label="Contraseña" valueOriginal="Sin cambiar" valueActual={form.password ? '••••••••' : 'Sin cambiar'} />
+                                    <ConfirmRow label="Teléfono" value={form.telefono} previousValue={formOriginal.telefono} />
+                                    <ConfirmRow label="Correo" value={form.emailLocal + form.emailDominio} previousValue={(formOriginal.emailLocal || '') + (formOriginal.emailDominio || '')} />
+                                    <ConfirmRow label="Rol" value={getNombreRol(form.idRol)} previousValue={getNombreRol(formOriginal.idRol)} />
+                                    <ConfirmRow label="Contraseña" value={form.password ? '••••••••' : 'Sin cambiar'} previousValue="Sin cambiar" />
                                 </Paper>
                             </Box>
                         )}
                     </Box>
                 )
+            }
             default:
                 return null
         }
@@ -613,7 +589,7 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
                     <Button
                         onClick={activeStep < steps.length - 1 ? handleNext : handleSubmit}
                         variant="contained"
-                        disabled={submitting || (activeStep === steps.length - 1 && !Object.values(getCamposCambiados()).some(Boolean))}
+                        disabled={submitting || (activeStep === steps.length - 1 && sinCambios)}
                         endIcon={submitting ? <CircularProgress size={18} color="inherit" /> : (activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <SaveOutlinedIcon />)}
                         disableRipple
                         sx={{
@@ -623,16 +599,10 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
                             '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}` },
                             '&.Mui-disabled': { backgroundColor: '#e0e0e0', color: '#9e9e9e' },
                         }}>
-                        {activeStep < steps.length - 1 ? 'Siguiente' : submitting ? 'Guardando...' : !Object.values(getCamposCambiados()).some(Boolean) ? 'Sin cambios' : 'Guardar cambios'}
+                        {activeStep < steps.length - 1 ? 'Siguiente' : submitting ? 'Guardando...' : sinCambios ? 'Sin cambios' : 'Guardar cambios'}
                     </Button>
                 </Box>
             </Box>
-
-            <Snackbar open={exito} autoHideDuration={2500} onClose={() => setExito(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-                <Alert severity="success" variant="filled" sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }} onClose={() => setExito(false)}>
-                    ¡Usuario actualizado exitosamente!
-                </Alert>
-            </Snackbar>
         </Dialog>
     )
 }

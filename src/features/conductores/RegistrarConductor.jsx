@@ -1,6 +1,6 @@
 ﻿import { useTheme } from '@mui/material/styles'
 import { useState } from 'react'
-import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, Snackbar, TextField, Select, InputAdornment, Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material'
+import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, TextField, Select, InputAdornment, Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined'
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
@@ -16,7 +16,9 @@ import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined
 import EventOutlinedIcon from '@mui/icons-material/EventOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import { useConductor } from '../../shared/contexts/ConductorContext.jsx'
+import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { FormField, FormSelect } from '../../shared/components/FormularioEstandarizado.jsx'
+import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import * as conductorService from '../../shared/services/conductorService.js'
@@ -31,12 +33,12 @@ const steps = ['Datos Personales', 'Licencia de Conducción', 'Confirmación']
 
 const RegistrarConductor = ({ open, onClose, onSuccess }) => {
     const { registrarConductor } = useConductor()
+    const { showToast } = useToast()
     const theme = useTheme()
     const [errores, setErrores] = useState({})
     const [apiError, setApiError] = useState(null)
     const [activeStep, setActiveStep] = useState(0)
     const [submitting, setSubmitting] = useState(false)
-    const [exito, setExito] = useState(false)
     const [showPassword, setShowPassword] = useState(false)
     const [avisoNombreDuplicado, setAvisoNombreDuplicado] = useState('')
     const [avisoDocDuplicado, setAvisoDocDuplicado] = useState('')
@@ -213,13 +215,13 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
                 habilitado: true,
                 estado: 'Disponible'
             })
-            setExito(true)
+            showToast('¡Conductor registrado exitosamente!', 'success')
             setTimeout(() => {
                 handleClose()
                 if (onSuccess) onSuccess()
             }, 1500)
         } catch (err) {
-            setApiError(err.message || 'Error al registrar el conductor')
+            setApiError(getErrorMessage(err, 'Error al registrar el conductor'))
         } finally {
             setSubmitting(false)
         }
@@ -450,12 +452,6 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
                     </Box>
                 </Box>
             </DialogContent>
-
-            <Snackbar open={exito} autoHideDuration={2500} onClose={() => setExito(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-                <Alert severity="success" variant="filled" sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }} onClose={() => setExito(false)}>
-                    ¡Conductor registrado exitosamente!
-                </Alert>
-            </Snackbar>
 
             <Box sx={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',

@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import {
     Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel,
-    Button, Snackbar, Alert, TextField, Select, InputAdornment,
+    Button, Alert, TextField, Select, InputAdornment,
     Dialog, DialogTitle, DialogContent, IconButton
 } from '@mui/material'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
@@ -16,8 +16,11 @@ import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined'
 import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined'
 import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
 import CloseIcon from '@mui/icons-material/Close'
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import { usePropietario } from '../../shared/contexts/PropietarioContext.jsx'
+import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { FormField, FormSelect } from '../../shared/components/FormularioEstandarizado.jsx'
+import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import * as propietarioService from '../../shared/services/propietarioService.js'
@@ -42,8 +45,8 @@ const EMPTY_FORM = {
 
 const ActualizarPropietario = ({ open, onClose, propietario: propietarioProp, onSuccess }) => {
     const { propietarios, actualizarPropietario } = usePropietario()
+    const { showToast } = useToast()
     const theme = useTheme()
-    const [exito, setExito] = useState(false)
     const [apiError, setApiError] = useState(null)
     const [errores, setErrores] = useState({})
     const [activeStep, setActiveStep] = useState(0)
@@ -237,13 +240,13 @@ const ActualizarPropietario = ({ open, onClose, propietario: propietarioProp, on
                 apellido: form.tipoIdentificacion === 'NIT' ? '' : form.apellido,
                 email: emailLocal ? emailLocal + emailDominio : '',
             })
-            setExito(true)
+            showToast('¡Propietario actualizado exitosamente!', 'success')
             setTimeout(() => {
                 handleClose()
                 if (onSuccess) onSuccess()
             }, 1500)
         } catch (err) {
-            setApiError(err.message || 'Error al actualizar el propietario')
+            setApiError(getErrorMessage(err, 'Error al actualizar el propietario'))
         } finally {
             setSubmitting(false)
         }
@@ -371,9 +374,29 @@ const ActualizarPropietario = ({ open, onClose, propietario: propietarioProp, on
                         </FormSelect>
                     </Box>
                 )
-            case 2:
+            case 2: {
+                const emailActual = form.emailLocal ? form.emailLocal + form.emailDominio : '—'
+                const emailOriginal = formOriginal ? (formOriginal.emailLocal ? formOriginal.emailLocal + formOriginal.emailDominio : '—') : undefined
+                const sonDistintos = (a, b) => String(a ?? '') !== String(b ?? '')
+                const camposComparados = [
+                    [form.tipoIdentificacion, formOriginal?.tipoIdentificacion],
+                    [form.numeroIdentificacion, formOriginal?.numeroIdentificacion],
+                    [form.nombre, formOriginal?.nombre],
+                    [form.apellido, formOriginal?.apellido],
+                    [form.telefono, formOriginal?.telefono],
+                    [emailActual, emailOriginal],
+                    [form.tarjetaPropiedad, formOriginal?.tarjetaPropiedad],
+                    [form.tipoFlota, formOriginal?.tipoFlota],
+                ]
+                const totalModificados = formOriginal ? camposComparados.filter(([a, b]) => sonDistintos(a, b)).length : 0
+
                 return (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        {totalModificados > 0 && (
+                            <Alert severity="info" icon={<EditOutlinedIcon fontSize="inherit" />} sx={{ borderRadius: 2 }}>
+                                Se {totalModificados === 1 ? 'modificó' : 'modificaron'} {totalModificados} {totalModificados === 1 ? 'campo' : 'campos'}: revísalo{totalModificados === 1 ? '' : 's'} antes de guardar.
+                            </Alert>
+                        )}
                         {sinCambios && (
                             <Alert severity="warning" sx={{ borderRadius: 2 }} onClose={() => setSinCambios(false)}>
                                 No has realizado ningún cambio. Los datos ya están actualizados.
@@ -391,11 +414,11 @@ const ActualizarPropietario = ({ open, onClose, propietario: propietarioProp, on
                                     <Typography fontWeight={700} fontSize="0.95rem">Datos Personales</Typography>
                                 </Box>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la información personal</Typography>
-                                <ConfirmRow label="Tipo de documento" value={getTipoLabel(form.tipoIdentificacion)} />
-                                <ConfirmRow label="N° de documento" value={form.numeroIdentificacion} />
-                                <ConfirmRow label={form.tipoIdentificacion === 'NIT' ? 'Razón Social' : 'Nombre'} value={form.nombre} />
+                                <ConfirmRow label="Tipo de documento" value={getTipoLabel(form.tipoIdentificacion)} previousValue={formOriginal ? getTipoLabel(formOriginal.tipoIdentificacion) : undefined} />
+                                <ConfirmRow label="N° de documento" value={form.numeroIdentificacion} previousValue={formOriginal?.numeroIdentificacion} />
+                                <ConfirmRow label={form.tipoIdentificacion === 'NIT' ? 'Razón Social' : 'Nombre'} value={form.nombre} previousValue={formOriginal?.nombre} />
                                 {form.tipoIdentificacion !== 'NIT' && (
-                                    <ConfirmRow label="Apellido" value={form.apellido || 'N/A'} />
+                                    <ConfirmRow label="Apellido" value={form.apellido || 'N/A'} previousValue={formOriginal?.apellido || 'N/A'} />
                                 )}
                             </Paper>
                             <Paper elevation={0} sx={{ flex: 1, minWidth: 0, borderRadius: 2, p: 2.5, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white' }}>
@@ -404,14 +427,15 @@ const ActualizarPropietario = ({ open, onClose, propietario: propietarioProp, on
                                     <Typography fontWeight={700} fontSize="0.95rem">Contacto y Vehículo</Typography>
                                 </Box>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica los datos de contacto y flota</Typography>
-                                <ConfirmRow label="Teléfono" value={form.telefono} />
-                                <ConfirmRow label="Correo" value={form.emailLocal ? form.emailLocal + form.emailDominio : '—'} />
-                                <ConfirmRow label="Tarjeta propiedad" value={form.tarjetaPropiedad || 'N/A'} />
-                                <ConfirmRow label="Tipo de flota" value={form.tipoFlota || 'N/A'} />
+                                <ConfirmRow label="Teléfono" value={form.telefono} previousValue={formOriginal?.telefono} />
+                                <ConfirmRow label="Correo" value={emailActual} previousValue={emailOriginal} />
+                                <ConfirmRow label="Tarjeta propiedad" value={form.tarjetaPropiedad || 'N/A'} previousValue={formOriginal?.tarjetaPropiedad || 'N/A'} />
+                                <ConfirmRow label="Tipo de flota" value={form.tipoFlota || 'N/A'} previousValue={formOriginal?.tipoFlota || 'N/A'} />
                             </Paper>
                         </Box>
                     </Box>
                 )
+            }
             default:
                 return null
         }
@@ -490,12 +514,6 @@ const ActualizarPropietario = ({ open, onClose, propietario: propietarioProp, on
                     </Button>
                 </Box>
             </Box>
-
-            <Snackbar open={exito} autoHideDuration={2500} onClose={() => setExito(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-                <Alert severity="success" variant="filled" sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }} onClose={() => setExito(false)}>
-                    ¡Propietario actualizado exitosamente!
-                </Alert>
-            </Snackbar>
         </Dialog>
     )
 }

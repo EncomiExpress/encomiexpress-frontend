@@ -5,7 +5,7 @@ import { getPageOfDestino } from '../../shared/services/destinoService.js'
 import {
     Box, Typography, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, Chip, IconButton,
-    TextField, InputAdornment, Snackbar, Alert,
+    TextField, InputAdornment,
     Tooltip, Button, CircularProgress,
     Select, MenuItem, FormControl, Pagination, TableSortLabel,
 } from '@mui/material'
@@ -21,6 +21,7 @@ import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDown
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import { useDestino } from '../../shared/contexts/DestinoContext.jsx'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
+import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import RegistrarDestino from './RegistrarDestino'
 import ActualizarDestino from './ActualizarDestino'
 import ModalConsultarDestino from './ModalConsultarDestino'
@@ -135,7 +136,7 @@ const ListarDestino = () => {
     const [searchTerm, setSearchTerm] = useState('')
     const [debouncedSearch, setDebouncedSearch] = useState('')
     const [destinoVer, setDestinoVer] = useState(null)
-    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
+    const { showToast } = useToast()
     const [confirmInhabilitar, setConfirmInhabilitar] = useState({ open: false, id: null, ciudad: '', habilitadoActual: null })
     const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
     const [filtroDepartamento, setFiltroDepartamento] = useState('')
@@ -218,13 +219,9 @@ const ListarDestino = () => {
     const onConfirmar = async () => {
         try {
             await toggleHabilitado(confirmInhabilitar.id)
-            setSnackbar({
-                open: true,
-                message: confirmInhabilitar.habilitadoActual ? 'Destino inhabilitado correctamente.' : 'Destino habilitado correctamente.',
-                severity: 'success',
-            })
+            showToast(confirmInhabilitar.habilitadoActual ? 'Destino inhabilitado correctamente.' : 'Destino habilitado correctamente.', 'success')
         } catch (err) {
-            setSnackbar({ open: true, message: err.message || 'No se pudo cambiar el estado del destino.', severity: 'error' })
+            showToast(err.message || 'No se pudo cambiar el estado del destino.', 'error')
             throw err
         }
     }
@@ -638,7 +635,7 @@ const ListarDestino = () => {
                 onClose={() => setModalRegistrarOpen(false)}
                 onSuccess={() => {
                     fetchDestinos()
-                    setSnackbar({ open: true, message: 'Destino registrado correctamente', severity: 'success' })
+                    showToast('Destino registrado correctamente', 'success')
                 }}
             />
 
@@ -648,7 +645,7 @@ const ListarDestino = () => {
                 destino={destinoEditar}
                 onSuccess={() => {
                     fetchDestinos()
-                    setSnackbar({ open: true, message: 'Destino actualizado correctamente', severity: 'success' })
+                    showToast('Destino actualizado correctamente', 'success')
                 }}
             />
 
@@ -659,16 +656,6 @@ const ListarDestino = () => {
                 onExited={() => setConfirmInhabilitar({ open: false, id: null, ciudad: '', habilitadoActual: null })}
                 onConfirm={onConfirmar}
             />
-
-            <Snackbar open={snackbar.open} autoHideDuration={3000}
-                onClose={() => setSnackbar(s => ({ ...s, open: false }))}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-                <Alert severity={snackbar.severity} variant="filled"
-                    sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }}
-                    onClose={() => setSnackbar(s => ({ ...s, open: false }))}>
-                    {snackbar.message}
-                </Alert>
-            </Snackbar>
         </Box>
     )
 }

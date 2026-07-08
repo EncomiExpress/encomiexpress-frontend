@@ -3,11 +3,12 @@ import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useClientes } from '../../shared/contexts/ClienteContext.jsx'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
+import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import {
     Box, Typography, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, TextField,
     IconButton, Chip, Tooltip, InputAdornment,
-    Button, Avatar, Select, MenuItem, Pagination, Snackbar, Alert,
+    Button, Avatar, Select, MenuItem, Pagination,
     CircularProgress, FormControl, TableSortLabel
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
@@ -61,7 +62,7 @@ const ListarCliente = () => {
     const [page, setPage] = useState(1)
     const [rowsPerPage, setRowsPerPage] = useState(5)
     const [clienteConsulta, setClienteConsulta] = useState(null)
-    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
+    const { showToast } = useToast()
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [clienteEditar, setClienteEditar] = useState(null)
@@ -569,7 +570,7 @@ const ListarCliente = () => {
                     if (wasPending && data) {
                         const habilitadoActual = data.habilitadoActual
                         toggleHabilitadoCliente(data.idCliente)
-                            .then(() => setSnackbar({ open: true, message: `Cliente ${habilitadoActual ? 'inhabilitado' : 'habilitado'} correctamente`, severity: habilitadoActual ? 'warning' : 'success' }))
+                            .then(() => showToast(`Cliente ${habilitadoActual ? 'inhabilitado' : 'habilitado'} correctamente`, habilitadoActual ? 'warning' : 'success'))
                             .catch(() => {})
                     }
                 }}
@@ -580,7 +581,7 @@ const ListarCliente = () => {
                 open={modalRegistrarOpen}
                 onClose={() => setModalRegistrarOpen(false)}
                 onSuccess={() => {
-                    setSnackbar({ open: true, message: 'Cliente registrado correctamente', severity: 'success' })
+                    showToast('Cliente registrado correctamente', 'success')
                 }}
             />
 
@@ -589,30 +590,9 @@ const ListarCliente = () => {
                 onClose={() => { setModalActualizarOpen(false); setClienteEditar(null) }}
                 cliente={clienteEditar}
                 onSuccess={() => {
-                    setSnackbar({ open: true, message: 'Cliente actualizado correctamente', severity: 'success' })
+                    showToast('Cliente actualizado correctamente', 'success')
                 }}
             />
-
-            <Snackbar
-                open={snackbar.open}
-                autoHideDuration={3000}
-                onClose={() => setSnackbar(s => ({ ...s, open: false }))}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-            >
-                <Alert
-                    severity={snackbar.severity}
-                    variant="filled"
-                    sx={{
-                        fontWeight: 600,
-                        borderRadius: 2,
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                        fontSize: '0.85rem',
-                    }}
-                    onClose={() => setSnackbar(s => ({ ...s, open: false }))}
-                >
-                    {snackbar.message}
-                </Alert>
-            </Snackbar>
         </Box>
     )
 }

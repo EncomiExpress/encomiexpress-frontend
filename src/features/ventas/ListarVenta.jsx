@@ -6,7 +6,7 @@ import {
     Box, Typography, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, TextField,
     IconButton, Chip, Tooltip, InputAdornment,
-    Button, Select, MenuItem, Pagination, Snackbar, Alert,
+    Button, Select, MenuItem, Pagination,
     CircularProgress, FormControl, TableSortLabel,
     Menu, Dialog, DialogContent
 } from '@mui/material'
@@ -24,6 +24,7 @@ import PaidOutlinedIcon from '@mui/icons-material/PaidOutlined'
 import SwapHorizOutlinedIcon from '@mui/icons-material/SwapHorizOutlined'
 import { ESTADOS_ENCOMIENDA, METODOS_PAGO, ESTADOS_PAGO } from '../../shared/contexts/VentaContext.jsx'
 import { useAuth, PERMISOS } from '../../shared/contexts/AuthContext.jsx'
+import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { getPageOfEncomienda } from '../../shared/services/ventaService'
 import RegistrarVenta from './RegistrarVenta'
 import ActualizarVenta from './ActualizarVenta'
@@ -132,7 +133,7 @@ const ListarVenta = () => {
     const [page, setPage] = useState(1)
     const [rowsPerPage, setRowsPerPage] = useState(5)
     const [ventaConsulta, setVentaConsulta] = useState(null)
-    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
+    const { showToast } = useToast()
     const [modalInhabilitar, setModalInhabilitar] = useState({ open: false, venta: null })
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
@@ -197,34 +198,18 @@ const ListarVenta = () => {
     const handleEstadoChange = async (id, nuevoEstado) => {
         try {
             await cambiarEstadoVenta(id, nuevoEstado)
-            setSnackbar({
-                open: true,
-                message: `Estado actualizado a ${nuevoEstado.charAt(0).toUpperCase() + nuevoEstado.slice(1)}.`,
-                severity: 'success',
-            })
+            showToast(`Estado actualizado a ${nuevoEstado.charAt(0).toUpperCase() + nuevoEstado.slice(1)}.`, 'success')
         } catch (err) {
-            setSnackbar({
-                open: true,
-                message: err.message || 'Error al cambiar el estado de la encomienda.',
-                severity: 'error',
-            })
+            showToast(err.message || 'Error al cambiar el estado de la encomienda.', 'error')
         }
     }
 
     const handlePagoChange = async (id, nuevoPago) => {
         try {
             await actualizarVenta(id, { estadoPago: nuevoPago })
-            setSnackbar({
-                open: true,
-                message: `Estado de pago actualizado a ${nuevoPago}.`,
-                severity: 'success',
-            })
+            showToast(`Estado de pago actualizado a ${nuevoPago}.`, 'success')
         } catch (err) {
-            setSnackbar({
-                open: true,
-                message: err.message || 'Error al cambiar el estado de pago.',
-                severity: 'error',
-            })
+            showToast(err.message || 'Error al cambiar el estado de pago.', 'error')
         }
     }
 
@@ -590,11 +575,12 @@ const ListarVenta = () => {
                                                         label="Ruta cancelada · Reasignar"
                                                         size="small"
                                                         sx={{
-                                                            backgroundColor: '#FFF7ED',
-                                                            color: '#EA580C',
+                                                            height: 18,
+                                                            fontSize: '0.65rem',
                                                             fontWeight: 600,
-                                                            fontSize: '0.7rem',
-                                                            height: 20,
+                                                            backgroundColor: alpha(theme.palette.warning.main, 0.12),
+                                                            color: theme.palette.warning.dark,
+                                                            border: `1px solid ${alpha(theme.palette.warning.main, 0.35)}`,
                                                             mt: 0.5,
                                                         }}
                                                     />
@@ -808,7 +794,7 @@ const ListarVenta = () => {
                 onClose={() => setModalRegistrarOpen(false)}
                 onSuccess={() => {
                     setModalRegistrarOpen(false)
-                    setSnackbar({ open: true, message: 'Venta registrada correctamente.', severity: 'success' })
+                    showToast('Venta registrada correctamente.', 'success')
                 }}
             />
 
@@ -819,7 +805,7 @@ const ListarVenta = () => {
                 onSuccess={() => {
                     setModalActualizarOpen(false)
                     setVentaEditar(null)
-                    setSnackbar({ open: true, message: 'Venta actualizada correctamente.', severity: 'success' })
+                    showToast('Venta actualizada correctamente.', 'success')
                 }}
             />
 
@@ -835,7 +821,7 @@ const ListarVenta = () => {
                     if (wasPending && venta) {
                         const habilitadoActual = venta.habilitado
                         toggleHabilitadoVenta(venta.idEncomiendaVenta)
-                            .then(() => setSnackbar({ open: true, message: `Venta ${habilitadoActual ? 'inhabilitada' : 'habilitada'} correctamente.`, severity: habilitadoActual ? 'warning' : 'success' }))
+                            .then(() => showToast(`Venta ${habilitadoActual ? 'inhabilitada' : 'habilitada'} correctamente.`, habilitadoActual ? 'warning' : 'success'))
                             .catch(() => {})
                     }
                 }}
@@ -998,26 +984,6 @@ const ListarVenta = () => {
                 </Box>
             </Dialog>
 
-            <Snackbar
-                open={snackbar.open}
-                autoHideDuration={3000}
-                onClose={() => setSnackbar(s => ({ ...s, open: false }))}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-            >
-                <Alert
-                    severity={snackbar.severity}
-                    variant="filled"
-                    sx={{
-                        fontWeight: 600,
-                        borderRadius: 2,
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                        fontSize: '0.85rem',
-                    }}
-                    onClose={() => setSnackbar(s => ({ ...s, open: false }))}
-                >
-                    {snackbar.message}
-                </Alert>
-            </Snackbar>
         </Box>
     )
 }

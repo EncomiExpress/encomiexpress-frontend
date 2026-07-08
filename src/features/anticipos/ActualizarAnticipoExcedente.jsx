@@ -1,8 +1,8 @@
 ﻿import { useTheme } from '@mui/material/styles'
 import { useState, useEffect, useRef } from 'react'
 import {
-    Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel,
-    Button, Alert, Snackbar, TextField, Dialog, DialogTitle, DialogContent, IconButton,
+    Box, Typography, Paper, Stepper, Step, StepLabel,
+    Button, Alert, TextField, Dialog, DialogTitle, DialogContent, IconButton,
     Autocomplete
 } from '@mui/material'
 import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined'
@@ -12,46 +12,25 @@ import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
 import AttachMoneyOutlinedIcon from '@mui/icons-material/AttachMoneyOutlined'
 import CloseIcon from '@mui/icons-material/Close'
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import { useAnticipos } from '../../shared/contexts/AnticipoExcedenteContext.jsx'
-import { FormField, FormSelect } from '../../shared/components/FormularioEstandarizado.jsx'
+import { useToast } from '../../shared/contexts/ToastContext.jsx'
+import { FormField } from '../../shared/components/FormularioEstandarizado.jsx'
+import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import { formatFecha } from '../../shared/utils/formatters.js'
 import { normalizarTexto } from '../../shared/utils/duplicados.js'
 
-const ESTADO_COLORS = {
-    'Entregado':           { bg: '#F3E8FF', color: '#A855F7' },
-    'En Legalización':     { bg: '#DBEAFE', color: '#3B82F6' },
-    'Excedente pendiente': { bg: '#FEF3C7', color: '#F59E0B' },
-    'Completado':             { bg: '#F3E5F5', color: '#6A1B9A' },
-}
-
-const steps = ['Asignación', 'Estado y Fechas']
-
-const ConfirmRowChip = ({ label, value, colors }) => {
-    const theme = useTheme()
-
-    return (
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, py: 0.9, overflow: 'hidden' }}>
-            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500, flexShrink: 0 }}>{label}</Typography>
-        <Box sx={{
-            display: 'inline-flex', alignItems: 'center',
-            backgroundColor: colors?.bg || '#F3F4F6', color: colors?.color || '#6B7280',
-            px: 1.5, py: 0.3, borderRadius: 10, fontWeight: 600, fontSize: '0.75rem', textTransform: 'capitalize',
-        }}>
-            {value || '—'}
-        </Box>
-    </Box>
-    )
-}
+const steps = ['Asignación', 'Fechas', 'Confirmación']
 
 const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, onSuccess }) => {
     const { anticipos, actualizarAnticipo, conductores, rutas } = useAnticipos()
+    const { showToast } = useToast()
     const theme = useTheme()
     const [errores, setErrores] = useState({})
     const [activeStep, setActiveStep] = useState(0)
     const [submitting, setSubmitting] = useState(false)
-    const [exito, setExito] = useState(false)
     const [anticipoOriginal, setAnticipoOriginal] = useState(null)
     const [formOriginal, setFormOriginal] = useState(null)
     const [sinCambios, setSinCambios] = useState(false)
@@ -118,7 +97,6 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
         }
         if (step === 1) {
             if (!form.fechaEntrega) e.fechaEntrega = 'La fecha de entrega es obligatoria'
-            if (!form.estado) e.estado = 'Selecciona un estado'
             if (form.fechaLegalizacion && form.fechaEntrega && form.fechaLegalizacion < form.fechaEntrega)
                 e.fechaLegalizacion = 'La fecha de legalización no puede ser anterior a la fecha de entrega'
             if (form.fechaEntregaExcedente && form.fechaEntrega && form.fechaEntregaExcedente < form.fechaEntrega)
@@ -153,13 +131,13 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
         setSubmitting(true)
         try {
             await actualizarAnticipo(form)
-            setExito(true)
+            showToast('¡Anticipo actualizado exitosamente!', 'success')
             setTimeout(() => {
                 onClose()
                 if (onSuccess) onSuccess()
             }, 1500)
         } catch (err) {
-            setErrores({ submit: err.message || 'Error al actualizar el anticipo.' })
+            setErrores({ submit: getErrorMessage(err, 'Error al actualizar el anticipo.') })
         } finally {
             setSubmitting(false)
         }
@@ -300,21 +278,6 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
             case 1:
                 return (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                        <FormSelect
-                            label="Estado"
-                            name="estado"
-                            value={form?.estado || 'Entregado'}
-                            onChange={handleChange}
-                            required
-                            error={errores.estado}
-                            helperText={errores.estado}
-                        >
-                            <MenuItem value="Entregado" disabled={anticipoOriginal?.estado !== 'Entregado'}>Entregado</MenuItem>
-                            <MenuItem value="En Legalización">En Legalización</MenuItem>
-                            <MenuItem value="Excedente pendiente">Excedente pendiente</MenuItem>
-                            <MenuItem value="Cerrado">Cerrado</MenuItem>
-                        </FormSelect>
-
                         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                             <TextField
                                 fullWidth label="Fecha de entrega" name="fechaEntrega" type="date"
@@ -350,10 +313,29 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
                     </Box>
                 )
 
-            case 2:
+            case 2: {
                 // Paso de confirmación / resumen antes de guardar
+                const excedenteOriginal = formOriginal ? parseFloat(formOriginal.valorAnticipo || 0) - parseFloat(formOriginal.valorGastado || 0) : undefined
+                const sonDistintos = (a, b) => String(a ?? '') !== String(b ?? '')
+                const camposComparados = formOriginal ? [
+                    [form.idConductor, formOriginal.idConductor],
+                    [form.idRuta, formOriginal.idRuta],
+                    [form.valorAnticipo, formOriginal.valorAnticipo],
+                    [form.valorGastado, formOriginal.valorGastado],
+                    [form.fechaEntrega, formOriginal.fechaEntrega],
+                    [form.fechaLegalizacion, formOriginal.fechaLegalizacion],
+                    [form.fechaEntregaExcedente, formOriginal.fechaEntregaExcedente],
+                    [form.soporte, formOriginal.soporte],
+                ] : []
+                const totalModificados = camposComparados.filter(([a, b]) => sonDistintos(a, b)).length
+
                 return (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        {totalModificados > 0 && (
+                            <Alert severity="info" icon={<EditOutlinedIcon fontSize="inherit" />} sx={{ borderRadius: 2 }}>
+                                Se {totalModificados === 1 ? 'modificó' : 'modificaron'} {totalModificados} {totalModificados === 1 ? 'campo' : 'campos'}: revísalo{totalModificados === 1 ? '' : 's'} antes de guardar.
+                            </Alert>
+                        )}
                         {sinCambios && (
                             <Alert severity="warning" sx={{ borderRadius: 2 }} onClose={() => setSinCambios(false)}>
                                 No has realizado ningún cambio. Los datos ya están actualizados.
@@ -369,27 +351,27 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
                                     <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Asignación</Typography>
                                 </Box>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la asignación del anticipo</Typography>
-                                <ConfirmRow label="Conductor" value={getNombreConductor(form?.idConductor)} />
-                                <ConfirmRow label="Ruta" value={getNombreRuta(form?.idRuta)} />
-                                <ConfirmRow label="Anticipo" value={formatMoney(form?.valorAnticipo)} />
-                                <ConfirmRow label="Gastado" value={form?.valorGastado ? formatMoney(form.valorGastado) : '—'} />
-                                <ConfirmRow label="Excedente" value={formatMoney(excedente)} />
+                                <ConfirmRow label="Conductor" value={getNombreConductor(form?.idConductor)} previousValue={formOriginal ? getNombreConductor(formOriginal.idConductor) : undefined} />
+                                <ConfirmRow label="Ruta" value={getNombreRuta(form?.idRuta)} previousValue={formOriginal ? getNombreRuta(formOriginal.idRuta) : undefined} />
+                                <ConfirmRow label="Anticipo" value={formatMoney(form?.valorAnticipo)} previousValue={formOriginal ? formatMoney(formOriginal.valorAnticipo) : undefined} />
+                                <ConfirmRow label="Gastado" value={form?.valorGastado ? formatMoney(form.valorGastado) : '—'} previousValue={formOriginal ? (formOriginal.valorGastado ? formatMoney(formOriginal.valorGastado) : '—') : undefined} />
+                                <ConfirmRow label="Excedente" value={formatMoney(excedente)} previousValue={excedenteOriginal !== undefined ? formatMoney(excedenteOriginal) : undefined} />
                             </Paper>
                             <Paper elevation={0} sx={cardSx}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                                     <AttachMoneyIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
-                                    <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Estado y Fechas</Typography>
+                                    <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Fechas</Typography>
                                 </Box>
-                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica el estado y las fechas</Typography>
-                                <ConfirmRowChip label="Estado" value={form?.estado} colors={ESTADO_COLORS[form?.estado]} />
-                                <ConfirmRow label="F. Entrega" value={formatFecha(form?.fechaEntrega)} />
-                                <ConfirmRow label="F. Legalización" value={formatFecha(form?.fechaLegalizacion)} />
-                                <ConfirmRow label="F. Excedente" value={formatFecha(form?.fechaEntregaExcedente)} />
-                                <ConfirmRow label="Observaciones" value={form?.soporte || '—'} />
+                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica las fechas</Typography>
+                                <ConfirmRow label="F. Entrega" value={formatFecha(form?.fechaEntrega)} previousValue={formOriginal ? formatFecha(formOriginal.fechaEntrega) : undefined} />
+                                <ConfirmRow label="F. Legalización" value={formatFecha(form?.fechaLegalizacion)} previousValue={formOriginal ? formatFecha(formOriginal.fechaLegalizacion) : undefined} />
+                                <ConfirmRow label="F. Excedente" value={formatFecha(form?.fechaEntregaExcedente)} previousValue={formOriginal ? formatFecha(formOriginal.fechaEntregaExcedente) : undefined} />
+                                <ConfirmRow label="Observaciones" value={form?.soporte || '—'} previousValue={formOriginal?.soporte || '—'} />
                             </Paper>
                         </Box>
                     </Box>
                 )
+            }
 
             default:
                 return null
@@ -447,15 +429,6 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
                     </Box>
                 </Box>
             </DialogContent>
-
-            <Snackbar open={exito} autoHideDuration={2500} onClose={() => setExito(false)}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-                <Alert severity="success" variant="filled"
-                    sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }}
-                    onClose={() => setExito(false)}>
-                    ¡Anticipo actualizado exitosamente!
-                </Alert>
-            </Snackbar>
 
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 4, py: 2.5, borderTop: `1px solid ${theme.palette.divider}` }}>
                 <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined"

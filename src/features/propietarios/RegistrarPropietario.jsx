@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import {
     Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel,
-    Button, Alert, Snackbar, TextField, Select, InputAdornment,
+    Button, Alert, TextField, Select, InputAdornment,
     Dialog, DialogTitle, DialogContent, IconButton
 } from '@mui/material'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
@@ -17,7 +17,9 @@ import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined'
 import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import { usePropietario } from '../../shared/contexts/PropietarioContext.jsx'
+import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { FormField, FormSelect } from '../../shared/components/FormularioEstandarizado.jsx'
+import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import * as propietarioService from '../../shared/services/propietarioService.js'
@@ -42,12 +44,12 @@ const EMPTY_FORM = {
 
 const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
     const { registrarPropietario } = usePropietario()
+    const { showToast } = useToast()
     const theme = useTheme()
     const [errores, setErrores] = useState({})
     const [apiError, setApiError] = useState(null)
     const [activeStep, setActiveStep] = useState(0)
     const [submitting, setSubmitting] = useState(false)
-    const [exito, setExito] = useState(false)
     const [avisoNombreDuplicado, setAvisoNombreDuplicado] = useState('')
     const [avisoDocDuplicado, setAvisoDocDuplicado] = useState('')
     const [form, setForm] = useState(EMPTY_FORM)
@@ -199,13 +201,13 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
                 apellido: form.tipoIdentificacion === 'NIT' ? '' : form.apellido,
                 email: emailLocal ? emailLocal + emailDominio : '',
             })
-            setExito(true)
+            showToast('¡Propietario registrado exitosamente!', 'success')
             setTimeout(() => {
                 handleClose()
                 if (onSuccess) onSuccess()
             }, 1500)
         } catch (err) {
-            setApiError(err.message || 'Error al registrar el propietario')
+            setApiError(getErrorMessage(err, 'Error al registrar el propietario'))
         } finally {
             setSubmitting(false)
         }
@@ -437,12 +439,6 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
                     </Button>
                 </Box>
             </Box>
-
-            <Snackbar open={exito} autoHideDuration={2500} onClose={() => setExito(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-                <Alert severity="success" variant="filled" sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }} onClose={() => setExito(false)}>
-                    ¡Propietario registrado exitosamente!
-                </Alert>
-            </Snackbar>
         </Dialog>
     )
 }

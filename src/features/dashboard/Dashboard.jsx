@@ -1,5 +1,5 @@
 import { useTheme } from '@mui/material/styles'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useVentas } from '../../shared/contexts/VentaContext.jsx'
 import { useConductor } from '../../shared/contexts/ConductorContext.jsx'
 import { useVehiculo } from '../../shared/contexts/VehiculoContext.jsx'
@@ -121,12 +121,20 @@ const Dashboard = () => {
     };
   });
 
-  const { ventas } = useVentas()
+  const { ventas, fetchVentas } = useVentas()
   const { conductores } = useConductor()
   const { getVehiculos } = useVehiculo()
   const transportes = getVehiculos()
 
   const theme = useTheme()
+
+  // El dashboard necesita el histórico completo de ventas para calcular
+  // ingresos/envíos por estado, no la página parcial que deja ListarVenta en el contexto.
+  useEffect(() => {
+    const abortController = new AbortController()
+    fetchVentas(abortController.signal, { limit: 1000 })
+    return () => abortController.abort()
+  }, [fetchVentas])
 
   const ingresosMes = useMemo(() => {
     const meses = new Map()
@@ -165,16 +173,16 @@ const Dashboard = () => {
       }))
   }, [ventas, filtroActivo, theme])
 
-  const topRutas = useMemo(() => {
+  const topDestinos = useMemo(() => {
     const contador = {}
     ventas.forEach((venta) => {
       if (!isWithinRange(venta.fechaRegistro, filtroActivo.desde, filtroActivo.hasta)) return
-      const ruta = formatRutaDestino(venta.ruta?.destino)
-      if (!ruta || ruta === '—') return
-      contador[ruta] = (contador[ruta] || 0) + 1
+      const destino = formatRutaDestino(venta.ruta?.destino)
+      if (!destino || destino === '—') return
+      contador[destino] = (contador[destino] || 0) + 1
     })
     return Object.entries(contador)
-      .map(([ruta, envios]) => ({ ruta, envios }))
+      .map(([destino, envios]) => ({ destino, envios }))
       .sort((a, b) => b.envios - a.envios)
       .slice(0, 5)
   }, [ventas, filtroActivo])
@@ -182,7 +190,7 @@ const Dashboard = () => {
   const conductoresTotales = conductores.length
   const conductoresDisponibles = conductores.filter(c => c.habilitado).length
   const vehiculosTotales = transportes.length
-  const vehiculosDisponibles = transportes.filter(t => t.habilitado).length
+  const vehiculosDisponibles = transportes.filter(t => t.habilitado && t.estado === 'Disponible').length
 
   const maxEnvios = enviosEstado.length > 0 ? Math.max(...enviosEstado.map(e => e.count)) : 1
   const maxIngreso = ingresosMes.length > 0 ? Math.max(...ingresosMes.map(m => m.valor)) : 1
@@ -388,11 +396,11 @@ const Dashboard = () => {
           <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, border: `1px solid ${theme.palette.divider}` }}>
             <SectionHeader
               icon={<RouteOutlinedIcon sx={{ fontSize: 16, color: theme.palette.primary.main }} />}
-              title="Top 5 Rutas más Utilizadas"
+              title="Top 5 Destinos más Utilizados"
             />
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.2 }}>
-              {topRutas.map((r, i) => (
-                <Box key={r.ruta} sx={{
+              {topDestinos.map((d, i) => (
+                <Box key={d.destino} sx={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   p: 1.2, borderRadius: 2,
                   backgroundColor: i === 0 ? theme.palette.primary.light : theme.palette.background.muted,
@@ -408,11 +416,11 @@ const Dashboard = () => {
                       {i + 1}
                     </Typography>
                     <Typography variant="body2" sx={{ color: theme.palette.text.medium, fontWeight: 500, fontSize: '0.82rem' }}>
-                      {r.ruta}
+                      {d.destino}
                     </Typography>
                   </Box>
                   <Typography variant="body2" fontWeight={700} sx={{ color: theme.palette.primary.main, fontSize: '0.82rem', whiteSpace: 'nowrap', ml: 1 }}>
-                    {r.envios} envíos
+                    {d.envios} envíos
                   </Typography>
                 </Box>
               ))}

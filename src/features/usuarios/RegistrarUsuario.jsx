@@ -1,7 +1,7 @@
 ﻿import { useTheme } from '@mui/material/styles'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Dialog, DialogTitle, DialogContent, IconButton, Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, Snackbar, TextField, Select, InputAdornment, CircularProgress } from '@mui/material'
+import { Dialog, DialogTitle, DialogContent, IconButton, Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, TextField, Select, InputAdornment, CircularProgress } from '@mui/material'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined'
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
@@ -16,7 +16,9 @@ import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import { useAuth, ROLES } from '../../shared/contexts/AuthContext.jsx'
+import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { formFieldStyles } from '../../shared/utils/formStyles.js'
+import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import * as usuarioService from '../../shared/services/usuarioService.js'
 import { hayNombreDuplicado, MENSAJE_NOMBRE_DUPLICADO, hayDocumentoDuplicado, MENSAJE_DOC_DUPLICADO } from '../../shared/utils/duplicados.js'
@@ -29,13 +31,13 @@ const steps = ['Datos Personales', 'Credenciales', 'Confirmación']
 
 const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
     const { tienePermiso, registrarUsuario, getRolesBackend } = useAuth()
+    const { showToast } = useToast()
     const theme = useTheme()
     const navigate = useNavigate()
     const [errores, setErrores] = useState({})
     const [apiError, setApiError] = useState(null)
     const [activeStep, setActiveStep] = useState(0)
     const [submitting, setSubmitting] = useState(false)
-    const [exito, setExito] = useState(false)
     const [rolesDisponibles, setRolesDisponibles] = useState([])
     const [avisoNombreDuplicado, setAvisoNombreDuplicado] = useState('')
     const [avisoDocDuplicado, setAvisoDocDuplicado] = useState('')
@@ -211,7 +213,7 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
             const result = await registrarUsuario(datosBackend, false)
 
             if (result.success) {
-                setExito(true)
+                showToast('¡Usuario registrado exitosamente!', 'success')
                 setTimeout(() => {
                     handleClose()
                     if (onSuccess) onSuccess()
@@ -220,7 +222,7 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
                 setApiError(result.mensaje || 'Error al registrar usuario')
             }
         } catch (err) {
-            setApiError(err.message)
+            setApiError(getErrorMessage(err, 'Error al registrar el usuario'))
         } finally {
             setSubmitting(false)
         }
@@ -242,7 +244,6 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
         setErrores({})
         setApiError(null)
         setActiveStep(0)
-        setExito(false)
         onClose()
     }
 
@@ -441,7 +442,7 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica los datos de acceso</Typography>
                                 <ConfirmRow label="Teléfono" value={form.telefono} />
                                 <ConfirmRow label="Email" value={form.emailLocal + form.emailDominio} />
-                                <ConfirmRow label="Rol" value={rolesDisponibles.find(r => r.idRol === parseInt(form.idRol))?.nombre || form.idRol} />
+                                <ConfirmRow label="Rol" value={rolesDisponibles.find(r => r.idRol === parseInt(form.idRol))?.nombre || '—'} />
                             </Paper>
                         </Box>
                     </Box>
@@ -538,11 +539,6 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
                 </Box>
             </Box>
 
-            <Snackbar open={exito} autoHideDuration={2500} onClose={() => setExito(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-                <Alert severity="success" variant="filled" sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }} onClose={() => setExito(false)}>
-                    ¡Usuario registrado exitosamente!
-                </Alert>
-            </Snackbar>
         </Dialog>
     )
 }

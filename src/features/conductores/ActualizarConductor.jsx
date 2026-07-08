@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import {
     Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel,
-    Button, Snackbar, Alert, TextField, Select, InputAdornment,
+    Button, Alert, TextField, Select, InputAdornment,
     Dialog, DialogTitle, DialogContent, IconButton
 } from '@mui/material'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
@@ -16,8 +16,11 @@ import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined'
 import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
 import EventOutlinedIcon from '@mui/icons-material/EventOutlined'
 import CloseIcon from '@mui/icons-material/Close'
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import { useConductor } from '../../shared/contexts/ConductorContext.jsx'
+import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { FormField, FormSelect } from '../../shared/components/FormularioEstandarizado.jsx'
+import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import * as conductorService from '../../shared/services/conductorService.js'
@@ -62,13 +65,13 @@ const FORM_INICIAL = {
 
 const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSuccess }) => {
     const { getConductorById, actualizarConductorApi, fetchConductores } = useConductor()
+    const { showToast } = useToast()
     const theme = useTheme()
     const cardSx = {
         flex: 1, minWidth: 0, borderRadius: 2, p: 2.5,
         border: `1px solid ${theme.palette.divider}`,
         backgroundColor: 'white', elevation: 0, overflow: 'hidden',
     }
-    const [exito, setExito] = useState(false)
     const [apiError, setApiError] = useState(null)
     const [errores, setErrores] = useState({})
     const [activeStep, setActiveStep] = useState(0)
@@ -258,13 +261,13 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
             )
 
             await fetchConductores()
-            setExito(true)
+            showToast('¡Conductor actualizado exitosamente!', 'success')
             setTimeout(() => {
                 onClose()
                 if (onSuccess) onSuccess()
             }, 1500)
         } catch (err) {
-            setApiError(err.message || 'Error al actualizar el conductor')
+            setApiError(getErrorMessage(err, 'Error al actualizar el conductor'))
         } finally {
             setSubmitting(false)
         }
@@ -356,9 +359,30 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
                             icon={EventOutlinedIcon} InputLabelProps={{ shrink: true }} />
                     </Box>
                 )
-            case 2:
+            case 2: {
+                const emailActual = form.emailLocal + form.emailDominio
+                const emailOriginal = formOriginal ? formOriginal.emailLocal + formOriginal.emailDominio : undefined
+                const sonDistintos = (a, b) => String(a ?? '') !== String(b ?? '')
+                const camposComparados = [
+                    [form.tipoIdentificacion, formOriginal?.tipoIdentificacion],
+                    [form.numeroIdentificacion, formOriginal?.numeroIdentificacion],
+                    [form.nombre, formOriginal?.nombre],
+                    [form.apellido, formOriginal?.apellido],
+                    [form.telefono, formOriginal?.telefono],
+                    [emailActual, emailOriginal],
+                    [form.licenciaConduccion, formOriginal?.licenciaConduccion],
+                    [form.numeroLicencia, formOriginal?.numeroLicencia],
+                    [form.fechaVencimientoLicencia, formOriginal?.fechaVencimientoLicencia],
+                ]
+                const totalModificados = formOriginal ? camposComparados.filter(([a, b]) => sonDistintos(a, b)).length : 0
+
                 return (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        {totalModificados > 0 && (
+                            <Alert severity="info" icon={<EditOutlinedIcon fontSize="inherit" />} sx={{ borderRadius: 2 }}>
+                                Se {totalModificados === 1 ? 'modificó' : 'modificaron'} {totalModificados} {totalModificados === 1 ? 'campo' : 'campos'}: revísalo{totalModificados === 1 ? '' : 's'} antes de guardar.
+                            </Alert>
+                        )}
                         {sinCambios && (
                             <Alert severity="warning" sx={{ borderRadius: 2 }} onClose={() => setSinCambios(false)}>
                                 No has realizado ningún cambio. Los datos ya están actualizados.
@@ -376,10 +400,10 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
                                     <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Datos Personales</Typography>
                                 </Box>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la información personal</Typography>
-                                <ConfirmRow label="Tipo de documento" value={getTipoLabel(form.tipoIdentificacion)} />
-                                <ConfirmRow label="N° de documento" value={form.numeroIdentificacion} />
-                                <ConfirmRow label="Nombre" value={form.nombre} />
-                                <ConfirmRow label="Apellido" value={form.apellido} />
+                                <ConfirmRow label="Tipo de documento" value={getTipoLabel(form.tipoIdentificacion)} previousValue={formOriginal ? getTipoLabel(formOriginal.tipoIdentificacion) : undefined} />
+                                <ConfirmRow label="N° de documento" value={form.numeroIdentificacion} previousValue={formOriginal?.numeroIdentificacion} />
+                                <ConfirmRow label="Nombre" value={form.nombre} previousValue={formOriginal?.nombre} />
+                                <ConfirmRow label="Apellido" value={form.apellido} previousValue={formOriginal?.apellido} />
                             </Paper>
                             <Paper elevation={0} sx={cardSx}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
@@ -387,15 +411,16 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
                                     <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Licencia de Conducción</Typography>
                                 </Box>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica los datos de licencia</Typography>
-                                <ConfirmRow label="Teléfono" value={form.telefono} />
-                                <ConfirmRow label="Correo" value={form.emailLocal + form.emailDominio} />
-                                <ConfirmRow label="Categoría licencia" value={getLicenciaLabel(form.licenciaConduccion)} />
-                                <ConfirmRow label="N° de licencia" value={form.numeroLicencia || '—'} />
-                                <ConfirmRow label="Vencimiento" value={form.fechaVencimientoLicencia} />
+                                <ConfirmRow label="Teléfono" value={form.telefono} previousValue={formOriginal?.telefono} />
+                                <ConfirmRow label="Correo" value={emailActual} previousValue={emailOriginal} />
+                                <ConfirmRow label="Categoría licencia" value={getLicenciaLabel(form.licenciaConduccion)} previousValue={formOriginal ? getLicenciaLabel(formOriginal.licenciaConduccion) : undefined} />
+                                <ConfirmRow label="N° de licencia" value={form.numeroLicencia || '—'} previousValue={formOriginal?.numeroLicencia || '—'} />
+                                <ConfirmRow label="Vencimiento" value={form.fechaVencimientoLicencia} previousValue={formOriginal?.fechaVencimientoLicencia} />
                             </Paper>
                         </Box>
                     </Box>
                 )
+            }
             default:
                 return null
         }
@@ -439,12 +464,6 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
                     </Box>
                 </Box>
             </DialogContent>
-
-            <Snackbar open={exito} autoHideDuration={2500} onClose={() => setExito(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-                <Alert severity="success" variant="filled" sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }} onClose={() => setExito(false)}>
-                    ¡Conductor actualizado exitosamente!
-                </Alert>
-            </Snackbar>
 
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 4, py: 2.5, borderTop: `1px solid ${theme.palette.divider}`, backgroundColor: '#FAFAFA' }}>
                 <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined" startIcon={<ArrowBackOutlinedIcon />} disableRipple

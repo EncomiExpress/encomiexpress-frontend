@@ -2,7 +2,7 @@ import { useTheme } from '@mui/material/styles'
 import { useState, useEffect } from 'react'
 import {
     Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel,
-    Button, Alert, Snackbar, Dialog, DialogTitle, DialogContent, IconButton
+    Button, Alert, Dialog, DialogTitle, DialogContent, IconButton
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined'
@@ -10,8 +10,11 @@ import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined'
 import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined'
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined'
 import AttachMoneyOutlinedIcon from '@mui/icons-material/AttachMoneyOutlined'
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import { useDestino } from '../../shared/contexts/DestinoContext.jsx'
+import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { FormField, FormSelect } from '../../shared/components/FormularioEstandarizado.jsx'
+import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 
 const steps = ['Ubicación', 'Tarifa', 'Confirmación']
@@ -21,12 +24,12 @@ const TARIFA_MAX = 999999999
 
 const ActualizarDestino = ({ open, onClose, destino, onSuccess }) => {
     const { actualizarDestino } = useDestino()
+    const { showToast } = useToast()
     const theme = useTheme()
     const [errores, setErrores] = useState({})
     const [apiError, setApiError] = useState(null)
     const [activeStep, setActiveStep] = useState(0)
     const [submitting, setSubmitting] = useState(false)
-    const [exito, setExito] = useState(false)
     const [originalData, setOriginalData] = useState(null)
     const [sinCambios, setSinCambios] = useState(false)
 
@@ -117,13 +120,13 @@ const ActualizarDestino = ({ open, onClose, destino, onSuccess }) => {
                 ciudad: form.ciudad,
                 tarifaBase: Number(form.tarifaBase) || 0,
             })
-            setExito(true)
+            showToast('¡Destino actualizado exitosamente!', 'success')
             setTimeout(() => {
                 handleClose()
                 onSuccess?.()
             }, 1500)
         } catch (err) {
-            setApiError(err.message || 'Error al actualizar el destino')
+            setApiError(getErrorMessage(err, 'Error al actualizar el destino'))
         } finally {
             setSubmitting(false)
         }
@@ -134,7 +137,6 @@ const ActualizarDestino = ({ open, onClose, destino, onSuccess }) => {
         setErrores({})
         setApiError(null)
         setActiveStep(0)
-        setExito(false)
         setSinCambios(false)
         onClose()
     }
@@ -175,9 +177,24 @@ const ActualizarDestino = ({ open, onClose, destino, onSuccess }) => {
                         />
                     </Box>
                 )
-            case 2:
+            case 2: {
+                const tarifaActual = form.tarifaBase ? `$${Number(form.tarifaBase).toLocaleString('es-CO')}` : '—'
+                const tarifaOriginal = originalData ? (originalData.tarifaBase ? `$${Number(originalData.tarifaBase).toLocaleString('es-CO')}` : '—') : undefined
+                const sonDistintos = (a, b) => String(a ?? '') !== String(b ?? '')
+                const camposComparados = originalData ? [
+                    [form.departamento, originalData.departamento],
+                    [form.ciudad, originalData.ciudad],
+                    [form.tarifaBase, originalData.tarifaBase],
+                ] : []
+                const totalModificados = camposComparados.filter(([a, b]) => sonDistintos(a, b)).length
+
                 return (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        {totalModificados > 0 && (
+                            <Alert severity="info" icon={<EditOutlinedIcon fontSize="inherit" />} sx={{ borderRadius: 2 }}>
+                                Se {totalModificados === 1 ? 'modificó' : 'modificaron'} {totalModificados} {totalModificados === 1 ? 'campo' : 'campos'}: revísalo{totalModificados === 1 ? '' : 's'} antes de guardar.
+                            </Alert>
+                        )}
                         {sinCambios && (
                             <Alert severity="warning" sx={{ borderRadius: 2 }} onClose={() => setSinCambios(false)}>
                                 No has realizado ningún cambio. Los datos ya están actualizados.
@@ -196,12 +213,13 @@ const ActualizarDestino = ({ open, onClose, destino, onSuccess }) => {
                             <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
                                 Verifica los cambios antes de guardar
                             </Typography>
-                            <ConfirmRow label="Departamento" value={form.departamento} />
-                            <ConfirmRow label="Ciudad" value={form.ciudad} />
-                            <ConfirmRow label="Tarifa Base" value={form.tarifaBase ? `$${Number(form.tarifaBase).toLocaleString('es-CO')}` : '—'} />
+                            <ConfirmRow label="Departamento" value={form.departamento} previousValue={originalData?.departamento} />
+                            <ConfirmRow label="Ciudad" value={form.ciudad} previousValue={originalData?.ciudad} />
+                            <ConfirmRow label="Tarifa Base" value={tarifaActual} previousValue={tarifaOriginal} />
                         </Paper>
                     </Box>
                 )
+            }
             default:
                 return null
         }
@@ -247,12 +265,6 @@ const ActualizarDestino = ({ open, onClose, destino, onSuccess }) => {
                     </Box>
                 </Box>
             </DialogContent>
-
-            <Snackbar open={exito} autoHideDuration={2500} onClose={() => setExito(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-                <Alert severity="success" variant="filled" sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }}>
-                    ¡Destino actualizado exitosamente!
-                </Alert>
-            </Snackbar>
 
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 4, py: 2.5, borderTop: `1px solid ${theme.palette.divider}` }}>
                 <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined"

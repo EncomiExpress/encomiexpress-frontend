@@ -5,7 +5,7 @@ import {
     Box, Typography, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, Chip, IconButton,
     TextField, InputAdornment, Select, MenuItem, FormControl,
-    Snackbar, Alert, Tooltip, Button, Avatar, CircularProgress,
+    Tooltip, Button, Avatar, CircularProgress,
     Pagination, TableSortLabel
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
@@ -20,6 +20,7 @@ import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import { useConductor } from '../../shared/contexts/ConductorContext.jsx'
 import { useRutaProgramacion } from '../../shared/contexts/RutaProgramacionContext.jsx'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
+import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import * as rutaService from '../../shared/services/rutaService'
 import { getPageOfConductor } from '../../shared/services/conductorService'
 import RegistrarConductor from './RegistrarConductor'
@@ -95,7 +96,7 @@ const ListarConductor = () => {
     const [searchTerm, setSearchTerm] = useState('')
     const [debouncedSearch, setDebouncedSearch] = useState('')
     const [conductorVer, setConductorVer] = useState(null)
-    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
+    const { showToast } = useToast()
     const [modalBloqueo, setModalBloqueo] = useState({ open: false, dependencias: [], mensaje: '' })
     const [confirmToggle, setConfirmToggle] = useState({ open: false, idConductor: null, nombreCompleto: '', habilitadoActual: false })
     const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
@@ -182,16 +183,12 @@ const ListarConductor = () => {
         const { idConductor, habilitadoActual } = confirmToggle
         try {
             await toggleHabilitado(idConductor)
-            setSnackbar({
-                open: true,
-                message: `Conductor ${habilitadoActual ? 'inhabilitado' : 'habilitado'} correctamente.`,
-                severity: 'success',
-            })
+            showToast(`Conductor ${habilitadoActual ? 'inhabilitado' : 'habilitado'} correctamente.`, 'success')
         } catch (err) {
             if (err?.details?.length > 0) {
                 setModalBloqueo({ open: true, dependencias: err.details, mensaje: err.message })
             } else {
-                setSnackbar({ open: true, message: err.message || 'Error al cambiar el estado', severity: 'error' })
+                showToast(err.message || 'Error al cambiar el estado', 'error')
             }
             throw err
         }
@@ -626,7 +623,7 @@ const ListarConductor = () => {
                 onClose={() => setModalRegistrarOpen(false)}
                 onSuccess={() => {
                     fetchConductores()
-                    setSnackbar({ open: true, message: 'Conductor registrado correctamente', severity: 'success' })
+                    showToast('Conductor registrado correctamente', 'success')
                 }}
             />
 
@@ -636,7 +633,7 @@ const ListarConductor = () => {
                 conductor={conductorEditar}
                 onSuccess={() => {
                     fetchConductores()
-                    setSnackbar({ open: true, message: 'Conductor actualizado correctamente', severity: 'success' })
+                    showToast('Conductor actualizado correctamente', 'success')
                 }}
             />
 
@@ -656,15 +653,6 @@ const ListarConductor = () => {
                 dependencias={modalBloqueo.dependencias}
             />
 
-            <Snackbar open={snackbar.open} autoHideDuration={3000}
-                onClose={() => setSnackbar(s => ({ ...s, open: false }))}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-                <Alert severity={snackbar.severity} variant="filled"
-                    sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }}
-                    onClose={() => setSnackbar(s => ({ ...s, open: false }))}>
-                    {snackbar.message}
-                </Alert>
-            </Snackbar>
         </Box>
     )
 }

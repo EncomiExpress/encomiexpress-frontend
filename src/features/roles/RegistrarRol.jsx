@@ -1,8 +1,10 @@
 import { useTheme } from '@mui/material/styles'
 import { useState, useEffect } from 'react'
-import { Box, Typography, Paper, FormControlLabel, Checkbox, Grid, Alert, IconButton, Snackbar, Dialog, DialogTitle, DialogContent, Button } from '@mui/material'
+import { Box, Typography, Paper, FormControlLabel, Checkbox, Grid, IconButton, Dialog, DialogTitle, DialogContent, Button } from '@mui/material'
 import { Security, Close, CheckOutlined } from '@mui/icons-material'
 import { useAuth, PERMISOS, MODULOS } from '../../shared/contexts/AuthContext.jsx'
+import { useToast } from '../../shared/contexts/ToastContext.jsx'
+import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import {
   FormField,
   FormAlert
@@ -10,6 +12,7 @@ import {
 
 const RegistrarRol = ({ open, onClose, onSuccess }) => {
   const { tienePermiso, registrarRol, getPermisosBackend } = useAuth()
+  const { showToast } = useToast()
   const theme = useTheme()
 
   const [formData, setFormData] = useState({
@@ -17,7 +20,6 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
     descripcion: '',
     permisos: []
   })
-  const [mensaje, setMensaje] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [error, setError] = useState('')
   const [permisosDisponibles, setPermisosDisponibles] = useState([])
@@ -77,7 +79,6 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
       return
     }
 
-    setMensaje('')
     setError('')
     setEnviando(true)
     try {
@@ -94,12 +95,12 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
       if (respuesta.success) {
         onSuccess && onSuccess()
         handleClose()
-        setMensaje('Rol registrado exitosamente')
+        showToast('¡Rol registrado exitosamente!', 'success')
       } else {
         setError(respuesta.message || 'Error al registrar el rol')
       }
-    } catch {
-      setError('Error al registrar el rol')
+    } catch (err) {
+      setError(getErrorMessage(err, 'Error al registrar el rol'))
     } finally {
       setEnviando(false)
     }
@@ -112,7 +113,6 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
       permisos: []
     })
     setError('')
-    setMensaje('')
     onClose()
   }
 
@@ -170,7 +170,7 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
       'inhabilitar_propietario': 'Inhabilitar',
       'ver_dashboard': 'Ver',
     }
-    return labels[permiso] || permiso
+    return labels[permiso] || permiso.replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase())
   }
 
   if (!tienePermiso(PERMISOS.REGISTRAR_ROL)) {
@@ -349,12 +349,6 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
           </Button>
         </Box>
       </Box>
-
-      <Snackbar open={!!mensaje} autoHideDuration={2500} onClose={() => setMensaje('')} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-        <Alert severity="success" variant="filled" sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }} onClose={() => setMensaje('')}>
-          ¡Rol registrado exitosamente!
-        </Alert>
-      </Snackbar>
     </Dialog>
   )
 }

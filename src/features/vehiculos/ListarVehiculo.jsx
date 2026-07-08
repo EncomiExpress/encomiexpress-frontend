@@ -6,7 +6,7 @@ import {
     TableContainer, TableHead, TableRow, Chip, IconButton,
     TextField, InputAdornment, Select, MenuItem, FormControl, Menu,
     Dialog, DialogContent,
-    Snackbar, Alert, Tooltip, Button, Avatar, CircularProgress,
+    Tooltip, Button, Avatar, CircularProgress,
     Pagination, TableSortLabel
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
@@ -23,6 +23,7 @@ import SwapHorizOutlinedIcon from '@mui/icons-material/SwapHorizOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import { useVehiculo } from '../../shared/contexts/VehiculoContext.jsx'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
+import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { useRutaProgramacion } from '../../shared/contexts/RutaProgramacionContext.jsx'
 import RegistrarVehiculo from './RegistrarVehiculo'
 import ActualizarVehiculo from './ActualizarVehiculo'
@@ -160,7 +161,7 @@ const ListarTransporte = () => {
     const [error, setError] = useState(null)
     const initialLoad = useRef(true)
     const [vehiculoVer, setVehiculoVer] = useState(null)
-    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
+    const { showToast } = useToast()
     const [estadoMenu, setEstadoMenu] = useState({ anchor: null, id: null, estadoActual: null })
     const [confirmMantenimiento, setConfirmMantenimiento] = useState({ open: false, id: null })
     const [confirmInhabilitar, setConfirmInhabilitar] = useState({ open: false, id: null, habilitadoActual: null, placa: '', estadoVehiculo: null })
@@ -271,7 +272,7 @@ const ListarTransporte = () => {
     const handleEstadoChange = async (id, nuevoEstado) => {
         const success = await updateEstado(id, nuevoEstado)
         if (success) {
-            setSnackbar({ open: true, message: `Estado actualizado a ${nuevoEstado}.`, severity: 'success' })
+            showToast(`Estado actualizado a ${nuevoEstado}.`, 'success')
         }
     }
 
@@ -283,13 +284,9 @@ const ListarTransporte = () => {
         const { habilitadoActual } = confirmInhabilitar
         try {
             await toggleHabilitado(confirmInhabilitar.id)
-            setSnackbar({
-                open: true,
-                message: habilitadoActual ? 'Vehículo inhabilitado correctamente.' : 'Vehículo habilitado correctamente.',
-                severity: 'success',
-            })
+            showToast(habilitadoActual ? 'Vehículo inhabilitado correctamente.' : 'Vehículo habilitado correctamente.', 'success')
         } catch (err) {
-            setSnackbar({ open: true, message: err.message || 'Error al cambiar el estado del vehículo', severity: 'error' })
+            showToast(err.message || 'Error al cambiar el estado del vehículo', 'error')
             throw err
         }
     }
@@ -847,7 +844,7 @@ const ListarTransporte = () => {
                 onClose={() => setModalRegistrarOpen(false)}
                 onSuccess={() => {
                     fetchVehiculos()
-                    setSnackbar({ open: true, message: 'Vehículo registrado correctamente', severity: 'success' })
+                    showToast('Vehículo registrado correctamente', 'success')
                 }}
             />
 
@@ -857,7 +854,7 @@ const ListarTransporte = () => {
                 transporte={vehiculoEditar}
                 onSuccess={() => {
                     fetchVehiculos()
-                    setSnackbar({ open: true, message: 'Vehículo actualizado correctamente', severity: 'success' })
+                    showToast('Vehículo actualizado correctamente', 'success')
                 }}
             />
 
@@ -948,26 +945,6 @@ const ListarTransporte = () => {
                 </DialogContent>
             </Dialog>
 
-            <Snackbar
-                open={snackbar.open}
-                autoHideDuration={3000}
-                onClose={() => setSnackbar(s => ({ ...s, open: false }))}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-            >
-                <Alert
-                    severity={snackbar.severity}
-                    variant="filled"
-                    sx={{
-                        fontWeight: 600,
-                        borderRadius: 2,
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                        fontSize: '0.85rem',
-                    }}
-                    onClose={() => setSnackbar(s => ({ ...s, open: false }))}
-                >
-                    {snackbar.message}
-                </Alert>
-            </Snackbar>
         </Box>
     )
 }

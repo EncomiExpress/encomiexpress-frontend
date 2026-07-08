@@ -6,7 +6,7 @@ import {
     Box, Typography, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, Chip, IconButton,
     TextField, InputAdornment, Select, MenuItem, FormControl,
-    Snackbar, Alert, Tooltip, Button, Avatar, Pagination, CircularProgress, TableSortLabel
+    Tooltip, Button, Avatar, Pagination, CircularProgress, TableSortLabel
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
@@ -19,6 +19,7 @@ import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import { usePropietario } from '../../shared/contexts/PropietarioContext.jsx'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
+import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import RegistrarPropietario from './RegistrarPropietario'
 import ActualizarPropietario from './ActualizarPropietario'
 import ModalBloqueoInhabilitacion from '../../shared/components/ModalBloqueoInhabilitacion'
@@ -71,7 +72,7 @@ const ListarPropietario = () => {
     const [searchTerm, setSearchTerm] = useState('')
     const [debouncedSearch, setDebouncedSearch] = useState('')
     const [propietarioVer, setPropietarioVer] = useState(null)
-    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
+    const { showToast } = useToast()
     const [modalBloqueo, setModalBloqueo] = useState({ open: false, dependencias: [], mensaje: '' })
     const [confirmToggle, setConfirmToggle] = useState({ open: false, idPropietario: null, nombreCompleto: '', habilitadoActual: false })
     const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
@@ -138,16 +139,12 @@ const ListarPropietario = () => {
         const { idPropietario, habilitadoActual } = confirmToggle
         try {
             await toggleHabilitado(idPropietario)
-            setSnackbar({
-                open: true,
-                message: `Propietario ${habilitadoActual ? 'inhabilitado' : 'habilitado'} correctamente.`,
-                severity: 'success',
-            })
+            showToast(`Propietario ${habilitadoActual ? 'inhabilitado' : 'habilitado'} correctamente.`, 'success')
         } catch (err) {
             if (err?.details?.length > 0) {
                 setModalBloqueo({ open: true, dependencias: err.details, mensaje: err.message })
             } else {
-                setSnackbar({ open: true, message: err.message || 'Error al cambiar el estado', severity: 'error' })
+                showToast(err.message || 'Error al cambiar el estado', 'error')
             }
             throw err
         }
@@ -563,7 +560,7 @@ const ListarPropietario = () => {
                 onClose={() => setModalRegistrarOpen(false)}
                 onSuccess={() => {
                     fetchPropietarios()
-                    setSnackbar({ open: true, message: 'Propietario registrado correctamente', severity: 'success' })
+                    showToast('Propietario registrado correctamente', 'success')
                 }}
             />
 
@@ -573,7 +570,7 @@ const ListarPropietario = () => {
                 propietario={propietarioEditar}
                 onSuccess={() => {
                     fetchPropietarios()
-                    setSnackbar({ open: true, message: 'Propietario actualizado correctamente', severity: 'success' })
+                    showToast('Propietario actualizado correctamente', 'success')
                 }}
             />
 
@@ -593,15 +590,6 @@ const ListarPropietario = () => {
                 dependencias={modalBloqueo.dependencias}
             />
 
-            <Snackbar open={snackbar.open} autoHideDuration={3500}
-                onClose={() => setSnackbar(s => ({ ...s, open: false }))}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-                <Alert severity={snackbar.severity} variant="filled"
-                    sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }}
-                    onClose={() => setSnackbar(s => ({ ...s, open: false }))}>
-                    {snackbar.message}
-                </Alert>
-            </Snackbar>
         </Box>
     )
 }

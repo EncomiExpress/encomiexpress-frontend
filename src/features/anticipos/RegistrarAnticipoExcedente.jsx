@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import {
     Box, Typography, Paper, Stepper, Step, StepLabel,
-    Button, Alert, Snackbar, TextField, Dialog, DialogTitle, DialogContent, IconButton,
+    Button, Alert, TextField, Dialog, DialogTitle, DialogContent, IconButton,
     Autocomplete
 } from '@mui/material'
 import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined'
@@ -13,7 +13,9 @@ import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
 import AttachMoneyOutlinedIcon from '@mui/icons-material/AttachMoneyOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import { useAnticipos } from '../../shared/contexts/AnticipoExcedenteContext.jsx'
+import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { FormField } from '../../shared/components/FormularioEstandarizado.jsx'
+import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import { normalizarTexto } from '../../shared/utils/duplicados.js'
@@ -22,11 +24,11 @@ const steps = ['Asignación', 'Estado y Fechas']
 
 const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
     const { agregarAnticipo, conductores, rutas } = useAnticipos()
+    const { showToast } = useToast()
     const theme = useTheme()
     const [errores, setErrores] = useState({})
     const [activeStep, setActiveStep] = useState(0)
     const [submitting, setSubmitting] = useState(false)
-    const [exito, setExito] = useState(false)
     const [conductorInput, setConductorInput] = useState('')
     const [rutaInput, setRutaInput] = useState('')
 
@@ -108,13 +110,13 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
         setSubmitting(true)
         try {
             await agregarAnticipo(form)
-            setExito(true)
+            showToast('¡Anticipo registrado exitosamente!', 'success')
             setTimeout(() => {
                 handleClose()
                 if (onSuccess) onSuccess()
             }, 1500)
         } catch (err) {
-            setErrores({ submit: err.message || 'Error al registrar el anticipo.' })
+            setErrores({ submit: getErrorMessage(err, 'Error al registrar el anticipo.') })
         } finally {
             setSubmitting(false)
         }
@@ -367,15 +369,6 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
                     </Box>
                 </Box>
             </DialogContent>
-
-            <Snackbar open={exito} autoHideDuration={2500} onClose={() => setExito(false)}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-                <Alert severity="success" variant="filled"
-                    sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }}
-                    onClose={() => setExito(false)}>
-                    ¡Anticipo registrado exitosamente!
-                </Alert>
-            </Snackbar>
 
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 4, py: 2.5, borderTop: `1px solid ${theme.palette.divider}` }}>
                 <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined"

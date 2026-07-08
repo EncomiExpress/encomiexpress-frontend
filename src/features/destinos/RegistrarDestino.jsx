@@ -2,7 +2,7 @@ import { useTheme } from '@mui/material/styles'
 import { useState } from 'react'
 import {
     Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel,
-    Button, Alert, Snackbar, Dialog, DialogTitle, DialogContent, IconButton
+    Button, Alert, Dialog, DialogTitle, DialogContent, IconButton
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined'
@@ -11,7 +11,9 @@ import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import AttachMoneyOutlinedIcon from '@mui/icons-material/AttachMoneyOutlined'
 import { useDestino } from '../../shared/contexts/DestinoContext.jsx'
+import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { FormField, FormSelect } from '../../shared/components/FormularioEstandarizado.jsx'
+import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 
 const steps = ['Ubicación', 'Tarifa', 'Confirmación']
@@ -21,12 +23,12 @@ const TARIFA_MAX = 999999999
 
 const RegistrarDestino = ({ open, onClose, onSuccess }) => {
     const { registrarDestino } = useDestino()
+    const { showToast } = useToast()
     const theme = useTheme()
     const [errores, setErrores] = useState({})
     const [apiError, setApiError] = useState(null)
     const [activeStep, setActiveStep] = useState(0)
     const [submitting, setSubmitting] = useState(false)
-    const [exito, setExito] = useState(false)
 
     const [form, setForm] = useState({
         departamento: '',
@@ -89,13 +91,13 @@ const RegistrarDestino = ({ open, onClose, onSuccess }) => {
                 ciudad: form.ciudad,
                 tarifaBase: Number(form.tarifaBase) || 0,
             })
-            setExito(true)
+            showToast('¡Destino registrado exitosamente!', 'success')
             setTimeout(() => {
                 handleClose()
                 onSuccess?.()
             }, 1500)
         } catch (err) {
-            setApiError(err.message || 'Error al registrar el destino')
+            setApiError(getErrorMessage(err, 'Error al registrar el destino'))
         } finally {
             setSubmitting(false)
         }
@@ -106,7 +108,6 @@ const RegistrarDestino = ({ open, onClose, onSuccess }) => {
         setErrores({})
         setApiError(null)
         setActiveStep(0)
-        setExito(false)
         onClose()
     }
 
@@ -213,12 +214,6 @@ const RegistrarDestino = ({ open, onClose, onSuccess }) => {
                     </Box>
                 </Box>
             </DialogContent>
-
-            <Snackbar open={exito} autoHideDuration={2500} onClose={() => setExito(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-                <Alert severity="success" variant="filled" sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }}>
-                    ¡Destino registrado exitosamente!
-                </Alert>
-            </Snackbar>
 
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 4, py: 2.5, borderTop: `1px solid ${theme.palette.divider}` }}>
                 <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined"

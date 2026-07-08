@@ -1,4 +1,5 @@
 import { BrowserRouter } from 'react-router-dom'
+import { ToastProvider } from './shared/contexts/ToastContext'
 import { AuthProvider } from './shared/contexts/AuthContext'
 import { ClienteProvider } from './shared/contexts/ClienteContext'
 import { AnticipoExcedenteProvider } from './shared/contexts/AnticipoExcedenteContext'
@@ -14,26 +15,28 @@ import SessionExpiredDialog from './shared/components/SessionExpiredDialog'
 function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <VehiculoProvider>
-          <PropietarioProvider>
-            <ConductorProvider>
-              <DestinoProvider>
-                <RutaProgramacionProvider>
-                  <ClienteProvider>
-                    <VentaProvider>
-                      <AnticipoExcedenteProvider>
-                        <AppRoutes />
-                        <SessionExpiredDialog />
-                      </AnticipoExcedenteProvider>
-                    </VentaProvider>
-                  </ClienteProvider>
-                </RutaProgramacionProvider>
-              </DestinoProvider>
-            </ConductorProvider>
-          </PropietarioProvider>
-        </VehiculoProvider>
-      </AuthProvider>
+      <ToastProvider>
+        <AuthProvider>
+          <VehiculoProvider>
+            <PropietarioProvider>
+              <ConductorProvider>
+                <DestinoProvider>
+                  <RutaProgramacionProvider>
+                    <ClienteProvider>
+                      <VentaProvider>
+                        <AnticipoExcedenteProvider>
+                          <AppRoutes />
+                          <SessionExpiredDialog />
+                        </AnticipoExcedenteProvider>
+                      </VentaProvider>
+                    </ClienteProvider>
+                  </RutaProgramacionProvider>
+                </DestinoProvider>
+              </ConductorProvider>
+            </PropietarioProvider>
+          </VehiculoProvider>
+        </AuthProvider>
+      </ToastProvider>
     </BrowserRouter>
   )
 }

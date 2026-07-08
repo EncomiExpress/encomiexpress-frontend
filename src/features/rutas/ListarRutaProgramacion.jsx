@@ -5,7 +5,7 @@ import {
     Box, Typography, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, Chip, IconButton,
     TextField, InputAdornment, Select, MenuItem, FormControl, Menu,
-    Snackbar, Alert, Tooltip, Button,
+    Tooltip, Button,
     Avatar, CircularProgress, Pagination, TableSortLabel,
     Dialog, DialogContent
 } from '@mui/material'
@@ -28,6 +28,7 @@ import { useVehiculo } from '../../shared/contexts/VehiculoContext.jsx'
 import { useConductor } from '../../shared/contexts/ConductorContext.jsx'
 import { useDestino } from '../../shared/contexts/DestinoContext.jsx'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
+import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import RegistrarRutaProgramacion from './RegistrarRutaProgramacion'
 import ActualizarRutaProgramacion from './ActualizarRutaProgramacion'
 import ModalConsultarRutaProgramacion from './ModalConsultarRutaProgramacion'
@@ -210,7 +211,7 @@ const ListarRutaProgramacion = () => {
     const [searchTerm, setSearchTerm]         = useState('')
     const [debouncedSearch, setDebouncedSearch] = useState('')
     const [rutaVer, setRutaVer]               = useState(null)
-    const [snackbar, setSnackbar]             = useState({ open: false, message: '', severity: 'success' })
+    const { showToast } = useToast()
     const [confirmInhabilitar, setConfirmInhabilitar] = useState({ open: false, idRuta: null, nombreRuta: '', habilitadoActual: null, estadoRuta: null })
     const [confirmEstado, setConfirmEstado]   = useState({ open: false, id: null, nuevoEstado: null, info: '', ruta: null, vehiculo: null, conductor: null, confirmed: false })
     const [alertaBloqueo, setAlertaBloqueo]   = useState({ open: false, titulo: '', entidades: [] })
@@ -355,13 +356,9 @@ const resolveDestino = (ruta) =>
     const ejecutarCambioEstado = async (id, nuevoEstado) => {
         try {
             await updateEstado(id, nuevoEstado)
-            setSnackbar({ open: true, message: `Estado actualizado a "${nuevoEstado}".`, severity: 'success' })
+            showToast(`Estado actualizado a "${nuevoEstado}".`, 'success')
         } catch (err) {
-            if (err?.details?.length > 0) {
-                setSnackbar({ open: true, message: err.message || 'Error al actualizar estado', severity: 'error' })
-            } else {
-                setSnackbar({ open: true, message: err.message || 'Error al actualizar estado', severity: 'error' })
-            }
+            showToast(err.message || 'Error al actualizar estado', 'error')
         }
     }
 
@@ -418,7 +415,7 @@ const resolveDestino = (ruta) =>
         const INFO_ESTADOS = {
             'Programada': 'Las ventas seguirán asociadas bajo esta ruta. Deberá registrar un nuevo anticipo para el conductor si es necesario.',
             'Completada': 'El vehículo y el conductor quedarán disponibles y las ventas asociadas pasarán a "Entregada".',
-            'Cancelada': 'El vehículo y el conductor quedarán disponibles, el anticipo pasará a "Excedente pendiente" y las ventas asociadas pasarán a "Cancelada".',
+            'Cancelada': 'El vehículo y el conductor quedarán disponibles, el anticipo pasará a "Excedente pendiente" y las ventas asociadas quedarán pendientes de reasignación a otra ruta.',
         }
         const info = INFO_ESTADOS[nuevoEstado] || ''
         setConfirmEstado({ open: true, id, nuevoEstado, info, ruta: rutaActual, vehiculo, conductor, confirmed: false })
@@ -439,25 +436,21 @@ const resolveDestino = (ruta) =>
         const { idRuta, habilitadoActual } = confirmInhabilitar
         try {
             await toggleHabilitado(idRuta)
-            setSnackbar({
-                open: true,
-                message: `Ruta ${habilitadoActual ? 'inhabilitada' : 'habilitada'} correctamente.`,
-                severity: 'success',
-            })
+            showToast(`Ruta ${habilitadoActual ? 'inhabilitada' : 'habilitada'} correctamente.`, 'success')
         } catch (err) {
-            setSnackbar({ open: true, message: err.message || 'Error al cambiar habilitado', severity: 'error' })
+            showToast(err.message || 'Error al cambiar habilitado', 'error')
             throw err
         }
     }
 
     const handleRegistrarSuccess = () => {
         fetchRutasProgramadas(buildRutasParams())
-        setSnackbar({ open: true, message: 'Ruta registrada correctamente', severity: 'success' })
+        showToast('Ruta registrada correctamente', 'success')
     }
 
     const handleActualizarSuccess = () => {
         fetchRutasProgramadas(buildRutasParams())
-        setSnackbar({ open: true, message: 'Ruta actualizada correctamente', severity: 'success' })
+        showToast('Ruta actualizada correctamente', 'success')
     }
 
     return (
@@ -1092,21 +1085,6 @@ const resolveDestino = (ruta) =>
                 ))}
             </Menu>
 
-            <Snackbar
-                open={snackbar.open}
-                autoHideDuration={3000}
-                onClose={() => setSnackbar(s => ({ ...s, open: false }))}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-            >
-                <Alert
-                    severity={snackbar.severity}
-                    variant="filled"
-                    sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }}
-                    onClose={() => setSnackbar(s => ({ ...s, open: false }))}
-                >
-                    {snackbar.message}
-                </Alert>
-            </Snackbar>
         </Box>
     )
 }

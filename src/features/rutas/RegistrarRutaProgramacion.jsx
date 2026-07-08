@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import {
     Box, Typography, Paper, Stepper, Step, StepLabel,
-    Button, Alert, Snackbar, Dialog, DialogTitle, DialogContent, IconButton,
+    Button, Alert, Dialog, DialogTitle, DialogContent, IconButton,
     Autocomplete, TextField
 } from '@mui/material'
 import RouteOutlinedIcon from '@mui/icons-material/RouteOutlined'
@@ -16,7 +16,9 @@ import { useRutaProgramacion } from '../../shared/contexts/RutaProgramacionConte
 import { useVehiculo } from '../../shared/contexts/VehiculoContext.jsx'
 import { useConductor } from '../../shared/contexts/ConductorContext.jsx'
 import { useDestino } from '../../shared/contexts/DestinoContext.jsx'
+import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { FormField } from '../../shared/components/FormularioEstandarizado.jsx'
+import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import { normalizarTexto } from '../../shared/utils/duplicados.js'
@@ -31,6 +33,7 @@ const steps = ['Datos de la Ruta', 'Horario', 'Confirmación']
 
 const RegistrarRutaProgramacion = ({ open, onClose, onSuccess }) => {
     const { registrarRutaProgramada } = useRutaProgramacion()
+    const { showToast } = useToast()
     const theme = useTheme()
     const { getVehiculosHabilitados } = useVehiculo()
     const { getConductoresHabilitados } = useConductor()
@@ -40,7 +43,6 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess }) => {
     const [apiError, setApiError]     = useState(null)
     const [activeStep, setActiveStep] = useState(0)
     const [submitting, setSubmitting] = useState(false)
-    const [exito, setExito]           = useState(false)
     const [destinoInput, setDestinoInput]     = useState('')
     const [conductorInput, setConductorInput] = useState('')
     const [vehiculoInput, setVehiculoInput]   = useState('')
@@ -107,10 +109,10 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess }) => {
                 observaciones: form.observaciones || '',
                 estado: 'Programada'
             })
-            setExito(true)
+            showToast('¡Ruta programada exitosamente!', 'success')
             setTimeout(() => { handleClose(); onSuccess?.() }, 1500)
         } catch (err) {
-            setApiError(err.message || 'Error al registrar la ruta')
+            setApiError(getErrorMessage(err, 'Error al registrar la ruta'))
         } finally {
             setSubmitting(false)
         }
@@ -121,7 +123,6 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess }) => {
         setErrores({})
         setApiError(null)
         setActiveStep(0)
-        setExito(false)
         setDestinoInput('')
         setConductorInput('')
         setVehiculoInput('')
@@ -136,15 +137,15 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess }) => {
 
     const getVehiculoLabel = (id) => {
         const v = vehiculos.find(x => x.idVehiculo === parseInt(id))
-        return v ? `${v.placa} - ${v.marca} ${v.modelo}` : id
+        return v ? `${v.placa} - ${v.marca} ${v.modelo}` : '—'
     }
     const getConductorLabel = (id) => {
         const c = conductores.find(x => x.idConductor === parseInt(id))
-        return c ? `${c.nombre} ${c.apellido}` : id
+        return c ? `${c.nombre} ${c.apellido}` : '—'
     }
     const getDestinoLabel = (id) => {
         const d = destinos.find(x => x.idDestino === parseInt(id))
-        return d ? (d.nombre ? `${d.nombre} - ${d.ciudad}` : `${d.departamento} - ${d.ciudad}`) : id
+        return d ? (d.nombre ? `${d.nombre} - ${d.ciudad}` : `${d.departamento} - ${d.ciudad}`) : '—'
     }
 
     const renderStepContent = () => {
@@ -335,12 +336,6 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess }) => {
                     </Box>
                 </Box>
             </DialogContent>
-
-            <Snackbar open={exito} autoHideDuration={2500} onClose={() => setExito(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-                <Alert severity="success" variant="filled" sx={{ fontWeight: 600, borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '0.85rem' }} onClose={() => setExito(false)}>
-                    ¡Ruta programada exitosamente!
-                </Alert>
-            </Snackbar>
 
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 4, py: 2.5, borderTop: `1px solid ${theme.palette.divider}` }}>
                 <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined"
