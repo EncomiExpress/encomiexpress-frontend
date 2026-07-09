@@ -7,6 +7,9 @@ import {
   Box, Typography, Paper, Button, TextField,
   LinearProgress, Divider
 } from '@mui/material'
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
+} from 'recharts'
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import CalendarTodayOutlinedIcon from '@mui/icons-material/CalendarTodayOutlined'
 import AttachMoneyOutlinedIcon from '@mui/icons-material/AttachMoneyOutlined'
@@ -26,13 +29,16 @@ const STATUS_LABEL = {
 
 const formatCOP = (n) => '$' + n.toLocaleString('es-CO')
 
+const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1)
+
 const normalizeMonth = (dateString) => {
   const date = new Date(dateString)
   if (Number.isNaN(date.getTime())) return null
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const year = date.getFullYear()
-  const label = date.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' })
-  return { key: `${year}-${month}`, label, date }
+  const label = capitalize(date.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' }))
+  const shortLabel = capitalize(date.toLocaleDateString('es-CO', { month: 'short' })).replace('.', '')
+  return { key: `${year}-${month}`, label, shortLabel, date }
 }
 
 const isWithinRange = (dateString, desde, hasta) => {
@@ -83,6 +89,27 @@ const KpiCard = ({ icon, label, main, sub, height = '100%', minHeight = 0 }) => 
         )}
       </Box>
     </Paper>
+  )
+}
+
+const IngresosTooltip = ({ active, payload }) => {
+  const theme = useTheme()
+  if (!active || !payload?.length) return null
+  const { mes, valor } = payload[0].payload
+  return (
+    <Box sx={{
+      backgroundColor: theme.palette.background.paper,
+      border: `1px solid ${theme.palette.divider}`,
+      borderRadius: 2, px: 1.5, py: 1,
+      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+    }}>
+      <Typography variant="caption" sx={{ color: theme.palette.text.secondary, display: 'block', mb: 0.3 }}>
+        {mes}
+      </Typography>
+      <Typography variant="body2" fontWeight={700} sx={{ color: theme.palette.primary.main }}>
+        {formatCOP(valor)}
+      </Typography>
+    </Box>
   )
 }
 
@@ -143,7 +170,7 @@ const Dashboard = () => {
       const fecha = normalizeMonth(venta.fechaRegistro)
       if (!fecha || venta.total == null) return
       const valor = Number(venta.total) || 0
-      const current = meses.get(fecha.key) || { key: fecha.key, mes: fecha.label, valor: 0 }
+      const current = meses.get(fecha.key) || { key: fecha.key, mes: fecha.label, mesCorto: fecha.shortLabel, valor: 0 }
       meses.set(fecha.key, { ...current, valor: current.valor + valor })
     })
     return Array.from(meses.values()).sort((a, b) => a.key.localeCompare(b.key))
@@ -193,7 +220,6 @@ const Dashboard = () => {
   const vehiculosDisponibles = transportes.filter(t => t.habilitado && t.estado === 'Disponible').length
 
   const maxEnvios = enviosEstado.length > 0 ? Math.max(...enviosEstado.map(e => e.count)) : 1
-  const maxIngreso = ingresosMes.length > 0 ? Math.max(...ingresosMes.map(m => m.valor)) : 1
 
   const handleExportar = () => {
     const rows = ventas.map(venta => ({
@@ -313,31 +339,34 @@ const Dashboard = () => {
                 {filtroActivo.desde} — {filtroActivo.hasta}
               </Typography>
             </Box>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {ingresosMes.map((m) => (
-                <Box key={m.key}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                    <Typography variant="body2" sx={{ color: theme.palette.text.medium, fontWeight: 500, fontSize: '0.82rem' }}>
-                      {m.mes}
-                    </Typography>
-                    <Typography variant="body2" fontWeight={700} sx={{ color: theme.palette.primary.main, fontSize: '0.85rem' }}>
-                      {formatCOP(m.valor)}
-                    </Typography>
-                  </Box>
-                  <LinearProgress
-                    variant="determinate"
-                    value={(m.valor / maxIngreso) * 100}
-                    sx={{
-                      height: 7, borderRadius: 4, backgroundColor: theme.palette.background.subtle,
-                      '& .MuiLinearProgress-bar': {
-                        background: `linear-gradient(90deg, ${theme.palette.primary.main} 45%, ${theme.palette.secondary.main} 100%)`,
-                        borderRadius: 4,
-                      },
-                    }}
+            {ingresosMes.length > 0 ? (
+              <ResponsiveContainer width="100%" height={240}>
+                <BarChart data={ingresosMes} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="ingresosBarFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={theme.palette.primary.main} />
+                      <stop offset="100%" stopColor={theme.palette.secondary.main} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid vertical={false} stroke={theme.palette.divider} strokeDasharray="3 3" />
+                  <XAxis
+                    dataKey="mesCorto" tickLine={false} axisLine={{ stroke: theme.palette.divider }}
+                    tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
                   />
-                </Box>
-              ))}
-            </Box>
+                  <YAxis
+                    tickLine={false} axisLine={false} width={54}
+                    tick={{ fill: theme.palette.text.secondary, fontSize: 11 }}
+                    tickFormatter={(v) => v >= 1000000 ? `${(v / 1000000).toFixed(1)}M` : v >= 1000 ? `${(v / 1000).toFixed(0)}K` : v}
+                  />
+                  <Tooltip content={<IngresosTooltip />} cursor={{ fill: theme.palette.background.subtle }} />
+                  <Bar dataKey="valor" fill="url(#ingresosBarFill)" radius={[4, 4, 0, 0]} maxBarSize={48} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <Typography variant="body2" sx={{ color: theme.palette.text.secondary, textAlign: 'center', py: 4 }}>
+                Sin ventas registradas en este período.
+              </Typography>
+            )}
           </Paper>
 
           <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, border: `1px solid ${theme.palette.divider}` }}>
