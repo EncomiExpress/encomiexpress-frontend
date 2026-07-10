@@ -18,7 +18,7 @@ const LoadingScreen = ({ mensaje = 'Cargando...' }) => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: 'rgba(255, 255, 255, 0.98)',
+        backgroundColor: theme.palette.background.default,
       }}
     >
       <Box sx={{
@@ -27,10 +27,10 @@ const LoadingScreen = ({ mensaje = 'Cargando...' }) => {
         alignItems: 'center',
         gap: 3,
         p: 5,
-        backgroundColor: 'white',
+        backgroundColor: theme.palette.background.paper,
         borderRadius: 4,
         boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
-        border: '1px solid rgba(26,46,110,0.1)'
+        border: `1px solid ${theme.palette.divider}`,
       }}>
         <Box sx={{ width: 140, height: 80, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <img src={logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
@@ -49,10 +49,10 @@ const LoadingScreen = ({ mensaje = 'Cargando...' }) => {
           </Box>
         </Box>
 
-        <Typography sx={{ color: theme.palette.text.dark, fontWeight: 600, fontSize: '1rem', textAlign: 'center' }}>
+        <Typography sx={{ color: theme.palette.text.primary, fontWeight: 600, fontSize: '1rem', textAlign: 'center' }}>
           {mensaje}
         </Typography>
-        <Typography sx={{ color: 'rgba(33,33,33,0.45)', fontSize: '0.75rem' }}>
+        <Typography sx={{ color: theme.palette.text.secondary, fontSize: '0.75rem' }}>
           Por favor espera...
         </Typography>
       </Box>

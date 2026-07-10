@@ -3,7 +3,8 @@ import { useState } from 'react'
 import { Box, Paper, Typography, MenuItem, Dialog, DialogTitle, DialogContent, Stepper, Step, StepLabel, Alert, IconButton, Button, Autocomplete, TextField } from '@mui/material'
 import {
   DirectionsCarOutlined, BadgeOutlined, SellOutlined, InvertColorsOutlined,
-  EventOutlined, SpeedOutlined, Close, ArrowBackOutlined, ArrowForwardOutlined, CheckOutlined
+  EventOutlined, SpeedOutlined, Close, ArrowBackOutlined, ArrowForwardOutlined, CheckOutlined,
+  DescriptionOutlined
 } from '@mui/icons-material'
 import { useVehiculo } from '../../shared/contexts/VehiculoContext.jsx'
 import { usePropietario } from '../../shared/contexts/PropietarioContext.jsx'
@@ -24,6 +25,7 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
     idPropietario: '',
     placa: '',
+    tarjetaPropiedad: '',
     marca: '',
     modelo: '',
     color: '',
@@ -69,7 +71,7 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
 
   const handleClose = () => {
     setFormData({
-      idPropietario: '', placa: '', marca: '', modelo: '', color: '',
+      idPropietario: '', placa: '', tarjetaPropiedad: '', marca: '', modelo: '', color: '',
       tipo: '', origen: 'Propio', capacidad: '',
       vencimientoSOAT: '', vencimientoRevisionTecnica: '', vencimientoSeguroTerceros: ''
     })
@@ -112,6 +114,7 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
       await registrarVehiculo({
         idPropietario: formData.idPropietario ? parseInt(formData.idPropietario, 10) : null,
         placa: formData.placa.trim(),
+        tarjetaPropiedad: formData.tarjetaPropiedad?.trim() || null,
         marca: formData.marca.trim(),
         modelo: formData.modelo.trim(),
         color: formData.color.trim(),
@@ -164,10 +167,6 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
       case 1:
         return (
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
-            <FormSelect label="Origen" name="origen" value={formData.origen} onChange={handleChange} required>
-              <MenuItem value="Propio">Propio</MenuItem>
-              <MenuItem value="Tercerizado">Tercerizado</MenuItem>
-            </FormSelect>
             <Autocomplete
               options={propietarios.filter(p => p.habilitado !== false)}
               getOptionLabel={(p) => `${p.nombre} ${p.apellido} — ${p.numeroIdentificacion}`}
@@ -195,6 +194,14 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
                   sx={formFieldStyles} />
               )}
             />
+            <FormField label="Tarjeta de propiedad" name="tarjetaPropiedad" value={formData.tarjetaPropiedad}
+              onChange={handleChange} icon={DescriptionOutlined}
+              inputProps={{ maxLength: 50 }} placeholder="Ej: TC-001-2020"
+              helperText="Opcional" />
+            <FormSelect label="Origen" name="origen" value={formData.origen} onChange={handleChange} required>
+              <MenuItem value="Propio">Propio</MenuItem>
+              <MenuItem value="Tercerizado">Tercerizado</MenuItem>
+            </FormSelect>
             <FormField label="Vencimiento SOAT" name="vencimientoSOAT" type="date"
               value={formData.vencimientoSOAT} onChange={handleChange} required icon={EventOutlined}
               inputProps={{ min: hoyISO() }}
@@ -235,8 +242,9 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
                   <Typography fontWeight={700} fontSize="0.95rem">Propietario y Documentación</Typography>
                 </Box>
                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica propietario y fechas de vencimiento</Typography>
-                <ConfirmRow label="Origen" value={formData.origen} />
                 <ConfirmRow label="Propietario" value={(() => { const p = propietarios.find(p => p.idPropietario === formData.idPropietario); return p ? `${p.nombre} ${p.apellido}` : '—' })()} />
+                <ConfirmRow label="Tarjeta propiedad" value={formData.tarjetaPropiedad || 'N/A'} />
+                <ConfirmRow label="Origen" value={formData.origen} />
                 <ConfirmRow label="SOAT" value={formData.vencimientoSOAT || '—'} />
                 <ConfirmRow label="Revisión Técnica" value={formData.vencimientoRevisionTecnica || '—'} />
                 <ConfirmRow label="Seguro de Terceros" value={formData.vencimientoSeguroTerceros || '—'} />

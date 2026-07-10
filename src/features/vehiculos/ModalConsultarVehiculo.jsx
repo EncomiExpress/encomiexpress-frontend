@@ -48,7 +48,7 @@ const CampoFila = ({ label, value, esChip, valueColor }) => {
                 <Chip
                     label={value || '—'}
                     size="small"
-                    sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.main, fontSize: '0.7rem' }}
+                    sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem' }}
                 />
             ) : (
                 <Typography variant="body2" fontWeight={500} color={valueColor || theme.palette.text.medium}>
@@ -67,6 +67,7 @@ const ModalConsultarVehiculo = ({ vehiculo, onClose }) => {
 
     useEffect(() => {
         if (!vehiculo || tabIndex !== 1) return
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- loading flag antes de fetch, patrón recomendado por React
         setTabRutas({ data: [], loading: true })
         rutaService.getRutas({ idVehiculo: vehiculo.idVehiculo, limit: 100 })
             .then(res => setTabRutas({ data: res?.data || [], loading: false }))
@@ -125,6 +126,7 @@ const ModalConsultarVehiculo = ({ vehiculo, onClose }) => {
                                 Características y clasificación
                             </Typography>
                             <CampoFila label="Placa" value={vehiculo.placa} esChip />
+                            <CampoFila label="Tarjeta propiedad" value={vehiculo.tarjetaPropiedad || '—'} />
                             <CampoFila label="Tipo" value={vehiculo.tipo} esChip />
                             <CampoFila label="Marca" value={vehiculo.marca} />
                             <CampoFila label="Modelo" value={vehiculo.modelo} />

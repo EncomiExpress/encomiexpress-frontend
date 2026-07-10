@@ -8,26 +8,6 @@ export const getVentaEstadoDot = (estado) => {
     }
 }
 
-export const getEstadoColorVenta = (estado, theme) => {
-    switch (estado) {
-        case 'Programada':   return theme.palette.status.ventaProgramada
-        case 'En Tránsito':  return theme.palette.status.ventaEnTransito
-        case 'Entregada':    return theme.palette.status.ventaEntregadaAlt
-        case 'Cancelada':    return theme.palette.status.ventaDevueltaAlt
-        default:             return theme.palette.status.neutral
-    }
-}
-
-export const getEstadoColorVentaHex = (estado) => {
-    switch (estado) {
-        case 'Programada':   return { bg: '#E0E7FF', color: '#3730A3' }
-        case 'En Tránsito':  return { bg: '#CFFAFE', color: '#155E75' }
-        case 'Entregada':    return { bg: '#D1FAE5', color: '#065F46' }
-        case 'Cancelada':    return { bg: '#FEE2E2', color: '#991B1B' }
-        default:             return { bg: '#F3F4F6', color: '#6B7280' }
-    }
-}
-
 export const getEstadoColorRuta = (estado) => {
     switch (estado) {
         case 'Programada': return { bg: '#F3E8FF', color: '#A855F7' }

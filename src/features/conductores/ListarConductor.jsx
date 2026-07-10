@@ -282,10 +282,10 @@ const ListarConductor = () => {
                                     borderRadius: 3, textTransform: 'none', fontSize: '0.75rem', px: 2, py: 0.5, minWidth: 0,
                                     fontWeight: filtroHabilitado === f.value ? 600 : 400,
                                     backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
-                                    color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.secondary,
+                                    color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.primary.darker,
                                     boxShadow: filtroHabilitado === f.value ? '0 1px 4px rgba(0,0,0,0.12)' : 'none',
                                     border: 'none',
-                                    '&:hover': { backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent', color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.medium, border: 'none' },
+                                    '&:hover': { backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent', color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.primary.dark, border: 'none' },
                                 }}>
                                 {f.label}
                             </Button>
@@ -439,7 +439,7 @@ const ListarConductor = () => {
                                         <TableCell sx={{ py: 1.5 }}>
                                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.4 }}>
                                                 <Chip label={conductor.licenciaConduccion || '—'} size="small"
-                                                    sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.main, fontSize: '0.7rem', alignSelf: 'flex-start' }} />
+                                                    sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem', alignSelf: 'flex-start' }} />
                                                 {conductor.numeroLicencia && (
                                                     <Typography variant="caption" color={theme.palette.text.secondary} sx={{ lineHeight: 1.2 }}>
                                                         {conductor.numeroLicencia}

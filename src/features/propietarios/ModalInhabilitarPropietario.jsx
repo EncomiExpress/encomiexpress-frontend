@@ -51,8 +51,8 @@ const ModalInhabilitarPropietario = ({ open, data, onClose, onExited, onConfirm 
                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5, pt: 2 }}>
                     <Box sx={{ width: 67, height: 67, borderRadius: '50%', backgroundColor: theme.palette.primary.light, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         {data.habilitadoActual
-                            ? <BlockOutlinedIcon sx={{ fontSize: 35, color: theme.palette.primary.main }} />
-                            : <CheckCircleOutlinedIcon sx={{ fontSize: 35, color: theme.palette.primary.main }} />
+                            ? <BlockOutlinedIcon sx={{ fontSize: 35, color: theme.palette.primary.darker }} />
+                            : <CheckCircleOutlinedIcon sx={{ fontSize: 35, color: theme.palette.primary.darker }} />
                         }
                     </Box>
                     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>

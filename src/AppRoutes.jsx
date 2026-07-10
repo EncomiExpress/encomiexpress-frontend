@@ -3,9 +3,11 @@ import { Box, Paper, Typography } from '@mui/material'
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined'
 import { useTheme } from '@mui/material/styles'
 import LayoutAdmin from './shared/components/LayoutAdmin.jsx'
+import LoadingScreen from './shared/components/LoadingScreen.jsx'
 import { useAuth } from './shared/contexts/AuthContext.jsx'
 import { PERMISOS } from './shared/contexts/AuthContext.jsx'
 import SessionExpiredDialog from './shared/components/SessionExpiredDialog.jsx'
+import useSlowRequest from './shared/hooks/useSlowRequest.js'
 
 // Página pública principal
 import Home from './shared/components/Home.jsx'
@@ -95,9 +97,16 @@ const SinPermisos = () => {
 // Componente wrapper para rutas privadas con LayoutAdmin
 const PrivateRoute = ({ children, permisosRequeridos = [] }) => {
   const { usuario, loading, tieneAlgunPermiso } = useAuth()
+  const tardando = useSlowRequest(loading)
 
   if (loading) {
-    return null
+    return (
+      <LoadingScreen
+        mensaje={tardando
+          ? 'Conectando con el servidor... esto puede tardar unos segundos'
+          : 'Cargando...'}
+      />
+    )
   }
 
   if (!usuario) {

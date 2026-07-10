@@ -94,7 +94,7 @@ const ModalInhabilitarVehiculo = ({ open, data, onClose, onExited, onConfirm }) 
                 {!data.habilitadoActual ? (
                     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5, pt: 2 }}>
                         <Box sx={{ width: 67, height: 67, borderRadius: '50%', backgroundColor: theme.palette.primary.light, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <CheckCircleOutlinedIcon sx={{ fontSize: 35, color: theme.palette.primary.main }} />
+                            <CheckCircleOutlinedIcon sx={{ fontSize: 35, color: theme.palette.primary.darker }} />
                         </Box>
                         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
                             <Typography fontWeight={700} fontSize="1.4rem" color={theme.palette.text.primary}>¿Habilitar vehículo?</Typography>
@@ -106,7 +106,7 @@ const ModalInhabilitarVehiculo = ({ open, data, onClose, onExited, onConfirm }) 
                 ) : modalCargando ? (
                     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5, pt: 2 }}>
                         <Box sx={{ width: 67, height: 67, borderRadius: '50%', backgroundColor: theme.palette.primary.light, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <BlockOutlinedIcon sx={{ fontSize: 35, color: theme.palette.primary.main }} />
+                            <BlockOutlinedIcon sx={{ fontSize: 35, color: theme.palette.primary.darker }} />
                         </Box>
                         <Typography fontWeight={700} fontSize="1.4rem" color={theme.palette.text.primary}>¿Inhabilitar vehículo?</Typography>
                         <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
@@ -116,7 +116,7 @@ const ModalInhabilitarVehiculo = ({ open, data, onClose, onExited, onConfirm }) 
                 ) : modalBloqueado ? (
                     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5, pt: 2 }}>
                         <Box sx={{ width: 67, height: 67, borderRadius: '50%', backgroundColor: theme.palette.primary.light, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <BlockOutlinedIcon sx={{ fontSize: 35, color: theme.palette.primary.main }} />
+                            <BlockOutlinedIcon sx={{ fontSize: 35, color: theme.palette.primary.darker }} />
                         </Box>
                         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
                             <Typography fontWeight={700} fontSize="1.4rem" color={theme.palette.text.primary}>No se puede inhabilitar</Typography>
@@ -134,7 +134,7 @@ const ModalInhabilitarVehiculo = ({ open, data, onClose, onExited, onConfirm }) 
                 ) : data.estadoVehiculo === 'Mantenimiento' && modalProgramadas.length === 0 ? (
                     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5, pt: 2 }}>
                         <Box sx={{ width: 67, height: 67, borderRadius: '50%', backgroundColor: theme.palette.primary.light, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <BlockOutlinedIcon sx={{ fontSize: 35, color: theme.palette.primary.main }} />
+                            <BlockOutlinedIcon sx={{ fontSize: 35, color: theme.palette.primary.darker }} />
                         </Box>
                         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
                             <Typography fontWeight={700} fontSize="1.4rem" color={theme.palette.text.primary}>¿Inhabilitar vehículo?</Typography>
@@ -146,7 +146,7 @@ const ModalInhabilitarVehiculo = ({ open, data, onClose, onExited, onConfirm }) 
                 ) : modalProgramadas.length > 0 ? (
                     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5, pt: 2 }}>
                         <Box sx={{ width: 67, height: 67, borderRadius: '50%', backgroundColor: theme.palette.primary.light, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <BlockOutlinedIcon sx={{ fontSize: 35, color: theme.palette.primary.main }} />
+                            <BlockOutlinedIcon sx={{ fontSize: 35, color: theme.palette.primary.darker }} />
                         </Box>
                         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
                             <Typography fontWeight={700} fontSize="1.4rem" color={theme.palette.text.primary}>¿Inhabilitar vehículo?</Typography>
@@ -164,7 +164,7 @@ const ModalInhabilitarVehiculo = ({ open, data, onClose, onExited, onConfirm }) 
                 ) : (
                     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5, pt: 2 }}>
                         <Box sx={{ width: 67, height: 67, borderRadius: '50%', backgroundColor: theme.palette.primary.light, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <BlockOutlinedIcon sx={{ fontSize: 35, color: theme.palette.primary.main }} />
+                            <BlockOutlinedIcon sx={{ fontSize: 35, color: theme.palette.primary.darker }} />
                         </Box>
                         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
                             <Typography fontWeight={700} fontSize="1.4rem" color={theme.palette.text.primary}>¿Inhabilitar vehículo?</Typography>

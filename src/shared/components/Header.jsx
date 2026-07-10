@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useTheme } from '@mui/material/styles'
-import { Box, Typography, Avatar, Menu, MenuItem, Divider, Popover, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button, TextField, Alert, CircularProgress, InputAdornment, IconButton } from '@mui/material'
+import { Box, Typography, Avatar, Menu, MenuItem, Divider, Popover, Dialog, DialogContent, Button, TextField, Alert, CircularProgress, InputAdornment, IconButton } from '@mui/material'
 import {
   DarkModeOutlined as MoonIcon,
   LightModeOutlined as SunIcon,
@@ -416,59 +416,50 @@ const Header = ({ collapsed }) => {
           open={openCambiarDialog}
           onClose={() => !cambiarLoading && setOpenCambiarDialog(false)}
           maxWidth="xs" fullWidth
-          PaperProps={{
-            sx: {
-              borderRadius: 4,
-              overflow: 'hidden',
-              boxShadow: darkMode ? '0 20px 60px rgba(0,0,0,0.4)' : '0 20px 60px rgba(0,0,0,0.15)',
-              border: `1px solid ${panelBorder}`,
-              backgroundColor: panelBg,
-            }
-          }}
+          slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}
         >
-          {/* Cabecera con ícono */}
-          <Box sx={{
-            px: 3, pt: 3, pb: 2,
-            display: 'flex', alignItems: 'center', gap: 2,
-            borderBottom: `1px solid ${panelBorder}`,
-          }}>
-            <Box sx={{
-              width: 42, height: 42, borderRadius: '12px',
-              backgroundColor: pal.secondary.main + '18',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-            }}>
-              <LockResetIcon sx={{ fontSize: '1.4rem', color: pal.secondary.main }} />
-            </Box>
-            <Box>
-              <Typography sx={{ fontWeight: 700, fontSize: '1rem', color: darkMode ? '#FFFFFF' : '#212121', lineHeight: 1.2 }}>
-                Cambiar contraseña
-              </Typography>
-              <Typography sx={{ fontSize: '0.78rem', color: darkMode ? '#A0A0A0' : 'rgba(33,33,33,0.5)', mt: 0.3 }}>
-                Ingresa tu contraseña actual y la nueva
-              </Typography>
-            </Box>
-          </Box>
+          <DialogContent sx={{ p: 3, pb: 1, textAlign: 'center', position: 'relative' }}>
+            <IconButton
+              onClick={() => !cambiarLoading && setOpenCambiarDialog(false)}
+              sx={{ position: 'absolute', top: 8, right: 8, color: theme.palette.text.secondary }}
+            >
+              <Close />
+            </IconButton>
 
-          <DialogContent sx={{ px: 3, pt: 2.5, pb: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <TextField {...campoPassword('Contraseña actual',          passwordActual,  setPasswordActual,  showActual,  setShowActual)} />
-            <TextField {...campoPassword('Nueva contraseña',           passwordNueva,   setPasswordNueva,   showNueva,   setShowNueva)} />
-            <TextField {...campoPassword('Confirmar nueva contraseña', passwordConfirm, setPasswordConfirm, showConfirm, setShowConfirm)} />
-            {cambiarMensaje && (
-              <Alert severity={cambiarMensaje.tipo} sx={{ fontSize: '0.82rem', borderRadius: 2 }}>
-                {cambiarMensaje.texto}
-              </Alert>
-            )}
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5, pt: 2 }}>
+              <Box sx={{ width: 67, height: 67, borderRadius: 2, backgroundColor: theme.palette.primary.main + '22', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <LockResetIcon sx={{ fontSize: 35, color: theme.palette.primary.main }} />
+              </Box>
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+                <Typography fontWeight={700} fontSize="1.4rem" color={theme.palette.text.primary}>
+                  Cambiar contraseña
+                </Typography>
+                <Typography fontSize="1rem" color={theme.palette.text.secondary} sx={{ textAlign: 'center' }}>
+                  Ingresa tu contraseña actual y la nueva
+                </Typography>
+              </Box>
+            </Box>
+
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 3, textAlign: 'left' }}>
+              <TextField {...campoPassword('Contraseña actual',          passwordActual,  setPasswordActual,  showActual,  setShowActual)} />
+              <TextField {...campoPassword('Nueva contraseña',           passwordNueva,   setPasswordNueva,   showNueva,   setShowNueva)} />
+              <TextField {...campoPassword('Confirmar nueva contraseña', passwordConfirm, setPasswordConfirm, showConfirm, setShowConfirm)} />
+              {cambiarMensaje && (
+                <Alert severity={cambiarMensaje.tipo} sx={{ fontSize: '0.82rem', borderRadius: 2 }}>
+                  {cambiarMensaje.texto}
+                </Alert>
+              )}
+            </Box>
           </DialogContent>
 
-          <DialogActions sx={{ px: 3, pb: 3, pt: 2, gap: 1.5 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 3, px: 3, pt: 1, pb: 3 }}>
             <Button
               onClick={() => setOpenCambiarDialog(false)}
               disableRipple disabled={cambiarLoading}
               sx={{
-                textTransform: 'none', fontWeight: 500, borderRadius: 2,
-                color: darkMode ? '#A0A0A0' : '#8A94A6',
-                border: `1px solid ${panelBorder}`, px: 2.5,
-                '&:hover': { backgroundColor: darkMode ? '#2A2A2A' : '#F8F9FA', color: darkMode ? '#FFFFFF' : '#1a0e0c' },
+                textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 2,
+                px: 3.5, py: 0.75, fontSize: '0.875rem', border: `1px solid ${theme.palette.divider}`,
+                '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary },
               }}
             >
               Cancelar
@@ -478,10 +469,9 @@ const Header = ({ collapsed }) => {
               variant="contained" disableRipple
               disabled={cambiarLoading || !passwordActual || !passwordNueva || !passwordConfirm}
               sx={{
-                textTransform: 'none', borderRadius: 2, fontWeight: 600, minWidth: 110, px: 2.5,
-                backgroundColor: pal.secondary.main,
-                boxShadow: `0 4px 14px ${pal.secondary.main}4D`,
-                '&:hover': { backgroundColor: pal.secondary.dark, boxShadow: `0 6px 20px ${pal.secondary.main}66` },
+                textTransform: 'none', borderRadius: 2, fontWeight: 600, minWidth: 110, px: 5, py: 0.76, fontSize: '0.875rem',
+                backgroundColor: theme.palette.primary.main,
+                '&:hover': { backgroundColor: theme.palette.primary.dark },
               }}
             >
               {cambiarLoading
@@ -489,9 +479,7 @@ const Header = ({ collapsed }) => {
                 : 'Guardar cambios'
               }
             </Button>
-          </DialogActions>
-
-          {/* Barra degradada inferior */}
+          </Box>
         </Dialog>
 
         {/* ── Dialog logout ── */}

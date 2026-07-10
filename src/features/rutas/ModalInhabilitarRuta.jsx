@@ -103,8 +103,8 @@ const ModalInhabilitarRuta = ({ open, data, onClose, onExited, onConfirm }) => {
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}>
                         {data?.habilitadoActual
-                            ? <DoNotDisturbOutlinedIcon sx={{ fontSize: 35, color: theme.palette.primary.main }} />
-                            : <CheckCircleOutlinedIcon sx={{ fontSize: 35, color: theme.palette.primary.main }} />
+                            ? <DoNotDisturbOutlinedIcon sx={{ fontSize: 35, color: theme.palette.primary.darker }} />
+                            : <CheckCircleOutlinedIcon sx={{ fontSize: 35, color: theme.palette.primary.darker }} />
                         }
                     </Box>
                     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>

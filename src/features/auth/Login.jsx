@@ -1,22 +1,21 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useTheme } from '@mui/material/styles'
-import { Box, TextField, Button, Typography, Paper, Alert, Grid, MenuItem, Select, FormControl, InputLabel, InputAdornment, IconButton, Divider, Dialog, DialogTitle, DialogContent, DialogActions, CircularProgress } from '@mui/material'
+import { Box, TextField, Button, Typography, Paper, Alert, InputAdornment, IconButton, Divider, Dialog, DialogContent, CircularProgress, Snackbar } from '@mui/material'
 import {
   EmailOutlined as Email,
   LockOutlined as Lock,
   VisibilityOutlined as Visibility,
   VisibilityOffOutlined as VisibilityOff,
-  PersonAdd,
   Login as LoginIcon,
-  Person,
-  Badge,
   ArrowBack,
   LockResetOutlined as LockResetIcon,
+  Close,
 } from '@mui/icons-material'
-import { useAuth, ROLES } from '../../shared/contexts/AuthContext.jsx'
+import { useAuth } from '../../shared/contexts/AuthContext.jsx'
 import { recuperarPassword } from '../../shared/services/authService.js'
 import LoadingScreen from '../../shared/components/LoadingScreen.jsx'
+import useSlowRequest from '../../shared/hooks/useSlowRequest.js'
 import logo from '../../assets/logo.png'
 
 const Login = () => {
@@ -25,18 +24,8 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [camposError, setCamposError] = useState({ email: '', password: '' })
-  const [openRegister, setOpenRegister] = useState(false)
   const [cargando, setCargando] = useState(false)
   const [apiCargando, setApiCargando] = useState(false)
-  const [registerData, setRegisterData] = useState({
-    nombre: '',
-    email: '',
-    password: '',
-    rol: '',
-    iniciales: ''
-  })
-  const [registerError, setRegisterError] = useState('')
-  const [registerSuccess, setRegisterSuccess] = useState('')
 
   // Estados para recuperar contraseña
   const [openRecuperar, setOpenRecuperar]       = useState(false)
@@ -44,9 +33,10 @@ const Login = () => {
   const [recuperarLoading, setRecuperarLoading] = useState(false)
   const [recuperarMensaje, setRecuperarMensaje] = useState(null)
 
-  const { login, registrarUsuario, usuario, loading, sessionExpired } = useAuth()
+  const { login, usuario, loading, sessionExpired } = useAuth()
   const navigate = useNavigate()
   const theme = useTheme()
+  const tardando = useSlowRequest(apiCargando)
 
   useEffect(() => {
     if (!loading && !cargando && !apiCargando && usuario) {
@@ -82,27 +72,6 @@ const Login = () => {
     } catch {
       setApiCargando(false)
       setError('Error al iniciar sesión')
-    }
-  }
-
-  const handleRegisterChange = (e) => {
-    setRegisterData({ ...registerData, [e.target.name]: e.target.value })
-  }
-
-  const handleRegister = (e) => {
-    e.preventDefault()
-    setRegisterError('')
-    if (!registerData.nombre || !registerData.email || !registerData.password || !registerData.rol || !registerData.iniciales) {
-      setRegisterError('Todos los campos son requeridos')
-      return
-    }
-    try {
-      registrarUsuario(registerData)
-      setRegisterSuccess('Usuario registrado correctamente. Ahora puedes iniciar sesión.')
-      setOpenRegister(false)
-      setRegisterData({ nombre: '', email: '', password: '', rol: '', iniciales: '' })
-    } catch {
-      setRegisterError('Error al registrar usuario')
     }
   }
 
@@ -204,7 +173,7 @@ const Login = () => {
         <Box sx={{ p: 4 }}>
           {sessionExpired && !error && (
             <Alert severity="warning" sx={{ mb: 3, borderRadius: 2 }}>
-              Tu sesión ha expirado. Inicia sesión nuevamente para continuar.
+              Ha pasado mucho tiempo desde tu última actividad. Inicia sesión de nuevo para continuar.
             </Alert>
           )}
           {error && (
@@ -227,7 +196,7 @@ const Login = () => {
             <TextField
               fullWidth label="Contraseña" type={showPassword ? 'text' : 'password'}
               value={password} onChange={(e) => { setPassword(e.target.value); setCamposError(prev => ({ ...prev, password: '' })); setError('') }}
-              required placeholder="••••••"
+              required
               error={!!camposError.password} helperText={camposError.password}
               InputProps={{
                 startAdornment: <InputAdornment position="start"><Lock sx={{ color: '#8b8382' }} /></InputAdornment>,
@@ -274,6 +243,21 @@ const Login = () => {
             </Button>
           </form>
 
+          <Box sx={{ mt: 2.5, textAlign: 'center' }}>
+            <Typography sx={{ color: theme.palette.text.secondary, fontSize: '0.875rem' }}>
+              ¿Necesitas una cuenta?{' '}
+              <Button
+                component={Link} to="/register" variant="text"
+                sx={{
+                  color: theme.palette.primary.main, fontWeight: 600, p: 0, minWidth: 'auto',
+                  textTransform: 'none', '&:hover': { textDecoration: 'underline' },
+                }}
+              >
+                Regístrate
+              </Button>
+            </Typography>
+          </Box>
+
           <Divider sx={{ my: 3 }}>
             <Typography sx={{ color: theme.palette.text.secondary, fontSize: '0.75rem' }}>O</Typography>
           </Divider>
@@ -297,78 +281,69 @@ const Login = () => {
         open={openRecuperar}
         onClose={() => !recuperarLoading && setOpenRecuperar(false)}
         maxWidth="xs" fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: 4,
-            overflow: 'hidden',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
-            border: `1px solid ${theme.palette.divider}`,
-          }
-        }}
+        slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}
       >
-{/* Cabecera con ícono */}
-        <Box sx={{
-          px: 3, pt: 3, pb: 2,
-          display: 'flex', alignItems: 'center', gap: 2,
-          borderBottom: `1px solid ${theme.palette.divider}`,
-        }}>
-          <Box sx={{
-            width: 42, height: 42, borderRadius: '12px',
-            backgroundColor: theme.palette.secondary.main + '18',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-          }}>
-            <LockResetIcon sx={{ fontSize: '1.4rem', color: theme.palette.secondary.main }} />
-          </Box>
-          <Box>
-            <Typography sx={{ fontWeight: 700, fontSize: '1rem', color: theme.palette.text.dark, lineHeight: 1.2 }}>
-              Recuperar contraseña
-            </Typography>
-            <Typography sx={{ fontSize: '0.78rem', color: theme.palette.text.secondary, mt: 0.3 }}>
-              Te enviaremos acceso temporal a tu correo
-            </Typography>
-          </Box>
-        </Box>
+        <DialogContent sx={{ p: 3, pb: 1, textAlign: 'center', position: 'relative' }}>
+          <IconButton
+            onClick={() => !recuperarLoading && setOpenRecuperar(false)}
+            sx={{ position: 'absolute', top: 8, right: 8, color: theme.palette.text.secondary }}
+          >
+            <Close />
+          </IconButton>
 
-        <DialogContent sx={{ px: 3, pt: 2.5, pb: 1 }}>
-          <TextField
-            label="Correo electrónico"
-            type="email"
-            fullWidth
-            size="small"
-            value={recuperarEmail}
-            onChange={(e) => setRecuperarEmail(e.target.value)}
-            disabled={recuperarLoading}
-            placeholder="correo@ejemplo.com"
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Email sx={{ fontSize: '1rem', color: '#8b8382' }} />
-                </InputAdornment>
-              ),
-            }}
-            sx={{
-              '& .MuiOutlinedInput-root': { '&.Mui-focused fieldset': { borderColor: theme.palette.secondary.main } },
-              '& .MuiInputLabel-root.Mui-focused': { color: theme.palette.secondary.main },
-            }}
-          />
-          {recuperarMensaje && (
-            <Alert severity={recuperarMensaje.tipo} sx={{ mt: 2, fontSize: '0.82rem', borderRadius: 2 }}>
-              {recuperarMensaje.texto}
-            </Alert>
-          )}
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5, pt: 2 }}>
+            <Box sx={{ width: 67, height: 67, borderRadius: 2, backgroundColor: theme.palette.primary.main + '22', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <LockResetIcon sx={{ fontSize: 35, color: theme.palette.primary.main }} />
+            </Box>
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+              <Typography fontWeight={700} fontSize="1.4rem" color={theme.palette.text.primary}>
+                Recuperar contraseña
+              </Typography>
+              <Typography fontSize="1rem" color={theme.palette.text.secondary} sx={{ textAlign: 'center' }}>
+                Te enviaremos acceso temporal a tu correo
+              </Typography>
+            </Box>
+          </Box>
+
+          <Box sx={{ mt: 3, textAlign: 'left' }}>
+            <TextField
+              label="Correo electrónico"
+              type="email"
+              fullWidth
+              size="small"
+              value={recuperarEmail}
+              onChange={(e) => setRecuperarEmail(e.target.value)}
+              disabled={recuperarLoading}
+              placeholder="correo@ejemplo.com"
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Email sx={{ fontSize: '1rem', color: theme.palette.text.secondary }} />
+                  </InputAdornment>
+                ),
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': { '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main } },
+                '& .MuiInputLabel-root.Mui-focused': { color: theme.palette.primary.main },
+              }}
+            />
+            {recuperarMensaje && (
+              <Alert severity={recuperarMensaje.tipo} sx={{ mt: 2, fontSize: '0.82rem', borderRadius: 2 }}>
+                {recuperarMensaje.texto}
+              </Alert>
+            )}
+          </Box>
         </DialogContent>
 
-        <DialogActions sx={{ px: 3, pb: 3, pt: 2, gap: 1.5 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 3, px: 3, pt: 1, pb: 3 }}>
           <Button
             onClick={() => setOpenRecuperar(false)}
             disabled={recuperarLoading}
             disableRipple
             sx={{
-              textTransform: 'none', fontWeight: 500, borderRadius: 2,
-              color: theme.palette.text.secondary,
-              border: `1px solid ${theme.palette.divider}`,
-              px: 2.5,
-              '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.dark },
+              textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 2,
+              px: 3.5, py: 0.75, fontSize: '0.875rem', border: `1px solid ${theme.palette.divider}`,
+              '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary },
             }}
           >
             Cancelar
@@ -379,14 +354,9 @@ const Login = () => {
             disableRipple
             disabled={recuperarLoading || !recuperarEmail}
             sx={{
-              textTransform: 'none', borderRadius: 2, fontWeight: 600,
-              minWidth: 110, px: 2.5,
-              backgroundColor: theme.palette.secondary.main,
-              boxShadow: `0 4px 14px ${theme.palette.secondary.main}4D`,
-              '&:hover': {
-                backgroundColor: theme.palette.secondary.dark,
-                boxShadow: `0 6px 20px ${theme.palette.secondary.main}66`,
-              },
+              textTransform: 'none', borderRadius: 2, fontWeight: 600, minWidth: 110, px: 5, py: 0.76, fontSize: '0.875rem',
+              backgroundColor: theme.palette.primary.main,
+              '&:hover': { backgroundColor: theme.palette.primary.dark },
             }}
           >
             {recuperarLoading
@@ -394,63 +364,26 @@ const Login = () => {
               : 'Enviar acceso'
             }
           </Button>
-        </DialogActions>
+        </Box>
       </Dialog>
 
-      {/* ── Dialog registro ── */}
-      <Dialog open={openRegister} onClose={() => setOpenRegister(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{
-          p: 3, textAlign: 'center',
-          backgroundColor: theme.palette.background.paper,
-          borderBottom: `1px solid ${theme.palette.divider}`,
-        }}>
-          <Typography sx={{ color: theme.palette.text.dark, fontWeight: 700, fontSize: '1.1rem' }}>
-            Crear Cuenta
-          </Typography>
-        </DialogTitle>
-        <DialogContent sx={{ p: 3 }}>
-          {registerSuccess && <Alert severity="success" sx={{ mb: 2, borderRadius: 2 }}>{registerSuccess}</Alert>}
-          {registerError && <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>{registerError}</Alert>}
-          <Box component="form" onSubmit={handleRegister}>
-            <Grid container spacing={2}>
-              <Grid size={12}>
-                <TextField fullWidth label="Nombre completo" name="nombre" value={registerData.nombre} onChange={handleRegisterChange} required
-                  InputProps={{ startAdornment: <InputAdornment position="start"><Person sx={{ color: '#8b8382' }} /></InputAdornment> }} />
-              </Grid>
-              <Grid size={12}>
-                <TextField fullWidth label="Correo electrónico" name="email" type="email" value={registerData.email} onChange={handleRegisterChange} required
-                  InputProps={{ startAdornment: <InputAdornment position="start"><Email sx={{ color: '#8b8382' }} /></InputAdornment> }} />
-              </Grid>
-              <Grid size={12}>
-                <TextField fullWidth label="Contraseña" name="password" type="password" value={registerData.password} onChange={handleRegisterChange} required
-                  InputProps={{ startAdornment: <InputAdornment position="start"><Lock sx={{ color: '#8b8382' }} /></InputAdornment> }} />
-              </Grid>
-              <Grid size={12}>
-                <FormControl fullWidth required>
-                  <InputLabel>Rol</InputLabel>
-                  <Select name="rol" value={registerData.rol} label="Rol" onChange={handleRegisterChange}>
-                    {Object.values(ROLES).map((rol) => (
-                      <MenuItem key={rol.id} value={rol.nombre}>{rol.nombre}</MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid size={12}>
-                <TextField fullWidth label="Iniciales" name="iniciales" value={registerData.iniciales} onChange={handleRegisterChange} required
-                  inputProps={{ maxLength: 3 }} helperText="Ej: VP, JG, MV"
-                  InputProps={{ startAdornment: <InputAdornment position="start"><Badge sx={{ color: '#8b8382' }} /></InputAdornment> }} />
-              </Grid>
-            </Grid>
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 3 }}>
-          <Button onClick={() => setOpenRegister(false)} sx={{ color: 'rgba(33,33,33,0.45)' }}>Cancelar</Button>
-          <Button onClick={handleRegister} variant="contained" startIcon={<PersonAdd />}
-            sx={{ backgroundColor: theme.palette.primary.main, borderRadius: 2, px: 3, '&:hover': { backgroundColor: theme.palette.primary.dark } }}>
-            Registrarse
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <Snackbar
+        open={apiCargando && tardando}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert
+          severity="info"
+          sx={{
+            borderRadius: 2,
+            backgroundColor: theme.palette.status.info.bg,
+            color: theme.palette.status.info.color,
+            '& .MuiAlert-icon': { color: theme.palette.status.info.color },
+          }}
+        >
+          Conectando con el servidor... esto puede tardar unos segundos.
+        </Alert>
+      </Snackbar>
+
     </Box>
   )
 }

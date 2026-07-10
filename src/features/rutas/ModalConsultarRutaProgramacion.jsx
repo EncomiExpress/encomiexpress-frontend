@@ -43,7 +43,7 @@ const CampoFila = ({ label, value, esChip }) => {
                 <Chip
                     label={value || '—'}
                     size="small"
-                    sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.main, fontSize: '0.7rem' }}
+                    sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem' }}
                 />
             ) : (
                 <Typography variant="body2" fontWeight={500} color={theme.palette.text.medium}>
@@ -66,6 +66,7 @@ const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
 
     useEffect(() => {
         if (!ruta || tabIndex !== 1) return
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- loading flag antes de fetch, patrón recomendado por React
         setTabEncomiendas({ data: [], loading: true })
         ventaService.getEncomiendas(undefined, { idRuta: ruta.idRuta, limit: 100 })
             .then(res => setTabEncomiendas({ data: res?.data || [], loading: false }))
@@ -74,6 +75,7 @@ const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
 
     useEffect(() => {
         if (!ruta || tabIndex !== 2) return
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- loading flag antes de fetch, patrón recomendado por React
         setTabAnticipos({ data: [], loading: true })
         anticipoService.getAnticipos(undefined, { idRuta: ruta.idRuta, limit: 100 })
             .then(res => setTabAnticipos({ data: res?.data || [], loading: false }))
@@ -144,7 +146,7 @@ const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Vehículo</Typography>
                                 <Chip label={resolveVehiculo(ruta) || '—'} size="small"
                                     onClick={() => window.open(`/vehiculos/listar?highlight=${ruta.idVehiculo}`, '_blank')}
-                                    sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.main, fontSize: '0.7rem', cursor: 'pointer', '&:hover': { filter: 'brightness(0.92)' } }} />
+                                    sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem', cursor: 'pointer', '&:hover': { filter: 'brightness(0.92)' } }} />
                             </Box>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Conductor</Typography>
@@ -168,7 +170,7 @@ const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Destino</Typography>
                                 <Chip label={resolveDestino(ruta) || '—'} size="small"
                                     onClick={() => window.open(`/transporte/destinos?highlight=${ruta.idDestino}`, '_blank')}
-                                    sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.main, fontSize: '0.7rem', cursor: 'pointer', '&:hover': { filter: 'brightness(0.92)' } }} />
+                                    sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem', cursor: 'pointer', '&:hover': { filter: 'brightness(0.92)' } }} />
                             </Box>
                             <CampoFila label="Fecha salida" value={ruta.fechaSalida || '—'} />
                             <CampoFila label="Hora salida" value={formatHora12(ruta.horaSalida) || '—'} />

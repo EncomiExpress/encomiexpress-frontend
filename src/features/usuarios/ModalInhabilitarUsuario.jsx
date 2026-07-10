@@ -31,8 +31,8 @@ const ModalInhabilitarUsuario = ({ open, data, onClose, onExited, onConfirm }) =
                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5, pt: 2 }}>
                     <Box sx={{ width: 67, height: 67, borderRadius: '50%', backgroundColor: theme.palette.primary.light, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         {data.habilitadoActual
-                            ? <BlockOutlinedIcon sx={{ fontSize: 35, color: theme.palette.primary.main }} />
-                            : <CheckCircleOutlinedIcon sx={{ fontSize: 35, color: theme.palette.primary.main }} />
+                            ? <BlockOutlinedIcon sx={{ fontSize: 35, color: theme.palette.primary.darker }} />
+                            : <CheckCircleOutlinedIcon sx={{ fontSize: 35, color: theme.palette.primary.darker }} />
                         }
                     </Box>
                     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
@@ -42,7 +42,7 @@ const ModalInhabilitarUsuario = ({ open, data, onClose, onExited, onConfirm }) =
                         <Typography fontSize="0.95rem" color={theme.palette.text.secondary}>
                             {data.habilitadoActual
                                 ? <><strong>{data.nombreCompleto}</strong> no podrá iniciar sesión en el sistema.</>
-                                : <><strong>{data.nombreCompleto}</strong> volverá a tener acceso al sistema.</>
+                                : <><strong>{data.nombreCompleto}</strong> podrá iniciar sesión en el sistema.</>
                             }
                         </Typography>
                     </Box>

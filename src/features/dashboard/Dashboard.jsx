@@ -19,6 +19,7 @@ import RouteOutlinedIcon from '@mui/icons-material/RouteOutlined'
 import BarChartOutlinedIcon from '@mui/icons-material/BarChartOutlined'
 import { formatRutaDestino } from '../../shared/utils/formatters.js'
 import { exportToExcel } from '../../shared/utils/exportExcel.js'
+import { getVentaEstadoDot } from '../../shared/utils/estadoColors.js'
 
 const STATUS_LABEL = {
   'Programada':  'Programada',
@@ -177,12 +178,6 @@ const Dashboard = () => {
   }, [ventas, filtroActivo])
 
   const enviosEstado = useMemo(() => {
-    const statusColors = {
-      'Entregada':   theme.palette.status.ventaEntregada.color,
-      'En Tránsito': theme.palette.status.ventaEnTransito.color,
-      'Programada':  theme.palette.status.ventaProgramada.color,
-      'Cancelada':   theme.palette.status.neutral.color,
-    }
     const contador = {}
     ventas.forEach((venta) => {
       if (!isWithinRange(venta.fechaRegistro, filtroActivo.desde, filtroActivo.hasta)) return
@@ -196,9 +191,9 @@ const Dashboard = () => {
       .map(key => ({
         label: STATUS_LABEL[key] || key.charAt(0).toUpperCase() + key.slice(1),
         count: contador[key],
-        color: statusColors[key] || theme.palette.status.neutral.color,
+        color: getVentaEstadoDot(key).color,
       }))
-  }, [ventas, filtroActivo, theme])
+  }, [ventas, filtroActivo])
 
   const topDestinos = useMemo(() => {
     const contador = {}
@@ -332,7 +327,7 @@ const Dashboard = () => {
           <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, border: `1px solid ${theme.palette.divider}` }}>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
               <SectionHeader
-                icon={<AttachMoneyOutlinedIcon sx={{ fontSize: 16, color: theme.palette.primary.main }} />}
+                icon={<AttachMoneyOutlinedIcon sx={{ fontSize: 16, color: theme.palette.primary.darker }} />}
                 title="Ingresos por Mes"
               />
               <Typography variant="caption" sx={{ color: theme.palette.text.secondary, fontSize: '0.72rem' }}>
@@ -345,7 +340,7 @@ const Dashboard = () => {
                   <defs>
                     <linearGradient id="ingresosBarFill" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor={theme.palette.primary.main} />
-                      <stop offset="100%" stopColor={theme.palette.secondary.main} />
+                      <stop offset="100%" stopColor={theme.palette.primary.dark} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid vertical={false} stroke={theme.palette.divider} strokeDasharray="3 3" />
@@ -371,7 +366,7 @@ const Dashboard = () => {
 
           <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, border: `1px solid ${theme.palette.divider}` }}>
             <SectionHeader
-              icon={<BarChartOutlinedIcon sx={{ fontSize: 16, color: theme.palette.primary.main }} />}
+              icon={<BarChartOutlinedIcon sx={{ fontSize: 16, color: theme.palette.primary.darker }} />}
               title="Envíos por Estado"
             />
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.6 }}>
@@ -407,14 +402,14 @@ const Dashboard = () => {
 
           <Box sx={{ display: 'flex', gap: 2.5, alignItems: 'stretch', width: '100%' }}>
             <KpiCard
-              icon={<PersonOutlinedIcon sx={{ fontSize: 18, color: theme.palette.primary.main }} />}
+              icon={<PersonOutlinedIcon sx={{ fontSize: 18, color: theme.palette.primary.darker }} />}
               label="Conductores Disponibles"
               main={`${conductoresDisponibles} / ${conductoresTotales}`}
               sub="disponibles / total"
               height="165px"
             />
             <KpiCard
-              icon={<DirectionsCarOutlinedIcon sx={{ fontSize: 18, color: theme.palette.primary.main }} />}
+              icon={<DirectionsCarOutlinedIcon sx={{ fontSize: 18, color: theme.palette.primary.darker }} />}
               label="Vehículos Disponibles"
               main={`${vehiculosDisponibles} / ${vehiculosTotales}`}
               sub="disponibles / total"
@@ -424,7 +419,7 @@ const Dashboard = () => {
 
           <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, border: `1px solid ${theme.palette.divider}` }}>
             <SectionHeader
-              icon={<RouteOutlinedIcon sx={{ fontSize: 16, color: theme.palette.primary.main }} />}
+              icon={<RouteOutlinedIcon sx={{ fontSize: 16, color: theme.palette.primary.darker }} />}
               title="Top 5 Destinos más Utilizados"
             />
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.2 }}>
@@ -439,12 +434,12 @@ const Dashboard = () => {
                     <Typography sx={{
                       width: 20, height: 20, borderRadius: '50%',
                       backgroundColor: i === 0 ? theme.palette.primary.main : theme.palette.primary.light,
-                      color: i === 0 ? theme.palette.primary.contrastText : theme.palette.primary.main, fontSize: '0.65rem', fontWeight: 700,
+                      color: i === 0 ? theme.palette.primary.contrastText : theme.palette.primary.darker, fontSize: '0.65rem', fontWeight: 700,
                       display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                     }}>
                       {i + 1}
                     </Typography>
-                    <Typography variant="body2" sx={{ color: theme.palette.text.medium, fontWeight: 500, fontSize: '0.82rem' }}>
+                    <Typography variant="body2" sx={{ color: i === 0 ? theme.palette.primary.darker : theme.palette.text.medium, fontWeight: 500, fontSize: '0.82rem' }}>
                       {d.destino}
                     </Typography>
                   </Box>

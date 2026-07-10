@@ -7,7 +7,8 @@ import {
     TableContainer, TableHead, TableRow, TextField,
     IconButton, Chip, Tooltip, InputAdornment,
     Button, Avatar, Select, MenuItem, Pagination,
-    CircularProgress, FormControl, TableSortLabel
+    CircularProgress, FormControl, TableSortLabel,
+    Dialog, DialogContent
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
@@ -16,6 +17,8 @@ import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
+import HourglassEmptyOutlinedIcon from '@mui/icons-material/HourglassEmptyOutlined'
+import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined'
 import ToggleSwitch from '../../shared/components/ToggleSwitch.jsx'
 import ClearIcon from '@mui/icons-material/Clear'
 import RegistrarUsuario from './RegistrarUsuario'
@@ -65,7 +68,7 @@ const ListarUsuario = () => {
     const theme = useTheme()
     const thStyle = getThStyle(theme)
     const filterMenuProps = getFilterMenuProps(theme)
-    const { tienePermiso, PERMISOS, getUsuarios, getRolesBackend, habilitarInhabilitarUsuario, usuario: usuarioActual } = useAuth()
+    const { tienePermiso, PERMISOS, getUsuarios, getRolesBackend, habilitarInhabilitarUsuario, ignorarRegistroUsuario, usuario: usuarioActual } = useAuth()
 
     const [usuarios, setUsuarios] = useState([])
     const [loading, setLoading] = useState(true)
@@ -87,6 +90,7 @@ const ListarUsuario = () => {
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [usuarioEditar, setUsuarioEditar] = useState(null)
     const [confirmToggle, setConfirmToggle] = useState({ open: false, idUsuario: null, nombreCompleto: '', habilitadoActual: false })
+    const [confirmIgnorar, setConfirmIgnorar] = useState({ open: false, idUsuario: null, nombreCompleto: '' })
 
     useEffect(() => {
         const t = setTimeout(() => setDebouncedBusqueda(busqueda), 300)
@@ -149,12 +153,37 @@ const ListarUsuario = () => {
         try {
             await habilitarInhabilitarUsuario(idUsuario)
             setUsuarios(prev => prev.map(u =>
-                u.idUsuario === idUsuario ? { ...u, habilitado: !u.habilitado } : u
+                // Al habilitar (aprobar) una cuenta de autoregistro, el backend también
+                // limpia registroPendiente — se refleja igual acá para no recargar la tabla.
+                u.idUsuario === idUsuario ? { ...u, habilitado: !u.habilitado, registroPendiente: u.habilitado ? u.registroPendiente : false } : u
             ))
             showToast(`Usuario ${habilitadoActual ? 'inhabilitado' : 'habilitado'} correctamente`, 'success')
         } catch (err) {
             showToast(err?.message || 'Error al cambiar el estado', 'error')
             throw err
+        }
+    }
+
+    const solicitarIgnorar = (usuario) => {
+        setConfirmIgnorar({
+            open: true,
+            idUsuario: usuario.idUsuario,
+            nombreCompleto: `${usuario.nombre} ${usuario.apellido}`,
+        })
+    }
+
+    const onConfirmarIgnorar = async () => {
+        const { idUsuario } = confirmIgnorar
+        try {
+            await ignorarRegistroUsuario(idUsuario)
+            setUsuarios(prev => prev.map(u =>
+                u.idUsuario === idUsuario ? { ...u, registroPendiente: false } : u
+            ))
+            showToast('Solicitud de registro ignorada', 'success')
+        } catch (err) {
+            showToast(err?.message || 'Error al ignorar la solicitud', 'error')
+        } finally {
+            setConfirmIgnorar({ open: false, idUsuario: null, nombreCompleto: '' })
         }
     }
 
@@ -273,14 +302,14 @@ const ListarUsuario = () => {
                                     minWidth: 0,
                                     fontWeight: filtroHabilitado === f.value ? 600 : 400,
                                     backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
-                                    color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.secondary,
+                                    color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.primary.darker,
                                     boxShadow: filtroHabilitado === f.value
                                         ? '0 1px 4px rgba(0,0,0,0.12)'
                                         : 'none',
                                     border: 'none',
                                     '&:hover': {
                                         backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
-                                        color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.medium,
+                                        color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.primary.dark,
                                         border: 'none',
                                     },
                                 }}
@@ -465,20 +494,48 @@ const ListarUsuario = () => {
                                         </TableCell>
 
                                         <TableCell sx={{ py: 1.5 }}>
-                                            <Chip
-                                                label={usuario.rol?.nombre}
-                                                size="small"
-                                                variant="outlined"
-                                                sx={{
-                                                    backgroundColor: 'transparent',
-                                                    color: theme.palette.primary.main,
-                                                    fontWeight: 600,
-                                                    fontSize: '0.72rem',
-                                                    height: 22,
-                                                    borderRadius: 10,
-                                                    borderColor: theme.palette.divider,
-                                                }}
-                                            />
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6, flexWrap: 'wrap' }}>
+                                                <Chip
+                                                    label={usuario.rol?.nombre}
+                                                    size="small"
+                                                    variant="outlined"
+                                                    sx={{
+                                                        backgroundColor: 'transparent',
+                                                        color: theme.palette.primary.main,
+                                                        fontWeight: 600,
+                                                        fontSize: '0.72rem',
+                                                        height: 22,
+                                                        borderRadius: 10,
+                                                        borderColor: theme.palette.divider,
+                                                    }}
+                                                />
+                                                {usuario.registroPendiente && !usuario.habilitado && (
+                                                    <Chip
+                                                        icon={<HourglassEmptyOutlinedIcon sx={{ fontSize: '0.85rem !important', color: `${theme.palette.status.warning.color} !important` }} />}
+                                                        label="Pendiente de activación"
+                                                        size="small"
+                                                        onDelete={tienePermiso(PERMISOS.INHABILITAR_USUARIO) ? () => solicitarIgnorar(usuario) : undefined}
+                                                        deleteIcon={
+                                                            <Tooltip title="Ignorar solicitud (no la habilita, solo quita este aviso)">
+                                                                <CloseOutlinedIcon sx={{ fontSize: '0.85rem !important' }} />
+                                                            </Tooltip>
+                                                        }
+                                                        sx={{
+                                                            backgroundColor: theme.palette.status.warning.bg,
+                                                            color: theme.palette.status.warning.color,
+                                                            fontWeight: 600,
+                                                            fontSize: '0.68rem',
+                                                            height: 22,
+                                                            borderRadius: 10,
+                                                            '& .MuiChip-deleteIcon': {
+                                                                color: theme.palette.status.warning.color,
+                                                                opacity: 0.65,
+                                                                '&:hover': { opacity: 1 },
+                                                            },
+                                                        }}
+                                                    />
+                                                )}
+                                            </Box>
                                         </TableCell>
 
                                         <TableCell sx={{ py: 1.5 }}>
@@ -664,6 +721,56 @@ const ListarUsuario = () => {
                 onExited={() => setConfirmToggle({ open: false, idUsuario: null, nombreCompleto: '', habilitadoActual: false })}
                 onConfirm={onConfirmar}
             />
+
+            <Dialog
+                open={confirmIgnorar.open}
+                onClose={() => setConfirmIgnorar(s => ({ ...s, open: false }))}
+                maxWidth="xs" fullWidth
+                slotProps={{ paper: { sx: { borderRadius: 3 } } }}
+            >
+                <DialogContent sx={{ p: 3, textAlign: 'center', position: 'relative' }}>
+                    <IconButton
+                        onClick={() => setConfirmIgnorar(s => ({ ...s, open: false }))}
+                        sx={{ position: 'absolute', top: 8, right: 8, color: theme.palette.text.secondary }}
+                    >
+                        <CloseOutlinedIcon />
+                    </IconButton>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5, pt: 1 }}>
+                        <Box sx={{
+                            width: 67, height: 67, borderRadius: '50%',
+                            backgroundColor: theme.palette.status.warning.bg,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}>
+                            <HourglassEmptyOutlinedIcon sx={{ fontSize: 35, color: theme.palette.status.warning.color }} />
+                        </Box>
+                        <Typography fontWeight={700} fontSize="1.35rem" color={theme.palette.text.primary}>
+                            ¿Ignorar esta solicitud?
+                        </Typography>
+                        <Typography fontSize="0.9rem" color={theme.palette.text.secondary}>
+                            La cuenta de <strong>{confirmIgnorar.nombreCompleto}</strong> quedará inhabilitada, sin el aviso de pendiente. Podrás habilitarla más adelante si cambias de opinión.
+                        </Typography>
+                    </Box>
+                </DialogContent>
+                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2, px: 3, pb: 3 }}>
+                    <Button onClick={() => setConfirmIgnorar(s => ({ ...s, open: false }))} disableRipple
+                        sx={{
+                            textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 2,
+                            px: 3, py: 0.75, fontSize: '0.875rem', border: `1px solid ${theme.palette.divider}`,
+                            '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary },
+                        }}>
+                        Cancelar
+                    </Button>
+                    <Button onClick={onConfirmarIgnorar} variant="contained" disableRipple
+                        sx={{
+                            textTransform: 'none', borderRadius: 2, fontWeight: 600, px: 4, py: 0.76, fontSize: '0.875rem',
+                            backgroundColor: theme.palette.status.warning.color,
+                            color: '#fff',
+                            '&:hover': { backgroundColor: theme.palette.status.warning.color, filter: 'brightness(0.92)' },
+                        }}>
+                        Confirmar
+                    </Button>
+                </Box>
+            </Dialog>
         </Box>
     )
 }

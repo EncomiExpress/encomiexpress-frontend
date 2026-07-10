@@ -14,7 +14,6 @@ import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined'
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined'
 import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined'
 import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined'
-import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import { usePropietario } from '../../shared/contexts/PropietarioContext.jsx'
@@ -29,7 +28,7 @@ import { hayNombreDuplicado, MENSAJE_NOMBRE_DUPLICADO, hayDocumentoDuplicado, ME
 const DOMINIOS_EMAIL = ['@gmail.com', '@hotmail.com', '@outlook.com', '@yahoo.com', '@icloud.com', '@live.com']
 const DOMINIO_OTRO = '__otro__'
 
-const steps = ['Datos Personales', 'Contacto y Vehículo', 'Confirmación']
+const steps = ['Datos Personales', 'Contacto y Flota', 'Confirmación']
 
 const EMPTY_FORM = {
     tipoIdentificacion: '',
@@ -39,7 +38,6 @@ const EMPTY_FORM = {
     telefono: '',
     emailLocal: '',
     emailDominio: '@gmail.com',
-    tarjetaPropiedad: '',
     tipoFlota: '',
 }
 
@@ -84,7 +82,6 @@ const ActualizarPropietario = ({ open, onClose, propietario: propietarioProp, on
             telefono: propietario.telefono || '',
             emailLocal,
             emailDominio,
-            tarjetaPropiedad: propietario.tarjetaPropiedad || '',
             tipoFlota: propietario.tipoFlota || '',
         }
         setForm(datosForm)
@@ -360,10 +357,6 @@ const ActualizarPropietario = ({ open, onClose, propietario: propietarioProp, on
                                 htmlInput: { maxLength: 50 }
                             }}
                             sx={formFieldStyles} />
-                        <FormField label="Tarjeta de propiedad" name="tarjetaPropiedad" value={form.tarjetaPropiedad}
-                            onChange={handleChange} icon={DirectionsCarOutlinedIcon}
-                            inputProps={{ maxLength: 50 }} placeholder="Ej: 123456789"
-                            helperText="Opcional" />
                         <FormSelect label="Tipo de flota" name="tipoFlota" value={form.tipoFlota}
                             onChange={handleChange} helperText="Opcional">
                             <MenuItem value="">Sin especificar</MenuItem>
@@ -385,7 +378,6 @@ const ActualizarPropietario = ({ open, onClose, propietario: propietarioProp, on
                     [form.apellido, formOriginal?.apellido],
                     [form.telefono, formOriginal?.telefono],
                     [emailActual, emailOriginal],
-                    [form.tarjetaPropiedad, formOriginal?.tarjetaPropiedad],
                     [form.tipoFlota, formOriginal?.tipoFlota],
                 ]
                 const totalModificados = formOriginal ? camposComparados.filter(([a, b]) => sonDistintos(a, b)).length : 0
@@ -424,12 +416,11 @@ const ActualizarPropietario = ({ open, onClose, propietario: propietarioProp, on
                             <Paper elevation={0} sx={{ flex: 1, minWidth: 0, borderRadius: 2, p: 2.5, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white' }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                                     <PhoneOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
-                                    <Typography fontWeight={700} fontSize="0.95rem">Contacto y Vehículo</Typography>
+                                    <Typography fontWeight={700} fontSize="0.95rem">Contacto y Flota</Typography>
                                 </Box>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica los datos de contacto y flota</Typography>
                                 <ConfirmRow label="Teléfono" value={form.telefono} previousValue={formOriginal?.telefono} />
                                 <ConfirmRow label="Correo" value={emailActual} previousValue={emailOriginal} />
-                                <ConfirmRow label="Tarjeta propiedad" value={form.tarjetaPropiedad || 'N/A'} previousValue={formOriginal?.tarjetaPropiedad || 'N/A'} />
                                 <ConfirmRow label="Tipo de flota" value={form.tipoFlota || 'N/A'} previousValue={formOriginal?.tipoFlota || 'N/A'} />
                             </Paper>
                         </Box>

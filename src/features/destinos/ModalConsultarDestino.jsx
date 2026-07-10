@@ -93,7 +93,7 @@ const CampoFila = ({ label, value, esChip }) => {
                 <Chip
                     label={value || '—'}
                     size="small"
-                    sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.main, fontSize: '0.7rem' }}
+                    sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem' }}
                 />
             ) : (
                 <Typography variant="body2" fontWeight={500} color={theme.palette.text.medium}>
@@ -111,6 +111,7 @@ const ModalConsultarDestino = ({ destino, onClose }) => {
 
     useEffect(() => {
         if (!destino || tabIndex !== 1) return
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- loading flag antes de fetch, patrón recomendado por React
         setTabRutas({ data: [], loading: true })
         rutaService.getRutas({ idDestino: destino.idDestino, limit: 100 })
             .then(res => setTabRutas({ data: res?.data || [], loading: false }))
@@ -180,7 +181,7 @@ const ModalConsultarDestino = ({ destino, onClose }) => {
                                 <Chip
                                     label={destino.tarifaBase !== undefined ? `$${Number(destino.tarifaBase).toLocaleString('es-CO')}` : '—'}
                                     size="small"
-                                    sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.main, fontSize: '0.7rem', borderRadius: '2px', height: 26 }}
+                                    sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem', borderRadius: '2px', height: 26 }}
                                 />
                             </Box>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>

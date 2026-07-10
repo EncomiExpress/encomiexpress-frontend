@@ -37,8 +37,8 @@ export default function SessionExpiredDialog() {
 
       <DialogContent>
         <DialogContentText>
-          Tu sesión ha expirado. Por seguridad, necesitas iniciar sesión nuevamente para continuar
-          usando el sistema.
+          Ha pasado mucho tiempo desde tu última actividad y tu sesión se cerró automáticamente.
+          Inicia sesión de nuevo para seguir usando el sistema.
         </DialogContentText>
       </DialogContent>
 

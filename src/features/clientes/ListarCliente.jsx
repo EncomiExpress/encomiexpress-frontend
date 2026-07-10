@@ -240,14 +240,14 @@ const ListarCliente = () => {
                                 minWidth: 0,
                                 fontWeight: filtroEstado === f.value ? 600 : 400,
                                 backgroundColor: filtroEstado === f.value ? theme.palette.background.paper : 'transparent',
-                                color: filtroEstado === f.value ? theme.palette.text.primary : theme.palette.text.secondary,
+                                color: filtroEstado === f.value ? theme.palette.text.primary : theme.palette.primary.darker,
                                 boxShadow: filtroEstado === f.value
                                     ? '0 1px 4px rgba(0,0,0,0.12)'
                                     : 'none',
                                 border: 'none',
                                 '&:hover': {
                                     backgroundColor: filtroEstado === f.value ? theme.palette.background.paper : 'transparent',
-                                    color: filtroEstado === f.value ? theme.palette.text.primary : theme.palette.text.medium,
+                                    color: filtroEstado === f.value ? theme.palette.text.primary : theme.palette.primary.dark,
                                     border: 'none',
                                 },
                             }}

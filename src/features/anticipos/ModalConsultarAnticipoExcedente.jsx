@@ -24,7 +24,7 @@ const CampoFila = ({ label, value, esChip }) => {
                 <Chip
                     label={value || '—'}
                     size="small"
-                    sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.main, fontSize: '0.7rem' }}
+                    sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem' }}
                 />
             ) : (
                 <Typography variant="body2" fontWeight={500} color={theme.palette.text.medium}>
@@ -111,7 +111,7 @@ const ModalConsultarAnticipoExcedente = ({ anticipo, conductores, rutas, onClose
                             <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Ruta</Typography>
                             <Chip label={nombreRuta || '—'} size="small"
                                 onClick={() => window.open(`/transporte/rutas?highlight=${anticipo.idRuta}`, '_blank')}
-                                sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.main, fontSize: '0.7rem', cursor: 'pointer', '&:hover': { filter: 'brightness(0.92)' } }} />
+                                sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem', cursor: 'pointer', '&:hover': { filter: 'brightness(0.92)' } }} />
                         </Box>
                     </Paper>
 

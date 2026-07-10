@@ -68,6 +68,7 @@ const tokens = {
 // ─────────────────────────────────────────────
 
 const buildLightPalette = (t) => ({
+  mode: 'light',
   primary: {
     main:          t.primary,
     light:         t.primaryLight,
@@ -135,32 +136,6 @@ const buildLightPalette = (t) => ({
     info:             { bg: '#E3F2FD', color: '#1565C0' },
     infoBlue:         { bg: '#DBEAFE', color: '#1E40AF' },
     purple:           { bg: '#F3E5F5', color: '#6A1B9A' },
-    anticipoEntregado:    { bg: '#E3F2FD', color: '#1565C0' },
-    anticipoLegalizacion: { bg: '#FFF8E1', color: '#F57F17' },
-    anticipoLegalizado:   { bg: '#E8F5E9', color: '#2E7D32' },
-    anticipoExcedente:    { bg: '#FFF3E0', color: '#E65100' },
-    anticipoCerrado:      { bg: '#F3E5F5', color: '#6A1B9A' },
-    rutaProgramada:   { bg: '#E0E7FF', color: '#3730A3' },
-    rutaEnCurso:      { bg: '#DBEAFE', color: '#1E40AF' },
-    rutaCompletada:   { bg: '#D1FAE5', color: '#065F46' },
-    rutaCancelada:    { bg: '#FEE2E2', color: '#991B1B' },
-    ventaPendiente:   { bg: '#FEF3C7', color: '#92400E' },
-    ventaEnRecogida:  { bg: '#DBEAFE', color: '#1E40AF' },
-    ventaProgramada:  { bg: '#E0E7FF', color: '#3730A3' },
-    ventaEnTransito:  { bg: '#CFFAFE', color: '#155E75' },
-    ventaEntregada:   { bg: '#D1FAE5', color: '#065F46' },
-    ventaDevuelta:    { bg: '#FEE2E2', color: '#991B1B' },
-    ventaEntregadaAlt: { bg: '#E8F5E9', color: '#2E7D32' },
-    ventaDevueltaAlt:  { bg: '#FFF4E5', color: '#BF360C' },
-    excedentePositivo: { bg: '#E8F5E9', border: '#A5D6A7' },
-    excedenteNegativo: { bg: '#FFF3F3', border: '#FFCDD2' },
-    pagado:           { bg: '#D1FAE5', color: '#065F46' },
-    pendientePago:    { bg: '#FEE2E2', color: '#991B1B' },
-    conductorActivo:  '#2E7D32',
-    conductorInactivo: '#ef4444',
-    conductorVencido:  '#ef4444',
-    neutral:          { bg: '#F3F4F6', color: '#6B7280' },
-    neutralAlt:       { bg: '#F5F5F5', color: '#757575' },
   },
   avatarDefault:  { bg: `${t.primaryLight}`, color: `${t.primaryDark}` },
   avatarDisabled: { bg: '#E0E0E0', color: '#9E9E9E' },
@@ -173,6 +148,7 @@ const buildLightPalette = (t) => ({
 })
 
 const buildDarkPalette = (t) => ({
+  mode: 'dark',
   primary: {
     main:          t.primary,
     light:         t.primaryLight,
@@ -201,7 +177,7 @@ const buildDarkPalette = (t) => ({
   },
   text: {
     primary:   '#E0E0E0',
-    secondary: '#A0A0A0',
+    secondary: '#B8B8B8',
     disabled:  '#707070',
     hint:      '#B76E6E',
     dark:      '#FFFFFF',
@@ -239,32 +215,6 @@ const buildDarkPalette = (t) => ({
     info:             { bg: '#0D2B4E', color: '#90CAF9' },
     infoBlue:         { bg: '#0D2B4E', color: '#90CAF9' },
     purple:           { bg: '#2D1458', color: '#CE93D8' },
-    anticipoEntregado:    { bg: '#0D2B4E', color: '#90CAF9' },
-    anticipoLegalizacion: { bg: '#4E3100', color: '#FFB74D' },
-    anticipoLegalizado:   { bg: '#1B5E20', color: '#4CAF50' },
-    anticipoExcedente:    { bg: '#4E1F00', color: '#FFB74D' },
-    anticipoCerrado:      { bg: '#2D1458', color: '#CE93D8' },
-    rutaProgramada:   { bg: '#1A1250', color: '#B39DDB' },
-    rutaEnCurso:      { bg: '#0D2B4E', color: '#90CAF9' },
-    rutaCompletada:   { bg: '#1B5E20', color: '#4CAF50' },
-    rutaCancelada:    { bg: '#4A1515', color: '#EF5350' },
-    ventaPendiente:   { bg: '#4E3100', color: '#FFB74D' },
-    ventaEnRecogida:  { bg: '#0D2B4E', color: '#90CAF9' },
-    ventaProgramada:  { bg: '#1A1250', color: '#B39DDB' },
-    ventaEnTransito:  { bg: '#003D47', color: '#4DD0E1' },
-    ventaEntregada:   { bg: '#1B5E20', color: '#4CAF50' },
-    ventaDevuelta:    { bg: '#4A1515', color: '#EF5350' },
-    ventaEntregadaAlt: { bg: '#1B5E20', color: '#4CAF50' },
-    ventaDevueltaAlt:  { bg: '#4E1A00', color: '#FF8A80' },
-    excedentePositivo: { bg: '#1B5E20', border: '#4CAF50' },
-    excedenteNegativo: { bg: '#4A1515', border: '#EF5350' },
-    pagado:           { bg: '#1B5E20', color: '#4CAF50' },
-    pendientePago:    { bg: '#4A1515', color: '#EF5350' },
-    conductorActivo:  '#4CAF50',
-    conductorInactivo: '#EF5350',
-    conductorVencido:  '#EF5350',
-    neutral:          { bg: '#2A2A2A', color: '#AAAAAA' },
-    neutralAlt:       { bg: '#333333', color: '#999999' },
   },
   avatarDefault:  { bg: `${t.primaryLight}`, color: `${t.primaryDark}` },
   avatarDisabled: { bg: '#424242', color: '#9E9E9E' },
@@ -295,6 +245,13 @@ export const getTheme = (mode = 'light', paletteKey = 'red') => {
       fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
     },
     components: {
+      MuiCssBaseline: {
+        styleOverrides: {
+          'input[type="date"]::-webkit-calendar-picker-indicator': {
+            filter: mode === 'dark' ? 'invert(1)' : 'none',
+          },
+        },
+      },
       MuiButton: {
         styleOverrides: {
           containedPrimary: {

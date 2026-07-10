@@ -190,12 +190,12 @@ const ListarRol = () => {
                                 minWidth: 0,
                                 fontWeight: filtroHabilitado === f.value ? 600 : 400,
                                 backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
-                                color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.secondary,
+                                color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.primary.darker,
                                 boxShadow: filtroHabilitado === f.value ? '0 1px 4px rgba(0,0,0,0.12)' : 'none',
                                 border: 'none',
                                 '&:hover': {
                                     backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
-                                    color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.medium,
+                                    color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.primary.dark,
                                     border: 'none',
                                 },
                             }}

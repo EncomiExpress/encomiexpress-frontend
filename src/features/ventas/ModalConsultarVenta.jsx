@@ -8,7 +8,9 @@ import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined'
 import PaymentOutlinedIcon from '@mui/icons-material/PaymentOutlined'
 import CloseIcon from '@mui/icons-material/Close'
+import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined'
 import { getVentaEstadoDot } from '../../shared/utils/estadoColors.js'
+import { descargarGuiaPdf } from '../../shared/utils/exportGuiaPdf.js'
 
 const CampoFila = ({ label, value }) => {
     const theme = useTheme()
@@ -142,7 +144,7 @@ const ModalConsultarVenta = ({ venta, onClose }) => {
                             <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Ruta</Typography>
                             <Chip label={venta.ruta?.nombreRuta || '—'} size="small"
                                 onClick={() => window.open(`/transporte/rutas?highlight=${venta.idRuta}`, '_blank')}
-                                sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.main, fontSize: '0.7rem', cursor: 'pointer', '&:hover': { filter: 'brightness(0.92)' } }} />
+                                sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem', cursor: 'pointer', '&:hover': { filter: 'brightness(0.92)' } }} />
                         </Box>
                         <CampoFila label="Método de pago" value={venta.metodoPago} />
                         <CampoFila label="Valor servicio" value={venta.valorServicio != null ? `$${Number(venta.valorServicio).toLocaleString('es-CO')}` : null} />
@@ -150,13 +152,21 @@ const ModalConsultarVenta = ({ venta, onClose }) => {
                         <CampoFila label="Total" value={venta.total != null ? `$${Number(venta.total).toLocaleString('es-CO')}` : null} />
                         <CampoFila label="Fecha registro" value={venta.fechaRegistro} />
                         <CampoFila label="Fecha est. entrega" value={venta.fechaEstimadaEntrega} />
-                        <CampoFila label="N° factura" value={venta.numeroFactura} />
                         <CampoFila label="Observaciones" value={venta.observaciones} />
                     </Paper>
                 </Box>
             </Box>
 
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', px: 3, pb: 3 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5, px: 3, pb: 3 }}>
+                <Button onClick={() => descargarGuiaPdf(venta)} variant="outlined"
+                    startIcon={<ReceiptLongOutlinedIcon sx={{ fontSize: 18 }} />}
+                    sx={{
+                        borderRadius: 2, textTransform: 'none', color: theme.palette.text.primary,
+                        borderColor: theme.palette.divider,
+                        '&:hover': { backgroundColor: theme.palette.action.hover, borderColor: theme.palette.divider },
+                    }}>
+                    Descargar guía
+                </Button>
                 <Button onClick={onClose} variant="contained" sx={{
                     backgroundColor: theme.palette.primary.main, borderRadius: 2, textTransform: 'none',
                     boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,

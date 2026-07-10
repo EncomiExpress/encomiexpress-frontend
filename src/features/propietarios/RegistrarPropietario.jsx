@@ -14,7 +14,6 @@ import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined'
 import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined'
-import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import { usePropietario } from '../../shared/contexts/PropietarioContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
@@ -28,7 +27,7 @@ import { hayNombreDuplicado, MENSAJE_NOMBRE_DUPLICADO, hayDocumentoDuplicado, ME
 const DOMINIOS_EMAIL = ['@gmail.com', '@hotmail.com', '@outlook.com', '@yahoo.com', '@icloud.com', '@live.com']
 const DOMINIO_OTRO = '__otro__'
 
-const steps = ['Datos Personales', 'Contacto y Vehículo', 'Confirmación']
+const steps = ['Datos Personales', 'Contacto y Flota', 'Confirmación']
 
 const EMPTY_FORM = {
     tipoIdentificacion: '',
@@ -38,7 +37,6 @@ const EMPTY_FORM = {
     telefono: '',
     emailLocal: '',
     emailDominio: '@gmail.com',
-    tarjetaPropiedad: '',
     tipoFlota: '',
 }
 
@@ -314,10 +312,6 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
                                 htmlInput: { maxLength: 50 }
                             }}
                             sx={formFieldStyles} />
-                        <FormField label="Tarjeta de propiedad" name="tarjetaPropiedad" value={form.tarjetaPropiedad}
-                            onChange={handleChange} icon={DirectionsCarOutlinedIcon}
-                            inputProps={{ maxLength: 50 }} placeholder="Ej: 123456789"
-                            helperText="Opcional" />
                         <FormSelect label="Tipo de flota" name="tipoFlota" value={form.tipoFlota}
                             onChange={handleChange} helperText="Opcional">
                             <MenuItem value="">Sin especificar</MenuItem>
@@ -353,12 +347,11 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
                             <Paper elevation={0} sx={{ flex: 1, minWidth: 0, borderRadius: 2, p: 2.5, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white' }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                                     <PhoneOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
-                                    <Typography fontWeight={700} fontSize="0.95rem">Contacto y Vehículo</Typography>
+                                    <Typography fontWeight={700} fontSize="0.95rem">Contacto y Flota</Typography>
                                 </Box>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica los datos de contacto y flota</Typography>
                                 <ConfirmRow label="Teléfono" value={form.telefono} />
                                 <ConfirmRow label="Correo" value={form.emailLocal ? form.emailLocal + form.emailDominio : '—'} />
-                                <ConfirmRow label="Tarjeta propiedad" value={form.tarjetaPropiedad || 'N/A'} />
                                 <ConfirmRow label="Tipo de flota" value={form.tipoFlota || 'N/A'} />
                             </Paper>
                         </Box>

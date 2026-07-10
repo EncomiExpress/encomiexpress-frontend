@@ -233,37 +233,6 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
-  const refreshAccessToken = async () => {
-    const refreshTokenGuardado = localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN)
-    if (!refreshTokenGuardado) {
-      logout()
-      return { success: false }
-    }
-
-    try {
-      const res = await fetch(`${API_URL}/auth/refresh`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken: refreshTokenGuardado })
-      })
-
-      const data = await res.json()
-      if (!res.ok || !data.success) {
-        logout()
-        return { success: false }
-      }
-
-      const { token: nuevoToken } = data.data
-      setToken(nuevoToken)
-      localStorage.setItem(STORAGE_KEYS.TOKEN, nuevoToken)
-
-      return { success: true }
-    } catch {
-      logout()
-      return { success: false }
-    }
-  }
-
   const recuperarPassword = async () => ({ success: true })
 
   const getUsuarios = useCallback(async (params = {}) => {
@@ -352,6 +321,15 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
+  const ignorarRegistroUsuario = async (id) => {
+    try {
+      const data = await usuarioService.ignorarRegistroUsuario(id)
+      return { success: true, message: data.message }
+    } catch (err) {
+      return { success: false, message: err.message || 'Error de conexión' }
+    }
+  }
+
   return (
     <AuthContext.Provider value={{
       usuario,
@@ -360,7 +338,6 @@ export const AuthProvider = ({ children }) => {
       sessionExpired,
       login,
       logout,
-      refreshAccessToken,
       tienePermiso,
       tieneAlgunPermiso,
       tieneTodosLosPermisos,
@@ -375,6 +352,7 @@ export const AuthProvider = ({ children }) => {
       eliminarRolBackend,
       actualizarUsuario,
       habilitarInhabilitarUsuario,
+      ignorarRegistroUsuario,
       ROLES,
       MODULOS,
       PERMISOS,

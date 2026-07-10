@@ -126,7 +126,7 @@ const ModalBloqueoInhabilitacion = ({ open, onClose, entidad = 'registro', mensa
                                         fontSize: '0.7rem',
                                         fontWeight: 700,
                                         backgroundColor: theme.palette.primary.light,
-                                        color: theme.palette.primary.main,
+                                        color: theme.palette.primary.darker,
                                     }}
                                 />
                             </Box>

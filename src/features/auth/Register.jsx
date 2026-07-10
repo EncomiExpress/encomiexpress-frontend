@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useTheme } from '@mui/material/styles'
-import { Box, TextField, Button, Typography, Paper, Alert, MenuItem, Select, FormControl, InputLabel, InputAdornment, IconButton, Grid } from '@mui/material'
+import { Box, TextField, Button, Typography, Paper, Alert, MenuItem, Select, FormControl, InputLabel, InputAdornment, IconButton, Stepper, Step, StepLabel, CircularProgress } from '@mui/material'
 import {
-  PersonOutline as Person,
+  PersonOutlined as Person,
   EmailOutlined as Email,
   LockOutlined as Lock,
   BadgeOutlined as Badge,
@@ -11,19 +11,35 @@ import {
   VisibilityOutlined as Visibility,
   VisibilityOffOutlined as VisibilityOff,
   ArrowBack,
-  PersonAdd
+  ArrowBackOutlined,
+  ArrowForwardOutlined,
+  CheckOutlined,
+  KeyboardArrowDownOutlined as KeyboardArrowDown,
 } from '@mui/icons-material'
-import { useAuth, ROLES } from '../../shared/contexts/AuthContext.jsx'
+import { useAuth } from '../../shared/contexts/AuthContext.jsx'
+import { register as registrarAutoregistro } from '../../shared/services/authService.js'
 import logo from '../../assets/logo.png'
 
 const TIPOS_IDENTIFICACION = [
   { value: 'CC', label: 'Cédula de Ciudadanía' },
   { value: 'CE', label: 'Cédula de Extranjería' },
   { value: 'TI', label: 'Tarjeta de Identidad' },
-  { value: 'NIT', label: 'NIT' },
   { value: 'PAS', label: 'Pasaporte' },
 ]
 
+const DOMINIOS_EMAIL = ['@gmail.com', '@hotmail.com', '@outlook.com', '@yahoo.com', '@icloud.com', '@live.com']
+const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s]).{8,16}$/
+const PASSWORD_HELP = '8-16 caracteres, con mayúsculas, minúsculas, números y un carácter especial (sin @)'
+const steps = ['Datos personales', 'Contacto y acceso']
+
+// Ruta pública sin login (/register) que replica los campos reales del módulo
+// Usuarios. Pensada para que el personal administrativo se autoregistre sin que
+// un admin tenga que digitar sus datos — NO es el mismo flujo que /usuarios/registrar
+// (ese sí requiere estar logueado y con permiso, y crea usuarios ya habilitados).
+// Llama a authService.register() → POST /auth/register, que SIEMPRE fuerza
+// idRol=1 (Administrador) y la cuenta queda inhabilitada + marcada como pendiente
+// hasta que un admin ya activo la habilite desde el módulo de Usuarios (ver
+// registroPendiente en usuario.js / usuarioService.js del backend).
 const Register = () => {
   const [formData, setFormData] = useState({
     tipoIdentificacion: 'CC',
@@ -31,18 +47,26 @@ const Register = () => {
     nombre: '',
     apellido: '',
     telefono: '',
-    email: '',
+    emailLocal: '',
+    emailDominio: '@gmail.com',
     password: '',
-    idRol: 2,
+    confirmarPassword: '',
   })
+  const [errores, setErrores] = useState({})
+  const [activeStep, setActiveStep] = useState(0)
   const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmarPassword, setShowConfirmarPassword] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const { registrarUsuario, usuario } = useAuth()
+  const { usuario } = useAuth()
   const navigate = useNavigate()
   const theme = useTheme()
+
+  const esDocAlfanumerico = ['CE', 'PAS'].includes(formData.tipoIdentificacion)
+  const maxLengthDoc = esDocAlfanumerico ? 12 : 10
+  const docHelperText = esDocAlfanumerico ? 'Alfanumérico, hasta 12 caracteres' : 'Solo dígitos, entre 3 y 10'
 
   useEffect(() => {
     if (usuario) {
@@ -51,55 +75,114 @@ const Register = () => {
   }, [usuario, navigate])
 
   const handleChange = (e) => {
-    const { name, value } = e.target
-    setFormData({ ...formData, [name]: value })
-    setError('')
-    setSuccess('')
-  }
+    const { name } = e.target
+    let { value } = e.target
 
-  const getIniciales = () => {
-    const nombre = formData.nombre.trim()
-    const apellido = formData.apellido.trim()
-    if (!nombre && !apellido) return ''
-    const inicialNombre = nombre.split(' ').map(n => n[0]).join('').substring(0, 2)
-    const inicialApellido = apellido.split(' ').map(n => n[0]).join('').substring(0, 2)
-    return (inicialNombre + inicialApellido).toUpperCase().substring(0, 3)
-  }
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setError('')
-    setSuccess('')
-
-    const { tipoIdentificacion, numeroIdentificacion, nombre, apellido, email, password, idRol } = formData
-
-    if (!tipoIdentificacion || !numeroIdentificacion || !nombre || !apellido || !email || !password) {
-      setError('Todos los campos son requeridos')
+    if (name === 'nombre' || name === 'apellido') {
+      value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
+    }
+    if (name === 'telefono') {
+      value = value.replace(/[^0-9]/g, '')
+    }
+    if (name === 'numeroIdentificacion') {
+      value = esDocAlfanumerico ? value.replace(/[^a-zA-Z0-9]/g, '') : value.replace(/[^0-9]/g, '')
+    }
+    if (name === 'tipoIdentificacion') {
+      setFormData(prev => ({ ...prev, tipoIdentificacion: value, numeroIdentificacion: '' }))
+      setErrores(prev => ({ ...prev, tipoIdentificacion: '', numeroIdentificacion: '' }))
+      setError('')
+      setSuccess('')
       return
     }
+    if (name === 'password' || name === 'confirmarPassword') {
+      value = value.replace(/@/g, '')
+    }
+    if (name === 'emailLocal') {
+      value = value.replace(/[^a-zA-Z0-9._-]/g, '')
+    }
 
-    if (password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres')
+    setFormData(prev => ({ ...prev, [name]: value }))
+    setErrores(prev => ({ ...prev, [name]: '' }))
+    setError('')
+    setSuccess('')
+  }
+
+  const validarPaso = (step) => {
+    const e = {}
+    const soloLetras = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/
+
+    if (step === 0) {
+      if (!formData.nombre.trim()) e.nombre = 'El nombre es obligatorio'
+      else if (!soloLetras.test(formData.nombre)) e.nombre = 'El nombre solo puede contener letras'
+
+      if (!formData.apellido.trim()) e.apellido = 'El apellido es obligatorio'
+      else if (!soloLetras.test(formData.apellido)) e.apellido = 'El apellido solo puede contener letras'
+
+      if (!formData.numeroIdentificacion.trim()) e.numeroIdentificacion = 'El número de documento es obligatorio'
+      else if (formData.numeroIdentificacion.length < 3 || formData.numeroIdentificacion.length > maxLengthDoc) {
+        e.numeroIdentificacion = `Debe tener entre 3 y ${maxLengthDoc} caracteres`
+      }
+    }
+
+    if (step === 1) {
+      if (!formData.telefono.trim()) e.telefono = 'El teléfono es obligatorio'
+      else if (!/^\d{10}$/.test(formData.telefono)) e.telefono = 'El teléfono debe tener exactamente 10 dígitos'
+
+      if (!formData.emailLocal.trim()) e.emailLocal = 'El correo es obligatorio'
+
+      if (!formData.password) e.password = 'La contraseña es obligatoria'
+      else if (!PASSWORD_REGEX.test(formData.password)) e.password = PASSWORD_HELP
+
+      if (!formData.confirmarPassword) e.confirmarPassword = 'Confirma la contraseña'
+      else if (formData.password !== formData.confirmarPassword) e.confirmarPassword = 'Las contraseñas no coinciden'
+    }
+
+    return e
+  }
+
+  const handleNext = () => {
+    const erroresEncontrados = validarPaso(activeStep)
+    if (Object.keys(erroresEncontrados).length > 0) {
+      setErrores(erroresEncontrados)
+      return
+    }
+    setActiveStep(prev => prev + 1)
+  }
+
+  const handleBack = () => setActiveStep(prev => prev - 1)
+
+  const handleSubmit = async () => {
+    setError('')
+    setSuccess('')
+
+    const erroresEncontrados = validarPaso(1)
+    if (Object.keys(erroresEncontrados).length > 0) {
+      setErrores(erroresEncontrados)
       return
     }
 
     setLoading(true)
-
     try {
+      const { emailLocal, emailDominio, confirmarPassword: _confirmarPassword, ...resto } = formData
       const datosRegistro = {
-        ...formData,
-        idRol: parseInt(idRol),
+        ...resto,
+        email: emailLocal + emailDominio,
+        idRol: 1, // Administrador — fijo, ver nota arriba
       }
 
-      const resultado = await registrarUsuario(datosRegistro)
+      // autoLogin=false: la cuenta queda inhabilitada hasta que un admin la apruebe,
+      // no tiene caso guardar un token que de todos modos el backend va a rechazar.
+      const resultado = await registrarAutoregistro(datosRegistro, false)
 
       if (resultado.success) {
-        setSuccess('Usuario registrado correctamente. Redirigiendo...')
-        setTimeout(() => {
-          navigate('/dashboard')
-        }, 1500)
+        setSuccess('¡Listo! Tu cuenta fue creada. Un administrador debe activarla antes de que puedas ingresar — te avisará cuando puedas iniciar sesión.')
+        setFormData({
+          tipoIdentificacion: 'CC', numeroIdentificacion: '', nombre: '', apellido: '',
+          telefono: '', emailLocal: '', emailDominio: '@gmail.com', password: '', confirmarPassword: '',
+        })
+        setActiveStep(0)
       } else {
-        setError(resultado.mensaje || 'Error al registrar usuario')
+        setError(resultado.message || 'Error al registrar usuario')
       }
     } catch {
       setError('Error de conexión. Intenta de nuevo.')
@@ -108,24 +191,138 @@ const Register = () => {
     }
   }
 
+  const renderStepContent = () => {
+    if (activeStep === 0) {
+      return (
+        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
+          <FormControl fullWidth required>
+            <InputLabel sx={{ '&.Mui-focused': { color: theme.palette.primary.main } }}>
+              Tipo de documento
+            </InputLabel>
+            <Select
+              name="tipoIdentificacion" value={formData.tipoIdentificacion} label="Tipo de documento"
+              onChange={handleChange} IconComponent={KeyboardArrowDown}
+            >
+              {TIPOS_IDENTIFICACION.map((tipo) => (
+                <MenuItem key={tipo.value} value={tipo.value}>{tipo.label}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <TextField
+            fullWidth label="Número de documento" name="numeroIdentificacion"
+            value={formData.numeroIdentificacion} onChange={handleChange} required
+            error={!!errores.numeroIdentificacion} helperText={errores.numeroIdentificacion || docHelperText}
+            InputProps={{
+              startAdornment: <InputAdornment position="start"><Badge sx={{ color: theme.palette.text.secondary }} /></InputAdornment>,
+              inputProps: { maxLength: maxLengthDoc },
+            }}
+          />
+
+          <TextField
+            fullWidth label="Nombre(s)" name="nombre"
+            value={formData.nombre} onChange={handleChange} required
+            error={!!errores.nombre} helperText={errores.nombre}
+            InputProps={{
+              startAdornment: <InputAdornment position="start"><Person sx={{ color: theme.palette.text.secondary }} /></InputAdornment>,
+              inputProps: { maxLength: 50 },
+            }}
+          />
+
+          <TextField
+            fullWidth label="Apellido(s)" name="apellido"
+            value={formData.apellido} onChange={handleChange} required
+            error={!!errores.apellido} helperText={errores.apellido}
+            InputProps={{
+              startAdornment: <InputAdornment position="start"><Person sx={{ color: theme.palette.text.secondary }} /></InputAdornment>,
+              inputProps: { maxLength: 50 },
+            }}
+          />
+        </Box>
+      )
+    }
+
+    return (
+      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
+        <TextField
+          fullWidth label="Teléfono" name="telefono"
+          value={formData.telefono} onChange={handleChange} required
+          error={!!errores.telefono} helperText={errores.telefono || 'Número de 10 dígitos'}
+          InputProps={{
+            startAdornment: <InputAdornment position="start"><Phone sx={{ color: theme.palette.text.secondary }} /></InputAdornment>,
+            inputProps: { maxLength: 10 },
+          }}
+        />
+
+        <TextField
+          fullWidth label="Correo electrónico" name="emailLocal"
+          value={formData.emailLocal} onChange={handleChange} required
+          error={!!errores.emailLocal} helperText={errores.emailLocal}
+          InputProps={{
+            startAdornment: <InputAdornment position="start"><Email sx={{ color: theme.palette.text.secondary }} /></InputAdornment>,
+            endAdornment: (
+              <InputAdornment position="end">
+                <Select
+                  name="emailDominio" value={formData.emailDominio} onChange={handleChange}
+                  variant="standard" disableUnderline IconComponent={KeyboardArrowDown}
+                  sx={{ fontSize: '1rem', color: theme.palette.text.secondary, '& .MuiSelect-select': { py: 0, pl: 0.5, pr: '22px !important' } }}
+                >
+                  {DOMINIOS_EMAIL.map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
+                </Select>
+              </InputAdornment>
+            ),
+            inputProps: { maxLength: 50 },
+          }}
+        />
+
+        <Box sx={{ gridColumn: '1 / -1', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
+          <TextField
+            fullWidth label="Contraseña" name="password" type={showPassword ? 'text' : 'password'}
+            value={formData.password} onChange={handleChange} required
+            error={!!errores.password} helperText={errores.password || PASSWORD_HELP}
+            InputProps={{
+              startAdornment: <InputAdornment position="start"><Lock sx={{ color: theme.palette.text.secondary }} /></InputAdornment>,
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton onClick={() => setShowPassword(p => !p)} edge="end" sx={{ color: theme.palette.text.secondary }}>
+                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+              inputProps: { maxLength: 16 },
+            }}
+          />
+
+          <TextField
+            fullWidth label="Confirmar contraseña" name="confirmarPassword" type={showConfirmarPassword ? 'text' : 'password'}
+            value={formData.confirmarPassword} onChange={handleChange} required
+            error={!!errores.confirmarPassword} helperText={errores.confirmarPassword}
+            InputProps={{
+              startAdornment: <InputAdornment position="start"><Lock sx={{ color: theme.palette.text.secondary }} /></InputAdornment>,
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton onClick={() => setShowConfirmarPassword(p => !p)} edge="end" sx={{ color: theme.palette.text.secondary }}>
+                    {showConfirmarPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+              inputProps: { maxLength: 16 },
+            }}
+          />
+        </Box>
+      </Box>
+    )
+  }
+
   return (
-    <Box
-      sx={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: theme.palette.background.default,
-        py: 4,
-        px: 2,
-        position: 'relative',
-        overflow: 'hidden',
-      }}
-    >
+    <Box sx={{
+      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      backgroundColor: theme.palette.background.default, py: 4, px: 2,
+      position: 'relative', overflow: 'hidden',
+    }}>
       <Box sx={{
         position: 'absolute', top: 0, left: 0, right: 0, height: 4,
-        background: theme.palette.gradient.navbar,
-        zIndex: 20,
+        background: theme.palette.gradient.navbar, zIndex: 20,
       }} />
 
       <Box sx={{ position: 'absolute', bottom: -80, left: -80, zIndex: 0, opacity: 0.12, transform: 'rotate(-5deg)' }}>
@@ -139,338 +336,129 @@ const Register = () => {
         </svg>
       </Box>
 
+      <Box sx={{ position: 'absolute', top: -80, right: -80, zIndex: 0, opacity: 0.09, transform: 'rotate(8deg)' }}>
+        <svg width="580" height="580" viewBox="0 0 300 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <polygon points="150,20 280,90 150,160 20,90" fill="#2a3f8f" />
+          <polygon points="20,90 150,160 150,280 20,210" fill={theme.palette.secondary.main} />
+          <polygon points="280,90 150,160 150,280 280,210" fill="#0f1c45" />
+          <polygon points="150,20 280,90 150,160 20,90" fill="none" stroke={theme.palette.secondary.main} strokeWidth="2.5" />
+          <polygon points="20,90 150,160 150,280 20,210" fill="none" stroke={theme.palette.secondary.main} strokeWidth="2.5" />
+          <polygon points="280,90 150,160 150,280 280,210" fill="none" stroke={theme.palette.secondary.main} strokeWidth="2.5" />
+        </svg>
+      </Box>
+
       <Button
-        component={Link}
-        to="/"
-        startIcon={<ArrowBack />}
+        component={Link} to="/" startIcon={<ArrowBack />}
         sx={{
-          position: 'absolute',
-          top: 20,
-          left: 24,
-          color: 'rgba(33,33,33,0.6)',
-          textTransform: 'none',
-          fontWeight: 600,
-          fontSize: '0.85rem',
-          borderRadius: 2,
-          px: 2,
-          py: 0.8,
-          border: '1px solid rgba(26,46,110,0.15)',
-          backgroundColor: 'white',
-          zIndex: 20,
-          '&:hover': {
-            backgroundColor: '#f5f5f5',
-            borderColor: 'rgba(26,46,110,0.2)',
-            color: theme.palette.primary.main,
-          },
+          position: 'absolute', top: 20, left: 24,
+          color: theme.palette.text.secondary, textTransform: 'none',
+          fontWeight: 600, fontSize: '0.85rem', borderRadius: 2, px: 2, py: 0.8,
+          border: `1px solid ${theme.palette.divider}`,
+          backgroundColor: theme.palette.background.paper, zIndex: 20,
+          '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.primary.main },
           transition: 'all 0.2s ease',
         }}
       >
         Volver al inicio
       </Button>
 
-      <Paper
-        elevation={0}
-        sx={{
-          p: 0,
-          width: '100%',
-          maxWidth: 700,
-          borderRadius: 4,
-          backgroundColor: 'white',
-          border: '1px solid rgba(26,46,110,0.1)',
-          overflow: 'hidden',
-          position: 'relative',
-          zIndex: 10,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-        }}
-      >
+      <Paper elevation={0} sx={{
+        p: 0, width: '100%', maxWidth: 700, borderRadius: 4,
+        backgroundColor: theme.palette.background.paper,
+        border: `1px solid ${theme.palette.divider}`,
+        overflow: 'hidden', position: 'relative', zIndex: 10,
+        boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+      }}>
         <Box sx={{
-          px: 4,
-          py: 4,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 1.5,
-          backgroundColor: 'white',
-          borderBottom: '1px solid rgba(26,46,110,0.08)',
+          px: 4, py: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5,
+          backgroundColor: theme.palette.background.paper,
+          borderBottom: `1px solid ${theme.palette.divider}`,
         }}>
-          <Box sx={{
-            width: 140,
-            height: 100,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            overflow: 'hidden',
-          }}>
+          <Box sx={{ width: 140, height: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
             <img src={logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </Box>
           <Box sx={{ textAlign: 'center' }}>
             <Typography sx={{ color: theme.palette.text.dark, fontWeight: 700, fontSize: '1.5rem', mb: 0.5, lineHeight: 1.2, fontFamily: 'Cambria, Georgia, serif' }}>
-              Crear Cuenta
+              Crear usuario administrador
             </Typography>
-            <Typography sx={{ color: 'rgba(33,33,33,0.45)', fontSize: '0.875rem' }}>
-              Ingresa tus datos para registrarte
+            <Typography sx={{ color: theme.palette.text.secondary, fontSize: '0.875rem' }}>
+              Regístrate y un administrador activará tu cuenta
             </Typography>
           </Box>
         </Box>
 
         <Box sx={{ p: 4 }}>
-          {success && (
-            <Alert severity="success" sx={{ mb: 3, borderRadius: 2 }}>
-              {success}
-            </Alert>
-          )}
+          {success && <Alert severity="success" sx={{ mb: 3, borderRadius: 2 }}>{success}</Alert>}
+          {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>{error}</Alert>}
 
-          {error && (
-            <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
-              {error}
-            </Alert>
-          )}
-
-          <form onSubmit={handleSubmit}>
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <Box sx={{ flex: 1 }}>
-                <FormControl fullWidth required sx={{ mb: 2.5 }}>
-                  <InputLabel sx={{ '&.Mui-focused': { color: theme.palette.primary.main } }}>
-                    Tipo de Identificación
-                  </InputLabel>
-                  <Select
-                    name="tipoIdentificacion"
-                    value={formData.tipoIdentificacion}
-                    label="Tipo de Identificación"
-                    onChange={handleChange}
-                  >
-                    {TIPOS_IDENTIFICACION.map((tipo) => (
-                      <MenuItem key={tipo.value} value={tipo.value}>
-                        {tipo.label}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-
-                <TextField
-                  fullWidth
-                  label="Número de Identificación"
-                  name="numeroIdentificacion"
-                  value={formData.numeroIdentificacion}
-                  onChange={handleChange}
-                  required
-                  placeholder="Ej: 12345678"
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <Badge sx={{ color: '#8b8382' }} />
-                      </InputAdornment>
-                    ),
-                  }}
-                  sx={{
-                    mb: 2.5,
-                    '& .MuiOutlinedInput-root': { '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main } },
-                    '& .MuiInputLabel-root.Mui-focused': { color: theme.palette.primary.main },
-                  }}
-                />
-
-                <TextField
-                  fullWidth
-                  label="Nombre(s)"
-                  name="nombre"
-                  value={formData.nombre}
-                  onChange={handleChange}
-                  required
-                  placeholder="Ej: Juan Carlos"
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <Person sx={{ color: '#8b8382' }} />
-                      </InputAdornment>
-                    ),
-                  }}
-                  sx={{
-                    mb: 2.5,
-                    '& .MuiOutlinedInput-root': { '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main } },
-                    '& .MuiInputLabel-root.Mui-focused': { color: theme.palette.primary.main },
-                  }}
-                />
-
-                <TextField
-                  fullWidth
-                  label="Apellido(s)"
-                  name="apellido"
-                  value={formData.apellido}
-                  onChange={handleChange}
-                  required
-                  placeholder="Ej: Pérez Gómez"
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <Person sx={{ color: '#8b8382' }} />
-                      </InputAdornment>
-                    ),
-                  }}
-                  sx={{
-                    mb: 2.5,
-                    '& .MuiOutlinedInput-root': { '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main } },
-                    '& .MuiInputLabel-root.Mui-focused': { color: theme.palette.primary.main },
-                  }}
-                />
-              </Box>
-
-              <Box sx={{ flex: 1 }}>
-                <TextField
-                  fullWidth
-                  label="Teléfono"
-                  name="telefono"
-                  value={formData.telefono}
-                  onChange={handleChange}
-                  placeholder="Ej: 3001234567"
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <Phone sx={{ color: '#8b8382' }} />
-                      </InputAdornment>
-                    ),
-                  }}
-                  sx={{
-                    mb: 2.5,
-                    '& .MuiOutlinedInput-root': { '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main } },
-                    '& .MuiInputLabel-root.Mui-focused': { color: theme.palette.primary.main },
-                  }}
-                />
-
-                <TextField
-                  fullWidth
-                  label="Correo electrónico"
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                  placeholder="correo@ejemplo.com"
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <Email sx={{ color: '#8b8382' }} />
-                      </InputAdornment>
-                    ),
-                  }}
-                  sx={{
-                    mb: 2.5,
-                    '& .MuiOutlinedInput-root': { '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main } },
-                    '& .MuiInputLabel-root.Mui-focused': { color: theme.palette.primary.main },
-                  }}
-                />
-
-                <TextField
-                  fullWidth
-                  label="Contraseña"
-                  name="password"
-                  type={showPassword ? 'text' : 'password'}
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
-                  placeholder="••••••"
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <Lock sx={{ color: '#8b8382' }} />
-                      </InputAdornment>
-                    ),
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton
-                          onClick={() => setShowPassword(!showPassword)}
-                          edge="end"
-                          sx={{ color: '#8b8382' }}
-                        >
-                          {showPassword ? <VisibilityOff /> : <Visibility />}
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  }}
-                  sx={{
-                    mb: 2.5,
-                    '& .MuiOutlinedInput-root': { '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main } },
-                    '& .MuiInputLabel-root.Mui-focused': { color: theme.palette.primary.main },
-                  }}
-                />
-
-                <FormControl fullWidth required sx={{ mb: 2.5 }}>
-                  <InputLabel sx={{ '&.Mui-focused': { color: theme.palette.primary.main } }}>
-                    Rol
-                  </InputLabel>
-                  <Select
-                    name="idRol"
-                    value={formData.idRol}
-                    label="Rol"
-                    onChange={handleChange}
-                  >
-                    {Object.values(ROLES).filter(r => r.nombre !== 'Administrador').map((rol) => (
-                      <MenuItem key={rol.id} value={rol.id}>
-                        {rol.nombre}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Box>
-            </Box>
-
-            <Box sx={{
-              p: 1.5,
+          <Stepper activeStep={activeStep} alternativeLabel
+            sx={{
               mb: 3,
-              backgroundColor: '#f8f9fa',
-              borderRadius: 2,
-              border: '1px solid rgba(26,46,110,0.1)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1
+              '& .MuiStepIcon-root': { color: theme.palette.divider },
+              '& .MuiStepIcon-root.Mui-active': { color: theme.palette.primary.main },
+              '& .MuiStepIcon-root.Mui-completed': { color: theme.palette.primary.main },
+              '& .MuiStepIcon-text': { fill: 'white', fontSize: '0.7rem', fontWeight: 700 },
+              '& .MuiStepConnector-line': { borderColor: theme.palette.divider },
+              '& .MuiStepConnector-root.Mui-active .MuiStepConnector-line': { borderColor: theme.palette.primary.main },
+              '& .MuiStepConnector-root.Mui-completed .MuiStepConnector-line': { borderColor: theme.palette.primary.main },
+              '& .MuiStepLabel-label': { fontSize: '0.8rem', color: theme.palette.text.secondary, mt: 0.5 },
+              '& .MuiStepLabel-label.Mui-active': { color: theme.palette.text.primary, fontWeight: 600 },
+              '& .MuiStepLabel-label.Mui-completed': { color: theme.palette.primary.main, fontWeight: 500 },
+            }}
+          >
+            {steps.map(label => <Step key={label}><StepLabel>{label}</StepLabel></Step>)}
+          </Stepper>
+
+          {renderStepContent()}
+
+          {activeStep === steps.length - 1 && (
+            <Box sx={{
+              p: 1.5, mt: 2.5, mb: 1, borderRadius: 2, display: 'flex', alignItems: 'center', gap: 1,
+              backgroundColor: theme.palette.primary.main + '18',
+              border: `1px solid ${theme.palette.divider}`,
             }}>
-              <Badge sx={{ color: '#8b8382' }} />
-              <Typography sx={{ color: 'rgba(33,33,33,0.7)', fontSize: '0.9rem' }}>
-                Iniciales:
-              </Typography>
-              <Typography sx={{ color: theme.palette.primary.main, fontWeight: 700, fontSize: '1rem' }}>
-                {getIniciales() || '---'}
+              <Badge sx={{ color: theme.palette.primary.darker, fontSize: '1.1rem' }} />
+              <Typography sx={{ color: theme.palette.primary.darker, fontSize: '0.85rem', fontWeight: 500 }}>
+                Se creará con rol <strong>Administrador</strong>, pero inhabilitada hasta que un administrador ya activo la apruebe desde el módulo de Usuarios.
               </Typography>
             </Box>
+          )}
 
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 3 }}>
             <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              size="large"
-              disabled={loading}
-              startIcon={<PersonAdd />}
+              onClick={handleBack} disabled={activeStep === 0} variant="outlined"
+              startIcon={<ArrowBackOutlined />} disableRipple
               sx={{
-                backgroundColor: theme.palette.primary.main,
-                borderRadius: 2,
-                py: 1.5,
-                fontWeight: 700,
-                fontSize: '1rem',
-                textTransform: 'none',
-                boxShadow: '0 4px 14px rgba(204, 24, 24, 0.3)',
-                '&:hover': {
-                  backgroundColor: theme.palette.primary.dark,
-                  boxShadow: '0 6px 20px rgba(204, 24, 24, 0.4)',
-                },
+                textTransform: 'none', borderRadius: 2, borderColor: theme.palette.divider,
+                color: theme.palette.text.primary, fontWeight: 500,
+                '&:hover': { borderColor: theme.palette.divider, backgroundColor: theme.palette.background.subtle },
+                '&.Mui-disabled': { borderColor: theme.palette.divider, color: theme.palette.text.secondary },
+              }}>
+              Anterior
+            </Button>
+            <Button
+              onClick={activeStep < steps.length - 1 ? handleNext : handleSubmit}
+              variant="contained" disabled={loading} disableRipple
+              endIcon={loading ? <CircularProgress size={18} color="inherit" /> : (activeStep < steps.length - 1 ? <ArrowForwardOutlined /> : <CheckOutlined />)}
+              sx={{
+                backgroundColor: theme.palette.primary.main, borderRadius: 2, px: 3,
+                fontWeight: 700, fontSize: '0.95rem', textTransform: 'none',
+                boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
+                '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}` },
               }}
             >
-              {loading ? 'Registrando...' : 'Crear Cuenta'}
+              {activeStep < steps.length - 1 ? 'Siguiente' : (loading ? 'Creando...' : 'Crear administrador')}
             </Button>
-          </form>
+          </Box>
 
           <Box sx={{ mt: 3, textAlign: 'center' }}>
-            <Typography sx={{ color: 'rgba(33,33,33,0.45)', fontSize: '0.875rem' }}>
+            <Typography sx={{ color: theme.palette.text.secondary, fontSize: '0.875rem' }}>
               ¿Ya tienes cuenta?{' '}
               <Button
-                component={Link}
-                to="/login"
-                variant="text"
+                component={Link} to="/login" variant="text"
                 sx={{
-                  color: theme.palette.primary.main,
-                  fontWeight: 600,
-                  p: 0,
-                  minWidth: 'auto',
-                  textTransform: 'none',
-                  '&:hover': { textDecoration: 'underline' },
+                  color: theme.palette.primary.main, fontWeight: 600, p: 0, minWidth: 'auto',
+                  textTransform: 'none', '&:hover': { textDecoration: 'underline' },
                 }}
               >
                 Iniciar Sesión

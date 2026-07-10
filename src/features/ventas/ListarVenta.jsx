@@ -15,6 +15,7 @@ import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
+import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import ClearIcon from '@mui/icons-material/Clear'
@@ -26,6 +27,7 @@ import { ESTADOS_ENCOMIENDA, METODOS_PAGO, ESTADOS_PAGO } from '../../shared/con
 import { useAuth, PERMISOS } from '../../shared/contexts/AuthContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { getPageOfEncomienda } from '../../shared/services/ventaService'
+import { descargarGuiaPdf } from '../../shared/utils/exportGuiaPdf.js'
 import RegistrarVenta from './RegistrarVenta'
 import ActualizarVenta from './ActualizarVenta'
 import ModalInhabilitarVenta from './ModalInhabilitarVenta'
@@ -195,6 +197,14 @@ const ListarVenta = () => {
         exportToExcel({ data: rows, fileName: 'ventas', sheetName: 'Ventas' })
     }
 
+    const handleDescargarGuia = async (venta) => {
+        try {
+            await descargarGuiaPdf(venta)
+        } catch (err) {
+            showToast(err.message || 'Error al generar la guía en PDF.', 'error')
+        }
+    }
+
     const handleEstadoChange = async (id, nuevoEstado) => {
         try {
             await cambiarEstadoVenta(id, nuevoEstado)
@@ -321,14 +331,14 @@ const ListarVenta = () => {
                                     minWidth: 0,
                                     fontWeight: filtroHabilitado === f.value ? 600 : 400,
                                     backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
-                                    color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.secondary,
+                                    color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.primary.darker,
                                     boxShadow: filtroHabilitado === f.value
                                         ? '0 1px 4px rgba(0,0,0,0.12)'
                                         : 'none',
                                     border: 'none',
                                     '&:hover': {
                                         backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
-                                        color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.text.medium,
+                                        color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.primary.dark,
                                         border: 'none',
                                     },
                                 }}
@@ -597,7 +607,7 @@ const ListarVenta = () => {
                                                     sx={{
                                                         fontWeight: 600,
                                                         backgroundColor: theme.palette.primary.light,
-                                                        color: theme.palette.primary.main,
+                                                        color: theme.palette.primary.darker,
                                                         fontSize: '0.7rem',
                                                         borderRadius: '2px',
                                                         height: 24,
@@ -665,6 +675,12 @@ const ListarVenta = () => {
                                                         <IconButton size="small" onClick={() => setVentaConsulta(venta)}
                                                             sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.action.hover } }}>
                                                             <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                    <Tooltip title="Descargar guía">
+                                                        <IconButton size="small" onClick={() => handleDescargarGuia(venta)}
+                                                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.action.hover } }}>
+                                                            <ReceiptLongOutlinedIcon sx={{ fontSize: 18 }} />
                                                         </IconButton>
                                                     </Tooltip>
                                                     <Tooltip title="Editar">

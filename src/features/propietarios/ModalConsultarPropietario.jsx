@@ -19,7 +19,7 @@ const CampoFila = ({ label, value, esChip }) => {
                 <Chip
                     label={value || '—'}
                     size="small"
-                    sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.main, fontSize: '0.7rem' }}
+                    sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem' }}
                 />
             ) : (
                 <Typography variant="body2" fontWeight={500} color={theme.palette.text.medium}>
@@ -37,6 +37,7 @@ const ModalConsultarPropietario = ({ propietario, onClose }) => {
 
     useEffect(() => {
         if (!propietario || tabIndex !== 1) return
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- loading flag antes de fetch, patrón recomendado por React
         setTabVehiculos({ data: [], loading: true })
         vehiculoService.getVehiculos(undefined, { idPropietario: propietario.idPropietario, limit: 100 })
             .then(res => setTabVehiculos({ data: res?.data || [], loading: false }))
@@ -103,7 +104,6 @@ const ModalConsultarPropietario = ({ propietario, onClose }) => {
                             </Typography>
                             <CampoFila label="Teléfono" value={propietario.telefono} />
                             <CampoFila label="Email" value={propietario.email} />
-                            <CampoFila label="Tarjeta propiedad" value={propietario.tarjetaPropiedad} />
                             <CampoFila label="Tipo de flota" value={propietario.tipoFlota} esChip />
                             <CampoFila label="Estado" value={propietario.habilitado ? 'Habilitado' : 'Inhabilitado'} />
                         </Paper>
