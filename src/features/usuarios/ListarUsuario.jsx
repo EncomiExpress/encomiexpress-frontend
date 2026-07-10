@@ -1,0 +1,779 @@
+import { useTheme } from '@mui/material/styles'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { useAuth } from '../../shared/contexts/AuthContext.jsx'
+import { useToast } from '../../shared/contexts/ToastContext.jsx'
+import {
+    Box, Typography, Paper, Table, TableBody, TableCell,
+    TableContainer, TableHead, TableRow, TextField,
+    IconButton, Chip, Tooltip, InputAdornment,
+    Button, Avatar, Select, MenuItem, Pagination,
+    CircularProgress, FormControl, TableSortLabel,
+    Dialog, DialogContent
+} from '@mui/material'
+import SearchIcon from '@mui/icons-material/Search'
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
+import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
+import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
+import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
+import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
+import HourglassEmptyOutlinedIcon from '@mui/icons-material/HourglassEmptyOutlined'
+import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined'
+import ToggleSwitch from '../../shared/components/ToggleSwitch.jsx'
+import ClearIcon from '@mui/icons-material/Clear'
+import RegistrarUsuario from './RegistrarUsuario'
+import ActualizarUsuario from './ActualizarUsuario'
+import ModalConsultarUsuario from './ModalConsultarUsuario'
+import ModalInhabilitarUsuario from './ModalInhabilitarUsuario'
+import { exportToExcel } from '../../shared/utils/exportExcel.js'
+
+
+
+const getThStyle = (theme) => ({
+    fontWeight: 700,
+    fontSize: '0.80rem',
+    color: theme.palette.text.primary,
+    letterSpacing: 0.5,
+    py: 1.5,
+    borderBottom: `1px solid ${theme.palette.divider}`,
+    whiteSpace: 'nowrap',
+})
+
+const getFilterMenuProps = (theme) => ({
+    slotProps: {
+        paper: {
+            sx: {
+                borderRadius: 2,
+                boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+                mt: 0.5,
+                '& .MuiMenuItem-root': {
+                    fontSize: '0.82rem', py: 0.9, px: 2,
+                    display: 'flex', justifyContent: 'space-between', gap: 2,
+                    '&:hover': { backgroundColor: theme.palette.primary.light },
+                    '&.Mui-selected': { backgroundColor: 'transparent', fontWeight: 600, color: theme.palette.text.primary },
+                    '&.Mui-selected:hover': { backgroundColor: theme.palette.primary.light },
+                },
+            },
+        },
+    },
+})
+
+const FILTROS = [
+    { value: 'todo', label: 'Todo' },
+    { value: 'habilitado', label: 'Habilitado' },
+    { value: 'inhabilitado', label: 'Inhabilitado' },
+]
+
+const ListarUsuario = () => {
+    const theme = useTheme()
+    const thStyle = getThStyle(theme)
+    const filterMenuProps = getFilterMenuProps(theme)
+    const { tienePermiso, PERMISOS, getUsuarios, getRolesBackend, habilitarInhabilitarUsuario, ignorarRegistroUsuario, usuario: usuarioActual } = useAuth()
+
+    const [usuarios, setUsuarios] = useState([])
+    const [loading, setLoading] = useState(true)
+    const initialLoad = useRef(true)
+    const [error, setError] = useState(null)
+    const [total, setTotal] = useState(0)
+    const [roles, setRoles] = useState([])
+    const [filtroRol, setFiltroRol] = useState('')
+
+    const [busqueda, setBusqueda] = useState('')
+    const [debouncedBusqueda, setDebouncedBusqueda] = useState('')
+    const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
+    const [sortBy, setSortBy] = useState({ field: 'nombre', dir: 'asc' })
+    const [page, setPage] = useState(1)
+    const [rowsPerPage, setRowsPerPage] = useState(5)
+    const [usuarioConsulta, setUsuarioConsulta] = useState(null)
+    const { showToast } = useToast()
+    const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
+    const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
+    const [usuarioEditar, setUsuarioEditar] = useState(null)
+    const [confirmToggle, setConfirmToggle] = useState({ open: false, idUsuario: null, nombreCompleto: '', habilitadoActual: false })
+    const [confirmIgnorar, setConfirmIgnorar] = useState({ open: false, idUsuario: null, nombreCompleto: '' })
+
+    useEffect(() => {
+        const t = setTimeout(() => setDebouncedBusqueda(busqueda), 300)
+        return () => clearTimeout(t)
+    }, [busqueda])
+
+    const cargarUsuarios = useCallback(async () => {
+        setLoading(true)
+        setError(null)
+        try {
+            const respuesta = await getUsuarios({
+                page,
+                limit: rowsPerPage,
+                sortBy: `${sortBy.field}.${sortBy.dir}`,
+                habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
+                idRol: filtroRol || undefined,
+                q: debouncedBusqueda.trim() || undefined,
+            })
+            setUsuarios(Array.isArray(respuesta.data) ? respuesta.data : [])
+            setTotal(typeof respuesta.total === 'number' ? respuesta.total : (Array.isArray(respuesta.data) ? respuesta.data.length : 0))
+        } catch (err) {
+            setError(err.message)
+        } finally {
+            setLoading(false)
+            initialLoad.current = false
+        }
+    }, [getUsuarios, page, rowsPerPage, debouncedBusqueda, filtroHabilitado, filtroRol, sortBy])
+
+    useEffect(() => {
+        cargarUsuarios()
+    }, [cargarUsuarios])
+
+    useEffect(() => {
+        const cargarRoles = async () => {
+            try {
+                const respuesta = await getRolesBackend({ habilitado: 'true' })
+                if (respuesta.success) {
+                    setRoles(respuesta.data || [])
+                }
+            } catch {
+                setRoles([])
+            }
+        }
+        cargarRoles()
+    }, [getRolesBackend])
+
+    const puedeRegistrar = tienePermiso(PERMISOS.REGISTRAR_USUARIO)
+
+    const solicitarToggle = (usuario) => {
+        setConfirmToggle({
+            open: true,
+            idUsuario: usuario.idUsuario,
+            nombreCompleto: `${usuario.nombre} ${usuario.apellido}`,
+            habilitadoActual: usuario.habilitado,
+        })
+    }
+
+    const onConfirmar = async () => {
+        const { idUsuario, habilitadoActual } = confirmToggle
+        try {
+            await habilitarInhabilitarUsuario(idUsuario)
+            setUsuarios(prev => prev.map(u =>
+                // Al habilitar (aprobar) una cuenta de autoregistro, el backend también
+                // limpia registroPendiente — se refleja igual acá para no recargar la tabla.
+                u.idUsuario === idUsuario ? { ...u, habilitado: !u.habilitado, registroPendiente: u.habilitado ? u.registroPendiente : false } : u
+            ))
+            showToast(`Usuario ${habilitadoActual ? 'inhabilitado' : 'habilitado'} correctamente`, 'success')
+        } catch (err) {
+            showToast(err?.message || 'Error al cambiar el estado', 'error')
+            throw err
+        }
+    }
+
+    const solicitarIgnorar = (usuario) => {
+        setConfirmIgnorar({
+            open: true,
+            idUsuario: usuario.idUsuario,
+            nombreCompleto: `${usuario.nombre} ${usuario.apellido}`,
+        })
+    }
+
+    const onConfirmarIgnorar = async () => {
+        const { idUsuario } = confirmIgnorar
+        try {
+            await ignorarRegistroUsuario(idUsuario)
+            setUsuarios(prev => prev.map(u =>
+                u.idUsuario === idUsuario ? { ...u, registroPendiente: false } : u
+            ))
+            showToast('Solicitud de registro ignorada', 'success')
+        } catch (err) {
+            showToast(err?.message || 'Error al ignorar la solicitud', 'error')
+        } finally {
+            setConfirmIgnorar({ open: false, idUsuario: null, nombreCompleto: '' })
+        }
+    }
+
+    const handleSort = (field) => {
+        setSortBy(prev => prev.field === field
+            ? { field, dir: prev.dir === 'asc' ? 'desc' : 'asc' }
+            : { field, dir: 'asc' }
+        )
+        setPage(1)
+    }
+
+    const handleExportar = () => {
+        const rows = usuarios.map(usuario => ({
+            'ID': usuario.idUsuario,
+            'Nombre': `${usuario.nombre || ''} ${usuario.apellido || ''}`.trim(),
+            'Email': usuario.email,
+            'Rol': usuario.rol?.nombre || usuario.idRol || '-',
+            'Estado': usuario.habilitado === false ? 'Inhabilitado' : 'Habilitado',
+        }))
+
+        exportToExcel({
+            data: rows,
+            fileName: 'usuarios',
+            sheetName: 'Usuarios',
+        })
+    }
+
+    const totalPages = Math.max(1, Math.ceil(total / rowsPerPage))
+    const safePage = Math.min(page, totalPages)
+    const from = total === 0 ? 0 : (safePage - 1) * rowsPerPage + 1
+    const to = Math.min(safePage * rowsPerPage, total)
+    return (
+        <Box sx={{ p: 3.5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
+                <Box>
+                    <Typography variant="h5" fontWeight={700} color={theme.palette.text.primary}>
+                        Usuarios
+                    </Typography>
+                    <Typography variant="body2" color={theme.palette.text.secondary} mt={0.3}>
+                        Gestiona los usuarios registrados en el sistema.
+                    </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Button
+                        onClick={handleExportar}
+                        variant="contained"
+                        startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 18 }} />}
+                        sx={{
+                            backgroundColor: theme.palette.background.paper,
+                            color: theme.palette.text.primary,
+                            borderRadius: 2,
+                            textTransform: 'none',
+                            fontSize: '0.875rem',
+                            fontWeight: 700,
+                            border: `1px solid ${theme.palette.divider}`,
+                            boxShadow: 'none',
+                            '&:hover': {
+                                backgroundColor: theme.palette.primary.light,
+                                color: theme.palette.text.primary,
+                                border: `1px solid ${theme.palette.divider}`,
+                                boxShadow: 'none',
+                            },
+                        }}
+                    >
+                        Exportar
+                    </Button>
+
+                    {puedeRegistrar && (
+                        <Button
+                            onClick={() => setModalRegistrarOpen(true)}
+                            variant="contained"
+                            startIcon={<AddOutlinedIcon sx={{ fontSize: 20 }} />}
+                            sx={{
+                                backgroundColor: theme.palette.primary.main,
+                                borderRadius: 2,
+                                textTransform: 'none',
+                                fontSize: '0.875rem',
+                                fontWeight: 600,
+                                boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
+                                '&:hover': {
+                                    backgroundColor: theme.palette.primary.dark,
+                                    boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}`,
+                                },
+                            }}
+                        >
+                            Nuevo
+                        </Button>
+                    )}
+                </Box>
+            </Box>
+
+
+
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+                    <Box sx={{
+                        display: 'inline-flex',
+                        backgroundColor: theme.palette.primary.light,
+                        borderRadius: 4,
+                        p: '4px',
+                        gap: '5px',
+                    }}>
+                        {FILTROS.map(f => (
+                            <Button
+                                key={f.value}
+                                onClick={() => { setFiltroHabilitado(f.value); setPage(1) }}
+                                size="small"
+                                disableElevation
+                                disableRipple
+                                sx={{
+                                    borderRadius: 3,
+                                    textTransform: 'none',
+                                    fontSize: '0.75rem',
+                                    px: 2,
+                                    py: 0.5,
+                                    minWidth: 0,
+                                    fontWeight: filtroHabilitado === f.value ? 600 : 400,
+                                    backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
+                                    color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.primary.darker,
+                                    boxShadow: filtroHabilitado === f.value
+                                        ? '0 1px 4px rgba(0,0,0,0.12)'
+                                        : 'none',
+                                    border: 'none',
+                                    '&:hover': {
+                                        backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
+                                        color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.primary.dark,
+                                        border: 'none',
+                                    },
+                                }}
+                            >
+                                {f.label}
+                            </Button>
+                        ))}
+                    </Box>
+
+                    <FormControl size="small" sx={{ minWidth: 150 }}>
+                        <Select
+                            displayEmpty
+                            value={filtroRol}
+                            onChange={e => { setFiltroRol(e.target.value); setPage(1) }}
+                            renderValue={v => v ? roles.find(r => r.id === v)?.nombre || 'Rol' : 'Rol'}
+                            IconComponent={KeyboardArrowDownOutlinedIcon}
+                            sx={{
+                                fontSize: '0.82rem', borderRadius: 4,
+                                color: filtroRol ? theme.palette.text.primary : theme.palette.text.secondary,
+                                '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
+                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
+                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
+                                '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` },
+                                '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
+                                '& .MuiTouchRipple-root': { display: 'none' },
+                            }}
+                            MenuProps={filterMenuProps}
+                        >
+                            <MenuItem value="">Todos</MenuItem>
+                            {roles.map((rol) => (
+                                <MenuItem key={rol.id} value={rol.id}>
+                                    {rol.nombre}
+                                    {filtroRol === rol.id && <CheckOutlinedIcon sx={{ fontSize: 14, color: theme.palette.text.secondary }} />}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                </Box>
+
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+                    <TextField
+                        size="small"
+                        placeholder="Buscar usuarios..."
+                        sx={{
+                            width: 280,
+                            '& .MuiOutlinedInput-root': {
+                                borderRadius: 4,
+                                '&.Mui-focused': {
+                                    boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}`,
+                                },
+                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                    borderColor: theme.palette.primary.main,
+                                    borderWidth: '1px',
+                                },
+                            },
+                        }}
+                        value={busqueda}
+                        onChange={e => { setBusqueda(e.target.value); setPage(1) }}
+                        slotProps={{
+                            input: {
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <SearchIcon sx={{ color: theme.palette.text.secondary, fontSize: 20 }} />
+                                    </InputAdornment>
+                                ),
+                                endAdornment: busqueda && (
+                                    <InputAdornment position="end">
+                                        <IconButton size="small" onClick={() => { setBusqueda(''); setPage(1) }}>
+                                            <ClearIcon sx={{ fontSize: 16 }} />
+                                        </IconButton>
+                                    </InputAdornment>
+                                )
+                            }
+                        }}
+                    />
+
+                </Box>
+            </Box>
+
+            <Paper elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 3, overflow: 'hidden' }}>
+                <TableContainer>
+                    <Table>
+                        <TableHead>
+                            <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
+                                <TableCell sx={thStyle}>
+                                    <TableSortLabel
+                                        active={sortBy.field === 'nombre'}
+                                        direction={sortBy.field === 'nombre' ? sortBy.dir : 'asc'}
+                                        onClick={() => handleSort('nombre')}
+                                        sx={{
+                                            color: 'inherit',
+                                            '&.Mui-active': { color: theme.palette.primary.main },
+                                            '& .MuiTableSortLabel-icon': { opacity: 0.4, fontSize: 16 },
+                                            '&.Mui-active .MuiTableSortLabel-icon': { opacity: 1 },
+                                        }}
+                                    >
+                                        Nombre
+                                    </TableSortLabel>
+                                </TableCell>
+                                <TableCell sx={thStyle}>Identificación</TableCell>
+                                <TableCell sx={thStyle}>Teléfono</TableCell>
+                                <TableCell sx={thStyle}>Email</TableCell>
+                                <TableCell sx={thStyle}>Rol</TableCell>
+                                <TableCell sx={{ ...thStyle, width: 130 }}>Acciones</TableCell>
+                            </TableRow>
+                        </TableHead>
+
+                        <TableBody>
+                            {loading && initialLoad.current ? (
+                                <TableRow>
+                                    <TableCell colSpan={6} align="center" sx={{ py: 7 }}>
+                                        <CircularProgress size={28} sx={{ color: theme.palette.primary.main }} />
+                                        <Typography variant="body2" color={theme.palette.text.secondary} mt={1.5}>
+                                            Cargando usuarios...
+                                        </Typography>
+                                    </TableCell>
+                                </TableRow>
+                            ) : error ? (
+                                <TableRow>
+                                    <TableCell colSpan={6} align="center" sx={{ py: 5 }}>
+                                        <Typography color="error" variant="body2">
+                                            No se pudieron cargar los usuarios. Verifica la conexión con el servidor.
+                                        </Typography>
+                                        {import.meta.env.DEV && (
+                                            <Box component="pre" sx={{ mt: 0.5, fontSize: 11, opacity: 0.7, whiteSpace: 'pre-wrap', m: 0 }}>
+                                                {String(error)}
+                                            </Box>
+                                        )}
+                                    </TableCell>
+                                </TableRow>
+                            ) : !loading && usuarios.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={6} align="center" sx={{ py: 7 }}>
+                                        <Typography color={theme.palette.text.secondary} variant="body2">
+                                            {filtroHabilitado !== 'todo' || filtroRol !== ''
+                                                ? 'No se encontraron usuarios que coincidan con los filtros aplicados.'
+                                                : debouncedBusqueda.trim()
+                                                    ? 'No se encontraron usuarios que coincidan con la búsqueda.'
+                                                    : 'No hay usuarios registrados en el sistema.'
+                                            }
+                                        </Typography>
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                                usuarios.map(usuario => (
+                                    <TableRow
+                                        key={usuario.idUsuario}
+                                        sx={{
+                                            '&:hover': { backgroundColor: theme.palette.background.subtle },
+                                            transition: 'background-color 0.15s',
+                                            opacity: usuario.habilitado ? 1 : 0.55,
+                                        }}
+                                    >
+                                        <TableCell>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                                <Avatar sx={{
+                                                    width: 34, height: 34,
+                                                    backgroundColor: usuario.habilitado ? theme.palette.avatarDefault.bg : theme.palette.avatarDisabled.bg,
+                                                    fontSize: '0.73rem',
+                                                    fontWeight: 700,
+                                                    color: usuario.habilitado ? theme.palette.avatarDefault.color : theme.palette.avatarDisabled.color,
+                                                }}
+                                                >
+                                                    {usuario.iniciales && usuario.iniciales !== 'U' ? usuario.iniciales : (usuario.nombre?.[0] || '') + (usuario.apellido?.[0] || '') || 'U'}
+                                                </Avatar>
+                                                <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary} noWrap>
+                                                    {usuario.nombre} {usuario.apellido}
+                                                </Typography>
+                                            </Box>
+                                        </TableCell>
+
+                                        <TableCell sx={{ fontSize: '0.85rem', color: theme.palette.text.primary, py: 1.5 }}>
+                                            {usuario.tipoIdentificacion} {usuario.numeroIdentificacion}
+                                        </TableCell>
+
+                                        <TableCell sx={{ fontSize: '0.85rem', color: theme.palette.text.primary, py: 1.5 }}>
+                                            {usuario.telefono || '—'}
+                                        </TableCell>
+
+                                        <TableCell sx={{ fontSize: '0.85rem', color: theme.palette.text.primary, py: 1.5 }}>
+                                            {usuario.email}
+                                        </TableCell>
+
+                                        <TableCell sx={{ py: 1.5 }}>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6, flexWrap: 'wrap' }}>
+                                                <Chip
+                                                    label={usuario.rol?.nombre}
+                                                    size="small"
+                                                    variant="outlined"
+                                                    sx={{
+                                                        backgroundColor: 'transparent',
+                                                        color: theme.palette.primary.main,
+                                                        fontWeight: 600,
+                                                        fontSize: '0.72rem',
+                                                        height: 22,
+                                                        borderRadius: 10,
+                                                        borderColor: theme.palette.divider,
+                                                    }}
+                                                />
+                                                {usuario.registroPendiente && !usuario.habilitado && (
+                                                    <Chip
+                                                        icon={<HourglassEmptyOutlinedIcon sx={{ fontSize: '0.85rem !important', color: `${theme.palette.status.warning.color} !important` }} />}
+                                                        label="Pendiente de activación"
+                                                        size="small"
+                                                        onDelete={tienePermiso(PERMISOS.INHABILITAR_USUARIO) ? () => solicitarIgnorar(usuario) : undefined}
+                                                        deleteIcon={
+                                                            <Tooltip title="Ignorar solicitud (no la habilita, solo quita este aviso)">
+                                                                <CloseOutlinedIcon sx={{ fontSize: '0.85rem !important' }} />
+                                                            </Tooltip>
+                                                        }
+                                                        sx={{
+                                                            backgroundColor: theme.palette.status.warning.bg,
+                                                            color: theme.palette.status.warning.color,
+                                                            fontWeight: 600,
+                                                            fontSize: '0.68rem',
+                                                            height: 22,
+                                                            borderRadius: 10,
+                                                            '& .MuiChip-deleteIcon': {
+                                                                color: theme.palette.status.warning.color,
+                                                                opacity: 0.65,
+                                                                '&:hover': { opacity: 1 },
+                                                            },
+                                                        }}
+                                                    />
+                                                )}
+                                            </Box>
+                                        </TableCell>
+
+                                        <TableCell sx={{ py: 1.5 }}>
+                                            <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                                {tienePermiso(PERMISOS.CONSULTAR_USUARIO) && (
+                                                    <Tooltip title="Ver detalle">
+                                                        <IconButton
+                                                            size="small"
+                                                            onClick={() => setUsuarioConsulta(usuario)}
+                                                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
+                                                        >
+                                                            <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                )}
+                                                {tienePermiso(PERMISOS.ACTUALIZAR_USUARIO) && (
+                                                    usuario.rol?.nombre?.toLowerCase() === 'conductor' ? (
+                                                        <Tooltip title="Este usuario es un conductor: actualízalo desde el módulo de Conductores">
+                                                            <span>
+                                                                <IconButton size="small" disabled>
+                                                                    <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                                                                </IconButton>
+                                                            </span>
+                                                        </Tooltip>
+                                                    ) : (
+                                                        <Tooltip title="Editar">
+                                                            <IconButton
+                                                                size="small"
+                                                                onClick={() => { setUsuarioEditar(usuario); setModalActualizarOpen(true) }}
+                                                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
+                                                            >
+                                                                <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                    )
+                                                )}
+                                                {tienePermiso(PERMISOS.INHABILITAR_USUARIO) && usuario.idUsuario !== usuarioActual?.idUsuario && (
+                                                    <ToggleSwitch id={usuario.idUsuario} checked={usuario.habilitado} onChange={() => solicitarToggle(usuario)} />
+                                                )}
+                                            </Box>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+            </Paper>
+
+            <Box sx={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                px: 0.5, pt: 1.5,
+            }}>
+                <Typography variant="body2" color={theme.palette.text.secondary}>
+                    Mostrando {from}–{to} de {total} resultado{total !== 1 ? 's' : ''}
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="body2" color={theme.palette.text.secondary} fontWeight={500}>
+                            Filas
+                        </Typography>
+                        <Select
+                            value={rowsPerPage}
+                            onChange={e => { setRowsPerPage(Number(e.target.value)); setPage(1) }}
+                            size="small"
+                            renderValue={(value) => value}
+                            IconComponent={KeyboardArrowDownOutlinedIcon}
+                            sx={{
+                                fontSize: '0.82rem',
+                                borderRadius: 2,
+                                '& .MuiSelect-select': { py: 0.6, pl: 1.5, pr: '28px !important' },
+                                '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
+                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
+                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                    borderColor: theme.palette.primary.main,
+                                    borderWidth: '1px',
+                                },
+                                '&.Mui-focused': {
+                                    boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}`,
+                                },
+                                '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
+                                '& .MuiTouchRipple-root': { display: 'none' },
+                            }}
+                            MenuProps={{
+                                slotProps: {
+                                    paper: {
+                                        sx: {
+                                            borderRadius: 2,
+                                            boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+                                            mt: 0.5,
+                                            minWidth: 80,
+                                            '& .MuiMenuItem-root': {
+                                                fontSize: '0.82rem',
+                                                py: 0.9,
+                                                px: 2,
+                                                display: 'flex',
+                                                justifyContent: 'space-between',
+                                                gap: 2,
+                                                '&:hover': { backgroundColor: theme.palette.primary.light },
+                                                '&.Mui-selected': {
+                                                    backgroundColor: 'transparent',
+                                                    fontWeight: 600,
+                                                    color: theme.palette.text.primary,
+                                                },
+                                                '&.Mui-selected:hover': { backgroundColor: theme.palette.primary.light },
+                                            },
+                                        },
+                                    },
+                                },
+                            }}
+                        >
+                            {[5, 10, 25].map(n => (
+                                <MenuItem key={n} value={n}>
+                                    {n}
+                                    {rowsPerPage === n && (
+                                        <CheckOutlinedIcon sx={{ fontSize: 14, color: theme.palette.text.secondary }} />
+                                    )}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </Box>
+                    <Pagination
+                        count={totalPages}
+                        page={safePage}
+                        onChange={(_, val) => setPage(val)}
+                        size="small"
+                        shape="rounded"
+                        sx={{
+                            '& .MuiPaginationItem-root': {
+                                fontSize: '0.82rem',
+                                borderRadius: '8px',
+                                minWidth: 34,
+                                height: 34,
+                                mx: 0.2,
+                                color: theme.palette.text.primary,
+                                border: `1px solid ${theme.palette.divider}`,
+                                '& .MuiTouchRipple-root': { display: 'none' },
+                            },
+                            '& .MuiPaginationItem-ellipsis': {
+                                border: 'none',
+                            },
+                            '& .MuiPaginationItem-root.Mui-selected': {
+                                backgroundColor: theme.palette.primary.main,
+                                borderColor: theme.palette.primary.main,
+                                color: 'white',
+                                fontWeight: 600,
+                                '&:hover': { backgroundColor: theme.palette.primary.darker },
+                            },
+                            '& .MuiPaginationItem-root:hover:not(.Mui-selected)': {
+                                backgroundColor: theme.palette.background.subtle,
+                                borderColor: theme.palette.divider,
+                            },
+                        }}
+                    />
+                </Box>
+            </Box>
+
+            <ModalConsultarUsuario usuario={usuarioConsulta} onClose={() => setUsuarioConsulta(null)} />
+
+            <RegistrarUsuario
+                open={modalRegistrarOpen}
+                onClose={() => setModalRegistrarOpen(false)}
+                onSuccess={() => {
+                    cargarUsuarios()
+                    showToast('Usuario registrado correctamente', 'success')
+                }}
+            />
+
+            <ActualizarUsuario
+                open={modalActualizarOpen}
+                onClose={() => { setModalActualizarOpen(false); setUsuarioEditar(null) }}
+                usuario={usuarioEditar}
+                onSuccess={() => {
+                    cargarUsuarios()
+                    showToast('Usuario actualizado correctamente', 'success')
+                }}
+            />
+
+            <ModalInhabilitarUsuario
+                open={confirmToggle.open}
+                data={confirmToggle}
+                onClose={() => setConfirmToggle(s => ({ ...s, open: false }))}
+                onExited={() => setConfirmToggle({ open: false, idUsuario: null, nombreCompleto: '', habilitadoActual: false })}
+                onConfirm={onConfirmar}
+            />
+
+            <Dialog
+                open={confirmIgnorar.open}
+                onClose={() => setConfirmIgnorar(s => ({ ...s, open: false }))}
+                maxWidth="xs" fullWidth
+                slotProps={{ paper: { sx: { borderRadius: 3 } } }}
+            >
+                <DialogContent sx={{ p: 3, textAlign: 'center', position: 'relative' }}>
+                    <IconButton
+                        onClick={() => setConfirmIgnorar(s => ({ ...s, open: false }))}
+                        sx={{ position: 'absolute', top: 8, right: 8, color: theme.palette.text.secondary }}
+                    >
+                        <CloseOutlinedIcon />
+                    </IconButton>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5, pt: 1 }}>
+                        <Box sx={{
+                            width: 67, height: 67, borderRadius: '50%',
+                            backgroundColor: theme.palette.status.warning.bg,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}>
+                            <HourglassEmptyOutlinedIcon sx={{ fontSize: 35, color: theme.palette.status.warning.color }} />
+                        </Box>
+                        <Typography fontWeight={700} fontSize="1.35rem" color={theme.palette.text.primary}>
+                            ¿Ignorar esta solicitud?
+                        </Typography>
+                        <Typography fontSize="0.9rem" color={theme.palette.text.secondary}>
+                            La cuenta de <strong>{confirmIgnorar.nombreCompleto}</strong> quedará inhabilitada, sin el aviso de pendiente. Podrás habilitarla más adelante si cambias de opinión.
+                        </Typography>
+                    </Box>
+                </DialogContent>
+                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2, px: 3, pb: 3 }}>
+                    <Button onClick={() => setConfirmIgnorar(s => ({ ...s, open: false }))} disableRipple
+                        sx={{
+                            textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 2,
+                            px: 3, py: 0.75, fontSize: '0.875rem', border: `1px solid ${theme.palette.divider}`,
+                            '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary },
+                        }}>
+                        Cancelar
+                    </Button>
+                    <Button onClick={onConfirmarIgnorar} variant="contained" disableRipple
+                        sx={{
+                            textTransform: 'none', borderRadius: 2, fontWeight: 600, px: 4, py: 0.76, fontSize: '0.875rem',
+                            backgroundColor: theme.palette.status.warning.color,
+                            color: '#fff',
+                            '&:hover': { backgroundColor: theme.palette.status.warning.color, filter: 'brightness(0.92)' },
+                        }}>
+                        Confirmar
+                    </Button>
+                </Box>
+            </Dialog>
+        </Box>
+    )
+}
+
+export default ListarUsuario
+

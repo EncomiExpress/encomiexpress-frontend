@@ -1,11 +1,44 @@
-import Rutas from './Rutas'
+import { BrowserRouter } from 'react-router-dom'
+import { ToastProvider } from './shared/contexts/ToastContext'
+import { AuthProvider } from './shared/contexts/AuthContext'
+import { ClienteProvider } from './shared/contexts/ClienteContext'
+import { AnticipoExcedenteProvider } from './shared/contexts/AnticipoExcedenteContext'
+import { VehiculoProvider } from './shared/contexts/VehiculoContext'
+import { PropietarioProvider } from './shared/contexts/PropietarioContext'
+import { ConductorProvider } from './shared/contexts/ConductorContext'
+import { DestinoProvider } from './shared/contexts/DestinoContext'
+import { RutaProgramacionProvider } from './shared/contexts/RutaProgramacionContext'
+import { VentaProvider } from './shared/contexts/VentaContext'
+import AppRoutes from './AppRoutes'
+import SessionExpiredDialog from './shared/components/SessionExpiredDialog'
 
-const App = () => {
+function App() {
   return (
-    <Rutas />
+    <BrowserRouter>
+      <ToastProvider>
+        <AuthProvider>
+          <VehiculoProvider>
+            <PropietarioProvider>
+              <ConductorProvider>
+                <DestinoProvider>
+                  <RutaProgramacionProvider>
+                    <ClienteProvider>
+                      <VentaProvider>
+                        <AnticipoExcedenteProvider>
+                          <AppRoutes />
+                          <SessionExpiredDialog />
+                        </AnticipoExcedenteProvider>
+                      </VentaProvider>
+                    </ClienteProvider>
+                  </RutaProgramacionProvider>
+                </DestinoProvider>
+              </ConductorProvider>
+            </PropietarioProvider>
+          </VehiculoProvider>
+        </AuthProvider>
+      </ToastProvider>
+    </BrowserRouter>
   )
 }
 
 export default App
-
-
