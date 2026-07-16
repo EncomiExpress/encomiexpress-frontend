@@ -2,7 +2,7 @@ import { useTheme } from '@mui/material/styles'
 import { useState } from 'react'
 import {
     Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel,
-    Button, Alert, Dialog, DialogTitle, DialogContent, IconButton
+    Button, Alert, Dialog, DialogTitle, DialogContent, IconButton, CircularProgress
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined'
@@ -104,6 +104,7 @@ const RegistrarDestino = ({ open, onClose, onSuccess }) => {
     }
 
     const handleClose = () => {
+        if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
         setForm({ departamento: '', ciudad: '', tarifaBase: '' })
         setErrores({})
         setApiError(null)
@@ -114,7 +115,7 @@ const RegistrarDestino = ({ open, onClose, onSuccess }) => {
     const cardSx = {
         flex: 1, minWidth: 0, borderRadius: 2, p: 2.5,
         border: `1px solid ${theme.palette.divider}`,
-        backgroundColor: 'white', elevation: 0,
+        backgroundColor: theme.palette.background.paper, elevation: 0,
     }
 
     const renderStepContent = () => {
@@ -235,16 +236,18 @@ const RegistrarDestino = ({ open, onClose, onSuccess }) => {
                         onClick={activeStep < steps.length - 1 ? handleNext : handleSubmit}
                         variant="contained"
                         disabled={submitting}
-                        endIcon={activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <CheckOutlinedIcon />}
+                        endIcon={submitting ? undefined : (activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <CheckOutlinedIcon />)}
                         disableRipple
                         sx={{
-                            textTransform: 'none', borderRadius: 2, fontWeight: 600,
+                            textTransform: 'none', borderRadius: 2, fontWeight: 600, minWidth: 160,
                             backgroundColor: theme.palette.primary.main,
                             boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
                             '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}` },
                             '&.Mui-disabled': { backgroundColor: theme.palette.divider, color: theme.palette.text.disabled },
                         }}>
-                        {activeStep < steps.length - 1 ? 'Siguiente' : submitting ? 'Registrando...' : 'Registrar'}
+                        {submitting
+                            ? <CircularProgress size={18} color="inherit" />
+                            : (activeStep < steps.length - 1 ? 'Siguiente' : 'Registrar')}
                     </Button>
                 </Box>
             </Box>

@@ -1,5 +1,5 @@
 import { useTheme, alpha } from '@mui/material/styles'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useLayoutEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
     Box, Typography, Paper, Table, TableBody, TableCell,
@@ -7,7 +7,7 @@ import {
     TextField, InputAdornment, Select, MenuItem, FormControl, Menu,
     Dialog, DialogContent,
     Tooltip, Button, Avatar, CircularProgress,
-    Pagination, TableSortLabel
+    TableSortLabel
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
@@ -18,9 +18,11 @@ import ClearIcon from '@mui/icons-material/Clear'
 import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import ToggleSwitch from '../../shared/components/ToggleSwitch.jsx'
+import TablaPaginacionFooter from '../../shared/components/TablaPaginacionFooter.jsx'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import SwapHorizOutlinedIcon from '@mui/icons-material/SwapHorizOutlined'
 import CloseIcon from '@mui/icons-material/Close'
+import UnfoldMoreOutlinedIcon from '@mui/icons-material/UnfoldMoreOutlined'
 import { useVehiculo } from '../../shared/contexts/VehiculoContext.jsx'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
@@ -29,7 +31,7 @@ import RegistrarVehiculo from './RegistrarVehiculo'
 import ActualizarVehiculo from './ActualizarVehiculo'
 import ModalConsultarVehiculo from './ModalConsultarVehiculo'
 import ModalInhabilitarVehiculo from './ModalInhabilitarVehiculo'
-import { getPageOfVehiculo } from '../../shared/services/vehiculoService.js'
+import { getPageOfVehiculo, getVehiculos as getVehiculosApi } from '../../shared/services/vehiculoService.js'
 import { getRutas } from '../../shared/services/rutaService'
 import { getEstadoColorRuta } from '../../shared/utils/estadoColors.js'
 import { isVencido } from '../../shared/utils/formatters.js'
@@ -55,9 +57,9 @@ const getFilterMenuProps = (theme) => ({
                 '& .MuiMenuItem-root': {
                     fontSize: '0.82rem', py: 0.9, px: 2,
                     display: 'flex', justifyContent: 'space-between', gap: 2,
-                    '&:hover': { backgroundColor: theme.palette.primary.light },
+                    '&:hover': { backgroundColor: theme.palette.primary.activeBg },
                     '&.Mui-selected': { backgroundColor: 'transparent', fontWeight: 600, color: theme.palette.text.primary },
-                    '&.Mui-selected:hover': { backgroundColor: theme.palette.primary.light },
+                    '&.Mui-selected:hover': { backgroundColor: theme.palette.primary.activeBg },
                 },
             },
         },
@@ -159,14 +161,28 @@ const ListarTransporte = () => {
     const [debouncedSearch, setDebouncedSearch] = useState('')
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
+    const [exportando, setExportando] = useState(false)
     const initialLoad = useRef(true)
     const [vehiculoVer, setVehiculoVer] = useState(null)
     const { showToast } = useToast()
     const [estadoMenu, setEstadoMenu] = useState({ anchor: null, id: null, estadoActual: null })
     const [confirmMantenimiento, setConfirmMantenimiento] = useState({ open: false, id: null })
+    const [confirmandoEstado, setConfirmandoEstado] = useState(false)
     const [confirmInhabilitar, setConfirmInhabilitar] = useState({ open: false, id: null, habilitadoActual: null, placa: '', estadoVehiculo: null })
     const [rutasMantenimiento, setRutasMantenimiento] = useState({ data: [], loading: false })
     const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
+    const filtroContainerRef = useRef(null)
+    const filtroBtnRefs = useRef([])
+    const [filtroPillStyle, setFiltroPillStyle] = useState({ left: 0, width: 0 })
+
+    useLayoutEffect(() => {
+        const activeIndex = FILTROS_HABILITADO.findIndex(f => f.value === filtroHabilitado)
+        const btn = filtroBtnRefs.current[activeIndex]
+        const container = filtroContainerRef.current
+        if (btn && container) {
+            setFiltroPillStyle({ left: btn.offsetLeft, width: btn.offsetWidth })
+        }
+    }, [filtroHabilitado])
     const [filtroEstadoVehiculo, setFiltroEstadoVehiculo] = useState('')
     const [filtroTipo, setFiltroTipo] = useState('')
     const [page, setPage] = useState(1)
@@ -174,7 +190,7 @@ const ListarTransporte = () => {
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [vehiculoEditar, setVehiculoEditar] = useState(null)
-    const [sortBy, setSortBy] = useState({ field: 'placa', dir: 'asc' })
+    const [sortBy, setSortBy] = useState({ field: '', dir: '' })
     const { getVehiculos, getTotal, updateEstado, toggleHabilitado, fetchVehiculos } = useVehiculo()
     const { rutasProgramadas, fetchRutasProgramadas } = useRutaProgramacion()
     const { usuario, tienePermiso, PERMISOS } = useAuth()
@@ -219,7 +235,7 @@ const ListarTransporte = () => {
                     estado: filtroEstadoVehiculo === '' || filtroEstadoVehiculo === 'En Ruta' ? undefined : filtroEstadoVehiculo,
                     tipo: filtroTipo || undefined,
                     habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
-                    sortBy: `${sortBy.field}.${sortBy.dir}`,
+                    sortBy: sortBy.field ? `${sortBy.field}.${sortBy.dir}` : undefined,
                     q: debouncedSearch.trim() || undefined,
                 })
             } catch (err) {
@@ -233,10 +249,11 @@ const ListarTransporte = () => {
     }, [usuario, navigate, page, rowsPerPage, filtroEstadoVehiculo, filtroTipo, filtroHabilitado, debouncedSearch, sortBy, fetchVehiculos])
 
     const handleSort = (field) => {
-        setSortBy(prev => prev.field === field
-            ? { field, dir: prev.dir === 'asc' ? 'desc' : 'asc' }
-            : { field, dir: 'asc' }
-        )
+        setSortBy(prev => {
+            if (prev.field !== field) return { field, dir: 'asc' }
+            if (prev.dir === 'asc') return { field, dir: 'desc' }
+            return { field: '', dir: '' }
+        })
         setPage(1)
     }
 
@@ -309,18 +326,43 @@ const ListarTransporte = () => {
         return coincideBusqueda && coincideHabilitado && coincideEstado
     })
 
-    const handleExportar = () => {
-        const rows = filteredTransportes.map(vehiculo => ({
-            'ID': vehiculo.idVehiculo,
-            'Placa': vehiculo.placa,
-            'Marca': vehiculo.marca,
-            'Modelo': vehiculo.modelo,
-            'Tipo': vehiculo.tipo,
-            'Estado': vehiculo.estadoEfectivo || vehiculo.estado,
-            'Habilitado': vehiculo.habilitado === false ? 'No' : 'Sí',
-        }))
-
-        exportToExcel({ data: rows, fileName: 'vehiculos', sheetName: 'Vehículos' })
+    const handleExportar = async () => {
+        setExportando(true)
+        try {
+            const res = await getVehiculosApi(undefined, {
+                limit: 100000,
+                estado: filtroEstadoVehiculo === '' || filtroEstadoVehiculo === 'En Ruta' ? undefined : filtroEstadoVehiculo,
+                tipo: filtroTipo || undefined,
+                habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
+                q: debouncedSearch.trim() || undefined,
+            })
+            const todos = (res?.data || []).map(t => ({
+                ...t,
+                estadoEfectivo: vehiculosOcupadosIds.has(t.idVehiculo) ? 'En Ruta' : t.estado,
+            }))
+            const filtrados = filtroEstadoVehiculo === 'En Ruta'
+                ? todos.filter(t => t.estadoEfectivo === 'En Ruta')
+                : todos
+            const rows = filtrados.map(vehiculo => ({
+                'ID': vehiculo.idVehiculo,
+                'Placa': vehiculo.placa,
+                'Marca': vehiculo.marca,
+                'Modelo': vehiculo.modelo,
+                'Tipo': vehiculo.tipo,
+                'Capacidad (kg)': vehiculo.capacidad,
+                'Propietario': vehiculo.propietario ? `${vehiculo.propietario.nombre} ${vehiculo.propietario.apellido}`.trim() : '-',
+                'Vencimiento SOAT': vehiculo.vencimientoSOAT,
+                'Vencimiento Rev. Técnica': vehiculo.vencimientoRevisionTecnica,
+                'Vencimiento Seguro Terceros': vehiculo.vencimientoSeguroTerceros,
+                'Estado': vehiculo.estadoEfectivo || vehiculo.estado,
+                'Habilitado': vehiculo.habilitado === false ? 'No' : 'Sí',
+            }))
+            await exportToExcel({ data: rows, fileName: 'vehiculos', sheetName: 'Vehículos', themeColor: theme.palette.primary.main })
+        } catch (err) {
+            showToast(err.message || 'Error al exportar.', 'error')
+        } finally {
+            setExportando(false)
+        }
     }
 
     const limpiarBusqueda = () => {
@@ -328,10 +370,6 @@ const ListarTransporte = () => {
         setPage(1)
     }
 
-    const totalPages = Math.max(1, Math.ceil(totalBackend / rowsPerPage))
-    const safePage = Math.min(page, totalPages)
-    const from = totalBackend === 0 ? 0 : (safePage - 1) * rowsPerPage + 1
-    const to = Math.min(safePage * rowsPerPage, totalBackend)
 
     return (
         <Box sx={{ p: 3.5 }}>
@@ -347,8 +385,9 @@ const ListarTransporte = () => {
                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                      <Button
                          onClick={handleExportar}
+                         disabled={exportando}
                          variant="contained"
-                         startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 18 }} />}
+                         startIcon={exportando ? <CircularProgress size={16} sx={{ color: 'inherit' }} /> : <FileDownloadOutlinedIcon sx={{ fontSize: 18 }} />}
                          sx={{
                              backgroundColor: theme.palette.background.paper,
                              color: theme.palette.text.primary,
@@ -359,14 +398,14 @@ const ListarTransporte = () => {
                              border: `1px solid ${theme.palette.divider}`,
                              boxShadow: 'none',
                              '&:hover': {
-                                 backgroundColor: theme.palette.primary.light,
+                                 backgroundColor: theme.palette.primary.activeBg,
                                  color: theme.palette.text.primary,
                                  border: `1px solid ${theme.palette.divider}`,
                                  boxShadow: 'none',
                              },
                          }}
                      >
-                         Exportar
+                         {exportando ? 'Exportando...' : 'Exportar'}
                      </Button>
 
                      {tienePermiso(PERMISOS.REGISTRAR_VEHICULO) && (
@@ -395,21 +434,37 @@ const ListarTransporte = () => {
 
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-                    <Box sx={{
+                    <Box ref={filtroContainerRef} sx={{
+                        position: 'relative',
                         display: 'inline-flex',
                         backgroundColor: theme.palette.primary.light,
                         borderRadius: 4,
                         p: '4px',
                         gap: '5px',
                     }}>
-                        {FILTROS_HABILITADO.map(f => (
+                        <Box sx={{
+                            position: 'absolute',
+                            top: '4px',
+                            bottom: '4px',
+                            left: `${filtroPillStyle.left}px`,
+                            width: `${filtroPillStyle.width}px`,
+                            borderRadius: 3,
+                            backgroundColor: theme.palette.background.paper,
+                            boxShadow: '0 1px 4px rgba(0,0,0,0.12)',
+                            transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                            pointerEvents: 'none',
+                        }} />
+                        {FILTROS_HABILITADO.map((f, i) => (
                             <Button
                                 key={f.value}
+                                ref={el => { filtroBtnRefs.current[i] = el }}
                                 onClick={() => { setFiltroHabilitado(f.value); setPage(1) }}
                                 size="small"
                                 disableElevation
                                 disableRipple
                                 sx={{
+                                    position: 'relative',
+                                    zIndex: 1,
                                     borderRadius: 3,
                                     textTransform: 'none',
                                     fontSize: '0.75rem',
@@ -417,12 +472,12 @@ const ListarTransporte = () => {
                                     py: 0.5,
                                     minWidth: 0,
                                     fontWeight: filtroHabilitado === f.value ? 600 : 400,
-                                    backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
+                                    backgroundColor: 'transparent',
                                     color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.primary.darker,
-                                    boxShadow: filtroHabilitado === f.value ? '0 1px 4px rgba(0,0,0,0.12)' : 'none',
+                                    transition: 'color 0.3s ease',
                                     border: 'none',
                                     '&:hover': {
-                                        backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
+                                        backgroundColor: 'transparent',
                                         color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.primary.dark,
                                         border: 'none',
                                     },
@@ -534,13 +589,15 @@ const ListarTransporte = () => {
                                 <TableCell sx={thStyle}>
                                     <TableSortLabel
                                         active={sortBy.field === 'placa'}
-                                        direction={sortBy.field === 'placa' ? sortBy.dir : 'asc'}
+                                        direction={sortBy.dir === 'desc' ? 'desc' : 'asc'}
                                         onClick={() => handleSort('placa')}
+                                        IconComponent={sortBy.field === 'placa' ? undefined : UnfoldMoreOutlinedIcon}
                                         sx={{
                                             color: 'inherit',
+                                            '&:hover': { color: 'inherit' },
                                             '&.Mui-active': { color: theme.palette.primary.main },
-                                            '& .MuiTableSortLabel-icon': { opacity: 0.4, fontSize: 16 },
-                                            '&.Mui-active .MuiTableSortLabel-icon': { opacity: 1 },
+                                            '&.Mui-active:hover': { color: theme.palette.primary.main },
+                                            '& .MuiTableSortLabel-icon': { opacity: 1, fontSize: 16 },
                                         }}
                                     >
                                         Placa
@@ -696,22 +753,32 @@ const ListarTransporte = () => {
                                                         <IconButton
                                                             size="small"
                                                             onClick={() => setVehiculoVer(transporte)}
-                                                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
+                                                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}
                                                         >
                                                             <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
                                                         </IconButton>
                                                     </Tooltip>
                                                 )}
                                                 {tienePermiso(PERMISOS.ACTUALIZAR_VEHICULO) && (
-                                                    <Tooltip title="Editar">
-                                                        <IconButton
-                                                            size="small"
-                                                            onClick={() => { setVehiculoEditar(transporte); setModalActualizarOpen(true) }}
-                                                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
-                                                        >
-                                                            <EditOutlinedIcon sx={{ fontSize: 18 }} />
-                                                        </IconButton>
-                                                    </Tooltip>
+                                                    transporte.habilitado === false ? (
+                                                        <Tooltip title="Habilita el registro para poder editarlo">
+                                                            <span>
+                                                                <IconButton size="small" disabled>
+                                                                    <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                                                                </IconButton>
+                                                            </span>
+                                                        </Tooltip>
+                                                    ) : (
+                                                        <Tooltip title="Editar">
+                                                            <IconButton
+                                                                size="small"
+                                                                onClick={() => { setVehiculoEditar(transporte); setModalActualizarOpen(true) }}
+                                                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}
+                                                            >
+                                                                <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                    )
                                                 )}
                                                 {tienePermiso(PERMISOS.INHABILITAR_VEHICULO) && (
                                                     <ToggleSwitch id={transporte.idVehiculo} checked={transporte.habilitado !== false} onChange={() => handleToggleHabilitado(transporte.idVehiculo, transporte.habilitado, transporte.estadoEfectivo, transporte.placa)} />
@@ -727,113 +794,13 @@ const ListarTransporte = () => {
                 </TableContainer>
             </Paper>
 
-            <Box sx={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                px: 0.5, pt: 1.5,
-            }}>
-                <Typography variant="body2" color={theme.palette.text.secondary}>
-                    Mostrando {from}–{to} de {totalBackend} resultado{totalBackend !== 1 ? 's' : ''}
-                </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography variant="body2" color={theme.palette.text.secondary} fontWeight={500}>
-                            Filas
-                        </Typography>
-                        <Select
-                            value={rowsPerPage}
-                            onChange={e => { setRowsPerPage(Number(e.target.value)); setPage(1) }}
-                            size="small"
-                            renderValue={(value) => value}
-                            IconComponent={KeyboardArrowDownOutlinedIcon}
-                            sx={{
-                                fontSize: '0.82rem',
-                                borderRadius: 2,
-                                '& .MuiSelect-select': { py: 0.6, pl: 1.5, pr: '28px !important' },
-                                '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
-                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
-                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                    borderColor: theme.palette.primary.main,
-                                    borderWidth: '1px',
-                                },
-                                '&.Mui-focused': {
-                                    boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}`,
-                                },
-                                '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
-                                '& .MuiTouchRipple-root': { display: 'none' },
-                            }}
-                            MenuProps={{
-                                slotProps: {
-                                    paper: {
-                                        sx: {
-                                            borderRadius: 2,
-                                            boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
-                                            mt: 0.5,
-                                            minWidth: 80,
-                                            '& .MuiMenuItem-root': {
-                                                fontSize: '0.82rem',
-                                                py: 0.9,
-                                                px: 2,
-                                                display: 'flex',
-                                                justifyContent: 'space-between',
-                                                gap: 2,
-                                                '&:hover': { backgroundColor: theme.palette.primary.light },
-                                                '&.Mui-selected': {
-                                                    backgroundColor: 'transparent',
-                                                    fontWeight: 600,
-                                                    color: theme.palette.text.primary,
-                                                },
-                                                '&.Mui-selected:hover': { backgroundColor: theme.palette.primary.light },
-                                            },
-                                        },
-                                    },
-                                },
-                            }}
-                        >
-                            {[5, 10, 25].map(n => (
-                                <MenuItem key={n} value={n}>
-                                    {n}
-                                    {rowsPerPage === n && (
-                                        <CheckOutlinedIcon sx={{ fontSize: 14, color: theme.palette.text.secondary }} />
-                                    )}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </Box>
-                    <Pagination
-                        count={totalPages}
-                        page={safePage}
-                        onChange={(_, val) => setPage(val)}
-                        size="small"
-                        shape="rounded"
-                        sx={{
-                            '& .MuiPaginationItem-root': {
-                                fontSize: '0.82rem',
-                                borderRadius: '8px',
-                                minWidth: 34,
-                                height: 34,
-                                mx: 0.2,
-                                color: theme.palette.text.primary,
-                                border: `1px solid ${theme.palette.divider}`,
-                                '& .MuiTouchRipple-root': { display: 'none' },
-                            },
-                            '& .MuiPaginationItem-ellipsis': {
-                                border: 'none',
-                            },
-                            '& .MuiPaginationItem-root.Mui-selected': {
-                                backgroundColor: theme.palette.primary.main,
-                                borderColor: theme.palette.primary.main,
-                                color: 'white',
-                                fontWeight: 600,
-                                '&:hover': { backgroundColor: theme.palette.primary.darker },
-                            },
-                            '& .MuiPaginationItem-root:hover:not(.Mui-selected)': {
-                                backgroundColor: theme.palette.background.subtle,
-                                borderColor: theme.palette.divider,
-                            },
-                        }}
-                    />
-                </Box>
-            </Box>
+            <TablaPaginacionFooter
+                total={totalBackend}
+                page={page}
+                rowsPerPage={rowsPerPage}
+                onPageChange={setPage}
+                onRowsPerPageChange={(n) => { setRowsPerPage(n); setPage(1) }}
+            />
 
             {vehiculoVer && (
                 <ModalConsultarVehiculo vehiculo={vehiculoVer} onClose={() => setVehiculoVer(null)} />
@@ -936,10 +903,19 @@ const ListarTransporte = () => {
                             sx={{ textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 2, px: 3.5, py: 0.75, fontSize: '0.875rem', border: `1px solid ${theme.palette.divider}`, '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary } }}>
                             Cancelar
                         </Button>
-                        <Button onClick={() => { handleEstadoChange(confirmMantenimiento.id, 'Mantenimiento'); setConfirmMantenimiento({ open: false, id: null }) }}
+                        <Button onClick={async () => {
+                                setConfirmandoEstado(true)
+                                try {
+                                    await handleEstadoChange(confirmMantenimiento.id, 'Mantenimiento')
+                                    setConfirmMantenimiento({ open: false, id: null })
+                                } finally {
+                                    setConfirmandoEstado(false)
+                                }
+                            }}
+                            disabled={confirmandoEstado}
                             variant="contained" disableRipple
-                            sx={{ textTransform: 'none', borderRadius: 2, fontWeight: 600, px: 5, py: 0.76, fontSize: '0.875rem', backgroundColor: theme.palette.warning.main, '&:hover': { backgroundColor: theme.palette.warning.dark } }}>
-                            Confirmar
+                            sx={{ textTransform: 'none', borderRadius: 2, fontWeight: 600, minWidth: 140, px: 5, py: 0.76, fontSize: '0.875rem', backgroundColor: theme.palette.warning.main, '&:hover': { backgroundColor: theme.palette.warning.dark } }}>
+                            {confirmandoEstado ? <CircularProgress size={18} sx={{ color: 'white' }} /> : 'Confirmar'}
                         </Button>
                     </Box>
                 </DialogContent>

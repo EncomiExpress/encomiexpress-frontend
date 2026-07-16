@@ -18,7 +18,9 @@ import {
 } from '@mui/icons-material'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
 import { register as registrarAutoregistro } from '../../shared/services/authService.js'
+import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import logo from '../../assets/logo.png'
+import logoDark from '../../assets/logoDark.png'
 
 const TIPOS_IDENTIFICACION = [
   { value: 'CC', label: 'Cédula de Ciudadanía' },
@@ -28,8 +30,8 @@ const TIPOS_IDENTIFICACION = [
 ]
 
 const DOMINIOS_EMAIL = ['@gmail.com', '@hotmail.com', '@outlook.com', '@yahoo.com', '@icloud.com', '@live.com']
-const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s]).{8,16}$/
-const PASSWORD_HELP = '8-16 caracteres, con mayúsculas, minúsculas, números y un carácter especial (sin @)'
+const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s]).{8,64}$/
+const PASSWORD_HELP = '8-64 caracteres, con mayúsculas, minúsculas, números y un carácter especial'
 const steps = ['Datos personales', 'Contacto y acceso']
 
 // Ruta pública sin login (/register) que replica los campos reales del módulo
@@ -93,9 +95,6 @@ const Register = () => {
       setError('')
       setSuccess('')
       return
-    }
-    if (name === 'password' || name === 'confirmarPassword') {
-      value = value.replace(/@/g, '')
     }
     if (name === 'emailLocal') {
       value = value.replace(/[^a-zA-Z0-9._-]/g, '')
@@ -175,7 +174,7 @@ const Register = () => {
       const resultado = await registrarAutoregistro(datosRegistro, false)
 
       if (resultado.success) {
-        setSuccess('¡Listo! Tu cuenta fue creada. Un administrador debe activarla antes de que puedas ingresar — te avisará cuando puedas iniciar sesión.')
+        setSuccess('¡Listo! Tu registro fue enviado. Un administrador ya activo debe aprobarlo antes de que puedas ingresar.')
         setFormData({
           tipoIdentificacion: 'CC', numeroIdentificacion: '', nombre: '', apellido: '',
           telefono: '', emailLocal: '', emailDominio: '@gmail.com', password: '', confirmarPassword: '',
@@ -194,9 +193,9 @@ const Register = () => {
   const renderStepContent = () => {
     if (activeStep === 0) {
       return (
-        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
-          <FormControl fullWidth required>
-            <InputLabel sx={{ '&.Mui-focused': { color: theme.palette.primary.main } }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+          <FormControl fullWidth required sx={formFieldStyles}>
+            <InputLabel>
               Tipo de documento
             </InputLabel>
             <Select
@@ -217,6 +216,7 @@ const Register = () => {
               startAdornment: <InputAdornment position="start"><Badge sx={{ color: theme.palette.text.secondary }} /></InputAdornment>,
               inputProps: { maxLength: maxLengthDoc },
             }}
+            sx={formFieldStyles}
           />
 
           <TextField
@@ -227,6 +227,7 @@ const Register = () => {
               startAdornment: <InputAdornment position="start"><Person sx={{ color: theme.palette.text.secondary }} /></InputAdornment>,
               inputProps: { maxLength: 50 },
             }}
+            sx={formFieldStyles}
           />
 
           <TextField
@@ -237,13 +238,14 @@ const Register = () => {
               startAdornment: <InputAdornment position="start"><Person sx={{ color: theme.palette.text.secondary }} /></InputAdornment>,
               inputProps: { maxLength: 50 },
             }}
+            sx={formFieldStyles}
           />
         </Box>
       )
     }
 
     return (
-      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
         <TextField
           fullWidth label="Teléfono" name="telefono"
           value={formData.telefono} onChange={handleChange} required
@@ -252,6 +254,7 @@ const Register = () => {
             startAdornment: <InputAdornment position="start"><Phone sx={{ color: theme.palette.text.secondary }} /></InputAdornment>,
             inputProps: { maxLength: 10 },
           }}
+          sx={formFieldStyles}
         />
 
         <TextField
@@ -273,9 +276,10 @@ const Register = () => {
             ),
             inputProps: { maxLength: 50 },
           }}
+          sx={formFieldStyles}
         />
 
-        <Box sx={{ gridColumn: '1 / -1', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
+        <Box sx={{ gridColumn: '1 / -1', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
           <TextField
             fullWidth label="Contraseña" name="password" type={showPassword ? 'text' : 'password'}
             value={formData.password} onChange={handleChange} required
@@ -289,8 +293,9 @@ const Register = () => {
                   </IconButton>
                 </InputAdornment>
               ),
-              inputProps: { maxLength: 16 },
+              inputProps: { maxLength: 64 },
             }}
+            sx={formFieldStyles}
           />
 
           <TextField
@@ -306,8 +311,9 @@ const Register = () => {
                   </IconButton>
                 </InputAdornment>
               ),
-              inputProps: { maxLength: 16 },
+              inputProps: { maxLength: 64 },
             }}
+            sx={formFieldStyles}
           />
         </Box>
       </Box>
@@ -317,7 +323,7 @@ const Register = () => {
   return (
     <Box sx={{
       minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      backgroundColor: theme.palette.background.default, py: 4, px: 2,
+      backgroundColor: theme.palette.background.default, py: 2, px: 2,
       position: 'relative', overflow: 'hidden',
     }}>
       <Box sx={{
@@ -370,30 +376,30 @@ const Register = () => {
         boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
       }}>
         <Box sx={{
-          px: 4, py: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5,
+          px: 4, py: 3, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5,
           backgroundColor: theme.palette.background.paper,
           borderBottom: `1px solid ${theme.palette.divider}`,
         }}>
           <Box sx={{ width: 140, height: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-            <img src={logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            <img src={theme.palette.mode === 'dark' ? logoDark : logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </Box>
           <Box sx={{ textAlign: 'center' }}>
             <Typography sx={{ color: theme.palette.text.dark, fontWeight: 700, fontSize: '1.5rem', mb: 0.5, lineHeight: 1.2, fontFamily: 'Cambria, Georgia, serif' }}>
-              Crear usuario administrador
+              Regístrate
             </Typography>
             <Typography sx={{ color: theme.palette.text.secondary, fontSize: '0.875rem' }}>
-              Regístrate y un administrador activará tu cuenta
+              Completa tus datos para solicitar acceso al sistema
             </Typography>
           </Box>
         </Box>
 
-        <Box sx={{ p: 4 }}>
+        <Box sx={{ p: 3 }}>
           {success && <Alert severity="success" sx={{ mb: 3, borderRadius: 2 }}>{success}</Alert>}
           {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>{error}</Alert>}
 
           <Stepper activeStep={activeStep} alternativeLabel
             sx={{
-              mb: 3,
+              mb: 2,
               '& .MuiStepIcon-root': { color: theme.palette.divider },
               '& .MuiStepIcon-root.Mui-active': { color: theme.palette.primary.main },
               '& .MuiStepIcon-root.Mui-completed': { color: theme.palette.primary.main },
@@ -409,22 +415,20 @@ const Register = () => {
             {steps.map(label => <Step key={label}><StepLabel>{label}</StepLabel></Step>)}
           </Stepper>
 
+          <Box sx={{
+            p: 1, mb: 2, borderRadius: 2, display: 'flex', alignItems: 'center', gap: 1,
+            backgroundColor: theme.palette.primary.main + '18',
+            border: `1px solid ${theme.palette.divider}`,
+          }}>
+            <Badge sx={{ color: theme.palette.primary.main, fontSize: '1.1rem' }} />
+            <Typography sx={{ color: theme.palette.primary.main, fontSize: '0.8rem', fontWeight: 500 }}>
+              Serás <strong>Administrador</strong>, pero tu registro quedará pendiente de aprobación por un administrador ya activo.
+            </Typography>
+          </Box>
+
           {renderStepContent()}
 
-          {activeStep === steps.length - 1 && (
-            <Box sx={{
-              p: 1.5, mt: 2.5, mb: 1, borderRadius: 2, display: 'flex', alignItems: 'center', gap: 1,
-              backgroundColor: theme.palette.primary.main + '18',
-              border: `1px solid ${theme.palette.divider}`,
-            }}>
-              <Badge sx={{ color: theme.palette.primary.darker, fontSize: '1.1rem' }} />
-              <Typography sx={{ color: theme.palette.primary.darker, fontSize: '0.85rem', fontWeight: 500 }}>
-                Se creará con rol <strong>Administrador</strong>, pero inhabilitada hasta que un administrador ya activo la apruebe desde el módulo de Usuarios.
-              </Typography>
-            </Box>
-          )}
-
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 3 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
             <Button
               onClick={handleBack} disabled={activeStep === 0} variant="outlined"
               startIcon={<ArrowBackOutlined />} disableRipple
@@ -441,19 +445,19 @@ const Register = () => {
               variant="contained" disabled={loading} disableRipple
               endIcon={loading ? <CircularProgress size={18} color="inherit" /> : (activeStep < steps.length - 1 ? <ArrowForwardOutlined /> : <CheckOutlined />)}
               sx={{
-                backgroundColor: theme.palette.primary.main, borderRadius: 2, px: 3,
+                backgroundColor: theme.palette.primary.main, borderRadius: 2, px: 3, minWidth: 200,
                 fontWeight: 700, fontSize: '0.95rem', textTransform: 'none',
                 boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
                 '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}` },
               }}
             >
-              {activeStep < steps.length - 1 ? 'Siguiente' : (loading ? 'Creando...' : 'Crear administrador')}
+              {activeStep < steps.length - 1 ? 'Siguiente' : (loading ? 'Enviando solicitud...' : 'Enviar registro')}
             </Button>
           </Box>
 
-          <Box sx={{ mt: 3, textAlign: 'center' }}>
+          <Box sx={{ mt: 2, textAlign: 'center' }}>
             <Typography sx={{ color: theme.palette.text.secondary, fontSize: '0.875rem' }}>
-              ¿Ya tienes cuenta?{' '}
+              ¿Ya estás registrado?{' '}
               <Button
                 component={Link} to="/login" variant="text"
                 sx={{

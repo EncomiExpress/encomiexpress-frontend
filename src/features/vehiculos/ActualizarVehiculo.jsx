@@ -1,6 +1,6 @@
 ﻿import { useTheme } from '@mui/material/styles'
 import { useState, useEffect, useRef } from 'react'
-import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, Dialog, DialogTitle, DialogContent, IconButton, TextField, Autocomplete } from '@mui/material'
+import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, Dialog, DialogTitle, DialogContent, IconButton, TextField, Autocomplete, InputAdornment, CircularProgress } from '@mui/material'
 import {
   DirectionsCarOutlined, BadgeOutlined, SellOutlined, InvertColorsOutlined,
   EventOutlined, SpeedOutlined, SaveOutlined, ArrowBackOutlined, ArrowForwardOutlined, Close, EditOutlined,
@@ -17,8 +17,7 @@ import { normalizarTexto } from '../../shared/utils/duplicados.js'
 
 const steps = ['Datos del Vehículo', 'Documentación', 'Confirmación']
 
-const TIPOS_VEHICULO = ['Camioneta', 'Camión', 'Furgón', 'Semi Trayler', 'Trayler', 'Motocicleta', 'Otro']
-const hoyISO = () => new Date().toISOString().split('T')[0]
+const TIPOS_VEHICULO = ['Camioneta', 'Camión', 'Furgón', 'Semi Trayler', 'Trayler', 'Otro']
 const CAPACIDAD_MAX = 999999
 
 const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSuccess }) => {
@@ -49,7 +48,19 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
     setErrores({})
     setApiError('')
     const transporte = getVehiculoById(transporteProp.idVehiculo)
-    if (transporte) { setFormData(transporte); setFormOriginal(transporte) }
+    if (transporte) {
+      // Si el tipo guardado no está en la lista fija, es un tipo "personalizado"
+      // que se escribió a mano — el select se muestra en "Otro" con ese valor
+      // en el campo de texto.
+      const esTipoFijo = TIPOS_VEHICULO.includes(transporte.tipo)
+      const datos = {
+        ...transporte,
+        tipo: esTipoFijo ? transporte.tipo : 'Otro',
+        tipoOtro: esTipoFijo ? '' : (transporte.tipo || ''),
+      }
+      setFormData(datos)
+      setFormOriginal(datos)
+    }
   }, [open, transporteProp, getVehiculoById])
 
   const handleChange = (e) => {
@@ -60,6 +71,7 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
     if (name === 'marca') value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
     if (name === 'modelo') value = value.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚüÜñÑ\s-]/g, '')
     if (name === 'color') value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
+    if (name === 'tipoOtro') value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
     if (name === 'capacidad') {
       value = value.replace(/[^0-9.]/g, '')
       if (value !== '') {
@@ -82,6 +94,7 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
       if (!formData.modelo?.trim()) e.modelo = 'El modelo es obligatorio'
       if (!formData.color?.trim()) e.color = 'El color es obligatorio'
       if (!formData.tipo) e.tipo = 'El tipo de vehículo es obligatorio'
+      else if (formData.tipo === 'Otro' && !formData.tipoOtro?.trim()) e.tipoOtro = 'Especifica el tipo de vehículo'
       if (!formData.capacidad) e.capacidad = 'La capacidad es obligatoria'
       else if (parseFloat(formData.capacidad) <= 0) e.capacidad = 'La capacidad debe ser mayor a 0'
       else if (parseFloat(formData.capacidad) > CAPACIDAD_MAX) e.capacidad = `La capacidad no puede ser mayor a ${CAPACIDAD_MAX.toLocaleString('es-CO')} kg`
@@ -89,11 +102,8 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
     if (step === 1) {
       if (!formData.idPropietario) e.idPropietario = 'El propietario es obligatorio'
       if (!formData.vencimientoSOAT) e.vencimientoSOAT = 'La fecha de vencimiento del SOAT es obligatoria'
-      else if (formData.vencimientoSOAT < hoyISO()) e.vencimientoSOAT = 'La fecha de vencimiento no puede ser anterior a hoy'
       if (!formData.vencimientoRevisionTecnica) e.vencimientoRevisionTecnica = 'La fecha de vencimiento de la Revisión Técnica es obligatoria'
-      else if (formData.vencimientoRevisionTecnica < hoyISO()) e.vencimientoRevisionTecnica = 'La fecha de vencimiento no puede ser anterior a hoy'
       if (!formData.vencimientoSeguroTerceros) e.vencimientoSeguroTerceros = 'La fecha de vencimiento del Seguro de Terceros es obligatoria'
-      else if (formData.vencimientoSeguroTerceros < hoyISO()) e.vencimientoSeguroTerceros = 'La fecha de vencimiento no puede ser anterior a hoy'
     }
     return e
   }
@@ -106,6 +116,11 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
   }
 
   const handleBack = () => setActiveStep((prev) => prev - 1)
+
+  const cerrar = () => {
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+    onClose()
+  }
 
   const handleSubmit = async () => {
     if (formOriginal) {
@@ -122,11 +137,12 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
       await actualizarVehiculo({
         idVehiculo: parseInt(transporteProp?.idVehiculo),
         ...formData,
+        tipo: formData.tipo === 'Otro' ? formData.tipoOtro.trim() : formData.tipo,
         capacidad: parseFloat(formData.capacidad),
         idPropietario: parseInt(formData.idPropietario)
       })
       showToast('¡Vehículo actualizado exitosamente!', 'success')
-      setTimeout(() => { onClose(); if (onSuccess) onSuccess() }, 1500)
+      setTimeout(() => { cerrar(); if (onSuccess) onSuccess() }, 1500)
     } catch (err) {
       setApiError(getErrorMessage(err, 'Error al actualizar el vehículo'))
     } finally {
@@ -155,10 +171,32 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
               placeholder="Ej: Blanco" icon={InvertColorsOutlined}
               error={errores.color} helperText={errores.color}
               inputProps={{ maxLength: 20 }} />
-            <FormSelect label="Tipo de Vehículo" name="tipo" value={formData.tipo} onChange={handleChange} required
-              error={errores.tipo} helperText={errores.tipo}>
-              {TIPOS_VEHICULO.map((t) => <MenuItem key={t} value={t}>{t}</MenuItem>)}
-            </FormSelect>
+            {formData.tipo === 'Otro' ? (
+              <TextField
+                fullWidth label="Tipo de Vehículo" name="tipoOtro" value={formData.tipoOtro || ''} onChange={handleChange} required
+                placeholder="Escribe el tipo de vehículo"
+                error={!!errores.tipoOtro} helperText={errores.tipoOtro || 'Presiona la X para volver a la lista'}
+                slotProps={{
+                  inputLabel: { shrink: true },
+                  htmlInput: { maxLength: 30 },
+                  input: {
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton size="small" onClick={() => setFormData(prev => ({ ...prev, tipo: '', tipoOtro: '' }))} edge="end">
+                          <Close fontSize="small" />
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  },
+                }}
+                sx={formFieldStyles}
+              />
+            ) : (
+              <FormSelect label="Tipo de Vehículo" name="tipo" value={formData.tipo} onChange={handleChange} required
+                error={errores.tipo} helperText={errores.tipo}>
+                {TIPOS_VEHICULO.map((t) => <MenuItem key={t} value={t}>{t}</MenuItem>)}
+              </FormSelect>
+            )}
             <FormField label="Capacidad (kg)" name="capacidad" value={formData.capacidad}
               onChange={handleChange} required placeholder="Ej: 1500" icon={SpeedOutlined}
               error={errores.capacidad} helperText={errores.capacidad}
@@ -205,15 +243,12 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
             </FormSelect>
             <FormField label="Vencimiento SOAT" name="vencimientoSOAT" type="date"
               value={formData.vencimientoSOAT} onChange={handleChange} required icon={EventOutlined}
-              inputProps={{ min: hoyISO() }}
               error={errores.vencimientoSOAT} helperText={errores.vencimientoSOAT} />
             <FormField label="Vencimiento Revisión Técnica" name="vencimientoRevisionTecnica" type="date"
               value={formData.vencimientoRevisionTecnica} onChange={handleChange} required icon={EventOutlined}
-              inputProps={{ min: hoyISO() }}
               error={errores.vencimientoRevisionTecnica} helperText={errores.vencimientoRevisionTecnica} />
             <FormField label="Vencimiento Seguro de Terceros" name="vencimientoSeguroTerceros" type="date"
               value={formData.vencimientoSeguroTerceros} onChange={handleChange} required icon={EventOutlined}
-              inputProps={{ min: hoyISO() }}
               error={errores.vencimientoSeguroTerceros} helperText={errores.vencimientoSeguroTerceros} />
           </Box>
         )
@@ -255,7 +290,7 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
               <Alert severity="error" sx={{ borderRadius: 2 }} onClose={() => setApiError('')}>{apiError}</Alert>
             )}
             <Box sx={{ display: 'flex', gap: 2 }}>
-              <Paper elevation={0} sx={{ flex: 1, minWidth: 0, borderRadius: 2, p: 2.5, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white', overflow: 'hidden' }}>
+              <Paper elevation={0} sx={{ flex: 1, minWidth: 0, borderRadius: 2, p: 2.5, border: `1px solid ${theme.palette.divider}`, backgroundColor: theme.palette.background.paper, overflow: 'hidden' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                   <DirectionsCarOutlined sx={{ fontSize: 20, color: theme.palette.text.primary }} />
                   <Typography fontWeight={700} fontSize="0.95rem">Datos del Vehículo</Typography>
@@ -265,10 +300,10 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
                 <ConfirmRow label="Marca" value={formData.marca} previousValue={formOriginal?.marca} />
                 <ConfirmRow label="Modelo" value={formData.modelo} previousValue={formOriginal?.modelo} />
                 <ConfirmRow label="Color" value={formData.color} previousValue={formOriginal?.color} />
-                <ConfirmRow label="Tipo" value={formData.tipo} previousValue={formOriginal?.tipo} />
+                <ConfirmRow label="Tipo" value={formData.tipo === 'Otro' ? formData.tipoOtro : formData.tipo} previousValue={formOriginal ? (formOriginal.tipo === 'Otro' ? formOriginal.tipoOtro : formOriginal.tipo) : undefined} />
                 <ConfirmRow label="Capacidad" value={formData.capacidad ? `${formData.capacidad} kg` : ''} previousValue={formOriginal?.capacidad ? `${formOriginal.capacidad} kg` : undefined} />
               </Paper>
-              <Paper elevation={0} sx={{ flex: 1, minWidth: 0, borderRadius: 2, p: 2.5, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white', overflow: 'hidden' }}>
+              <Paper elevation={0} sx={{ flex: 1, minWidth: 0, borderRadius: 2, p: 2.5, border: `1px solid ${theme.palette.divider}`, backgroundColor: theme.palette.background.paper, overflow: 'hidden' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                   <EventOutlined sx={{ fontSize: 20, color: theme.palette.text.primary }} />
                   <Typography fontWeight={700} fontSize="0.95rem">Documentación</Typography>
@@ -291,7 +326,7 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
   }
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth
+    <Dialog open={open} onClose={cerrar} maxWidth="md" fullWidth
       slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}>
       <DialogTitle sx={{ m: 0, p: 2, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${theme.palette.divider}` }}>
         <Box>
@@ -303,7 +338,7 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
             }
           </Typography>
         </Box>
-        <IconButton onClick={onClose} sx={{ color: theme.palette.text.secondary }}>
+        <IconButton onClick={cerrar} sx={{ color: theme.palette.text.secondary }}>
           <Close />
         </IconButton>
       </DialogTitle>
@@ -343,7 +378,7 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
           Anterior
         </Button>
         <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
-          <Button onClick={onClose} disableRipple
+          <Button onClick={cerrar} disableRipple
             sx={{
               textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 2,
               '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary },
@@ -354,16 +389,18 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
             onClick={activeStep < steps.length - 1 ? handleNext : handleSubmit}
             variant="contained"
             disabled={submitting || (activeStep === steps.length - 1 && sinCambios)}
-            endIcon={activeStep < steps.length - 1 ? <ArrowForwardOutlined /> : <SaveOutlined />}
+            endIcon={submitting ? undefined : (activeStep < steps.length - 1 ? <ArrowForwardOutlined /> : <SaveOutlined />)}
             disableRipple
             sx={{
-              textTransform: 'none', borderRadius: 2, fontWeight: 600,
+              textTransform: 'none', borderRadius: 2, fontWeight: 600, minWidth: 170,
               backgroundColor: theme.palette.primary.main,
               boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
               '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}` },
               '&.Mui-disabled': { backgroundColor: '#e0e0e0', color: '#9e9e9e' },
             }}>
-            {activeStep < steps.length - 1 ? 'Siguiente' : submitting ? 'Guardando...' : sinCambios ? 'Sin cambios' : 'Guardar cambios'}
+            {submitting
+              ? <CircularProgress size={18} color="inherit" />
+              : (activeStep < steps.length - 1 ? 'Siguiente' : sinCambios ? 'Sin cambios' : 'Guardar cambios')}
           </Button>
         </Box>
       </Box>

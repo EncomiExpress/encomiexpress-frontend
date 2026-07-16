@@ -25,8 +25,8 @@ import * as usuarioService from '../../shared/services/usuarioService.js'
 import { hayNombreDuplicado, MENSAJE_NOMBRE_DUPLICADO, hayDocumentoDuplicado, MENSAJE_DOC_DUPLICADO } from '../../shared/utils/duplicados.js'
 
 const DOMINIOS_EMAIL = ['@gmail.com', '@hotmail.com', '@outlook.com', '@yahoo.com', '@icloud.com', '@live.com']
-const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s]).{8,16}$/
-const PASSWORD_HELP = '8-16 caracteres, con mayúsculas, minúsculas, números y un carácter especial (sin @)'
+const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s]).{8,64}$/
+const PASSWORD_HELP = '8-64 caracteres, con mayúsculas, minúsculas, números y un carácter especial'
 
 const steps = ['Datos Personales', 'Credenciales', 'Confirmación']
 
@@ -152,9 +152,6 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
             setApiError(null)
             setSinCambios(false)
             return
-        }
-        if (name === 'password' || name === 'confirmarPassword') {
-            value = value.replace(/@/g, '')
         }
         if (name === 'emailLocal') {
             value = value.replace(/[^a-zA-Z0-9._-]/g, '')
@@ -294,7 +291,7 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
             await actualizarUsuario(usuarioProp.idUsuario, datosBackend)
             showToast('¡Usuario actualizado exitosamente!', 'success')
             setTimeout(() => {
-                onClose()
+                cerrar()
                 if (onSuccess) onSuccess()
             }, 1500)
         } catch (err) {
@@ -304,12 +301,17 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
         }
     }
 
-    const handleCancelar = () => onClose()
+    const cerrar = () => {
+        if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+        onClose()
+    }
+
+    const handleCancelar = () => cerrar()
 
     const cardSx = {
         flex: 1, minWidth: 0, borderRadius: 2, p: 2.5,
         border: `1px solid ${theme.palette.divider}`,
-        backgroundColor: 'white', elevation: 0,
+        backgroundColor: theme.palette.background.paper, elevation: 0,
         overflow: 'hidden',
     }
 
@@ -439,7 +441,7 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
                                         ),
                                         sx: { pl: 1.5 }
                                     },
-                                    htmlInput: { maxLength: 16 }
+                                    htmlInput: { maxLength: 64 }
                                 }}
                                 sx={formFieldStyles} />
                             <TextField fullWidth label="Confirmar contraseña" name="confirmarPassword" type={showConfirmarPassword ? 'text' : 'password'}
@@ -457,7 +459,7 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
                                         ),
                                         sx: { pl: 1.5 }
                                     },
-                                    htmlInput: { maxLength: 16 }
+                                    htmlInput: { maxLength: 64 }
                                 }}
                                 sx={formFieldStyles} />
                         </Box>
@@ -520,7 +522,7 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
     }
 
     return (
-        <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth
+        <Dialog open={open} onClose={cerrar} maxWidth="md" fullWidth
             slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}>
             <DialogTitle sx={{ m: 0, p: 2, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${theme.palette.divider}` }}>
                 <Box>
@@ -534,7 +536,7 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
                         }
                     </Typography>
                 </Box>
-                <IconButton onClick={onClose} sx={{ color: theme.palette.text.secondary }}>
+                <IconButton onClick={cerrar} sx={{ color: theme.palette.text.secondary }}>
                     <CloseIcon />
                 </IconButton>
             </DialogTitle>
@@ -566,7 +568,7 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
 
             <Box sx={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                px: 4, py: 2.5, borderTop: `1px solid ${theme.palette.divider}`, backgroundColor: '#FAFAFA',
+                px: 4, py: 2.5, borderTop: `1px solid ${theme.palette.divider}`,
             }}>
                 <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined"
                     startIcon={<ArrowBackOutlinedIcon />} disableRipple
@@ -590,16 +592,18 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
                         onClick={activeStep < steps.length - 1 ? handleNext : handleSubmit}
                         variant="contained"
                         disabled={submitting || (activeStep === steps.length - 1 && sinCambios)}
-                        endIcon={submitting ? <CircularProgress size={18} color="inherit" /> : (activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <SaveOutlinedIcon />)}
+                        endIcon={submitting ? undefined : (activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <SaveOutlinedIcon />)}
                         disableRipple
                         sx={{
-                            textTransform: 'none', borderRadius: 2, fontWeight: 600,
+                            textTransform: 'none', borderRadius: 2, fontWeight: 600, minWidth: 170,
                             backgroundColor: theme.palette.primary.main,
                             boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
                             '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}` },
                             '&.Mui-disabled': { backgroundColor: '#e0e0e0', color: '#9e9e9e' },
                         }}>
-                        {activeStep < steps.length - 1 ? 'Siguiente' : submitting ? 'Guardando...' : sinCambios ? 'Sin cambios' : 'Guardar cambios'}
+                        {submitting
+                            ? <CircularProgress size={18} color="inherit" />
+                            : (activeStep < steps.length - 1 ? 'Siguiente' : sinCambios ? 'Sin cambios' : 'Guardar cambios')}
                     </Button>
                 </Box>
             </Box>

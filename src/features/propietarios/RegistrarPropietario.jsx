@@ -3,7 +3,7 @@ import { useState } from 'react'
 import {
     Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel,
     Button, Alert, TextField, Select, InputAdornment,
-    Dialog, DialogTitle, DialogContent, IconButton
+    Dialog, DialogTitle, DialogContent, IconButton, CircularProgress
 } from '@mui/material'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined'
@@ -53,6 +53,7 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
     const [form, setForm] = useState(EMPTY_FORM)
 
     const handleClose = () => {
+        if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
         setForm(EMPTY_FORM)
         setErrores({})
         setApiError(null)
@@ -331,7 +332,7 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
                             </Alert>
                         )}
                         <Box sx={{ display: 'flex', gap: 2 }}>
-                            <Paper elevation={0} sx={{ flex: 1, minWidth: 0, borderRadius: 2, p: 2.5, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white' }}>
+                            <Paper elevation={0} sx={{ flex: 1, minWidth: 0, borderRadius: 2, p: 2.5, border: `1px solid ${theme.palette.divider}`, backgroundColor: theme.palette.background.paper }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                                     <BusinessOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
                                     <Typography fontWeight={700} fontSize="0.95rem">Datos Personales</Typography>
@@ -344,7 +345,7 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
                                     <ConfirmRow label="Apellido" value={form.apellido || 'N/A'} />
                                 )}
                             </Paper>
-                            <Paper elevation={0} sx={{ flex: 1, minWidth: 0, borderRadius: 2, p: 2.5, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white' }}>
+                            <Paper elevation={0} sx={{ flex: 1, minWidth: 0, borderRadius: 2, p: 2.5, border: `1px solid ${theme.palette.divider}`, backgroundColor: theme.palette.background.paper }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                                     <PhoneOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
                                     <Typography fontWeight={700} fontSize="0.95rem">Contacto y Flota</Typography>
@@ -363,7 +364,7 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
     }
 
     const btnSx = {
-        textTransform: 'none', borderRadius: 2, fontWeight: 600,
+        textTransform: 'none', borderRadius: 2, fontWeight: 600, minWidth: 160,
         backgroundColor: theme.palette.primary.main,
         boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
         '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}` },
@@ -426,9 +427,11 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
                     <Button
                         onClick={activeStep < steps.length - 1 ? handleNext : handleSubmit}
                         variant="contained" disabled={submitting}
-                        endIcon={activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <CheckOutlinedIcon />}
+                        endIcon={submitting ? undefined : (activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <CheckOutlinedIcon />)}
                         disableRipple sx={btnSx}>
-                        {activeStep < steps.length - 1 ? 'Siguiente' : submitting ? 'Registrando...' : 'Registrar'}
+                        {submitting
+                            ? <CircularProgress size={18} color="inherit" />
+                            : (activeStep < steps.length - 1 ? 'Siguiente' : 'Registrar')}
                     </Button>
                 </Box>
             </Box>

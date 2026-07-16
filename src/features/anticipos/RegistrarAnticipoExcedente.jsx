@@ -1,9 +1,9 @@
-﻿import { useTheme } from '@mui/material/styles'
+﻿import { useTheme, alpha } from '@mui/material/styles'
 import { useState } from 'react'
 import {
     Box, Typography, Paper, Stepper, Step, StepLabel,
     Button, Alert, TextField, Dialog, DialogTitle, DialogContent, IconButton,
-    Autocomplete
+    Autocomplete, CircularProgress
 } from '@mui/material'
 import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined'
 import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined'
@@ -20,16 +20,15 @@ import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import { normalizarTexto } from '../../shared/utils/duplicados.js'
 
-const steps = ['Asignación', 'Estado y Fechas']
+const steps = ['Asignación y Valores', 'Estado y Fechas', 'Confirmación']
 
 const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
-    const { agregarAnticipo, conductores, rutas } = useAnticipos()
+    const { agregarAnticipo, rutas } = useAnticipos()
     const { showToast } = useToast()
     const theme = useTheme()
     const [errores, setErrores] = useState({})
     const [activeStep, setActiveStep] = useState(0)
     const [submitting, setSubmitting] = useState(false)
-    const [conductorInput, setConductorInput] = useState('')
     const [rutaInput, setRutaInput] = useState('')
 
     const formInicial = {
@@ -46,10 +45,10 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
     const [form, setForm] = useState(formInicial)
 
     const handleClose = () => {
+        if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
         setForm(formInicial)
         setErrores({})
         setActiveStep(0)
-        setConductorInput('')
         setRutaInput('')
         onClose()
     }
@@ -66,10 +65,6 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
             if (!isNaN(num) && num > NUMERIC_LIMITS[name]) return
         }
 
-        if (name === 'soporte') {
-            value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ0-9\s,.-]/g, '')
-        }
-
         setForm(prev => ({ ...prev, [name]: value }))
         setErrores(prev => ({ ...prev, [name]: '' }))
     }
@@ -77,7 +72,6 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
     const validarPaso = (step) => {
         const e = {}
         if (step === 0) {
-            if (!form.idConductor) e.idConductor = 'Selecciona un conductor'
             if (!form.idRuta) e.idRuta = 'Selecciona una ruta'
             if (!form.valorAnticipo) e.valorAnticipo = 'El valor del anticipo es obligatorio'
             else if (isNaN(form.valorAnticipo) || parseFloat(form.valorAnticipo) <= 0)
@@ -128,10 +122,9 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
         return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(num)
     }
 
-    const getNombreConductor = (id) => {
-        const c = conductores.find(c => c.idConductor === parseInt(id))
-        return c ? c.nombre : '—'
-    }
+    const rutaSeleccionada = rutas.find(r => r.idRuta === parseInt(form.idRuta))
+
+    const getNombreConductor = () => rutaSeleccionada?.conductorNombre || '—'
 
     const getNombreRuta = (id) => {
         const r = rutas.find(r => r.idRuta === parseInt(id))
@@ -140,7 +133,7 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
 
     const excedente = parseFloat(form.valorAnticipo || 0) - parseFloat(form.valorGastado || 0)
 
-    const cardSx = { flex: 1, borderRadius: 2, p: 2.5, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white' }
+    const cardSx = { flex: 1, borderRadius: 2, p: 2.5, border: `1px solid ${theme.palette.divider}`, backgroundColor: theme.palette.background.paper }
 
     const renderStepContent = () => {
         switch (activeStep) {
@@ -148,44 +141,19 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
                 return (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                         <Autocomplete
-                            options={conductores}
-                            getOptionLabel={(c) => c.nombre}
-                            isOptionEqualToValue={(opt, val) => opt.idConductor === val.idConductor}
-                            value={conductores.find(c => c.idConductor === parseInt(form.idConductor)) || null}
-                            inputValue={conductorInput}
-                            onInputChange={(_, newVal, reason) => {
-                                if (reason === 'input') setConductorInput(newVal.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ0-9\s]/g, ''))
-                                else setConductorInput(newVal)
-                            }}
-                            onChange={(_, val) => handleChange({ target: { name: 'idConductor', value: val ? val.idConductor : '' } })}
-                            filterOptions={(opts, { inputValue }) => {
-                                if (!inputValue.trim()) return [...opts].sort((a, b) => b.idConductor - a.idConductor).slice(0, 5)
-                                const q = normalizarTexto(inputValue)
-                                return opts.filter(c =>
-                                    normalizarTexto(c.nombre).includes(q) ||
-                                    normalizarTexto(c.numeroIdentificacion || '').includes(q)
-                                )
-                            }}
-                            noOptionsText="No se encontraron conductores"
-                            renderInput={(params) => (
-                                <TextField {...params} label="Conductor *"
-                                    error={!!errores.idConductor} helperText={errores.idConductor || 'Busca por nombre, apellido o documento'}
-                                    slotProps={{ inputLabel: { shrink: true }, htmlInput: { ...params.inputProps, maxLength: 80 } }}
-                                    sx={formFieldStyles} />
-                            )}
-                        />
-
-                        <Autocomplete
                             options={rutas}
                             getOptionLabel={(r) => r.nombre}
                             isOptionEqualToValue={(opt, val) => opt.idRuta === val.idRuta}
-                            value={rutas.find(r => r.idRuta === parseInt(form.idRuta)) || null}
+                            value={rutaSeleccionada || null}
                             inputValue={rutaInput}
                             onInputChange={(_, newVal, reason) => {
                                 if (reason === 'input') setRutaInput(newVal.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ0-9\s\-_]/g, ''))
                                 else setRutaInput(newVal)
                             }}
-                            onChange={(_, val) => handleChange({ target: { name: 'idRuta', value: val ? val.idRuta : '' } })}
+                            onChange={(_, val) => {
+                                setForm(prev => ({ ...prev, idRuta: val ? val.idRuta : '', idConductor: val ? val.idConductor : '' }))
+                                setErrores(prev => ({ ...prev, idRuta: '' }))
+                            }}
                             filterOptions={(opts, { inputValue }) => {
                                 if (!inputValue.trim()) return [...opts].sort((a, b) => b.idRuta - a.idRuta).slice(0, 5)
                                 const q = normalizarTexto(inputValue)
@@ -194,10 +162,20 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
                             noOptionsText="No se encontraron rutas"
                             renderInput={(params) => (
                                 <TextField {...params} label="Ruta *"
-                                    error={!!errores.idRuta} helperText={errores.idRuta || 'Busca por nombre de la ruta'}
+                                    error={!!errores.idRuta} helperText={errores.idRuta || 'Busca por nombre de la ruta. (El conductor se autocompletará)'}
                                     slotProps={{ inputLabel: { shrink: true }, htmlInput: { ...params.inputProps, maxLength: 100 } }}
                                     sx={formFieldStyles} />
                             )}
+                        />
+
+                        <TextField
+                            label="Conductor"
+                            value={rutaSeleccionada?.conductorNombre || ''}
+                            disabled
+                            fullWidth
+                            helperText="Se autocompleta con el conductor asignado a la ruta"
+                            slotProps={{ inputLabel: { shrink: true } }}
+                            sx={formFieldStyles}
                         />
 
                         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
@@ -218,30 +196,33 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
                                 name="valorGastado"
                                 value={form.valorGastado}
                                 onChange={handleChange}
+                                disabled
                                 icon={AttachMoneyOutlinedIcon}
                                 placeholder="Ej: 500000"
                                 error={errores.valorGastado}
-                                helperText={errores.valorGastado || 'Diligenciar al legalizar'}
+                                helperText={errores.valorGastado || 'Se diligencia cuando la ruta esté en curso'}
                                 inputProps={{ maxLength: 12 }}
                             />
                         </Box>
 
-                        {/* Cálculo excedente */}
+                        {/* Cálculo excedente — mismos colores que el chip "+$" del listado
+                        (theme.palette.success), no fijos, para que coincidan entre sí y
+                        para que sí cambien en modo oscuro. */}
                         <Box sx={{
                             p: 3, borderRadius: 2,
-                            backgroundColor: excedente >= 0 ? '#E8F5E9' : '#FFF3F3',
-                            border: `1px solid ${excedente >= 0 ? '#A5D6A7' : '#FFCDD2'}`,
+                            backgroundColor: alpha(theme.palette.success.main, 0.1),
+                            border: `1px solid ${alpha(theme.palette.success.main, 0.3)}`,
                             display: 'flex', alignItems: 'center', gap: 2,
                         }}>
-                            <AttachMoneyIcon sx={{ color: excedente >= 0 ? '#2E7D32' : theme.palette.primary.main, fontSize: 32 }} />
+                            <AttachMoneyIcon sx={{ color: theme.palette.success.dark, fontSize: 32 }} />
                             <Box>
                                 <Typography variant="caption" fontWeight={700}
-                                    color={excedente >= 0 ? '#2E7D32' : theme.palette.primary.main}
+                                    color={theme.palette.success.dark}
                                     textTransform="uppercase" letterSpacing={0.8}>
-                                    {excedente >= 0 ? 'Excedente a devolver' : 'Faltante (gasto mayor al anticipo)'}
+                                    Excedente a devolver
                                 </Typography>
-                                <Typography variant="h5" fontWeight={800} color={excedente >= 0 ? '#2E7D32' : theme.palette.primary.main}>
-                                    {formatMoney(Math.abs(excedente))}
+                                <Typography variant="h5" fontWeight={800} color={theme.palette.success.dark}>
+                                    {formatMoney(excedente)}
                                 </Typography>
                             </Box>
                         </Box>
@@ -261,7 +242,8 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
                             <TextField
                                 fullWidth label="Fecha de legalización" name="fechaLegalizacion" type="date"
                                 value={form.fechaLegalizacion} onChange={handleChange}
-                                error={!!errores.fechaLegalizacion} helperText={errores.fechaLegalizacion || 'Opcional'}
+                                disabled
+                                error={!!errores.fechaLegalizacion} helperText={errores.fechaLegalizacion || 'Se completará sola cuando se legalice el anticipo'}
                                 slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: form.fechaEntrega || undefined } }} sx={formFieldStyles}
                             />
                         </Box>
@@ -269,19 +251,9 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
                         <TextField
                             fullWidth label="Fecha entrega excedente" name="fechaEntregaExcedente" type="date"
                             value={form.fechaEntregaExcedente} onChange={handleChange}
-                            error={!!errores.fechaEntregaExcedente} helperText={errores.fechaEntregaExcedente || 'Opcional'}
+                            disabled
+                            error={!!errores.fechaEntregaExcedente} helperText={errores.fechaEntregaExcedente || 'Se completará sola al confirmar la devolución del excedente'}
                             slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: form.fechaEntrega || undefined } }} sx={formFieldStyles}
-                        />
-
-                        <FormField
-                            label="Observaciones"
-                            name="soporte"
-                            value={form.soporte}
-                            onChange={handleChange}
-                            multiline rows={3}
-                            placeholder="Agrega alguna observación si es necesario..."
-                            inputProps={{ maxLength: 500 }}
-                            helperText={`Opcional · ${form.soporte?.length || 0}/500`}
                         />
                     </Box>
                 )
@@ -300,10 +272,9 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
                                     <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Asignación</Typography>
                                 </Box>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la asignación del anticipo</Typography>
-                                <ConfirmRow label="Conductor" value={getNombreConductor(form.idConductor)} />
                                 <ConfirmRow label="Ruta" value={getNombreRuta(form.idRuta)} />
+                                <ConfirmRow label="Conductor" value={getNombreConductor()} />
                                 <ConfirmRow label="Anticipo" value={formatMoney(form.valorAnticipo)} />
-                                <ConfirmRow label="Gastado" value={form.valorGastado ? formatMoney(form.valorGastado) : '—'} />
                                 <ConfirmRow label="Excedente" value={formatMoney(excedente)} />
                             </Paper>
                             <Paper elevation={0} sx={cardSx}>
@@ -312,11 +283,7 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
                                     <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Estado y Fechas</Typography>
                                 </Box>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica el estado y las fechas</Typography>
-                                <ConfirmRow label="Estado" value="Entregado" />
                                 <ConfirmRow label="F. Entrega" value={form.fechaEntrega || '—'} />
-                                <ConfirmRow label="F. Legalización" value={form.fechaLegalizacion || '—'} />
-                                <ConfirmRow label="F. Excedente" value={form.fechaEntregaExcedente || '—'} />
-                                <ConfirmRow label="Observaciones" value={form.soporte || '—'} />
                             </Paper>
                         </Box>
                     </Box>
@@ -327,8 +294,7 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
         }
     }
 
-    // steps tiene longitud 2; el paso 2 es la confirmación interna
-    const totalSteps = steps.length  // 2
+    const totalSteps = steps.length
 
     return (
         <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth
@@ -394,17 +360,17 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
                         onClick={activeStep < totalSteps - 1 ? handleNext : handleSubmit}
                         variant="contained"
                         disabled={submitting}
-                        endIcon={activeStep < totalSteps - 1 ? <ArrowForwardOutlinedIcon /> : <CheckOutlinedIcon />}
+                        endIcon={submitting ? undefined : (activeStep < totalSteps - 1 ? <ArrowForwardOutlinedIcon /> : <CheckOutlinedIcon />)}
                         disableRipple
                         sx={{
-                            textTransform: 'none', borderRadius: 2, fontWeight: 600,
+                            textTransform: 'none', borderRadius: 2, fontWeight: 600, minWidth: 160,
                             backgroundColor: theme.palette.primary.main,
                             boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
                             '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}` },
                         }}>
-                        {activeStep < totalSteps - 1
-                            ? 'Siguiente'
-                            : submitting ? 'Registrando...' : 'Registrar'
+                        {submitting
+                            ? <CircularProgress size={18} color="inherit" />
+                            : (activeStep < totalSteps - 1 ? 'Siguiente' : 'Registrar')
                         }
                     </Button>
                 </Box>

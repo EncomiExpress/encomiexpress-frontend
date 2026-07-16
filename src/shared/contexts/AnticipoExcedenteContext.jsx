@@ -59,21 +59,33 @@ export const AnticipoExcedenteProvider = ({ children }) => {
     }
   }, [token]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Normalizar conductores para el selector: { idConductor, nombre }
-  const conductoresNormalizados = conductores.map((c) => ({
-    idConductor: c.idConductor,
-    nombre:
-      c.nombre && c.apellido
-        ? `${c.nombre} ${c.apellido}`
-        : c.nombre || `Conductor ${c.idConductor}`,
-    numeroIdentificacion: c.numeroIdentificacion || '',
-  }))
+  // Normalizar conductores para el selector: { idConductor, nombre } — solo habilitados
+  const conductoresNormalizados = conductores
+    .filter((c) => c.habilitado !== false)
+    .map((c) => ({
+      idConductor: c.idConductor,
+      nombre:
+        c.nombre && c.apellido
+          ? `${c.nombre} ${c.apellido}`
+          : c.nombre || `Conductor ${c.idConductor}`,
+      numeroIdentificacion: c.numeroIdentificacion || '',
+    }))
 
-  // Normalizar rutas para el selector: { idRuta, nombre }
-  const rutasNormalizadas = rutasProgramadas.map((r) => ({
-    idRuta: r.idRuta,
-    nombre: r.nombreRuta || r.nombre || `Ruta ${r.idRuta}`,
-  }))
+  // Normalizar rutas para el selector: { idRuta, nombre, idConductor, conductorNombre } —
+  // solo habilitadas y Programadas (una ruta "En Curso"/"Completada"/"Cancelada" ya no
+  // debería recibir anticipos nuevos). El conductor va incluido porque el anticipo se
+  // autocompleta con el conductor asignado a la ruta elegida, no se selecciona aparte.
+  const rutasNormalizadas = rutasProgramadas
+    .filter((r) => r.habilitado !== false && r.estado === 'Programada')
+    .map((r) => {
+      const u = r.conductor?.usuario
+      return {
+        idRuta: r.idRuta,
+        nombre: r.nombreRuta || r.nombre || `Ruta ${r.idRuta}`,
+        idConductor: r.idConductor,
+        conductorNombre: u ? `${u.nombre} ${u.apellido}` : `Conductor ${r.idConductor}`,
+      }
+    })
 
   // ── CRUD ────────────────────────────────────────────────────────────────────
 
@@ -105,6 +117,20 @@ export const AnticipoExcedenteProvider = ({ children }) => {
     )
   }, [])
 
+  // Confirma que el conductor devolvió el excedente: pasa el anticipo a
+  // Completado y registra fechaEntregaExcedente con la fecha de hoy, todo en
+  // el mismo paso (a diferencia de cambiarEstado, que no toca esa fecha).
+  const entregarExcedente = useCallback(async (id, soporte) => {
+    const res = await anticipoService.entregarExcedenteAnticipo(id, soporte)
+    const actualizado = res?.data
+    if (actualizado) {
+      setAnticipos((prev) =>
+        prev.map((a) => (a.idAnticipoExcedente === id ? actualizado : a))
+      )
+    }
+    return actualizado
+  }, [])
+
   const toggleHabilitado = useCallback(async (id) => {
     const res = await anticipoService.toggleHabilitadoAnticipo(id)
     if (res?.data) {
@@ -127,6 +153,7 @@ export const AnticipoExcedenteProvider = ({ children }) => {
         agregarAnticipo,
         actualizarAnticipo,
         cambiarEstado,
+        entregarExcedente,
         toggleHabilitado,
       }}
     >

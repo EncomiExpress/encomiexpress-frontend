@@ -20,20 +20,21 @@ export const RutaProgramacionProvider = ({ children }) => {
   const [error, setError] = useState(null)
   const { fetchVehiculos } = useVehiculo()
 
-  const fetchRutasProgramadas = useCallback(async (params = {}) => {
+  const fetchRutasProgramadas = useCallback(async (params = {}, signal) => {
     setLoading(true)
     setError(null)
     try {
-      const res = await getRutas(params)
+      const res = await getRutas(params, signal)
       const data = res?.data ?? []
       setRutasProgramadas(data)
       setTotal(res?.total ?? data.length)
       return data
     } catch (err) {
+      if (err.name === 'AbortError') return []
       setError(err.message || 'Error al cargar rutas')
       return []
     } finally {
-      setLoading(false)
+      if (!signal?.aborted) setLoading(false)
     }
   }, [])
 

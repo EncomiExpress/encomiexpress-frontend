@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import {
     Box, Typography, Paper, Stepper, Step, StepLabel,
     Button, Alert, Dialog, DialogTitle, DialogContent, IconButton,
-    Autocomplete, TextField
+    Autocomplete, TextField, CircularProgress
 } from '@mui/material'
 import RouteOutlinedIcon from '@mui/icons-material/RouteOutlined'
 import EventOutlinedIcon from '@mui/icons-material/EventOutlined'
@@ -22,6 +22,7 @@ import { FormField } from '../../shared/components/FormularioEstandarizado.jsx'
 import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
+import { formatFecha } from '../../shared/utils/formatters.js'
 import { normalizarTexto } from '../../shared/utils/duplicados.js'
 
 const mananaISO = () => {
@@ -77,12 +78,15 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
             }
             setForm(datos)
             setOriginalData(datos)
+            // Si el vehículo/conductor/destino de esta ruta ya fue inhabilitado desde que
+            // se creó, no aparece en las listas de habilitados — se usan los datos que ya
+            // trae la propia ruta como respaldo, para que el campo nunca se vea vacío.
             const v = getVehiculosHabilitados().find(x => x.idVehiculo === ruta.idVehiculo)
             const c = getConductoresHabilitados().find(x => x.idConductor === ruta.idConductor)
             const d = getDestinosHabilitados().find(x => x.idDestino === ruta.idDestino)
-            setVehiculoInput(v ? `${v.placa} — ${v.marca} ${v.modelo}` : '')
-            setConductorInput(c ? `${c.nombre} ${c.apellido}` : '')
-            setDestinoInput(d ? (d.nombre ? `${d.nombre} - ${d.ciudad}` : `${d.departamento} - ${d.ciudad}`) : '')
+            setVehiculoInput(v ? `${v.placa} — ${v.marca} ${v.modelo}` : (ruta.vehiculo ? `${ruta.vehiculo.placa} — ${ruta.vehiculo.marca} ${ruta.vehiculo.modelo}` : ''))
+            setConductorInput(c ? `${c.nombre} ${c.apellido}` : (ruta.conductor?.usuario ? `${ruta.conductor.usuario.nombre} ${ruta.conductor.usuario.apellido}` : ''))
+            setDestinoInput(d ? (d.nombre ? `${d.nombre} - ${d.ciudad}` : `${d.departamento} - ${d.ciudad}`) : (ruta.destino ? `${ruta.destino.departamento} - ${ruta.destino.ciudad}` : ''))
         }
     }, [ruta, open, getVehiculosHabilitados, getConductoresHabilitados, getDestinosHabilitados])
 
@@ -156,6 +160,7 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
     }
 
     const handleClose = () => {
+        if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
         setForm({ nombreRuta: '', idVehiculo: '', idConductor: '', idDestino: '', fechaSalida: '', horaSalida: '', horaLlegadaEstimada: '', observaciones: '' })
         setErrores({})
         setApiError(null)
@@ -171,21 +176,46 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
     const cardSx = {
         flex: 1, minWidth: 0, borderRadius: 2, p: 2.5,
         border: `1px solid ${theme.palette.divider}`,
-        backgroundColor: 'white', elevation: 0, overflow: 'hidden',
+        backgroundColor: theme.palette.background.paper, elevation: 0, overflow: 'hidden',
     }
 
+    // Mismo respaldo que arriba (vehículo/conductor/destino inhabilitados desde que se creó la ruta).
     const getVehiculoLabel = (id) => {
         const v = vehiculos.find(x => x.idVehiculo === parseInt(id))
-        return v ? `${v.placa} - ${v.marca} ${v.modelo}` : '—'
+        if (v) return `${v.placa} - ${v.marca} ${v.modelo}`
+        if (ruta?.vehiculo && parseInt(id) === ruta.idVehiculo) return `${ruta.vehiculo.placa} - ${ruta.vehiculo.marca} ${ruta.vehiculo.modelo}`
+        return '—'
     }
     const getConductorLabel = (id) => {
         const c = conductores.find(x => x.idConductor === parseInt(id))
-        return c ? `${c.nombre} ${c.apellido}` : '—'
+        if (c) return `${c.nombre} ${c.apellido}`
+        if (ruta?.conductor?.usuario && parseInt(id) === ruta.idConductor) return `${ruta.conductor.usuario.nombre} ${ruta.conductor.usuario.apellido}`
+        return '—'
     }
     const getDestinoLabel = (id) => {
         const d = destinos.find(x => x.idDestino === parseInt(id))
-        return d ? (d.nombre ? `${d.nombre} - ${d.ciudad}` : `${d.departamento} - ${d.ciudad}`) : '—'
+        if (d) return d.nombre ? `${d.nombre} - ${d.ciudad}` : `${d.departamento} - ${d.ciudad}`
+        if (ruta?.destino && parseInt(id) === ruta.idDestino) return `${ruta.destino.departamento} - ${ruta.destino.ciudad}`
+        return '—'
     }
+
+    // Mismo respaldo que arriba, pero como opción "sintética" para que el Autocomplete
+    // tenga un value consistente (si no, algunos re-renders de MUI vacían el campo).
+    const destinoSeleccionado = destinos.find(d => d.idDestino === parseInt(form.idDestino)) || (
+        ruta?.destino && parseInt(form.idDestino) === ruta.idDestino
+            ? { idDestino: ruta.idDestino, nombre: ruta.destino.nombre, ciudad: ruta.destino.ciudad, departamento: ruta.destino.departamento }
+            : null
+    )
+    const conductorSeleccionado = conductores.find(c => c.idConductor === parseInt(form.idConductor)) || (
+        ruta?.conductor?.usuario && parseInt(form.idConductor) === ruta.idConductor
+            ? { idConductor: ruta.idConductor, nombre: ruta.conductor.usuario.nombre, apellido: ruta.conductor.usuario.apellido }
+            : null
+    )
+    const vehiculoSeleccionado = vehiculos.find(v => v.idVehiculo === parseInt(form.idVehiculo)) || (
+        ruta?.vehiculo && parseInt(form.idVehiculo) === ruta.idVehiculo
+            ? { idVehiculo: ruta.idVehiculo, placa: ruta.vehiculo.placa, marca: ruta.vehiculo.marca, modelo: ruta.vehiculo.modelo }
+            : null
+    )
 
     const renderStepContent = () => {
         switch (activeStep) {
@@ -199,7 +229,7 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
                             options={destinos}
                             getOptionLabel={(d) => d.nombre ? `${d.nombre} - ${d.ciudad}` : `${d.departamento} - ${d.ciudad}`}
                             isOptionEqualToValue={(opt, val) => opt.idDestino === val.idDestino}
-                            value={destinos.find(d => d.idDestino === parseInt(form.idDestino)) || null}
+                            value={destinoSeleccionado}
                             inputValue={destinoInput}
                             onInputChange={(_, newVal, reason) => {
                                 if (reason === 'input') setDestinoInput(newVal.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, ''))
@@ -226,7 +256,7 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
                             options={conductores}
                             getOptionLabel={(c) => `${c.nombre} ${c.apellido}`}
                             isOptionEqualToValue={(opt, val) => opt.idConductor === val.idConductor}
-                            value={conductores.find(c => c.idConductor === parseInt(form.idConductor)) || null}
+                            value={conductorSeleccionado}
                             inputValue={conductorInput}
                             onInputChange={(_, newVal, reason) => {
                                 if (reason === 'input') setConductorInput(newVal.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ0-9\s]/g, ''))
@@ -254,7 +284,7 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
                             options={vehiculos}
                             getOptionLabel={(v) => `${v.placa} — ${v.marca} ${v.modelo}`}
                             isOptionEqualToValue={(opt, val) => opt.idVehiculo === val.idVehiculo}
-                            value={vehiculos.find(v => v.idVehiculo === parseInt(form.idVehiculo)) || null}
+                            value={vehiculoSeleccionado}
                             inputValue={vehiculoInput}
                             onInputChange={(_, newVal, reason) => {
                                 if (reason === 'input') setVehiculoInput(newVal.replace(/[^a-zA-Z0-9\s\-_]/g, ''))
@@ -338,9 +368,9 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
                                 </Box>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la información de la ruta</Typography>
                                 <ConfirmRow label="Nombre"    value={form.nombreRuta} previousValue={originalData?.nombreRuta} />
-                                <ConfirmRow label="Vehículo"  value={getVehiculoLabel(form.idVehiculo)} previousValue={originalData ? getVehiculoLabel(originalData.idVehiculo) : undefined} />
-                                <ConfirmRow label="Conductor" value={getConductorLabel(form.idConductor)} previousValue={originalData ? getConductorLabel(originalData.idConductor) : undefined} />
                                 <ConfirmRow label="Destino"   value={getDestinoLabel(form.idDestino)} previousValue={originalData ? getDestinoLabel(originalData.idDestino) : undefined} />
+                                <ConfirmRow label="Conductor" value={getConductorLabel(form.idConductor)} previousValue={originalData ? getConductorLabel(originalData.idConductor) : undefined} />
+                                <ConfirmRow label="Vehículo"  value={getVehiculoLabel(form.idVehiculo)} previousValue={originalData ? getVehiculoLabel(originalData.idVehiculo) : undefined} />
                             </Paper>
                             <Paper elevation={0} sx={cardSx}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
@@ -348,9 +378,10 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
                                     <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Horario</Typography>
                                 </Box>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica el horario</Typography>
-                                <ConfirmRow label="Fecha"        value={form.fechaSalida} previousValue={originalData?.fechaSalida} />
+                                <ConfirmRow label="Fecha Salida" value={formatFecha(form.fechaSalida)} previousValue={originalData?.fechaSalida ? formatFecha(originalData.fechaSalida) : undefined} />
                                 <ConfirmRow label="Hora Salida"  value={form.horaSalida} previousValue={originalData?.horaSalida} />
                                 <ConfirmRow label="Hora Llegada" value={form.horaLlegadaEstimada || 'N/A'} previousValue={originalData?.horaLlegadaEstimada || 'N/A'} />
+                                <ConfirmRow label="Observaciones" value={form.observaciones} previousValue={originalData?.observaciones} />
                             </Paper>
                         </Box>
                     </Box>
@@ -423,16 +454,18 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
                         onClick={activeStep < steps.length - 1 ? handleNext : handleSubmit}
                         variant="contained"
                         disabled={submitting || (activeStep === steps.length - 1 && sinCambios)}
-                        endIcon={activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <SaveOutlinedIcon />}
+                        endIcon={submitting ? undefined : (activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <SaveOutlinedIcon />)}
                         disableRipple
                         sx={{
-                            textTransform: 'none', borderRadius: 2, fontWeight: 600,
+                            textTransform: 'none', borderRadius: 2, fontWeight: 600, minWidth: 170,
                             backgroundColor: theme.palette.primary.main,
                             boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
                             '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}` },
                             '&.Mui-disabled': { backgroundColor: theme.palette.divider, color: theme.palette.text.disabled },
                         }}>
-                        {activeStep < steps.length - 1 ? 'Siguiente' : submitting ? 'Guardando...' : sinCambios ? 'Sin cambios' : 'Guardar cambios'}
+                        {submitting
+                            ? <CircularProgress size={18} color="inherit" />
+                            : (activeStep < steps.length - 1 ? 'Siguiente' : sinCambios ? 'Sin cambios' : 'Guardar cambios')}
                     </Button>
                 </Box>
             </Box>

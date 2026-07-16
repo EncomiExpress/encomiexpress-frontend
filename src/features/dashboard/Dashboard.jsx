@@ -3,9 +3,11 @@ import { useState, useMemo, useEffect } from 'react'
 import { useVentas } from '../../shared/contexts/VentaContext.jsx'
 import { useConductor } from '../../shared/contexts/ConductorContext.jsx'
 import { useVehiculo } from '../../shared/contexts/VehiculoContext.jsx'
+import { useToast } from '../../shared/contexts/ToastContext.jsx'
+import { getEncomiendas } from '../../shared/services/ventaService'
 import {
   Box, Typography, Paper, Button, TextField,
-  LinearProgress, Divider
+  LinearProgress, Divider, CircularProgress
 } from '@mui/material'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
@@ -153,6 +155,8 @@ const Dashboard = () => {
   const { conductores } = useConductor()
   const { getVehiculos } = useVehiculo()
   const transportes = getVehiculos()
+  const { showToast } = useToast()
+  const [exportando, setExportando] = useState(false)
 
   const theme = useTheme()
 
@@ -216,17 +220,28 @@ const Dashboard = () => {
 
   const maxEnvios = enviosEstado.length > 0 ? Math.max(...enviosEstado.map(e => e.count)) : 1
 
-  const handleExportar = () => {
-    const rows = ventas.map(venta => ({
-      'ID': venta.idEncomiendaVenta || venta.idVenta,
-      'Cliente': venta.cliente?.nombre || venta.idCliente || '-',
-      'Estado': venta.estado,
-      'Estado de pago': venta.estadoPago,
-      'Valor': venta.valorTotal || venta.valor || venta.precio,
-      'Fecha': venta.fechaRegistro || venta.fechaSalida,
-    }))
+  const handleExportar = async () => {
+    setExportando(true)
+    try {
+      // El dashboard no tiene filtros propios — se trae el histórico completo,
+      // sin el tope de 1000 que usa la carga inicial del panel.
+      const res = await getEncomiendas(undefined, { limit: 100000 })
+      const rows = (res?.data || []).map(venta => ({
+        'ID': venta.idEncomiendaVenta || venta.idVenta,
+        'Guía': venta.numeroGuia,
+        'Cliente': `${venta.cliente?.nombre || ''} ${venta.cliente?.apellido || ''}`.trim() || venta.idCliente || '-',
+        'Estado': venta.estado,
+        'Estado de pago': venta.estadoPago,
+        'Total': venta.total,
+        'Fecha': venta.fechaRegistro,
+      }))
 
-    exportToExcel({ data: rows, fileName: 'dashboard', sheetName: 'Dashboard' })
+      await exportToExcel({ data: rows, fileName: 'dashboard', sheetName: 'Dashboard', themeColor: theme.palette.primary.main })
+    } catch (err) {
+      showToast(err.message || 'Error al exportar.', 'error')
+    } finally {
+      setExportando(false)
+    }
   }
 
   return (
@@ -243,8 +258,9 @@ const Dashboard = () => {
         </Box>
         <Button
           onClick={handleExportar}
+          disabled={exportando}
           variant="contained"
-          startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 18 }} />}
+          startIcon={exportando ? <CircularProgress size={16} sx={{ color: 'inherit' }} /> : <FileDownloadOutlinedIcon sx={{ fontSize: 18 }} />}
           sx={{
             backgroundColor: theme.palette.background.paper,
             color: theme.palette.text.primary,
@@ -255,14 +271,14 @@ const Dashboard = () => {
             border: `1px solid ${theme.palette.divider}`,
             boxShadow: 'none',
             '&:hover': {
-              backgroundColor: theme.palette.primary.light,
+              backgroundColor: theme.palette.primary.activeBg,
               color: theme.palette.text.primary,
               border: `1px solid ${theme.palette.divider}`,
               boxShadow: 'none',
             },
           }}
         >
-          Exportar
+          {exportando ? 'Exportando...' : 'Exportar'}
         </Button>
       </Box>
 

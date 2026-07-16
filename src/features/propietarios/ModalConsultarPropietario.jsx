@@ -13,8 +13,8 @@ import CloseIcon from '@mui/icons-material/Close'
 const CampoFila = ({ label, value, esChip }) => {
     const theme = useTheme()
     return (
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
-            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>{label}</Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 2, py: 0.9 }}>
+            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500, flexShrink: 0 }}>{label}</Typography>
             {esChip ? (
                 <Chip
                     label={value || '—'}
@@ -22,7 +22,8 @@ const CampoFila = ({ label, value, esChip }) => {
                     sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem' }}
                 />
             ) : (
-                <Typography variant="body2" fontWeight={500} color={theme.palette.text.medium}>
+                <Typography variant="body2" fontWeight={500} color={theme.palette.text.medium}
+                    sx={{ flex: 1, minWidth: 0, textAlign: 'right', wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
                     {value ?? '—'}
                 </Typography>
             )}

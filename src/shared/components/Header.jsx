@@ -5,6 +5,7 @@ import {
   DarkModeOutlined as MoonIcon,
   LightModeOutlined as SunIcon,
   LockResetOutlined as LockResetIcon,
+  LockOutlined as LockIcon,
   Logout as LogoutIcon,
   CheckRounded as CheckIcon,
   VisibilityOutlined as EyeIcon,
@@ -14,12 +15,14 @@ import {
   ViewStreamOutlined as TopNavIcon,
 } from '@mui/icons-material'
 import logo from '../../assets/logo.png'
+import logoDark from '../../assets/logoDark.png'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import { useNavigate } from 'react-router-dom'
 import { useDarkMode } from '../contexts/ThemeContext.jsx'
 import { API_URL } from '../config/api.js'
 import LogoutConfirmDialog from './LogoutConfirmDialog.jsx'
 import useDateTime from '../hooks/useDateTime.js'
+import { formFieldStyles } from '../utils/formStyles.js'
 
 const getGreeting = () => {
   const hour = new Date().getHours()
@@ -42,6 +45,10 @@ const NAV_OPTIONS = [
   { key: 'sidebar', label: 'Sidebar', icon: SidebarIcon },
   { key: 'topnav',  label: 'Top Nav', icon: TopNavIcon  },
 ]
+
+// Debe coincidir con PASSWORD_REGEX en features/auth/Register.jsx y con el validador del backend
+const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s]).{8,64}$/
+const PASSWORD_HELP = '8-64 caracteres, con mayúsculas, minúsculas, números y un carácter especial'
 
 // ─── PaletaAnimada ───────────────────────────────────────────────────────────
 
@@ -142,6 +149,7 @@ const Header = ({ collapsed }) => {
   const [showConfirm,       setShowConfirm]       = useState(false)
   const [cambiarLoading,    setCambiarLoading]    = useState(false)
   const [cambiarMensaje,    setCambiarMensaje]    = useState(null)
+  const [erroresCambiar,    setErroresCambiar]    = useState({})
 
   const { usuario, logout, token } = useAuth()
   const navigate = useNavigate()
@@ -163,18 +171,20 @@ const Header = ({ collapsed }) => {
     setPasswordNueva('')
     setPasswordConfirm('')
     setCambiarMensaje(null)
+    setErroresCambiar({})
     setOpenCambiarDialog(true)
   }
 
   const handleCambiarPassword = async () => {
-    if (passwordNueva !== passwordConfirm) {
-      setCambiarMensaje({ tipo: 'error', texto: 'Las contraseñas nuevas no coinciden.' })
+    const errores = {}
+    if (!PASSWORD_REGEX.test(passwordNueva)) errores.nueva = PASSWORD_HELP
+    if (!passwordConfirm) errores.confirm = 'Confirma la nueva contraseña'
+    else if (passwordNueva !== passwordConfirm) errores.confirm = 'Las contraseñas no coinciden'
+    if (Object.keys(errores).length > 0) {
+      setErroresCambiar(errores)
       return
     }
-    if (passwordNueva.length < 6) {
-      setCambiarMensaje({ tipo: 'error', texto: 'La nueva contraseña debe tener al menos 6 caracteres.' })
-      return
-    }
+    setErroresCambiar({})
     setCambiarLoading(true)
     setCambiarMensaje(null)
     try {
@@ -196,15 +206,25 @@ const Header = ({ collapsed }) => {
     }
   }
 
-  const campoPassword = (label, value, setter, show, setShow) => ({
+  const campoPassword = (label, value, setter, show, setShow, errorKey, helperText) => ({
     label,
     type: show ? 'text' : 'password',
     fullWidth: true,
-    size: 'small',
     value,
-    onChange: (e) => setter(e.target.value),
+    onChange: (e) => {
+      setter(e.target.value)
+      if (errorKey && erroresCambiar[errorKey]) setErroresCambiar(prev => ({ ...prev, [errorKey]: '' }))
+    },
     disabled: cambiarLoading,
+    error: errorKey ? !!erroresCambiar[errorKey] : undefined,
+    helperText: errorKey ? (erroresCambiar[errorKey] || helperText) : undefined,
+    sx: formFieldStyles,
     InputProps: {
+      startAdornment: (
+        <InputAdornment position="start">
+          <LockIcon sx={{ color: theme.palette.text.secondary }} />
+        </InputAdornment>
+      ),
       endAdornment: (
         <InputAdornment position="end">
           <IconButton size="small" onClick={() => setShow(p => !p)} edge="end">
@@ -236,7 +256,7 @@ const Header = ({ collapsed }) => {
         {/* ── Izquierda ── */}
         {navLayout === 'topnav' ? (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Box component="img" src={logo} alt="EncomiExpress"
+            <Box component="img" src={darkMode ? logoDark : logo} alt="EncomiExpress"
               sx={{ height: 38, width: 'auto', objectFit: 'contain', userSelect: 'none' }} />
             <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'baseline', gap: 0.5 }}>
               <Typography sx={{ fontSize: '1.2rem', color: darkMode ? '#A0A0A0' : '#483c3a', fontWeight: 500, fontFamily: 'Cambria !important', lineHeight: 1 }}>
@@ -314,7 +334,7 @@ const Header = ({ collapsed }) => {
                 onClick={handleAbrirCambiar}
                 sx={{ borderRadius: '8px', fontSize: '0.82rem', fontWeight: 500, gap: 1.5, py: 1, '&:hover': { backgroundColor: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(26,46,110,0.06)' } }}
               >
-                <LockResetIcon sx={{ fontSize: '1.1rem', color: pal.secondary.main }} />
+                <LockResetIcon sx={{ fontSize: '1.1rem', color: pal.primary.main }} />
                 Cambiar contraseña
               </MenuItem>
 
@@ -442,8 +462,8 @@ const Header = ({ collapsed }) => {
 
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 3, textAlign: 'left' }}>
               <TextField {...campoPassword('Contraseña actual',          passwordActual,  setPasswordActual,  showActual,  setShowActual)} />
-              <TextField {...campoPassword('Nueva contraseña',           passwordNueva,   setPasswordNueva,   showNueva,   setShowNueva)} />
-              <TextField {...campoPassword('Confirmar nueva contraseña', passwordConfirm, setPasswordConfirm, showConfirm, setShowConfirm)} />
+              <TextField {...campoPassword('Nueva contraseña',           passwordNueva,   setPasswordNueva,   showNueva,   setShowNueva,  'nueva',   PASSWORD_HELP)} />
+              <TextField {...campoPassword('Confirmar nueva contraseña', passwordConfirm, setPasswordConfirm, showConfirm, setShowConfirm, 'confirm')} />
               {cambiarMensaje && (
                 <Alert severity={cambiarMensaje.tipo} sx={{ fontSize: '0.82rem', borderRadius: 2 }}>
                   {cambiarMensaje.texto}

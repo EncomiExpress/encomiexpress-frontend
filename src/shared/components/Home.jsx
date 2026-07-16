@@ -8,6 +8,7 @@ import slide2 from '../../assets/camion.png'
 import slide3 from '../../assets/customers.png'
 import slide4 from '../../assets/cashbag.png'
 import logo from '../../assets/logo.png'
+import logoDark from '../../assets/logoDark.png'
 
 const slides = [slide1, slide2, slide3, slide4]
 
@@ -90,7 +91,7 @@ const Home = () => {
           justifyContent: 'flex-start',
           flexShrink: 0,
         }}>
-          <img src={logo} alt="EncomiExpress" style={logoStyle} />
+          <img src={theme.palette.mode === 'dark' ? logoDark : logo} alt="EncomiExpress" style={logoStyle} />
         </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -139,7 +140,7 @@ const Home = () => {
               <Grid size={{ xs: 12, md: 7 }}>
                 <Typography sx={{
                   fontWeight: 700, fontSize: { xs: '2.8rem', md: '4rem' }, fontFamily: 'Cambria',
-                  lineHeight: 1.08, letterSpacing: '-2px', mb: 3, color: theme.palette.background.default === '#121212' ? '#4FC3F7' : 'rgb(26, 46, 110, 0.95)',
+                  lineHeight: 1.08, letterSpacing: '-2px', mb: 3, color: theme.palette.background.default === '#121212' ? '#64BBE2' : 'rgb(26, 46, 110, 0.95)',
                 }}>
                   Panel de{' '}
                   <Box component="span" sx={{ color: theme.palette.background.default === '#121212' ? '#E57373' : 'rgba(204,24,24,0.95)' }}>administración</Box>
@@ -267,7 +268,7 @@ const Home = () => {
           justifyContent: 'flex-start',
           flexShrink: 0,
         }}>
-          <img src={logo} alt="EncomiExpress" style={logoStyle} />
+          <img src={theme.palette.mode === 'dark' ? logoDark : logo} alt="EncomiExpress" style={logoStyle} />
         </Box>
         <Typography sx={{ color: 'rgba(255, 255, 255, 0.65)', fontSize: '0.78rem' }}>
           © 2026 EncomiExpress · Uso exclusivo del personal autorizado.

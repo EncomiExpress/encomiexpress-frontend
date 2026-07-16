@@ -7,9 +7,6 @@ export const getAnticipos = (signal, params = {}) => {
   return fetchWithAuth(`/anticipos${suffix}`, { method: 'GET', signal })
 }
 
-export const getAnticipoById = (id, signal) =>
-  fetchWithAuth(`/anticipos/${id}`, { method: 'GET', signal })
-
 export const createAnticipo = (datos) =>
   fetchWithAuth('/anticipos', { method: 'POST', body: JSON.stringify(datos) })
 
@@ -19,8 +16,14 @@ export const updateAnticipo = (id, datos) =>
 export const cambiarEstadoAnticipo = (id, estado) =>
   fetchWithAuth(`/anticipos/${id}/estado`, { method: 'PATCH', body: JSON.stringify({ estado }) })
 
+export const entregarExcedenteAnticipo = (id, soporte) =>
+  fetchWithAuth(`/anticipos/${id}/entregar-excedente`, { method: 'PATCH', body: JSON.stringify({ soporte }) })
+
 export const toggleHabilitadoAnticipo = (id) =>
   fetchWithAuth(`/anticipos/${id}/toggle-habilitado`, { method: 'PATCH' })
 
 export const getPageOfAnticipo = (id, limit = 10) =>
   fetchWithAuth(`/anticipos/${id}/page-of?limit=${limit}`)
+
+export const getAniosDisponiblesAnticipo = () =>
+  fetchWithAuth('/anticipos/anios-disponibles')

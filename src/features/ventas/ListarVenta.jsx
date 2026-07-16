@@ -1,12 +1,12 @@
 import { useTheme, alpha } from '@mui/material/styles'
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { useVentas } from '../../shared/contexts/VentaContext.jsx'
+import { useVentas, ESTADOS_ENCOMIENDA, METODOS_PAGO, ESTADOS_PAGO } from '../../shared/contexts/VentaContext.jsx'
 import {
     Box, Typography, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, TextField,
     IconButton, Chip, Tooltip, InputAdornment,
-    Button, Select, MenuItem, Pagination,
+    Button, Select, MenuItem,
     CircularProgress, FormControl, TableSortLabel,
     Menu, Dialog, DialogContent
 } from '@mui/material'
@@ -20,14 +20,16 @@ import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import ClearIcon from '@mui/icons-material/Clear'
 import ToggleSwitch from '../../shared/components/ToggleSwitch.jsx'
+import TablaPaginacionFooter from '../../shared/components/TablaPaginacionFooter.jsx'
 import CloseIcon from '@mui/icons-material/Close'
 import PaidOutlinedIcon from '@mui/icons-material/PaidOutlined'
 import SwapHorizOutlinedIcon from '@mui/icons-material/SwapHorizOutlined'
-import { ESTADOS_ENCOMIENDA, METODOS_PAGO, ESTADOS_PAGO } from '../../shared/contexts/VentaContext.jsx'
+import UnfoldMoreOutlinedIcon from '@mui/icons-material/UnfoldMoreOutlined'
 import { useAuth, PERMISOS } from '../../shared/contexts/AuthContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
-import { getPageOfEncomienda } from '../../shared/services/ventaService'
+import { getPageOfEncomienda, getEncomiendas } from '../../shared/services/ventaService'
 import { descargarGuiaPdf } from '../../shared/utils/exportGuiaPdf.js'
+import { formatFecha } from '../../shared/utils/formatters.js'
 import RegistrarVenta from './RegistrarVenta'
 import ActualizarVenta from './ActualizarVenta'
 import ModalInhabilitarVenta from './ModalInhabilitarVenta'
@@ -83,9 +85,9 @@ const getFilterMenuProps = (theme) => ({
                 '& .MuiMenuItem-root': {
                     fontSize: '0.82rem', py: 0.9, px: 2,
                     display: 'flex', justifyContent: 'space-between', gap: 2,
-                    '&:hover': { backgroundColor: theme.palette.primary.light },
+                    '&:hover': { backgroundColor: theme.palette.primary.activeBg },
                     '&.Mui-selected': { backgroundColor: 'transparent', fontWeight: 600, color: theme.palette.text.primary },
-                    '&.Mui-selected:hover': { backgroundColor: theme.palette.primary.light },
+                    '&.Mui-selected:hover': { backgroundColor: theme.palette.primary.activeBg },
                 },
             },
         },
@@ -121,14 +123,29 @@ const ListarVenta = () => {
             .catch(() => {})
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [highlightId])
-    const { ventas, total, loading, error, fetchVentas, cambiarEstadoVenta, actualizarVenta, toggleHabilitadoVenta } = useVentas()
+    const { ventas, total, fetchVentas, cambiarEstadoVenta, cambiarEstadoPagoVenta, toggleHabilitadoVenta } = useVentas()
     const { tienePermiso } = useAuth()
     const initialLoad = useRef(true)
     const pendingConfirm = useRef(false)
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState(null)
+    const [exportando, setExportando] = useState(false)
 
     const [busqueda, setBusqueda] = useState('')
     const [debouncedBusqueda, setDebouncedBusqueda] = useState('')
     const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
+    const filtroContainerRef = useRef(null)
+    const filtroBtnRefs = useRef([])
+    const [filtroPillStyle, setFiltroPillStyle] = useState({ left: 0, width: 0 })
+
+    useLayoutEffect(() => {
+        const activeIndex = FILTROS_HABILITADO.findIndex(f => f.value === filtroHabilitado)
+        const btn = filtroBtnRefs.current[activeIndex]
+        const container = filtroContainerRef.current
+        if (btn && container) {
+            setFiltroPillStyle({ left: btn.offsetLeft, width: btn.offsetWidth })
+        }
+    }, [filtroHabilitado])
     const [filtroEstadoEncomienda, setFiltroEstadoEncomienda] = useState('')
     const [filtroPago, setFiltroPago] = useState('')
     const [filtroMetodoPago, setFiltroMetodoPago] = useState('')
@@ -140,24 +157,25 @@ const ListarVenta = () => {
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [ventaEditar, setVentaEditar] = useState(null)
-    const [sortBy, setSortBy] = useState({ field: 'fechaRegistro', dir: 'desc' })
+    const [sortBy, setSortBy] = useState({ field: '', dir: '' })
     const [pagoMenuAnchor, setPagoMenuAnchor] = useState(null)
     const [pagoMenuId, setPagoMenuId] = useState(null)
     const [confirmPago, setConfirmPago] = useState({ open: false, id: null })
     const [estadoMenuAnchor, setEstadoMenuAnchor] = useState(null)
     const [estadoMenuId, setEstadoMenuId] = useState(null)
     const [confirmCancelar, setConfirmCancelar] = useState({ open: false, id: null })
+    const [confirmandoEstado, setConfirmandoEstado] = useState(false)
 
     useEffect(() => {
       const t = setTimeout(() => setDebouncedBusqueda(busqueda), 300)
       return () => clearTimeout(t)
     }, [busqueda])
 
-    const fetchVentasBackend = useCallback(() => {
-      fetchVentas(undefined, {
+    const fetchVentasBackend = useCallback((signal) => {
+      return fetchVentas(signal, {
         page,
         limit: rowsPerPage,
-        sortBy: `${sortBy.field}.${sortBy.dir}`,
+        sortBy: sortBy.field ? `${sortBy.field}.${sortBy.dir}` : undefined,
         estado: filtroEstadoEncomienda || undefined,
         estadoPago: filtroPago || undefined,
         metodoPago: filtroMetodoPago || undefined,
@@ -167,7 +185,26 @@ const ListarVenta = () => {
     }, [page, rowsPerPage, filtroEstadoEncomienda, filtroPago, filtroMetodoPago, filtroHabilitado, debouncedBusqueda, sortBy, fetchVentas])
 
     useEffect(() => {
-      fetchVentasBackend()
+      const controller = new AbortController()
+      let cancelled = false
+
+      const cargar = async () => {
+        setLoading(true)
+        setError(null)
+        try {
+          await fetchVentasBackend(controller.signal)
+        } catch (err) {
+          if (!cancelled) setError(err.message)
+        } finally {
+          if (!cancelled) setLoading(false)
+        }
+      }
+
+      cargar()
+      return () => {
+        cancelled = true
+        controller.abort()
+      }
     }, [fetchVentasBackend])
 
     useEffect(() => {
@@ -175,26 +212,47 @@ const ListarVenta = () => {
     }, [loading])
 
     const handleSort = (field) => {
-        setSortBy(prev => prev.field === field
-            ? { field, dir: prev.dir === 'asc' ? 'desc' : 'asc' }
-            : { field, dir: 'asc' }
-        )
+        setSortBy(prev => {
+            if (prev.field !== field) return { field, dir: 'asc' }
+            if (prev.dir === 'asc') return { field, dir: 'desc' }
+            return { field: '', dir: '' }
+        })
         setPage(1)
     }
 
-    const handleExportar = () => {
-        const rows = ventas.map(venta => ({
-            'ID': venta.idEncomiendaVenta || venta.idVenta,
-            'Cliente': venta.cliente?.nombre || venta.idCliente || '-',
-            'Destino': venta.destino?.ciudad || venta.destino?.nombre || '-',
-            'Estado': venta.estado,
-            'Estado de pago': venta.estadoPago,
-            'Método de pago': venta.metodoPago,
-            'Valor': venta.valorTotal || venta.valor || venta.precio,
-            'Habilitado': venta.habilitado === false ? 'No' : 'Sí',
-        }))
-
-        exportToExcel({ data: rows, fileName: 'ventas', sheetName: 'Ventas' })
+    const handleExportar = async () => {
+        setExportando(true)
+        try {
+            const res = await getEncomiendas(undefined, {
+                limit: 100000,
+                estado: filtroEstadoEncomienda || undefined,
+                estadoPago: filtroPago || undefined,
+                metodoPago: filtroMetodoPago || undefined,
+                habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
+                q: debouncedBusqueda.trim() || undefined,
+            })
+            const rows = (res?.data || []).map(venta => ({
+                'ID': venta.idEncomiendaVenta || venta.idVenta,
+                'Guía': venta.numeroGuia,
+                'Cliente': `${venta.cliente?.nombre || ''} ${venta.cliente?.apellido || ''}`.trim() || venta.idCliente || '-',
+                'Ruta': venta.ruta?.nombreRuta || '-',
+                'Destino': venta.ruta?.destino?.ciudad || '-',
+                'Fecha registro': venta.fechaRegistro,
+                'Fecha est. entrega': venta.fechaEstimadaEntrega,
+                'Estado': venta.estado,
+                'Estado de pago': venta.estadoPago,
+                'Método de pago': venta.metodoPago,
+                'Valor servicio': venta.valorServicio,
+                'Impuestos': venta.impuestos,
+                'Total': venta.total,
+                'Habilitado': venta.habilitado === false ? 'No' : 'Sí',
+            }))
+            await exportToExcel({ data: rows, fileName: 'ventas', sheetName: 'Ventas', themeColor: theme.palette.primary.main })
+        } catch (err) {
+            showToast(err.message || 'Error al exportar.', 'error')
+        } finally {
+            setExportando(false)
+        }
     }
 
     const handleDescargarGuia = async (venta) => {
@@ -216,7 +274,7 @@ const ListarVenta = () => {
 
     const handlePagoChange = async (id, nuevoPago) => {
         try {
-            await actualizarVenta(id, { estadoPago: nuevoPago })
+            await cambiarEstadoPagoVenta(id, nuevoPago)
             showToast(`Estado de pago actualizado a ${nuevoPago}.`, 'success')
         } catch (err) {
             showToast(err.message || 'Error al cambiar el estado de pago.', 'error')
@@ -224,13 +282,23 @@ const ListarVenta = () => {
     }
 
     const handlePagoConfirm = async () => {
-        await handlePagoChange(confirmPago.id, 'Pagado')
-        setConfirmPago({ open: false, id: null })
+        setConfirmandoEstado(true)
+        try {
+            await handlePagoChange(confirmPago.id, 'Pagado')
+            setConfirmPago({ open: false, id: null })
+        } finally {
+            setConfirmandoEstado(false)
+        }
     }
 
     const handleCancelarConfirm = async () => {
-        await handleEstadoChange(confirmCancelar.id, 'Cancelada')
-        setConfirmCancelar({ open: false, id: null })
+        setConfirmandoEstado(true)
+        try {
+            await handleEstadoChange(confirmCancelar.id, 'Cancelada')
+            setConfirmCancelar({ open: false, id: null })
+        } finally {
+            setConfirmandoEstado(false)
+        }
     }
 
     const handleToggleHabilitado = (venta) => {
@@ -240,11 +308,6 @@ const ListarVenta = () => {
     const handleConfirmarToggle = () => {
         pendingConfirm.current = true
     }
-
-    const totalPages = Math.max(1, Math.ceil(total / rowsPerPage))
-    const safePage = Math.min(page, totalPages)
-    const from = total === 0 ? 0 : (safePage - 1) * rowsPerPage + 1
-    const to = Math.min(safePage * rowsPerPage, total)
 
     return (
         <Box sx={{ p: 3.5 }}>
@@ -260,8 +323,9 @@ const ListarVenta = () => {
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Button
                         onClick={handleExportar}
+                        disabled={exportando}
                         variant="contained"
-                        startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 18 }} />}
+                        startIcon={exportando ? <CircularProgress size={16} sx={{ color: 'inherit' }} /> : <FileDownloadOutlinedIcon sx={{ fontSize: 18 }} />}
                         sx={{
                             backgroundColor: theme.palette.background.paper,
                             color: theme.palette.text.primary,
@@ -272,14 +336,14 @@ const ListarVenta = () => {
                             border: `1px solid ${theme.palette.divider}`,
                             boxShadow: 'none',
                             '&:hover': {
-                                backgroundColor: theme.palette.primary.light,
+                                backgroundColor: theme.palette.primary.activeBg,
                                 color: theme.palette.text.primary,
                                 border: `1px solid ${theme.palette.divider}`,
                                 boxShadow: 'none',
                             },
                         }}
                     >
-                        Exportar
+                        {exportando ? 'Exportando...' : 'Exportar'}
                     </Button>
 
                     <Button
@@ -308,21 +372,37 @@ const ListarVenta = () => {
 
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-                    <Box sx={{
+                    <Box ref={filtroContainerRef} sx={{
+                        position: 'relative',
                         display: 'inline-flex',
                         backgroundColor: theme.palette.primary.light,
                         borderRadius: 4,
                         p: '4px',
                         gap: '5px',
                     }}>
-                        {FILTROS_HABILITADO.map(f => (
+                        <Box sx={{
+                            position: 'absolute',
+                            top: '4px',
+                            bottom: '4px',
+                            left: `${filtroPillStyle.left}px`,
+                            width: `${filtroPillStyle.width}px`,
+                            borderRadius: 3,
+                            backgroundColor: theme.palette.background.paper,
+                            boxShadow: '0 1px 4px rgba(0,0,0,0.12)',
+                            transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                            pointerEvents: 'none',
+                        }} />
+                        {FILTROS_HABILITADO.map((f, i) => (
                             <Button
                                 key={f.value}
+                                ref={el => { filtroBtnRefs.current[i] = el }}
                                 onClick={() => { setFiltroHabilitado(f.value); setPage(1) }}
                                 size="small"
                                 disableElevation
                                 disableRipple
                                 sx={{
+                                    position: 'relative',
+                                    zIndex: 1,
                                     borderRadius: 3,
                                     textTransform: 'none',
                                     fontSize: '0.75rem',
@@ -330,14 +410,12 @@ const ListarVenta = () => {
                                     py: 0.5,
                                     minWidth: 0,
                                     fontWeight: filtroHabilitado === f.value ? 600 : 400,
-                                    backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
+                                    backgroundColor: 'transparent',
                                     color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.primary.darker,
-                                    boxShadow: filtroHabilitado === f.value
-                                        ? '0 1px 4px rgba(0,0,0,0.12)'
-                                        : 'none',
+                                    transition: 'color 0.3s ease',
                                     border: 'none',
                                     '&:hover': {
-                                        backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
+                                        backgroundColor: 'transparent',
                                         color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.primary.dark,
                                         border: 'none',
                                     },
@@ -376,34 +454,6 @@ const ListarVenta = () => {
                         </Select>
                     </FormControl>
 
-                    <FormControl size="small" sx={{ minWidth: 140 }}>
-                        <Select
-                            displayEmpty
-                            value={filtroPago}
-                            onChange={e => { setFiltroPago(e.target.value); setPage(1) }}
-                            renderValue={v => v || 'Pago'}
-                            IconComponent={KeyboardArrowDownOutlinedIcon}
-                            sx={{
-                                fontSize: '0.82rem', borderRadius: 4,
-                                color: filtroPago ? theme.palette.text.primary : theme.palette.text.secondary,
-                                '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
-                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
-                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
-                                '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` },
-                                '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
-                                '& .MuiTouchRipple-root': { display: 'none' },
-                            }}
-                            MenuProps={filterMenuProps}>
-                            <MenuItem value="">Todos</MenuItem>
-                            {ESTADOS_PAGO.map(e => (
-                                <MenuItem key={e} value={e}>
-                                    {e}
-                                    {filtroPago === e && <CheckOutlinedIcon sx={{ fontSize: 14, color: theme.palette.text.secondary }} />}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-
                     <FormControl size="small" sx={{ minWidth: 150 }}>
                         <Select
                             displayEmpty
@@ -427,6 +477,34 @@ const ListarVenta = () => {
                                 <MenuItem key={mp} value={mp}>
                                     {mp}
                                     {filtroMetodoPago === mp && <CheckOutlinedIcon sx={{ fontSize: 14, color: theme.palette.text.secondary }} />}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+
+                    <FormControl size="small" sx={{ minWidth: 140 }}>
+                        <Select
+                            displayEmpty
+                            value={filtroPago}
+                            onChange={e => { setFiltroPago(e.target.value); setPage(1) }}
+                            renderValue={v => v || 'Pago'}
+                            IconComponent={KeyboardArrowDownOutlinedIcon}
+                            sx={{
+                                fontSize: '0.82rem', borderRadius: 4,
+                                color: filtroPago ? theme.palette.text.primary : theme.palette.text.secondary,
+                                '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
+                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
+                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
+                                '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` },
+                                '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
+                                '& .MuiTouchRipple-root': { display: 'none' },
+                            }}
+                            MenuProps={filterMenuProps}>
+                            <MenuItem value="">Todos</MenuItem>
+                            {ESTADOS_PAGO.map(e => (
+                                <MenuItem key={e} value={e}>
+                                    {e}
+                                    {filtroPago === e && <CheckOutlinedIcon sx={{ fontSize: 14, color: theme.palette.text.secondary }} />}
                                 </MenuItem>
                             ))}
                         </Select>
@@ -475,25 +553,29 @@ const ListarVenta = () => {
                     <Table>
                         <TableHead>
                             <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
-                                <TableCell sx={thStyle}>Guía</TableCell>
+                                <TableCell sx={thStyle}>
+                                    <TableSortLabel
+                                        active={sortBy.field === 'numeroGuia'}
+                                        direction={sortBy.dir === 'desc' ? 'desc' : 'asc'}
+                                        onClick={() => handleSort('numeroGuia')}
+                                        IconComponent={sortBy.field === 'numeroGuia' ? undefined : UnfoldMoreOutlinedIcon}
+                                        sx={{
+                                            color: 'inherit',
+                                            '&:hover': { color: 'inherit' },
+                                            '&.Mui-active': { color: theme.palette.primary.main },
+                                            '&.Mui-active:hover': { color: theme.palette.primary.main },
+                                            '& .MuiTableSortLabel-icon': { opacity: 1, fontSize: 16 },
+                                        }}
+                                    >
+                                        Guía
+                                    </TableSortLabel>
+                                </TableCell>
                                 <TableCell sx={thStyle}>Remitente / Destinatario</TableCell>
                                 <TableCell sx={thStyle}>Destino</TableCell>
                                 <TableCell sx={thStyle}>Total</TableCell>
                                 <TableCell sx={thStyle}>Estado pago</TableCell>
                                 <TableCell sx={thStyle}>
-                                    <TableSortLabel
-                                        active={sortBy.field === 'estado'}
-                                        direction={sortBy.field === 'estado' ? sortBy.dir : 'asc'}
-                                        onClick={() => handleSort('estado')}
-                                        sx={{
-                                            color: 'inherit',
-                                            '&.Mui-active': { color: theme.palette.primary.main },
-                                            '& .MuiTableSortLabel-icon': { opacity: 0.4, fontSize: 16 },
-                                            '&.Mui-active .MuiTableSortLabel-icon': { opacity: 1 },
-                                        }}
-                                    >
-                                        Estado
-                                    </TableSortLabel>
+                                    Estado
                                 </TableCell>
                                 <TableCell sx={{ ...thStyle, width: 130 }}>Acciones</TableCell>
                             </TableRow>
@@ -561,7 +643,7 @@ const ListarVenta = () => {
                                                     {venta.numeroGuia}
                                                 </Typography>
                                                 <Typography variant="caption" color={theme.palette.text.secondary}>
-                                                    {venta.fechaRegistro}
+                                                    {formatFecha(venta.fechaRegistro)}
                                                 </Typography>
                                             </TableCell>
 
@@ -632,6 +714,13 @@ const ListarVenta = () => {
                                                             <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: '#D97706' }}>Pendiente</Typography>
                                                         </Box>
                                                     )
+                                                ) : (venta.metodoPago === 'Contraentrega' && venta.estado !== 'Entregada') ? (
+                                                    <Tooltip title="Es Contraentrega: el pago solo se puede confirmar cuando la venta sea entregada">
+                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, pl: 1, opacity: 0.55 }}>
+                                                            <Box sx={{ width: 9, height: 9, borderRadius: '50%', border: '2px solid #D97706', backgroundColor: 'transparent', flexShrink: 0 }} />
+                                                            <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: '#D97706' }}>Pendiente</Typography>
+                                                        </Box>
+                                                    </Tooltip>
                                                 ) : (
                                                     <Box
                                                         onClick={(e) => { e.stopPropagation(); setPagoMenuAnchor(e.currentTarget); setPagoMenuId(venta.idEncomiendaVenta) }}
@@ -683,13 +772,35 @@ const ListarVenta = () => {
                                                             <ReceiptLongOutlinedIcon sx={{ fontSize: 18 }} />
                                                         </IconButton>
                                                     </Tooltip>
-                                                    <Tooltip title="Editar">
-                                                        <IconButton size="small"
-                                                            onClick={() => { setVentaEditar(venta); setModalActualizarOpen(true) }}
-                                                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.action.hover } }}>
-                                                            <EditOutlinedIcon sx={{ fontSize: 18 }} />
-                                                        </IconButton>
-                                                    </Tooltip>
+                                                    {venta.habilitado === false ? (
+                                                        <Tooltip title="Habilita el registro para poder editarlo">
+                                                            <span>
+                                                                <IconButton size="small" disabled>
+                                                                    <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                                                                </IconButton>
+                                                            </span>
+                                                        </Tooltip>
+                                                    ) : venta.estado !== 'Programada' ? (
+                                                        <Tooltip title={
+                                                            venta.estado === 'En Tránsito' ? 'Esta venta ya está en tránsito: no se puede editar'
+                                                                : venta.estado === 'Entregada' ? 'Esta venta ya fue entregada: no se puede editar'
+                                                                    : 'Esta venta fue cancelada: no se puede editar'
+                                                        }>
+                                                            <span>
+                                                                <IconButton size="small" disabled>
+                                                                    <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                                                                </IconButton>
+                                                            </span>
+                                                        </Tooltip>
+                                                    ) : (
+                                                        <Tooltip title="Editar">
+                                                            <IconButton size="small"
+                                                                onClick={() => { setVentaEditar(venta); setModalActualizarOpen(true) }}
+                                                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.action.hover } }}>
+                                                                <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                    )}
                                                     {tienePermiso(PERMISOS.INHABILITAR_VENTA) && (
                                                     <ToggleSwitch id={venta.idEncomiendaVenta} checked={venta.habilitado} onChange={() => handleToggleHabilitado(venta)} />
                                                     )}
@@ -704,104 +815,13 @@ const ListarVenta = () => {
                 </TableContainer>
             </Paper>
 
-            <Box sx={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                px: 0.5, pt: 1.5,
-            }}>
-                <Typography variant="body2" color={theme.palette.text.secondary}>
-                    Mostrando {from}–{to} de {total} resultado{total !== 1 ? 's' : ''}
-                </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography variant="body2" color={theme.palette.text.secondary} fontWeight={500}>
-                            Filas
-                        </Typography>
-                        <Select
-                            value={rowsPerPage}
-                            onChange={e => { setRowsPerPage(Number(e.target.value)); setPage(1) }}
-                            size="small"
-                            renderValue={(value) => value}
-                            IconComponent={KeyboardArrowDownOutlinedIcon}
-                            sx={{
-                                fontSize: '0.82rem',
-                                borderRadius: 2,
-                                '& .MuiSelect-select': { py: 0.6, pl: 1.5, pr: '28px !important' },
-                                '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
-                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
-                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                    borderColor: theme.palette.primary.main, borderWidth: '1px',
-                                },
-                                '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` },
-                                '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
-                                '& .MuiTouchRipple-root': { display: 'none' },
-                            }}
-                            MenuProps={{
-                                slotProps: {
-                                    paper: {
-                                        sx: {
-                                            borderRadius: 2,
-                                            boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
-                                            mt: 0.5,
-                                            minWidth: 80,
-                                            '& .MuiMenuItem-root': {
-                                                fontSize: '0.82rem',
-                                                py: 0.9,
-                                                px: 2,
-                                                display: 'flex',
-                                                justifyContent: 'space-between',
-                                                gap: 2,
-                                                '&:hover': { backgroundColor: theme.palette.action.hover },
-                                                '&.Mui-selected': { backgroundColor: 'transparent', fontWeight: 600, color: theme.palette.text.primary },
-                                                '&.Mui-selected:hover': { backgroundColor: theme.palette.primary.light },
-                                            },
-                                        },
-                                    },
-                                },
-                            }}
-                        >
-                            {[5, 10, 25].map(n => (
-                                <MenuItem key={n} value={n}>
-                                    {n}
-                                    {rowsPerPage === n && (
-                                        <CheckOutlinedIcon sx={{ fontSize: 14, color: theme.palette.text.secondary }} />
-                                    )}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </Box>
-                    <Pagination
-                        count={totalPages}
-                        page={safePage}
-                        onChange={(_, val) => setPage(val)}
-                        size="small"
-                        shape="rounded"
-                        sx={{
-                            '& .MuiPaginationItem-root': {
-                                fontSize: '0.82rem',
-                                borderRadius: '8px',
-                                minWidth: 34,
-                                height: 34,
-                                mx: 0.2,
-                                color: theme.palette.text.primary,
-                                border: `1px solid ${theme.palette.divider}`,
-                                '& .MuiTouchRipple-root': { display: 'none' },
-                            },
-                            '& .MuiPaginationItem-ellipsis': { border: 'none' },
-                            '& .MuiPaginationItem-root.Mui-selected': {
-                                backgroundColor: theme.palette.primary.main,
-                                borderColor: theme.palette.primary.main,
-                                color: 'white',
-                                fontWeight: 600,
-                                '&:hover': { backgroundColor: theme.palette.primary.darker },
-                            },
-                            '& .MuiPaginationItem-root:hover:not(.Mui-selected)': {
-                                backgroundColor: theme.palette.background.subtle,
-                                borderColor: theme.palette.divider,
-                            },
-                        }}
-                    />
-                </Box>
-            </Box>
+            <TablaPaginacionFooter
+                total={total}
+                page={page}
+                rowsPerPage={rowsPerPage}
+                onPageChange={setPage}
+                onRowsPerPageChange={(n) => { setRowsPerPage(n); setPage(1) }}
+            />
 
             <ModalConsultarVenta venta={ventaConsulta} onClose={() => setVentaConsulta(null)} />
 
@@ -924,16 +944,17 @@ const ListarVenta = () => {
                     </Button>
                     <Button
                         onClick={handleCancelarConfirm}
+                        disabled={confirmandoEstado}
                         variant="contained"
                         disableRipple
                         sx={{
-                            textTransform: 'none', borderRadius: 2, fontWeight: 600,
+                            textTransform: 'none', borderRadius: 2, fontWeight: 600, minWidth: 140,
                             px: 5, py: 0.76, fontSize: '0.875rem',
                             backgroundColor: '#3F3F46',
                             '&:hover': { backgroundColor: '#3F3F46', filter: 'brightness(0.88)' },
                         }}
                     >
-                        Confirmar
+                        {confirmandoEstado ? <CircularProgress size={18} sx={{ color: 'white' }} /> : 'Confirmar'}
                     </Button>
                 </Box>
             </Dialog>
@@ -986,16 +1007,17 @@ const ListarVenta = () => {
                     </Button>
                     <Button
                         onClick={handlePagoConfirm}
+                        disabled={confirmandoEstado}
                         variant="contained"
                         disableRipple
                         sx={{
-                            textTransform: 'none', borderRadius: 2, fontWeight: 600,
+                            textTransform: 'none', borderRadius: 2, fontWeight: 600, minWidth: 140,
                             px: 5, py: 0.76, fontSize: '0.875rem',
                             backgroundColor: '#059669',
                             '&:hover': { backgroundColor: '#059669', filter: 'brightness(0.88)' },
                         }}
                     >
-                        Confirmar
+                        {confirmandoEstado ? <CircularProgress size={18} sx={{ color: 'white' }} /> : 'Confirmar'}
                     </Button>
                 </Box>
             </Dialog>

@@ -1,9 +1,9 @@
-﻿import { useTheme } from '@mui/material/styles'
+﻿import { useTheme, alpha } from '@mui/material/styles'
 import { useState, useEffect, useRef } from 'react'
 import {
     Box, Typography, Paper, Stepper, Step, StepLabel,
     Button, Alert, TextField, Dialog, DialogTitle, DialogContent, IconButton,
-    Autocomplete
+    Autocomplete, CircularProgress
 } from '@mui/material'
 import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined'
 import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined'
@@ -22,10 +22,10 @@ import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import { formatFecha } from '../../shared/utils/formatters.js'
 import { normalizarTexto } from '../../shared/utils/duplicados.js'
 
-const steps = ['Asignación', 'Fechas', 'Confirmación']
+const steps = ['Asignación y Valores', 'Fechas', 'Confirmación']
 
 const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, onSuccess }) => {
-    const { anticipos, actualizarAnticipo, conductores, rutas } = useAnticipos()
+    const { anticipos, actualizarAnticipo, rutas } = useAnticipos()
     const { showToast } = useToast()
     const theme = useTheme()
     const [errores, setErrores] = useState({})
@@ -36,7 +36,6 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
     const [sinCambios, setSinCambios] = useState(false)
     const [form, setForm] = useState(null)
     const cargado = useRef(false)
-    const [conductorInput, setConductorInput] = useState('')
     const [rutaInput, setRutaInput] = useState('')
 
     useEffect(() => {
@@ -57,11 +56,12 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
         }
         setFormOriginal(datos)
         setForm(datos)
-        const c = conductores.find(x => x.idConductor === anticipo.idConductor)
+        // "rutas" del contexto solo trae rutas "Programada" (son las únicas asignables a
+        // un anticipo nuevo) — la ruta real de este anticipo puede ya estar "En Curso" o
+        // más adelante, así que si no aparece ahí se usa el nombre que ya trae el anticipo.
         const r = rutas.find(x => x.idRuta === anticipo.idRuta)
-        setConductorInput(c ? c.nombre : '')
-        setRutaInput(r ? r.nombre : '')
-    }, [open, anticipoProp, anticipos, conductores, rutas])
+        setRutaInput(r ? r.nombre : (anticipo.ruta?.nombreRuta || ''))
+    }, [open, anticipoProp, anticipos, rutas])
 
     const NUMERIC_LIMITS = { valorAnticipo: 999999999, valorGastado: 999999999 }
 
@@ -73,10 +73,9 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
             value = value.replace(/[^0-9.]/g, '')
             const num = parseFloat(value)
             if (!isNaN(num) && num > NUMERIC_LIMITS[name]) return
-        }
-
-        if (name === 'soporte') {
-            value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ0-9\s,.-]/g, '')
+            // El gasto nunca puede superar el valor entregado — así nunca hay
+            // "faltante" que devolver.
+            if (name === 'valorGastado' && !isNaN(num) && num > parseFloat(form?.valorAnticipo || 0)) return
         }
 
         setForm(prev => ({ ...prev, [name]: value }))
@@ -87,13 +86,16 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
     const validarPaso = (step) => {
         const e = {}
         if (step === 0) {
-            if (!form.idConductor) e.idConductor = 'Selecciona un conductor'
             if (!form.idRuta) e.idRuta = 'Selecciona una ruta'
             if (!form.valorAnticipo) e.valorAnticipo = 'El valor del anticipo es obligatorio'
             else if (isNaN(form.valorAnticipo) || parseFloat(form.valorAnticipo) <= 0)
                 e.valorAnticipo = 'Ingresa un valor válido mayor a 0'
             if (form.valorGastado !== '' && form.valorGastado !== 0 && (isNaN(form.valorGastado) || parseFloat(form.valorGastado) < 0))
                 e.valorGastado = 'Ingresa un valor válido'
+            else if (parseFloat(form.valorGastado || 0) > parseFloat(form.valorAnticipo || 0))
+                e.valorGastado = 'No puede ser mayor al valor del anticipo'
+            if (enLegalizacion && (form.valorGastado === '' || form.valorGastado === null || form.valorGastado === undefined))
+                e.valorGastado = 'El valor gastado es obligatorio para legalizar este anticipo'
         }
         if (step === 1) {
             if (!form.fechaEntrega) e.fechaEntrega = 'La fecha de entrega es obligatoria'
@@ -130,10 +132,29 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
         setSinCambios(false)
         setSubmitting(true)
         try {
-            await actualizarAnticipo(form)
+            // idRuta/idConductor/valorAnticipo/fechaEntrega solo se mandan si de
+            // verdad se pueden editar en este estado, y valorGastado solo si el
+            // anticipo ya está "En Legalización" — el backend rechaza todo el
+            // guardado si los ve fuera de esos estados.
+            const payload = {
+                idAnticipoExcedente: form.idAnticipoExcedente,
+                soporte: form.soporte,
+                fechaLegalizacion: form.fechaLegalizacion,
+                fechaEntregaExcedente: form.fechaEntregaExcedente,
+            }
+            if (puedeEditarAsignacion) {
+                payload.idRuta = form.idRuta
+                payload.idConductor = form.idConductor
+                payload.valorAnticipo = form.valorAnticipo
+                payload.fechaEntrega = form.fechaEntrega
+            }
+            if (enLegalizacion) {
+                payload.valorGastado = form.valorGastado
+            }
+            await actualizarAnticipo(payload)
             showToast('¡Anticipo actualizado exitosamente!', 'success')
             setTimeout(() => {
-                onClose()
+                cerrar()
                 if (onSuccess) onSuccess()
             }, 1500)
         } catch (err) {
@@ -143,7 +164,12 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
         }
     }
 
-    const handleCancelar = () => onClose()
+    const cerrar = () => {
+        if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+        onClose()
+    }
+
+    const handleCancelar = () => cerrar()
 
     const formatMoney = (val) => {
         const num = parseFloat(val || 0)
@@ -151,22 +177,55 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
         return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(num)
     }
 
-    const getNombreConductor = (id) => {
-        const c = conductores.find(c => c.idConductor === parseInt(id))
-        return c ? c.nombre : '—'
-    }
+    // Si la ruta elegida sigue "Programada", su conductor manda (por si se reasignó
+    // el anticipo a otra ruta). Si no aparece ahí (ya avanzó de estado), se usa el
+    // conductor que ya traía el anticipo desde que se cargó.
+    const nombreConductorOriginal = anticipoOriginal?.conductor?.usuario
+        ? `${anticipoOriginal.conductor.usuario.nombre} ${anticipoOriginal.conductor.usuario.apellido}`
+        : '—'
+
+    // Si la ruta ya avanzó de estado no aparece en "rutas" (solo trae "Programada") —
+    // se arma una opción sintética con los datos del anticipo para que el Autocomplete no quede vacío.
+    const rutaSeleccionada = rutas.find(r => r.idRuta === parseInt(form?.idRuta)) || (
+        anticipoOriginal?.ruta
+            ? {
+                idRuta: anticipoOriginal.idRuta,
+                nombre: anticipoOriginal.ruta.nombreRuta || `Ruta ${anticipoOriginal.idRuta}`,
+                idConductor: anticipoOriginal.idConductor,
+                conductorNombre: nombreConductorOriginal,
+            }
+            : null
+    )
+
+    const getNombreConductor = () => rutaSeleccionada?.conductorNombre || nombreConductorOriginal
 
     const getNombreRuta = (id) => {
         const r = rutas.find(r => r.idRuta === parseInt(id))
-        return r ? r.nombre : '—'
+        return r ? r.nombre : (anticipoOriginal?.ruta?.nombreRuta || '—')
     }
 
     const excedente = parseFloat(form?.valorAnticipo || 0) - parseFloat(form?.valorGastado || 0)
 
+    // La ruta/conductor/valor del anticipo/fecha de entrega solo se pueden tocar
+    // mientras el anticipo sigue "Entregado" (la ruta todavía no arrancó). En
+    // "En Legalización" lo único que se puede completar es el valor gastado —
+    // de ahí en adelante (Excedente pendiente/Completado) ni siquiera se llega
+    // a abrir este modal (el ícono "Editar" ya queda bloqueado en la lista).
+    const estadoActual = anticipoOriginal?.estado
+    const puedeEditarAsignacion = estadoActual === 'Entregado'
+    const enLegalizacion = estadoActual === 'En Legalización'
+
+    // Mientras se legaliza, la fecha de legalización va a quedar en la de hoy sí o
+    // sí en cuanto se guarde (así lo calcula el backend) — se muestra de una vez en
+    // vez de dejar el campo vacío con un texto en futuro.
+    const fechaLegalizacionMostrada = enLegalizacion
+        ? new Date().toISOString().split('T')[0]
+        : (form?.fechaLegalizacion || '')
+
     const cardSx = {
         flex: 1, minWidth: 0, borderRadius: 2, p: 2.5,
         border: `1px solid ${theme.palette.divider}`,
-        backgroundColor: 'white', overflow: 'hidden',
+        backgroundColor: theme.palette.background.paper, overflow: 'hidden',
     }
 
     const renderStepContent = () => {
@@ -175,44 +234,21 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
                 return (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                         <Autocomplete
-                            options={conductores}
-                            getOptionLabel={(c) => c.nombre}
-                            isOptionEqualToValue={(opt, val) => opt.idConductor === val.idConductor}
-                            value={form ? (conductores.find(c => c.idConductor === parseInt(form.idConductor)) || null) : null}
-                            inputValue={conductorInput}
-                            onInputChange={(_, newVal, reason) => {
-                                if (reason === 'input') setConductorInput(newVal.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ0-9\s]/g, ''))
-                                else setConductorInput(newVal)
-                            }}
-                            onChange={(_, val) => handleChange({ target: { name: 'idConductor', value: val ? val.idConductor : '' } })}
-                            filterOptions={(opts, { inputValue }) => {
-                                if (!inputValue.trim()) return [...opts].sort((a, b) => b.idConductor - a.idConductor).slice(0, 5)
-                                const q = normalizarTexto(inputValue)
-                                return opts.filter(c =>
-                                    normalizarTexto(c.nombre).includes(q) ||
-                                    normalizarTexto(c.numeroIdentificacion || '').includes(q)
-                                )
-                            }}
-                            noOptionsText="No se encontraron conductores"
-                            renderInput={(params) => (
-                                <TextField {...params} label="Conductor *"
-                                    error={!!errores.idConductor} helperText={errores.idConductor || 'Busca por nombre, apellido o documento'}
-                                    slotProps={{ inputLabel: { shrink: true }, htmlInput: { ...params.inputProps, maxLength: 80 } }}
-                                    sx={formFieldStyles} />
-                            )}
-                        />
-
-                        <Autocomplete
                             options={rutas}
+                            disabled={!puedeEditarAsignacion}
                             getOptionLabel={(r) => r.nombre}
                             isOptionEqualToValue={(opt, val) => opt.idRuta === val.idRuta}
-                            value={form ? (rutas.find(r => r.idRuta === parseInt(form.idRuta)) || null) : null}
+                            value={rutaSeleccionada || null}
                             inputValue={rutaInput}
                             onInputChange={(_, newVal, reason) => {
                                 if (reason === 'input') setRutaInput(newVal.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ0-9\s\-_]/g, ''))
                                 else setRutaInput(newVal)
                             }}
-                            onChange={(_, val) => handleChange({ target: { name: 'idRuta', value: val ? val.idRuta : '' } })}
+                            onChange={(_, val) => {
+                                setForm(prev => ({ ...prev, idRuta: val ? val.idRuta : '', idConductor: val ? val.idConductor : prev.idConductor }))
+                                setErrores(prev => ({ ...prev, idRuta: '' }))
+                                setSinCambios(false)
+                            }}
                             filterOptions={(opts, { inputValue }) => {
                                 if (!inputValue.trim()) return [...opts].sort((a, b) => b.idRuta - a.idRuta).slice(0, 5)
                                 const q = normalizarTexto(inputValue)
@@ -221,10 +257,25 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
                             noOptionsText="No se encontraron rutas"
                             renderInput={(params) => (
                                 <TextField {...params} label="Ruta *"
-                                    error={!!errores.idRuta} helperText={errores.idRuta || 'Busca por nombre de la ruta'}
+                                    error={!!errores.idRuta}
+                                    helperText={errores.idRuta || (puedeEditarAsignacion
+                                        ? 'Busca por nombre de la ruta. (El conductor se autocompletará)'
+                                        : 'La ruta ya arrancó: no se puede reasignar')}
                                     slotProps={{ inputLabel: { shrink: true }, htmlInput: { ...params.inputProps, maxLength: 100 } }}
                                     sx={formFieldStyles} />
                             )}
+                        />
+
+                        <TextField
+                            label="Conductor"
+                            value={getNombreConductor()}
+                            disabled
+                            fullWidth
+                            helperText={puedeEditarAsignacion
+                                ? 'Se autocompleta con el conductor asignado a la ruta'
+                                : 'La ruta ya arrancó: no se puede reasignar'}
+                            slotProps={{ inputLabel: { shrink: true } }}
+                            sx={formFieldStyles}
                         />
 
                         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
@@ -234,10 +285,11 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
                                 value={form?.valorAnticipo || ''}
                                 onChange={handleChange}
                                 required
+                                disabled={!puedeEditarAsignacion}
                                 icon={AttachMoneyOutlinedIcon}
                                 placeholder="Ej: 500000"
                                 error={errores.valorAnticipo}
-                                helperText={errores.valorAnticipo || 'Valor en pesos colombianos'}
+                                helperText={errores.valorAnticipo || (puedeEditarAsignacion ? 'Valor en pesos colombianos' : 'La ruta ya arrancó: no se puede modificar')}
                                 inputProps={{ maxLength: 12 }}
                             />
                             <FormField
@@ -245,30 +297,33 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
                                 name="valorGastado"
                                 value={form?.valorGastado || ''}
                                 onChange={handleChange}
+                                required={enLegalizacion}
+                                disabled={!enLegalizacion}
                                 icon={AttachMoneyOutlinedIcon}
                                 placeholder="Ej: 500000"
                                 error={errores.valorGastado}
-                                helperText={errores.valorGastado || 'Diligenciar al legalizar'}
+                                helperText={errores.valorGastado || (enLegalizacion ? 'Obligatorio para legalizar este anticipo' : 'Se diligencia cuando la ruta esté en curso')}
                                 inputProps={{ maxLength: 12 }}
                             />
                         </Box>
 
+                        {/* Mismos colores que el chip "+$" del listado (theme.palette.success),
+                        no fijos, para que coincidan entre sí y para que sí cambien en modo oscuro. */}
                         <Box sx={{
                             p: 3, borderRadius: 2,
-                            backgroundColor: excedente >= 0 ? '#E8F5E9' : '#FFF3F3',
-                            border: `1px solid ${excedente >= 0 ? '#A5D6A7' : '#FFCDD2'}`,
+                            backgroundColor: alpha(theme.palette.success.main, 0.1),
+                            border: `1px solid ${alpha(theme.palette.success.main, 0.3)}`,
                             display: 'flex', alignItems: 'center', gap: 2,
                         }}>
-                            <AttachMoneyIcon sx={{ color: excedente >= 0 ? '#2E7D32' : theme.palette.primary.main, fontSize: 32 }} />
+                            <AttachMoneyIcon sx={{ color: theme.palette.success.dark, fontSize: 32 }} />
                             <Box>
                                 <Typography variant="caption" fontWeight={700}
-                                    color={excedente >= 0 ? '#2E7D32' : theme.palette.primary.main}
+                                    color={theme.palette.success.dark}
                                     textTransform="uppercase" letterSpacing={0.8}>
-                                    {excedente >= 0 ? 'Excedente a devolver' : 'Faltante (gasto mayor al anticipo)'}
+                                    Excedente a devolver
                                 </Typography>
-                                <Typography variant="h5" fontWeight={800}
-                                    color={excedente >= 0 ? '#2E7D32' : theme.palette.primary.main}>
-                                    {formatMoney(Math.abs(excedente))}
+                                <Typography variant="h5" fontWeight={800} color={theme.palette.success.dark}>
+                                    {formatMoney(excedente)}
                                 </Typography>
                             </Box>
                         </Box>
@@ -282,34 +337,35 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
                             <TextField
                                 fullWidth label="Fecha de entrega" name="fechaEntrega" type="date"
                                 value={form?.fechaEntrega || ''} onChange={handleChange} required
-                                error={!!errores.fechaEntrega} helperText={errores.fechaEntrega}
+                                disabled={!puedeEditarAsignacion}
+                                error={!!errores.fechaEntrega}
+                                helperText={errores.fechaEntrega || (puedeEditarAsignacion ? undefined : 'La ruta ya arrancó: no se puede modificar')}
                                 slotProps={{ inputLabel: { shrink: true } }} sx={formFieldStyles}
                             />
                             <TextField
                                 fullWidth label="Fecha de legalización" name="fechaLegalizacion" type="date"
-                                value={form?.fechaLegalizacion || ''} onChange={handleChange}
-                                error={!!errores.fechaLegalizacion} helperText={errores.fechaLegalizacion || 'Opcional'}
-                                slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: form?.fechaEntrega || undefined } }} sx={formFieldStyles}
+                                value={fechaLegalizacionMostrada} onChange={handleChange}
+                                disabled={!enLegalizacion}
+                                error={!!errores.fechaLegalizacion}
+                                helperText={errores.fechaLegalizacion || (enLegalizacion ? 'Quedará registrada con la fecha de hoy al guardar' : 'Se completa sola al legalizar el anticipo')}
+                                slotProps={{
+                                    inputLabel: { shrink: true },
+                                    htmlInput: { min: form?.fechaEntrega || undefined, readOnly: enLegalizacion },
+                                }} sx={formFieldStyles}
                             />
                         </Box>
 
-                        <TextField
-                            fullWidth label="Fecha entrega excedente" name="fechaEntregaExcedente" type="date"
-                            value={form?.fechaEntregaExcedente || ''} onChange={handleChange}
-                            error={!!errores.fechaEntregaExcedente} helperText={errores.fechaEntregaExcedente || 'Opcional'}
-                            slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: form?.fechaEntrega || undefined } }} sx={formFieldStyles}
-                        />
+                        {puedeEditarAsignacion && (
+                            <TextField
+                                fullWidth label="Fecha entrega excedente" name="fechaEntregaExcedente" type="date"
+                                value={form?.fechaEntregaExcedente || ''} onChange={handleChange}
+                                disabled
+                                error={!!errores.fechaEntregaExcedente}
+                                helperText={errores.fechaEntregaExcedente || 'Se completa sola al confirmar la devolución del excedente'}
+                                slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: form?.fechaEntrega || undefined } }} sx={formFieldStyles}
+                            />
+                        )}
 
-                        <FormField
-                            label="Observaciones"
-                            name="soporte"
-                            value={form?.soporte || ''}
-                            onChange={handleChange}
-                            multiline rows={3}
-                            placeholder="Agrega alguna observación si es necesario..."
-                            inputProps={{ maxLength: 500 }}
-                            helperText={`Opcional · ${form?.soporte?.length || 0}/500`}
-                        />
                     </Box>
                 )
 
@@ -324,8 +380,6 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
                     [form.valorGastado, formOriginal.valorGastado],
                     [form.fechaEntrega, formOriginal.fechaEntrega],
                     [form.fechaLegalizacion, formOriginal.fechaLegalizacion],
-                    [form.fechaEntregaExcedente, formOriginal.fechaEntregaExcedente],
-                    [form.soporte, formOriginal.soporte],
                 ] : []
                 const totalModificados = camposComparados.filter(([a, b]) => sonDistintos(a, b)).length
 
@@ -351,10 +405,12 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
                                     <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Asignación</Typography>
                                 </Box>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la asignación del anticipo</Typography>
-                                <ConfirmRow label="Conductor" value={getNombreConductor(form?.idConductor)} previousValue={formOriginal ? getNombreConductor(formOriginal.idConductor) : undefined} />
                                 <ConfirmRow label="Ruta" value={getNombreRuta(form?.idRuta)} previousValue={formOriginal ? getNombreRuta(formOriginal.idRuta) : undefined} />
+                                <ConfirmRow label="Conductor" value={getNombreConductor()} previousValue={formOriginal ? nombreConductorOriginal : undefined} />
                                 <ConfirmRow label="Anticipo" value={formatMoney(form?.valorAnticipo)} previousValue={formOriginal ? formatMoney(formOriginal.valorAnticipo) : undefined} />
-                                <ConfirmRow label="Gastado" value={form?.valorGastado ? formatMoney(form.valorGastado) : '—'} previousValue={formOriginal ? (formOriginal.valorGastado ? formatMoney(formOriginal.valorGastado) : '—') : undefined} />
+                                {enLegalizacion && (
+                                    <ConfirmRow label="Gastado" value={form?.valorGastado ? formatMoney(form.valorGastado) : '—'} previousValue={formOriginal ? (formOriginal.valorGastado ? formatMoney(formOriginal.valorGastado) : '—') : undefined} />
+                                )}
                                 <ConfirmRow label="Excedente" value={formatMoney(excedente)} previousValue={excedenteOriginal !== undefined ? formatMoney(excedenteOriginal) : undefined} />
                             </Paper>
                             <Paper elevation={0} sx={cardSx}>
@@ -364,9 +420,9 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
                                 </Box>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica las fechas</Typography>
                                 <ConfirmRow label="F. Entrega" value={formatFecha(form?.fechaEntrega)} previousValue={formOriginal ? formatFecha(formOriginal.fechaEntrega) : undefined} />
-                                <ConfirmRow label="F. Legalización" value={formatFecha(form?.fechaLegalizacion)} previousValue={formOriginal ? formatFecha(formOriginal.fechaLegalizacion) : undefined} />
-                                <ConfirmRow label="F. Excedente" value={formatFecha(form?.fechaEntregaExcedente)} previousValue={formOriginal ? formatFecha(formOriginal.fechaEntregaExcedente) : undefined} />
-                                <ConfirmRow label="Observaciones" value={form?.soporte || '—'} previousValue={formOriginal?.soporte || '—'} />
+                                {enLegalizacion && (
+                                    <ConfirmRow label="F. Legalización" value={formatFecha(fechaLegalizacionMostrada)} previousValue={formOriginal ? formatFecha(formOriginal.fechaLegalizacion) : undefined} />
+                                )}
                             </Paper>
                         </Box>
                     </Box>
@@ -382,7 +438,7 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
 
     if (!form || !anticipoOriginal) {
         return (
-            <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+            <Dialog open={open} onClose={cerrar} maxWidth="md" fullWidth>
                 <Box sx={{ p: 3.5, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 300 }}>
                     <Typography color={theme.palette.text.secondary}>Cargando datos del anticipo...</Typography>
                 </Box>
@@ -393,7 +449,7 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
     const totalSteps = steps.length  // 2; el paso 2 es confirmación interna
 
     return (
-        <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth
+        <Dialog open={open} onClose={cerrar} maxWidth="md" fullWidth
             slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}>
 
             <DialogTitle sx={{ m: 0, p: 2, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${theme.palette.divider}` }}>
@@ -401,7 +457,7 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
                     <Typography variant="h6" fontWeight={700}>Editar Anticipo / Excedente</Typography>
                     <Typography variant="body2" color={theme.palette.text.secondary}>Modifica los campos que necesites.</Typography>
                 </Box>
-                <IconButton onClick={onClose} sx={{ color: theme.palette.text.secondary }}>
+                <IconButton onClick={cerrar} sx={{ color: theme.palette.text.secondary }}>
                     <CloseIcon />
                 </IconButton>
             </DialogTitle>
@@ -454,18 +510,18 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
                         onClick={activeStep < totalSteps - 1 ? handleNext : handleSubmit}
                         variant="contained"
                         disabled={submitting || (activeStep === totalSteps - 1 && sinCambios)}
-                        endIcon={activeStep < totalSteps - 1 ? <ArrowForwardOutlinedIcon /> : <SaveOutlinedIcon />}
+                        endIcon={submitting ? undefined : (activeStep < totalSteps - 1 ? <ArrowForwardOutlinedIcon /> : <SaveOutlinedIcon />)}
                         disableRipple
                         sx={{
-                            textTransform: 'none', borderRadius: 2, fontWeight: 600,
+                            textTransform: 'none', borderRadius: 2, fontWeight: 600, minWidth: 170,
                             backgroundColor: theme.palette.primary.main,
                             boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
                             '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}` },
                             '&.Mui-disabled': { backgroundColor: theme.palette.divider, color: theme.palette.text.disabled },
                         }}>
-                        {activeStep < totalSteps - 1
-                            ? 'Siguiente'
-                            : submitting ? 'Guardando...' : sinCambios ? 'Sin cambios' : 'Guardar cambios'
+                        {submitting
+                            ? <CircularProgress size={18} color="inherit" />
+                            : (activeStep < totalSteps - 1 ? 'Siguiente' : sinCambios ? 'Sin cambios' : 'Guardar cambios')
                         }
                     </Button>
                 </Box>

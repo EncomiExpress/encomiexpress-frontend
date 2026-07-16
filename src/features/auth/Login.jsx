@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useTheme } from '@mui/material/styles'
-import { Box, TextField, Button, Typography, Paper, Alert, InputAdornment, IconButton, Divider, Dialog, DialogContent, CircularProgress, Snackbar } from '@mui/material'
+import { Box, TextField, Button, Typography, Paper, Alert, InputAdornment, IconButton, Dialog, DialogContent, CircularProgress, Snackbar } from '@mui/material'
 import {
   EmailOutlined as Email,
   LockOutlined as Lock,
@@ -16,7 +16,9 @@ import { useAuth } from '../../shared/contexts/AuthContext.jsx'
 import { recuperarPassword } from '../../shared/services/authService.js'
 import LoadingScreen from '../../shared/components/LoadingScreen.jsx'
 import useSlowRequest from '../../shared/hooks/useSlowRequest.js'
+import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import logo from '../../assets/logo.png'
+import logoDark from '../../assets/logoDark.png'
 
 const Login = () => {
   const [email, setEmail] = useState('')
@@ -80,8 +82,8 @@ const Login = () => {
     setRecuperarLoading(true)
     setRecuperarMensaje(null)
     try {
-      await recuperarPassword(recuperarEmail)
-      setRecuperarMensaje({ tipo: 'success', texto: 'Se envió una contraseña temporal a tu correo.' })
+      const resultado = await recuperarPassword(recuperarEmail)
+      setRecuperarMensaje({ tipo: 'success', texto: resultado.message })
     } catch (err) {
       setRecuperarMensaje({ tipo: 'error', texto: err.message || 'No se pudo enviar el correo.' })
     } finally {
@@ -158,7 +160,7 @@ const Login = () => {
           borderBottom: `1px solid ${theme.palette.divider}`,
         }}>
           <Box sx={{ width: 140, height: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-            <img src={logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            <img src={theme.palette.mode === 'dark' ? logoDark : logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </Box>
           <Box sx={{ textAlign: 'center' }}>
             <Typography sx={{ color: theme.palette.text.dark, fontWeight: 700, fontSize: '1.5rem', mb: 0.5, lineHeight: 1.2, fontFamily: 'Cambria, Georgia, serif' }}>
@@ -187,11 +189,7 @@ const Login = () => {
               required placeholder="correo@ejemplo.com"
               error={!!camposError.email} helperText={camposError.email}
               InputProps={{ startAdornment: <InputAdornment position="start"><Email sx={{ color: '#8b8382' }} /></InputAdornment> }}
-              sx={{
-                mb: 1.5,
-                '& .MuiOutlinedInput-root': { '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main } },
-                '& .MuiInputLabel-root.Mui-focused': { color: theme.palette.primary.main },
-              }}
+              sx={[formFieldStyles, { mb: 1.5 }]}
             />
             <TextField
               fullWidth label="Contraseña" type={showPassword ? 'text' : 'password'}
@@ -208,11 +206,7 @@ const Login = () => {
                   </InputAdornment>
                 ),
               }}
-              sx={{
-                mb: 2,
-                '& .MuiOutlinedInput-root': { '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main } },
-                '& .MuiInputLabel-root.Mui-focused': { color: theme.palette.primary.main },
-              }}
+              sx={[formFieldStyles, { mb: 2 }]}
             />
 
             {/* ── ¿Olvidaste tu contraseña? ── */}
@@ -220,7 +214,7 @@ const Login = () => {
               <Typography
                 onClick={() => { setRecuperarEmail(''); setRecuperarMensaje(null); setOpenRecuperar(true) }}
                 sx={{
-                  fontSize: '0.8rem', color: theme.palette.secondary.main,
+                  fontSize: '0.8rem', color: theme.palette.primary.main,
                   fontWeight: 600, cursor: 'pointer',
                   '&:hover': { textDecoration: 'underline' },
                 }}
@@ -231,7 +225,8 @@ const Login = () => {
 
             <Button
               type="submit" fullWidth variant="contained" size="large"
-              endIcon={<LoginIcon />} disabled={cargando || apiCargando}
+              endIcon={cargando || apiCargando ? <CircularProgress size={18} color="inherit" /> : <LoginIcon />}
+              disabled={cargando || apiCargando}
               sx={{
                 backgroundColor: theme.palette.primary.main, borderRadius: 2,
                 py: 1.5, fontWeight: 700, fontSize: '1rem', textTransform: 'none',
@@ -245,7 +240,7 @@ const Login = () => {
 
           <Box sx={{ mt: 2.5, textAlign: 'center' }}>
             <Typography sx={{ color: theme.palette.text.secondary, fontSize: '0.875rem' }}>
-              ¿Necesitas una cuenta?{' '}
+              ¿No estás registrado?{' '}
               <Button
                 component={Link} to="/register" variant="text"
                 sx={{
@@ -258,21 +253,6 @@ const Login = () => {
             </Typography>
           </Box>
 
-          <Divider sx={{ my: 3 }}>
-            <Typography sx={{ color: theme.palette.text.secondary, fontSize: '0.75rem' }}>O</Typography>
-          </Divider>
-
-          <Box sx={{ p: 2.5, backgroundColor: theme.palette.background.subtle, borderRadius: 2, border: `1px solid ${theme.palette.divider}` }}>
-            <Typography sx={{ color: theme.palette.text.secondary, fontSize: '0.7rem', letterSpacing: '1px', mb: 1.5, fontWeight: 600 }}>
-              USUARIO ADMINISTRADOR
-            </Typography>
-            <Typography sx={{ color: theme.palette.text.dark, fontSize: '0.75rem', fontFamily: 'monospace', display: 'block', mb: 0.5 }}>
-              • admin@encomiexpress.com
-            </Typography>
-            <Typography sx={{ color: theme.palette.text.secondary, fontSize: '0.7rem', fontFamily: 'monospace', borderTop: `1px solid ${theme.palette.divider}`, pt: 1.5, display: 'block' }}>
-              Contraseña: admin123
-            </Typography>
-          </Box>
         </Box>
       </Paper>
 
@@ -300,38 +280,37 @@ const Login = () => {
                 Recuperar contraseña
               </Typography>
               <Typography fontSize="1rem" color={theme.palette.text.secondary} sx={{ textAlign: 'center' }}>
-                Te enviaremos acceso temporal a tu correo
+                Ingresa tu correo registrado
               </Typography>
             </Box>
           </Box>
 
           <Box sx={{ mt: 3, textAlign: 'left' }}>
+            {recuperarMensaje && (
+              <Alert severity={recuperarMensaje.tipo} sx={{ mb: 2, fontSize: '0.82rem', borderRadius: 2 }}>
+                {recuperarMensaje.texto}
+              </Alert>
+            )}
             <TextField
               label="Correo electrónico"
               type="email"
               fullWidth
-              size="small"
               value={recuperarEmail}
-              onChange={(e) => setRecuperarEmail(e.target.value)}
+              onChange={(e) => {
+                setRecuperarEmail(e.target.value)
+                setRecuperarMensaje(null)
+              }}
               disabled={recuperarLoading}
               placeholder="correo@ejemplo.com"
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <Email sx={{ fontSize: '1rem', color: theme.palette.text.secondary }} />
+                    <Email sx={{ color: theme.palette.text.secondary }} />
                   </InputAdornment>
                 ),
               }}
-              sx={{
-                '& .MuiOutlinedInput-root': { '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main } },
-                '& .MuiInputLabel-root.Mui-focused': { color: theme.palette.primary.main },
-              }}
+              sx={formFieldStyles}
             />
-            {recuperarMensaje && (
-              <Alert severity={recuperarMensaje.tipo} sx={{ mt: 2, fontSize: '0.82rem', borderRadius: 2 }}>
-                {recuperarMensaje.texto}
-              </Alert>
-            )}
           </Box>
         </DialogContent>
 
@@ -352,7 +331,7 @@ const Login = () => {
             onClick={handleRecuperar}
             variant="contained"
             disableRipple
-            disabled={recuperarLoading || !recuperarEmail}
+            disabled={recuperarLoading || !recuperarEmail || recuperarMensaje?.tipo === 'success'}
             sx={{
               textTransform: 'none', borderRadius: 2, fontWeight: 600, minWidth: 110, px: 5, py: 0.76, fontSize: '0.875rem',
               backgroundColor: theme.palette.primary.main,
@@ -361,7 +340,9 @@ const Login = () => {
           >
             {recuperarLoading
               ? <><CircularProgress size={14} sx={{ color: '#fff', mr: 1 }} /> Enviando...</>
-              : 'Enviar acceso'
+              : recuperarMensaje?.tipo === 'success'
+                ? 'Correo enviado'
+                : 'Enviar acceso'
             }
           </Button>
         </Box>

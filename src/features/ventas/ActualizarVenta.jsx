@@ -1,6 +1,6 @@
 import { useTheme } from '@mui/material/styles'
 import { useState, useEffect } from 'react'
-import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, TextField, Autocomplete, Dialog, DialogTitle, DialogContent, IconButton, Divider } from '@mui/material'
+import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, TextField, Autocomplete, Dialog, DialogTitle, DialogContent, IconButton, Divider, CircularProgress } from '@mui/material'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined'
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
@@ -15,14 +15,16 @@ import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import { useVentas } from '../../shared/contexts/VentaContext.jsx'
 import { useClientes } from '../../shared/contexts/ClienteContext.jsx'
 import { useRutaProgramacion } from '../../shared/contexts/RutaProgramacionContext.jsx'
+import { useConfiguracion } from '../../shared/contexts/ConfiguracionContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { FormField, FormSelect } from '../../shared/components/FormularioEstandarizado.jsx'
 import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import { normalizarTexto } from '../../shared/utils/duplicados.js'
+import { formatFecha } from '../../shared/utils/formatters.js'
 
-const steps = ['Partes', 'Paquete', 'Envío', 'Pago', 'Confirmación']
+const steps = ['Participantes', 'Paquete', 'Envío', 'Pago', 'Confirmación']
 
 const hoyISO = () => new Date().toISOString().split('T')[0]
 
@@ -32,6 +34,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
     const theme = useTheme()
     const { clientes } = useClientes()
     const { rutasProgramadas, fetchRutasProgramadas } = useRutaProgramacion()
+    const { tarifaPorKg } = useConfiguracion()
     const [errores, setErrores] = useState({})
     const [apiError, setApiError] = useState(null)
     const [activeStep, setActiveStep] = useState(0)
@@ -77,7 +80,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
         const destinatario = ventaData.destinatarios?.[0] || null
         const paquete = ventaData.paquetes?.[0] || null
         const datosForm = {
-            idCliente: ventaData.cliente?.id || ventaData.idCliente || '',
+            idCliente: ventaData.cliente?.idCliente || ventaData.idCliente || '',
             nombreDestinatario: destinatario?.nombreDestinatario || '',
             telefonoDestinatario: destinatario?.telefonoDestinatario || '',
             direccionDestinatario: destinatario?.direccionDestinatario || '',
@@ -115,11 +118,24 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
         }
     }, [venta])
 
-    const clienteSeleccionado = clientes.find(c => c.idCliente === parseInt(form.idCliente))
+    // Si el cliente no aparece en el contexto (inhabilitado, o aún no cargaba), se arma
+    // una opción sintética con los datos de la propia venta para que el Autocomplete no quede vacío.
+    const clienteSeleccionado = clientes.find(c => c.idCliente === parseInt(form.idCliente)) || (
+        ventaOriginal?.cliente && parseInt(form.idCliente) === (ventaOriginal.cliente.idCliente || ventaOriginal.idCliente)
+            ? ventaOriginal.cliente
+            : null
+    )
 
     const NUMERIC_LIMITS = {
         peso: 9999, alto: 9999, ancho: 9999, profundidad: 9999,
         valorDeclarado: 999999999, valorServicio: 999999999, impuestos: 999999999,
+    }
+
+    // valorServicio = tarifa base del destino + (peso × tarifa por kg). El resultado
+    // sigue siendo editable a mano después de este auto-cálculo.
+    const calcularValorServicio = (tarifaBase, peso) => {
+        const pesoNum = parseFloat(peso) || 0
+        return Number(tarifaBase || 0) + (pesoNum * tarifaPorKg)
     }
 
     const handleChange = (e) => {
@@ -148,9 +164,21 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
 
         setForm(prev => {
             const updated = { ...prev, [name]: value }
-            if (name === 'valorServicio' || name === 'impuestos') {
-                const vs = parseFloat(name === 'valorServicio' ? value : prev.valorServicio) || 0
-                const imp = parseFloat(name === 'impuestos' ? value : prev.impuestos) || 0
+            if (name === 'valorServicio') {
+                const vs = parseFloat(value) || 0
+                const imp = Math.round(vs * 0.10)
+                updated.impuestos = imp
+                updated.total = vs + imp
+            } else if (name === 'impuestos') {
+                const vs = parseFloat(prev.valorServicio) || 0
+                const imp = parseFloat(value) || 0
+                updated.total = vs + imp
+            } else if (name === 'peso' && prev.idRuta) {
+                const ruta = rutasProgramadas.find(r => r.idRuta === parseInt(prev.idRuta))
+                const vs = calcularValorServicio(ruta?.destino?.tarifaBase, value)
+                const imp = Math.round(vs * 0.10)
+                updated.valorServicio = vs
+                updated.impuestos = imp
                 updated.total = vs + imp
             }
             return updated
@@ -207,6 +235,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
         }
 
         if (step === 2) {
+            if (!form.idRuta) e.idRuta = 'La ruta es obligatoria'
             if (!form.fechaEstimadaEntrega) e.fechaEstimadaEntrega = 'La fecha es obligatoria'
             else if (ventaOriginal?.estado === 'Programada' && form.fechaEstimadaEntrega < hoyISO())
                 e.fechaEstimadaEntrega = 'La fecha de entrega no puede ser anterior a hoy'
@@ -251,6 +280,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
         try {
             const numId = venta?.idEncomiendaVenta || venta?.id
             const payload = {
+                idRuta: parseInt(form.idRuta),
                 fechaEstimadaEntrega: form.fechaEstimadaEntrega || null,
                 observaciones: form.observaciones || null,
                 metodoPago: form.metodoPago,
@@ -274,7 +304,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
 
             showToast('¡Venta actualizada exitosamente!', 'success')
             setTimeout(() => {
-                if (onClose) onClose()
+                cerrar()
                 if (onSuccess) onSuccess()
             }, 1500)
         } catch (err) {
@@ -284,14 +314,17 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
         }
     }
 
-    const handleCancelar = () => {
+    const cerrar = () => {
+        if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
         if (onClose) onClose()
     }
+
+    const handleCancelar = () => cerrar()
 
     const cardSx = {
         flex: 1, minWidth: 0, borderRadius: 2, p: 2.5,
         border: `1px solid ${theme.palette.divider}`,
-        backgroundColor: 'white', overflow: 'hidden',
+        backgroundColor: theme.palette.background.paper, overflow: 'hidden',
     }
 
     const renderStepContent = () => {
@@ -445,8 +478,14 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                             <Autocomplete
-                                options={rutasProgramadas.filter(r => r.habilitado !== false)}
-                                getOptionLabel={(option) => `${option.nombreRuta || 'Sin nombre'} — $${Number(option.destino?.tarifaBase || 0).toLocaleString()}`}
+                                options={rutasProgramadas.filter(r => r.habilitado !== false && r.estado === 'Programada')}
+                                getOptionLabel={(option) => {
+                                    const base = `${option.nombreRuta || 'Sin nombre'} — $${Number(option.destino?.tarifaBase || 0).toLocaleString()}`
+                                    const capacidad = option.vehiculo?.capacidad
+                                    if (!capacidad) return base
+                                    const disponible = Math.max(0, Number(capacidad) - Number(option.pesoUsado || 0))
+                                    return `${base} · ${disponible.toFixed(0)}/${Number(capacidad).toFixed(0)} kg disponibles`
+                                }}
                                 isOptionEqualToValue={(opt, val) => opt.idRuta === val.idRuta}
                                 filterOptions={(opts, { inputValue }) => {
                                     if (!inputValue.trim()) return [...opts].sort((a, b) => b.idRuta - a.idRuta).slice(0, 5)
@@ -470,16 +509,18 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                                 }}
                                 onChange={(_, newValue) => {
                                     if (newValue) {
-                                        const tarifaBase = Number(newValue.destino?.tarifaBase || 0)
-                                        const impuestos = Math.round(tarifaBase * 0.10)
-                                        setForm(prev => ({
-                                            ...prev,
-                                            idRuta: newValue.idRuta,
-                                            destino: newValue.nombreRuta || 'Sin nombre',
-                                            valorServicio: tarifaBase,
-                                            impuestos,
-                                            total: tarifaBase + impuestos,
-                                        }))
+                                        setForm(prev => {
+                                            const valorServicio = calcularValorServicio(newValue.destino?.tarifaBase, prev.peso)
+                                            const impuestos = Math.round(valorServicio * 0.10)
+                                            return {
+                                                ...prev,
+                                                idRuta: newValue.idRuta,
+                                                destino: newValue.nombreRuta || 'Sin nombre',
+                                                valorServicio,
+                                                impuestos,
+                                                total: valorServicio + impuestos,
+                                            }
+                                        })
                                     } else {
                                         setForm(prev => ({ ...prev, idRuta: '', destino: '' }))
                                     }
@@ -521,22 +562,30 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                         </FormSelect>
                         <FormField label="Valor del servicio ($)" name="valorServicio"
                             value={form.valorServicio} onChange={handleChange}
+                            helperText="Tarifa del destino + peso × tarifa por kg (editable)"
                             inputProps={{ maxLength: 9 }} />
                         <FormField label="Impuestos ($)" name="impuestos"
                             value={form.impuestos} onChange={handleChange}
+                            helperText="10% del valor del servicio (editable)"
                             inputProps={{ maxLength: 9 }} />
                         <FormField label="Total a pagar ($)" name="total"
                             value={form.total} onChange={handleChange} disabled={true} />
                     </Box>
                 )
             case 4: {
-                const clienteOriginal = formOriginal ? clientes.find(c => c.idCliente === parseInt(formOriginal.idCliente)) : null
+                const clienteOriginal = formOriginal
+                    ? clientes.find(c => c.idCliente === parseInt(formOriginal.idCliente)) || ventaOriginal?.cliente
+                    : null
                 const dimensionesActual = form.alto ? `${form.alto}×${form.ancho}×${form.profundidad} cm` : null
                 const dimensionesOriginal = formOriginal?.alto ? `${formOriginal.alto}×${formOriginal.ancho}×${formOriginal.profundidad} cm` : undefined
                 const valorDeclaradoActual = form.valorDeclarado ? `$${parseFloat(form.valorDeclarado).toLocaleString()}` : '$0'
                 const valorDeclaradoOriginal = formOriginal ? (formOriginal.valorDeclarado ? `$${parseFloat(formOriginal.valorDeclarado).toLocaleString()}` : '$0') : undefined
                 const totalActual = form.total ? `$${parseFloat(form.total).toLocaleString()}` : null
                 const totalOriginal = formOriginal ? (formOriginal.total ? `$${parseFloat(formOriginal.total).toLocaleString()}` : null) : undefined
+                const valorServicioActual = form.valorServicio ? `$${parseFloat(form.valorServicio).toLocaleString()}` : null
+                const valorServicioOriginal = formOriginal ? (formOriginal.valorServicio ? `$${parseFloat(formOriginal.valorServicio).toLocaleString()}` : null) : undefined
+                const impuestosActual = form.impuestos ? `$${parseFloat(form.impuestos).toLocaleString()}` : null
+                const impuestosOriginal = formOriginal ? (formOriginal.impuestos ? `$${parseFloat(formOriginal.impuestos).toLocaleString()}` : null) : undefined
 
                 const sonDistintos = (a, b) => String(a ?? '') !== String(b ?? '')
                 const camposComparados = formOriginal ? [
@@ -619,8 +668,11 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                                 </Box>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Ruta y valores</Typography>
                                 <ConfirmRow label="Ruta" value={form.destino} previousValue={formOriginal?.destino} />
-                                <ConfirmRow label="Fecha entrega" value={form.fechaEstimadaEntrega} previousValue={formOriginal?.fechaEstimadaEntrega} />
+                                <ConfirmRow label="Fecha entrega" value={formatFecha(form.fechaEstimadaEntrega)} previousValue={formOriginal?.fechaEstimadaEntrega ? formatFecha(formOriginal.fechaEstimadaEntrega) : undefined} />
+                                <ConfirmRow label="Observaciones" value={form.observaciones} previousValue={formOriginal?.observaciones} />
                                 <ConfirmRow label="Método de pago" value={form.metodoPago} previousValue={formOriginal?.metodoPago} />
+                                <ConfirmRow label="Valor del servicio" value={valorServicioActual} previousValue={valorServicioOriginal} />
+                                <ConfirmRow label="Impuestos" value={impuestosActual} previousValue={impuestosOriginal} />
                                 <ConfirmRow label="Total" value={totalActual} previousValue={totalOriginal} />
                             </Paper>
                         </Box>
@@ -634,7 +686,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
 
     if (!ventaOriginal && !apiError) {
         return (
-            <Dialog open={open} onClose={() => onClose && onClose()} maxWidth="md" fullWidth
+            <Dialog open={open} onClose={cerrar} maxWidth="md" fullWidth
                 slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}>
                 <DialogTitle sx={{ m: 0, p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -647,7 +699,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                         </Box>
                         <Typography variant="h6" fontWeight={700}>Editar Venta</Typography>
                     </Box>
-                    <IconButton onClick={() => onClose && onClose()} sx={{ color: theme.palette.text.secondary }}>
+                    <IconButton onClick={cerrar} sx={{ color: theme.palette.text.secondary }}>
                         <CloseIcon />
                     </IconButton>
                 </DialogTitle>
@@ -662,7 +714,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
 
     if (!ventaOriginal && apiError) {
         return (
-            <Dialog open={open} onClose={() => onClose && onClose()} maxWidth="md" fullWidth
+            <Dialog open={open} onClose={cerrar} maxWidth="md" fullWidth
                 slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}>
                 <DialogTitle sx={{ m: 0, p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -675,7 +727,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                         </Box>
                         <Typography variant="h6" fontWeight={700}>Editar Venta</Typography>
                     </Box>
-                    <IconButton onClick={() => onClose && onClose()} sx={{ color: theme.palette.text.secondary }}>
+                    <IconButton onClick={cerrar} sx={{ color: theme.palette.text.secondary }}>
                         <CloseIcon />
                     </IconButton>
                 </DialogTitle>
@@ -687,7 +739,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
     }
 
     return (
-        <Dialog open={open} onClose={() => onClose && onClose()} maxWidth="md" fullWidth
+        <Dialog open={open} onClose={cerrar} maxWidth="md" fullWidth
             slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}>
             <DialogTitle sx={{ m: 0, p: 2, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${theme.palette.divider}` }}>
                 <Box>
@@ -699,7 +751,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                         }
                     </Typography>
                 </Box>
-                <IconButton onClick={() => onClose && onClose()} sx={{ color: theme.palette.text.secondary }}>
+                <IconButton onClick={cerrar} sx={{ color: theme.palette.text.secondary }}>
                     <CloseIcon />
                 </IconButton>
             </DialogTitle>
@@ -755,18 +807,18 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                         onClick={activeStep < steps.length - 1 ? handleNext : handleSubmit}
                         variant="contained"
                         disabled={submitting || (activeStep === steps.length - 1 && sinCambios)}
-                        endIcon={activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <SaveOutlinedIcon />}
+                        endIcon={submitting ? undefined : (activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <SaveOutlinedIcon />)}
                         disableRipple
                         sx={{
-                            textTransform: 'none', borderRadius: 2, fontWeight: 600,
+                            textTransform: 'none', borderRadius: 2, fontWeight: 600, minWidth: 170,
                             backgroundColor: theme.palette.primary.main,
                             boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
                             '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}` },
                             '&.Mui-disabled': { backgroundColor: theme.palette.divider, color: theme.palette.text.disabled },
                         }}>
-                        {activeStep < steps.length - 1
-                            ? 'Siguiente'
-                            : submitting ? 'Guardando...' : sinCambios ? 'Sin cambios' : 'Guardar cambios'
+                        {submitting
+                            ? <CircularProgress size={18} color="inherit" />
+                            : (activeStep < steps.length - 1 ? 'Siguiente' : sinCambios ? 'Sin cambios' : 'Guardar cambios')
                         }
                     </Button>
                 </Box>

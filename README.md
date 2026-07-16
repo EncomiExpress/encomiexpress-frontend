@@ -8,7 +8,7 @@ Panel web administrativo para la gestión operativa de OsvaldoC Mensajería y Lo
 
 | Rol | Funcionalidades |
 |------|----------------|
-| **Administrador** | - Gestión completa de usuarios <br> - Asignación de roles y permisos <br> - Administración de clientes, conductores y propietarios <br> - Control de flota vehicular <br> - Programación de rutas y destinos <br> - Gestión de encomiendas y ventas <br> - Control de anticipos y excedentes <br> - Medición de desempeño del sistema |
+| **Administrador** | - Gestión completa de usuarios <br> - Asignación de roles y permisos <br> - Administración de clientes, conductores y propietarios <br> - Control de flota vehicular <br> - Programación de rutas y destinos <br> - Gestión de encomiendas y ventas <br> - Control de anticipos y excedentes <br> - Medición de desempeño del sistema <br> - Descarga de guía de envío en PDF <br> - Exportación a Excel de los datos registrados |
 | **General** | - Inicio de sesión <br> - Cierre de sesión <br> - Navegación basada en permisos <br> - Dashboard de indicadores <br> - Modo oscuro / modo claro <br> - Paleta de colores personalizable (rojo / azul) <br> - Dos modos de navegación: Sidebar y Top Nav |
 
 ---
@@ -18,11 +18,12 @@ Panel web administrativo para la gestión operativa de OsvaldoC Mensajería y Lo
 - React 19 + JavaScript (ES6+)
 - Vite — Herramienta de construcción rápida
 - Material UI (MUI) v7 — Componentes de React para Material Design
-  - `@mui/material/styles` — `ThemeProvider` + `createTheme` para sistema de theming centralizado
-  - `@emotion/react` & `@emotion/styled` — Styling engine de MUI
 - React Router v7 — Enrutamiento de aplicaciones
 - React Context — Gestión de estado global
 - Fetch API — Cliente HTTP nativo para peticiones al backend
+- Recharts — Gráficas del Dashboard
+- jsPDF + jsbarcode — Generación de la guía de envío en PDF con código de barras
+- ExcelJS — Exportación de listados a Excel con formato y marca propia
 
 ---
 
@@ -51,10 +52,12 @@ src/
 │   ├── styles/                # Tema centralizado (theme.js con createTheme)
 │   ├── contexts/              # Contextos globales (estado con React Context)
 │   ├── components/            # Componentes reutilizables
-│   ├── hooks/                 # Hooks personalizados (useDateTime, etc.)
+│   ├── hooks/                 # Hooks personalizados
 │   ├── services/              # Servicios API (auth, ventas, clientes, etc.)
+│   ├── utils/                 # Formatters, colores por estado, export a Excel/PDF
 │   └── config/                # Configuración (API URL, constantes, secciones de nav)
 │
+├── assets/                    # Imágenes estáticas (logos, ilustraciones)
 ├── App.jsx                    # Providers anidados y configuración
 ├── AppRoutes.jsx              # Definición de rutas protegidas
 └── main.jsx                   # Punto de entrada
@@ -128,23 +131,7 @@ El tema se gestiona en `ThemeContext.jsx` y se aplica globalmente vía `ThemePro
 | **Roja** | `#CC1818` | `#1A2E6E` |
 | **Azul** | `#1A2E6E` | `#CC1818` |
 
-Todos los colores se definen de forma centralizada en `src/shared/styles/theme.js` mediante `createTheme()` y se consumen a través del `ThemeProvider`. Ningún componente usa colores hexadecimales hardcodeados.
-
----
-
-## Paleta de Colores (modo claro, paleta roja)
-
-| Nombre | Color | Uso |
-|-------|-------|-----|
-| `primary.main` | `#CC1818` | Rojo principal — acciones destacadas, botones primarios, acentos |
-| `primary.light` | `#FFE8E8` | Rojo claro — fondos sutiles, chips |
-| `primary.dark` | `#b91c1c` | Rojo oscuro — hover de botones |
-| `secondary.main` | `#1A2E6E` | Azul oscuro — navegación, encabezados, elementos secundarios |
-| `secondary.light` | `#2a3f8f` | Azul claro |
-| `text.primary` | `#1a0e0c` | Texto principal |
-| `text.secondary` | `#8A94A6` | Texto secundario / muted |
-| `background.default` | `#F5F6FA` | Fondo general |
-| `divider` | `#E0E0E0` | Bordes y divisores |
+Todos los colores se definen de forma centralizada en `src/shared/styles/theme.js` mediante `createTheme()` y se consumen a través del `ThemeProvider`.
 
 ---
 
@@ -158,6 +145,7 @@ Todos los colores se definen de forma centralizada en `src/shared/styles/theme.j
 | **LayoutAdmin** | Layout principal que renderiza Sidebar o TopNav según la preferencia del usuario |
 | **LoadingScreen** | Pantalla de carga con animación de camión y logo de marca |
 | **FormularioEstandarizado** | Librería interna de componentes de formulario (FormField, FormSelect, PasswordField, etc.) |
+| **SessionExpiredDialog** | Aviso modal cuando el token expira en medio de una sesión activa |
 
 ---
 
@@ -167,10 +155,19 @@ Todos los colores se definen de forma centralizada en `src/shared/styles/theme.j
 |----------|---------------|
 | **ThemeProvider + createTheme (MUI)** | Sistema de theming centralizado en `theme.js`; soporta dark mode y cambio de paleta sin tocar componentes |
 | **Context API vs Redux** | React Context es suficiente para este tamaño de aplicación; evita complejidad adicional |
-| **fetchWithAuth centralizado** | Single source of truth para manejo de errores (401 auto-logout, 403 manejo silencioso) |
 | **fetch nativo vs Axios** | fetch API es nativo del browser; evita dependencia adicional para el scope actual |
-| **Componentes sin estado (presentacionales)** | Separación clara: Context maneja lógica de negocio, Components solo UI |
 | **Preferencias en localStorage** | El modo de navegación y la paleta de colores persisten entre sesiones sin necesidad de backend |
+
+---
+## Requisitos del Sistema
+
+| Requisito | Versión mínima | Notas |
+|---|---|---|
+| Node.js | 18 | Requerido por Vite 7 |
+| npm | Incluido con Node.js | Gestor de paquetes |
+| Git | Cualquiera | Para clonar el repositorio |
+
+Además necesitas el [backend de EncomiExpress](https://github.com/EncomiExpress/encomiexpress-backend) corriendo (local o remoto) — sin él, el panel no tiene de dónde traer datos.
 
 ---
 
@@ -182,7 +179,7 @@ Copia el archivo `.env.example` y renómbralo a `.env`:
 cp .env.example .env
 ```
 
-Luego completa los valores según tu entorno. Ver `.env.example` para la lista completa de variables requeridas.
+Si tu backend corre en un puerto o dominio distinto a `localhost:3000`, ajusta `VITE_API_URL` en tu `.env` — si no la defines, el frontend usa ese valor por defecto.
 
 ---
 
@@ -198,15 +195,20 @@ npm install
 
 # 3. Configurar variables de entorno
 cp .env.example .env
-# Editar .env con tus credenciales
+```
 
-# 4. Ejecutar servidor de desarrollo
+---
+
+## Ejecutar en Entorno Local
+
+```bash
+# Servidor de desarrollo
 npm run dev
 
-# 5. Construir para producción
+# Construir para producción
 npm run build
 
-# 6. Previsualizar build de producción
+# Previsualizar el build de producción
 npm run preview
 ```
 
@@ -218,6 +220,12 @@ npm run preview
 |---|---|---|
 | [encomiexpress-backend](https://github.com/EncomiExpress/encomiexpress-backend) | API REST del sistema | Node.js · Express · PostgreSQL · Sequelize |
 | [encomiexpress-mobile](https://github.com/EncomiExpress/encomiexpress-mobile) | Aplicación móvil para conductores | Flutter · Dart |
+
+---
+
+## Licencia
+
+Este proyecto está bajo la licencia MIT — ver el archivo [LICENSE](./LICENSE) para más detalles.
 
 ---
 

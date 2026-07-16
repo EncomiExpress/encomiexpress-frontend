@@ -6,8 +6,6 @@ export const getClientes = (signal, params = {}) => {
   const suffix = qs.toString() ? `?${qs.toString()}` : ''
   return fetchWithAuth(`/clientes${suffix}`, { method: 'GET', signal })
 }
-export const getClienteById = (id, signal) =>
-  fetchWithAuth(`/clientes/${id}`, { method: 'GET', signal })
 export const createCliente = (datos) =>
   fetchWithAuth('/clientes', { method: 'POST', body: JSON.stringify(datos) })
 export const updateCliente = (id, datos) =>

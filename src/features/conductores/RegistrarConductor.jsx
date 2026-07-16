@@ -1,6 +1,6 @@
 ﻿import { useTheme } from '@mui/material/styles'
-import { useState } from 'react'
-import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, TextField, Select, InputAdornment, Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material'
+import { useState, useEffect } from 'react'
+import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, TextField, Select, InputAdornment, Dialog, DialogTitle, DialogContent, IconButton, CircularProgress } from '@mui/material'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined'
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
@@ -15,6 +15,7 @@ import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
 import EventOutlinedIcon from '@mui/icons-material/EventOutlined'
 import CloseIcon from '@mui/icons-material/Close'
+import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
 import { useConductor } from '../../shared/contexts/ConductorContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { FormField, FormSelect } from '../../shared/components/FormularioEstandarizado.jsx'
@@ -24,12 +25,24 @@ import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import * as conductorService from '../../shared/services/conductorService.js'
 import { hayNombreDuplicado, MENSAJE_NOMBRE_DUPLICADO, hayDocumentoDuplicado, MENSAJE_DOC_DUPLICADO } from '../../shared/utils/duplicados.js'
 
-const DOMINIOS_EMAIL = ['@gmail.com', '@hotmail.com', '@outlook.com', '@yahoo.com', '@icloud.com', '@live.com']
 const hoyISO = () => new Date().toISOString().split('T')[0]
-const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s]).{8,16}$/
-const PASSWORD_HELP = '8-16 caracteres, con mayúsculas, minúsculas, números y un carácter especial (sin @)'
 
-const steps = ['Datos Personales', 'Licencia de Conducción', 'Confirmación']
+const DOMINIOS_EMAIL = ['@gmail.com', '@hotmail.com', '@outlook.com', '@yahoo.com', '@icloud.com', '@live.com']
+const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s]).{8,64}$/
+const PASSWORD_HELP = '8-64 caracteres, con mayúsculas, minúsculas, números y un carácter especial'
+
+const steps = ['Datos Personales', 'Credenciales', 'Licencia', 'Confirmación']
+
+const CATEGORIAS_LICENCIA = [
+    { value: 'A1', label: 'A1 - Motocicleta hasta 125 c.c.' },
+    { value: 'A2', label: 'A2 - Motocicleta de más de 125 c.c.' },
+    { value: 'B1', label: 'B1 - Automóvil, camioneta o microbús (particular)' },
+    { value: 'B2', label: 'B2 - Camión rígido, buseta o bus (particular)' },
+    { value: 'B3', label: 'B3 - Vehículo articulado (particular)' },
+    { value: 'C1', label: 'C1 - Automóvil, camioneta o microbús (servicio público)' },
+    { value: 'C2', label: 'C2 - Camión rígido, buseta o bus (servicio público)' },
+    { value: 'C3', label: 'C3 - Vehículo articulado (servicio público)' },
+]
 
 const RegistrarConductor = ({ open, onClose, onSuccess }) => {
     const { registrarConductor } = useConductor()
@@ -40,6 +53,7 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
     const [activeStep, setActiveStep] = useState(0)
     const [submitting, setSubmitting] = useState(false)
     const [showPassword, setShowPassword] = useState(false)
+    const [showConfirmarPassword, setShowConfirmarPassword] = useState(false)
     const [avisoNombreDuplicado, setAvisoNombreDuplicado] = useState('')
     const [avisoDocDuplicado, setAvisoDocDuplicado] = useState('')
 
@@ -52,9 +66,9 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
         emailLocal: '',
         emailDominio: '@gmail.com',
         password: '',
-        licenciaConduccion: '',
+        confirmarPassword: '',
+        categoriasLicencia: [{ categoria: '', vencimiento: '' }],
         numeroLicencia: '',
-        fechaVencimientoLicencia: ''
     })
 
     const esDocAlfanumerico = (tipo) => ['CE', 'PAS'].includes(tipo)
@@ -91,13 +105,35 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
         if (name === 'emailLocal') {
             value = value.replace(/[^a-zA-Z0-9._-]/g, '')
         }
-        if (name === 'password') {
-            value = value.replace(/@/g, '')
-        }
-
         setForm(prev => ({ ...prev, [name]: value }))
         setErrores(prev => ({ ...prev, [name]: '' }))
         setApiError(null)
+    }
+
+    // El número de licencia casi siempre coincide con el documento en Colombia —
+    // se sugiere al llegar al paso de licencia, pero se puede cambiar.
+    useEffect(() => {
+        if (activeStep === 2 && !form.numeroLicencia && form.numeroIdentificacion) {
+            setForm(prev => ({ ...prev, numeroLicencia: prev.numeroIdentificacion }))
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeStep])
+
+    const handleCategoriaChange = (index, campo, value) => {
+        setForm(prev => ({
+            ...prev,
+            categoriasLicencia: prev.categoriasLicencia.map((c, i) => i === index ? { ...c, [campo]: value } : c)
+        }))
+        setErrores(prev => ({ ...prev, categoriasLicencia: '' }))
+        setApiError(null)
+    }
+
+    const handleAgregarCategoria = () => {
+        setForm(prev => ({ ...prev, categoriasLicencia: [...prev.categoriasLicencia, { categoria: '', vencimiento: '' }] }))
+    }
+
+    const handleQuitarCategoria = (index) => {
+        setForm(prev => ({ ...prev, categoriasLicencia: prev.categoriasLicencia.filter((_, i) => i !== index) }))
     }
 
     const verificarDocumentoDuplicado = async () => {
@@ -163,9 +199,17 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
             if (!form.emailLocal?.trim()) e.emailLocal = 'El correo es obligatorio'
             if (!form.password) e.password = 'La contraseña es obligatoria'
             else if (!PASSWORD_REGEX.test(form.password)) e.password = PASSWORD_HELP
-            if (!form.licenciaConduccion) e.licenciaConduccion = 'Selecciona una categoría de licencia'
-            if (!form.fechaVencimientoLicencia) e.fechaVencimientoLicencia = 'La fecha de vencimiento es obligatoria'
-            else if (form.fechaVencimientoLicencia < hoyISO()) e.fechaVencimientoLicencia = 'La fecha de vencimiento no puede ser anterior a hoy'
+            if (!form.confirmarPassword) e.confirmarPassword = 'Confirma la contraseña'
+            else if (form.password !== form.confirmarPassword) e.confirmarPassword = 'Las contraseñas no coinciden'
+        }
+
+        if (step === 2) {
+            const completas = form.categoriasLicencia.filter(c => c.categoria && c.vencimiento)
+            const incompletas = form.categoriasLicencia.some(c => (c.categoria && !c.vencimiento) || (!c.categoria && c.vencimiento))
+            const vencidas = completas.some(c => c.vencimiento < hoyISO())
+            if (completas.length === 0) e.categoriasLicencia = 'Agrega al menos una categoría con su fecha de vencimiento'
+            else if (incompletas) e.categoriasLicencia = 'Completa la categoría y la fecha en cada fila, o quita la fila'
+            else if (vencidas) e.categoriasLicencia = 'El vencimiento no puede ser una fecha anterior a hoy'
         }
 
         return e
@@ -185,6 +229,7 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
     const handleCancelar = () => handleClose()
 
     const handleClose = () => {
+        if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
         setForm({
             nombre: '',
             apellido: '',
@@ -194,11 +239,12 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
             emailLocal: '',
             emailDominio: '@gmail.com',
             password: '',
-            licenciaConduccion: '',
+            confirmarPassword: '',
+            categoriasLicencia: [{ categoria: '', vencimiento: '' }],
             numeroLicencia: '',
-            fechaVencimientoLicencia: '',
         })
         setShowPassword(false)
+        setShowConfirmarPassword(false)
         setErrores({})
         setActiveStep(0)
         onClose()
@@ -208,7 +254,7 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
         setSubmitting(true)
         setApiError(null)
         try {
-            const { emailLocal, emailDominio, ...resto } = form
+            const { emailLocal, emailDominio, confirmarPassword: _confirmarPassword, ...resto } = form
             await registrarConductor({
                 ...resto,
                 email: emailLocal ? emailLocal + emailDominio : '',
@@ -230,7 +276,7 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
     const cardSx = {
         flex: 1, minWidth: 0, borderRadius: 2, p: 2.5,
         border: `1px solid ${theme.palette.divider}`,
-        backgroundColor: 'white', elevation: 0,
+        backgroundColor: theme.palette.background.paper, elevation: 0,
         overflow: 'hidden',
     }
 
@@ -239,19 +285,7 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
         return tipos[tipo] || tipo
     }
 
-    const getLicenciaLabel = (lic) => {
-        const licencias = {
-            'A1': 'A1 - Motocicleta hasta 125 c.c.',
-            'A2': 'A2 - Motocicleta de más de 125 c.c.',
-            'B1': 'B1 - Automóvil, camioneta o microbús (particular)',
-            'B2': 'B2 - Camión rígido, buseta o bus (particular)',
-            'B3': 'B3 - Vehículo articulado (particular)',
-            'C1': 'C1 - Automóvil, camioneta o microbús (servicio público)',
-            'C2': 'C2 - Camión rígido, buseta o bus (servicio público)',
-            'C3': 'C3 - Vehículo articulado (servicio público)',
-        }
-        return licencias[lic] || lic
-    }
+    const getLicenciaLabel = (lic) => CATEGORIAS_LICENCIA.find(c => c.value === lic)?.label || lic
 
     const renderStepContent = () => {
         switch (activeStep) {
@@ -325,51 +359,105 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
                                 htmlInput: { maxLength: 50 }
                             }}
                             sx={formFieldStyles} />
-                        <TextField fullWidth label="Contraseña inicial" name="password"
-                            type={showPassword ? 'text' : 'password'}
-                            value={form.password} onChange={handleChange} required
-                            error={!!errores.password} helperText={errores.password || PASSWORD_HELP}
-                            slotProps={{
-                                input: {
-                                    startAdornment: (
-                                        <InputAdornment position="start">
-                                            <LockOutlinedIcon sx={{ color: '#94a3b8' }} />
-                                        </InputAdornment>
-                                    ),
-                                    endAdornment: (
-                                        <InputAdornment position="end">
-                                            <IconButton onClick={() => setShowPassword(p => !p)} edge="end" size="small" tabIndex={-1}>
-                                                {showPassword ? <VisibilityOffOutlinedIcon sx={{ fontSize: 20 }} /> : <VisibilityOutlinedIcon sx={{ fontSize: 20 }} />}
-                                            </IconButton>
-                                        </InputAdornment>
-                                    ),
-                                },
-                                htmlInput: { maxLength: 16 }
-                            }}
-                            sx={formFieldStyles} />
-                        <FormSelect label="Licencia de Conducción" name="licenciaConduccion" value={form.licenciaConduccion}
-                            onChange={handleChange} required error={errores.licenciaConduccion} helperText={errores.licenciaConduccion}>
-                            <MenuItem value="A1">A1 - Motocicleta hasta 125 c.c.</MenuItem>
-                            <MenuItem value="A2">A2 - Motocicleta de más de 125 c.c.</MenuItem>
-                            <MenuItem value="B1">B1 - Automóvil, camioneta o microbús (particular)</MenuItem>
-                            <MenuItem value="B2">B2 - Camión rígido, buseta o bus (particular)</MenuItem>
-                            <MenuItem value="B3">B3 - Vehículo articulado (particular)</MenuItem>
-                            <MenuItem value="C1">C1 - Automóvil, camioneta o microbús (servicio público)</MenuItem>
-                            <MenuItem value="C2">C2 - Camión rígido, buseta o bus (servicio público)</MenuItem>
-                            <MenuItem value="C3">C3 - Vehículo articulado (servicio público)</MenuItem>
-                        </FormSelect>
-                        <FormField label="N° de Licencia" name="numeroLicencia" value={form.numeroLicencia}
-                            onChange={handleChange} icon={BadgeOutlinedIcon}
-                            inputProps={{ maxLength: 20 }} placeholder="Ej: 123456789"
-                            helperText="Opcional" />
-                        <FormField label="Fecha Vencimiento Licencia" name="fechaVencimientoLicencia" type="date"
-                            value={form.fechaVencimientoLicencia} onChange={handleChange}
-                            inputProps={{ min: hoyISO() }}
-                            required error={errores.fechaVencimientoLicencia} helperText={errores.fechaVencimientoLicencia}
-                            icon={EventOutlinedIcon} InputLabelProps={{ shrink: true }} />
+                        <Box sx={{ gridColumn: '1 / -1', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
+                            <TextField fullWidth label="Contraseña inicial" name="password"
+                                type={showPassword ? 'text' : 'password'}
+                                value={form.password} onChange={handleChange} required
+                                error={!!errores.password} helperText={errores.password || PASSWORD_HELP}
+                                slotProps={{
+                                    input: {
+                                        startAdornment: (
+                                            <InputAdornment position="start">
+                                                <LockOutlinedIcon sx={{ color: '#94a3b8' }} />
+                                            </InputAdornment>
+                                        ),
+                                        endAdornment: (
+                                            <InputAdornment position="end">
+                                                <IconButton onClick={() => setShowPassword(p => !p)} edge="end" size="small" tabIndex={-1}>
+                                                    {showPassword ? <VisibilityOffOutlinedIcon sx={{ fontSize: 20 }} /> : <VisibilityOutlinedIcon sx={{ fontSize: 20 }} />}
+                                                </IconButton>
+                                            </InputAdornment>
+                                        ),
+                                    },
+                                    htmlInput: { maxLength: 64 }
+                                }}
+                                sx={formFieldStyles} />
+                            <TextField fullWidth label="Confirmar contraseña" name="confirmarPassword"
+                                type={showConfirmarPassword ? 'text' : 'password'}
+                                value={form.confirmarPassword} onChange={handleChange} required
+                                error={!!errores.confirmarPassword} helperText={errores.confirmarPassword}
+                                slotProps={{
+                                    input: {
+                                        startAdornment: (
+                                            <InputAdornment position="start">
+                                                <LockOutlinedIcon sx={{ color: '#94a3b8' }} />
+                                            </InputAdornment>
+                                        ),
+                                        endAdornment: (
+                                            <InputAdornment position="end">
+                                                <IconButton onClick={() => setShowConfirmarPassword(p => !p)} edge="end" size="small" tabIndex={-1}>
+                                                    {showConfirmarPassword ? <VisibilityOffOutlinedIcon sx={{ fontSize: 20 }} /> : <VisibilityOutlinedIcon sx={{ fontSize: 20 }} />}
+                                                </IconButton>
+                                            </InputAdornment>
+                                        ),
+                                    },
+                                    htmlInput: { maxLength: 64 }
+                                }}
+                                sx={formFieldStyles} />
+                        </Box>
                     </Box>
                 )
             case 2:
+                return (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                        <FormField label="N° de Licencia" name="numeroLicencia" value={form.numeroLicencia}
+                            onChange={handleChange} icon={BadgeOutlinedIcon}
+                            inputProps={{ maxLength: 20 }} placeholder="Ej: 123456789"
+                            helperText="Se autocompleta con el documento — puedes cambiarlo" />
+
+                        <Typography variant="body2" fontWeight={600} color={theme.palette.text.primary}>
+                            Categorías de licencia
+                        </Typography>
+                        {errores.categoriasLicencia && (
+                            <Typography variant="caption" color="error" sx={{ mt: -1.5 }}>{errores.categoriasLicencia}</Typography>
+                        )}
+
+                        {form.categoriasLicencia.map((cat, index) => {
+                            const categoriasUsadas = form.categoriasLicencia
+                                .filter((_, i) => i !== index)
+                                .map(c => c.categoria)
+                            return (
+                                <Box key={index} sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 1.5, alignItems: 'center' }}>
+                                    <FormSelect label="Categoría" value={cat.categoria}
+                                        onChange={(e) => handleCategoriaChange(index, 'categoria', e.target.value)}>
+                                        {CATEGORIAS_LICENCIA.filter(c => !categoriasUsadas.includes(c.value)).map(c => (
+                                            <MenuItem key={c.value} value={c.value}>{c.label}</MenuItem>
+                                        ))}
+                                    </FormSelect>
+                                    <FormField label="Vencimiento" type="date" value={cat.vencimiento}
+                                        onChange={(e) => handleCategoriaChange(index, 'vencimiento', e.target.value)}
+                                        icon={EventOutlinedIcon} InputLabelProps={{ shrink: true }}
+                                        inputProps={{ min: hoyISO() }} />
+                                    <IconButton onClick={() => handleQuitarCategoria(index)}
+                                        disabled={form.categoriasLicencia.length === 1}
+                                        sx={{ visibility: form.categoriasLicencia.length === 1 ? 'hidden' : 'visible' }}>
+                                        <CloseIcon fontSize="small" />
+                                    </IconButton>
+                                </Box>
+                            )
+                        })}
+
+                        <Button
+                            onClick={handleAgregarCategoria}
+                            startIcon={<AddOutlinedIcon />}
+                            disabled={form.categoriasLicencia.length >= CATEGORIAS_LICENCIA.length}
+                            sx={{ alignSelf: 'flex-start', textTransform: 'none', fontWeight: 600 }}
+                        >
+                            Agregar categoría
+                        </Button>
+                    </Box>
+                )
+            case 3:
                 return (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                         {apiError && (
@@ -391,16 +479,26 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
                             </Paper>
                             <Paper elevation={0} sx={cardSx}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                                    <LockOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
+                                    <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Credenciales</Typography>
+                                </Box>
+                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica los datos de acceso</Typography>
+                                <ConfirmRow label="Teléfono" value={form.telefono} />
+                                <ConfirmRow label="Correo" value={form.emailLocal + form.emailDominio} />
+                                <ConfirmRow label="Contraseña" value="••••••••" />
+                            </Paper>
+                        </Box>
+                        <Box sx={{ display: 'flex', gap: 2 }}>
+                            <Paper elevation={0} sx={cardSx}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                                     <DirectionsCarOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
                                     <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Licencia de Conducción</Typography>
                                 </Box>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica los datos de licencia</Typography>
-                                <ConfirmRow label="Teléfono" value={form.telefono} />
-                                <ConfirmRow label="Correo" value={form.emailLocal + form.emailDominio} />
-                                <ConfirmRow label="Contraseña" value={'•'.repeat(form.password.length)} />
-                                <ConfirmRow label="Categoría licencia" value={getLicenciaLabel(form.licenciaConduccion)} />
                                 <ConfirmRow label="N° de licencia" value={form.numeroLicencia || '—'} />
-                                <ConfirmRow label="Vencimiento" value={form.fechaVencimientoLicencia} />
+                                {form.categoriasLicencia.filter(c => c.categoria && c.vencimiento).map((cat, i) => (
+                                    <ConfirmRow key={i} label={getLicenciaLabel(cat.categoria)} value={cat.vencimiento} />
+                                ))}
                             </Paper>
                         </Box>
                     </Box>
@@ -455,7 +553,7 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
 
             <Box sx={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                px: 4, py: 2.5, borderTop: `1px solid ${theme.palette.divider}`, backgroundColor: '#FAFAFA',
+                px: 4, py: 2.5, borderTop: `1px solid ${theme.palette.divider}`,
             }}>
                 <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined"
                     startIcon={<ArrowBackOutlinedIcon />} disableRipple
@@ -479,15 +577,17 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
                         onClick={activeStep < steps.length - 1 ? handleNext : handleSubmit}
                         variant="contained"
                         disabled={submitting}
-                        endIcon={activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <CheckOutlinedIcon />}
+                        endIcon={submitting ? undefined : (activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <CheckOutlinedIcon />)}
                         disableRipple
                         sx={{
-                            textTransform: 'none', borderRadius: 2, fontWeight: 600,
+                            textTransform: 'none', borderRadius: 2, fontWeight: 600, minWidth: 160,
                             backgroundColor: theme.palette.primary.main,
                             boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
                             '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}` },
                         }}>
-                        {activeStep < steps.length - 1 ? 'Siguiente' : submitting ? 'Registrando...' : 'Registrar'}
+                        {submitting
+                            ? <CircularProgress size={18} color="inherit" />
+                            : (activeStep < steps.length - 1 ? 'Siguiente' : 'Registrar')}
                     </Button>
                 </Box>
             </Box>
