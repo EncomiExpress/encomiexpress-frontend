@@ -10,6 +10,7 @@ import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import { getEncomiendas } from '../../shared/services/ventaService'
 import { getVentaEstadoDot } from '../../shared/utils/estadoColors'
+import { getGuiaPrincipal } from '../../shared/utils/formatters'
 
 const renderDot = (dot) => {
     if (dot.type === 'circle') {
@@ -139,7 +140,7 @@ const ModalInhabilitarCliente = ({ open, data, onClose, onExited, onConfirm }) =
                                                     sx={{ cursor: 'pointer', '&:hover td': { backgroundColor: theme.palette.action.hover } }}
                                                 >
                                                     <TableCell sx={{ fontSize: '0.8rem', fontWeight: 600, py: 0.75 }}>
-                                                        {v.numeroGuia || '—'}
+                                                        {getGuiaPrincipal(v) || '—'}
                                                     </TableCell>
                                                     <TableCell sx={{ py: 0.75, textAlign: 'right' }}>
                                                         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.75 }}>

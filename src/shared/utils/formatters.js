@@ -20,3 +20,10 @@ export const isVencido = (fecha) => {
     if (!fecha) return false
     return new Date(fecha) < new Date()
 }
+
+// El número de guía ahora vive en cada paquete (uno por paquete físico), no en la
+// venta — esto da "la" guía representativa de una venta para vistas que solo
+// necesitan mostrar/exportar un identificador (listados de dependencias, Excel,
+// dashboard). Para la vista detallada de una venta con varios paquetes, usar el
+// selector de paquete en vez de este helper.
+export const getGuiaPrincipal = (venta) => venta?.paquetes?.[0]?.numeroGuia || venta?.paquete?.numeroGuia || null

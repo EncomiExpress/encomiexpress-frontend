@@ -10,6 +10,7 @@ import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import { getVentaEstadoDot } from '../../shared/utils/estadoColors.js'
+import { getGuiaPrincipal } from '../../shared/utils/formatters.js'
 
 const CampoFila = ({ label, value }) => {
     const theme = useTheme()
@@ -27,7 +28,7 @@ const CampoFila = ({ label, value }) => {
 const ModalConsultarCliente = ({ cliente, onClose }) => {
     const theme = useTheme()
     const [tabIndex, setTabIndex] = useState(0)
-    const [tabVentas, setTabVentas] = useState({ data: [], loading: false })
+    const [tabVentas, setTabVentas] = useState({ data: [], total: 0, loading: false })
 
     useEffect(() => {
         if (!cliente || tabIndex !== 1) return
@@ -35,10 +36,10 @@ const ModalConsultarCliente = ({ cliente, onClose }) => {
         // Necesario para mostrar el loading apenas se abre la pestaña; sin esto no hay forma
         // de avisar que está cargando antes de que la petición responda.
         // eslint-disable-next-line react-hooks/set-state-in-effect
-        setTabVentas({ data: [], loading: true })
+        setTabVentas({ data: [], total: 0, loading: true })
         ventaService.getEncomiendas(undefined, { idCliente: cliente.idCliente, limit: 100 })
-            .then(res => { if (!ignore) setTabVentas({ data: res?.data || [], loading: false }) })
-            .catch(() => { if (!ignore) setTabVentas({ data: [], loading: false }) })
+            .then(res => { if (!ignore) setTabVentas({ data: res?.data || [], total: res?.total ?? 0, loading: false }) })
+            .catch(() => { if (!ignore) setTabVentas({ data: [], total: 0, loading: false }) })
         return () => { ignore = true }
     }, [cliente, tabIndex])
 
@@ -110,7 +111,12 @@ const ModalConsultarCliente = ({ cliente, onClose }) => {
 
             {tabIndex === 1 && (
                 <Box sx={{ p: 3 }}>
-                    <Typography variant="body2" color={theme.palette.text.secondary} sx={{ mb: 2 }}>Encomiendas registradas para este cliente</Typography>
+                    <Typography variant="body2" color={theme.palette.text.secondary} sx={{ mb: tabVentas.total > 100 ? 0.5 : 2 }}>Encomiendas registradas para este cliente</Typography>
+                    {tabVentas.total > 100 && (
+                        <Typography variant="caption" color={theme.palette.text.secondary} sx={{ display: 'block', mb: 2 }}>
+                            Mostrando los 100 más recientes de {tabVentas.total}.
+                        </Typography>
+                    )}
                     {tabVentas.loading
                         ? <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}><CircularProgress size={30} /></Box>
                         : tabVentas.data.length === 0
@@ -132,7 +138,7 @@ const ModalConsultarCliente = ({ cliente, onClose }) => {
                                             <TableRow key={v.idEncomiendaVenta}
                                                 onClick={() => window.open(`/ventas/listar?highlight=${v.idEncomiendaVenta}`, '_blank')}
                                                 sx={{ cursor: 'pointer', '&:hover': { backgroundColor: theme.palette.background.subtle } }}>
-                                                <TableCell sx={{ fontSize: '0.82rem', fontWeight: 600 }}>{v.numeroGuia || `#${v.idEncomiendaVenta}`}</TableCell>
+                                                <TableCell sx={{ fontSize: '0.82rem', fontWeight: 600 }}>{getGuiaPrincipal(v) || `#${v.idEncomiendaVenta}`}</TableCell>
                                                 <TableCell sx={{ fontSize: '0.82rem' }}>{v.ruta?.destino?.ciudad || '—'}</TableCell>
                                                 <TableCell sx={{ fontSize: '0.82rem' }}>${Number(v.valorServicio || 0).toLocaleString('es-CO')}</TableCell>
                                                 <TableCell>

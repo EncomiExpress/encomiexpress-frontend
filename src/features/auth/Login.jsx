@@ -342,7 +342,7 @@ const Login = () => {
               ? <><CircularProgress size={14} sx={{ color: '#fff', mr: 1 }} /> Enviando...</>
               : recuperarMensaje?.tipo === 'success'
                 ? 'Correo enviado'
-                : 'Enviar acceso'
+                : 'Enviar enlace'
             }
           </Button>
         </Box>

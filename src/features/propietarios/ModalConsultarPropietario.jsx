@@ -34,15 +34,15 @@ const CampoFila = ({ label, value, esChip }) => {
 const ModalConsultarPropietario = ({ propietario, onClose }) => {
     const theme = useTheme()
     const [tabIndex, setTabIndex] = useState(0)
-    const [tabVehiculos, setTabVehiculos] = useState({ data: [], loading: false })
+    const [tabVehiculos, setTabVehiculos] = useState({ data: [], total: 0, loading: false })
 
     useEffect(() => {
         if (!propietario || tabIndex !== 1) return
         // eslint-disable-next-line react-hooks/set-state-in-effect -- loading flag antes de fetch, patrón recomendado por React
-        setTabVehiculos({ data: [], loading: true })
+        setTabVehiculos({ data: [], total: 0, loading: true })
         vehiculoService.getVehiculos(undefined, { idPropietario: propietario.idPropietario, limit: 100 })
-            .then(res => setTabVehiculos({ data: res?.data || [], loading: false }))
-            .catch(() => setTabVehiculos({ data: [], loading: false }))
+            .then(res => setTabVehiculos({ data: res?.data || [], total: res?.total ?? 0, loading: false }))
+            .catch(() => setTabVehiculos({ data: [], total: 0, loading: false }))
     }, [propietario, tabIndex])
 
     if (!propietario) return null
@@ -114,9 +114,14 @@ const ModalConsultarPropietario = ({ propietario, onClose }) => {
 
             {tabIndex === 1 && (
                 <Box sx={{ p: 3 }}>
-                    <Typography variant="body2" color={theme.palette.text.secondary} sx={{ mb: 2 }}>
+                    <Typography variant="body2" color={theme.palette.text.secondary} sx={{ mb: tabVehiculos.total > 100 ? 0.5 : 2 }}>
                         Vehículos registrados para este propietario
                     </Typography>
+                    {tabVehiculos.total > 100 && (
+                        <Typography variant="caption" color={theme.palette.text.secondary} sx={{ display: 'block', mb: 2 }}>
+                            Mostrando los 100 más recientes de {tabVehiculos.total}.
+                        </Typography>
+                    )}
                     {tabVehiculos.loading
                         ? <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}><CircularProgress size={30} /></Box>
                         : tabVehiculos.data.length === 0

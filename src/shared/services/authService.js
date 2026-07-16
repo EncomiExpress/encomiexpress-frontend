@@ -1,16 +1,16 @@
 import { API_URL } from '../config/api';
 
-// Clave para storing el token en localStorage
+// sessionStorage a propósito (no localStorage): la sesión muere al cerrar la pestaña.
 const TOKEN_KEY = 'token';
 const USER_KEY = 'usuario';
 
-// Obtener token del localStorage
-export const getToken = () => localStorage.getItem(TOKEN_KEY);
+// Obtener token del sessionStorage
+export const getToken = () => sessionStorage.getItem(TOKEN_KEY);
 
-// Guardar token y usuario en localStorage
+// Guardar token y usuario en sessionStorage
 export const setAuthData = (token, usuario) => {
-  localStorage.setItem(TOKEN_KEY, token);
-  localStorage.setItem(USER_KEY, JSON.stringify(usuario));
+  sessionStorage.setItem(TOKEN_KEY, token);
+  sessionStorage.setItem(USER_KEY, JSON.stringify(usuario));
 };
 
 // Función helper para hacer peticiones con token — compartida con todos los servicios
@@ -69,7 +69,7 @@ export const fetchWithAuth = async (endpoint, options = {}) => {
     if (originalError.status !== 401) throw originalError;
 
     // Intentar renovar con refresh token
-    const storedRefreshToken = localStorage.getItem('refreshToken');
+    const storedRefreshToken = sessionStorage.getItem('refreshToken');
     const refreshTokenValido = storedRefreshToken && storedRefreshToken !== 'undefined';
 
     if (refreshTokenValido) {
@@ -90,7 +90,7 @@ export const fetchWithAuth = async (endpoint, options = {}) => {
       }
 
       if (nuevoToken) {
-        localStorage.setItem('token', nuevoToken);
+        sessionStorage.setItem('token', nuevoToken);
         window.dispatchEvent(new CustomEvent('encomi:token-refreshed', { detail: { token: nuevoToken } }));
         return await ejecutarPeticion(nuevoToken);
       }
@@ -144,7 +144,7 @@ export const register = async (userData, autoLogin = true) => {
 };
 
 /**
- * Solicitar recuperación de contraseña
+ * Solicitar recuperación de contraseña — envía un enlace de reseteo al correo
  * POST /api/auth/recuperar-password
  */
 export const recuperarPassword = async (email) => {
@@ -154,9 +154,21 @@ export const recuperarPassword = async (email) => {
   });
 };
 
+/**
+ * Elegir nueva contraseña con el token del enlace de recuperar-password
+ * POST /api/auth/resetear-password
+ */
+export const resetearPassword = async (token, passwordNueva) => {
+  return await fetchWithAuth('/auth/resetear-password', {
+    method: 'POST',
+    body: JSON.stringify({ token, passwordNueva }),
+  });
+};
+
 export default {
   register,
   recuperarPassword,
+  resetearPassword,
   getToken,
   setAuthData,
 };

@@ -1,6 +1,7 @@
+import { useState } from 'react'
 import { useTheme, alpha } from '@mui/material/styles'
 import {
-    Box, Typography, Paper, Chip, Button, Dialog, IconButton
+    Box, Typography, Paper, Chip, Button, Dialog, IconButton, Menu, MenuItem
 } from '@mui/material'
 import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
@@ -9,8 +10,9 @@ import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined'
 import PaymentOutlinedIcon from '@mui/icons-material/PaymentOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined'
+import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import { getVentaEstadoDot } from '../../shared/utils/estadoColors.js'
-import { descargarGuiaPdf } from '../../shared/utils/exportGuiaPdf.js'
+import { descargarGuiaPaquete } from '../../shared/utils/exportGuiaPdf.js'
 import { formatFecha } from '../../shared/utils/formatters.js'
 
 const CampoFila = ({ label, value }) => {
@@ -41,17 +43,25 @@ const EstadoDot = ({ info, label }) => {
 
 const ModalConsultarVenta = ({ venta, onClose }) => {
     const theme = useTheme()
+    const [paqueteIndex, setPaqueteIndex] = useState(0)
+    const [menuAnchor, setMenuAnchor] = useState(null)
+
     if (!venta) return null
 
     const estadoInfo = getVentaEstadoDot(venta.estado)
     const esPagado = venta.estadoPago === 'Pagado'
-    const dim = venta.paquete
-        ? [venta.paquete.alto, venta.paquete.ancho, venta.paquete.profundidad].every(v => v != null)
-            ? `${venta.paquete.alto}×${venta.paquete.ancho}×${venta.paquete.profundidad} cm`
-            : '—'
+    const paquetes = venta.paquetes?.length > 0 ? venta.paquetes : [venta.paquete].filter(Boolean)
+    const paquete = paquetes[paqueteIndex] || paquetes[0] || null
+    const dim = paquete && [paquete.alto, paquete.ancho, paquete.profundidad].every(v => v != null)
+        ? `${paquete.alto}×${paquete.ancho}×${paquete.profundidad} cm`
         : '—'
 
     const cardSx = { borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: theme.palette.background.paper }
+
+    const seleccionarPaquete = (index) => {
+        setPaqueteIndex(index)
+        setMenuAnchor(null)
+    }
 
     return (
         <Dialog open onClose={onClose} maxWidth="md" fullWidth
@@ -74,9 +84,29 @@ const ModalConsultarVenta = ({ venta, onClose }) => {
                         <LocalShippingOutlinedIcon sx={{ fontSize: 22, color: theme.palette.primary.main }} />
                     </Box>
                     <Box>
-                        <Typography fontWeight={700} fontSize="1rem" color={theme.palette.text.primary}>
-                            {venta.numeroGuia}
-                        </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
+                            <Typography fontWeight={700} fontSize="1rem" color={theme.palette.text.primary}>
+                                {paquete?.numeroGuia || '—'}
+                            </Typography>
+                            {paquetes.length > 1 && (
+                                <>
+                                    <IconButton size="small" onClick={(e) => setMenuAnchor(e.currentTarget)}
+                                        sx={{ color: theme.palette.text.secondary }}>
+                                        <KeyboardArrowDownOutlinedIcon sx={{ fontSize: 20 }} />
+                                    </IconButton>
+                                    <Menu anchorEl={menuAnchor} open={!!menuAnchor} onClose={() => setMenuAnchor(null)}>
+                                        {paquetes.map((p, i) => (
+                                            <MenuItem key={p.idPaquete || i} selected={i === paqueteIndex} onClick={() => seleccionarPaquete(i)}>
+                                                <Box>
+                                                    <Typography variant="body2" fontWeight={600}>{p.numeroGuia}</Typography>
+                                                    <Typography variant="caption" color={theme.palette.text.secondary}>Paquete {i + 1} de {paquetes.length}</Typography>
+                                                </Box>
+                                            </MenuItem>
+                                        ))}
+                                    </Menu>
+                                </>
+                            )}
+                        </Box>
                         <Typography variant="caption" color={theme.palette.text.secondary}>
                             {venta.cliente?.nombre} {venta.cliente?.apellido}
                         </Typography>
@@ -118,10 +148,10 @@ const ModalConsultarVenta = ({ venta, onClose }) => {
                                 <Inventory2OutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
                                 <Typography fontWeight={700} fontSize="0.95rem">Paquete</Typography>
                             </Box>
-                            <CampoFila label="Contenido" value={venta.paquete?.descripcionContenido} />
-                            <CampoFila label="Peso" value={venta.paquete?.peso != null ? `${venta.paquete.peso} kg` : null} />
+                            <CampoFila label="Contenido" value={paquete?.descripcionContenido} />
+                            <CampoFila label="Peso" value={paquete?.peso != null ? `${paquete.peso} kg` : null} />
                             <CampoFila label="Dimensiones" value={dim} />
-                            <CampoFila label="Valor declarado" value={venta.paquete?.valorDeclarado != null ? `$${Number(venta.paquete.valorDeclarado).toLocaleString('es-CO')}` : null} />
+                            <CampoFila label="Valor declarado" value={paquete?.valorDeclarado != null ? `$${Number(paquete.valorDeclarado).toLocaleString('es-CO')}` : null} />
                         </Paper>
                     </Box>
 
@@ -160,7 +190,7 @@ const ModalConsultarVenta = ({ venta, onClose }) => {
             </Box>
 
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5, px: 3, pb: 3 }}>
-                <Button onClick={() => descargarGuiaPdf(venta)} variant="outlined"
+                <Button onClick={() => descargarGuiaPaquete(venta, paquete)} variant="outlined"
                     startIcon={<ReceiptLongOutlinedIcon sx={{ fontSize: 18 }} />}
                     sx={{
                         borderRadius: 2, textTransform: 'none', color: theme.palette.text.primary,

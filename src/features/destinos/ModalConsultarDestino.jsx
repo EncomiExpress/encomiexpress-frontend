@@ -108,15 +108,15 @@ const CampoFila = ({ label, value, esChip }) => {
 const ModalConsultarDestino = ({ destino, onClose }) => {
     const theme = useTheme()
     const [tabIndex, setTabIndex] = useState(0)
-    const [tabRutas, setTabRutas] = useState({ data: [], loading: false })
+    const [tabRutas, setTabRutas] = useState({ data: [], total: 0, loading: false })
 
     useEffect(() => {
         if (!destino || tabIndex !== 1) return
         // eslint-disable-next-line react-hooks/set-state-in-effect -- loading flag antes de fetch, patrón recomendado por React
-        setTabRutas({ data: [], loading: true })
+        setTabRutas({ data: [], total: 0, loading: true })
         rutaService.getRutas({ idDestino: destino.idDestino, limit: 100 })
-            .then(res => setTabRutas({ data: res?.data || [], loading: false }))
-            .catch(() => setTabRutas({ data: [], loading: false }))
+            .then(res => setTabRutas({ data: res?.data || [], total: res?.total ?? 0, loading: false }))
+            .catch(() => setTabRutas({ data: [], total: 0, loading: false }))
     }, [destino, tabIndex])
 
     if (!destino) return null
@@ -201,9 +201,14 @@ const ModalConsultarDestino = ({ destino, onClose }) => {
 
             {tabIndex === 1 && (
                 <Box sx={{ p: 3 }}>
-                    <Typography variant="body2" color={theme.palette.text.secondary} sx={{ mb: 2 }}>
+                    <Typography variant="body2" color={theme.palette.text.secondary} sx={{ mb: tabRutas.total > 100 ? 0.5 : 2 }}>
                         Rutas programadas hacia este destino
                     </Typography>
+                    {tabRutas.total > 100 && (
+                        <Typography variant="caption" color={theme.palette.text.secondary} sx={{ display: 'block', mb: 2 }}>
+                            Mostrando los 100 más recientes de {tabRutas.total}.
+                        </Typography>
+                    )}
                     {tabRutas.loading
                         ? <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}><CircularProgress size={30} /></Box>
                         : tabRutas.data.length === 0

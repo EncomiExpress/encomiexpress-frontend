@@ -11,6 +11,7 @@ import CloseIcon from '@mui/icons-material/Close'
 import * as ventaService from '../../shared/services/ventaService'
 import * as anticipoService from '../../shared/services/anticipoService'
 import { getVentaEstadoDot, getAnticipoEstadoDot } from '../../shared/utils/estadoColors'
+import { getGuiaPrincipal } from '../../shared/utils/formatters'
 
 const ESTADOS_BLOQUEO_ANTICIPO = ['Entregado', 'En Legalización', 'Excedente pendiente']
 
@@ -150,7 +151,7 @@ const ModalInhabilitarRuta = ({ open, data, onClose, onExited, onConfirm }) => {
                                                             onClick={() => window.open(`/ventas/listar?highlight=${v.idEncomiendaVenta}`, '_blank')}
                                                             sx={{ cursor: 'pointer', '&:hover td': { backgroundColor: theme.palette.action.hover } }}>
                                                             <TableCell sx={{ fontSize: '0.8rem', fontWeight: 600, py: 0.75 }}>
-                                                                {v.numeroGuia || `#${v.idEncomiendaVenta}`}
+                                                                {getGuiaPrincipal(v) || `#${v.idEncomiendaVenta}`}
                                                             </TableCell>
                                                             <TableCell sx={{ fontSize: '0.8rem', py: 0.75 }}>
                                                                 {v.cliente ? `${v.cliente.nombre} ${v.cliente.apellido}` : '—'}

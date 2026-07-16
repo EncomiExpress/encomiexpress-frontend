@@ -92,8 +92,8 @@ export const AuthProvider = ({ children }) => {
     const handleSessionExpired = () => {
       // Limpiar credenciales del storage pero mantener `usuario` en estado
       // para que SessionExpiredDialog distinga entre "nunca logueado" y "expirado en uso"
-      localStorage.removeItem(STORAGE_KEYS.TOKEN)
-      localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN)
+      sessionStorage.removeItem(STORAGE_KEYS.TOKEN)
+      sessionStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN)
       setToken(null)
       setSessionExpired(true)
     }
@@ -112,8 +112,8 @@ export const AuthProvider = ({ children }) => {
   // Al iniciar, validar el token con el backend antes de restaurar la sesión
   useEffect(() => {
     const validateSession = async () => {
-      const tokenGuardado = localStorage.getItem(STORAGE_KEYS.TOKEN)
-      const usuarioGuardado = localStorage.getItem(STORAGE_KEYS.USUARIO)
+      const tokenGuardado = sessionStorage.getItem(STORAGE_KEYS.TOKEN)
+      const usuarioGuardado = sessionStorage.getItem(STORAGE_KEYS.USUARIO)
 
       if (!tokenGuardado || !usuarioGuardado) {
         setLoading(false)
@@ -135,7 +135,7 @@ export const AuthProvider = ({ children }) => {
           const usuarioActualizado = { ...perfilFresco, rol: rolNombre ? { nombre: rolNombre } : null }
           setToken(getToken())
           setUsuario(usuarioActualizado)
-          localStorage.setItem(STORAGE_KEYS.USUARIO, JSON.stringify(usuarioActualizado))
+          sessionStorage.setItem(STORAGE_KEYS.USUARIO, JSON.stringify(usuarioActualizado))
         } else {
           setToken(tokenGuardado)
           setUsuario(JSON.parse(usuarioGuardado))
@@ -144,9 +144,9 @@ export const AuthProvider = ({ children }) => {
         if (err.status === 401) {
           // fetchWithAuth ya intentó el refresh y también falló (pasaron las
           // 24h reales) — ahí sí, sesión expirada de verdad.
-          localStorage.removeItem(STORAGE_KEYS.TOKEN)
-          localStorage.removeItem(STORAGE_KEYS.USUARIO)
-          localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN)
+          sessionStorage.removeItem(STORAGE_KEYS.TOKEN)
+          sessionStorage.removeItem(STORAGE_KEYS.USUARIO)
+          sessionStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN)
           setSessionExpired(true)
         } else {
           // Error de red u otro problema del servidor — mantener sesión local
@@ -190,9 +190,9 @@ export const AuthProvider = ({ children }) => {
 
       setSessionExpired(false)
       setToken(tokenNuevo)
-      localStorage.setItem(STORAGE_KEYS.TOKEN, tokenNuevo)
-      localStorage.setItem(STORAGE_KEYS.USUARIO, JSON.stringify(usuarioNormalizado))
-      if (refreshTokenNuevo) localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshTokenNuevo)
+      sessionStorage.setItem(STORAGE_KEYS.TOKEN, tokenNuevo)
+      sessionStorage.setItem(STORAGE_KEYS.USUARIO, JSON.stringify(usuarioNormalizado))
+      if (refreshTokenNuevo) sessionStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshTokenNuevo)
       setUsuario(usuarioNormalizado)
 
       return { success: true, usuario: usuarioNormalizado }
@@ -204,9 +204,9 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     setToken(null)
     setUsuario(null)
-    localStorage.removeItem(STORAGE_KEYS.TOKEN)
-    localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN)
-    localStorage.removeItem(STORAGE_KEYS.USUARIO)
+    sessionStorage.removeItem(STORAGE_KEYS.TOKEN)
+    sessionStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN)
+    sessionStorage.removeItem(STORAGE_KEYS.USUARIO)
   }
 
   const tienePermiso = (permiso) => {

@@ -141,20 +141,17 @@ const drawGridCell = (doc, x, y, w, h, label, value) => {
   doc.text(lines.slice(0, 2), x + 3, y + 9.5)
 }
 
-export const descargarGuiaPdf = async (venta) => {
-  if (!venta) return
-
-  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [PAGE_W, PAGE_H] })
+// Dibuja una página completa de guía para UN paquete. Cuando la venta tiene
+// varios paquetes, se llama una vez por paquete (una página por paquete) —
+// cada página comparte guía/remitente/destinatario/valores, y solo cambia el
+// contenido específico del paquete. Así cada paquete queda con su propia guía
+// físicamente separable, en vez de mezclarlos en un único documento continuo.
+const drawGuiaPage = (doc, venta, pkg, index, totalPaginas, assets) => {
   let y = MARGIN
 
-  let logoW = 0
-  try {
-    const { dataUrl, ratio } = await loadImageAsDataUrl(logoOsvaldoC)
-    const logoH = 19
-    logoW = logoH * ratio
-    doc.addImage(dataUrl, 'PNG', MARGIN, y - 5, logoW, logoH)
-  } catch {
-    // si el logo no carga, se continúa sin él
+  const logoW = assets.logoDataUrl ? 19 * assets.logoRatio : 0
+  if (assets.logoDataUrl) {
+    doc.addImage(assets.logoDataUrl, 'PNG', MARGIN, y - 5, logoW, 19)
   }
 
   const textX = MARGIN + logoW + 4
@@ -172,6 +169,13 @@ export const descargarGuiaPdf = async (venta) => {
     textX, y + 12
   )
 
+  if (totalPaginas > 1) {
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(8)
+    doc.setTextColor(90, 90, 90)
+    doc.text(`Paquete ${index + 1} de ${totalPaginas}`, PAGE_W - MARGIN, y - 4, { align: 'right' })
+  }
+
   const guiaBoxW = 68
   const guiaBoxX = PAGE_W - MARGIN - guiaBoxW
   doc.setDrawColor(180, 180, 180)
@@ -183,9 +187,11 @@ export const descargarGuiaPdf = async (venta) => {
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(13)
   doc.setTextColor(20, 20, 20)
-  doc.text(sanitizeForPdf(venta.numeroGuia) || '—', guiaBoxX + 3, y + 8.5)
+  doc.text(sanitizeForPdf(pkg?.numeroGuia) || '—', guiaBoxX + 3, y + 8.5)
 
-  const barcodeDataUrl = generateBarcodeDataUrl(venta.numeroGuia)
+  // El código de barras es del PAQUETE (no de la venta) — cada paquete físico
+  // tiene su propio número de guía único, así que cada página necesita el suyo.
+  const barcodeDataUrl = generateBarcodeDataUrl(pkg?.numeroGuia)
   doc.addImage(barcodeDataUrl, 'PNG', guiaBoxX, y + 11, guiaBoxW, 12)
 
   y += 26
@@ -263,22 +269,30 @@ export const descargarGuiaPdf = async (venta) => {
 
   y = boxY + boxH + 6
 
-  y = drawGrowingBox(doc, y, 'Contenido del paquete', venta.paquete?.descripcionContenido)
+  y = drawGrowingBox(doc, y, 'Contenido del paquete', pkg?.descripcionContenido)
 
   y = ensureSpace(doc, y, 14)
-  const dim = venta.paquete && [venta.paquete.alto, venta.paquete.ancho, venta.paquete.profundidad].every(v => v != null)
-    ? `${venta.paquete.alto}×${venta.paquete.ancho}×${venta.paquete.profundidad} cm`
+  const dim = pkg && [pkg.alto, pkg.ancho, pkg.profundidad].every(v => v != null)
+    ? `${pkg.alto}×${pkg.ancho}×${pkg.profundidad} cm`
     : '—'
-  const gridColsA = [
-    ['Peso', venta.paquete?.peso != null ? `${venta.paquete.peso} kg` : '—'],
+  const gridColsPaquete = [
+    ['Peso', pkg?.peso != null ? `${pkg.peso} kg` : '—'],
     ['Dimensiones', dim],
-    ['Valor declarado', formatCurrency(venta.paquete?.valorDeclarado)],
+    ['Valor declarado', formatCurrency(pkg?.valorDeclarado)],
+  ]
+  const cellWPaquete = CONTENT_W / gridColsPaquete.length
+  gridColsPaquete.forEach(([label, value], j) => drawGridCell(doc, MARGIN + cellWPaquete * j, y, cellWPaquete, 14, label, value))
+  y += 16
+
+  // ── Grid de valores de la venta (igual en todas las páginas: es el mismo envío) ──
+  y = ensureSpace(doc, y, 14)
+  const gridColsVenta = [
     ['Valor servicio', formatCurrency(venta.valorServicio)],
     ['Impuestos', formatCurrency(venta.impuestos)],
     [venta.metodoPago === 'Contraentrega' ? 'Valor a cobrar' : 'Total', formatCurrency(venta.total)],
   ]
-  const cellWA = CONTENT_W / gridColsA.length
-  gridColsA.forEach(([label, value], i) => drawGridCell(doc, MARGIN + cellWA * i, y, cellWA, 14, label, value))
+  const cellWVenta = CONTENT_W / gridColsVenta.length
+  gridColsVenta.forEach(([label, value], i) => drawGridCell(doc, MARGIN + cellWVenta * i, y, cellWVenta, 14, label, value))
   y += 16
 
   // ── Grid de método de pago / estado de pago ──
@@ -349,6 +363,48 @@ export const descargarGuiaPdf = async (venta) => {
     `Generado el ${new Date().toLocaleString('es-CO')}`,
     MARGIN, y
   )
+}
 
-  doc.save(`guia-${venta.numeroGuia || venta.idEncomiendaVenta}.pdf`)
+const cargarLogo = async () => {
+  try {
+    const { dataUrl, ratio } = await loadImageAsDataUrl(logoOsvaldoC)
+    return { logoDataUrl: dataUrl, logoRatio: ratio }
+  } catch {
+    // si el logo no carga, se continúa sin él
+    return { logoDataUrl: null, logoRatio: 1 }
+  }
+}
+
+// Descarga la guía completa de una venta: una página por cada paquete, cada una
+// con su propio número de guía y código de barras (mismo remitente/destinatario/
+// valores en todas). Es la que se usa desde el botón rápido del Listar.
+export const descargarGuiaPdf = async (venta) => {
+  if (!venta) return
+
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [PAGE_W, PAGE_H] })
+  const assets = await cargarLogo()
+
+  const paquetes = venta.paquetes?.length > 0 ? venta.paquetes : [venta.paquete].filter(Boolean)
+  const paginas = paquetes.length > 0 ? paquetes : [null]
+
+  paginas.forEach((pkg, index) => {
+    if (index > 0) doc.addPage([PAGE_W, PAGE_H], 'landscape')
+    drawGuiaPage(doc, venta, pkg, index, paginas.length, assets)
+  })
+
+  doc.save(`guia-${paquetes[0]?.numeroGuia || venta.idEncomiendaVenta}.pdf`)
+}
+
+// Descarga la guía de UN solo paquete (una sola página, con su propio número de
+// guía y código de barras) — la usa el botón "Descargar guía" del modal Consultar,
+// que ya está enfocado en un paquete específico (el que se esté viendo ahí).
+export const descargarGuiaPaquete = async (venta, paquete) => {
+  if (!venta || !paquete) return
+
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [PAGE_W, PAGE_H] })
+  const assets = await cargarLogo()
+
+  drawGuiaPage(doc, venta, paquete, 0, 1, assets)
+
+  doc.save(`guia-${paquete.numeroGuia || venta.idEncomiendaVenta}.pdf`)
 }

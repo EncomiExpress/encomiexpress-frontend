@@ -29,7 +29,7 @@ import { useAuth, PERMISOS } from '../../shared/contexts/AuthContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { getPageOfEncomienda, getEncomiendas } from '../../shared/services/ventaService'
 import { descargarGuiaPdf } from '../../shared/utils/exportGuiaPdf.js'
-import { formatFecha } from '../../shared/utils/formatters.js'
+import { formatFecha, getGuiaPrincipal } from '../../shared/utils/formatters.js'
 import RegistrarVenta from './RegistrarVenta'
 import ActualizarVenta from './ActualizarVenta'
 import ModalInhabilitarVenta from './ModalInhabilitarVenta'
@@ -233,7 +233,7 @@ const ListarVenta = () => {
             })
             const rows = (res?.data || []).map(venta => ({
                 'ID': venta.idEncomiendaVenta || venta.idVenta,
-                'Guía': venta.numeroGuia,
+                'Guía': (venta.paquetes || []).map(p => p.numeroGuia).filter(Boolean).join(', ') || getGuiaPrincipal(venta) || '—',
                 'Cliente': `${venta.cliente?.nombre || ''} ${venta.cliente?.apellido || ''}`.trim() || venta.idCliente || '-',
                 'Ruta': venta.ruta?.nombreRuta || '-',
                 'Destino': venta.ruta?.destino?.ciudad || '-',
@@ -639,9 +639,37 @@ const ListarVenta = () => {
                                         >
                                             {/* Guía + fecha */}
                                             <TableCell sx={{ py: 1.5 }}>
-                                                <Typography variant="body2" fontWeight={600} color={theme.palette.primary.main}>
-                                                    {venta.numeroGuia}
-                                                </Typography>
+                                                {(() => {
+                                                    const q = debouncedBusqueda.trim().toLowerCase()
+                                                    const paquetes = venta.paquetes || []
+                                                    // Si la búsqueda coincide con la guía de un paquete que NO es el primero,
+                                                    // se muestra esa — para no contradecir lo que la usuaria buscó.
+                                                    const guiaVisible = (q && paquetes.find(p => p.numeroGuia?.toLowerCase().includes(q))?.numeroGuia)
+                                                        || paquetes[0]?.numeroGuia
+                                                        || '—'
+                                                    const adicionales = Math.max(0, paquetes.length - 1)
+                                                    return (
+                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                                                            <Typography variant="body2" fontWeight={600} color={theme.palette.primary.main}>
+                                                                {guiaVisible}
+                                                            </Typography>
+                                                            {adicionales > 0 && (
+                                                                <Chip
+                                                                    label={`+${adicionales} ${adicionales === 1 ? 'paquete' : 'paquetes'}`}
+                                                                    size="small"
+                                                                    sx={{
+                                                                        fontWeight: 600,
+                                                                        backgroundColor: theme.palette.primary.light,
+                                                                        color: theme.palette.primary.darker,
+                                                                        fontSize: '0.65rem',
+                                                                        borderRadius: '2px',
+                                                                        height: 18,
+                                                                    }}
+                                                                />
+                                                            )}
+                                                        </Box>
+                                                    )
+                                                })()}
                                                 <Typography variant="caption" color={theme.palette.text.secondary}>
                                                     {formatFecha(venta.fechaRegistro)}
                                                 </Typography>

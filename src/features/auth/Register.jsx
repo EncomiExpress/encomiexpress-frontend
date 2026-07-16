@@ -354,7 +354,7 @@ const Register = () => {
       </Box>
 
       <Button
-        component={Link} to="/" startIcon={<ArrowBack />}
+        component={Link} to="/login" startIcon={<ArrowBack />}
         sx={{
           position: 'absolute', top: 20, left: 24,
           color: theme.palette.text.secondary, textTransform: 'none',
@@ -365,7 +365,7 @@ const Register = () => {
           transition: 'all 0.2s ease',
         }}
       >
-        Volver al inicio
+        Volver al inicio de sesión
       </Button>
 
       <Paper elevation={0} sx={{

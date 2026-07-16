@@ -8,6 +8,7 @@ import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import * as ventaService from '../../shared/services/ventaService'
 import * as anticipoService from '../../shared/services/anticipoService'
 import { getEstadoColorRuta, getEstadoColorAnticipo, getVentaEstadoDot, getAnticipoEstadoDot } from '../../shared/utils/estadoColors.js'
+import { getGuiaPrincipal } from '../../shared/utils/formatters.js'
 
 const vehiculoDot = (estado) => {
     if (estado === 'En Ruta')       return { color: '#3B82F6', fill: true,  label: 'En Ruta' }
@@ -213,7 +214,7 @@ const ModalConfirmarEstado = ({ open, nuevoEstado, info, ruta, vehiculo, conduct
                                                                 <TableRow key={v.idEncomiendaVenta}
                                                                     onClick={() => openHighlight('/ventas/listar', v.idEncomiendaVenta)}
                                                                     sx={{ cursor: 'pointer', '&:hover td': { backgroundColor: theme.palette.action.hover } }}>
-                                                                    <TableCell sx={{ fontSize: '0.8rem', fontWeight: 600, py: 0.75 }}>{v.numeroGuia || `#${v.idEncomiendaVenta}`}</TableCell>
+                                                                    <TableCell sx={{ fontSize: '0.8rem', fontWeight: 600, py: 0.75 }}>{getGuiaPrincipal(v) || `#${v.idEncomiendaVenta}`}</TableCell>
                                                                     <TableCell sx={{ fontSize: '0.8rem', py: 0.75 }}>{v.cliente ? `${v.cliente.nombre} ${v.cliente.apellido}` : '—'}</TableCell>
                                                                     <TableCell sx={{ py: 0.75, textAlign: 'right' }}>
                                                                         {(() => {

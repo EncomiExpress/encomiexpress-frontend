@@ -47,25 +47,25 @@ const CampoFila = ({ label, value, esChip, valueColor }) => {
 const ModalConsultarConductor = ({ conductor, onClose }) => {
     const theme = useTheme()
     const [tabIndex, setTabIndex] = useState(0)
-    const [tabRutas, setTabRutas] = useState({ data: [], loading: false })
-    const [tabAnticipos, setTabAnticipos] = useState({ data: [], loading: false })
+    const [tabRutas, setTabRutas] = useState({ data: [], total: 0, loading: false })
+    const [tabAnticipos, setTabAnticipos] = useState({ data: [], total: 0, loading: false })
 
     useEffect(() => {
         if (!conductor || tabIndex !== 1) return
         // eslint-disable-next-line react-hooks/set-state-in-effect -- loading flag antes de fetch, patrón recomendado por React
-        setTabRutas({ data: [], loading: true })
+        setTabRutas({ data: [], total: 0, loading: true })
         rutaService.getRutas({ idConductor: conductor.idConductor, limit: 100 })
-            .then(res => setTabRutas({ data: res?.data || [], loading: false }))
-            .catch(() => setTabRutas({ data: [], loading: false }))
+            .then(res => setTabRutas({ data: res?.data || [], total: res?.total ?? 0, loading: false }))
+            .catch(() => setTabRutas({ data: [], total: 0, loading: false }))
     }, [conductor, tabIndex])
 
     useEffect(() => {
         if (!conductor || tabIndex !== 2) return
         // eslint-disable-next-line react-hooks/set-state-in-effect -- loading flag antes de fetch, patrón recomendado por React
-        setTabAnticipos({ data: [], loading: true })
+        setTabAnticipos({ data: [], total: 0, loading: true })
         anticipoService.getAnticipos(undefined, { idConductor: conductor.idConductor, limit: 100 })
-            .then(res => setTabAnticipos({ data: res?.data || [], loading: false }))
-            .catch(() => setTabAnticipos({ data: [], loading: false }))
+            .then(res => setTabAnticipos({ data: res?.data || [], total: res?.total ?? 0, loading: false }))
+            .catch(() => setTabAnticipos({ data: [], total: 0, loading: false }))
     }, [conductor, tabIndex])
 
     if (!conductor) return null
@@ -167,9 +167,14 @@ const ModalConsultarConductor = ({ conductor, onClose }) => {
 
             {tabIndex === 1 && (
                 <Box sx={{ p: 3 }}>
-                    <Typography variant="body2" color={theme.palette.text.secondary} sx={{ mb: 2 }}>
+                    <Typography variant="body2" color={theme.palette.text.secondary} sx={{ mb: tabRutas.total > 100 ? 0.5 : 2 }}>
                         Rutas asignadas a este conductor
                     </Typography>
+                    {tabRutas.total > 100 && (
+                        <Typography variant="caption" color={theme.palette.text.secondary} sx={{ display: 'block', mb: 2 }}>
+                            Mostrando los 100 más recientes de {tabRutas.total}.
+                        </Typography>
+                    )}
                     {tabRutas.loading
                         ? <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}><CircularProgress size={30} /></Box>
                         : tabRutas.data.length === 0
@@ -209,9 +214,14 @@ const ModalConsultarConductor = ({ conductor, onClose }) => {
 
             {tabIndex === 2 && (
                 <Box sx={{ p: 3 }}>
-                    <Typography variant="body2" color={theme.palette.text.secondary} sx={{ mb: 2 }}>
+                    <Typography variant="body2" color={theme.palette.text.secondary} sx={{ mb: tabAnticipos.total > 100 ? 0.5 : 2 }}>
                         Anticipos registrados para este conductor
                     </Typography>
+                    {tabAnticipos.total > 100 && (
+                        <Typography variant="caption" color={theme.palette.text.secondary} sx={{ display: 'block', mb: 2 }}>
+                            Mostrando los 100 más recientes de {tabAnticipos.total}.
+                        </Typography>
+                    )}
                     {tabAnticipos.loading
                         ? <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}><CircularProgress size={30} /></Box>
                         : tabAnticipos.data.length === 0

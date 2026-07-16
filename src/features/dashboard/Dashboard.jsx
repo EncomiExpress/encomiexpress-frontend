@@ -19,7 +19,7 @@ import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
 import RouteOutlinedIcon from '@mui/icons-material/RouteOutlined'
 import BarChartOutlinedIcon from '@mui/icons-material/BarChartOutlined'
-import { formatRutaDestino } from '../../shared/utils/formatters.js'
+import { formatRutaDestino, getGuiaPrincipal } from '../../shared/utils/formatters.js'
 import { exportToExcel } from '../../shared/utils/exportExcel.js'
 import { getVentaEstadoDot } from '../../shared/utils/estadoColors.js'
 
@@ -228,7 +228,7 @@ const Dashboard = () => {
       const res = await getEncomiendas(undefined, { limit: 100000 })
       const rows = (res?.data || []).map(venta => ({
         'ID': venta.idEncomiendaVenta || venta.idVenta,
-        'Guía': venta.numeroGuia,
+        'Guía': getGuiaPrincipal(venta),
         'Cliente': `${venta.cliente?.nombre || ''} ${venta.cliente?.apellido || ''}`.trim() || venta.idCliente || '-',
         'Estado': venta.estado,
         'Estado de pago': venta.estadoPago,

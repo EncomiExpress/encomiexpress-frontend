@@ -8,6 +8,7 @@ import DoNotDisturbOutlinedIcon from '@mui/icons-material/DoNotDisturbOutlined'
 import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import { getRutaEstadoDot } from '../../shared/utils/estadoColors'
+import { getGuiaPrincipal } from '../../shared/utils/formatters'
 
 const renderDot = (dot) => {
     if (dot.type === 'circle') {
@@ -47,7 +48,7 @@ const ModalInhabilitarVenta = ({ open, venta, onClose, onExited, onConfirm }) =>
 
     const habilitadoActual = venta?.habilitado === true
     const bloqueado = habilitadoActual && venta?.estado !== 'Entregada' && venta?.estado !== 'Cancelada'
-    const guia = venta?.numeroGuia || '—'
+    const guia = getGuiaPrincipal(venta) || '—'
     const ruta = venta?.ruta || null
 
     const titulo = !habilitadoActual

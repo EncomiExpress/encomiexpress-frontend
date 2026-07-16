@@ -14,7 +14,7 @@ import AccessTimeOutlinedIcon from '@mui/icons-material/AccessTimeOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import RouteIcon from '@mui/icons-material/Route'
 import { getEstadoColorRuta, getAnticipoEstadoDot, getVentaEstadoDot } from '../../shared/utils/estadoColors.js'
-import { formatFecha } from '../../shared/utils/formatters.js'
+import { formatFecha, getGuiaPrincipal } from '../../shared/utils/formatters.js'
 
 const formatHora12 = (hora) => {
     if (!hora) return null
@@ -59,8 +59,8 @@ const CampoFila = ({ label, value, esChip }) => {
 const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
     const theme = useTheme()
     const [tabIndex, setTabIndex] = useState(0)
-    const [tabEncomiendas, setTabEncomiendas] = useState({ data: [], loading: false })
-    const [tabAnticipos, setTabAnticipos] = useState({ data: [], loading: false })
+    const [tabEncomiendas, setTabEncomiendas] = useState({ data: [], total: 0, loading: false })
+    const [tabAnticipos, setTabAnticipos] = useState({ data: [], total: 0, loading: false })
 
     const { getVehiculos } = useVehiculo()
     const { getConductores } = useConductor()
@@ -69,19 +69,19 @@ const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
     useEffect(() => {
         if (!ruta || tabIndex !== 1) return
         // eslint-disable-next-line react-hooks/set-state-in-effect -- loading flag antes de fetch, patrón recomendado por React
-        setTabEncomiendas({ data: [], loading: true })
+        setTabEncomiendas({ data: [], total: 0, loading: true })
         ventaService.getEncomiendas(undefined, { idRuta: ruta.idRuta, limit: 100 })
-            .then(res => setTabEncomiendas({ data: res?.data || [], loading: false }))
-            .catch(() => setTabEncomiendas({ data: [], loading: false }))
+            .then(res => setTabEncomiendas({ data: res?.data || [], total: res?.total ?? 0, loading: false }))
+            .catch(() => setTabEncomiendas({ data: [], total: 0, loading: false }))
     }, [ruta, tabIndex])
 
     useEffect(() => {
         if (!ruta || tabIndex !== 2) return
         // eslint-disable-next-line react-hooks/set-state-in-effect -- loading flag antes de fetch, patrón recomendado por React
-        setTabAnticipos({ data: [], loading: true })
+        setTabAnticipos({ data: [], total: 0, loading: true })
         anticipoService.getAnticipos(undefined, { idRuta: ruta.idRuta, limit: 100 })
-            .then(res => setTabAnticipos({ data: res?.data || [], loading: false }))
-            .catch(() => setTabAnticipos({ data: [], loading: false }))
+            .then(res => setTabAnticipos({ data: res?.data || [], total: res?.total ?? 0, loading: false }))
+            .catch(() => setTabAnticipos({ data: [], total: 0, loading: false }))
     }, [ruta, tabIndex])
 
     if (!ruta) return null
@@ -194,9 +194,14 @@ const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
 
             {tabIndex === 1 && (
                 <Box sx={{ p: 3 }}>
-                    <Typography variant="body2" color={theme.palette.text.secondary} sx={{ mb: 2 }}>
+                    <Typography variant="body2" color={theme.palette.text.secondary} sx={{ mb: tabEncomiendas.total > 100 ? 0.5 : 2 }}>
                         Encomiendas registradas en esta ruta
                     </Typography>
+                    {tabEncomiendas.total > 100 && (
+                        <Typography variant="caption" color={theme.palette.text.secondary} sx={{ display: 'block', mb: 2 }}>
+                            Mostrando los 100 más recientes de {tabEncomiendas.total}.
+                        </Typography>
+                    )}
                     {tabEncomiendas.loading
                         ? <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}><CircularProgress size={30} /></Box>
                         : tabEncomiendas.data.length === 0
@@ -216,7 +221,7 @@ const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
                                         <TableRow key={v.idEncomiendaVenta}
                                             onClick={() => window.open(`/ventas/listar?highlight=${v.idEncomiendaVenta}`, '_blank')}
                                             sx={{ cursor: 'pointer', '&:hover': { backgroundColor: theme.palette.background.subtle } }}>
-                                            <TableCell sx={{ fontSize: '0.82rem', fontWeight: 600 }}>{v.numeroGuia || `#${v.idEncomiendaVenta}`}</TableCell>
+                                            <TableCell sx={{ fontSize: '0.82rem', fontWeight: 600 }}>{getGuiaPrincipal(v) || `#${v.idEncomiendaVenta}`}</TableCell>
                                             <TableCell sx={{ fontSize: '0.82rem' }}>{v.cliente ? `${v.cliente.nombre} ${v.cliente.apellido}` : '—'}</TableCell>
                                             <TableCell sx={{ fontSize: '0.82rem' }}>${Number(v.valorServicio || 0).toLocaleString('es-CO')}</TableCell>
                                             <TableCell>
@@ -244,9 +249,14 @@ const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
 
             {tabIndex === 2 && (
                 <Box sx={{ p: 3 }}>
-                    <Typography variant="body2" color={theme.palette.text.secondary} sx={{ mb: 2 }}>
+                    <Typography variant="body2" color={theme.palette.text.secondary} sx={{ mb: tabAnticipos.total > 100 ? 0.5 : 2 }}>
                         Anticipos asociados a esta ruta
                     </Typography>
+                    {tabAnticipos.total > 100 && (
+                        <Typography variant="caption" color={theme.palette.text.secondary} sx={{ display: 'block', mb: 2 }}>
+                            Mostrando los 100 más recientes de {tabAnticipos.total}.
+                        </Typography>
+                    )}
                     {tabAnticipos.loading
                         ? <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}><CircularProgress size={30} /></Box>
                         : tabAnticipos.data.length === 0

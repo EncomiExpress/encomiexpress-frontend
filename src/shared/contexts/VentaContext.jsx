@@ -17,10 +17,11 @@ export const METODOS_PAGO = ['Contraentrega', 'Efectivo', 'Transferencia', 'Nequ
 
 export const ESTADOS_PAGO = ['Pendiente', 'Pagado']
 
-// El backend devuelve destinatarios[] y paquetes[] — tomamos el primero de cada uno
+// El backend devuelve destinatario como objeto singular (1:1) y paquetes[] (1:N) —
+// paquete queda como atajo al primero para las vistas que aún no muestran la lista completa.
 const normalize = (e) => ({
   ...e,
-  destinatario: e.destinatarios?.[0] || null,
+  destinatario: e.destinatario || null,
   paquete: e.paquetes?.[0] || null,
 })
 
