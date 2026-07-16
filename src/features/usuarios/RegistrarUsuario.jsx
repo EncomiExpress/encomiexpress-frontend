@@ -24,8 +24,8 @@ import * as usuarioService from '../../shared/services/usuarioService.js'
 import { hayNombreDuplicado, MENSAJE_NOMBRE_DUPLICADO, hayDocumentoDuplicado, MENSAJE_DOC_DUPLICADO } from '../../shared/utils/duplicados.js'
 
 const DOMINIOS_EMAIL = ['@gmail.com', '@hotmail.com', '@outlook.com', '@yahoo.com', '@icloud.com', '@live.com']
-const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s]).{8,16}$/
-const PASSWORD_HELP = '8-16 caracteres, con mayúsculas, minúsculas, números y un carácter especial (sin @)'
+const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s]).{8,64}$/
+const PASSWORD_HELP = '8-64 caracteres, con mayúsculas, minúsculas, números y un carácter especial'
 
 const steps = ['Datos Personales', 'Credenciales', 'Confirmación']
 
@@ -102,9 +102,6 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
             return
         }
         if (name === 'numeroIdentificacion') setAvisoDocDuplicado('')
-        if (name === 'password' || name === 'confirmarPassword') {
-            value = value.replace(/@/g, '')
-        }
         if (name === 'emailLocal') {
             value = value.replace(/[^a-zA-Z0-9._-]/g, '')
         }
@@ -229,6 +226,7 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
     }
 
     const handleClose = () => {
+        if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
         setForm({
             nombre: '',
             apellido: '',
@@ -252,7 +250,7 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
     const cardSx = {
         flex: 1, minWidth: 0, borderRadius: 2, p: 2.5,
         border: `1px solid ${theme.palette.divider}`,
-        backgroundColor: 'white', elevation: 0,
+        backgroundColor: theme.palette.background.paper, elevation: 0,
         overflow: 'hidden',
     }
 
@@ -390,7 +388,7 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
                                         ),
                                         sx: { pl: 1.5 }
                                     },
-                                    htmlInput: { maxLength: 16 }
+                                    htmlInput: { maxLength: 64 }
                                 }}
                                 sx={formFieldStyles} />
                             <TextField fullWidth label="Confirmar contraseña" name="confirmarPassword" type={showConfirmarPassword ? 'text' : 'password'}
@@ -408,7 +406,7 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
                                         ),
                                         sx: { pl: 1.5 }
                                     },
-                                    htmlInput: { maxLength: 16 }
+                                    htmlInput: { maxLength: 64 }
                                 }}
                                 sx={formFieldStyles} />
                         </Box>
@@ -442,6 +440,7 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica los datos de acceso</Typography>
                                 <ConfirmRow label="Teléfono" value={form.telefono} />
                                 <ConfirmRow label="Email" value={form.emailLocal + form.emailDominio} />
+                                <ConfirmRow label="Contraseña" value="••••••••" />
                                 <ConfirmRow label="Rol" value={rolesDisponibles.find(r => r.idRol === parseInt(form.idRol))?.nombre || '—'} />
                             </Paper>
                         </Box>
@@ -501,7 +500,7 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
 
             <Box sx={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                px: 4, py: 2.5, borderTop: `1px solid ${theme.palette.divider}`, backgroundColor: '#FAFAFA',
+                px: 4, py: 2.5, borderTop: `1px solid ${theme.palette.divider}`,
             }}>
                 <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined"
                     startIcon={<ArrowBackOutlinedIcon />} disableRipple
@@ -525,16 +524,18 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
                         onClick={activeStep < steps.length - 1 ? handleNext : handleSubmit}
                         variant="contained"
                         disabled={submitting}
-                        endIcon={submitting ? <CircularProgress size={18} color="inherit" /> : (activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <CheckOutlinedIcon />)}
+                        endIcon={submitting ? undefined : (activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <CheckOutlinedIcon />)}
                         disableRipple
                         sx={{
-                            textTransform: 'none', borderRadius: 2, fontWeight: 600,
+                            textTransform: 'none', borderRadius: 2, fontWeight: 600, minWidth: 160,
                             backgroundColor: theme.palette.primary.main,
                             boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
                             '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}` },
                             '&.Mui-disabled': { backgroundColor: '#e0e0e0', color: '#9e9e9e' },
                         }}>
-                        {activeStep < steps.length - 1 ? 'Siguiente' : submitting ? 'Registrando...' : 'Registrar'}
+                        {submitting
+                            ? <CircularProgress size={18} color="inherit" />
+                            : (activeStep < steps.length - 1 ? 'Siguiente' : 'Registrar')}
                     </Button>
                 </Box>
             </Box>

@@ -3,6 +3,7 @@ import { API_URL } from '../config/api.js'
 import { STORAGE_KEYS } from '../config/storageKeys.js'
 import * as rolService from '../services/rolService'
 import * as usuarioService from '../services/usuarioService'
+import { fetchWithAuth, getToken } from '../services/authService.js'
 
 const AuthContext = createContext()
 export const useAuth = () => useContext(AuthContext)
@@ -120,47 +121,39 @@ export const AuthProvider = ({ children }) => {
       }
 
       try {
-        const res = await fetch(`${API_URL}/auth/profile`, {
-          headers: { Authorization: `Bearer ${tokenGuardado}` }
-        })
+        // fetchWithAuth intenta renovar con el refresh token (24h) si el access
+        // token (1h) ya venció, igual que en cualquier petición normal de la app —
+        // antes esto usaba fetch() directo y desloguéaba apenas pasaba 1h, sin
+        // aprovechar las 24h reales de la sesión.
+        const profileData = await fetchWithAuth('/auth/profile')
 
-        if (res.status === 401) {
-          // Token expirado o inválido — limpiar sesión y marcar como expirada
-          localStorage.removeItem(STORAGE_KEYS.TOKEN)
-          localStorage.removeItem(STORAGE_KEYS.USUARIO)
-          localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN)
-          setSessionExpired(true)
-          setLoading(false)
-          return
-        }
-
-        if (!res.ok) {
-          // Otro error del servidor — mantener sesión local (puede ser problema de red)
-          setToken(tokenGuardado)
-          setUsuario(JSON.parse(usuarioGuardado))
-          setLoading(false)
-          return
-        }
-
-        // Token válido — usar datos frescos del backend para reflejar cambios de permisos
-        const profileData = await res.json()
         if (profileData.success && profileData.data) {
           const perfilFresco = profileData.data
           const rolNombre = typeof perfilFresco.rol === 'string'
             ? perfilFresco.rol
             : perfilFresco.rol?.nombre || null
           const usuarioActualizado = { ...perfilFresco, rol: rolNombre ? { nombre: rolNombre } : null }
-          setToken(tokenGuardado)
+          setToken(getToken())
           setUsuario(usuarioActualizado)
           localStorage.setItem(STORAGE_KEYS.USUARIO, JSON.stringify(usuarioActualizado))
         } else {
           setToken(tokenGuardado)
           setUsuario(JSON.parse(usuarioGuardado))
         }
-      } catch {
-        // Error de red — restaurar sesión de todos modos para no desloguear sin razón
-        setToken(tokenGuardado)
-        setUsuario(JSON.parse(usuarioGuardado))
+      } catch (err) {
+        if (err.status === 401) {
+          // fetchWithAuth ya intentó el refresh y también falló (pasaron las
+          // 24h reales) — ahí sí, sesión expirada de verdad.
+          localStorage.removeItem(STORAGE_KEYS.TOKEN)
+          localStorage.removeItem(STORAGE_KEYS.USUARIO)
+          localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN)
+          setSessionExpired(true)
+        } else {
+          // Error de red u otro problema del servidor — mantener sesión local
+          // para no desloguear sin razón.
+          setToken(tokenGuardado)
+          setUsuario(JSON.parse(usuarioGuardado))
+        }
       }
 
       setLoading(false)

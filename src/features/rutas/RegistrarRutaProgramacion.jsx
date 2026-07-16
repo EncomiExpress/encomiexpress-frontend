@@ -3,7 +3,7 @@ import { useState } from 'react'
 import {
     Box, Typography, Paper, Stepper, Step, StepLabel,
     Button, Alert, Dialog, DialogTitle, DialogContent, IconButton,
-    Autocomplete, TextField
+    Autocomplete, TextField, CircularProgress
 } from '@mui/material'
 import RouteOutlinedIcon from '@mui/icons-material/RouteOutlined'
 import EventOutlinedIcon from '@mui/icons-material/EventOutlined'
@@ -18,6 +18,7 @@ import { useConductor } from '../../shared/contexts/ConductorContext.jsx'
 import { useDestino } from '../../shared/contexts/DestinoContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { FormField } from '../../shared/components/FormularioEstandarizado.jsx'
+import { formatFecha } from '../../shared/utils/formatters.js'
 import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
@@ -119,6 +120,7 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess }) => {
     }
 
     const handleClose = () => {
+        if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
         setForm({ nombreRuta: '', idVehiculo: '', idConductor: '', idDestino: '', fechaSalida: '', horaSalida: '', horaLlegadaEstimada: '', observaciones: '' })
         setErrores({})
         setApiError(null)
@@ -132,7 +134,7 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess }) => {
     const cardSx = {
         flex: 1, minWidth: 0, borderRadius: 2, p: 2.5,
         border: `1px solid ${theme.palette.divider}`,
-        backgroundColor: 'white', elevation: 0, overflow: 'hidden',
+        backgroundColor: theme.palette.background.paper, elevation: 0, overflow: 'hidden',
     }
 
     const getVehiculoLabel = (id) => {
@@ -276,9 +278,9 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess }) => {
                                 </Box>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la información de la ruta</Typography>
                                 <ConfirmRow label="Nombre"    value={form.nombreRuta} />
-                                <ConfirmRow label="Vehículo"  value={getVehiculoLabel(form.idVehiculo)} />
-                                <ConfirmRow label="Conductor" value={getConductorLabel(form.idConductor)} />
                                 <ConfirmRow label="Destino"   value={getDestinoLabel(form.idDestino)} />
+                                <ConfirmRow label="Conductor" value={getConductorLabel(form.idConductor)} />
+                                <ConfirmRow label="Vehículo"  value={getVehiculoLabel(form.idVehiculo)} />
                             </Paper>
                             <Paper elevation={0} sx={cardSx}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
@@ -286,9 +288,10 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess }) => {
                                     <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Horario</Typography>
                                 </Box>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica el horario</Typography>
-                                <ConfirmRow label="Fecha"        value={form.fechaSalida} />
+                                <ConfirmRow label="Fecha Salida" value={formatFecha(form.fechaSalida)} />
                                 <ConfirmRow label="Hora Salida"  value={form.horaSalida} />
                                 <ConfirmRow label="Hora Llegada" value={form.horaLlegadaEstimada || 'N/A'} />
+                                <ConfirmRow label="Observaciones" value={form.observaciones} />
                             </Paper>
                         </Box>
                     </Box>
@@ -360,16 +363,18 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess }) => {
                         onClick={activeStep < steps.length - 1 ? handleNext : handleSubmit}
                         variant="contained"
                         disabled={submitting}
-                        endIcon={activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <CheckOutlinedIcon />}
+                        endIcon={submitting ? undefined : (activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <CheckOutlinedIcon />)}
                         disableRipple
                         sx={{
-                            textTransform: 'none', borderRadius: 2, fontWeight: 600,
+                            textTransform: 'none', borderRadius: 2, fontWeight: 600, minWidth: 160,
                             backgroundColor: theme.palette.primary.main,
                             boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
                             '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}` },
                             '&.Mui-disabled': { backgroundColor: theme.palette.divider, color: theme.palette.text.disabled },
                         }}>
-                        {activeStep < steps.length - 1 ? 'Siguiente' : submitting ? 'Registrando...' : 'Registrar'}
+                        {submitting
+                            ? <CircularProgress size={18} color="inherit" />
+                            : (activeStep < steps.length - 1 ? 'Siguiente' : 'Registrar')}
                     </Button>
                 </Box>
             </Box>

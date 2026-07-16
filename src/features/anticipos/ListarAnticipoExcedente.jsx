@@ -1,5 +1,5 @@
 import { useTheme, alpha } from '@mui/material/styles'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useLayoutEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useAnticipos } from '../../shared/contexts/AnticipoExcedenteContext.jsx'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
@@ -8,7 +8,7 @@ import {
     Box, Typography, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, TextField,
     IconButton, Chip, Tooltip, InputAdornment,
-    Button, Select, MenuItem, Pagination,
+    Button, Select, MenuItem,
     CircularProgress, FormControl, TableSortLabel,
     Dialog, DialogTitle, DialogContent, DialogActions
 } from '@mui/material'
@@ -20,15 +20,17 @@ import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import ClearIcon from '@mui/icons-material/Clear'
 import ToggleSwitch from '../../shared/components/ToggleSwitch.jsx'
+import TablaPaginacionFooter from '../../shared/components/TablaPaginacionFooter.jsx'
 import CloseIcon from '@mui/icons-material/Close'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import TaskAltOutlinedIcon from '@mui/icons-material/TaskAltOutlined'
+import UnfoldMoreOutlinedIcon from '@mui/icons-material/UnfoldMoreOutlined'
 import RegistrarAnticipoExcedente from './RegistrarAnticipoExcedente'
 import ActualizarAnticipoExcedente from './ActualizarAnticipoExcedente'
 import ModalInhabilitarAnticipo from './ModalInhabilitarAnticipo'
 import ModalConsultarAnticipoExcedente from './ModalConsultarAnticipoExcedente'
 import { getAnticipoEstadoDot } from '../../shared/utils/estadoColors.js'
-import { getPageOfAnticipo } from '../../shared/services/anticipoService'
+import { getPageOfAnticipo, getAniosDisponiblesAnticipo, getAnticipos } from '../../shared/services/anticipoService'
 import { formatFecha } from '../../shared/utils/formatters.js'
 import { exportToExcel } from '../../shared/utils/exportExcel.js'
 
@@ -52,9 +54,9 @@ const getFilterMenuProps = (theme) => ({
                 '& .MuiMenuItem-root': {
                     fontSize: '0.82rem', py: 0.9, px: 2,
                     display: 'flex', justifyContent: 'space-between', gap: 2,
-                    '&:hover': { backgroundColor: theme.palette.primary.light },
+                    '&:hover': { backgroundColor: theme.palette.primary.activeBg },
                     '&.Mui-selected': { backgroundColor: 'transparent', fontWeight: 600, color: theme.palette.text.primary },
-                    '&.Mui-selected:hover': { backgroundColor: theme.palette.primary.light },
+                    '&.Mui-selected:hover': { backgroundColor: theme.palette.primary.activeBg },
                 },
             },
         },
@@ -95,6 +97,15 @@ const formatMoney = (val) => {
     return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(num)
 }
 
+const MESES = [
+    { value: '1',  label: 'Enero' },   { value: '2',  label: 'Febrero' },
+    { value: '3',  label: 'Marzo' },   { value: '4',  label: 'Abril' },
+    { value: '5',  label: 'Mayo' },    { value: '6',  label: 'Junio' },
+    { value: '7',  label: 'Julio' },   { value: '8',  label: 'Agosto' },
+    { value: '9',  label: 'Septiembre' }, { value: '10', label: 'Octubre' },
+    { value: '11', label: 'Noviembre' }, { value: '12', label: 'Diciembre' },
+]
+
 // ── Componente principal ─────────────────────────────────────────────────────
 const ListarAnticipoExcedente = () => {
     const theme = useTheme()
@@ -111,15 +122,33 @@ const ListarAnticipoExcedente = () => {
             setTimeout(() => highlightRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 400)
         }
     })
-    const { anticipos, total, conductores, rutas, loading, error, fetchAnticipos, toggleHabilitado, cambiarEstado } = useAnticipos()
+    const { anticipos, total, conductores, rutas, fetchAnticipos, toggleHabilitado, cambiarEstado, entregarExcedente } = useAnticipos()
     const { tienePermiso, PERMISOS } = useAuth()
     const initialLoad = useRef(true)
     const pendingConfirm = useRef(false)
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState(null)
+    const [exportando, setExportando] = useState(false)
 
     const [busqueda, setBusqueda] = useState('')
     const [debouncedBusqueda, setDebouncedBusqueda] = useState('')
     const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
+    const filtroContainerRef = useRef(null)
+    const filtroBtnRefs = useRef([])
+    const [filtroPillStyle, setFiltroPillStyle] = useState({ left: 0, width: 0 })
+
+    useLayoutEffect(() => {
+        const activeIndex = FILTROS_HABILITADO.findIndex(f => f.value === filtroHabilitado)
+        const btn = filtroBtnRefs.current[activeIndex]
+        const container = filtroContainerRef.current
+        if (btn && container) {
+            setFiltroPillStyle({ left: btn.offsetLeft, width: btn.offsetWidth })
+        }
+    }, [filtroHabilitado])
     const [filtroEstadoAnticipo, setFiltroEstadoAnticipo] = useState('')
+    const [filtroAnio, setFiltroAnio] = useState('')
+    const [filtroMes, setFiltroMes] = useState('')
+    const [aniosDisponibles, setAniosDisponibles] = useState([])
     const [page, setPage] = useState(1)
     const [rowsPerPage, setRowsPerPage] = useState(5)
     const [anticipoConsulta, setAnticipoConsulta] = useState(null)
@@ -128,9 +157,10 @@ const ListarAnticipoExcedente = () => {
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [anticipoEditar, setAnticipoEditar] = useState(null)
-    const [sortBy, setSortBy] = useState({ field: 'fechaEntrega', dir: 'desc' })
+    const [sortBy, setSortBy] = useState({ field: '', dir: '' })
     const [confirmLeg, setConfirmLeg] = useState({ open: false, id: null, nuevoEstado: null })
     const [confirmDev, setConfirmDev] = useState({ open: false, id: null })
+    const [confirmandoEstado, setConfirmandoEstado] = useState(false)
 
     useEffect(() => {
         if (!highlightId || hasNavigated.current) return
@@ -142,10 +172,11 @@ const ListarAnticipoExcedente = () => {
     }, [highlightId])
 
     const handleSort = (field) => {
-        setSortBy(prev => prev.field === field
-            ? { field, dir: prev.dir === 'asc' ? 'desc' : 'asc' }
-            : { field, dir: 'asc' }
-        )
+        setSortBy(prev => {
+            if (prev.field !== field) return { field, dir: 'asc' }
+            if (prev.dir === 'asc') return { field, dir: 'desc' }
+            return { field: '', dir: '' }
+        })
         setPage(1)
     }
 
@@ -155,44 +186,87 @@ const ListarAnticipoExcedente = () => {
     }, [busqueda])
 
     useEffect(() => {
-        fetchAnticipos(undefined, {
-            page,
-            limit: rowsPerPage,
-            q: debouncedBusqueda.trim() || undefined,
-            habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
-            estado: filtroEstadoAnticipo || undefined,
-            sortBy: `${sortBy.field}.${sortBy.dir}`,
-        })
-    }, [page, rowsPerPage, debouncedBusqueda, filtroHabilitado, filtroEstadoAnticipo, sortBy, fetchAnticipos])
+        const controller = new AbortController()
+        let cancelled = false
+
+        const cargar = async () => {
+            setLoading(true)
+            setError(null)
+            try {
+                await fetchAnticipos(controller.signal, {
+                    page,
+                    limit: rowsPerPage,
+                    q: debouncedBusqueda.trim() || undefined,
+                    habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
+                    estado: filtroEstadoAnticipo || undefined,
+                    anio: filtroAnio || undefined,
+                    mes: filtroMes || undefined,
+                    sortBy: sortBy.field ? `${sortBy.field}.${sortBy.dir}` : undefined,
+                })
+            } catch (err) {
+                if (!cancelled) setError(err.message)
+            } finally {
+                if (!cancelled) setLoading(false)
+            }
+        }
+
+        cargar()
+        return () => {
+            cancelled = true
+            controller.abort()
+        }
+    }, [page, rowsPerPage, debouncedBusqueda, filtroHabilitado, filtroEstadoAnticipo, filtroAnio, filtroMes, sortBy, fetchAnticipos])
+
+    useEffect(() => {
+        getAniosDisponiblesAnticipo()
+            .then(res => setAniosDisponibles(res.data || []))
+            .catch(() => setAniosDisponibles([]))
+    }, [])
 
     useEffect(() => {
         if (!loading) { initialLoad.current = false }
     }, [loading])
 
     // Helpers para resolver nombres desde los arrays del contexto
-    const getNombreConductor = (id) => {
-        const c = conductores.find(c => c.idConductor === parseInt(id))
+    const getNombreConductor = (anticipo) => {
+        if (anticipo?.conductor?.usuario) {
+            const { nombre, apellido } = anticipo.conductor.usuario
+            return apellido ? `${nombre} ${apellido}` : (nombre || '—')
+        }
+        const c = conductores.find(c => c.idConductor === parseInt(anticipo?.idConductor))
         return c ? c.nombre : '—'
     }
 
     const currentAnticipos = anticipos
-    const handleExportar = () => {
-        const rows = currentAnticipos.map(anticipo => ({
-            'ID': anticipo.idAnticipoExcedente || anticipo.idAnticipo,
-            'Conductor': getNombreConductor(anticipo.idConductor),
-            'Ruta': anticipo.ruta?.nombreRuta || anticipo.idRuta || '-',
-            'Monto': anticipo.monto || anticipo.valor,
-            'Fecha de entrega': anticipo.fechaEntrega,
-            'Estado': anticipo.estado,
-            'Habilitado': anticipo.habilitado === false ? 'No' : 'Sí',
-        }))
-
-        exportToExcel({ data: rows, fileName: 'anticipos', sheetName: 'Anticipos' })
+    const handleExportar = async () => {
+        setExportando(true)
+        try {
+            const res = await getAnticipos(undefined, {
+                limit: 100000,
+                q: debouncedBusqueda.trim() || undefined,
+                habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
+                estado: filtroEstadoAnticipo || undefined,
+                anio: filtroAnio || undefined,
+                mes: filtroMes || undefined,
+            })
+            const rows = (res?.data || []).map(anticipo => ({
+                'ID': anticipo.idAnticipoExcedente || anticipo.idAnticipo,
+                'Conductor': getNombreConductor(anticipo),
+                'Ruta': anticipo.ruta?.nombreRuta || anticipo.idRuta || '-',
+                'Valor anticipo': anticipo.valorAnticipo,
+                'Valor gastado': anticipo.valorGastado,
+                'Excedente': anticipo.excedente,
+                'Fecha de entrega': anticipo.fechaEntrega,
+                'Estado': anticipo.estado,
+                'Habilitado': anticipo.habilitado === false ? 'No' : 'Sí',
+            }))
+            await exportToExcel({ data: rows, fileName: 'anticipos', sheetName: 'Anticipos', themeColor: theme.palette.primary.main })
+        } catch (err) {
+            showToast(err.message || 'Error al exportar.', 'error')
+        } finally {
+            setExportando(false)
+        }
     }
-    const totalPages = Math.max(1, Math.ceil(total / rowsPerPage))
-    const safePage = Math.min(page, totalPages)
-    const from = total === 0 ? 0 : (safePage - 1) * rowsPerPage + 1
-    const to = Math.min(safePage * rowsPerPage, total)
 
     const handleToggleHabilitado = (anticipo) => {
         setModalInhabilitar({ open: true, anticipo })
@@ -212,7 +286,14 @@ const ListarAnticipoExcedente = () => {
     }
 
     const handleConfirmarDevolucion = async () => {
-        await ejecutarCambioEstadoAnticipo(confirmDev.id, 'Completado')
+        setConfirmandoEstado(true)
+        try {
+            await entregarExcedente(confirmDev.id)
+            showToast('Devolución confirmada: el anticipo quedó Completado', 'success')
+        } catch (err) {
+            showToast(err.message || 'No se pudo confirmar la devolución', 'error')
+        }
+        setConfirmandoEstado(false)
         setConfirmDev({ open: false, id: null })
     }
 
@@ -231,8 +312,9 @@ const ListarAnticipoExcedente = () => {
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Button
                         onClick={handleExportar}
+                        disabled={exportando}
                         variant="contained"
-                        startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 18 }} />}
+                        startIcon={exportando ? <CircularProgress size={16} sx={{ color: 'inherit' }} /> : <FileDownloadOutlinedIcon sx={{ fontSize: 18 }} />}
                         sx={{
                             backgroundColor: theme.palette.background.paper,
                             color: theme.palette.text.primary,
@@ -243,14 +325,14 @@ const ListarAnticipoExcedente = () => {
                             border: `1px solid ${theme.palette.divider}`,
                             boxShadow: 'none',
                             '&:hover': {
-                                backgroundColor: theme.palette.primary.light,
+                                backgroundColor: theme.palette.primary.activeBg,
                                 color: theme.palette.text.primary,
                                 border: `1px solid ${theme.palette.divider}`,
                                 boxShadow: 'none',
                             },
                         }}
                     >
-                        Exportar
+                        {exportando ? 'Exportando...' : 'Exportar'}
                     </Button>
 
                     {tienePermiso(PERMISOS.REGISTRAR_ANTICIPO) && (
@@ -279,21 +361,37 @@ const ListarAnticipoExcedente = () => {
 
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-                    <Box sx={{
+                    <Box ref={filtroContainerRef} sx={{
+                        position: 'relative',
                         display: 'inline-flex',
                         backgroundColor: theme.palette.primary.light,
                         borderRadius: 4,
                         p: '4px',
                         gap: '5px',
                     }}>
-                        {FILTROS_HABILITADO.map(f => (
+                        <Box sx={{
+                            position: 'absolute',
+                            top: '4px',
+                            bottom: '4px',
+                            left: `${filtroPillStyle.left}px`,
+                            width: `${filtroPillStyle.width}px`,
+                            borderRadius: 3,
+                            backgroundColor: theme.palette.background.paper,
+                            boxShadow: '0 1px 4px rgba(0,0,0,0.12)',
+                            transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                            pointerEvents: 'none',
+                        }} />
+                        {FILTROS_HABILITADO.map((f, i) => (
                             <Button
                                 key={f.value}
+                                ref={el => { filtroBtnRefs.current[i] = el }}
                                 onClick={() => { setFiltroHabilitado(f.value); setPage(1) }}
                                 size="small"
                                 disableElevation
                                 disableRipple
                                 sx={{
+                                    position: 'relative',
+                                    zIndex: 1,
                                     borderRadius: 3,
                                     textTransform: 'none',
                                     fontSize: '0.75rem',
@@ -301,12 +399,12 @@ const ListarAnticipoExcedente = () => {
                                     py: 0.5,
                                     minWidth: 0,
                                     fontWeight: filtroHabilitado === f.value ? 600 : 400,
-                                    backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
+                                    backgroundColor: 'transparent',
                                     color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.primary.darker,
-                                    boxShadow: filtroHabilitado === f.value ? '0 1px 4px rgba(0,0,0,0.12)' : 'none',
+                                    transition: 'color 0.3s ease',
                                     border: 'none',
                                     '&:hover': {
-                                        backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
+                                        backgroundColor: 'transparent',
                                         color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.primary.dark,
                                         border: 'none',
                                     },
@@ -345,6 +443,67 @@ const ListarAnticipoExcedente = () => {
                             ))}
                         </Select>
                     </FormControl>
+
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <FormControl size="small" sx={{ minWidth: 120 }}>
+                            <Select
+                                value={filtroAnio}
+                                onChange={(e) => { setFiltroAnio(e.target.value); setFiltroMes(''); setPage(1) }}
+                                displayEmpty
+                                renderValue={v => v || 'Año'}
+                                IconComponent={KeyboardArrowDownOutlinedIcon}
+                                sx={{
+                                    fontSize: '0.82rem', borderRadius: 4,
+                                    color: filtroAnio ? theme.palette.text.primary : theme.palette.text.secondary,
+                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
+                                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
+                                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
+                                    '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` },
+                                    '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
+                                    '& .MuiTouchRipple-root': { display: 'none' },
+                                }}
+                                MenuProps={filterMenuProps}>
+                                <MenuItem value="">Año</MenuItem>
+                                {aniosDisponibles.map(anio => (
+                                    <MenuItem key={anio} value={String(anio)}>
+                                        {anio}
+                                        {filtroAnio === String(anio) && <CheckOutlinedIcon sx={{ fontSize: 14, color: theme.palette.text.secondary }} />}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+
+                        <Tooltip title={filtroAnio ? '' : 'Primero elige un año'}>
+                            <FormControl size="small" sx={{ minWidth: 120 }}>
+                                <Select
+                                    value={filtroMes}
+                                    onChange={(e) => { setFiltroMes(e.target.value); setPage(1) }}
+                                    displayEmpty
+                                    disabled={!filtroAnio}
+                                    renderValue={v => v ? (MESES.find(m => m.value === v)?.label || v) : (filtroAnio ? 'Todos' : 'Mes')}
+                                    IconComponent={KeyboardArrowDownOutlinedIcon}
+                                    sx={{
+                                        fontSize: '0.82rem', borderRadius: 4,
+                                        color: filtroMes ? theme.palette.text.primary : theme.palette.text.secondary,
+                                        '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
+                                        '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
+                                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
+                                        '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` },
+                                        '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
+                                        '& .MuiTouchRipple-root': { display: 'none' },
+                                    }}
+                                    MenuProps={filterMenuProps}>
+                                    <MenuItem value="">{filtroAnio ? 'Todos' : 'Mes'}</MenuItem>
+                                    {MESES.map(m => (
+                                        <MenuItem key={m.value} value={m.value}>
+                                            {m.label}
+                                            {filtroMes === m.value && <CheckOutlinedIcon sx={{ fontSize: 14, color: theme.palette.text.secondary }} />}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Tooltip>
+                    </Box>
                 </Box>
 
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
@@ -388,26 +547,28 @@ const ListarAnticipoExcedente = () => {
                     <Table>
                         <TableHead>
                             <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
-                                <TableCell sx={thStyle}>Conductor</TableCell>
+                                <TableCell sx={thStyle}>
+                                    <TableSortLabel
+                                        active={sortBy.field === 'conductor'}
+                                        direction={sortBy.dir === 'desc' ? 'desc' : 'asc'}
+                                        onClick={() => handleSort('conductor')}
+                                        IconComponent={sortBy.field === 'conductor' ? undefined : UnfoldMoreOutlinedIcon}
+                                        sx={{
+                                            color: 'inherit',
+                                            '&:hover': { color: 'inherit' },
+                                            '&.Mui-active': { color: theme.palette.primary.main },
+                                            '&.Mui-active:hover': { color: theme.palette.primary.main },
+                                            '& .MuiTableSortLabel-icon': { opacity: 1, fontSize: 16 },
+                                        }}
+                                    >
+                                        Conductor
+                                    </TableSortLabel>
+                                </TableCell>
                                 <TableCell sx={thStyle}>Ruta</TableCell>
                                 <TableCell sx={thStyle}>Anticipo</TableCell>
                                 <TableCell sx={thStyle}>Gastado</TableCell>
                                 <TableCell sx={thStyle}>Excedente</TableCell>
-                                <TableCell sx={thStyle}>
-                                    <TableSortLabel
-                                        active={sortBy.field === 'fechaEntrega'}
-                                        direction={sortBy.field === 'fechaEntrega' ? sortBy.dir : 'asc'}
-                                        onClick={() => handleSort('fechaEntrega')}
-                                        sx={{
-                                            color: 'inherit',
-                                            '&.Mui-active': { color: theme.palette.primary.main },
-                                            '& .MuiTableSortLabel-icon': { opacity: 0.4, fontSize: 16 },
-                                            '&.Mui-active .MuiTableSortLabel-icon': { opacity: 1 },
-                                        }}
-                                    >
-                                        F. Entrega
-                                    </TableSortLabel>
-                                </TableCell>
+                                <TableCell sx={thStyle}>F. Entrega</TableCell>
                                 <TableCell sx={thStyle}>Estado</TableCell>
                                 <TableCell sx={{ ...thStyle, width: 130 }}>Acciones</TableCell>
                             </TableRow>
@@ -440,7 +601,7 @@ const ListarAnticipoExcedente = () => {
                                 <TableRow>
                                     <TableCell colSpan={8} align="center" sx={{ py: 7 }}>
                                         <Typography color={theme.palette.text.secondary} variant="body2">
-                                            {filtroHabilitado !== 'todo' || filtroEstadoAnticipo !== ''
+                                            {filtroHabilitado !== 'todo' || filtroEstadoAnticipo !== '' || filtroAnio !== '' || filtroMes !== ''
                                                 ? 'No se encontraron anticipos que coincidan con los filtros aplicados.'
                                                 : debouncedBusqueda.trim()
                                                     ? 'No se encontraron anticipos que coincidan con la búsqueda.'
@@ -452,7 +613,7 @@ const ListarAnticipoExcedente = () => {
                             ) : (
                                 currentAnticipos.map((anticipo) => {
                                     const excedente = parseFloat(anticipo.valorAnticipo || 0) - parseFloat(anticipo.valorGastado || 0)
-                                    const nombreConductor = getNombreConductor(anticipo.idConductor)
+                                    const nombreConductor = getNombreConductor(anticipo)
 
                                     const isHighlighted = highlightId && String(anticipo.idAnticipoExcedente) === String(highlightId)
                                     return (
@@ -522,16 +683,16 @@ const ListarAnticipoExcedente = () => {
                                                 )}
                                             </TableCell>
 
-                                            {/* Excedente / Faltante */}
+                                            {/* Excedente */}
                                             <TableCell sx={{ py: 2.5 }}>
                                                 {anticipo.valorGastado ? (
                                                     <Chip
-                                                        label={`${excedente >= 0 ? '+' : '-'}${formatMoney(Math.abs(excedente))}`}
+                                                        label={`+${formatMoney(excedente)}`}
                                                         size="small"
                                                         sx={{
                                                             fontWeight: 600,
-                                                            backgroundColor: alpha(excedente >= 0 ? theme.palette.success.main : theme.palette.primary.main, 0.1),
-                                                            color: excedente >= 0 ? theme.palette.success.dark : theme.palette.primary.main,
+                                                            backgroundColor: alpha(theme.palette.success.main, 0.1),
+                                                            color: theme.palette.success.dark,
                                                             fontSize: '0.7rem',
                                                             borderRadius: '2px',
                                                             height: 24,
@@ -567,19 +728,39 @@ const ListarAnticipoExcedente = () => {
                                                     {tienePermiso(PERMISOS.CONSULTAR_ANTICIPO) && (
                                                         <Tooltip title="Ver detalle">
                                                             <IconButton size="small" onClick={() => setAnticipoConsulta(anticipo)}
-                                                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}>
+                                                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}>
                                                                 <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
                                                             </IconButton>
                                                         </Tooltip>
                                                     )}
                                                     {tienePermiso(PERMISOS.ACTUALIZAR_ANTICIPO) && (
-                                                        <Tooltip title="Editar">
-                                                            <IconButton size="small"
-                                                                onClick={() => { setAnticipoEditar(anticipo); setModalActualizarOpen(true) }}
-                                                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}>
-                                                                <EditOutlinedIcon sx={{ fontSize: 18 }} />
-                                                            </IconButton>
-                                                        </Tooltip>
+                                                        anticipo.habilitado === false ? (
+                                                            <Tooltip title="Habilita el registro para poder editarlo">
+                                                                <span>
+                                                                    <IconButton size="small" disabled>
+                                                                        <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                                                                    </IconButton>
+                                                                </span>
+                                                            </Tooltip>
+                                                        ) : ['Excedente pendiente', 'Completado'].includes(anticipo.estado) ? (
+                                                            <Tooltip title={anticipo.estado === 'Excedente pendiente'
+                                                                ? 'Este anticipo ya está legalizado: no se puede editar'
+                                                                : 'Este anticipo ya está completado: no se puede editar'}>
+                                                                <span>
+                                                                    <IconButton size="small" disabled>
+                                                                        <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                                                                    </IconButton>
+                                                                </span>
+                                                            </Tooltip>
+                                                        ) : (
+                                                            <Tooltip title="Editar">
+                                                                <IconButton size="small"
+                                                                    onClick={() => { setAnticipoEditar(anticipo); setModalActualizarOpen(true) }}
+                                                                    sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}>
+                                                                    <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                                                                </IconButton>
+                                                            </Tooltip>
+                                                        )
                                                     )}
                                                     {tienePermiso(PERMISOS.INHABILITAR_ANTICIPO) && (
                                                         <ToggleSwitch id={anticipo.idAnticipoExcedente} checked={anticipo.habilitado !== false} onChange={() => handleToggleHabilitado(anticipo)} />
@@ -596,86 +777,13 @@ const ListarAnticipoExcedente = () => {
             </Paper>
 
             {/* Paginación */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
-                <Typography variant="body2" color={theme.palette.text.secondary} fontWeight={500}>
-                    Mostrando {from}–{to} de {total} resultado{total !== 1 ? 's' : ''}
-                </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography variant="body2" color={theme.palette.text.secondary} fontWeight={500}>Filas</Typography>
-                        <Select
-                            value={rowsPerPage}
-                            onChange={e => { setRowsPerPage(Number(e.target.value)); setPage(1) }}
-                            size="small"
-                            renderValue={(value) => value}
-                            IconComponent={KeyboardArrowDownOutlinedIcon}
-                            sx={{
-                                fontSize: '0.82rem', borderRadius: 2,
-                                '& .MuiSelect-select': { py: 0.6, pl: 1.5, pr: '28px !important' },
-                                '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
-                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
-                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
-                                '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` },
-                                '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
-                                '& .MuiTouchRipple-root': { display: 'none' },
-                            }}
-                            MenuProps={{
-                                slotProps: {
-                                    paper: {
-                                        sx: {
-                                            borderRadius: 2,
-                                            boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
-                                            mt: 0.5,
-                                            minWidth: 80,
-                                            '& .MuiMenuItem-root': {
-                                                fontSize: '0.82rem',
-                                                py: 0.9,
-                                                px: 2,
-                                                display: 'flex',
-                                                justifyContent: 'space-between',
-                                                gap: 2,
-                                                '&:hover': { backgroundColor: theme.palette.primary.light },
-                                                '&.Mui-selected': { backgroundColor: 'transparent', fontWeight: 600, color: theme.palette.text.primary },
-                                                '&.Mui-selected:hover': { backgroundColor: theme.palette.primary.light },
-                                            },
-                                        },
-                                    },
-                                },
-                            }}
-                        >
-                            {[5, 10, 25].map(n => (
-                                <MenuItem key={n} value={n}>
-                                    {n}
-                                    {rowsPerPage === n && <CheckOutlinedIcon sx={{ fontSize: 14, color: theme.palette.text.secondary }} />}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </Box>
-                    <Pagination
-                        count={totalPages}
-                        page={safePage}
-                        onChange={(_, val) => setPage(val)}
-                        size="small"
-                        shape="rounded"
-                        sx={{
-                            '& .MuiPaginationItem-root': {
-                                fontSize: '0.82rem', borderRadius: '8px', minWidth: 34, height: 34, mx: 0.2,
-                                color: theme.palette.text.primary, border: `1px solid ${theme.palette.divider}`,
-                                '& .MuiTouchRipple-root': { display: 'none' },
-                            },
-                            '& .MuiPaginationItem-ellipsis': { border: 'none' },
-                            '& .MuiPaginationItem-root.Mui-selected': {
-                                backgroundColor: theme.palette.primary.main, borderColor: theme.palette.primary.main,
-                                color: 'white', fontWeight: 600,
-                                '&:hover': { backgroundColor: theme.palette.primary.darker },
-                            },
-                            '& .MuiPaginationItem-root:hover:not(.Mui-selected)': {
-                                backgroundColor: theme.palette.background.subtle, borderColor: theme.palette.divider,
-                            },
-                        }}
-                    />
-                </Box>
-            </Box>
+            <TablaPaginacionFooter
+                total={total}
+                page={page}
+                rowsPerPage={rowsPerPage}
+                onPageChange={setPage}
+                onRowsPerPageChange={(n) => { setRowsPerPage(n); setPage(1) }}
+            />
 
             {/* Modales */}
             <ModalConsultarAnticipoExcedente
@@ -745,15 +853,21 @@ const ListarAnticipoExcedente = () => {
                         Cancelar
                     </Button>
                     <Button
-                        onClick={() => {
+                        onClick={async () => {
                             const { id, nuevoEstado } = confirmLeg
-                            setConfirmLeg({ open: false, id: null, nuevoEstado: null })
-                            ejecutarCambioEstadoAnticipo(id, nuevoEstado)
+                            setConfirmandoEstado(true)
+                            try {
+                                await ejecutarCambioEstadoAnticipo(id, nuevoEstado)
+                                setConfirmLeg({ open: false, id: null, nuevoEstado: null })
+                            } finally {
+                                setConfirmandoEstado(false)
+                            }
                         }}
+                        disabled={confirmandoEstado}
                         variant="contained" size="small"
-                        sx={{ textTransform: 'none', borderRadius: 2 }}
+                        sx={{ textTransform: 'none', borderRadius: 2, minWidth: 100 }}
                     >
-                        Confirmar
+                        {confirmandoEstado ? <CircularProgress size={16} sx={{ color: 'white' }} /> : 'Confirmar'}
                     </Button>
                 </DialogActions>
             </Dialog>
@@ -786,7 +900,7 @@ const ListarAnticipoExcedente = () => {
                         </Box>
                     </Box>
                     <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
-                        El anticipo pasará a <strong>Completado</strong>.
+                        El anticipo pasará a <strong>Completado</strong> y la fecha de entrega del excedente quedará registrada a la de hoy.
                     </Typography>
                 </DialogContent>
                 <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 3, px: 3, pt: 1, pb: 3 }}>
@@ -798,13 +912,13 @@ const ListarAnticipoExcedente = () => {
                     }}>
                         Cancelar
                     </Button>
-                    <Button onClick={handleConfirmarDevolucion} variant="contained" disableRipple sx={{
-                        textTransform: 'none', borderRadius: 2, fontWeight: 600,
+                    <Button onClick={handleConfirmarDevolucion} disabled={confirmandoEstado} variant="contained" disableRipple sx={{
+                        textTransform: 'none', borderRadius: 2, fontWeight: 600, minWidth: 140,
                         px: 5, py: 0.76, fontSize: '0.875rem',
                         backgroundColor: '#059669',
                         '&:hover': { backgroundColor: '#059669', filter: 'brightness(0.88)' },
                     }}>
-                        Confirmar
+                        {confirmandoEstado ? <CircularProgress size={18} sx={{ color: 'white' }} /> : 'Confirmar'}
                     </Button>
                 </Box>
             </Dialog>

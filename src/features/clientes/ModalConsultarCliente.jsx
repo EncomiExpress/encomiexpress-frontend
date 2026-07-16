@@ -14,9 +14,10 @@ import { getVentaEstadoDot } from '../../shared/utils/estadoColors.js'
 const CampoFila = ({ label, value }) => {
     const theme = useTheme()
     return (
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
-            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>{label}</Typography>
-            <Typography variant="body2" fontWeight={500} color={theme.palette.text.medium}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 2, py: 0.9 }}>
+            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500, flexShrink: 0 }}>{label}</Typography>
+            <Typography variant="body2" fontWeight={500} color={theme.palette.text.medium}
+                sx={{ flex: 1, minWidth: 0, textAlign: 'right', wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
                 {String(value ?? '-')}
             </Typography>
         </Box>
@@ -30,10 +31,15 @@ const ModalConsultarCliente = ({ cliente, onClose }) => {
 
     useEffect(() => {
         if (!cliente || tabIndex !== 1) return
+        let ignore = false
+        // Necesario para mostrar el loading apenas se abre la pestaña; sin esto no hay forma
+        // de avisar que está cargando antes de que la petición responda.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setTabVentas({ data: [], loading: true })
         ventaService.getEncomiendas(undefined, { idCliente: cliente.idCliente, limit: 100 })
-            .then(res => setTabVentas({ data: res?.data || [], loading: false }))
-            .catch(() => setTabVentas({ data: [], loading: false }))
+            .then(res => { if (!ignore) setTabVentas({ data: res?.data || [], loading: false }) })
+            .catch(() => { if (!ignore) setTabVentas({ data: [], loading: false }) })
+        return () => { ignore = true }
     }, [cliente, tabIndex])
 
     if (!cliente) return null

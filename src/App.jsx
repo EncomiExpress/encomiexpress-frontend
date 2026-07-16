@@ -7,6 +7,7 @@ import { VehiculoProvider } from './shared/contexts/VehiculoContext'
 import { PropietarioProvider } from './shared/contexts/PropietarioContext'
 import { ConductorProvider } from './shared/contexts/ConductorContext'
 import { DestinoProvider } from './shared/contexts/DestinoContext'
+import { ConfiguracionProvider } from './shared/contexts/ConfiguracionContext'
 import { RutaProgramacionProvider } from './shared/contexts/RutaProgramacionContext'
 import { VentaProvider } from './shared/contexts/VentaContext'
 import AppRoutes from './AppRoutes'
@@ -21,16 +22,18 @@ function App() {
             <PropietarioProvider>
               <ConductorProvider>
                 <DestinoProvider>
-                  <RutaProgramacionProvider>
-                    <ClienteProvider>
-                      <VentaProvider>
-                        <AnticipoExcedenteProvider>
-                          <AppRoutes />
-                          <SessionExpiredDialog />
-                        </AnticipoExcedenteProvider>
-                      </VentaProvider>
-                    </ClienteProvider>
-                  </RutaProgramacionProvider>
+                  <ConfiguracionProvider>
+                    <RutaProgramacionProvider>
+                      <ClienteProvider>
+                        <VentaProvider>
+                          <AnticipoExcedenteProvider>
+                            <AppRoutes />
+                            <SessionExpiredDialog />
+                          </AnticipoExcedenteProvider>
+                        </VentaProvider>
+                      </ClienteProvider>
+                    </RutaProgramacionProvider>
+                  </ConfiguracionProvider>
                 </DestinoProvider>
               </ConductorProvider>
             </PropietarioProvider>

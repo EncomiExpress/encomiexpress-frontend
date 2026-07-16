@@ -1,6 +1,6 @@
 ﻿import { useTheme } from '@mui/material/styles'
 import { useState, useEffect, useRef } from 'react'
-import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, TextField, Select, InputAdornment, Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material'
+import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, TextField, Select, InputAdornment, Dialog, DialogTitle, DialogContent, IconButton, CircularProgress } from '@mui/material'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined'
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
@@ -26,7 +26,7 @@ import { hayNombreDuplicado, MENSAJE_NOMBRE_DUPLICADO, hayDocumentoDuplicado, ME
 const DOMINIOS_EMAIL = ['@gmail.com', '@hotmail.com', '@outlook.com', '@yahoo.com', '@icloud.com', '@live.com']
 const DOMINIO_OTRO = '__otro__'
 
-const steps = ['Datos Personales', 'Información de Contacto', 'Confirmación']
+const steps = ['Datos Personales', 'Contacto', 'Confirmación']
 
 const ActualizarCliente = ({ open, onClose, cliente: clienteProp, onSuccess }) => {
     const { clientes, loading, actualizarCliente } = useClientes()
@@ -251,7 +251,7 @@ const ActualizarCliente = ({ open, onClose, cliente: clienteProp, onSuccess }) =
             await actualizarCliente({ ...resto, email: emailLocal + emailDominio, apellido: form.tipoIdentificacion === 'NIT' ? '' : form.apellido })
             showToast('¡Cliente actualizado exitosamente!', 'success')
             setTimeout(() => {
-                onClose()
+                cerrar()
                 if (onSuccess) onSuccess()
             }, 1500)
         } catch (err) {
@@ -261,12 +261,17 @@ const ActualizarCliente = ({ open, onClose, cliente: clienteProp, onSuccess }) =
         }
     }
 
-    const handleCancelar = () => onClose()
+    const cerrar = () => {
+        if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+        onClose()
+    }
+
+    const handleCancelar = () => cerrar()
 
     const cardSx = {
         flex: 1, minWidth: 0, borderRadius: 2, p: 2.5,
         border: `1px solid ${theme.palette.divider}`,
-        backgroundColor: 'white', elevation: 0,
+        backgroundColor: theme.palette.background.paper, elevation: 0,
         overflow: 'hidden',
     }
 
@@ -416,10 +421,10 @@ const ActualizarCliente = ({ open, onClose, cliente: clienteProp, onSuccess }) =
                                     <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Datos Personales</Typography>
                                 </Box>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la información personal</Typography>
-                                <ConfirmRow label={form.tipoIdentificacion === 'NIT' ? 'Razón Social' : 'Nombre'} value={form.nombre} previousValue={formOriginal?.nombre} />
-                                {form.tipoIdentificacion !== 'NIT' && <ConfirmRow label="Apellido" value={form.apellido} previousValue={formOriginal?.apellido} />}
                                 <ConfirmRow label="Tipo de documento" value={form.tipoIdentificacion} previousValue={formOriginal?.tipoIdentificacion} />
                                 <ConfirmRow label="N° de documento" value={form.numeroIdentificacion} previousValue={formOriginal?.numeroIdentificacion} />
+                                <ConfirmRow label={form.tipoIdentificacion === 'NIT' ? 'Razón Social' : 'Nombre'} value={form.nombre} previousValue={formOriginal?.nombre} />
+                                {form.tipoIdentificacion !== 'NIT' && <ConfirmRow label="Apellido" value={form.apellido} previousValue={formOriginal?.apellido} />}
                             </Paper>
                             <Paper elevation={0} sx={cardSx}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
@@ -441,7 +446,7 @@ const ActualizarCliente = ({ open, onClose, cliente: clienteProp, onSuccess }) =
     }
 
     return (
-        <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth
+        <Dialog open={open} onClose={cerrar} maxWidth="md" fullWidth
             slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}>
             <DialogTitle sx={{ m: 0, p: 2, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0' }}>
                 <Box>
@@ -455,7 +460,7 @@ const ActualizarCliente = ({ open, onClose, cliente: clienteProp, onSuccess }) =
                         }
                     </Typography>
                 </Box>
-                <IconButton onClick={onClose} sx={{ color: theme.palette.text.secondary }}>
+                <IconButton onClick={cerrar} sx={{ color: theme.palette.text.secondary }}>
                     <CloseIcon />
                 </IconButton>
             </DialogTitle>
@@ -510,16 +515,18 @@ const ActualizarCliente = ({ open, onClose, cliente: clienteProp, onSuccess }) =
                         onClick={activeStep < steps.length - 1 ? handleNext : handleSubmit}
                         variant="contained"
                         disabled={submitting || (activeStep === steps.length - 1 && sinCambios)}
-                        endIcon={activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <SaveOutlinedIcon />}
+                        endIcon={submitting ? undefined : (activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <SaveOutlinedIcon />)}
                         disableRipple
                         sx={{
-                            textTransform: 'none', borderRadius: 2, fontWeight: 600,
+                            textTransform: 'none', borderRadius: 2, fontWeight: 600, minWidth: 170,
                             backgroundColor: theme.palette.primary.main,
                             boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
                             '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}` },
                             '&.Mui-disabled': { backgroundColor: theme.palette.divider, color: theme.palette.text.disabled },
                         }}>
-                        {activeStep < steps.length - 1 ? 'Siguiente' : submitting ? 'Guardando...' : sinCambios ? 'Sin cambios' : 'Guardar cambios'}
+                        {submitting
+                            ? <CircularProgress size={18} color="inherit" />
+                            : (activeStep < steps.length - 1 ? 'Siguiente' : sinCambios ? 'Sin cambios' : 'Guardar cambios')}
                     </Button>
                 </Box>
             </Box>

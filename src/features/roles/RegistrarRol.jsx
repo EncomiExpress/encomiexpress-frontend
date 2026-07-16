@@ -1,6 +1,6 @@
 import { useTheme } from '@mui/material/styles'
 import { useState, useEffect } from 'react'
-import { Box, Typography, Paper, FormControlLabel, Checkbox, Grid, IconButton, Dialog, DialogTitle, DialogContent, Button } from '@mui/material'
+import { Box, Typography, Paper, FormControlLabel, Checkbox, Grid, IconButton, Dialog, DialogTitle, DialogContent, Button, CircularProgress } from '@mui/material'
 import { Security, Close, CheckOutlined } from '@mui/icons-material'
 import { useAuth, PERMISOS, MODULOS } from '../../shared/contexts/AuthContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
@@ -107,6 +107,7 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
   }
 
   const handleClose = () => {
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
     setFormData({
       nombre: '',
       descripcion: '',
@@ -247,7 +248,7 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
                   border: `1px solid ${theme.palette.divider}`,
                   borderRadius: 2,
                   mb: 1.5,
-                  backgroundColor: '#F8F9FA'
+                  backgroundColor: theme.palette.background.muted
                 }}
               >
                 <Box
@@ -257,7 +258,7 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
                     justifyContent: 'space-between',
                     p: 1.5,
                     borderBottom: `1px solid ${theme.palette.divider}`,
-                    backgroundColor: '#F8F9FA'
+                    backgroundColor: theme.palette.background.muted
                   }}
                 >
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -289,7 +290,7 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
                   />
                 </Box>
 
-                <Box sx={{ p: 1.5, backgroundColor: 'white' }}>
+                <Box sx={{ p: 1.5, backgroundColor: theme.palette.background.paper }}>
                   <Grid container spacing={0.5}>
                     {modulo.permisos.map((permiso) => (
                       <Grid size={{ xs: 6, sm: 4, md: 3 }} key={permiso}>
@@ -339,13 +340,13 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
             disabled={enviando}
             endIcon={enviando ? undefined : <CheckOutlined />}
             sx={{
-              textTransform: 'none', borderRadius: 2, fontWeight: 600,
+              textTransform: 'none', borderRadius: 2, fontWeight: 600, minWidth: 160,
               backgroundColor: theme.palette.primary.main,
               boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
               '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}` },
               '&.Mui-disabled': { backgroundColor: theme.palette.divider, color: theme.palette.text.disabled },
             }}>
-            {enviando ? 'Registrando...' : 'Registrar'}
+            {enviando ? <CircularProgress size={18} color="inherit" /> : 'Registrar'}
           </Button>
         </Box>
       </Box>

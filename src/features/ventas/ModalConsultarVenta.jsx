@@ -11,13 +11,15 @@ import CloseIcon from '@mui/icons-material/Close'
 import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined'
 import { getVentaEstadoDot } from '../../shared/utils/estadoColors.js'
 import { descargarGuiaPdf } from '../../shared/utils/exportGuiaPdf.js'
+import { formatFecha } from '../../shared/utils/formatters.js'
 
 const CampoFila = ({ label, value }) => {
     const theme = useTheme()
     return (
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
-            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>{label}</Typography>
-            <Typography variant="body2" fontWeight={500} color={theme.palette.text.medium}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 2, py: 0.9 }}>
+            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500, flexShrink: 0 }}>{label}</Typography>
+            <Typography variant="body2" fontWeight={500} color={theme.palette.text.medium}
+                sx={{ flex: 1, minWidth: 0, textAlign: 'right', wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
                 {String(value ?? '—')}
             </Typography>
         </Box>
@@ -150,8 +152,8 @@ const ModalConsultarVenta = ({ venta, onClose }) => {
                         <CampoFila label="Valor servicio" value={venta.valorServicio != null ? `$${Number(venta.valorServicio).toLocaleString('es-CO')}` : null} />
                         <CampoFila label="Impuestos" value={venta.impuestos != null ? `$${Number(venta.impuestos).toLocaleString('es-CO')}` : null} />
                         <CampoFila label="Total" value={venta.total != null ? `$${Number(venta.total).toLocaleString('es-CO')}` : null} />
-                        <CampoFila label="Fecha registro" value={venta.fechaRegistro} />
-                        <CampoFila label="Fecha est. entrega" value={venta.fechaEstimadaEntrega} />
+                        <CampoFila label="Fecha registro" value={formatFecha(venta.fechaRegistro)} />
+                        <CampoFila label="Fecha est. entrega" value={formatFecha(venta.fechaEstimadaEntrega)} />
                         <CampoFila label="Observaciones" value={venta.observaciones} />
                     </Paper>
                 </Box>

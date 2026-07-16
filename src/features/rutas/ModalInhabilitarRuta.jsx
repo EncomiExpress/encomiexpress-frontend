@@ -232,7 +232,7 @@ const ModalInhabilitarRuta = ({ open, data, onClose, onExited, onConfirm }) => {
                         <Button onClick={handleConfirm} variant="contained" disableRipple
                             disabled={cargando || confirming}
                             sx={{
-                                textTransform: 'none', borderRadius: 2, fontWeight: 600,
+                                textTransform: 'none', borderRadius: 2, fontWeight: 600, minWidth: 140,
                                 px: 5, py: 0.76, fontSize: '0.875rem',
                                 backgroundColor: theme.palette.primary.main,
                                 '&:hover': { backgroundColor: theme.palette.primary.dark },

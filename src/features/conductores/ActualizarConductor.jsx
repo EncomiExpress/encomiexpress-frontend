@@ -3,12 +3,15 @@ import { useState, useEffect, useRef } from 'react'
 import {
     Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel,
     Button, Alert, TextField, Select, InputAdornment,
-    Dialog, DialogTitle, DialogContent, IconButton
+    Dialog, DialogTitle, DialogContent, IconButton, CircularProgress
 } from '@mui/material'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined'
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
 import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined'
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined'
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
+import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined'
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined'
@@ -17,6 +20,7 @@ import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined
 import EventOutlinedIcon from '@mui/icons-material/EventOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
+import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
 import { useConductor } from '../../shared/contexts/ConductorContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { FormField, FormSelect } from '../../shared/components/FormularioEstandarizado.jsx'
@@ -27,28 +31,28 @@ import * as conductorService from '../../shared/services/conductorService.js'
 import { hayNombreDuplicado, MENSAJE_NOMBRE_DUPLICADO, hayDocumentoDuplicado, MENSAJE_DOC_DUPLICADO } from '../../shared/utils/duplicados.js'
 
 const DOMINIOS_EMAIL = ['@gmail.com', '@hotmail.com', '@outlook.com', '@yahoo.com', '@icloud.com', '@live.com']
-const hoyISO = () => new Date().toISOString().split('T')[0]
+const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s]).{8,64}$/
+const PASSWORD_HELP = '8-64 caracteres, con mayúsculas, minúsculas, números y un carácter especial'
 
-const steps = ['Datos Personales', 'Licencia de Conducción', 'Confirmación']
+const steps = ['Datos Personales', 'Credenciales', 'Licencia', 'Confirmación']
+
+const CATEGORIAS_LICENCIA = [
+    { value: 'A1', label: 'A1 - Motocicleta hasta 125 c.c.' },
+    { value: 'A2', label: 'A2 - Motocicleta de más de 125 c.c.' },
+    { value: 'B1', label: 'B1 - Automóvil, camioneta o microbús (particular)' },
+    { value: 'B2', label: 'B2 - Camión rígido, buseta o bus (particular)' },
+    { value: 'B3', label: 'B3 - Vehículo articulado (particular)' },
+    { value: 'C1', label: 'C1 - Automóvil, camioneta o microbús (servicio público)' },
+    { value: 'C2', label: 'C2 - Camión rígido, buseta o bus (servicio público)' },
+    { value: 'C3', label: 'C3 - Vehículo articulado (servicio público)' },
+]
 
 const getTipoLabel = (tipo) => {
     const tipos = { 'CC': 'Cédula', 'CE': 'Cédula Extranjería', 'TI': 'Tarjeta Identidad', 'PAS': 'Pasaporte', 'RC': 'Registro Civil' }
     return tipos[tipo] || tipo
 }
 
-const getLicenciaLabel = (lic) => {
-    const licencias = {
-        'A1': 'A1 - Motocicleta hasta 125 c.c.',
-        'A2': 'A2 - Motocicleta de más de 125 c.c.',
-        'B1': 'B1 - Automóvil, camioneta o microbús (particular)',
-        'B2': 'B2 - Camión rígido, buseta o bus (particular)',
-        'B3': 'B3 - Vehículo articulado (particular)',
-        'C1': 'C1 - Automóvil, camioneta o microbús (servicio público)',
-        'C2': 'C2 - Camión rígido, buseta o bus (servicio público)',
-        'C3': 'C3 - Vehículo articulado (servicio público)',
-    }
-    return licencias[lic] || lic || '—'
-}
+const getLicenciaLabel = (lic) => CATEGORIAS_LICENCIA.find(c => c.value === lic)?.label || lic || '—'
 
 const FORM_INICIAL = {
     tipoIdentificacion: '',
@@ -58,19 +62,20 @@ const FORM_INICIAL = {
     telefono: '',
     emailLocal: '',
     emailDominio: '@gmail.com',
-    licenciaConduccion: '',
+    password: '',
+    confirmarPassword: '',
+    categoriasLicencia: [{ categoria: '', vencimiento: '' }],
     numeroLicencia: '',
-    fechaVencimientoLicencia: ''
 }
 
 const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSuccess }) => {
-    const { getConductorById, actualizarConductorApi, fetchConductores } = useConductor()
+    const { getConductorById, actualizarConductor, fetchConductores } = useConductor()
     const { showToast } = useToast()
     const theme = useTheme()
     const cardSx = {
         flex: 1, minWidth: 0, borderRadius: 2, p: 2.5,
         border: `1px solid ${theme.palette.divider}`,
-        backgroundColor: 'white', elevation: 0, overflow: 'hidden',
+        backgroundColor: theme.palette.background.paper, elevation: 0, overflow: 'hidden',
     }
     const [apiError, setApiError] = useState(null)
     const [errores, setErrores] = useState({})
@@ -80,6 +85,8 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
     const [sinCambios, setSinCambios] = useState(false)
     const [avisoNombreDuplicado, setAvisoNombreDuplicado] = useState('')
     const [avisoDocDuplicado, setAvisoDocDuplicado] = useState('')
+    const [showPassword, setShowPassword] = useState(false)
+    const [showConfirmarPassword, setShowConfirmarPassword] = useState(false)
     const [form, setForm] = useState(FORM_INICIAL)
     const cargado = useRef(false)
 
@@ -101,7 +108,6 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
             const rawDominio = atIdx >= 0 ? '@' + email.slice(atIdx + 1) : '@gmail.com'
             const emailDominio = DOMINIOS_EMAIL.includes(rawDominio) ? rawDominio : '@gmail.com'
 
-            // El store ya mapea categoriaLicencia → licenciaConduccion y vencimientoLicencia → fechaVencimientoLicencia
             const datosForm = {
                 tipoIdentificacion: conductor.tipoIdentificacion || '',
                 numeroIdentificacion: conductor.numeroIdentificacion || '',
@@ -110,9 +116,12 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
                 telefono: conductor.telefono || '',
                 emailLocal,
                 emailDominio,
-                licenciaConduccion: conductor.licenciaConduccion || conductor.categoriaLicencia || '',
+                password: '',
+                confirmarPassword: '',
+                categoriasLicencia: conductor.categoriasLicencia?.length
+                    ? conductor.categoriasLicencia
+                    : [{ categoria: '', vencimiento: '' }],
                 numeroLicencia: conductor.numeroLicencia || '',
-                fechaVencimientoLicencia: conductor.fechaVencimientoLicencia || conductor.vencimientoLicencia || '',
             }
             setForm(datosForm)
             setFormOriginal(datosForm)
@@ -147,10 +156,29 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
         }
         if (name === 'telefono') value = value.replace(/[^0-9]/g, '')
         if (name === 'emailLocal') value = value.replace(/[^a-zA-Z0-9._-]/g, '')
-
         setForm(prev => ({ ...prev, [name]: value }))
         setErrores(prev => ({ ...prev, [name]: '' }))
         setApiError(null)
+        setSinCambios(false)
+    }
+
+    const handleCategoriaChange = (index, campo, value) => {
+        setForm(prev => ({
+            ...prev,
+            categoriasLicencia: prev.categoriasLicencia.map((c, i) => i === index ? { ...c, [campo]: value } : c)
+        }))
+        setErrores(prev => ({ ...prev, categoriasLicencia: '' }))
+        setApiError(null)
+        setSinCambios(false)
+    }
+
+    const handleAgregarCategoria = () => {
+        setForm(prev => ({ ...prev, categoriasLicencia: [...prev.categoriasLicencia, { categoria: '', vencimiento: '' }] }))
+        setSinCambios(false)
+    }
+
+    const handleQuitarCategoria = (index) => {
+        setForm(prev => ({ ...prev, categoriasLicencia: prev.categoriasLicencia.filter((_, i) => i !== index) }))
         setSinCambios(false)
     }
 
@@ -214,9 +242,14 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
             if (!form.telefono.trim()) e.telefono = 'El teléfono es obligatorio'
             else if (!/^\d{10}$/.test(form.telefono)) e.telefono = 'El teléfono debe tener 10 dígitos'
             if (!form.emailLocal?.trim()) e.emailLocal = 'El correo es obligatorio'
-            if (!form.licenciaConduccion) e.licenciaConduccion = 'Selecciona una categoría de licencia'
-            if (!form.fechaVencimientoLicencia) e.fechaVencimientoLicencia = 'La fecha de vencimiento es obligatoria'
-            else if (form.fechaVencimientoLicencia < hoyISO()) e.fechaVencimientoLicencia = 'La fecha de vencimiento no puede ser anterior a hoy'
+            if (form.password && !PASSWORD_REGEX.test(form.password)) e.password = PASSWORD_HELP
+            if (form.password && form.password !== form.confirmarPassword) e.confirmarPassword = 'Las contraseñas no coinciden'
+        }
+        if (step === 2) {
+            const completas = form.categoriasLicencia.filter(c => c.categoria && c.vencimiento)
+            const incompletas = form.categoriasLicencia.some(c => (c.categoria && !c.vencimiento) || (!c.categoria && c.vencimiento))
+            if (completas.length === 0) e.categoriasLicencia = 'Agrega al menos una categoría con su fecha de vencimiento'
+            else if (incompletas) e.categoriasLicencia = 'Completa la categoría y la fecha en cada fila, o quita la fila'
         }
         return e
     }
@@ -228,7 +261,13 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
     }
 
     const handleBack = () => setActiveStep(prev => prev - 1)
-    const handleCancelar = () => onClose()
+
+    const cerrar = () => {
+        if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+        onClose()
+    }
+
+    const handleCancelar = () => cerrar()
 
     const handleSubmit = async () => {
         const erroresEncontrados = validarPaso(activeStep)
@@ -236,10 +275,11 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
 
         // Detectar si realmente hubo cambios
         if (formOriginal) {
-            const hayCambios = Object.keys(form).some(key =>
-                String(formOriginal[key] ?? '') !== String(form[key] ?? '')
+            const hayCambiosSimples = Object.keys(form).some(key =>
+                key !== 'categoriasLicencia' && String(formOriginal[key] ?? '') !== String(form[key] ?? '')
             )
-            if (!hayCambios) { setSinCambios(true); return }
+            const hayCambiosLicencia = JSON.stringify(formOriginal.categoriasLicencia) !== JSON.stringify(form.categoriasLicencia)
+            if (!hayCambiosSimples && !hayCambiosLicencia) { setSinCambios(true); return }
         }
 
         setSinCambios(false)
@@ -247,23 +287,23 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
         setApiError(null)
 
         try {
-            const { emailLocal, emailDominio, licenciaConduccion, numeroLicencia, fechaVencimientoLicencia, ...resto } = form
+            const { emailLocal, emailDominio, categoriasLicencia, numeroLicencia, confirmarPassword: _confirmarPassword, password, ...resto } = form
 
-            await actualizarConductorApi(
+            await actualizarConductor(
                 parseInt(conductorProp?.idConductor),
                 {
                     ...resto,
                     email: emailLocal ? emailLocal + emailDominio : '',
-                    categoriaLicencia: licenciaConduccion,
+                    categoriasLicencia,
                     numeroLicencia: numeroLicencia || null,
-                    vencimientoLicencia: fechaVencimientoLicencia,
+                    ...(password ? { password } : {}),
                 }
             )
 
             await fetchConductores()
             showToast('¡Conductor actualizado exitosamente!', 'success')
             setTimeout(() => {
-                onClose()
+                cerrar()
                 if (onSuccess) onSuccess()
             }, 1500)
         } catch (err) {
@@ -337,29 +377,104 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
                                 htmlInput: { maxLength: 50 }
                             }}
                             sx={formFieldStyles} />
-                        <FormSelect label="Licencia de Conducción" name="licenciaConduccion" value={form.licenciaConduccion}
-                            onChange={handleChange} required error={errores.licenciaConduccion} helperText={errores.licenciaConduccion}>
-                            <MenuItem value="A1">A1 - Motocicleta hasta 125 c.c.</MenuItem>
-                            <MenuItem value="A2">A2 - Motocicleta de más de 125 c.c.</MenuItem>
-                            <MenuItem value="B1">B1 - Automóvil, camioneta o microbús (particular)</MenuItem>
-                            <MenuItem value="B2">B2 - Camión rígido, buseta o bus (particular)</MenuItem>
-                            <MenuItem value="B3">B3 - Vehículo articulado (particular)</MenuItem>
-                            <MenuItem value="C1">C1 - Automóvil, camioneta o microbús (servicio público)</MenuItem>
-                            <MenuItem value="C2">C2 - Camión rígido, buseta o bus (servicio público)</MenuItem>
-                            <MenuItem value="C3">C3 - Vehículo articulado (servicio público)</MenuItem>
-                        </FormSelect>
+                        <Box sx={{ gridColumn: '1 / -1', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
+                            <TextField fullWidth label="Nueva contraseña" name="password"
+                                type={showPassword ? 'text' : 'password'}
+                                value={form.password} onChange={handleChange}
+                                error={!!errores.password} helperText={errores.password || (form.password ? PASSWORD_HELP : 'Dejar vacío para mantener la actual')}
+                                slotProps={{
+                                    input: {
+                                        startAdornment: (
+                                            <InputAdornment position="start">
+                                                <LockOutlinedIcon sx={{ color: '#94a3b8' }} />
+                                            </InputAdornment>
+                                        ),
+                                        endAdornment: (
+                                            <InputAdornment position="end">
+                                                <IconButton onClick={() => setShowPassword(p => !p)} edge="end" size="small" tabIndex={-1}>
+                                                    {showPassword ? <VisibilityOffOutlinedIcon sx={{ fontSize: 20 }} /> : <VisibilityOutlinedIcon sx={{ fontSize: 20 }} />}
+                                                </IconButton>
+                                            </InputAdornment>
+                                        ),
+                                    },
+                                    htmlInput: { maxLength: 64 }
+                                }}
+                                sx={formFieldStyles} />
+                            <TextField fullWidth label="Confirmar contraseña" name="confirmarPassword"
+                                type={showConfirmarPassword ? 'text' : 'password'}
+                                value={form.confirmarPassword} onChange={handleChange}
+                                error={!!errores.confirmarPassword} helperText={errores.confirmarPassword}
+                                slotProps={{
+                                    input: {
+                                        startAdornment: (
+                                            <InputAdornment position="start">
+                                                <LockOutlinedIcon sx={{ color: '#94a3b8' }} />
+                                            </InputAdornment>
+                                        ),
+                                        endAdornment: (
+                                            <InputAdornment position="end">
+                                                <IconButton onClick={() => setShowConfirmarPassword(p => !p)} edge="end" size="small" tabIndex={-1}>
+                                                    {showConfirmarPassword ? <VisibilityOffOutlinedIcon sx={{ fontSize: 20 }} /> : <VisibilityOutlinedIcon sx={{ fontSize: 20 }} />}
+                                                </IconButton>
+                                            </InputAdornment>
+                                        ),
+                                    },
+                                    htmlInput: { maxLength: 64 }
+                                }}
+                                sx={formFieldStyles} />
+                        </Box>
+                    </Box>
+                )
+            case 2:
+                return (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                         <FormField label="N° de Licencia" name="numeroLicencia" value={form.numeroLicencia}
                             onChange={handleChange} icon={BadgeOutlinedIcon}
                             inputProps={{ maxLength: 20 }} placeholder="Ej: 123456789"
                             helperText="Opcional" />
-                        <FormField label="Fecha Vencimiento Licencia" name="fechaVencimientoLicencia" type="date"
-                            value={form.fechaVencimientoLicencia} onChange={handleChange}
-                            inputProps={{ min: hoyISO() }}
-                            required error={errores.fechaVencimientoLicencia} helperText={errores.fechaVencimientoLicencia}
-                            icon={EventOutlinedIcon} InputLabelProps={{ shrink: true }} />
+
+                        <Typography variant="body2" fontWeight={600} color={theme.palette.text.primary}>
+                            Categorías de licencia
+                        </Typography>
+                        {errores.categoriasLicencia && (
+                            <Typography variant="caption" color="error" sx={{ mt: -1.5 }}>{errores.categoriasLicencia}</Typography>
+                        )}
+
+                        {form.categoriasLicencia.map((cat, index) => {
+                            const categoriasUsadas = form.categoriasLicencia
+                                .filter((_, i) => i !== index)
+                                .map(c => c.categoria)
+                            return (
+                                <Box key={index} sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 1.5, alignItems: 'center' }}>
+                                    <FormSelect label="Categoría" value={cat.categoria}
+                                        onChange={(e) => handleCategoriaChange(index, 'categoria', e.target.value)}>
+                                        {CATEGORIAS_LICENCIA.filter(c => !categoriasUsadas.includes(c.value)).map(c => (
+                                            <MenuItem key={c.value} value={c.value}>{c.label}</MenuItem>
+                                        ))}
+                                    </FormSelect>
+                                    <FormField label="Vencimiento" type="date" value={cat.vencimiento}
+                                        onChange={(e) => handleCategoriaChange(index, 'vencimiento', e.target.value)}
+                                        icon={EventOutlinedIcon} InputLabelProps={{ shrink: true }} />
+                                    <IconButton onClick={() => handleQuitarCategoria(index)}
+                                        disabled={form.categoriasLicencia.length === 1}
+                                        sx={{ visibility: form.categoriasLicencia.length === 1 ? 'hidden' : 'visible' }}>
+                                        <CloseIcon fontSize="small" />
+                                    </IconButton>
+                                </Box>
+                            )
+                        })}
+
+                        <Button
+                            onClick={handleAgregarCategoria}
+                            startIcon={<AddOutlinedIcon />}
+                            disabled={form.categoriasLicencia.length >= CATEGORIAS_LICENCIA.length}
+                            sx={{ alignSelf: 'flex-start', textTransform: 'none', fontWeight: 600 }}
+                        >
+                            Agregar categoría
+                        </Button>
                     </Box>
                 )
-            case 2: {
+            case 3: {
                 const emailActual = form.emailLocal + form.emailDominio
                 const emailOriginal = formOriginal ? formOriginal.emailLocal + formOriginal.emailDominio : undefined
                 const sonDistintos = (a, b) => String(a ?? '') !== String(b ?? '')
@@ -370,9 +485,9 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
                     [form.apellido, formOriginal?.apellido],
                     [form.telefono, formOriginal?.telefono],
                     [emailActual, emailOriginal],
-                    [form.licenciaConduccion, formOriginal?.licenciaConduccion],
+                    [form.password, ''],
                     [form.numeroLicencia, formOriginal?.numeroLicencia],
-                    [form.fechaVencimientoLicencia, formOriginal?.fechaVencimientoLicencia],
+                    [JSON.stringify(form.categoriasLicencia), formOriginal ? JSON.stringify(formOriginal.categoriasLicencia) : undefined],
                 ]
                 const totalModificados = formOriginal ? camposComparados.filter(([a, b]) => sonDistintos(a, b)).length : 0
 
@@ -407,15 +522,30 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
                             </Paper>
                             <Paper elevation={0} sx={cardSx}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                                    <EmailOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
+                                    <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Credenciales</Typography>
+                                </Box>
+                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica los datos de contacto</Typography>
+                                <ConfirmRow label="Teléfono" value={form.telefono} previousValue={formOriginal?.telefono} />
+                                <ConfirmRow label="Correo" value={emailActual} previousValue={emailOriginal} />
+                                <ConfirmRow label="Contraseña" value={form.password ? '••••••••' : 'Sin cambiar'} previousValue="Sin cambiar" />
+                            </Paper>
+                        </Box>
+                        <Box sx={{ display: 'flex', gap: 2 }}>
+                            <Paper elevation={0} sx={cardSx}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                                     <DirectionsCarOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
                                     <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Licencia de Conducción</Typography>
                                 </Box>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica los datos de licencia</Typography>
-                                <ConfirmRow label="Teléfono" value={form.telefono} previousValue={formOriginal?.telefono} />
-                                <ConfirmRow label="Correo" value={emailActual} previousValue={emailOriginal} />
-                                <ConfirmRow label="Categoría licencia" value={getLicenciaLabel(form.licenciaConduccion)} previousValue={formOriginal ? getLicenciaLabel(formOriginal.licenciaConduccion) : undefined} />
                                 <ConfirmRow label="N° de licencia" value={form.numeroLicencia || '—'} previousValue={formOriginal?.numeroLicencia || '—'} />
-                                <ConfirmRow label="Vencimiento" value={form.fechaVencimientoLicencia} previousValue={formOriginal?.fechaVencimientoLicencia} />
+                                {form.categoriasLicencia.filter(c => c.categoria && c.vencimiento).map((cat, i) => {
+                                    const original = formOriginal?.categoriasLicencia?.find(c => c.categoria === cat.categoria)
+                                    return (
+                                        <ConfirmRow key={i} label={getLicenciaLabel(cat.categoria)} value={cat.vencimiento}
+                                            previousValue={original ? original.vencimiento : undefined} />
+                                    )
+                                })}
                             </Paper>
                         </Box>
                     </Box>
@@ -427,7 +557,7 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
     }
 
     return (
-        <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth
+        <Dialog open={open} onClose={cerrar} maxWidth="md" fullWidth
             slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}>
             <DialogTitle sx={{ m: 0, p: 2, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${theme.palette.divider}` }}>
                 <Box>
@@ -438,7 +568,7 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
                             : 'Modifica los campos que necesites.'}
                     </Typography>
                 </Box>
-                <IconButton onClick={onClose} sx={{ color: theme.palette.text.secondary }}><CloseIcon /></IconButton>
+                <IconButton onClick={cerrar} sx={{ color: theme.palette.text.secondary }}><CloseIcon /></IconButton>
             </DialogTitle>
 
             <DialogContent sx={{ p: 3, pt: 1.5 }}>
@@ -465,7 +595,7 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
                 </Box>
             </DialogContent>
 
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 4, py: 2.5, borderTop: `1px solid ${theme.palette.divider}`, backgroundColor: '#FAFAFA' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 4, py: 2.5, borderTop: `1px solid ${theme.palette.divider}` }}>
                 <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined" startIcon={<ArrowBackOutlinedIcon />} disableRipple
                     sx={{ textTransform: 'none', borderRadius: 2, borderColor: theme.palette.divider, color: theme.palette.text.primary, fontWeight: 500, '&:hover': { borderColor: theme.palette.divider, backgroundColor: theme.palette.background.subtle }, '&.Mui-disabled': { borderColor: theme.palette.divider, color: theme.palette.text.secondary } }}>
                     Anterior
@@ -477,10 +607,12 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
                     </Button>
                     <Button onClick={activeStep < steps.length - 1 ? handleNext : handleSubmit}
                         variant="contained" disabled={submitting || (activeStep === steps.length - 1 && sinCambios)}
-                        endIcon={activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <SaveOutlinedIcon />}
+                        endIcon={submitting ? undefined : (activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <SaveOutlinedIcon />)}
                         disableRipple
-                        sx={{ textTransform: 'none', borderRadius: 2, fontWeight: 600, backgroundColor: theme.palette.primary.main, boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`, '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}` }, '&.Mui-disabled': { backgroundColor: theme.palette.divider, color: theme.palette.text.disabled } }}>
-                        {activeStep < steps.length - 1 ? 'Siguiente' : submitting ? 'Guardando...' : sinCambios ? 'Sin cambios' : 'Guardar cambios'}
+                        sx={{ textTransform: 'none', borderRadius: 2, fontWeight: 600, minWidth: 170, backgroundColor: theme.palette.primary.main, boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`, '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}` }, '&.Mui-disabled': { backgroundColor: theme.palette.divider, color: theme.palette.text.disabled } }}>
+                        {submitting
+                            ? <CircularProgress size={18} color="inherit" />
+                            : (activeStep < steps.length - 1 ? 'Siguiente' : sinCambios ? 'Sin cambios' : 'Guardar cambios')}
                     </Button>
                 </Box>
             </Box>

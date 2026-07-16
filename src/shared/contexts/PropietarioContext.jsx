@@ -53,22 +53,6 @@ export const PropietarioProvider = ({ children }) => {
     [propietarios]
   )
 
-  const getPropietariosHabilitados = useCallback(
-    () => propietarios.filter(p => p.habilitado),
-    [propietarios]
-  )
-
-  // ─── Obtener propietario individual desde API ─────────────────────────────
-  const fetchPropietarioById = useCallback(async (id) => {
-    try {
-      const response = await propietarioService.getPropietarioById(id)
-      return response.data
-    } catch (err) {
-      setError(err.message)
-      return null
-    }
-  }, [])
-
   // ─── Registrar propietario ────────────────────────────────────────────────
   const registrarPropietario = useCallback(async (data) => {
     const response = await propietarioService.createPropietario(data)
@@ -108,9 +92,7 @@ export const PropietarioProvider = ({ children }) => {
     error,
     getPropietarios,
     getPropietarioById,
-    getPropietariosHabilitados,
     fetchPropietarios,
-    fetchPropietarioById,
     registrarPropietario,
     actualizarPropietario,
     toggleHabilitado,

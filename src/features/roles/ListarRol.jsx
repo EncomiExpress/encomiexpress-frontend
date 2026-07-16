@@ -1,27 +1,33 @@
 import { useTheme } from '@mui/material/styles'
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react'
 import { useAuth, PERMISOS } from '../../shared/contexts/AuthContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import {
     Box, Typography, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, TextField,
     IconButton, Tooltip, InputAdornment,
-    Button, Select, MenuItem, Pagination, Chip,
+    Button, Chip,
     TableSortLabel, CircularProgress
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
-import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import ClearIcon from '@mui/icons-material/Clear'
-import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
+import UnfoldMoreOutlinedIcon from '@mui/icons-material/UnfoldMoreOutlined'
 import ToggleSwitch from '../../shared/components/ToggleSwitch.jsx'
+import TablaPaginacionFooter from '../../shared/components/TablaPaginacionFooter.jsx'
 import RegistrarRol from './RegistrarRol'
 import ActualizarRol from './ActualizarRol'
 import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined'
 import ModalConsultarRol from './ModalConsultarRol'
 import ModalInhabilitarRol from './ModalInhabilitarRol'
+
+const FILTROS = [
+    { value: 'todo', label: 'Todo' },
+    { value: 'habilitado', label: 'Habilitado' },
+    { value: 'inhabilitado', label: 'Inhabilitado' },
+]
 
 const getThStyle = (theme) => ({
     fontWeight: 700,
@@ -46,7 +52,19 @@ const ListarRol = () => {
     const [busqueda, setBusqueda] = useState('')
     const [debouncedBusqueda, setDebouncedBusqueda] = useState('')
     const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
-    const [sortBy, setSortBy] = useState({ field: 'nombre', dir: 'asc' })
+    const filtroContainerRef = useRef(null)
+    const filtroBtnRefs = useRef([])
+    const [filtroPillStyle, setFiltroPillStyle] = useState({ left: 0, width: 0 })
+
+    useLayoutEffect(() => {
+        const activeIndex = FILTROS.findIndex(f => f.value === filtroHabilitado)
+        const btn = filtroBtnRefs.current[activeIndex]
+        const container = filtroContainerRef.current
+        if (btn && container) {
+            setFiltroPillStyle({ left: btn.offsetLeft, width: btn.offsetWidth })
+        }
+    }, [filtroHabilitado])
+    const [sortBy, setSortBy] = useState({ field: '', dir: '' })
     const [page, setPage] = useState(1)
     const [rowsPerPage, setRowsPerPage] = useState(10)
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
@@ -70,7 +88,7 @@ const ListarRol = () => {
             const respuesta = await getRolesBackend({
                 page,
                 limit: rowsPerPage,
-                sortBy: `${sortBy.field}.${sortBy.dir}`,
+                sortBy: sortBy.field ? `${sortBy.field}.${sortBy.dir}` : undefined,
                 habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
                 q: debouncedBusqueda.trim() || undefined,
             })
@@ -94,10 +112,11 @@ const ListarRol = () => {
     }, [cargarRoles])
 
     const handleSort = (field) => {
-        setSortBy(prev => prev.field === field
-            ? { field, dir: prev.dir === 'asc' ? 'desc' : 'asc' }
-            : { field, dir: 'asc' }
-        )
+        setSortBy(prev => {
+            if (prev.field !== field) return { field, dir: 'asc' }
+            if (prev.dir === 'asc') return { field, dir: 'desc' }
+            return { field: '', dir: '' }
+        })
         setPage(1)
     }
 
@@ -129,10 +148,6 @@ const ListarRol = () => {
     }
 
 
-    const totalPages = Math.max(1, Math.ceil(total / rowsPerPage))
-    const safePage = Math.min(page, totalPages)
-    const from = total === 0 ? 0 : (safePage - 1) * rowsPerPage + 1
-    const to = Math.min(safePage * rowsPerPage, total)
     return (
         <Box sx={{ p: 3.5 }}>
             <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
@@ -167,21 +182,37 @@ const ListarRol = () => {
             </Box>
 
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
-                <Box sx={{
+                <Box ref={filtroContainerRef} sx={{
+                    position: 'relative',
                     display: 'inline-flex',
                     backgroundColor: theme.palette.primary.light,
                     borderRadius: 4,
                     p: '4px',
                     gap: '5px',
                 }}>
-                    {[{ value: 'todo', label: 'Todo' }, { value: 'habilitado', label: 'Habilitado' }, { value: 'inhabilitado', label: 'Inhabilitado' }].map(f => (
+                    <Box sx={{
+                        position: 'absolute',
+                        top: '4px',
+                        bottom: '4px',
+                        left: `${filtroPillStyle.left}px`,
+                        width: `${filtroPillStyle.width}px`,
+                        borderRadius: 3,
+                        backgroundColor: theme.palette.background.paper,
+                        boxShadow: '0 1px 4px rgba(0,0,0,0.12)',
+                        transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                        pointerEvents: 'none',
+                    }} />
+                    {FILTROS.map((f, i) => (
                         <Button
                             key={f.value}
+                            ref={el => { filtroBtnRefs.current[i] = el }}
                             onClick={() => { setFiltroHabilitado(f.value); setPage(1) }}
                             size="small"
                             disableElevation
                             disableRipple
                             sx={{
+                                position: 'relative',
+                                zIndex: 1,
                                 borderRadius: 3,
                                 textTransform: 'none',
                                 fontSize: '0.75rem',
@@ -189,12 +220,12 @@ const ListarRol = () => {
                                 py: 0.5,
                                 minWidth: 0,
                                 fontWeight: filtroHabilitado === f.value ? 600 : 400,
-                                backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
+                                backgroundColor: 'transparent',
                                 color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.primary.darker,
-                                boxShadow: filtroHabilitado === f.value ? '0 1px 4px rgba(0,0,0,0.12)' : 'none',
+                                transition: 'color 0.3s ease',
                                 border: 'none',
                                 '&:hover': {
-                                    backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
+                                    backgroundColor: 'transparent',
                                     color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.primary.dark,
                                     border: 'none',
                                 },
@@ -252,13 +283,15 @@ const ListarRol = () => {
                                 <TableCell sx={{ ...thStyle, width: '30%' }}>
                                     <TableSortLabel
                                         active={sortBy.field === 'nombre'}
-                                        direction={sortBy.field === 'nombre' ? sortBy.dir : 'asc'}
+                                        direction={sortBy.dir === 'desc' ? 'desc' : 'asc'}
                                         onClick={() => handleSort('nombre')}
+                                        IconComponent={sortBy.field === 'nombre' ? undefined : UnfoldMoreOutlinedIcon}
                                         sx={{
                                             color: 'inherit',
+                                            '&:hover': { color: 'inherit' },
                                             '&.Mui-active': { color: theme.palette.primary.main },
-                                            '& .MuiTableSortLabel-icon': { opacity: 0.4, fontSize: 16 },
-                                            '&.Mui-active .MuiTableSortLabel-icon': { opacity: 1 },
+                                            '&.Mui-active:hover': { color: theme.palette.primary.main },
+                                            '& .MuiTableSortLabel-icon': { opacity: 1, fontSize: 16 },
                                         }}
                                     >
                                         Rol
@@ -351,22 +384,32 @@ const ListarRol = () => {
                                                             <IconButton
                                                                 size="small"
                                                                 onClick={(e) => { e.currentTarget.blur(); setRolConsulta(rol) }}
-                                                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
+                                                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}
                                                             >
                                                                 <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
                                                             </IconButton>
                                                         </Tooltip>
                                                     )}
                                                     {tienePermiso(PERMISOS.ACTUALIZAR_ROL) && (
-                                                        <Tooltip title="Editar">
-                                                            <IconButton
-                                                                size="small"
-                                                                onClick={(e) => { e.currentTarget.blur(); setRolEditar(rol); setModalActualizarOpen(true) }}
-                                                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
-                                                            >
-                                                                <EditOutlinedIcon sx={{ fontSize: 18 }} />
-                                                            </IconButton>
-                                                        </Tooltip>
+                                                        rol.habilitado === false ? (
+                                                            <Tooltip title="Habilita el registro para poder editarlo">
+                                                                <span>
+                                                                    <IconButton size="small" disabled>
+                                                                        <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                                                                    </IconButton>
+                                                                </span>
+                                                            </Tooltip>
+                                                        ) : (
+                                                            <Tooltip title="Editar">
+                                                                <IconButton
+                                                                    size="small"
+                                                                    onClick={(e) => { e.currentTarget.blur(); setRolEditar(rol); setModalActualizarOpen(true) }}
+                                                                    sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}
+                                                                >
+                                                                    <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                                                                </IconButton>
+                                                            </Tooltip>
+                                                        )
                                                     )}
                                                     {tienePermiso(PERMISOS.INHABILITAR_ROL) && (
                                                         <ToggleSwitch id={rol.id} checked={rol.habilitado} onChange={() => handleToggleHabilitado(rol.id, rol.nombre, rol.habilitado)} />
@@ -382,105 +425,13 @@ const ListarRol = () => {
                 </TableContainer>
             </Paper>
 
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
-                <Typography variant="body2" color={theme.palette.text.secondary} fontWeight={500}>
-                    Mostrando {from}–{to} de {total} resultado{total !== 1 ? 's' : ''}
-                </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography variant="body2" color={theme.palette.text.secondary} fontWeight={500}>
-                            Filas
-                        </Typography>
-                        <Select
-                            value={rowsPerPage}
-                            onChange={e => { setRowsPerPage(Number(e.target.value)); setPage(1) }}
-                            size="small"
-                            renderValue={(value) => value}
-                            IconComponent={KeyboardArrowDownOutlinedIcon}
-                            sx={{
-                                fontSize: '0.82rem',
-                                borderRadius: 2,
-                                '& .MuiSelect-select': { py: 0.6, pl: 1.5, pr: '28px !important' },
-                                '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
-                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
-                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                    borderColor: theme.palette.primary.main, borderWidth: '1px',
-                                },
-                                '&.Mui-focused': {
-                                    boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}`,
-                                },
-                                '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
-                                '& .MuiTouchRipple-root': { display: 'none' },
-                            }}
-                            MenuProps={{
-                                slotProps: {
-                                    paper: {
-                                        sx: {
-                                            borderRadius: 2,
-                                            boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
-                                            mt: 0.5,
-                                            minWidth: 80,
-                                            '& .MuiMenuItem-root': {
-                                                fontSize: '0.82rem',
-                                                py: 0.9,
-                                                px: 2,
-                                                display: 'flex',
-                                                justifyContent: 'space-between',
-                                                gap: 2,
-                                                '&:hover': { backgroundColor: theme.palette.primary.light },
-                                                '&.Mui-selected': { backgroundColor: 'transparent', fontWeight: 600, color: theme.palette.text.primary },
-                                                '&.Mui-selected:hover': { backgroundColor: theme.palette.primary.light },
-                                            },
-                                        },
-                                    },
-                                },
-                            }}
-                        >
-                            {[5, 10, 25].map(n => (
-                                <MenuItem key={n} value={n}>
-                                    {n}
-                                    {rowsPerPage === n && (
-                                        <CheckOutlinedIcon sx={{ fontSize: 14, color: theme.palette.text.secondary }} />
-                                    )}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </Box>
-                    <Pagination
-                        count={totalPages}
-                        page={safePage}
-                        onChange={(_, val) => setPage(val)}
-                        size="small"
-                        shape="rounded"
-                        sx={{
-                            '& .MuiPaginationItem-root': {
-                                fontSize: '0.82rem',
-                                borderRadius: '8px',
-                                minWidth: 34,
-                                height: 34,
-                                mx: 0.2,
-                                color: theme.palette.text.primary,
-                                border: `1px solid ${theme.palette.divider}`,
-                                '& .MuiTouchRipple-root': { display: 'none' },
-                            },
-                            '& .MuiPaginationItem-ellipsis': {
-                                border: 'none',
-                            },
-                            '& .MuiPaginationItem-root.Mui-selected': {
-                                backgroundColor: theme.palette.primary.main,
-                                borderColor: theme.palette.primary.main,
-                                color: 'white',
-                                fontWeight: 600,
-                                '&:hover': { backgroundColor: theme.palette.primary.darker },
-                            },
-                            '& .MuiPaginationItem-root:hover:not(.Mui-selected)': {
-                                backgroundColor: theme.palette.background.subtle,
-                                borderColor: theme.palette.divider,
-                            },
-                        }}
-                    />
-                </Box>
-            </Box>
+            <TablaPaginacionFooter
+                total={total}
+                page={page}
+                rowsPerPage={rowsPerPage}
+                onPageChange={setPage}
+                onRowsPerPageChange={(n) => { setRowsPerPage(n); setPage(1) }}
+            />
 
             <ModalConsultarRol rol={rolConsulta} onClose={() => setRolConsulta(null)} />
 

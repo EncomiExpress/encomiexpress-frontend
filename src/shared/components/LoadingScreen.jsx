@@ -2,6 +2,7 @@ import { useTheme } from '@mui/material/styles'
 import { Box, Typography } from '@mui/material'
 import { LocalShipping } from '@mui/icons-material'
 import logo from '../../assets/logo.png'
+import logoDark from '../../assets/logoDark.png'
 
 const LoadingScreen = ({ mensaje = 'Cargando...' }) => {
   const theme = useTheme()
@@ -33,7 +34,7 @@ const LoadingScreen = ({ mensaje = 'Cargando...' }) => {
         border: `1px solid ${theme.palette.divider}`,
       }}>
         <Box sx={{ width: 140, height: 80, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <img src={logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+          <img src={theme.palette.mode === 'dark' ? logoDark : logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
         </Box>
 
         <Box sx={{ position: 'relative', width: 120, height: 80 }}>

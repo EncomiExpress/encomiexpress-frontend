@@ -1,12 +1,12 @@
 import { useTheme, alpha } from '@mui/material/styles'
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useRef, useLayoutEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
     Box, Typography, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, Chip, IconButton,
     TextField, InputAdornment, Select, MenuItem, FormControl, Menu,
     Tooltip, Button,
-    Avatar, CircularProgress, Pagination, TableSortLabel,
+    Avatar, CircularProgress, TableSortLabel,
     Dialog, DialogContent
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
@@ -18,11 +18,13 @@ import ClearIcon from '@mui/icons-material/Clear'
 import RouteIcon from '@mui/icons-material/Route'
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import ToggleSwitch from '../../shared/components/ToggleSwitch.jsx'
+import TablaPaginacionFooter from '../../shared/components/TablaPaginacionFooter.jsx'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import DoNotDisturbOutlinedIcon from '@mui/icons-material/DoNotDisturbOutlined'
 import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
+import UnfoldMoreOutlinedIcon from '@mui/icons-material/UnfoldMoreOutlined'
 import { useRutaProgramacion } from '../../shared/contexts/RutaProgramacionContext.jsx'
 import { useVehiculo } from '../../shared/contexts/VehiculoContext.jsx'
 import { useConductor } from '../../shared/contexts/ConductorContext.jsx'
@@ -34,7 +36,8 @@ import ActualizarRutaProgramacion from './ActualizarRutaProgramacion'
 import ModalConsultarRutaProgramacion from './ModalConsultarRutaProgramacion'
 import ModalConfirmarEstado from './ModalConfirmarEstado'
 import ModalInhabilitarRuta from './ModalInhabilitarRuta'
-import { getPageOfRuta } from '../../shared/services/rutaService'
+import { getPageOfRuta, getAniosDisponiblesRuta, getRutas } from '../../shared/services/rutaService'
+import { formatFecha } from '../../shared/utils/formatters.js'
 import { getEstadoColorRuta as getEstadoColor, getVehiculoEstadoDot, getConductorEstadoDot } from '../../shared/utils/estadoColors.js'
 import { exportToExcel } from '../../shared/utils/exportExcel.js'
 
@@ -179,9 +182,9 @@ const getFilterMenuProps = (theme) => ({
                     fontSize: '0.82rem',
                     py: 0.9, px: 2,
                     display: 'flex', justifyContent: 'space-between', gap: 2,
-                    '&:hover': { backgroundColor: theme.palette.primary.light },
+                    '&:hover': { backgroundColor: theme.palette.primary.activeBg },
                     '&.Mui-selected': { backgroundColor: 'transparent', fontWeight: 600, color: theme.palette.text.primary },
-                    '&.Mui-selected:hover': { backgroundColor: theme.palette.primary.light },
+                    '&.Mui-selected:hover': { backgroundColor: theme.palette.primary.activeBg },
                 },
             },
         },
@@ -213,22 +216,38 @@ const ListarRutaProgramacion = () => {
     const [rutaVer, setRutaVer]               = useState(null)
     const { showToast } = useToast()
     const [confirmInhabilitar, setConfirmInhabilitar] = useState({ open: false, idRuta: null, nombreRuta: '', habilitadoActual: null, estadoRuta: null })
-    const [confirmEstado, setConfirmEstado]   = useState({ open: false, id: null, nuevoEstado: null, info: '', ruta: null, vehiculo: null, conductor: null, confirmed: false })
+    const [confirmEstado, setConfirmEstado]   = useState({ open: false, id: null, nuevoEstado: null, info: '', ruta: null, vehiculo: null, conductor: null })
     const [alertaBloqueo, setAlertaBloqueo]   = useState({ open: false, titulo: '', entidades: [] })
     const [estadoMenu, setEstadoMenu]         = useState({ anchor: null, id: null, estadoActual: null })
     const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
+    const filtroContainerRef = useRef(null)
+    const filtroBtnRefs = useRef([])
+    const [filtroPillStyle, setFiltroPillStyle] = useState({ left: 0, width: 0 })
+
+    useLayoutEffect(() => {
+        const activeIndex = FILTROS.findIndex(f => f.value === filtroHabilitado)
+        const btn = filtroBtnRefs.current[activeIndex]
+        const container = filtroContainerRef.current
+        if (btn && container) {
+            setFiltroPillStyle({ left: btn.offsetLeft, width: btn.offsetWidth })
+        }
+    }, [filtroHabilitado])
     const [filtroEstadoRuta, setFiltroEstadoRuta] = useState('')
     const [filtroAnio, setFiltroAnio]         = useState('')
     const [filtroMes, setFiltroMes]           = useState('')
+    const [aniosDisponibles, setAniosDisponibles] = useState([])
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [rutaEditar, setRutaEditar]         = useState(null)
     const [page, setPage] = useState(1)
     const [rowsPerPage, setRowsPerPage] = useState(5)
-    const [sortBy, setSortBy] = useState({ field: 'fechaSalida', dir: 'desc' })
+    const [sortBy, setSortBy] = useState({ field: '', dir: '' })
     const initialLoad = useRef(true)
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState(null)
+    const [exportando, setExportando] = useState(false)
 
-    const { rutasProgramadas, total, fetchRutasProgramadas, updateEstado, toggleHabilitado, loading, error } = useRutaProgramacion()
+    const { rutasProgramadas, total, fetchRutasProgramadas, updateEstado, toggleHabilitado } = useRutaProgramacion()
     const { getVehiculos } = useVehiculo()
     const { getConductores } = useConductor()
     const { destinos } = useDestino()
@@ -263,7 +282,7 @@ const ListarRutaProgramacion = () => {
     const buildRutasParams = () => ({
         page,
         limit: rowsPerPage,
-        sortBy: `${sortBy.field}.${sortBy.dir}`,
+        sortBy: sortBy.field ? `${sortBy.field}.${sortBy.dir}` : undefined,
         habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
         estado: filtroEstadoRuta || undefined,
         anio: filtroAnio || undefined,
@@ -273,7 +292,26 @@ const ListarRutaProgramacion = () => {
 
     useEffect(() => {
         if (!usuario) return
-        fetchRutasProgramadas(buildRutasParams())
+        const controller = new AbortController()
+        let cancelled = false
+
+        const cargar = async () => {
+            setLoading(true)
+            setError(null)
+            try {
+                await fetchRutasProgramadas(buildRutasParams(), controller.signal)
+            } catch (err) {
+                if (!cancelled && err.name !== 'AbortError') setError(err.message)
+            } finally {
+                if (!cancelled) setLoading(false)
+            }
+        }
+
+        cargar()
+        return () => {
+            cancelled = true
+            controller.abort()
+        }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [fetchRutasProgramadas, page, rowsPerPage, debouncedSearch, filtroHabilitado, filtroEstadoRuta, filtroAnio, filtroMes, sortBy, usuario])
 
@@ -282,24 +320,22 @@ const ListarRutaProgramacion = () => {
     }, [loading])
 
     const handleSort = (field) => {
-        setSortBy(prev => prev.field === field
-            ? { field, dir: prev.dir === 'asc' ? 'desc' : 'asc' }
-            : { field, dir: 'asc' }
-        )
+        setSortBy(prev => {
+            if (prev.field !== field) return { field, dir: 'asc' }
+            if (prev.dir === 'asc') return { field, dir: 'desc' }
+            return { field: '', dir: '' }
+        })
         setPage(1)
     }
 
-    // Años disponibles desde fechaSalida
-    const aniosDisponibles = useMemo(() => {
-        const anios = new Set()
-        rutasProgramadas.forEach(r => {
-            if (r.fechaSalida) {
-                const [anio] = r.fechaSalida.split('-')
-                if (anio) anios.add(anio)
-            }
-        })
-        return Array.from(anios).sort((a, b) => b - a)
-    }, [rutasProgramadas])
+    // Años disponibles para el filtro — se traen del backend (todas las rutas),
+    // no solo de la página actualmente cargada, para que el dropdown esté completo
+    // sin importar la paginación.
+    useEffect(() => {
+        getAniosDisponiblesRuta()
+            .then(res => setAniosDisponibles(res.data || []))
+            .catch(() => setAniosDisponibles([]))
+    }, [])
 
     // Helpers para mostrar datos relacionados (ya están en los contextos)
     const getVehiculoPlaca = (id) => {
@@ -333,25 +369,29 @@ const resolveDestino = (ruta) =>
 
     const getId = (ruta) => ruta.idRuta ?? ruta.idRutaProgramada
 
-    const handleExportar = () => {
-        const rows = rutasProgramadas.map(ruta => ({
-            'ID': getId(ruta),
-            'Ruta': ruta.nombreRuta || `Ruta ${getId(ruta)}`,
-            'Destino': resolveDestino(ruta),
-            'Vehículo': resolveVehiculo(ruta),
-            'Conductor': resolveConductor(ruta),
-            'Fecha salida': ruta.fechaSalida,
-            'Estado': ruta.estado,
-            'Habilitado': ruta.habilitado === false ? 'No' : 'Sí',
-        }))
-
-        exportToExcel({ data: rows, fileName: 'rutas', sheetName: 'Rutas' })
+    const handleExportar = async () => {
+        setExportando(true)
+        try {
+            const res = await getRutas({ ...buildRutasParams(), page: 1, limit: 100000 })
+            const rows = (res?.data || []).map(ruta => ({
+                'ID': getId(ruta),
+                'Ruta': ruta.nombreRuta || `Ruta ${getId(ruta)}`,
+                'Destino': resolveDestino(ruta),
+                'Vehículo': resolveVehiculo(ruta),
+                'Conductor': resolveConductor(ruta),
+                'Fecha salida': ruta.fechaSalida,
+                'Hora salida': formatHora12(ruta.horaSalida),
+                'Estado': ruta.estado,
+                'Habilitado': ruta.habilitado === false ? 'No' : 'Sí',
+            }))
+            await exportToExcel({ data: rows, fileName: 'rutas', sheetName: 'Rutas', themeColor: theme.palette.primary.main })
+        } catch (err) {
+            showToast(err.message || 'Error al exportar.', 'error')
+        } finally {
+            setExportando(false)
+        }
     }
 
-    const totalPages = Math.max(1, Math.ceil(total / rowsPerPage))
-    const safePage = Math.min(page, totalPages)
-    const from = total === 0 ? 0 : (safePage - 1) * rowsPerPage + 1
-    const to = Math.min(safePage * rowsPerPage, total)
 
     const ejecutarCambioEstado = async (id, nuevoEstado) => {
         try {
@@ -418,7 +458,7 @@ const resolveDestino = (ruta) =>
             'Cancelada': 'El vehículo y el conductor quedarán disponibles, el anticipo pasará a "Excedente pendiente" y las ventas asociadas quedarán pendientes de reasignación a otra ruta.',
         }
         const info = INFO_ESTADOS[nuevoEstado] || ''
-        setConfirmEstado({ open: true, id, nuevoEstado, info, ruta: rutaActual, vehiculo, conductor, confirmed: false })
+        setConfirmEstado({ open: true, id, nuevoEstado, info, ruta: rutaActual, vehiculo, conductor })
     }
 
     const handleToggleHabilitado = (id) => {
@@ -467,8 +507,9 @@ const resolveDestino = (ruta) =>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Button
                         onClick={handleExportar}
+                        disabled={exportando}
                         variant="contained"
-                        startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 18 }} />}
+                        startIcon={exportando ? <CircularProgress size={16} sx={{ color: 'inherit' }} /> : <FileDownloadOutlinedIcon sx={{ fontSize: 18 }} />}
                         sx={{
                             backgroundColor: theme.palette.background.paper,
                             color: theme.palette.text.primary,
@@ -479,14 +520,14 @@ const resolveDestino = (ruta) =>
                             border: `1px solid ${theme.palette.divider}`,
                             boxShadow: 'none',
                             '&:hover': {
-                                backgroundColor: theme.palette.primary.light,
+                                backgroundColor: theme.palette.primary.activeBg,
                                 color: theme.palette.text.primary,
                                 border: `1px solid ${theme.palette.divider}`,
                                 boxShadow: 'none',
                             },
                         }}
                     >
-                        Exportar
+                        {exportando ? 'Exportando...' : 'Exportar'}
                     </Button>
 
                     {tienePermiso(PERMISOS.REGISTRAR_RUTA) && (
@@ -516,21 +557,37 @@ const resolveDestino = (ruta) =>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, mb: 1.5, flexWrap: 'wrap' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <Box sx={{
+                        <Box ref={filtroContainerRef} sx={{
+                            position: 'relative',
                             display: 'inline-flex',
                             backgroundColor: theme.palette.primary.light,
                             borderRadius: 4,
                             p: '4px',
                             gap: '5px',
                         }}>
-                            {FILTROS.map(f => (
+                            <Box sx={{
+                                position: 'absolute',
+                                top: '4px',
+                                bottom: '4px',
+                                left: `${filtroPillStyle.left}px`,
+                                width: `${filtroPillStyle.width}px`,
+                                borderRadius: 3,
+                                backgroundColor: theme.palette.background.paper,
+                                boxShadow: '0 1px 4px rgba(0,0,0,0.12)',
+                                transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                pointerEvents: 'none',
+                            }} />
+                            {FILTROS.map((f, i) => (
                                 <Button
                                     key={f.value}
+                                    ref={el => { filtroBtnRefs.current[i] = el }}
                                     onClick={() => { setFiltroHabilitado(f.value); setPage(1) }}
                                     size="small"
                                     disableElevation
                                     disableRipple
                                     sx={{
+                                        position: 'relative',
+                                        zIndex: 1,
                                         borderRadius: 3,
                                         textTransform: 'none',
                                         fontSize: '0.75rem',
@@ -538,14 +595,12 @@ const resolveDestino = (ruta) =>
                                         py: 0.5,
                                         minWidth: 0,
                                         fontWeight: filtroHabilitado === f.value ? 600 : 400,
-                                        backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
+                                        backgroundColor: 'transparent',
                                         color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.primary.darker,
-                                        boxShadow: filtroHabilitado === f.value
-                                            ? '0 1px 4px rgba(0,0,0,0.12)'
-                                            : 'none',
+                                        transition: 'color 0.3s ease',
                                         border: 'none',
                                         '&:hover': {
-                                            backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
+                                            backgroundColor: 'transparent',
                                             color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.primary.dark,
                                             border: 'none',
                                         },
@@ -592,29 +647,59 @@ const resolveDestino = (ruta) =>
                                 value={filtroAnio}
                                 onChange={(e) => { setFiltroAnio(e.target.value); setFiltroMes(''); setPage(1) }}
                                 displayEmpty
-                                sx={{ borderRadius: 4 }}
-                            >
+                                renderValue={v => v || 'Año'}
+                                IconComponent={KeyboardArrowDownOutlinedIcon}
+                                sx={{
+                                    fontSize: '0.82rem', borderRadius: 4,
+                                    color: filtroAnio ? theme.palette.text.primary : theme.palette.text.secondary,
+                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
+                                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
+                                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
+                                    '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` },
+                                    '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
+                                    '& .MuiTouchRipple-root': { display: 'none' },
+                                }}
+                                MenuProps={filterMenuProps}>
                                 <MenuItem value="">Año</MenuItem>
                                 {aniosDisponibles.map(anio => (
-                                    <MenuItem key={anio} value={anio}>{anio}</MenuItem>
+                                    <MenuItem key={anio} value={String(anio)}>
+                                        {anio}
+                                        {filtroAnio === String(anio) && <CheckOutlinedIcon sx={{ fontSize: 14, color: theme.palette.text.secondary }} />}
+                                    </MenuItem>
                                 ))}
                             </Select>
                         </FormControl>
 
-                        <FormControl size="small" sx={{ minWidth: 120 }}>
-                            <Select
-                                value={filtroMes}
-                                onChange={(e) => { setFiltroMes(e.target.value); setPage(1) }}
-                                displayEmpty
-                                disabled={!filtroAnio}
-                                sx={{ borderRadius: 4 }}
-                            >
-                                <MenuItem value="">Mes</MenuItem>
-                                {MESES.map(m => (
-                                    <MenuItem key={m.value} value={m.value}>{m.label}</MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
+                        <Tooltip title={filtroAnio ? '' : 'Primero elige un año'}>
+                            <FormControl size="small" sx={{ minWidth: 120 }}>
+                                <Select
+                                    value={filtroMes}
+                                    onChange={(e) => { setFiltroMes(e.target.value); setPage(1) }}
+                                    displayEmpty
+                                    disabled={!filtroAnio}
+                                    renderValue={v => v ? (MESES.find(m => m.value === v)?.label || v) : (filtroAnio ? 'Todos' : 'Mes')}
+                                    IconComponent={KeyboardArrowDownOutlinedIcon}
+                                    sx={{
+                                        fontSize: '0.82rem', borderRadius: 4,
+                                        color: filtroMes ? theme.palette.text.primary : theme.palette.text.secondary,
+                                        '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
+                                        '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
+                                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
+                                        '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` },
+                                        '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
+                                        '& .MuiTouchRipple-root': { display: 'none' },
+                                    }}
+                                    MenuProps={filterMenuProps}>
+                                    <MenuItem value="">{filtroAnio ? 'Todos' : 'Mes'}</MenuItem>
+                                    {MESES.map(m => (
+                                        <MenuItem key={m.value} value={m.value}>
+                                            {m.label}
+                                            {filtroMes === m.value && <CheckOutlinedIcon sx={{ fontSize: 14, color: theme.palette.text.secondary }} />}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Tooltip>
                     </Box>
 
                 </Box>
@@ -658,22 +743,24 @@ const resolveDestino = (ruta) =>
                     <Table>
                         <TableHead>
                             <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
-                                <TableCell sx={thStyle}>Ruta</TableCell>
                                 <TableCell sx={thStyle}>
                                     <TableSortLabel
-                                        active={sortBy.field === 'fechaSalida'}
-                                        direction={sortBy.field === 'fechaSalida' ? sortBy.dir : 'asc'}
-                                        onClick={() => handleSort('fechaSalida')}
+                                        active={sortBy.field === 'nombreRuta'}
+                                        direction={sortBy.dir === 'desc' ? 'desc' : 'asc'}
+                                        onClick={() => handleSort('nombreRuta')}
+                                        IconComponent={sortBy.field === 'nombreRuta' ? undefined : UnfoldMoreOutlinedIcon}
                                         sx={{
                                             color: 'inherit',
+                                            '&:hover': { color: 'inherit' },
                                             '&.Mui-active': { color: theme.palette.primary.main },
-                                            '& .MuiTableSortLabel-icon': { opacity: 0.4, fontSize: 16 },
-                                            '&.Mui-active .MuiTableSortLabel-icon': { opacity: 1 },
+                                            '&.Mui-active:hover': { color: theme.palette.primary.main },
+                                            '& .MuiTableSortLabel-icon': { opacity: 1, fontSize: 16 },
                                         }}
                                     >
-                                        Fecha y hora salida
+                                        Ruta
                                     </TableSortLabel>
                                 </TableCell>
+                                <TableCell sx={thStyle}>Fecha y hora salida</TableCell>
                                 <TableCell sx={thStyle}>Vehículo</TableCell>
                                 <TableCell sx={thStyle}>Conductor</TableCell>
                                 <TableCell sx={thStyle}>Estado</TableCell>
@@ -740,7 +827,7 @@ const resolveDestino = (ruta) =>
                                                 {ruta.nombreRuta || '—'}
                                             </TableCell>
                                             <TableCell sx={{ py: 1.5 }}>
-                                                <Typography sx={{ fontSize: '0.875rem' }}>{ruta.fechaSalida || '—'}</Typography>
+                                                <Typography sx={{ fontSize: '0.875rem' }}>{formatFecha(ruta.fechaSalida)}</Typography>
                                                 {ruta.horaSalida && (
                                                     <Typography sx={{ fontSize: '0.75rem', color: theme.palette.text.secondary }}>{formatHora12(ruta.horaSalida)}</Typography>
                                                 )}
@@ -837,22 +924,40 @@ const resolveDestino = (ruta) =>
                                                             <IconButton
                                                                 size="small"
                                                                 onClick={() => setRutaVer(ruta)}
-                                                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
+                                                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}
                                                             >
                                                                 <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
                                                             </IconButton>
                                                         </Tooltip>
                                                     )}
                                                     {tienePermiso(PERMISOS.ACTUALIZAR_RUTA) && (
-                                                        <Tooltip title="Editar">
-                                                            <IconButton
-                                                                size="small"
-                                                                onClick={() => { setRutaEditar(ruta); setModalActualizarOpen(true) }}
-                                                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}
-                                                            >
-                                                                <EditOutlinedIcon sx={{ fontSize: 18 }} />
-                                                            </IconButton>
-                                                        </Tooltip>
+                                                        ruta.habilitado === false ? (
+                                                            <Tooltip title="Habilita el registro para poder editarlo">
+                                                                <span>
+                                                                    <IconButton size="small" disabled>
+                                                                        <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                                                                    </IconButton>
+                                                                </span>
+                                                            </Tooltip>
+                                                        ) : !['Programada', 'Cancelada'].includes(ruta.estado) ? (
+                                                            <Tooltip title="Solo se puede editar una ruta Programada o Cancelada">
+                                                                <span>
+                                                                    <IconButton size="small" disabled>
+                                                                        <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                                                                    </IconButton>
+                                                                </span>
+                                                            </Tooltip>
+                                                        ) : (
+                                                            <Tooltip title="Editar">
+                                                                <IconButton
+                                                                    size="small"
+                                                                    onClick={() => { setRutaEditar(ruta); setModalActualizarOpen(true) }}
+                                                                    sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}
+                                                                >
+                                                                    <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                                                                </IconButton>
+                                                            </Tooltip>
+                                                        )
                                                     )}
                                                     {tienePermiso(PERMISOS.INHABILITAR_RUTA) && (
                                                         <ToggleSwitch id={id} checked={ruta.habilitado !== false} onChange={() => handleToggleHabilitado(id)} />
@@ -868,98 +973,13 @@ const resolveDestino = (ruta) =>
                 </TableContainer>
             </Paper>
 
-            <Box sx={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                px: 0.5, pt: 1.5,
-            }}>
-                <Typography variant="body2" color={theme.palette.text.secondary}>
-                    Mostrando {from}–{to} de {total} resultado{total !== 1 ? 's' : ''}
-                </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography variant="body2" color={theme.palette.text.secondary} fontWeight={500}>
-                            Filas
-                        </Typography>
-                        <Select
-                            value={rowsPerPage}
-                            onChange={e => { setRowsPerPage(Number(e.target.value)); setPage(1) }}
-                            size="small"
-                            renderValue={(value) => value}
-                            IconComponent={KeyboardArrowDownOutlinedIcon}
-                            sx={{
-                                fontSize: '0.82rem',
-                                borderRadius: 2,
-                                '& .MuiSelect-select': { py: 0.6, pl: 1.5, pr: '28px !important' },
-                                '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
-                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
-                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                    borderColor: theme.palette.primary.main,
-                                    borderWidth: '1px',
-                                },
-                                '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` },
-                                '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
-                                '& .MuiTouchRipple-root': { display: 'none' },
-                            }}
-                            MenuProps={{
-                                slotProps: {
-                                    paper: {
-                                        sx: {
-                                            borderRadius: 2,
-                                            boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
-                                            mt: 0.5,
-                                            minWidth: 80,
-                                            '& .MuiMenuItem-root': {
-                                                fontSize: '0.82rem', py: 0.9, px: 2,
-                                                display: 'flex', justifyContent: 'space-between', gap: 2,
-                                                '&:hover': { backgroundColor: theme.palette.primary.light },
-                                                '&.Mui-selected': { backgroundColor: 'transparent', fontWeight: 600, color: theme.palette.text.primary },
-                                                '&.Mui-selected:hover': { backgroundColor: theme.palette.primary.light },
-                                            },
-                                        },
-                                    },
-                                },
-                            }}
-                        >
-                            {[5, 10, 25].map(n => (
-                                <MenuItem key={n} value={n}>{n}
-                                    {rowsPerPage === n && <CheckOutlinedIcon sx={{ fontSize: 14, color: theme.palette.text.secondary }} />}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </Box>
-                    <Pagination
-                        count={totalPages}
-                        page={safePage}
-                        onChange={(_, val) => setPage(val)}
-                        size="small"
-                        shape="rounded"
-                        sx={{
-                            '& .MuiPaginationItem-root': {
-                                fontSize: '0.82rem',
-                                borderRadius: '8px',
-                                minWidth: 34,
-                                height: 34,
-                                mx: 0.2,
-                                color: theme.palette.text.primary,
-                                border: `1px solid ${theme.palette.divider}`,
-                                '& .MuiTouchRipple-root': { display: 'none' },
-                            },
-                            '& .MuiPaginationItem-ellipsis': { border: 'none' },
-                            '& .MuiPaginationItem-root.Mui-selected': {
-                                backgroundColor: theme.palette.primary.main,
-                                borderColor: theme.palette.primary.main,
-                                color: 'white',
-                                fontWeight: 600,
-                                '&:hover': { backgroundColor: theme.palette.primary.darker },
-                            },
-                            '& .MuiPaginationItem-root:hover:not(.Mui-selected)': {
-                                backgroundColor: theme.palette.background.subtle,
-                                borderColor: theme.palette.divider,
-                            },
-                        }}
-                    />
-                </Box>
-            </Box>
+            <TablaPaginacionFooter
+                total={total}
+                page={page}
+                rowsPerPage={rowsPerPage}
+                onPageChange={setPage}
+                onRowsPerPageChange={(n) => { setRowsPerPage(n); setPage(1) }}
+            />
 
             {rutaVer && (
                 <ModalConsultarRutaProgramacion ruta={rutaVer} onClose={() => setRutaVer(null)} />
@@ -986,12 +1006,12 @@ const resolveDestino = (ruta) =>
                 vehiculo={confirmEstado.vehiculo}
                 conductor={confirmEstado.conductor}
                 onClose={() => setConfirmEstado(c => ({ ...c, open: false }))}
-                onConfirm={() => setConfirmEstado(c => ({ ...c, open: false, confirmed: true }))}
-                onExited={() => {
-                    const { id, nuevoEstado, confirmed } = confirmEstado
-                    setConfirmEstado({ open: false, id: null, nuevoEstado: null, info: '', ruta: null, vehiculo: null, conductor: null, confirmed: false })
-                    if (confirmed && id && nuevoEstado) ejecutarCambioEstado(id, nuevoEstado)
+                onConfirm={async () => {
+                    const { id, nuevoEstado } = confirmEstado
+                    await ejecutarCambioEstado(id, nuevoEstado)
+                    setConfirmEstado(c => ({ ...c, open: false }))
                 }}
+                onExited={() => setConfirmEstado({ open: false, id: null, nuevoEstado: null, info: '', ruta: null, vehiculo: null, conductor: null })}
             />
 
             <ModalInhabilitarRuta

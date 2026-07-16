@@ -28,7 +28,7 @@ export default function SessionExpiredDialog() {
     >
       <DialogTitle sx={{ pb: 1 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <LockOutlinedIcon color="warning" sx={{ fontSize: 28 }} />
+          <LockOutlinedIcon color="primary" sx={{ fontSize: 28 }} />
           <Typography variant="h6" fontWeight={600}>
             Sesión expirada
           </Typography>

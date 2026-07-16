@@ -2,8 +2,9 @@ import { jsPDF } from 'jspdf'
 import JsBarcode from 'jsbarcode'
 import logoOsvaldoC from '../../assets/logoOsvaldoC.png'
 
-const PAGE_W = 280
-const PAGE_H = 205
+const PAGE_W = 320
+// 240 (no 205): el peor caso real (campos cerca del máximo) necesita ~231mm de alto.
+const PAGE_H = 240
 const MARGIN = 8
 const CONTENT_W = PAGE_W - MARGIN * 2
 
@@ -76,19 +77,48 @@ const drawSectionTitle = (doc, x, y, text) => {
   doc.text(text.toUpperCase(), x, y)
 }
 
+// jsPDF mide el ancho de línea con la fuente activa al llamar a splitTextToSize —
+// hay que fijar bold/9 ANTES de partir el texto, o el cálculo sale con una fuente
+// más angosta y el texto se sale del ancho real.
+const wrapValue = (doc, value, maxWidth) => {
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(9)
+  return doc.splitTextToSize(sanitizeForPdf(value) || '—', maxWidth)
+}
+
 const drawField = (doc, x, y, maxWidth, label, value) => {
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(7.5)
   doc.setTextColor(120, 120, 120)
   doc.text(label, x, y)
 
-  const lines = doc.splitTextToSize(sanitizeForPdf(value) || '—', maxWidth)
+  const lines = wrapValue(doc, value, maxWidth)
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(9)
   doc.setTextColor(20, 20, 20)
   doc.text(lines, x, y + 4)
 
   return y + 4 + lines.length * 3.6
+}
+
+// Alto que ocupará un drawField sin dibujarlo — se usa para calcular de
+// antemano cuánto necesitan crecer las cajas de Remitente/Destinatario.
+const measureFieldHeight = (doc, maxWidth, value) => {
+  const lines = wrapValue(doc, value, maxWidth)
+  return 4 + lines.length * 3.6
+}
+
+// Caja cuyo alto se calcula según cuántas líneas necesite el texto (no un alto fijo)
+// — así "Contenido del paquete" y "Observaciones" nunca se desbordan del recuadro.
+const drawGrowingBox = (doc, y, label, value, minHeight = 12) => {
+  const lines = wrapValue(doc, value, CONTENT_W - 6)
+  // 10 en vez de 7.5: con descendentes (g, j, p, q, y) la última línea se salía por abajo.
+  const boxH = Math.max(minHeight, 10 + lines.length * 3.6)
+  y = ensureSpace(doc, y, boxH)
+  doc.setDrawColor(180, 180, 180)
+  doc.rect(MARGIN, y, CONTENT_W, boxH)
+  drawField(doc, MARGIN + 3, y + 5.5, CONTENT_W - 6, label, value)
+  return y + boxH + 2
 }
 
 const drawFieldPair = (doc, x, y, halfWidth, label1, value1, label2, value2) => {
@@ -117,7 +147,6 @@ export const descargarGuiaPdf = async (venta) => {
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [PAGE_W, PAGE_H] })
   let y = MARGIN
 
-  // ── Encabezado: logo + datos de la empresa + número de guía + código de barras ──
   let logoW = 0
   try {
     const { dataUrl, ratio } = await loadImageAsDataUrl(logoOsvaldoC)
@@ -165,7 +194,6 @@ export const descargarGuiaPdf = async (venta) => {
   doc.line(MARGIN, y, PAGE_W - MARGIN, y)
   y += 5
 
-  // ── Fecha emisión / entrega / estado ──
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(8)
   doc.setTextColor(90, 90, 90)
@@ -178,11 +206,38 @@ export const descargarGuiaPdf = async (venta) => {
   doc.line(MARGIN, y, PAGE_W - MARGIN, y)
   y += 6
 
-  // ── Cajas Remitente / Destinatario ──
+  // Mismo cálculo de alto que drawGrowingBox (ver arriba) — evita que el texto se salga del recuadro.
+  const nombreRemitente = `${venta.cliente?.nombre || ''} ${venta.cliente?.apellido || ''}`.trim() || '—'
+  const idRemitente = venta.cliente?.numeroIdentificacion
+    ? `${venta.cliente?.tipoIdentificacion || ''} ${venta.cliente.numeroIdentificacion}`.trim()
+    : '—'
+  const telRemitente = venta.cliente?.telefono
+  const emailRemitente = venta.cliente?.email
+  const dirRemitente = venta.cliente?.direccion
+
+  const nombreDestinatario = venta.destinatario?.nombreDestinatario
+  const telDestinatario = venta.destinatario?.telefonoDestinatario
+  const ciudadDestino = venta.ruta?.destino?.ciudad
+    ? `${venta.ruta.destino.ciudad}${venta.ruta.destino.departamento ? ' / ' + venta.ruta.destino.departamento : ''}`
+    : '—'
+  const dirDestinatario = venta.destinatario?.direccionDestinatario
+
   const boxGap = 4
   const boxW = (CONTENT_W - boxGap) / 2
+  const halfW = (boxW - 6) / 2 - 3
+  const leftContentH = 5
+    + measureFieldHeight(doc, boxW - 6, nombreRemitente)
+    + Math.max(measureFieldHeight(doc, halfW, idRemitente), measureFieldHeight(doc, halfW, telRemitente))
+    + measureFieldHeight(doc, boxW - 6, emailRemitente)
+    + measureFieldHeight(doc, boxW - 6, dirRemitente)
+  const rightContentH = 5
+    + measureFieldHeight(doc, boxW - 6, nombreDestinatario)
+    + Math.max(measureFieldHeight(doc, halfW, telDestinatario), measureFieldHeight(doc, halfW, ciudadDestino))
+    + measureFieldHeight(doc, boxW - 6, dirDestinatario)
+  const boxH = Math.max(40, leftContentH + 10, rightContentH + 10)
+
+  y = ensureSpace(doc, y, boxH)
   const boxY = y
-  const boxH = 40
 
   doc.setDrawColor(180, 180, 180)
   doc.rect(MARGIN, boxY, boxW, boxH)
@@ -191,39 +246,25 @@ export const descargarGuiaPdf = async (venta) => {
   let leftY = boxY + 6
   drawSectionTitle(doc, MARGIN + 3, leftY, 'Remitente')
   leftY += 5
-  leftY = drawField(doc, MARGIN + 3, leftY, boxW - 6, 'Nombre',
-    `${venta.cliente?.nombre || ''} ${venta.cliente?.apellido || ''}`.trim() || '—')
+  leftY = drawField(doc, MARGIN + 3, leftY, boxW - 6, 'Nombre', nombreRemitente)
   leftY = drawFieldPair(doc, MARGIN + 3, leftY, (boxW - 6) / 2,
-    'Identificación', venta.cliente?.numeroIdentificacion
-      ? `${venta.cliente?.tipoIdentificacion || ''} ${venta.cliente.numeroIdentificacion}`.trim()
-      : '—',
-    'Teléfono', venta.cliente?.telefono)
-  leftY = drawField(doc, MARGIN + 3, leftY, boxW - 6, 'Email', venta.cliente?.email)
-  drawField(doc, MARGIN + 3, leftY, boxW - 6, 'Dirección', venta.cliente?.direccion)
+    'Identificación', idRemitente, 'Teléfono', telRemitente)
+  leftY = drawField(doc, MARGIN + 3, leftY, boxW - 6, 'Email', emailRemitente)
+  drawField(doc, MARGIN + 3, leftY, boxW - 6, 'Dirección', dirRemitente)
 
   let rightY = boxY + 6
   const rightX = MARGIN + boxW + boxGap + 3
   drawSectionTitle(doc, rightX, rightY, 'Destinatario')
   rightY += 5
-  rightY = drawField(doc, rightX, rightY, boxW - 6, 'Nombre', venta.destinatario?.nombreDestinatario)
+  rightY = drawField(doc, rightX, rightY, boxW - 6, 'Nombre', nombreDestinatario)
   rightY = drawFieldPair(doc, rightX, rightY, (boxW - 6) / 2,
-    'Teléfono', venta.destinatario?.telefonoDestinatario,
-    'Ciudad / Depto. destino',
-    venta.ruta?.destino?.ciudad
-      ? `${venta.ruta.destino.ciudad}${venta.ruta.destino.departamento ? ' / ' + venta.ruta.destino.departamento : ''}`
-      : '—')
-  drawField(doc, rightX, rightY, boxW - 6, 'Dirección', venta.destinatario?.direccionDestinatario)
+    'Teléfono', telDestinatario, 'Ciudad / Depto. destino', ciudadDestino)
+  drawField(doc, rightX, rightY, boxW - 6, 'Dirección', dirDestinatario)
 
   y = boxY + boxH + 6
 
-  // ── Contenido del paquete ──
-  y = ensureSpace(doc, y, 12)
-  doc.setDrawColor(180, 180, 180)
-  doc.rect(MARGIN, y, CONTENT_W, 12)
-  drawField(doc, MARGIN + 3, y + 5.5, CONTENT_W - 6, 'Contenido del paquete', venta.paquete?.descripcionContenido)
-  y += 16
+  y = drawGrowingBox(doc, y, 'Contenido del paquete', venta.paquete?.descripcionContenido)
 
-  // ── Grid de peso / dimensiones / valores ──
   y = ensureSpace(doc, y, 14)
   const dim = venta.paquete && [venta.paquete.alto, venta.paquete.ancho, venta.paquete.profundidad].every(v => v != null)
     ? `${venta.paquete.alto}×${venta.paquete.ancho}×${venta.paquete.profundidad} cm`
@@ -238,29 +279,22 @@ export const descargarGuiaPdf = async (venta) => {
   ]
   const cellWA = CONTENT_W / gridColsA.length
   gridColsA.forEach(([label, value], i) => drawGridCell(doc, MARGIN + cellWA * i, y, cellWA, 14, label, value))
-  y += 18
+  y += 16
 
-  // ── Grid de método de pago / estado de pago / ruta / vehículo ──
+  // ── Grid de método de pago / estado de pago ──
   y = ensureSpace(doc, y, 14)
   const gridColsB = [
     ['Método de pago', venta.metodoPago],
     ['Estado de pago', venta.estadoPago],
-    ['Ruta', venta.ruta?.nombreRuta],
-    ['Vehículo (placa)', venta.ruta?.vehiculo?.placa],
   ]
   const cellWB = CONTENT_W / gridColsB.length
   gridColsB.forEach(([label, value], i) => drawGridCell(doc, MARGIN + cellWB * i, y, cellWB, 14, label, value))
-  y += 18
+  y += 16
 
-  // ── Observaciones ──
   if (venta.observaciones) {
-    y = ensureSpace(doc, y, 14)
-    doc.rect(MARGIN, y, CONTENT_W, 14)
-    drawField(doc, MARGIN + 3, y + 5.5, CONTENT_W - 6, 'Observaciones', venta.observaciones)
-    y += 18
+    y = drawGrowingBox(doc, y, 'Observaciones', venta.observaciones)
   }
 
-  // ── Firmas ──
   y = ensureSpace(doc, y, 20)
   const firmaW = (CONTENT_W - boxGap) / 2
   const firmaY = y;
@@ -277,9 +311,27 @@ export const descargarGuiaPdf = async (venta) => {
     doc.text(label, x + 4, firmaY + 16)
     doc.text('C.C.:', x + 4, firmaY + 18.8)
   })
-  y = firmaY + 24
+  y = firmaY + 22
 
-  // ── Pie legal ──
+  // Ruta/vehículo/conductor van como referencia secundaria (no es info del envío
+  // en sí, solo un respaldo interno de quién lo transportó).
+  const conductorNombre = venta.ruta?.conductor?.usuario
+    ? `${venta.ruta.conductor.usuario.nombre || ''} ${venta.ruta.conductor.usuario.apellido || ''}`.trim()
+    : ''
+  const refOperativa = [
+    venta.ruta?.nombreRuta && `Ruta: ${venta.ruta.nombreRuta}`,
+    venta.ruta?.vehiculo?.placa && `Vehículo: ${venta.ruta.vehiculo.placa}`,
+    conductorNombre && `Conductor: ${conductorNombre}`,
+  ].filter(Boolean).join(' · ')
+  if (refOperativa) {
+    y = ensureSpace(doc, y, 6)
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(6.5)
+    doc.setTextColor(140, 140, 140)
+    doc.text(sanitizeForPdf(refOperativa), MARGIN, y)
+    y += 4
+  }
+
   y = ensureSpace(doc, y, 12)
   doc.setFont('helvetica', 'italic')
   doc.setFontSize(6.5)

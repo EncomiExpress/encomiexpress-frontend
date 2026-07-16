@@ -25,7 +25,8 @@ const tokens = {
     dark: {
       primary:       '#E57373',
       primaryLight:  '#FFCDD2',
-      primaryDark:   '#C62828',
+      // Red 700 (no 800): mismo salto de tono que usa el azul entre primary y primaryDark.
+      primaryDark:   '#D32F2F',
       primaryDarker: '#B71C1C',
       activeBg:      'rgba(229,115,115,0.15)',
       activeGrad:    'rgba(229,115,115,0.08)',  // complemento cálido para gradiente activo
@@ -49,16 +50,18 @@ const tokens = {
       gradientNav:   'linear-gradient(90deg, #CC1818, #1A2E6E, #CC1818)',
     },
     dark: {
-      primary:       '#4FC3F7',
-      primaryLight:  '#B3E5FC',
-      primaryDark:   '#0288D1',
-      primaryDarker: '#01579B',
-      activeBg:      'rgba(79,195,247,0.15)',
-      activeGrad:    'rgba(79,195,247,0.08)',
+      // Desaturado a ~69% (antes 91%) para igualar la suavidad del rojo en modo
+      // oscuro — sin esto el azul se sentía mucho más eléctrico que el rojo.
+      primary:       '#64BBE2',
+      primaryLight:  '#BCE2F3',
+      primaryDark:   '#257EAE',
+      primaryDarker: '#155587',
+      activeBg:      'rgba(100,187,226,0.15)',
+      activeGrad:    'rgba(100,187,226,0.08)',
       hoverBg:       'rgba(255,255,255,0.06)',
-      hoverIcon:     '#B3E5FC',
+      hoverIcon:     '#BCE2F3',
       hoverText:     '#FFFFFF',
-      gradientNav:   'linear-gradient(90deg, #E57373, #4FC3F7, #E57373)',
+      gradientNav:   'linear-gradient(90deg, #E57373, #64BBE2, #E57373)',
     },
   },
 }
@@ -301,6 +304,16 @@ export const getTheme = (mode = 'light', paletteKey = 'red') => {
         styleOverrides: {
           root: {
             '&.Mui-focused': { color: pal.primary.main },
+          },
+        },
+      },
+      MuiPaper: {
+        styleOverrides: {
+          root: {
+            // MUI le suma a cualquier Paper con elevación (Dialog, Menu, Popover...) una
+            // superposición blanca semitransparente en modo oscuro que se ve gris lavado —
+            // se quita para que todos usen background.paper/background.default directamente.
+            backgroundImage: 'none',
           },
         },
       },

@@ -31,6 +31,16 @@ const ModalConfirmarEstado = ({ open, nuevoEstado, info, ruta, vehiculo, conduct
     const theme = useTheme()
     const { color } = getEstadoColorRuta(nuevoEstado)
     const [detalle, setDetalle] = useState({ anticipos: [], ventas: [], loading: false })
+    const [confirming, setConfirming] = useState(false)
+
+    const handleConfirm = async () => {
+        setConfirming(true)
+        try {
+            await onConfirm()
+        } finally {
+            setConfirming(false)
+        }
+    }
 
     useEffect(() => {
         if (!open) return
@@ -144,9 +154,12 @@ const ModalConfirmarEstado = ({ open, nuevoEstado, info, ruta, vehiculo, conduct
                                     {/* Sección 2: Anticipo */}
                                     {detalle.anticipos.length > 0 && (
                                         <>
-                                            <Typography variant="body2" color={theme.palette.text.primary} sx={{ mb: 1 }}>
+                                            <Typography variant="body2" color={theme.palette.text.primary} sx={{ mb: 0.5 }}>
                                                 El anticipo entregado pasará a{' '}
                                                 <Box component="span" sx={{ color: getEstadoColorAnticipo('En Legalización').color }}>"En Legalización"</Box>
+                                            </Typography>
+                                            <Typography variant="caption" color={theme.palette.text.secondary} sx={{ mb: 1, display: 'block' }}>
+                                                Desde ese momento, la ruta/conductor y el valor del anticipo no se podrán modificar.
                                             </Typography>
                                             <Paper elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 2, overflow: 'hidden', mb: 2 }}>
                                                 {detalle.anticipos.map((a, i) => {
@@ -239,13 +252,13 @@ const ModalConfirmarEstado = ({ open, nuevoEstado, info, ruta, vehiculo, conduct
                 }}>
                     Cancelar
                 </Button>
-                <Button onClick={onConfirm} variant="contained" disableRipple sx={{
-                    textTransform: 'none', borderRadius: 2, fontWeight: 600,
+                <Button onClick={handleConfirm} disabled={confirming} variant="contained" disableRipple sx={{
+                    textTransform: 'none', borderRadius: 2, fontWeight: 600, minWidth: 140,
                     px: 5, py: 0.76, fontSize: '0.875rem',
                     backgroundColor: color,
                     '&:hover': { backgroundColor: color, filter: 'brightness(0.88)' },
                 }}>
-                    Confirmar
+                    {confirming ? <CircularProgress size={18} sx={{ color: 'white' }} /> : 'Confirmar'}
                 </Button>
             </Box>
         </Dialog>

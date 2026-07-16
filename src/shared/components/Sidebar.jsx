@@ -12,7 +12,9 @@ import {
   ChevronLeft as ChevronLeftIcon,
 } from '@mui/icons-material'
 import logo from '../../assets/logo.png'
+import logoDark from '../../assets/logoDark.png'
 import logoEE from '../../assets/logoEE.png'
+import logoEEDark from '../../assets/logoEEDark.png'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import { useDarkMode } from '../contexts/ThemeContext.jsx'
 import LogoutConfirmDialog from './LogoutConfirmDialog.jsx'
@@ -245,7 +247,7 @@ const Sidebar = ({ collapsed, onToggleCollapsed }) => {
         }}>
           <Box
             component="img"
-            src={logo}
+            src={darkMode ? logoDark : logo}
             alt="EncomiExpress"
             sx={{
               width: '100%', height: 'auto', objectFit: 'contain', display: 'block',
@@ -259,7 +261,7 @@ const Sidebar = ({ collapsed, onToggleCollapsed }) => {
           />
           <Box
             component="img"
-            src={logoEE}
+            src={darkMode ? logoEEDark : logoEE}
             alt="EE"
             sx={{
               width: '100%', height: 'auto', objectFit: 'contain', display: 'block',

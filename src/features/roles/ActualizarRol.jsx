@@ -1,6 +1,6 @@
 import { useTheme } from '@mui/material/styles'
 import { useState, useEffect } from 'react'
-import { Box, Typography, Paper, FormControlLabel, Checkbox, Grid, Alert, Dialog, DialogTitle, DialogContent, IconButton, Button } from '@mui/material'
+import { Box, Typography, Paper, FormControlLabel, Checkbox, Grid, Alert, Dialog, DialogTitle, DialogContent, IconButton, Button, CircularProgress } from '@mui/material'
 import { Security, Close, SaveOutlined } from '@mui/icons-material'
 import { MODULOS, ROLES, useAuth } from '../../shared/contexts/AuthContext.jsx'
 import { getErrorMessage } from '../../shared/utils/errorMessage.js'
@@ -108,6 +108,11 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
     }
   }, [formData, formOriginal])
 
+  const cerrar = () => {
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+    onClose()
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setIntentoGuardar(true)
@@ -142,7 +147,7 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
 
       if (respuesta.success) {
         onSuccess && onSuccess()
-        onClose()
+        cerrar()
       } else {
         setError(respuesta.message || 'Error al actualizar el rol')
       }
@@ -154,7 +159,7 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
   }
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth
+    <Dialog open={open} onClose={cerrar} maxWidth="md" fullWidth
       slotProps={{ paper: { sx: { borderRadius: 3, p: 0, maxHeight: '90vh' } } }}>
       <DialogTitle sx={{ m: 0, p: 2, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${theme.palette.divider}` }}>
         <Box>
@@ -165,7 +170,7 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
             Modifica los permisos del rol.
           </Typography>
         </Box>
-        <IconButton onClick={onClose} sx={{ color: theme.palette.text.secondary }}>
+        <IconButton onClick={cerrar} sx={{ color: theme.palette.text.secondary }}>
           <Close />
         </IconButton>
       </DialogTitle>
@@ -218,7 +223,7 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
                   border: `1px solid ${theme.palette.divider}`,
                   borderRadius: 2,
                   mb: 1.5,
-                  backgroundColor: '#F8F9FA'
+                  backgroundColor: theme.palette.background.muted
                 }}
               >
                 <Box
@@ -228,7 +233,7 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
                     justifyContent: 'space-between',
                     p: 1.5,
                     borderBottom: `1px solid ${theme.palette.divider}`,
-                    backgroundColor: '#F8F9FA'
+                    backgroundColor: theme.palette.background.muted
                   }}
                 >
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -260,7 +265,7 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
                   />
                 </Box>
 
-                <Box sx={{ p: 1.5, backgroundColor: 'white' }}>
+                <Box sx={{ p: 1.5, backgroundColor: theme.palette.background.paper }}>
                   <Grid container spacing={0.5}>
                     {modulo.permisos.map((permiso) => (
                       <Grid size={{ xs: 6, sm: 4, md: 3 }} key={permiso}>
@@ -295,7 +300,7 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         mb: 2, pt: 2, px: 3, borderTop: `1px solid ${theme.palette.divider}`,
       }}>
-          <Button onClick={onClose} disableRipple
+          <Button onClick={cerrar} disableRipple
             sx={{
               textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 2,
               border: `1px solid ${theme.palette.divider}`,
@@ -309,14 +314,14 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
             disabled={enviando}
             endIcon={enviando ? undefined : <SaveOutlined />}
             sx={{
-              textTransform: 'none', borderRadius: 2, fontWeight: 600,
+              textTransform: 'none', borderRadius: 2, fontWeight: 600, minWidth: 170,
               backgroundColor: theme.palette.primary.main,
               boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
               '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}` },
               '&.Mui-disabled': { backgroundColor: theme.palette.divider, color: theme.palette.text.disabled },
             }}
           >
-            {enviando ? 'Guardando...' : 'Guardar Cambios'}
+            {enviando ? <CircularProgress size={18} color="inherit" /> : 'Guardar Cambios'}
           </Button>
         </Box>
       </Box>

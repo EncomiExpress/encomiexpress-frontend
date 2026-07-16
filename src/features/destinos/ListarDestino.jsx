@@ -1,13 +1,13 @@
 import { useTheme, alpha } from '@mui/material/styles'
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { getPageOfDestino } from '../../shared/services/destinoService.js'
+import { getPageOfDestino, getDestinos } from '../../shared/services/destinoService.js'
 import {
     Box, Typography, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, Chip, IconButton,
     TextField, InputAdornment,
     Tooltip, Button, CircularProgress,
-    Select, MenuItem, FormControl, Pagination, TableSortLabel,
+    Select, MenuItem, FormControl, TableSortLabel,
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
@@ -17,9 +17,15 @@ import ClearIcon from '@mui/icons-material/Clear'
 import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined'
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import ToggleSwitch from '../../shared/components/ToggleSwitch.jsx'
+import TablaPaginacionFooter from '../../shared/components/TablaPaginacionFooter.jsx'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined'
+import ScaleOutlinedIcon from '@mui/icons-material/ScaleOutlined'
+import CloseIcon from '@mui/icons-material/Close'
+import UnfoldMoreOutlinedIcon from '@mui/icons-material/UnfoldMoreOutlined'
 import { useDestino } from '../../shared/contexts/DestinoContext.jsx'
+import { useConfiguracion } from '../../shared/contexts/ConfiguracionContext.jsx'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import RegistrarDestino from './RegistrarDestino'
@@ -120,9 +126,9 @@ const getFilterMenuProps = (theme) => ({
                 '& .MuiMenuItem-root': {
                     fontSize: '0.82rem', py: 0.9, px: 2,
                     display: 'flex', justifyContent: 'space-between', gap: 2,
-                    '&:hover': { backgroundColor: theme.palette.primary.light },
+                    '&:hover': { backgroundColor: theme.palette.primary.activeBg },
                     '&.Mui-selected': { backgroundColor: 'transparent', fontWeight: 600, color: theme.palette.text.primary },
-                    '&.Mui-selected:hover': { backgroundColor: theme.palette.primary.light },
+                    '&.Mui-selected:hover': { backgroundColor: theme.palette.primary.activeBg },
                 },
             },
         },
@@ -139,13 +145,25 @@ const ListarDestino = () => {
     const { showToast } = useToast()
     const [confirmInhabilitar, setConfirmInhabilitar] = useState({ open: false, id: null, ciudad: '', habilitadoActual: null })
     const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
+    const filtroContainerRef = useRef(null)
+    const filtroBtnRefs = useRef([])
+    const [filtroPillStyle, setFiltroPillStyle] = useState({ left: 0, width: 0 })
+
+    useLayoutEffect(() => {
+        const activeIndex = FILTROS.findIndex(f => f.value === filtroHabilitado)
+        const btn = filtroBtnRefs.current[activeIndex]
+        const container = filtroContainerRef.current
+        if (btn && container) {
+            setFiltroPillStyle({ left: btn.offsetLeft, width: btn.offsetWidth })
+        }
+    }, [filtroHabilitado])
     const [filtroDepartamento, setFiltroDepartamento] = useState('')
     const [page, setPage] = useState(1)
     const [rowsPerPage, setRowsPerPage] = useState(5)
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [destinoEditar, setDestinoEditar] = useState(null)
-    const [sortBy, setSortBy] = useState({ field: 'ciudad', dir: 'asc' })
+    const [sortBy, setSortBy] = useState({ field: '', dir: '' })
     const initialLoad = useRef(true)
     const [searchParams] = useSearchParams()
     const highlightId = searchParams.get('highlight')
@@ -153,28 +171,83 @@ const ListarDestino = () => {
     const hasScrolled = useRef(false)
     const hasNavigated = useRef(false)
 
-    const { destinos, total, loading, error, fetchDestinos, toggleHabilitado } = useDestino()
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState(null)
+    const [exportando, setExportando] = useState(false)
+    const { destinos, total, fetchDestinos, toggleHabilitado } = useDestino()
+    const { tarifaPorKg, actualizarTarifaPorKg } = useConfiguracion()
     const { usuario, tienePermiso, PERMISOS } = useAuth()
     const navigate = useNavigate()
+
+    const [editandoTarifa, setEditandoTarifa] = useState(false)
+    const [tarifaInput, setTarifaInput] = useState('')
+    const [guardandoTarifa, setGuardandoTarifa] = useState(false)
+
+    const handleAbrirEdicionTarifa = () => {
+        setTarifaInput(String(tarifaPorKg))
+        setEditandoTarifa(true)
+    }
+
+    const handleCancelarEdicionTarifa = () => {
+        setEditandoTarifa(false)
+        setTarifaInput('')
+    }
+
+    const handleGuardarTarifa = async () => {
+        const valor = parseFloat(tarifaInput)
+        if (isNaN(valor) || valor < 0) {
+            showToast('Ingresa un valor numérico válido', 'error')
+            return
+        }
+        setGuardandoTarifa(true)
+        try {
+            await actualizarTarifaPorKg(valor)
+            showToast('Tarifa por kg actualizada correctamente', 'success')
+            setEditandoTarifa(false)
+        } catch (err) {
+            showToast(err.message || 'No se pudo actualizar la tarifa por kg.', 'error')
+        } finally {
+            setGuardandoTarifa(false)
+        }
+    }
 
     useEffect(() => {
       const t = setTimeout(() => setDebouncedSearch(searchTerm), 300)
       return () => clearTimeout(t)
     }, [searchTerm])
 
-    const fetchDestinosBackend = useCallback(() => {
-      fetchDestinos(undefined, {
+    const fetchDestinosBackend = useCallback((signal) => {
+      return fetchDestinos(signal, {
         page,
         limit: rowsPerPage,
         habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
         departamento: filtroDepartamento || undefined,
-        sortBy: `${sortBy.field}.${sortBy.dir}`,
+        sortBy: sortBy.field ? `${sortBy.field}.${sortBy.dir}` : undefined,
         q: debouncedSearch.trim() || undefined,
       })
     }, [page, rowsPerPage, filtroHabilitado, filtroDepartamento, debouncedSearch, sortBy, fetchDestinos])
 
     useEffect(() => {
-      fetchDestinosBackend()
+      const controller = new AbortController()
+      let cancelled = false
+
+      const cargar = async () => {
+        setLoading(true)
+        setError(null)
+        try {
+          await fetchDestinosBackend(controller.signal)
+        } catch (err) {
+          if (!cancelled) setError(err.message)
+        } finally {
+          if (!cancelled) setLoading(false)
+        }
+      }
+
+      cargar()
+      return () => {
+        cancelled = true
+        controller.abort()
+      }
     }, [fetchDestinosBackend])
 
     useEffect(() => {
@@ -198,10 +271,11 @@ const ListarDestino = () => {
     }, [highlightId])
 
     const handleSort = (field) => {
-        setSortBy(prev => prev.field === field
-            ? { field, dir: prev.dir === 'asc' ? 'desc' : 'asc' }
-            : { field, dir: 'asc' }
-        )
+        setSortBy(prev => {
+            if (prev.field !== field) return { field, dir: 'asc' }
+            if (prev.dir === 'asc') return { field, dir: 'desc' }
+            return { field: '', dir: '' }
+        })
         setPage(1)
     }
 
@@ -226,22 +300,30 @@ const ListarDestino = () => {
         }
     }
 
-    const handleExportar = () => {
-        const rows = destinos.map(destino => ({
-            'ID': destino.idDestino,
-            'Ciudad': destino.ciudad,
-            'Departamento': destino.departamento,
-            'Dirección': destino.direccion,
-            'Estado': destino.habilitado === false ? 'Inhabilitado' : 'Habilitado',
-        }))
-
-        exportToExcel({ data: rows, fileName: 'destinos', sheetName: 'Destinos' })
+    const handleExportar = async () => {
+        setExportando(true)
+        try {
+            const res = await getDestinos(undefined, {
+                limit: 100000,
+                habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
+                departamento: filtroDepartamento || undefined,
+                q: debouncedSearch.trim() || undefined,
+            })
+            const rows = (res?.data || []).map(destino => ({
+                'ID': destino.idDestino,
+                'Ciudad': destino.ciudad,
+                'Departamento': destino.departamento,
+                'Tarifa base': destino.tarifaBase,
+                'Estado': destino.habilitado === false ? 'Inhabilitado' : 'Habilitado',
+            }))
+            await exportToExcel({ data: rows, fileName: 'destinos', sheetName: 'Destinos', themeColor: theme.palette.primary.main })
+        } catch (err) {
+            showToast(err.message || 'Error al exportar.', 'error')
+        } finally {
+            setExportando(false)
+        }
     }
 
-    const totalPages = Math.max(1, Math.ceil(total / rowsPerPage))
-    const safePage = Math.min(page, totalPages)
-    const from = total === 0 ? 0 : (safePage - 1) * rowsPerPage + 1
-    const to = Math.min(safePage * rowsPerPage, total)
 
     return (
         <Box sx={{ p: 3.5 }}>
@@ -257,10 +339,77 @@ const ListarDestino = () => {
                     </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Box sx={{
+                        display: 'flex', alignItems: 'center', gap: 0.75,
+                        borderRadius: 2, border: `1px solid ${theme.palette.divider}`,
+                        backgroundColor: theme.palette.background.paper,
+                        pl: 0.75, pr: 1.25, height: 40,
+                    }}>
+                        <Tooltip title="Valor global usado en Ventas: tarifa del destino + peso × esta tarifa">
+                            <Box sx={{
+                                width: 26, height: 26, borderRadius: 1.5, flexShrink: 0,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                backgroundColor: theme.palette.primary.light,
+                            }}>
+                                <ScaleOutlinedIcon sx={{ fontSize: 15, color: theme.palette.primary.darker }} />
+                            </Box>
+                        </Tooltip>
+                        <Typography variant="body2" color={theme.palette.text.secondary} sx={{ fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+                            Tarifa por kg
+                        </Typography>
+                        {editandoTarifa ? (
+                            <>
+                                <TextField
+                                    size="small" autoFocus value={tarifaInput} variant="standard"
+                                    onChange={e => setTarifaInput(e.target.value.replace(/[^0-9.]/g, ''))}
+                                    slotProps={{ input: { disableUnderline: false, startAdornment: <InputAdornment position="start">$</InputAdornment> } }}
+                                    sx={{ width: 90 }}
+                                />
+                                <Tooltip title="Guardar">
+                                    <span>
+                                        <IconButton size="small" onClick={handleGuardarTarifa} disabled={guardandoTarifa}
+                                            sx={{ color: theme.palette.primary.main, p: 0.5 }}>
+                                            {guardandoTarifa ? <CircularProgress size={14} /> : <CheckOutlinedIcon sx={{ fontSize: 16 }} />}
+                                        </IconButton>
+                                    </span>
+                                </Tooltip>
+                                <Tooltip title="Cancelar">
+                                    <IconButton size="small" onClick={handleCancelarEdicionTarifa} disabled={guardandoTarifa}
+                                        sx={{ color: theme.palette.text.secondary, p: 0.5 }}>
+                                        <CloseIcon sx={{ fontSize: 16 }} />
+                                    </IconButton>
+                                </Tooltip>
+                            </>
+                        ) : (
+                            <>
+                                <Tooltip title="Valor global usado en Ventas: tarifa del destino + peso × esta tarifa">
+                                    <Chip
+                                        label={`$${Number(tarifaPorKg).toLocaleString('es-CO')} / kg`}
+                                        size="small"
+                                        sx={{
+                                            fontWeight: 600, backgroundColor: theme.palette.primary.light,
+                                            color: theme.palette.primary.darker, fontSize: '0.75rem', height: 24,
+                                        }}
+                                    />
+                                </Tooltip>
+                                {tienePermiso(PERMISOS.ACTUALIZAR_DESTINO) ? (
+                                    <Tooltip title="Desbloquear para editar">
+                                        <IconButton size="small" onClick={handleAbrirEdicionTarifa}
+                                            sx={{ color: theme.palette.text.secondary, p: 0.5, '&:hover': { backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker } }}>
+                                            <LockOutlinedIcon sx={{ fontSize: 14 }} />
+                                        </IconButton>
+                                    </Tooltip>
+                                ) : (
+                                    <LockOutlinedIcon sx={{ fontSize: 14, color: theme.palette.text.disabled }} />
+                                )}
+                            </>
+                        )}
+                    </Box>
                     <Button
                         onClick={handleExportar}
+                        disabled={exportando}
                         variant="contained"
-                        startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 18 }} />}
+                        startIcon={exportando ? <CircularProgress size={16} sx={{ color: 'inherit' }} /> : <FileDownloadOutlinedIcon sx={{ fontSize: 18 }} />}
                         sx={{
                             backgroundColor: theme.palette.background.paper,
                             color: theme.palette.text.primary,
@@ -271,14 +420,14 @@ const ListarDestino = () => {
                             border: `1px solid ${theme.palette.divider}`,
                             boxShadow: 'none',
                             '&:hover': {
-                                backgroundColor: theme.palette.primary.light,
+                                backgroundColor: theme.palette.primary.activeBg,
                                 color: theme.palette.text.primary,
                                 border: `1px solid ${theme.palette.divider}`,
                                 boxShadow: 'none',
                             },
                         }}
                     >
-                        Exportar
+                        {exportando ? 'Exportando...' : 'Exportar'}
                     </Button>
 
                     {tienePermiso(PERMISOS.REGISTRAR_DESTINO) && (
@@ -304,24 +453,38 @@ const ListarDestino = () => {
 
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <Box sx={{
+                    <Box ref={filtroContainerRef} sx={{
+                        position: 'relative',
                         display: 'inline-flex',
                         backgroundColor: theme.palette.primary.light,
                         borderRadius: 4,
                         p: '4px',
                         gap: '5px',
                     }}>
-                        {FILTROS.map(f => (
-                            <Button key={f.value} onClick={() => { setFiltroHabilitado(f.value); setPage(1) }}
+                        <Box sx={{
+                            position: 'absolute',
+                            top: '4px',
+                            bottom: '4px',
+                            left: `${filtroPillStyle.left}px`,
+                            width: `${filtroPillStyle.width}px`,
+                            borderRadius: 3,
+                            backgroundColor: theme.palette.background.paper,
+                            boxShadow: '0 1px 4px rgba(0,0,0,0.12)',
+                            transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                            pointerEvents: 'none',
+                        }} />
+                        {FILTROS.map((f, i) => (
+                            <Button key={f.value} ref={el => { filtroBtnRefs.current[i] = el }} onClick={() => { setFiltroHabilitado(f.value); setPage(1) }}
                                 size="small" disableElevation disableRipple
                                 sx={{
+                                    position: 'relative', zIndex: 1,
                                     borderRadius: 3, textTransform: 'none', fontSize: '0.75rem', px: 2, py: 0.5, minWidth: 0,
                                     fontWeight: filtroHabilitado === f.value ? 600 : 400,
-                                    backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent',
+                                    backgroundColor: 'transparent',
                                     color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.primary.darker,
-                                    boxShadow: filtroHabilitado === f.value ? '0 1px 4px rgba(0,0,0,0.12)' : 'none',
+                                    transition: 'color 0.3s ease',
                                     border: 'none',
-                                    '&:hover': { backgroundColor: filtroHabilitado === f.value ? theme.palette.background.paper : 'transparent', color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.primary.dark, border: 'none' },
+                                    '&:hover': { backgroundColor: 'transparent', color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.primary.dark, border: 'none' },
                                 }}>
                                 {f.label}
                             </Button>
@@ -391,13 +554,15 @@ const ListarDestino = () => {
                                 <TableCell sx={thStyle}>
                                     <TableSortLabel
                                         active={sortBy.field === 'ciudad'}
-                                        direction={sortBy.field === 'ciudad' ? sortBy.dir : 'asc'}
+                                        direction={sortBy.dir === 'desc' ? 'desc' : 'asc'}
                                         onClick={() => handleSort('ciudad')}
+                                        IconComponent={sortBy.field === 'ciudad' ? undefined : UnfoldMoreOutlinedIcon}
                                         sx={{
                                             color: 'inherit',
+                                            '&:hover': { color: 'inherit' },
                                             '&.Mui-active': { color: theme.palette.primary.main },
-                                            '& .MuiTableSortLabel-icon': { opacity: 0.4, fontSize: 16 },
-                                            '&.Mui-active .MuiTableSortLabel-icon': { opacity: 1 },
+                                            '&.Mui-active:hover': { color: theme.palette.primary.main },
+                                            '& .MuiTableSortLabel-icon': { opacity: 1, fontSize: 16 },
                                         }}
                                     >
                                         Ciudad
@@ -504,19 +669,29 @@ const ListarDestino = () => {
                                                 {tienePermiso(PERMISOS.CONSULTAR_DESTINO) && (
                                                     <Tooltip title="Ver detalle">
                                                         <IconButton size="small" onClick={() => setDestinoVer(destino)}
-                                                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}>
+                                                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}>
                                                             <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
                                                         </IconButton>
                                                     </Tooltip>
                                                 )}
                                                 {tienePermiso(PERMISOS.ACTUALIZAR_DESTINO) && (
-                                                    <Tooltip title="Editar">
-                                                        <IconButton size="small"
-                                                            onClick={() => { setDestinoEditar(destino); setModalActualizarOpen(true) }}
-                                                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.light } }}>
-                                                            <EditOutlinedIcon sx={{ fontSize: 18 }} />
-                                                        </IconButton>
-                                                    </Tooltip>
+                                                    destino.habilitado === false ? (
+                                                        <Tooltip title="Habilita el registro para poder editarlo">
+                                                            <span>
+                                                                <IconButton size="small" disabled>
+                                                                    <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                                                                </IconButton>
+                                                            </span>
+                                                        </Tooltip>
+                                                    ) : (
+                                                        <Tooltip title="Editar">
+                                                            <IconButton size="small"
+                                                                onClick={() => { setDestinoEditar(destino); setModalActualizarOpen(true) }}
+                                                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}>
+                                                                <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                    )
                                                 )}
                                                 {tienePermiso(PERMISOS.INHABILITAR_DESTINO) && (
                                                     <ToggleSwitch id={destino.idDestino} checked={destino.habilitado} onChange={() => handleToggleHabilitado(destino.idDestino, destino.habilitado, destino.ciudad)} />
@@ -532,98 +707,13 @@ const ListarDestino = () => {
                 </TableContainer>
             </Paper>
 
-            <Box sx={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                px: 0.5, pt: 1.5,
-            }}>
-                <Typography variant="body2" color={theme.palette.text.secondary}>
-                    Mostrando {from}–{to} de {total} resultado{total !== 1 ? 's' : ''}
-                </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography variant="body2" color={theme.palette.text.secondary} fontWeight={500}>
-                            Filas
-                        </Typography>
-                        <Select
-                            value={rowsPerPage}
-                            onChange={e => { setRowsPerPage(Number(e.target.value)); setPage(1) }}
-                            size="small"
-                            renderValue={(value) => value}
-                            IconComponent={KeyboardArrowDownOutlinedIcon}
-                            sx={{
-                                fontSize: '0.82rem',
-                                borderRadius: 2,
-                                '& .MuiSelect-select': { py: 0.6, pl: 1.5, pr: '28px !important' },
-                                '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
-                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
-                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                    borderColor: theme.palette.primary.main,
-                                    borderWidth: '1px',
-                                },
-                                '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` },
-                                '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
-                                '& .MuiTouchRipple-root': { display: 'none' },
-                            }}
-                            MenuProps={{
-                                slotProps: {
-                                    paper: {
-                                        sx: {
-                                            borderRadius: 2,
-                                            boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
-                                            mt: 0.5,
-                                            minWidth: 80,
-                                            '& .MuiMenuItem-root': {
-                                                fontSize: '0.82rem', py: 0.9, px: 2,
-                                                display: 'flex', justifyContent: 'space-between', gap: 2,
-                                                '&:hover': { backgroundColor: theme.palette.primary.light },
-                                                '&.Mui-selected': { backgroundColor: 'transparent', fontWeight: 600, color: theme.palette.text.primary },
-                                                '&.Mui-selected:hover': { backgroundColor: theme.palette.primary.light },
-                                            },
-                                        },
-                                    },
-                                },
-                            }}
-                        >
-                            {[5, 10, 25].map(n => (
-                                <MenuItem key={n} value={n}>{n}
-                                    {rowsPerPage === n && <CheckOutlinedIcon sx={{ fontSize: 14, color: theme.palette.text.secondary }} />}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </Box>
-                    <Pagination
-                        count={totalPages}
-                        page={safePage}
-                        onChange={(_, val) => setPage(val)}
-                        size="small"
-                        shape="rounded"
-                        sx={{
-                            '& .MuiPaginationItem-root': {
-                                fontSize: '0.82rem',
-                                borderRadius: '8px',
-                                minWidth: 34,
-                                height: 34,
-                                mx: 0.2,
-                                color: theme.palette.text.primary,
-                                border: `1px solid ${theme.palette.divider}`,
-                                '& .MuiTouchRipple-root': { display: 'none' },
-                            },
-                            '& .MuiPaginationItem-ellipsis': { border: 'none' },
-                            '& .MuiPaginationItem-root.Mui-selected': {
-                                backgroundColor: theme.palette.primary.main,
-                                borderColor: theme.palette.primary.main,
-                                color: 'white',
-                                fontWeight: 600,
-                                '&:hover': { backgroundColor: theme.palette.primary.darker },
-                            },
-                            '& .MuiPaginationItem-root:hover:not(.Mui-selected)': {
-                                backgroundColor: theme.palette.background.subtle,
-                                borderColor: theme.palette.divider,
-                            },
-                        }}
-                    />
-                </Box>
-            </Box>
+            <TablaPaginacionFooter
+                total={total}
+                page={page}
+                rowsPerPage={rowsPerPage}
+                onPageChange={setPage}
+                onRowsPerPageChange={(n) => { setRowsPerPage(n); setPage(1) }}
+            />
 
             {destinoVer && (
                 <ModalConsultarDestino destino={destinoVer} onClose={() => setDestinoVer(null)} />
@@ -634,7 +724,7 @@ const ListarDestino = () => {
                 open={modalRegistrarOpen}
                 onClose={() => setModalRegistrarOpen(false)}
                 onSuccess={() => {
-                    fetchDestinos()
+                    fetchDestinosBackend()
                     showToast('Destino registrado correctamente', 'success')
                 }}
             />
@@ -644,7 +734,7 @@ const ListarDestino = () => {
                 onClose={() => { setModalActualizarOpen(false); setDestinoEditar(null) }}
                 destino={destinoEditar}
                 onSuccess={() => {
-                    fetchDestinos()
+                    fetchDestinosBackend()
                     showToast('Destino actualizado correctamente', 'success')
                 }}
             />

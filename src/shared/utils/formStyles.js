@@ -6,7 +6,7 @@ export const formFieldStyles = (theme) => ({
     '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` },
     '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
     '& input:-webkit-autofill': {
-      WebkitBoxShadow: `0 0 0 1000px ${theme.palette.primary.light} inset`,
+      WebkitBoxShadow: `0 0 0 1000px ${theme.palette.background.input} inset`,
       WebkitTextFillColor: theme.palette.text.primary,
     },
   },

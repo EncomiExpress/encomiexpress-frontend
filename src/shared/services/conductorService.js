@@ -21,17 +21,6 @@ export const getConductores = async (signal, params = {}) => {
 };
 
 /**
- * Obtener conductor por ID
- * GET /api/conductores/:id
- */
-export const getConductorById = async (id, signal) => {
-  return await fetchWithAuth(`/conductores/${id}`, {
-    method: 'GET',
-    signal,
-  });
-};
-
-/**
  * Registrar nuevo conductor
  * POST /api/conductores
  */
@@ -65,16 +54,6 @@ export const cambiarEstadoConductor = async (id, estado) => {
 };
 
 /**
- * Eliminar conductor (inhabilitar)
- * DELETE /api/conductores/:id
- */
-export const deleteConductor = async (id) => {
-  return await fetchWithAuth(`/conductores/${id}`, {
-    method: 'DELETE',
-  });
-};
-
-/**
  * Habilitar/Inhabilitar conductor
  * PATCH /api/conductores/:id/toggle-habilitado
  */
@@ -89,10 +68,8 @@ export const getPageOfConductor = (id, limit = 10) =>
 
 export default {
   getConductores,
-  getConductorById,
   createConductor,
   updateConductor,
-  deleteConductor,
   toggleHabilitadoConductor,
   getPageOfConductor,
 };

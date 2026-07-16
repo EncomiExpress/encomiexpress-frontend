@@ -14,6 +14,7 @@ import AccessTimeOutlinedIcon from '@mui/icons-material/AccessTimeOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import RouteIcon from '@mui/icons-material/Route'
 import { getEstadoColorRuta, getAnticipoEstadoDot, getVentaEstadoDot } from '../../shared/utils/estadoColors.js'
+import { formatFecha } from '../../shared/utils/formatters.js'
 
 const formatHora12 = (hora) => {
     if (!hora) return null
@@ -37,8 +38,8 @@ const renderEstadoRuta = (estado) => {
 const CampoFila = ({ label, value, esChip }) => {
     const theme = useTheme()
     return (
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
-            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>{label}</Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 2, py: 0.9 }}>
+            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500, flexShrink: 0 }}>{label}</Typography>
             {esChip ? (
                 <Chip
                     label={value || '—'}
@@ -46,7 +47,8 @@ const CampoFila = ({ label, value, esChip }) => {
                     sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem' }}
                 />
             ) : (
-                <Typography variant="body2" fontWeight={500} color={theme.palette.text.medium}>
+                <Typography variant="body2" fontWeight={500} color={theme.palette.text.medium}
+                    sx={{ flex: 1, minWidth: 0, textAlign: 'right', wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
                     {value ?? '—'}
                 </Typography>
             )}
@@ -172,11 +174,9 @@ const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
                                     onClick={() => window.open(`/transporte/destinos?highlight=${ruta.idDestino}`, '_blank')}
                                     sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem', cursor: 'pointer', '&:hover': { filter: 'brightness(0.92)' } }} />
                             </Box>
-                            <CampoFila label="Fecha salida" value={ruta.fechaSalida || '—'} />
+                            <CampoFila label="Fecha salida" value={formatFecha(ruta.fechaSalida)} />
                             <CampoFila label="Hora salida" value={formatHora12(ruta.horaSalida) || '—'} />
-                            {ruta.horaLlegadaEstimada && (
-                                <CampoFila label="Hora llegada est." value={formatHora12(ruta.horaLlegadaEstimada)} />
-                            )}
+                            <CampoFila label="Hora llegada est." value={formatHora12(ruta.horaLlegadaEstimada) || '—'} />
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Estado</Typography>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
@@ -186,9 +186,7 @@ const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
                                     </Typography>
                                 </Box>
                             </Box>
-                            {ruta.observaciones && (
-                                <CampoFila label="Observaciones" value={ruta.observaciones} />
-                            )}
+                            <CampoFila label="Observaciones" value={ruta.observaciones} />
                         </Paper>
                     </Box>
                 </Box>

@@ -1,6 +1,6 @@
 ﻿import { useTheme } from '@mui/material/styles'
 import { useEffect, useState } from 'react'
-import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, TextField, Autocomplete, Dialog, DialogTitle, DialogContent, IconButton, Divider } from '@mui/material'
+import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, TextField, Autocomplete, Dialog, DialogTitle, DialogContent, IconButton, Divider, CircularProgress } from '@mui/material'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined'
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
@@ -16,14 +16,16 @@ import CloseIcon from '@mui/icons-material/Close'
 import { useVentas } from '../../shared/contexts/VentaContext.jsx'
 import { useClientes } from '../../shared/contexts/ClienteContext.jsx'
 import { useRutaProgramacion } from '../../shared/contexts/RutaProgramacionContext.jsx'
+import { useConfiguracion } from '../../shared/contexts/ConfiguracionContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { FormField, FormSelect } from '../../shared/components/FormularioEstandarizado.jsx'
 import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import { normalizarTexto } from '../../shared/utils/duplicados.js'
+import { formatFecha } from '../../shared/utils/formatters.js'
 
-const steps = ['Partes', 'Paquete', 'Envío', 'Pago', 'Confirmación']
+const steps = ['Participantes', 'Paquete', 'Envío', 'Pago', 'Confirmación']
 
 const RegistrarVenta = ({ open, onClose, onSuccess }) => {
     const { agregarVenta } = useVentas()
@@ -31,6 +33,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
     const theme = useTheme()
     const { clientes } = useClientes()
     const { rutasProgramadas, fetchRutasProgramadas } = useRutaProgramacion()
+    const { tarifaPorKg } = useConfiguracion()
     const [errores, setErrores] = useState({})
     const [apiError, setApiError] = useState(null)
     const [activeStep, setActiveStep] = useState(0)
@@ -66,6 +69,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
     })
 
     const handleClose = () => {
+        if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
         setForm({
             idCliente: '',
             nombreDestinatario: '',
@@ -89,6 +93,13 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
     const NUMERIC_LIMITS = {
         peso: 9999, alto: 9999, ancho: 9999, profundidad: 9999,
         valorDeclarado: 999999999, valorServicio: 999999999, impuestos: 999999999,
+    }
+
+    // valorServicio = tarifa base del destino + (peso × tarifa por kg). El resultado
+    // sigue siendo editable a mano después de este auto-cálculo.
+    const calcularValorServicio = (tarifaBase, peso) => {
+        const pesoNum = parseFloat(peso) || 0
+        return Number(tarifaBase || 0) + (pesoNum * tarifaPorKg)
     }
 
     const handleChange = (e) => {
@@ -120,9 +131,21 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
 
         setForm(prev => {
             const updated = { ...prev, [name]: value }
-            if (name === 'valorServicio' || name === 'impuestos') {
-                const vs = parseFloat(name === 'valorServicio' ? value : prev.valorServicio) || 0
-                const imp = parseFloat(name === 'impuestos' ? value : prev.impuestos) || 0
+            if (name === 'valorServicio') {
+                const vs = parseFloat(value) || 0
+                const imp = Math.round(vs * 0.10)
+                updated.impuestos = imp
+                updated.total = vs + imp
+            } else if (name === 'impuestos') {
+                const vs = parseFloat(prev.valorServicio) || 0
+                const imp = parseFloat(value) || 0
+                updated.total = vs + imp
+            } else if (name === 'peso' && prev.idRuta) {
+                const ruta = rutasProgramadas.find(r => r.idRuta === parseInt(prev.idRuta))
+                const vs = calcularValorServicio(ruta?.destino?.tarifaBase, value)
+                const imp = Math.round(vs * 0.10)
+                updated.valorServicio = vs
+                updated.impuestos = imp
                 updated.total = vs + imp
             }
             return updated
@@ -237,7 +260,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
     const cardSx = {
         flex: 1, minWidth: 0, borderRadius: 2, p: 2.5,
         border: `1px solid ${theme.palette.divider}`,
-        backgroundColor: 'white', overflow: 'hidden',
+        backgroundColor: theme.palette.background.paper, overflow: 'hidden',
     }
 
     const renderStepContent = () => {
@@ -390,8 +413,14 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                             <Autocomplete
-                                options={rutasProgramadas.filter(r => r.habilitado !== false)}
-                                getOptionLabel={(option) => `${option.nombreRuta || 'Sin nombre'} — $${Number(option.destino?.tarifaBase || 0).toLocaleString()}`}
+                                options={rutasProgramadas.filter(r => r.habilitado !== false && r.estado === 'Programada')}
+                                getOptionLabel={(option) => {
+                                    const base = `${option.nombreRuta || 'Sin nombre'} — $${Number(option.destino?.tarifaBase || 0).toLocaleString()}`
+                                    const capacidad = option.vehiculo?.capacidad
+                                    if (!capacidad) return base
+                                    const disponible = Math.max(0, Number(capacidad) - Number(option.pesoUsado || 0))
+                                    return `${base} · ${disponible.toFixed(0)}/${Number(capacidad).toFixed(0)} kg disponibles`
+                                }}
                                 isOptionEqualToValue={(opt, val) => opt.idRuta === val.idRuta}
                                 filterOptions={(opts, { inputValue }) => {
                                     if (!inputValue.trim()) return [...opts].sort((a, b) => b.idRuta - a.idRuta).slice(0, 5)
@@ -415,20 +444,22 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                                 }}
                                 onChange={(_, newValue) => {
                                     if (newValue) {
-                                        const tarifaBase = Number(newValue.destino?.tarifaBase || 0)
-                                        const impuestos = Math.round(tarifaBase * 0.10)
                                         const fechaSalida = newValue.fechaSalida || ''
-                                        setForm(prev => ({
-                                            ...prev,
-                                            idRuta: newValue.idRuta,
-                                            destino: newValue.nombreRuta || 'Sin nombre',
-                                            fechaSalidaRuta: fechaSalida,
-                                            fechaEstimadaEntrega: prev.fechaEstimadaEntrega && fechaSalida && prev.fechaEstimadaEntrega < fechaSalida
-                                                ? '' : prev.fechaEstimadaEntrega,
-                                            valorServicio: tarifaBase,
-                                            impuestos,
-                                            total: tarifaBase + impuestos,
-                                        }))
+                                        setForm(prev => {
+                                            const valorServicio = calcularValorServicio(newValue.destino?.tarifaBase, prev.peso)
+                                            const impuestos = Math.round(valorServicio * 0.10)
+                                            return {
+                                                ...prev,
+                                                idRuta: newValue.idRuta,
+                                                destino: newValue.nombreRuta || 'Sin nombre',
+                                                fechaSalidaRuta: fechaSalida,
+                                                fechaEstimadaEntrega: prev.fechaEstimadaEntrega && fechaSalida && prev.fechaEstimadaEntrega < fechaSalida
+                                                    ? '' : prev.fechaEstimadaEntrega,
+                                                valorServicio,
+                                                impuestos,
+                                                total: valorServicio + impuestos,
+                                            }
+                                        })
                                     } else {
                                         setForm(prev => ({ ...prev, idRuta: '', destino: '', fechaSalidaRuta: '' }))
                                     }
@@ -446,7 +477,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                             <TextField fullWidth label="Fecha estimada de entrega" name="fechaEstimadaEntrega"
                                 type="date" value={form.fechaEstimadaEntrega} onChange={handleChange} required
                                 error={!!errores.fechaEstimadaEntrega}
-                                helperText={errores.fechaEstimadaEntrega || (form.fechaSalidaRuta ? `Desde el ${form.fechaSalidaRuta}` : 'Selecciona primero una ruta')}
+                                helperText={errores.fechaEstimadaEntrega || (form.fechaSalidaRuta ? `Desde el ${formatFecha(form.fechaSalidaRuta)}` : 'Selecciona primero una ruta')}
                                 slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: form.fechaSalidaRuta || undefined } }}
                                 sx={formFieldStyles} />
                         </Box>
@@ -470,9 +501,11 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                         </FormSelect>
                         <FormField label="Valor del servicio ($)" name="valorServicio"
                             value={form.valorServicio} onChange={handleChange}
+                            helperText="Tarifa del destino + peso × tarifa por kg (editable)"
                             inputProps={{ maxLength: 9 }} />
                         <FormField label="Impuestos ($)" name="impuestos"
                             value={form.impuestos} onChange={handleChange}
+                            helperText="10% del valor del servicio (editable)"
                             inputProps={{ maxLength: 9 }} />
                         <FormField label="Total a pagar ($)" name="total"
                             value={form.total} onChange={handleChange} disabled />
@@ -529,8 +562,11 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                                 </Box>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Ruta, fechas y valores</Typography>
                                 <ConfirmRow label="Ruta" value={form.destino} />
-                                <ConfirmRow label="Fecha entrega" value={form.fechaEstimadaEntrega} />
+                                <ConfirmRow label="Fecha entrega" value={formatFecha(form.fechaEstimadaEntrega)} />
+                                <ConfirmRow label="Observaciones" value={form.observaciones} />
                                 <ConfirmRow label="Método de pago" value={form.metodoPago} />
+                                <ConfirmRow label="Valor del servicio" value={form.valorServicio ? `$${parseFloat(form.valorServicio).toLocaleString()}` : null} />
+                                <ConfirmRow label="Impuestos" value={form.impuestos ? `$${parseFloat(form.impuestos).toLocaleString()}` : null} />
                                 <ConfirmRow label="Total" value={form.total ? `$${parseFloat(form.total).toLocaleString()}` : null} />
                             </Paper>
                         </Box>
@@ -606,16 +642,18 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                     <Button
                         onClick={activeStep < steps.length - 1 ? handleNext : handleSubmit}
                         variant="contained" disabled={submitting}
-                        endIcon={activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <CheckOutlinedIcon />}
+                        endIcon={submitting ? undefined : (activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <CheckOutlinedIcon />)}
                         disableRipple
                         sx={{
-                            textTransform: 'none', borderRadius: 2, fontWeight: 600,
+                            textTransform: 'none', borderRadius: 2, fontWeight: 600, minWidth: 160,
                             backgroundColor: theme.palette.primary.main,
                             boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
                             '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}` },
                             '&.Mui-disabled': { backgroundColor: '#e0e0e0', color: '#9e9e9e' },
                         }}>
-                        {activeStep < steps.length - 1 ? 'Siguiente' : submitting ? 'Registrando...' : 'Registrar'}
+                        {submitting
+                            ? <CircularProgress size={18} color="inherit" />
+                            : (activeStep < steps.length - 1 ? 'Siguiente' : 'Registrar')}
                     </Button>
                 </Box>
             </Box>

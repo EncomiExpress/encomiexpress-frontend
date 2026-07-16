@@ -16,17 +16,6 @@ export const getPropietarios = async (signal, params = {}) => {
 }
 
 /**
- * Obtener propietario por ID
- * GET /api/propietarios/:id
- */
-export const getPropietarioById = async (id, signal) => {
-  return await fetchWithAuth(`/propietarios/${id}`, {
-    method: 'GET',
-    signal,
-  });
-};
-
-/**
  * Registrar nuevo propietario
  * POST /api/propietarios
  */
@@ -49,16 +38,6 @@ export const updatePropietario = async (id, propietarioData) => {
 };
 
 /**
- * Eliminar propietario (inhabilitar)
- * DELETE /api/propietarios/:id
- */
-export const deletePropietario = async (id) => {
-  return await fetchWithAuth(`/propietarios/${id}`, {
-    method: 'DELETE',
-  });
-};
-
-/**
  * Habilitar/Inhabilitar propietario
  * PATCH /api/propietarios/:id/toggle-habilitado
  */
@@ -73,10 +52,8 @@ export const getPageOfPropietario = (id, limit = 10) =>
 
 export default {
   getPropietarios,
-  getPropietarioById,
   createPropietario,
   updatePropietario,
-  deletePropietario,
   toggleHabilitadoPropietario,
   getPageOfPropietario,
 };

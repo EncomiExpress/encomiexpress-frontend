@@ -1,23 +1,11 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react'
 import * as conductorService from '../services/conductorService'
 import { useAuth } from './AuthContext'
+import { normalizarConductor } from '../utils/normalizarConductor.js'
 
 const ConductorContext = createContext()
 
 export const useConductor = () => useContext(ConductorContext)
-
-const normalizarConductor = (c) => ({
-  ...c,
-  nombre: c.usuario?.nombre || c.nombre || '',
-  apellido: c.usuario?.apellido || c.apellido || '',
-  telefono: c.usuario?.telefono || c.telefono || '',
-  email: c.usuario?.email || c.email || '',
-  tipoIdentificacion: c.usuario?.tipoIdentificacion || c.tipoIdentificacion || '',
-  numeroIdentificacion: c.usuario?.numeroIdentificacion || c.numeroIdentificacion || '',
-  licenciaConduccion: c.categoriaLicencia || '',
-  numeroLicencia: c.numeroLicencia || '',
-  fechaVencimientoLicencia: c.vencimientoLicencia || '',
-})
 
 export const ConductorProvider = ({ children }) => {
   const { token } = useAuth()
@@ -64,17 +52,6 @@ export const ConductorProvider = ({ children }) => {
     [conductores]
   )
 
-  // ─── Obtener conductor individual desde API ───────────────────────────────
-  const fetchConductorById = useCallback(async (id) => {
-    try {
-      const response = await conductorService.getConductorById(id)
-      return response.data
-    } catch (err) {
-      setError(err.message)
-      return null
-    }
-  }, [])
-
   // ─── Registrar conductor ──────────────────────────────────────────────────
   const registrarConductor = useCallback(async (nuevoConductor) => {
     const payload = {
@@ -85,9 +62,8 @@ export const ConductorProvider = ({ children }) => {
       telefono: nuevoConductor.telefono,
       email: nuevoConductor.email,
       password: nuevoConductor.password,
-      categoriaLicencia: nuevoConductor.licenciaConduccion,
+      categoriasLicencia: nuevoConductor.categoriasLicencia,
       numeroLicencia: nuevoConductor.numeroLicencia || null,
-      vencimientoLicencia: nuevoConductor.fechaVencimientoLicencia,
     }
     const response = await conductorService.createConductor(payload)
     if (response.success) {
@@ -97,30 +73,7 @@ export const ConductorProvider = ({ children }) => {
     throw new Error(response.message || 'Error al registrar conductor')
   }, [])
 
-  // ─── Actualizar conductor (recibe objeto completo) ────────────────────────
-  const actualizarConductor = useCallback(async (conductorActualizado) => {
-    const payload = {
-      tipoIdentificacion: conductorActualizado.tipoIdentificacion,
-      numeroIdentificacion: conductorActualizado.numeroIdentificacion,
-      nombre: conductorActualizado.nombre,
-      apellido: conductorActualizado.apellido,
-      telefono: conductorActualizado.telefono,
-      email: conductorActualizado.email,
-      categoriaLicencia: conductorActualizado.licenciaConduccion,
-      vencimientoLicencia: conductorActualizado.fechaVencimientoLicencia,
-    }
-    const response = await conductorService.updateConductor(conductorActualizado.idConductor, payload)
-    if (response.success) {
-      setConductores(prev => prev.map(c =>
-        c.idConductor === conductorActualizado.idConductor ? normalizarConductor(response.data) : c
-      ))
-      return true
-    }
-    throw new Error(response.message || 'Error al actualizar conductor')
-  }, [])
-
-  // ─── Actualizar conductor (recibe id y datos separados — usado por ActualizarConductor.jsx) ──
-  const actualizarConductorApi = useCallback(async (id, data) => {
+  const actualizarConductor = useCallback(async (id, data) => {
     const response = await conductorService.updateConductor(id, data)
     if (response.success) {
       setConductores(prev => prev.map(c =>
@@ -154,15 +107,6 @@ export const ConductorProvider = ({ children }) => {
     return false
   }, [])
 
-  // ─── Eliminar conductor ───────────────────────────────────────────────────
-  const eliminarConductor = useCallback(async (id) => {
-    const response = await conductorService.deleteConductor(id)
-    if (response.success) {
-      setConductores(prev => prev.filter(c => c.idConductor !== id))
-      return response
-    }
-  }, [])
-
   const value = {
     conductores,
     total,
@@ -173,12 +117,9 @@ export const ConductorProvider = ({ children }) => {
     getConductoresHabilitados,
     registrarConductor,
     actualizarConductor,
-    actualizarConductorApi,
     toggleHabilitado,
     updateEstado,
-    eliminarConductor,
     fetchConductores,
-    fetchConductorById,
   }
 
   return (

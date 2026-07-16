@@ -1,6 +1,6 @@
 ﻿import { useTheme } from '@mui/material/styles'
 import { useState } from 'react'
-import { Box, Paper, Typography, MenuItem, Dialog, DialogTitle, DialogContent, Stepper, Step, StepLabel, Alert, IconButton, Button, Autocomplete, TextField } from '@mui/material'
+import { Box, Paper, Typography, MenuItem, Dialog, DialogTitle, DialogContent, Stepper, Step, StepLabel, Alert, IconButton, Button, Autocomplete, TextField, InputAdornment, CircularProgress } from '@mui/material'
 import {
   DirectionsCarOutlined, BadgeOutlined, SellOutlined, InvertColorsOutlined,
   EventOutlined, SpeedOutlined, Close, ArrowBackOutlined, ArrowForwardOutlined, CheckOutlined,
@@ -17,7 +17,7 @@ import { normalizarTexto } from '../../shared/utils/duplicados.js'
 
 const steps = ['Datos del Vehículo', 'Documentación y Estado', 'Confirmación']
 
-const TIPOS_VEHICULO = ['Camioneta', 'Camión', 'Furgón', 'Semi Trayler', 'Trayler', 'Motocicleta', 'Otro']
+const TIPOS_VEHICULO = ['Camioneta', 'Camión', 'Furgón', 'Semi Trayler', 'Trayler', 'Otro']
 const hoyISO = () => new Date().toISOString().split('T')[0]
 const CAPACIDAD_MAX = 999999
 
@@ -30,6 +30,7 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
     modelo: '',
     color: '',
     tipo: '',
+    tipoOtro: '',
     origen: 'Propio',
     capacidad: '',
     vencimientoSOAT: '',
@@ -54,6 +55,7 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
     if (name === 'marca') value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
     if (name === 'modelo') value = value.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚüÜñÑ\s-]/g, '')
     if (name === 'color') value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
+    if (name === 'tipoOtro') value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
     if (name === 'capacidad') {
       value = value.replace(/[^0-9.]/g, '')
       if (value !== '') {
@@ -70,9 +72,10 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
   const handleBack = () => setActiveStep((prev) => prev - 1)
 
   const handleClose = () => {
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
     setFormData({
       idPropietario: '', placa: '', tarjetaPropiedad: '', marca: '', modelo: '', color: '',
-      tipo: '', origen: 'Propio', capacidad: '',
+      tipo: '', tipoOtro: '', origen: 'Propio', capacidad: '',
       vencimientoSOAT: '', vencimientoRevisionTecnica: '', vencimientoSeguroTerceros: ''
     })
     setErrores({})
@@ -89,6 +92,7 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
       if (!formData.modelo?.trim()) e.modelo = 'El modelo es obligatorio'
       if (!formData.color?.trim()) e.color = 'El color es obligatorio'
       if (!formData.tipo) e.tipo = 'El tipo de vehículo es obligatorio'
+      else if (formData.tipo === 'Otro' && !formData.tipoOtro?.trim()) e.tipoOtro = 'Especifica el tipo de vehículo'
       if (!formData.capacidad) e.capacidad = 'La capacidad es obligatoria'
       else if (parseFloat(formData.capacidad) <= 0) e.capacidad = 'La capacidad debe ser mayor a 0'
       else if (parseFloat(formData.capacidad) > CAPACIDAD_MAX) e.capacidad = `La capacidad no puede ser mayor a ${CAPACIDAD_MAX.toLocaleString('es-CO')} kg`
@@ -118,7 +122,7 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
         marca: formData.marca.trim(),
         modelo: formData.modelo.trim(),
         color: formData.color.trim(),
-        tipo: formData.tipo,
+        tipo: formData.tipo === 'Otro' ? formData.tipoOtro.trim() : formData.tipo,
         capacidad: formData.capacidad ? parseFloat(formData.capacidad) : null,
         vencimientoSOAT: formData.vencimientoSOAT || null,
         vencimientoRevisionTecnica: formData.vencimientoRevisionTecnica || null,
@@ -154,10 +158,32 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
               placeholder="Ej: Blanco" icon={InvertColorsOutlined}
               error={errores.color} helperText={errores.color}
               inputProps={{ maxLength: 20 }} />
-            <FormSelect label="Tipo de Vehículo" name="tipo" value={formData.tipo} onChange={handleChange} required
-              error={errores.tipo} helperText={errores.tipo}>
-              {TIPOS_VEHICULO.map((t) => <MenuItem key={t} value={t}>{t}</MenuItem>)}
-            </FormSelect>
+            {formData.tipo === 'Otro' ? (
+              <TextField
+                fullWidth label="Tipo de Vehículo" name="tipoOtro" value={formData.tipoOtro} onChange={handleChange} required
+                placeholder="Escribe el tipo de vehículo"
+                error={!!errores.tipoOtro} helperText={errores.tipoOtro || 'Presiona la X para volver a la lista'}
+                slotProps={{
+                  inputLabel: { shrink: true },
+                  htmlInput: { maxLength: 30 },
+                  input: {
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton size="small" onClick={() => setFormData(prev => ({ ...prev, tipo: '', tipoOtro: '' }))} edge="end">
+                          <Close fontSize="small" />
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  },
+                }}
+                sx={formFieldStyles}
+              />
+            ) : (
+              <FormSelect label="Tipo de Vehículo" name="tipo" value={formData.tipo} onChange={handleChange} required
+                error={errores.tipo} helperText={errores.tipo}>
+                {TIPOS_VEHICULO.map((t) => <MenuItem key={t} value={t}>{t}</MenuItem>)}
+              </FormSelect>
+            )}
             <FormField label="Capacidad (kg)" name="capacidad" value={formData.capacidad}
               onChange={handleChange} required placeholder="Ej: 1500" icon={SpeedOutlined}
               error={errores.capacidad} helperText={errores.capacidad}
@@ -223,7 +249,7 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
               <Alert severity="error" sx={{ borderRadius: 2 }} onClose={() => setApiError('')}>{apiError}</Alert>
             )}
             <Box sx={{ display: 'flex', gap: 2 }}>
-              <Paper elevation={0} sx={{ flex: 1, minWidth: 0, borderRadius: 2, p: 2.5, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white', overflow: 'hidden' }}>
+              <Paper elevation={0} sx={{ flex: 1, minWidth: 0, borderRadius: 2, p: 2.5, border: `1px solid ${theme.palette.divider}`, backgroundColor: theme.palette.background.paper, overflow: 'hidden' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                   <DirectionsCarOutlined sx={{ fontSize: 20, color: theme.palette.text.primary }} />
                   <Typography fontWeight={700} fontSize="0.95rem">Datos del Vehículo</Typography>
@@ -233,10 +259,10 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
                 <ConfirmRow label="Marca" value={formData.marca} />
                 <ConfirmRow label="Modelo" value={formData.modelo} />
                 <ConfirmRow label="Color" value={formData.color} />
-                <ConfirmRow label="Tipo" value={formData.tipo} />
+                <ConfirmRow label="Tipo" value={formData.tipo === 'Otro' ? formData.tipoOtro : formData.tipo} />
                 <ConfirmRow label="Capacidad" value={`${formData.capacidad} kg`} />
               </Paper>
-              <Paper elevation={0} sx={{ flex: 1, minWidth: 0, borderRadius: 2, p: 2.5, border: `1px solid ${theme.palette.divider}`, backgroundColor: 'white', overflow: 'hidden' }}>
+              <Paper elevation={0} sx={{ flex: 1, minWidth: 0, borderRadius: 2, p: 2.5, border: `1px solid ${theme.palette.divider}`, backgroundColor: theme.palette.background.paper, overflow: 'hidden' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                   <EventOutlined sx={{ fontSize: 20, color: theme.palette.text.primary }} />
                   <Typography fontWeight={700} fontSize="0.95rem">Propietario y Documentación</Typography>
@@ -320,13 +346,15 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
             endIcon={submitting ? undefined : (activeStep < steps.length - 1 ? <ArrowForwardOutlined /> : <CheckOutlined />)}
             disableRipple
             sx={{
-              textTransform: 'none', borderRadius: 2, fontWeight: 600,
+              textTransform: 'none', borderRadius: 2, fontWeight: 600, minWidth: 160,
               backgroundColor: theme.palette.primary.main,
               boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
               '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}` },
               '&.Mui-disabled': { backgroundColor: '#e0e0e0', color: '#9e9e9e' },
             }}>
-            {activeStep < steps.length - 1 ? 'Siguiente' : submitting ? 'Registrando...' : 'Registrar'}
+            {submitting
+              ? <CircularProgress size={18} color="inherit" />
+              : (activeStep < steps.length - 1 ? 'Siguiente' : 'Registrar')}
           </Button>
         </Box>
       </Box>
