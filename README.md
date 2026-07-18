@@ -4,6 +4,34 @@ Panel web administrativo para la gestión operativa de OsvaldoC Mensajería y Lo
 
 ---
 
+## Integrantes del Equipo
+
+- Santiago Suárez Durán
+- Sebastian Valencia Peréz
+- Valeria Paz Arana
+- Yeferson Andres Moreno Granda
+
+---
+
+## Índice
+
+- [Características Implementadas](#características-implementadas)
+- [Stack Tecnológico](#stack-tecnológico)
+- [Arquitectura Limpia](#arquitectura-limpia)
+- [Sistema de Navegación](#sistema-de-navegación)
+- [Modos de Navegación](#modos-de-navegación)
+- [Sistema de Tema](#sistema-de-tema)
+- [Componentes Destacados](#componentes-destacados)
+- [Decisiones de Diseño](#decisiones-de-diseño)
+- [Requisitos del Sistema](#requisitos-del-sistema)
+- [Variables de Entorno](#variables-de-entorno)
+- [Instalación](#instalación)
+- [Ejecutar en Entorno Local](#ejecutar-en-entorno-local)
+- [Repositorios relacionados](#repositorios-relacionados)
+- [Licencia](#licencia)
+
+---
+
 ## Características Implementadas
 
 | Rol | Funcionalidades |
