@@ -218,8 +218,8 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
                             <Box>
                                 <Typography variant="caption" fontWeight={700}
                                     color={theme.palette.success.dark}
-                                    textTransform="uppercase" letterSpacing={0.8}>
-                                    Excedente a devolver
+                                    letterSpacing={0.3}>
+                                    Excedente a Devolver
                                 </Typography>
                                 <Typography variant="h5" fontWeight={800} color={theme.palette.success.dark}>
                                     {formatMoney(excedente)}

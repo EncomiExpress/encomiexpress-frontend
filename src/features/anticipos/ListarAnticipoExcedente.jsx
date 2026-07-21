@@ -742,10 +742,12 @@ const ListarAnticipoExcedente = () => {
                                                                     </IconButton>
                                                                 </span>
                                                             </Tooltip>
-                                                        ) : ['Excedente pendiente', 'Completado'].includes(anticipo.estado) ? (
-                                                            <Tooltip title={anticipo.estado === 'Excedente pendiente'
-                                                                ? 'Este anticipo ya está legalizado: no se puede editar'
-                                                                : 'Este anticipo ya está completado: no se puede editar'}>
+                                                        ) : ['En Legalización', 'Excedente pendiente', 'Completado'].includes(anticipo.estado) ? (
+                                                            <Tooltip title={anticipo.estado === 'En Legalización'
+                                                                ? 'La ruta ya está en curso: el conductor legaliza este anticipo desde la app móvil'
+                                                                : anticipo.estado === 'Excedente pendiente'
+                                                                    ? 'Este anticipo ya está legalizado: no se puede editar'
+                                                                    : 'Este anticipo ya está completado: no se puede editar'}>
                                                                 <span>
                                                                     <IconButton size="small" disabled>
                                                                         <EditOutlinedIcon sx={{ fontSize: 18 }} />

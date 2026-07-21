@@ -391,7 +391,15 @@ const ListarRol = () => {
                                                         </Tooltip>
                                                     )}
                                                     {tienePermiso(PERMISOS.ACTUALIZAR_ROL) && (
-                                                        rol.habilitado === false ? (
+                                                        rol.id === 1 ? (
+                                                            <Tooltip title="El rol de administrador no se puede modificar">
+                                                                <span>
+                                                                    <IconButton size="small" disabled>
+                                                                        <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                                                                    </IconButton>
+                                                                </span>
+                                                            </Tooltip>
+                                                        ) : rol.habilitado === false ? (
                                                             <Tooltip title="Habilita el registro para poder editarlo">
                                                                 <span>
                                                                     <IconButton size="small" disabled>

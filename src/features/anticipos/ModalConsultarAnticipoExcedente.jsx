@@ -1,4 +1,5 @@
 import { useTheme, alpha } from '@mui/material/styles'
+import { useState } from 'react'
 import {
     Box, Typography, Paper, Chip, Button, Dialog, IconButton
 } from '@mui/material'
@@ -8,6 +9,11 @@ import AccountBalanceWalletOutlinedIcon from '@mui/icons-material/AccountBalance
 import CloseIcon from '@mui/icons-material/Close'
 import { getAnticipoEstadoDot } from '../../shared/utils/estadoColors.js'
 import { formatFecha } from '../../shared/utils/formatters.js'
+
+const esImagen = (url) => {
+    const ext = url.split('.').pop()?.toLowerCase().split('?')[0]
+    return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(ext)
+}
 
 const formatMoney = (val) => {
     const num = parseFloat(val || 0)
@@ -38,6 +44,7 @@ const CampoFila = ({ label, value, esChip }) => {
 
 const ModalConsultarAnticipoExcedente = ({ anticipo, conductores, rutas, onClose }) => {
     const theme = useTheme()
+    const [imagenAmpliada, setImagenAmpliada] = useState(null)
     if (!anticipo) return null
 
     const resolveConductor = () => {
@@ -54,8 +61,19 @@ const ModalConsultarAnticipoExcedente = ({ anticipo, conductores, rutas, onClose
         return r ? (r.nombreRuta || r.nombre) : '—'
     }
 
+    const resolveDestino = () => {
+        const destino = anticipo.ruta?.destino
+            || rutas?.find(r => r.idRuta === parseInt(anticipo.idRuta))?.destino
+        if (!destino) return null
+        return [destino.ciudad, destino.departamento].filter(Boolean).join(', ')
+    }
+
     const nombreConductor = resolveConductor()
     const nombreRuta = resolveRuta()
+    const destinoTexto = resolveDestino()
+    // Filtra entradas vacías/rotas — subidas viejas hechas antes de corregir el
+    // backend (guardaba `undefined` en vez de la URL real) quedaron como `null`.
+    const soporteValido = (anticipo.soporte || []).filter(Boolean)
     const estadoInfo = getAnticipoEstadoDot(anticipo.estado)
     const tieneGasto = parseFloat(anticipo.valorGastado || 0) > 0
     const excedente = parseFloat(anticipo.valorAnticipo || 0) - parseFloat(anticipo.valorGastado || 0)
@@ -114,6 +132,7 @@ const ModalConsultarAnticipoExcedente = ({ anticipo, conductores, rutas, onClose
                                 onClick={() => window.open(`/transporte/rutas?highlight=${anticipo.idRuta}`, '_blank')}
                                 sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem', cursor: 'pointer', '&:hover': { filter: 'brightness(0.92)' } }} />
                         </Box>
+                        <CampoFila label="Destino" value={destinoTexto} />
                     </Paper>
 
                     <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: theme.palette.background.paper, flex: 1 }}>
@@ -157,20 +176,25 @@ const ModalConsultarAnticipoExcedente = ({ anticipo, conductores, rutas, onClose
                         <CampoFila label="F. Entrega" value={formatFecha(anticipo.fechaEntrega) || '—'} />
                         <CampoFila label="F. Legalización" value={formatFecha(anticipo.fechaLegalizacion) || '—'} />
                         <CampoFila label="F. Entrega excedente" value={formatFecha(anticipo.fechaEntregaExcedente) || '—'} />
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', py: 0.9 }}>
                             <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Soporte</Typography>
-                            {anticipo.soporte ? (
-                                <Typography
-                                    variant="body2" fontWeight={500}
-                                    onClick={() => window.open(anticipo.soporte, '_blank')}
-                                    sx={{
-                                        color: theme.palette.primary.main, cursor: 'pointer',
-                                        textDecoration: 'underline', textDecorationStyle: 'dotted',
-                                        '&:hover': { opacity: 0.75 },
-                                    }}
-                                >
-                                    Ver soporte
-                                </Typography>
+                            {soporteValido.length > 0 ? (
+                                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.3 }}>
+                                    {soporteValido.map((url, i) => (
+                                        <Typography
+                                            key={i}
+                                            variant="body2" fontWeight={500}
+                                            onClick={() => esImagen(url) ? setImagenAmpliada(url) : window.open(url, '_blank')}
+                                            sx={{
+                                                color: theme.palette.primary.main, cursor: 'pointer',
+                                                textDecoration: 'underline', textDecorationStyle: 'dotted',
+                                                '&:hover': { opacity: 0.75 },
+                                            }}
+                                        >
+                                            Ver soporte{soporteValido.length > 1 ? ` ${i + 1}` : ''}
+                                        </Typography>
+                                    ))}
+                                </Box>
                             ) : (
                                 <Typography variant="body2" fontWeight={500} color={theme.palette.text.medium}>—</Typography>
                             )}
@@ -188,6 +212,22 @@ const ModalConsultarAnticipoExcedente = ({ anticipo, conductores, rutas, onClose
                     Cerrar
                 </Button>
             </Box>
+
+            {imagenAmpliada && (
+                <Dialog open onClose={() => setImagenAmpliada(null)} maxWidth="md"
+                    slotProps={{ paper: { sx: { backgroundColor: 'transparent', boxShadow: 'none', overflow: 'visible' } } }}>
+                    <Box sx={{ position: 'relative' }}>
+                        <IconButton onClick={() => setImagenAmpliada(null)} size="small" sx={{
+                            position: 'absolute', right: -16, top: -16, backgroundColor: theme.palette.background.paper,
+                            boxShadow: 2, '&:hover': { backgroundColor: theme.palette.background.paper },
+                        }}>
+                            <CloseIcon fontSize="small" />
+                        </IconButton>
+                        <Box component="img" src={imagenAmpliada} alt="Soporte"
+                            sx={{ maxWidth: '80vw', maxHeight: '85vh', display: 'block', borderRadius: 2 }} />
+                    </Box>
+                </Dialog>
+            )}
         </Dialog>
     )
 }
