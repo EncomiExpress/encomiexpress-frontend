@@ -10,7 +10,7 @@ import {
     IconButton, Chip, Tooltip, InputAdornment,
     Button, Select, MenuItem,
     CircularProgress, FormControl, TableSortLabel,
-    Dialog, DialogTitle, DialogContent, DialogActions
+    Dialog, DialogContent
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
@@ -122,7 +122,7 @@ const ListarAnticipoExcedente = () => {
             setTimeout(() => highlightRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 400)
         }
     })
-    const { anticipos, total, conductores, rutas, fetchAnticipos, toggleHabilitado, cambiarEstado, entregarExcedente } = useAnticipos()
+    const { anticipos, total, conductores, rutas, fetchAnticipos, toggleHabilitado, entregarExcedente } = useAnticipos()
     const { tienePermiso, PERMISOS } = useAuth()
     const initialLoad = useRef(true)
     const pendingConfirm = useRef(false)
@@ -158,7 +158,6 @@ const ListarAnticipoExcedente = () => {
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [anticipoEditar, setAnticipoEditar] = useState(null)
     const [sortBy, setSortBy] = useState({ field: '', dir: '' })
-    const [confirmLeg, setConfirmLeg] = useState({ open: false, id: null, nuevoEstado: null })
     const [confirmDev, setConfirmDev] = useState({ open: false, id: null })
     const [confirmandoEstado, setConfirmandoEstado] = useState(false)
 
@@ -274,15 +273,6 @@ const ListarAnticipoExcedente = () => {
 
     const handleConfirmarToggle = () => {
         pendingConfirm.current = true
-    }
-
-    const ejecutarCambioEstadoAnticipo = async (id, nuevoEstado) => {
-        try {
-            await cambiarEstado(id, nuevoEstado)
-            showToast('Estado del anticipo actualizado', 'success')
-        } catch (err) {
-            showToast(err.message || 'No se pudo cambiar el estado', 'error')
-        }
     }
 
     const handleConfirmarDevolucion = async () => {
@@ -826,53 +816,6 @@ const ListarAnticipoExcedente = () => {
                 }}
                 onConfirm={handleConfirmarToggle}
             />
-
-            {/* Modal confirmación cambio a "En Legalización" */}
-            <Dialog
-                open={confirmLeg.open}
-                onClose={() => setConfirmLeg({ open: false, id: null, nuevoEstado: null })}
-                maxWidth="xs"
-                fullWidth
-                slotProps={{ paper: { sx: { borderRadius: 3 } } }}
-            >
-                <DialogTitle sx={{ fontWeight: 700, fontSize: '1rem', pb: 0.5 }}>
-                    Confirmar cambio de estado
-                </DialogTitle>
-                <DialogContent>
-                    <Typography variant="body2" sx={{ mb: 1.5 }}>
-                        ¿Cambiar el estado a <strong>"En Legalización"</strong>?
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                        Una vez en legalización, el anticipo <strong>no puede volver a "Entregado"</strong>. Este cambio es irreversible.
-                    </Typography>
-                </DialogContent>
-                <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
-                    <Button
-                        onClick={() => setConfirmLeg({ open: false, id: null, nuevoEstado: null })}
-                        variant="outlined" size="small"
-                        sx={{ textTransform: 'none', borderRadius: 2 }}
-                    >
-                        Cancelar
-                    </Button>
-                    <Button
-                        onClick={async () => {
-                            const { id, nuevoEstado } = confirmLeg
-                            setConfirmandoEstado(true)
-                            try {
-                                await ejecutarCambioEstadoAnticipo(id, nuevoEstado)
-                                setConfirmLeg({ open: false, id: null, nuevoEstado: null })
-                            } finally {
-                                setConfirmandoEstado(false)
-                            }
-                        }}
-                        disabled={confirmandoEstado}
-                        variant="contained" size="small"
-                        sx={{ textTransform: 'none', borderRadius: 2, minWidth: 100 }}
-                    >
-                        {confirmandoEstado ? <CircularProgress size={16} sx={{ color: 'white' }} /> : 'Confirmar'}
-                    </Button>
-                </DialogActions>
-            </Dialog>
 
             {/* Modal confirmación devolución de excedente */}
             <Dialog
