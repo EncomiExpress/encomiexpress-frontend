@@ -4,7 +4,6 @@ import { useVentas } from '../../shared/contexts/VentaContext.jsx'
 import { useConductor } from '../../shared/contexts/ConductorContext.jsx'
 import { useVehiculo } from '../../shared/contexts/VehiculoContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
-import { getEncomiendas } from '../../shared/services/ventaService'
 import {
   Box, Typography, Paper, Button, TextField,
   LinearProgress, Divider, CircularProgress
@@ -19,7 +18,7 @@ import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
 import RouteOutlinedIcon from '@mui/icons-material/RouteOutlined'
 import BarChartOutlinedIcon from '@mui/icons-material/BarChartOutlined'
-import { formatRutaDestino, getGuiaPrincipal } from '../../shared/utils/formatters.js'
+import { formatRutaDestino } from '../../shared/utils/formatters.js'
 import { exportToExcel } from '../../shared/utils/exportExcel.js'
 import { getVentaEstadoDot } from '../../shared/utils/estadoColors.js'
 
@@ -220,23 +219,38 @@ const Dashboard = () => {
 
   const maxEnvios = enviosEstado.length > 0 ? Math.max(...enviosEstado.map(e => e.count)) : 1
 
+  // Exporta lo que el dashboard realmente muestra (no las ventas) — un libro
+  // con una hoja por sección, usando los mismos datos ya calculados arriba
+  // (ingresosMes/enviosEstado/topDestinos), filtrados por el mismo período activo.
   const handleExportar = async () => {
     setExportando(true)
     try {
-      // El dashboard no tiene filtros propios — se trae el histórico completo,
-      // sin el tope de 1000 que usa la carga inicial del panel.
-      const res = await getEncomiendas(undefined, { limit: 100000 })
-      const rows = (res?.data || []).map(venta => ({
-        'ID': venta.idEncomiendaVenta || venta.idVenta,
-        'Guía': getGuiaPrincipal(venta),
-        'Cliente': `${venta.cliente?.nombre || ''} ${venta.cliente?.apellido || ''}`.trim() || venta.idCliente || '-',
-        'Estado': venta.estado,
-        'Estado de pago': venta.estadoPago,
-        'Total': venta.total,
-        'Fecha': venta.fechaRegistro,
-      }))
+      const sheets = [
+        {
+          name: 'Resumen',
+          rows: [{
+            'Período': `${filtroActivo.desde} — ${filtroActivo.hasta}`,
+            'Conductores disponibles': conductoresDisponibles,
+            'Conductores totales': conductoresTotales,
+            'Vehículos disponibles': vehiculosDisponibles,
+            'Vehículos totales': vehiculosTotales,
+          }],
+        },
+        {
+          name: 'Ingresos por Mes',
+          rows: ingresosMes.map(m => ({ 'Mes': m.mes, 'Ingresos': m.valor })),
+        },
+        {
+          name: 'Envíos por Estado',
+          rows: enviosEstado.map(e => ({ 'Estado': e.label, 'Cantidad': e.count })),
+        },
+        {
+          name: 'Top Destinos',
+          rows: topDestinos.map((d, i) => ({ 'Puesto': i + 1, 'Destino': d.destino, 'Envíos': d.envios })),
+        },
+      ]
 
-      await exportToExcel({ data: rows, fileName: 'dashboard', sheetName: 'Dashboard', themeColor: theme.palette.primary.main })
+      await exportToExcel({ sheets, fileName: 'dashboard', themeColor: theme.palette.primary.main })
     } catch (err) {
       showToast(err.message || 'Error al exportar.', 'error')
     } finally {
