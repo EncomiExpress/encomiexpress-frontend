@@ -36,7 +36,6 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
         idRuta: '',
         valorAnticipo: '',
         valorGastado: '',
-        soporte: '',
         fechaEntrega: '',
         fechaLegalizacion: '',
         fechaEntregaExcedente: '',

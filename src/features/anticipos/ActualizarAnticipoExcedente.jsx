@@ -125,9 +125,11 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
             // el anticipo, es decir registrar valorGastado, quedó como algo que
             // solo hace el conductor desde la app móvil). Por eso aquí solo se
             // mandan los campos de esa etapa.
+            // `soporte` (comprobantes) no se edita desde la web — la subida de
+            // archivos es exclusiva de la app móvil (POST /anticipos/:id/soporte),
+            // así que no se reenvía acá.
             const payload = {
                 idAnticipoExcedente: form.idAnticipoExcedente,
-                soporte: form.soporte,
                 fechaEntregaExcedente: form.fechaEntregaExcedente,
             }
             if (puedeEditarAsignacion) {
