@@ -238,21 +238,6 @@ const Login = () => {
             </Button>
           </form>
 
-          <Box sx={{ mt: 2.5, textAlign: 'center' }}>
-            <Typography sx={{ color: theme.palette.text.secondary, fontSize: '0.875rem' }}>
-              ¿No estás registrado?{' '}
-              <Button
-                component={Link} to="/register" variant="text"
-                sx={{
-                  color: theme.palette.primary.main, fontWeight: 600, p: 0, minWidth: 'auto',
-                  textTransform: 'none', '&:hover': { textDecoration: 'underline' },
-                }}
-              >
-                Regístrate
-              </Button>
-            </Typography>
-          </Box>
-
         </Box>
       </Paper>
 

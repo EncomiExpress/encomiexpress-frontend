@@ -13,7 +13,6 @@ import Home from './shared/components/Home.jsx'
 
 // Auth
 import Login from './features/auth/Login.jsx'
-import Register from './features/auth/Register.jsx'
 import ResetearPassword from './features/auth/ResetearPassword.jsx'
 
 // Dashboard
@@ -143,9 +142,8 @@ const AppRoutes = () => {
       {/* Ruta raíz con Home directamente */}
       <Route path="/" element={<Home />} />
 
-      {/* Login y Register sin layout público */}
+      {/* Login sin layout público */}
       <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
       {/* Sin enlace en ningún menú — se llega vía el correo de "¿Olvidaste tu contraseña?" */}
       <Route path="/resetear-password" element={<ResetearPassword />} />
 

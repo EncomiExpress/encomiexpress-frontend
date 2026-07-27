@@ -314,15 +314,6 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
-  const ignorarRegistroUsuario = async (id) => {
-    try {
-      const data = await usuarioService.ignorarRegistroUsuario(id)
-      return { success: true, message: data.message }
-    } catch (err) {
-      return { success: false, message: err.message || 'Error de conexión' }
-    }
-  }
-
   return (
     <AuthContext.Provider value={{
       usuario,
@@ -345,7 +336,6 @@ export const AuthProvider = ({ children }) => {
       eliminarRolBackend,
       actualizarUsuario,
       habilitarInhabilitarUsuario,
-      ignorarRegistroUsuario,
       ROLES,
       MODULOS,
       PERMISOS,

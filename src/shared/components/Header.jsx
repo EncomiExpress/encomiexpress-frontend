@@ -46,7 +46,7 @@ const NAV_OPTIONS = [
   { key: 'topnav',  label: 'Top Nav', icon: TopNavIcon  },
 ]
 
-// Debe coincidir con PASSWORD_REGEX en features/auth/Register.jsx y con el validador del backend
+// Debe coincidir con PASSWORD_REGEX en features/auth/ResetearPassword.jsx, RegistrarUsuario.jsx y con el validador del backend
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s]).{8,64}$/
 const PASSWORD_HELP = '8-64 caracteres, con mayúsculas, minúsculas, números y un carácter especial'
 

@@ -97,7 +97,7 @@ export const fetchWithAuth = async (endpoint, options = {}) => {
     }
 
     // Sin refresh token válido o el refresh falló — notificar sesión expirada.
-    // Solo dispara el evento si había un token activo (evita falsos positivos en login/register).
+    // Solo dispara el evento si había un token activo (evita falsos positivos en login).
     if (token) {
       window.dispatchEvent(new CustomEvent('encomi:session-expired'));
     }
@@ -109,39 +109,6 @@ export const fetchWithAuth = async (endpoint, options = {}) => {
 // ============================================
 // FUNCIONES DE AUTENTICACIÓN
 // ============================================
-
-/**
- * Registrar nuevo usuario
- * POST /api/auth/register
- * @param {Object} userData - Datos del usuario
- * @param {boolean} autoLogin - Si true, guarda token para auto-login (para self-registration)
- */
-export const register = async (userData, autoLogin = true) => {
-  // Mapear los datos del formulario al formato del backend
-  const dataBackend = {
-    tipoIdentificacion: userData.tipoIdentificacion || 'CC',
-    numeroIdentificacion: userData.numeroIdentificacion || '',
-    nombre: userData.nombre,
-    apellido: userData.apellido || userData.nombre.split(' ').slice(1).join(' '),
-    telefono: userData.telefono || '',
-    email: userData.email,
-    password: userData.password,
-    idRol: userData.idRol || 2, // Por defecto vendedor
-  };
-
-  const data = await fetchWithAuth('/auth/register', {
-    method: 'POST',
-    body: JSON.stringify(dataBackend),
-  });
-
-  // Solo guardar token y usuario si el registro fue exitoso Y autoLogin es true
-  // (para auto-registro). Si un admin registra otro usuario, no debe hacer auto-login
-  if (autoLogin && data.success && data.data.token) {
-    setAuthData(data.data.token, data.data.usuario);
-  }
-
-  return data;
-};
 
 /**
  * Solicitar recuperación de contraseña — envía un enlace de reseteo al correo
@@ -166,7 +133,6 @@ export const resetearPassword = async (token, passwordNueva) => {
 };
 
 export default {
-  register,
   recuperarPassword,
   resetearPassword,
   getToken,
