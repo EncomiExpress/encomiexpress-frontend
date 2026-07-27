@@ -2,6 +2,9 @@ import { Link } from 'react-router-dom'
 import { useTheme } from '@mui/material/styles'
 import { Box, Typography, Grid, Button } from '@mui/material'
 import { Login as LoginIcon } from '@mui/icons-material'
+import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined'
+import LocalPhoneOutlinedIcon from '@mui/icons-material/LocalPhoneOutlined'
+import PlaceOutlinedIcon from '@mui/icons-material/PlaceOutlined'
 import { useState, useEffect } from 'react'
 import slide1 from '../../assets/box.png'
 import slide2 from '../../assets/camion.png'
@@ -270,9 +273,27 @@ const Home = () => {
         }}>
           <img src={theme.palette.mode === 'dark' ? logoDark : logo} alt="EncomiExpress" style={logoStyle} />
         </Box>
-        <Typography sx={{ color: 'rgba(255, 255, 255, 0.65)', fontSize: '0.78rem' }}>
-          © 2026 EncomiExpress · Uso exclusivo del personal autorizado.
-        </Typography>
+        <Box sx={{ textAlign: { xs: 'center', sm: 'right' } }}>
+          <Typography sx={{ color: 'rgba(255, 255, 255, 0.85)', fontSize: '0.78rem' }}>
+            © 2026 EncomiExpress · Uso exclusivo del personal autorizado de Osvaldoc Mensajería y Logística S.A.S.
+          </Typography>
+          <Box sx={{
+            display: 'flex', gap: 1.75, flexWrap: 'wrap',
+            justifyContent: { xs: 'center', sm: 'flex-end' }, mt: 0.5,
+          }}>
+            <Typography component="a" href="mailto:contacto.encomiexpress@gmail.com"
+              sx={{ color: 'rgba(255, 255, 255, 0.65)', fontSize: '0.75rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 0.5, '&:hover': { textDecoration: 'underline' } }}>
+              <EmailOutlinedIcon sx={{ fontSize: '0.95rem' }} /> contacto.encomiexpress@gmail.com
+            </Typography>
+            <Typography component="a" href="tel:+576044236529"
+              sx={{ color: 'rgba(255, 255, 255, 0.65)', fontSize: '0.75rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 0.5, '&:hover': { textDecoration: 'underline' } }}>
+              <LocalPhoneOutlinedIcon sx={{ fontSize: '0.95rem' }} /> 604 423 6529
+            </Typography>
+            <Typography sx={{ color: 'rgba(255, 255, 255, 0.65)', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
+              <PlaceOutlinedIcon sx={{ fontSize: '0.95rem' }} /> Medellín, Antioquia
+            </Typography>
+          </Box>
+        </Box>
       </Box>
     </Box>
   )
