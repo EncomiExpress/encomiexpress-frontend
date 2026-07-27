@@ -1,17 +1,20 @@
 import { useTheme } from '@mui/material/styles'
 import { useState, useEffect } from 'react'
-import { Box, Typography, Paper, FormControlLabel, Checkbox, Grid, IconButton, Dialog, DialogTitle, DialogContent, Button, CircularProgress } from '@mui/material'
+import { Box, Typography, Paper, FormControlLabel, Checkbox, Grid, IconButton, Dialog, DialogTitle, DialogContent, Button, CircularProgress, Alert } from '@mui/material'
 import { Security, Close, CheckOutlined } from '@mui/icons-material'
 import { useAuth, PERMISOS, MODULOS } from '../../shared/contexts/AuthContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { getErrorMessage } from '../../shared/utils/errorMessage.js'
+import { hayDocumentoDuplicado } from '../../shared/utils/duplicados.js'
 import {
   FormField,
   FormAlert
 } from '../../shared/components/FormularioEstandarizado.jsx'
 
+const MENSAJE_ROL_DUPLICADO = 'Ya existe un rol con este nombre.'
+
 const RegistrarRol = ({ open, onClose, onSuccess }) => {
-  const { tienePermiso, registrarRol, getPermisosBackend } = useAuth()
+  const { tienePermiso, registrarRol, getPermisosBackend, getRolesBackend } = useAuth()
   const { showToast } = useToast()
   const theme = useTheme()
 
@@ -23,6 +26,7 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
   const [enviando, setEnviando] = useState(false)
   const [error, setError] = useState('')
   const [permisosDisponibles, setPermisosDisponibles] = useState([])
+  const [avisoNombreDuplicado, setAvisoNombreDuplicado] = useState('')
 
   const modulos = Object.entries(MODULOS).filter(([key]) => key !== 'ROLES')
 
@@ -65,6 +69,21 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
     }
     cargarPermisos()
   }, [getPermisosBackend])
+
+  const verificarNombreRolDuplicado = async () => {
+    if (!formData.nombre.trim()) {
+      setAvisoNombreDuplicado('')
+      return
+    }
+    try {
+      const res = await getRolesBackend({ q: formData.nombre.trim(), limit: 10 })
+      if (!res?.success) return
+      const duplicado = hayDocumentoDuplicado(res.data, formData.nombre, { getDoc: (r) => r.nombre })
+      setAvisoNombreDuplicado(duplicado ? MENSAJE_ROL_DUPLICADO : '')
+    } catch {
+      // Si falla la verificación no bloqueamos el flujo de registro
+    }
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -114,6 +133,7 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
       permisos: []
     })
     setError('')
+    setAvisoNombreDuplicado('')
     onClose()
   }
 
@@ -214,11 +234,18 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
               label="Nombre del Rol"
               name="nombre"
               value={formData.nombre}
-              onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, nombre: e.target.value })
+                setAvisoNombreDuplicado('')
+              }}
+              onBlur={verificarNombreRolDuplicado}
               placeholder="Ej: Gerente, Supervisor, Asesor comercial"
               required
               inputProps={{ maxLength: 50 }}
             />
+            {avisoNombreDuplicado && (
+              <Alert severity="warning" sx={{ mt: 1, borderRadius: 2 }}>{avisoNombreDuplicado}</Alert>
+            )}
           </Box>
 
           <Box sx={{ mb: 2 }}>

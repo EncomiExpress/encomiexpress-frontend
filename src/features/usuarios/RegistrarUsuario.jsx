@@ -22,12 +22,50 @@ import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import * as usuarioService from '../../shared/services/usuarioService.js'
 import { hayNombreDuplicado, MENSAJE_NOMBRE_DUPLICADO, hayDocumentoDuplicado, MENSAJE_DOC_DUPLICADO } from '../../shared/utils/duplicados.js'
+import { esDocAlfanumerico, maxLengthDocumento, docHelperText, validarNumeroDocumento } from '../../shared/utils/documento.js'
 
 const DOMINIOS_EMAIL = ['@gmail.com', '@hotmail.com', '@outlook.com', '@yahoo.com', '@icloud.com', '@live.com']
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s]).{8,64}$/
 const PASSWORD_HELP = '8-64 caracteres, con mayúsculas, minúsculas, números y un carácter especial'
+const SOLO_LETRAS_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/
 
 const steps = ['Datos Personales', 'Credenciales', 'Confirmación']
+
+// Valida un único campo del formulario (usado en onBlur y para re-validar en vivo
+// mientras se corrige un campo ya marcado con error). numeroIdentificacion no
+// vive aquí porque ya tiene su propia validación en shared/utils/documento.js.
+const validarCampo = (name, form) => {
+    switch (name) {
+        case 'nombre':
+            if (!form.nombre.trim()) return 'El nombre es obligatorio'
+            if (!SOLO_LETRAS_REGEX.test(form.nombre)) return 'El nombre solo puede contener letras'
+            return ''
+        case 'apellido':
+            if (!form.apellido.trim()) return 'El apellido es obligatorio'
+            if (!SOLO_LETRAS_REGEX.test(form.apellido)) return 'El apellido solo puede contener letras'
+            return ''
+        case 'tipoIdentificacion':
+            return form.tipoIdentificacion ? '' : 'Selecciona un tipo de documento'
+        case 'telefono':
+            if (!form.telefono.trim()) return 'El teléfono es obligatorio'
+            if (!/^\d{10}$/.test(form.telefono)) return 'El teléfono debe tener exactamente 10 dígitos'
+            return ''
+        case 'emailLocal':
+            return form.emailLocal.trim() ? '' : 'El email es obligatorio'
+        case 'idRol':
+            return form.idRol ? '' : 'Selecciona un rol'
+        case 'password':
+            if (!form.password) return 'La contraseña es obligatoria'
+            if (!PASSWORD_REGEX.test(form.password)) return PASSWORD_HELP
+            return ''
+        case 'confirmarPassword':
+            if (!form.confirmarPassword) return 'Confirma la contraseña'
+            if (form.password !== form.confirmarPassword) return 'Las contraseñas no coinciden'
+            return ''
+        default:
+            return ''
+    }
+}
 
 const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
     const { tienePermiso, registrarUsuario, getRolesBackend } = useAuth()
@@ -70,15 +108,6 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
         idRol: '',
     })
 
-    const esDocAlfanumerico = (tipo) => ['CE', 'PAS'].includes(tipo)
-    const maxLengthDoc = esDocAlfanumerico(form.tipoIdentificacion) ? 12 : 10
-
-    const docHelperText = () => {
-        if (esDocAlfanumerico(form.tipoIdentificacion)) return 'Alfanumérico, hasta 12 caracteres'
-        if (form.tipoIdentificacion) return 'Solo dígitos, entre 3 y 10'
-        return 'Sin puntos ni comas'
-    }
-
     const handleChange = (e) => {
         const { name } = e.target
         let { value } = e.target
@@ -89,11 +118,6 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
         if (name === 'telefono') {
             value = value.replace(/[^0-9]/g, '')
         }
-        if (name === 'numeroIdentificacion') {
-            value = esDocAlfanumerico(form.tipoIdentificacion)
-                ? value.replace(/[^a-zA-Z0-9]/g, '')
-                : value.replace(/[^0-9]/g, '')
-        }
         if (name === 'tipoIdentificacion') {
             setForm(prev => ({ ...prev, tipoIdentificacion: value, numeroIdentificacion: '' }))
             setErrores(prev => ({ ...prev, tipoIdentificacion: '', numeroIdentificacion: '' }))
@@ -101,13 +125,34 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
             setApiError(null)
             return
         }
-        if (name === 'numeroIdentificacion') setAvisoDocDuplicado('')
+        if (name === 'numeroIdentificacion') {
+            value = esDocAlfanumerico(form.tipoIdentificacion)
+                ? value.replace(/[^a-zA-Z0-9]/g, '')
+                : value.replace(/[^0-9]/g, '')
+            setAvisoDocDuplicado('')
+            setForm(prev => ({ ...prev, numeroIdentificacion: value }))
+            // Si el campo ya estaba marcado con error, revalida en vivo con cada tecla
+            // para que el error se quite apenas quede corregido (no solo al salir del campo).
+            setErrores(prev => prev.numeroIdentificacion
+                ? { ...prev, numeroIdentificacion: validarNumeroDocumento(form.tipoIdentificacion, value) || '' }
+                : prev)
+            setApiError(null)
+            return
+        }
         if (name === 'emailLocal') {
             value = value.replace(/[^a-zA-Z0-9._-]/g, '')
         }
 
+        const formActualizado = { ...form, [name]: value }
         setForm(prev => ({ ...prev, [name]: value }))
-        setErrores(prev => ({ ...prev, [name]: '' }))
+        setErrores(prev => {
+            const siguiente = { ...prev, [name]: prev[name] ? validarCampo(name, formActualizado) : '' }
+            // Si se corrige la contraseña, revalida también "confirmar contraseña" si ya estaba marcado con error
+            if (name === 'password' && prev.confirmarPassword) {
+                siguiente.confirmarPassword = validarCampo('confirmarPassword', formActualizado)
+            }
+            return siguiente
+        })
         setApiError(null)
     }
 
@@ -143,45 +188,25 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
 
     const validarPaso = (step) => {
         const e = {}
-        const soloLetras = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/
-        const soloNumeros = /^\d+$/
 
         if (step === 0) {
-            if (!form.nombre.trim()) e.nombre = 'El nombre es obligatorio'
-            else if (!soloLetras.test(form.nombre)) e.nombre = 'El nombre solo puede contener letras'
+            e.nombre = validarCampo('nombre', form)
+            e.apellido = validarCampo('apellido', form)
+            e.tipoIdentificacion = validarCampo('tipoIdentificacion', form)
 
-            if (!form.apellido.trim()) e.apellido = 'El apellido es obligatorio'
-            else if (!soloLetras.test(form.apellido)) e.apellido = 'El apellido solo puede contener letras'
-
-            if (!form.tipoIdentificacion) e.tipoIdentificacion = 'Selecciona un tipo de documento'
-
-            if (!form.numeroIdentificacion.trim()) {
-                e.numeroIdentificacion = 'El número de documento es obligatorio'
-            } else if (esDocAlfanumerico(form.tipoIdentificacion)) {
-                if (!/^[a-zA-Z0-9]+$/.test(form.numeroIdentificacion))
-                    e.numeroIdentificacion = 'Solo letras y números, sin caracteres especiales'
-            } else if (!soloNumeros.test(form.numeroIdentificacion)) {
-                e.numeroIdentificacion = 'Solo se permiten dígitos'
-            } else if (form.numeroIdentificacion.length < 3 || form.numeroIdentificacion.length > 10) {
-                e.numeroIdentificacion = 'Debe tener entre 3 y 10 dígitos'
-            }
+            const errorDocumento = validarNumeroDocumento(form.tipoIdentificacion, form.numeroIdentificacion)
+            if (errorDocumento) e.numeroIdentificacion = errorDocumento
         }
 
         if (step === 1) {
-            if (!form.telefono.trim()) e.telefono = 'El teléfono es obligatorio'
-            else if (!/^\d{10}$/.test(form.telefono)) e.telefono = 'El teléfono debe tener exactamente 10 dígitos'
-
-            if (!form.emailLocal.trim()) e.emailLocal = 'El email es obligatorio'
-
-            if (!form.password) e.password = 'La contraseña es obligatoria'
-            else if (!PASSWORD_REGEX.test(form.password)) e.password = PASSWORD_HELP
-
-            if (!form.confirmarPassword) e.confirmarPassword = 'Confirma la contraseña'
-            else if (form.password !== form.confirmarPassword) e.confirmarPassword = 'Las contraseñas no coinciden'
-
-            if (!form.idRol) e.idRol = 'Selecciona un rol'
+            e.telefono = validarCampo('telefono', form)
+            e.emailLocal = validarCampo('emailLocal', form)
+            e.password = validarCampo('password', form)
+            e.confirmarPassword = validarCampo('confirmarPassword', form)
+            e.idRol = validarCampo('idRol', form)
         }
 
+        Object.keys(e).forEach(k => { if (!e[k]) delete e[k] })
         return e
     }
 
@@ -260,7 +285,8 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
                 return (
                     <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                         <TextField fullWidth select label="Tipo de documento" name="tipoIdentificacion"
-                            value={form.tipoIdentificacion} onChange={handleChange} required
+                            value={form.tipoIdentificacion} onChange={handleChange}
+                            onBlur={() => setErrores(prev => ({ ...prev, tipoIdentificacion: validarCampo('tipoIdentificacion', form) }))} required
                             error={!!errores.tipoIdentificacion} helperText={errores.tipoIdentificacion}
                             slotProps={{
                                 input: { startAdornment: <InputAdornment position="start"><BadgeOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment> },
@@ -273,15 +299,19 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
                             <MenuItem value="PAS">Pasaporte</MenuItem>
                         </TextField>
                         <TextField fullWidth label="Número de documento" name="numeroIdentificacion"
-                            value={form.numeroIdentificacion} onChange={handleChange} onBlur={verificarDocumentoDuplicado} required
-                            error={!!errores.numeroIdentificacion} helperText={errores.numeroIdentificacion || docHelperText()}
+                            value={form.numeroIdentificacion} onChange={handleChange}
+                            onBlur={() => {
+                                verificarDocumentoDuplicado()
+                                setErrores(prev => ({ ...prev, numeroIdentificacion: validarNumeroDocumento(form.tipoIdentificacion, form.numeroIdentificacion) || '' }))
+                            }} required
+                            error={!!errores.numeroIdentificacion} helperText={errores.numeroIdentificacion || docHelperText(form.tipoIdentificacion)}
                             slotProps={{
                                 input: { startAdornment: <InputAdornment position="start"><BadgeOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment>, sx: { pl: 1.5 } },
-                                htmlInput: { maxLength: maxLengthDoc }
+                                htmlInput: { maxLength: maxLengthDocumento(form.tipoIdentificacion) }
                             }}
                             sx={formFieldStyles} />
                         <TextField fullWidth label="Nombres" name="nombre" value={form.nombre} onChange={handleChange}
-                            onBlur={verificarNombreDuplicado} required placeholder="Ej: Juan"
+                            onBlur={() => { verificarNombreDuplicado(); setErrores(prev => ({ ...prev, nombre: validarCampo('nombre', form) })) }} required placeholder="Ej: Juan"
                             error={!!errores.nombre} helperText={errores.nombre}
                             slotProps={{
                                 input: { startAdornment: <InputAdornment position="start"><PersonOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment>, sx: { pl: 1.5 } },
@@ -289,7 +319,7 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
                             }}
                             sx={formFieldStyles} />
                         <TextField fullWidth label="Apellidos" name="apellido" value={form.apellido} onChange={handleChange}
-                            onBlur={verificarNombreDuplicado} required placeholder="Ej: Gómez López"
+                            onBlur={() => { verificarNombreDuplicado(); setErrores(prev => ({ ...prev, apellido: validarCampo('apellido', form) })) }} required placeholder="Ej: Gómez López"
                             error={!!errores.apellido} helperText={errores.apellido}
                             slotProps={{
                                 input: { startAdornment: <InputAdornment position="start"><PersonOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment>, sx: { pl: 1.5 } },
@@ -307,7 +337,8 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
             case 1:
                 return (
                     <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
-                        <TextField fullWidth label="Teléfono" name="telefono" value={form.telefono} onChange={handleChange} required
+                        <TextField fullWidth label="Teléfono" name="telefono" value={form.telefono} onChange={handleChange}
+                            onBlur={() => setErrores(prev => ({ ...prev, telefono: validarCampo('telefono', form) }))} required
                             error={!!errores.telefono} helperText={errores.telefono || 'Número de 10 dígitos'}
                             slotProps={{
                                 input: { startAdornment: <InputAdornment position="start"><PhoneOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment>, sx: { pl: 1.5 } },
@@ -315,7 +346,8 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
                             }}
                             sx={formFieldStyles} />
                         <TextField fullWidth label="Email electrónico" name="emailLocal"
-                            value={form.emailLocal} onChange={handleChange} required
+                            value={form.emailLocal} onChange={handleChange}
+                            onBlur={() => setErrores(prev => ({ ...prev, emailLocal: validarCampo('emailLocal', form) }))} required
                             error={!!errores.emailLocal} helperText={errores.emailLocal}
                             slotProps={{
                                 input: {
@@ -341,7 +373,8 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
                                 htmlInput: { maxLength: 50 }
                             }}
                             sx={formFieldStyles} />
-                        <TextField fullWidth select label="Rol" name="idRol" value={form.idRol} onChange={handleChange} required
+                        <TextField fullWidth select label="Rol" name="idRol" value={form.idRol} onChange={handleChange}
+                            onBlur={() => setErrores(prev => ({ ...prev, idRol: validarCampo('idRol', form) }))} required
                             error={!!errores.idRol} helperText={errores.idRol || (
                                 <>
                                     ¿Buscas registrar un conductor? Hazlo desde el módulo de{' '}
@@ -374,7 +407,8 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
                         </TextField>
                         <Box sx={{ gridColumn: '1 / -1', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                             <TextField fullWidth label="Contraseña" name="password" type={showPassword ? 'text' : 'password'}
-                                value={form.password} onChange={handleChange} required
+                                value={form.password} onChange={handleChange}
+                                onBlur={() => setErrores(prev => ({ ...prev, password: validarCampo('password', form) }))} required
                                 error={!!errores.password} helperText={errores.password || PASSWORD_HELP}
                                 slotProps={{
                                     input: {
@@ -392,7 +426,8 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
                                 }}
                                 sx={formFieldStyles} />
                             <TextField fullWidth label="Confirmar contraseña" name="confirmarPassword" type={showConfirmarPassword ? 'text' : 'password'}
-                                value={form.confirmarPassword} onChange={handleChange} required
+                                value={form.confirmarPassword} onChange={handleChange}
+                                onBlur={() => setErrores(prev => ({ ...prev, confirmarPassword: validarCampo('confirmarPassword', form) }))} required
                                 error={!!errores.confirmarPassword} helperText={errores.confirmarPassword}
                                 slotProps={{
                                     input: {

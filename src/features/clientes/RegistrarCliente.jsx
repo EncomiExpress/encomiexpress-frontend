@@ -21,11 +21,45 @@ import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import * as clienteService from '../../shared/services/clienteService.js'
 import { hayNombreDuplicado, MENSAJE_NOMBRE_DUPLICADO, hayDocumentoDuplicado, MENSAJE_DOC_DUPLICADO } from '../../shared/utils/duplicados.js'
+import { esDocAlfanumerico, maxLengthDocumento, docHelperText as docHelperTextBase, validarNumeroDocumento } from '../../shared/utils/documento.js'
 
 const DOMINIOS_EMAIL = ['@gmail.com', '@hotmail.com', '@outlook.com', '@yahoo.com', '@icloud.com', '@live.com']
 const DOMINIO_OTRO = '__otro__'
 
 const steps = ['Datos Personales', 'Contacto', 'Confirmación']
+
+// Valida un único campo del formulario (usado en onBlur y para re-validar en vivo
+// mientras se corrige un campo ya marcado con error). numeroIdentificacion no vive
+// aquí porque ya tiene su propia validación (validarDocumentoCompleto, más abajo).
+const SOLO_LETRAS_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/
+const validarCampo = (name, form) => {
+    const esNIT = form.tipoIdentificacion === 'NIT'
+    switch (name) {
+        case 'tipoIdentificacion':
+            return form.tipoIdentificacion ? '' : 'Selecciona un tipo de documento'
+        case 'nombre':
+            if (!form.nombre.trim()) return esNIT ? 'La razón social es obligatoria' : 'El nombre es obligatorio'
+            if (!esNIT && !SOLO_LETRAS_REGEX.test(form.nombre)) return 'El nombre solo puede contener letras'
+            return ''
+        case 'apellido':
+            if (esNIT) return ''
+            if (!form.apellido.trim()) return 'El apellido es obligatorio'
+            if (!SOLO_LETRAS_REGEX.test(form.apellido)) return 'El apellido solo puede contener letras'
+            return ''
+        case 'telefono':
+            if (!form.telefono.trim()) return 'El teléfono es obligatorio'
+            if (!/^\d{10}$/.test(form.telefono)) return 'El teléfono debe tener exactamente 10 dígitos'
+            return ''
+        case 'emailLocal':
+            if (!form.emailLocal.trim()) return 'El correo es obligatorio'
+            if (!/^@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(form.emailDominio)) return 'El dominio del correo no es válido (ej: @empresa.com)'
+            return ''
+        case 'direccion':
+            return form.direccion.trim() ? '' : 'La dirección es obligatoria'
+        default:
+            return ''
+    }
+}
 
 const RegistrarCliente = ({ open, onClose, onSuccess }) => {
     const { agregarCliente } = useClientes()
@@ -69,17 +103,26 @@ const RegistrarCliente = ({ open, onClose, onSuccess }) => {
         onClose()
     }
 
-    const esDocAlfanumerico = (tipo) => ['CE', 'PAS'].includes(tipo)
     const getMaxLengthDoc = () => {
         if (form.tipoIdentificacion === 'NIT') return 15
-        if (esDocAlfanumerico(form.tipoIdentificacion)) return 12
-        return 10
+        return maxLengthDocumento(form.tipoIdentificacion)
     }
     const docHelperText = () => {
         if (form.tipoIdentificacion === 'NIT') return 'Números con guión, hasta 15 caracteres'
-        if (esDocAlfanumerico(form.tipoIdentificacion)) return 'Alfanumérico, hasta 12 caracteres'
-        if (form.tipoIdentificacion) return 'Solo dígitos, entre 3 y 10'
-        return ''
+        return docHelperTextBase(form.tipoIdentificacion) || ''
+    }
+
+    // NIT tiene su propio formato (dígitos + guión, hasta 15) — no encaja en las
+    // reglas genéricas de documento.js, así que se valida aparte aquí.
+    const validarDocumentoCompleto = (tipo, valor) => {
+        const limpio = (valor || '').trim()
+        if (!limpio) return 'El número de documento es obligatorio'
+        if (tipo === 'NIT') {
+            if (!/^[0-9-]+$/.test(limpio)) return 'Solo se permiten números y guión'
+            if (limpio.length > 15) return 'Máximo 15 caracteres'
+            return null
+        }
+        return validarNumeroDocumento(tipo, limpio)
     }
 
     const handleChange = (e) => {
@@ -108,6 +151,12 @@ const RegistrarCliente = ({ open, onClose, onSuccess }) => {
             } else {
                 value = value.replace(/[^0-9]/g, '')
             }
+            setForm(prev => ({ ...prev, numeroIdentificacion: value }))
+            setErrores(prev => prev.numeroIdentificacion
+                ? { ...prev, numeroIdentificacion: validarDocumentoCompleto(form.tipoIdentificacion, value) || '' }
+                : prev)
+            setApiError(null)
+            return
         }
         if (name === 'telefono') {
             value = value.replace(/[^0-9]/g, '')
@@ -123,8 +172,16 @@ const RegistrarCliente = ({ open, onClose, onSuccess }) => {
             value = value.replace(/[^a-zA-Z0-9\s,.\-#/' ]/g, '')
         }
 
+        const formActualizado = { ...form, [name]: value }
         setForm(prev => ({ ...prev, [name]: value }))
-        setErrores(prev => ({ ...prev, [name]: '' }))
+        setErrores(prev => {
+            const siguiente = { ...prev, [name]: prev[name] ? validarCampo(name, formActualizado) : '' }
+            // Si se corrige el dominio del correo, revalida también "emailLocal" si ya estaba marcado con error
+            if (name === 'emailDominio' && prev.emailLocal) {
+                siguiente.emailLocal = validarCampo('emailLocal', formActualizado)
+            }
+            return siguiente
+        })
         setApiError(null)
     }
 
@@ -160,43 +217,22 @@ const RegistrarCliente = ({ open, onClose, onSuccess }) => {
 
     const validarPaso = (step) => {
         const e = {}
-        const soloLetras = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/
-        const soloNumeros = /^\d+$/
 
         if (step === 0) {
-            const esNIT = form.tipoIdentificacion === 'NIT'
-            if (!form.tipoIdentificacion) e.tipoIdentificacion = 'Selecciona un tipo de documento'
-
-            if (!form.numeroIdentificacion.trim()) {
-                e.numeroIdentificacion = 'El número de documento es obligatorio'
-            } else if (!esNIT && esDocAlfanumerico(form.tipoIdentificacion)) {
-                if (!/^[a-zA-Z0-9]+$/.test(form.numeroIdentificacion))
-                    e.numeroIdentificacion = 'Solo letras y números, sin caracteres especiales'
-            } else if (!esNIT) {
-                if (!soloNumeros.test(form.numeroIdentificacion)) {
-                    e.numeroIdentificacion = 'Solo se permiten dígitos'
-                } else if (form.numeroIdentificacion.length < 3 || form.numeroIdentificacion.length > 10) {
-                    e.numeroIdentificacion = 'Debe tener entre 3 y 10 dígitos'
-                }
-            }
-
-            if (!form.nombre.trim()) e.nombre = esNIT ? 'La razón social es obligatoria' : 'El nombre es obligatorio'
-            else if (!esNIT && !soloLetras.test(form.nombre)) e.nombre = 'El nombre solo puede contener letras'
-
-            if (!esNIT && !form.apellido.trim()) e.apellido = 'El apellido es obligatorio'
-            else if (!esNIT && form.apellido.trim() && !soloLetras.test(form.apellido)) e.apellido = 'El apellido solo puede contener letras'
+            e.tipoIdentificacion = validarCampo('tipoIdentificacion', form)
+            const errorDocumento = validarDocumentoCompleto(form.tipoIdentificacion, form.numeroIdentificacion)
+            if (errorDocumento) e.numeroIdentificacion = errorDocumento
+            e.nombre = validarCampo('nombre', form)
+            e.apellido = validarCampo('apellido', form)
         }
 
         if (step === 1) {
-            if (!form.telefono.trim()) e.telefono = 'El teléfono es obligatorio'
-            else if (!/^\d{10}$/.test(form.telefono)) e.telefono = 'El teléfono debe tener exactamente 10 dígitos'
-
-            if (!form.emailLocal.trim()) e.emailLocal = 'El correo es obligatorio'
-            else if (!/^@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(form.emailDominio)) e.emailLocal = 'El dominio del correo no es válido (ej: @empresa.com)'
-
-            if (!form.direccion.trim()) e.direccion = 'La dirección es obligatoria'
+            e.telefono = validarCampo('telefono', form)
+            e.emailLocal = validarCampo('emailLocal', form)
+            e.direccion = validarCampo('direccion', form)
         }
 
+        Object.keys(e).forEach(k => { if (!e[k]) delete e[k] })
         return e
     }
 
@@ -245,6 +281,7 @@ const RegistrarCliente = ({ open, onClose, onSuccess }) => {
                     <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                         <TextField fullWidth select label="Tipo de documento *" name="tipoIdentificacion"
                             value={form.tipoIdentificacion} onChange={handleChange}
+                            onBlur={() => setErrores(prev => ({ ...prev, tipoIdentificacion: validarCampo('tipoIdentificacion', form) }))}
                             error={!!errores.tipoIdentificacion} helperText={errores.tipoIdentificacion}
                             slotProps={{
                                 input: { startAdornment: <InputAdornment position="start"><BadgeOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment> },
@@ -259,20 +296,25 @@ const RegistrarCliente = ({ open, onClose, onSuccess }) => {
                             <MenuItem value="RC">Registro Civil (RC)</MenuItem>
                         </TextField>
                         <FormField label="Número de documento" name="numeroIdentificacion" value={form.numeroIdentificacion}
-                            onChange={handleChange} onBlur={verificarDocumentoDuplicado} required error={errores.numeroIdentificacion}
+                            onChange={handleChange}
+                            onBlur={() => {
+                                verificarDocumentoDuplicado()
+                                setErrores(prev => ({ ...prev, numeroIdentificacion: validarDocumentoCompleto(form.tipoIdentificacion, form.numeroIdentificacion) || '' }))
+                            }}
+                            required error={errores.numeroIdentificacion}
                             helperText={errores.numeroIdentificacion || docHelperText()} icon={BadgeOutlinedIcon}
                             inputProps={{ maxLength: getMaxLengthDoc() }} />
                         <FormField
                             label={form.tipoIdentificacion === 'NIT' ? 'Razón Social' : 'Nombres'}
                             name="nombre" value={form.nombre} onChange={handleChange}
-                            onBlur={verificarNombreDuplicado}
+                            onBlur={() => { verificarNombreDuplicado(); setErrores(prev => ({ ...prev, nombre: validarCampo('nombre', form) })) }}
                             required error={errores.nombre} helperText={errores.nombre}
                             icon={form.tipoIdentificacion === 'NIT' ? BusinessOutlinedIcon : PersonOutlinedIcon}
                             inputProps={{ maxLength: 50 }}
                             placeholder={form.tipoIdentificacion === 'NIT' ? 'Ej: Transportes XYZ S.A.S' : 'Ej: Juan'} />
                         {form.tipoIdentificacion !== 'NIT' && (
                             <FormField label="Apellidos" name="apellido" value={form.apellido} onChange={handleChange}
-                                onBlur={verificarNombreDuplicado}
+                                onBlur={() => { verificarNombreDuplicado(); setErrores(prev => ({ ...prev, apellido: validarCampo('apellido', form) })) }}
                                 required error={errores.apellido} helperText={errores.apellido} icon={PersonOutlinedIcon}
                                 inputProps={{ maxLength: 50 }} placeholder="Ej: Gómez López" />
                         )}
@@ -288,10 +330,12 @@ const RegistrarCliente = ({ open, onClose, onSuccess }) => {
                 return (
                     <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                         <FormField label="Teléfono" name="telefono" value={form.telefono} onChange={handleChange}
+                            onBlur={() => setErrores(prev => ({ ...prev, telefono: validarCampo('telefono', form) }))}
                             required error={errores.telefono} helperText={errores.telefono || 'Número de 10 dígitos'}
                             icon={PhoneOutlinedIcon} inputProps={{ maxLength: 10 }} />
                         <TextField fullWidth label="Email electrónico" name="emailLocal"
-                            value={form.emailLocal} onChange={handleChange} required
+                            value={form.emailLocal} onChange={handleChange}
+                            onBlur={() => setErrores(prev => ({ ...prev, emailLocal: validarCampo('emailLocal', form) }))} required
                             error={!!errores.emailLocal} helperText={errores.emailLocal}
                             slotProps={{
                                 input: {
@@ -305,7 +349,9 @@ const RegistrarCliente = ({ open, onClose, onSuccess }) => {
                                             {!DOMINIOS_EMAIL.includes(form.emailDominio) ? (
                                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
                                                     <Box component="input" name="emailDominio" value={form.emailDominio}
-                                                        onChange={handleChange} placeholder="@empresa.com" maxLength={40}
+                                                        onChange={handleChange}
+                                                        onBlur={() => errores.emailLocal && setErrores(prev => ({ ...prev, emailLocal: validarCampo('emailLocal', form) }))}
+                                                        placeholder="@empresa.com" maxLength={40}
                                                         sx={{
                                                             border: 'none', outline: 'none', background: 'transparent',
                                                             fontSize: '1rem', fontFamily: 'inherit', color: theme.palette.text.secondary,
@@ -336,7 +382,8 @@ const RegistrarCliente = ({ open, onClose, onSuccess }) => {
                             sx={formFieldStyles} />
                         <Box sx={{ gridColumn: '1 / -1' }}>
                             <FormField label="Dirección" name="direccion" value={form.direccion}
-                                onChange={handleChange} required error={errores.direccion}
+                                onChange={handleChange}
+                                onBlur={() => setErrores(prev => ({ ...prev, direccion: validarCampo('direccion', form) }))} required error={errores.direccion}
                                 helperText={errores.direccion || `${form.direccion.length}/200`} icon={HomeOutlinedIcon}
                                 inputProps={{ maxLength: 200 }} />
                         </Box>

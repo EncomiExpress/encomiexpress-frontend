@@ -20,6 +20,42 @@ const steps = ['Datos del Vehículo', 'Documentación', 'Confirmación']
 const TIPOS_VEHICULO = ['Camioneta', 'Camión', 'Furgón', 'Semi Trayler', 'Trayler', 'Otro']
 const CAPACIDAD_MAX = 999999
 
+// Valida un único campo del formulario (usado en onBlur y para re-validar en vivo
+// mientras se corrige un campo ya marcado con error). Sin chequeo de "fecha anterior
+// a hoy" en los vencimientos — a diferencia de RegistrarVehiculo.jsx, aquí no aplica:
+// no tiene sentido bloquear la edición de un vehículo cuyo documento ya venció.
+const validarCampo = (name, formData) => {
+  switch (name) {
+    case 'placa':
+      return formData.placa?.trim() ? '' : 'La placa es obligatoria'
+    case 'marca':
+      return formData.marca?.trim() ? '' : 'La marca es obligatoria'
+    case 'modelo':
+      return formData.modelo?.trim() ? '' : 'El modelo es obligatorio'
+    case 'color':
+      return formData.color?.trim() ? '' : 'El color es obligatorio'
+    case 'tipo':
+      return formData.tipo ? '' : 'El tipo de vehículo es obligatorio'
+    case 'tipoOtro':
+      return (formData.tipo === 'Otro' && !formData.tipoOtro?.trim()) ? 'Especifica el tipo de vehículo' : ''
+    case 'capacidad':
+      if (!formData.capacidad) return 'La capacidad es obligatoria'
+      if (parseFloat(formData.capacidad) <= 0) return 'La capacidad debe ser mayor a 0'
+      if (parseFloat(formData.capacidad) > CAPACIDAD_MAX) return `La capacidad no puede ser mayor a ${CAPACIDAD_MAX.toLocaleString('es-CO')} kg`
+      return ''
+    case 'idPropietario':
+      return formData.idPropietario ? '' : 'El propietario es obligatorio'
+    case 'vencimientoSOAT':
+      return formData.vencimientoSOAT ? '' : 'La fecha de vencimiento del SOAT es obligatoria'
+    case 'vencimientoRevisionTecnica':
+      return formData.vencimientoRevisionTecnica ? '' : 'La fecha de vencimiento de la Revisión Técnica es obligatoria'
+    case 'vencimientoSeguroTerceros':
+      return formData.vencimientoSeguroTerceros ? '' : 'La fecha de vencimiento del Seguro de Terceros es obligatoria'
+    default:
+      return ''
+  }
+}
+
 const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSuccess }) => {
   const { getVehiculoById, actualizarVehiculo } = useVehiculo()
   const { showToast } = useToast()
@@ -80,8 +116,16 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
       }
     }
 
+    const formActualizado = { ...formData, [name]: value }
     setFormData(prev => ({ ...prev, [name]: value }))
-    setErrores(prev => ({ ...prev, [name]: '' }))
+    setErrores(prev => {
+      const siguiente = { ...prev, [name]: prev[name] ? validarCampo(name, formActualizado) : '' }
+      // Si se corrige el tipo de vehículo, revalida también "tipoOtro" si ya estaba marcado con error
+      if (name === 'tipo' && prev.tipoOtro) {
+        siguiente.tipoOtro = validarCampo('tipoOtro', formActualizado)
+      }
+      return siguiente
+    })
     setApiError('')
     setSinCambios(false)
   }
@@ -89,22 +133,21 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
   const validarPaso = (step) => {
     const e = {}
     if (step === 0) {
-      if (!formData.placa?.trim()) e.placa = 'La placa es obligatoria'
-      if (!formData.marca?.trim()) e.marca = 'La marca es obligatoria'
-      if (!formData.modelo?.trim()) e.modelo = 'El modelo es obligatorio'
-      if (!formData.color?.trim()) e.color = 'El color es obligatorio'
-      if (!formData.tipo) e.tipo = 'El tipo de vehículo es obligatorio'
-      else if (formData.tipo === 'Otro' && !formData.tipoOtro?.trim()) e.tipoOtro = 'Especifica el tipo de vehículo'
-      if (!formData.capacidad) e.capacidad = 'La capacidad es obligatoria'
-      else if (parseFloat(formData.capacidad) <= 0) e.capacidad = 'La capacidad debe ser mayor a 0'
-      else if (parseFloat(formData.capacidad) > CAPACIDAD_MAX) e.capacidad = `La capacidad no puede ser mayor a ${CAPACIDAD_MAX.toLocaleString('es-CO')} kg`
+      e.placa = validarCampo('placa', formData)
+      e.marca = validarCampo('marca', formData)
+      e.modelo = validarCampo('modelo', formData)
+      e.color = validarCampo('color', formData)
+      e.tipo = validarCampo('tipo', formData)
+      e.tipoOtro = validarCampo('tipoOtro', formData)
+      e.capacidad = validarCampo('capacidad', formData)
     }
     if (step === 1) {
-      if (!formData.idPropietario) e.idPropietario = 'El propietario es obligatorio'
-      if (!formData.vencimientoSOAT) e.vencimientoSOAT = 'La fecha de vencimiento del SOAT es obligatoria'
-      if (!formData.vencimientoRevisionTecnica) e.vencimientoRevisionTecnica = 'La fecha de vencimiento de la Revisión Técnica es obligatoria'
-      if (!formData.vencimientoSeguroTerceros) e.vencimientoSeguroTerceros = 'La fecha de vencimiento del Seguro de Terceros es obligatoria'
+      e.idPropietario = validarCampo('idPropietario', formData)
+      e.vencimientoSOAT = validarCampo('vencimientoSOAT', formData)
+      e.vencimientoRevisionTecnica = validarCampo('vencimientoRevisionTecnica', formData)
+      e.vencimientoSeguroTerceros = validarCampo('vencimientoSeguroTerceros', formData)
     }
+    Object.keys(e).forEach(k => { if (!e[k]) delete e[k] })
     return e
   }
 
@@ -155,25 +198,30 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
       case 0:
         return (
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
-            <FormField label="Placa" name="placa" value={formData.placa} onChange={handleChange} required
+            <FormField label="Placa" name="placa" value={formData.placa} onChange={handleChange}
+              onBlur={() => setErrores(prev => ({ ...prev, placa: validarCampo('placa', formData) }))} required
               placeholder="Ej: ABC-1234" icon={BadgeOutlined}
               error={errores.placa} helperText={errores.placa}
               inputProps={{ maxLength: 8 }} />
-            <FormField label="Marca" name="marca" value={formData.marca} onChange={handleChange} required
+            <FormField label="Marca" name="marca" value={formData.marca} onChange={handleChange}
+              onBlur={() => setErrores(prev => ({ ...prev, marca: validarCampo('marca', formData) }))} required
               placeholder="Ej: Toyota" icon={SellOutlined}
               error={errores.marca} helperText={errores.marca}
               inputProps={{ maxLength: 30 }} />
-            <FormField label="Modelo" name="modelo" value={formData.modelo} onChange={handleChange} required
+            <FormField label="Modelo" name="modelo" value={formData.modelo} onChange={handleChange}
+              onBlur={() => setErrores(prev => ({ ...prev, modelo: validarCampo('modelo', formData) }))} required
               placeholder="Ej: Hilux" icon={DirectionsCarOutlined}
               error={errores.modelo} helperText={errores.modelo}
               inputProps={{ maxLength: 30 }} />
-            <FormField label="Color" name="color" value={formData.color} onChange={handleChange} required
+            <FormField label="Color" name="color" value={formData.color} onChange={handleChange}
+              onBlur={() => setErrores(prev => ({ ...prev, color: validarCampo('color', formData) }))} required
               placeholder="Ej: Blanco" icon={InvertColorsOutlined}
               error={errores.color} helperText={errores.color}
               inputProps={{ maxLength: 20 }} />
             {formData.tipo === 'Otro' ? (
               <TextField
-                fullWidth label="Tipo de Vehículo" name="tipoOtro" value={formData.tipoOtro || ''} onChange={handleChange} required
+                fullWidth label="Tipo de Vehículo" name="tipoOtro" value={formData.tipoOtro || ''} onChange={handleChange}
+                onBlur={() => setErrores(prev => ({ ...prev, tipoOtro: validarCampo('tipoOtro', formData) }))} required
                 placeholder="Escribe el tipo de vehículo"
                 error={!!errores.tipoOtro} helperText={errores.tipoOtro || 'Presiona la X para volver a la lista'}
                 slotProps={{
@@ -192,13 +240,15 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
                 sx={formFieldStyles}
               />
             ) : (
-              <FormSelect label="Tipo de Vehículo" name="tipo" value={formData.tipo} onChange={handleChange} required
+              <FormSelect label="Tipo de Vehículo" name="tipo" value={formData.tipo} onChange={handleChange}
+                onBlur={() => setErrores(prev => ({ ...prev, tipo: validarCampo('tipo', formData) }))} required
                 error={errores.tipo} helperText={errores.tipo}>
                 {TIPOS_VEHICULO.map((t) => <MenuItem key={t} value={t}>{t}</MenuItem>)}
               </FormSelect>
             )}
             <FormField label="Capacidad (kg)" name="capacidad" value={formData.capacidad}
-              onChange={handleChange} required placeholder="Ej: 1500" icon={SpeedOutlined}
+              onChange={handleChange}
+              onBlur={() => setErrores(prev => ({ ...prev, capacidad: validarCampo('capacidad', formData) }))} required placeholder="Ej: 1500" icon={SpeedOutlined}
               error={errores.capacidad} helperText={errores.capacidad}
               inputProps={{ maxLength: 6 }} />
           </Box>
@@ -212,6 +262,7 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
               isOptionEqualToValue={(opt, val) => opt.idPropietario === val.idPropietario}
               value={propietarios.find(p => p.idPropietario === formData.idPropietario) || null}
               onChange={(_, val) => handleChange({ target: { name: 'idPropietario', value: val ? val.idPropietario : '' } })}
+              onBlur={() => setErrores(prev => ({ ...prev, idPropietario: validarCampo('idPropietario', formData) }))}
               filterOptions={(opts, { inputValue }) => {
                 if (!inputValue.trim()) {
                   return [...opts].sort((a, b) => b.idPropietario - a.idPropietario).slice(0, 5)
@@ -242,13 +293,16 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
               <MenuItem value="Tercerizado">Tercerizado</MenuItem>
             </FormSelect>
             <FormField label="Vencimiento SOAT" name="vencimientoSOAT" type="date"
-              value={formData.vencimientoSOAT} onChange={handleChange} required icon={EventOutlined}
+              value={formData.vencimientoSOAT} onChange={handleChange}
+              onBlur={() => setErrores(prev => ({ ...prev, vencimientoSOAT: validarCampo('vencimientoSOAT', formData) }))} required icon={EventOutlined}
               error={errores.vencimientoSOAT} helperText={errores.vencimientoSOAT} />
             <FormField label="Vencimiento Revisión Técnica" name="vencimientoRevisionTecnica" type="date"
-              value={formData.vencimientoRevisionTecnica} onChange={handleChange} required icon={EventOutlined}
+              value={formData.vencimientoRevisionTecnica} onChange={handleChange}
+              onBlur={() => setErrores(prev => ({ ...prev, vencimientoRevisionTecnica: validarCampo('vencimientoRevisionTecnica', formData) }))} required icon={EventOutlined}
               error={errores.vencimientoRevisionTecnica} helperText={errores.vencimientoRevisionTecnica} />
             <FormField label="Vencimiento Seguro de Terceros" name="vencimientoSeguroTerceros" type="date"
-              value={formData.vencimientoSeguroTerceros} onChange={handleChange} required icon={EventOutlined}
+              value={formData.vencimientoSeguroTerceros} onChange={handleChange}
+              onBlur={() => setErrores(prev => ({ ...prev, vencimientoSeguroTerceros: validarCampo('vencimientoSeguroTerceros', formData) }))} required icon={EventOutlined}
               error={errores.vencimientoSeguroTerceros} helperText={errores.vencimientoSeguroTerceros} />
           </Box>
         )

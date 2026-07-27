@@ -24,14 +24,58 @@ import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import * as conductorService from '../../shared/services/conductorService.js'
 import { hayNombreDuplicado, MENSAJE_NOMBRE_DUPLICADO, hayDocumentoDuplicado, MENSAJE_DOC_DUPLICADO } from '../../shared/utils/duplicados.js'
+import { esDocAlfanumerico, maxLengthDocumento, docHelperText, validarNumeroDocumento } from '../../shared/utils/documento.js'
 
 const hoyISO = () => new Date().toISOString().split('T')[0]
 
 const DOMINIOS_EMAIL = ['@gmail.com', '@hotmail.com', '@outlook.com', '@yahoo.com', '@icloud.com', '@live.com']
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s]).{8,64}$/
 const PASSWORD_HELP = '8-64 caracteres, con mayúsculas, minúsculas, números y un carácter especial'
+const SOLO_LETRAS_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/
 
 const steps = ['Datos Personales', 'Credenciales', 'Licencia', 'Confirmación']
+
+// Valida un único campo del formulario (usado en onBlur y para re-validar en vivo
+// mientras se corrige un campo ya marcado con error). numeroIdentificacion no vive
+// aquí porque ya tiene su propia validación en shared/utils/documento.js.
+const validarCampo = (name, form) => {
+    switch (name) {
+        case 'tipoIdentificacion':
+            return form.tipoIdentificacion ? '' : 'Selecciona un tipo de documento'
+        case 'nombre':
+            if (!form.nombre.trim()) return 'El nombre es obligatorio'
+            if (!SOLO_LETRAS_REGEX.test(form.nombre)) return 'El nombre solo puede contener letras'
+            return ''
+        case 'apellido':
+            return form.apellido?.trim() ? '' : 'El apellido es obligatorio'
+        case 'telefono':
+            if (!form.telefono.trim()) return 'El teléfono es obligatorio'
+            if (!/^\d{10}$/.test(form.telefono)) return 'El teléfono debe tener 10 dígitos'
+            return ''
+        case 'emailLocal':
+            return form.emailLocal?.trim() ? '' : 'El correo es obligatorio'
+        case 'password':
+            if (!form.password) return 'La contraseña es obligatoria'
+            if (!PASSWORD_REGEX.test(form.password)) return PASSWORD_HELP
+            return ''
+        case 'confirmarPassword':
+            if (!form.confirmarPassword) return 'Confirma la contraseña'
+            if (form.password !== form.confirmarPassword) return 'Las contraseñas no coinciden'
+            return ''
+        default:
+            return ''
+    }
+}
+
+const validarCategorias = (categoriasLicencia) => {
+    const completas = categoriasLicencia.filter(c => c.categoria && c.vencimiento)
+    const incompletas = categoriasLicencia.some(c => (c.categoria && !c.vencimiento) || (!c.categoria && c.vencimiento))
+    const vencidas = completas.some(c => c.vencimiento < hoyISO())
+    if (completas.length === 0) return 'Agrega al menos una categoría con su fecha de vencimiento'
+    if (incompletas) return 'Completa la categoría y la fecha en cada fila, o quita la fila'
+    if (vencidas) return 'El vencimiento no puede ser una fecha anterior a hoy'
+    return ''
+}
 
 const CATEGORIAS_LICENCIA = [
     { value: 'A1', label: 'A1 - Motocicleta hasta 125 c.c.' },
@@ -71,14 +115,6 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
         numeroLicencia: '',
     })
 
-    const esDocAlfanumerico = (tipo) => ['CE', 'PAS'].includes(tipo)
-    const getMaxLengthDoc = () => esDocAlfanumerico(form.tipoIdentificacion) ? 12 : 10
-    const docHelperText = () => {
-        if (esDocAlfanumerico(form.tipoIdentificacion)) return 'Alfanumérico, hasta 12 caracteres'
-        if (form.tipoIdentificacion) return 'Solo dígitos, entre 3 y 10'
-        return ''
-    }
-
     const handleChange = (e) => {
         const { name } = e.target
         let { value } = e.target
@@ -98,6 +134,12 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
             value = esDocAlfanumerico(form.tipoIdentificacion)
                 ? value.replace(/[^a-zA-Z0-9]/g, '')
                 : value.replace(/[^0-9]/g, '')
+            setForm(prev => ({ ...prev, numeroIdentificacion: value }))
+            setErrores(prev => prev.numeroIdentificacion
+                ? { ...prev, numeroIdentificacion: validarNumeroDocumento(form.tipoIdentificacion, value) || '' }
+                : prev)
+            setApiError(null)
+            return
         }
         if (name === 'telefono') {
             value = value.replace(/[^0-9]/g, '')
@@ -105,8 +147,16 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
         if (name === 'emailLocal') {
             value = value.replace(/[^a-zA-Z0-9._-]/g, '')
         }
+        const formActualizado = { ...form, [name]: value }
         setForm(prev => ({ ...prev, [name]: value }))
-        setErrores(prev => ({ ...prev, [name]: '' }))
+        setErrores(prev => {
+            const siguiente = { ...prev, [name]: prev[name] ? validarCampo(name, formActualizado) : '' }
+            // Si se corrige la contraseña, revalida también "confirmar contraseña" si ya estaba marcado con error
+            if (name === 'password' && prev.confirmarPassword) {
+                siguiente.confirmarPassword = validarCampo('confirmarPassword', formActualizado)
+            }
+            return siguiente
+        })
         setApiError(null)
     }
 
@@ -120,11 +170,9 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
     }, [activeStep])
 
     const handleCategoriaChange = (index, campo, value) => {
-        setForm(prev => ({
-            ...prev,
-            categoriasLicencia: prev.categoriasLicencia.map((c, i) => i === index ? { ...c, [campo]: value } : c)
-        }))
-        setErrores(prev => ({ ...prev, categoriasLicencia: '' }))
+        const categoriasLicencia = form.categoriasLicencia.map((c, i) => i === index ? { ...c, [campo]: value } : c)
+        setForm(prev => ({ ...prev, categoriasLicencia }))
+        setErrores(prev => ({ ...prev, categoriasLicencia: prev.categoriasLicencia ? validarCategorias(categoriasLicencia) : '' }))
         setApiError(null)
     }
 
@@ -133,7 +181,9 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
     }
 
     const handleQuitarCategoria = (index) => {
-        setForm(prev => ({ ...prev, categoriasLicencia: prev.categoriasLicencia.filter((_, i) => i !== index) }))
+        const categoriasLicencia = form.categoriasLicencia.filter((_, i) => i !== index)
+        setForm(prev => ({ ...prev, categoriasLicencia }))
+        setErrores(prev => ({ ...prev, categoriasLicencia: prev.categoriasLicencia ? validarCategorias(categoriasLicencia) : '' }))
     }
 
     const verificarDocumentoDuplicado = async () => {
@@ -173,45 +223,28 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
 
     const validarPaso = (step) => {
         const e = {}
-        const soloLetras = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/
-        const soloNumeros = /^\d+$/
 
         if (step === 0) {
-            if (!form.tipoIdentificacion) e.tipoIdentificacion = 'Selecciona un tipo de documento'
-            if (!form.numeroIdentificacion.trim()) {
-                e.numeroIdentificacion = 'El número de documento es obligatorio'
-            } else if (esDocAlfanumerico(form.tipoIdentificacion)) {
-                if (!/^[a-zA-Z0-9]+$/.test(form.numeroIdentificacion))
-                    e.numeroIdentificacion = 'Solo letras y números, sin caracteres especiales'
-            } else if (!soloNumeros.test(form.numeroIdentificacion)) {
-                e.numeroIdentificacion = 'Solo se permiten dígitos'
-            } else if (form.numeroIdentificacion.length < 3 || form.numeroIdentificacion.length > 10) {
-                e.numeroIdentificacion = 'Debe tener entre 3 y 10 dígitos'
-            }
-            if (!form.nombre.trim()) e.nombre = 'El nombre es obligatorio'
-            else if (!soloLetras.test(form.nombre)) e.nombre = 'El nombre solo puede contener letras'
-            if (!form.apellido?.trim()) e.apellido = 'El apellido es obligatorio'
+            e.tipoIdentificacion = validarCampo('tipoIdentificacion', form)
+            const errorDocumento = validarNumeroDocumento(form.tipoIdentificacion, form.numeroIdentificacion)
+            if (errorDocumento) e.numeroIdentificacion = errorDocumento
+            e.nombre = validarCampo('nombre', form)
+            e.apellido = validarCampo('apellido', form)
         }
 
         if (step === 1) {
-            if (!form.telefono.trim()) e.telefono = 'El teléfono es obligatorio'
-            else if (!/^\d{10}$/.test(form.telefono)) e.telefono = 'El teléfono debe tener 10 dígitos'
-            if (!form.emailLocal?.trim()) e.emailLocal = 'El correo es obligatorio'
-            if (!form.password) e.password = 'La contraseña es obligatoria'
-            else if (!PASSWORD_REGEX.test(form.password)) e.password = PASSWORD_HELP
-            if (!form.confirmarPassword) e.confirmarPassword = 'Confirma la contraseña'
-            else if (form.password !== form.confirmarPassword) e.confirmarPassword = 'Las contraseñas no coinciden'
+            e.telefono = validarCampo('telefono', form)
+            e.emailLocal = validarCampo('emailLocal', form)
+            e.password = validarCampo('password', form)
+            e.confirmarPassword = validarCampo('confirmarPassword', form)
         }
 
         if (step === 2) {
-            const completas = form.categoriasLicencia.filter(c => c.categoria && c.vencimiento)
-            const incompletas = form.categoriasLicencia.some(c => (c.categoria && !c.vencimiento) || (!c.categoria && c.vencimiento))
-            const vencidas = completas.some(c => c.vencimiento < hoyISO())
-            if (completas.length === 0) e.categoriasLicencia = 'Agrega al menos una categoría con su fecha de vencimiento'
-            else if (incompletas) e.categoriasLicencia = 'Completa la categoría y la fecha en cada fila, o quita la fila'
-            else if (vencidas) e.categoriasLicencia = 'El vencimiento no puede ser una fecha anterior a hoy'
+            const errorCategorias = validarCategorias(form.categoriasLicencia)
+            if (errorCategorias) e.categoriasLicencia = errorCategorias
         }
 
+        Object.keys(e).forEach(k => { if (!e[k]) delete e[k] })
         return e
     }
 
@@ -294,6 +327,7 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
                     <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                         <TextField fullWidth select label="Tipo de documento *" name="tipoIdentificacion"
                             value={form.tipoIdentificacion} onChange={handleChange}
+                            onBlur={() => setErrores(prev => ({ ...prev, tipoIdentificacion: validarCampo('tipoIdentificacion', form) }))}
                             error={!!errores.tipoIdentificacion} helperText={errores.tipoIdentificacion}
                             slotProps={{
                                 input: { startAdornment: <InputAdornment position="start"><BadgeOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment> },
@@ -307,15 +341,20 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
                             <MenuItem value="RC">Registro Civil (RC)</MenuItem>
                         </TextField>
                         <FormField label="Número de documento" name="numeroIdentificacion" value={form.numeroIdentificacion}
-                            onChange={handleChange} onBlur={verificarDocumentoDuplicado} required error={errores.numeroIdentificacion}
-                            helperText={errores.numeroIdentificacion || docHelperText()} icon={BadgeOutlinedIcon}
-                            inputProps={{ maxLength: getMaxLengthDoc() }} />
+                            onChange={handleChange}
+                            onBlur={() => {
+                                verificarDocumentoDuplicado()
+                                setErrores(prev => ({ ...prev, numeroIdentificacion: validarNumeroDocumento(form.tipoIdentificacion, form.numeroIdentificacion) || '' }))
+                            }}
+                            required error={errores.numeroIdentificacion}
+                            helperText={errores.numeroIdentificacion || docHelperText(form.tipoIdentificacion)} icon={BadgeOutlinedIcon}
+                            inputProps={{ maxLength: maxLengthDocumento(form.tipoIdentificacion) }} />
                         <FormField label="Nombres" name="nombre" value={form.nombre} onChange={handleChange}
-                            onBlur={verificarNombreDuplicado}
+                            onBlur={() => { verificarNombreDuplicado(); setErrores(prev => ({ ...prev, nombre: validarCampo('nombre', form) })) }}
                             required error={errores.nombre} helperText={errores.nombre} icon={PersonOutlinedIcon}
                             inputProps={{ maxLength: 50 }} placeholder="Ej: Juan" />
                         <FormField label="Apellidos" name="apellido" value={form.apellido} onChange={handleChange}
-                            onBlur={verificarNombreDuplicado}
+                            onBlur={() => { verificarNombreDuplicado(); setErrores(prev => ({ ...prev, apellido: validarCampo('apellido', form) })) }}
                             required error={errores.apellido} helperText={errores.apellido} icon={PersonOutlinedIcon}
                             inputProps={{ maxLength: 50 }} placeholder="Ej: Gómez López" />
                         {avisoDocDuplicado && (
@@ -330,10 +369,12 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
                 return (
                     <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                         <FormField label="Teléfono" name="telefono" value={form.telefono} onChange={handleChange}
+                            onBlur={() => setErrores(prev => ({ ...prev, telefono: validarCampo('telefono', form) }))}
                             required error={errores.telefono} helperText={errores.telefono || 'Número de 10 dígitos'}
                             icon={PhoneOutlinedIcon} inputProps={{ maxLength: 10 }} />
                         <TextField fullWidth label="Correo electrónico" name="emailLocal"
-                            value={form.emailLocal} onChange={handleChange} required
+                            value={form.emailLocal} onChange={handleChange}
+                            onBlur={() => setErrores(prev => ({ ...prev, emailLocal: validarCampo('emailLocal', form) }))} required
                             error={!!errores.emailLocal} helperText={errores.emailLocal}
                             slotProps={{
                                 input: {
@@ -362,7 +403,8 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
                         <Box sx={{ gridColumn: '1 / -1', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                             <TextField fullWidth label="Contraseña inicial" name="password"
                                 type={showPassword ? 'text' : 'password'}
-                                value={form.password} onChange={handleChange} required
+                                value={form.password} onChange={handleChange}
+                                onBlur={() => setErrores(prev => ({ ...prev, password: validarCampo('password', form) }))} required
                                 error={!!errores.password} helperText={errores.password || PASSWORD_HELP}
                                 slotProps={{
                                     input: {
@@ -384,7 +426,8 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
                                 sx={formFieldStyles} />
                             <TextField fullWidth label="Confirmar contraseña" name="confirmarPassword"
                                 type={showConfirmarPassword ? 'text' : 'password'}
-                                value={form.confirmarPassword} onChange={handleChange} required
+                                value={form.confirmarPassword} onChange={handleChange}
+                                onBlur={() => setErrores(prev => ({ ...prev, confirmarPassword: validarCampo('confirmarPassword', form) }))} required
                                 error={!!errores.confirmarPassword} helperText={errores.confirmarPassword}
                                 slotProps={{
                                     input: {
@@ -436,6 +479,7 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
                                     </FormSelect>
                                     <FormField label="Vencimiento" type="date" value={cat.vencimiento}
                                         onChange={(e) => handleCategoriaChange(index, 'vencimiento', e.target.value)}
+                                        onBlur={() => setErrores(prev => ({ ...prev, categoriasLicencia: validarCategorias(form.categoriasLicencia) }))}
                                         icon={EventOutlinedIcon} InputLabelProps={{ shrink: true }}
                                         inputProps={{ min: hoyISO() }} />
                                     <IconButton onClick={() => handleQuitarCategoria(index)}
