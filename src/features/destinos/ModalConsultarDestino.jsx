@@ -167,6 +167,7 @@ const ModalConsultarDestino = ({ destino, onClose }) => {
                             </Typography>
                             <CampoFila label="Ciudad" value={destino.ciudad} />
                             <CampoFila label="Departamento" value={destino.departamento} />
+                            <CampoFila label="Dirección" value={destino.direccion || 'Sin registrar'} />
                         </Paper>
 
                         <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: theme.palette.background.paper, flex: 1 }}>
@@ -229,7 +230,10 @@ const ModalConsultarDestino = ({ destino, onClose }) => {
                                             onClick={() => window.open(`/transporte/rutas?highlight=${r.idRuta}`, '_blank')}
                                             sx={{ cursor: 'pointer', '&:hover': { backgroundColor: theme.palette.background.subtle } }}>
                                             <TableCell sx={{ fontSize: '0.82rem' }}>{r.nombreRuta || '—'}</TableCell>
-                                            <TableCell sx={{ fontSize: '0.82rem' }}>{r.vehiculo?.placa || '—'}</TableCell>
+                                            <TableCell sx={{ fontSize: '0.82rem' }}>
+                                                {r.paresVehiculoConductor?.[0]?.vehiculo?.placa || '—'}
+                                                {r.paresVehiculoConductor?.length > 1 ? ` +${r.paresVehiculoConductor.length - 1}` : ''}
+                                            </TableCell>
                                             <TableCell sx={{ fontSize: '0.82rem' }}>{r.fechaSalida ? new Date(r.fechaSalida).toLocaleDateString() : '—'}</TableCell>
                                             <TableCell>
                                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>

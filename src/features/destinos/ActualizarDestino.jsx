@@ -6,6 +6,7 @@ import {
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined'
+import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined'
 import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined'
 import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined'
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined'
@@ -22,6 +23,25 @@ const steps = ['Ubicación', 'Tarifa', 'Confirmación']
 const departamentos = ['Antioquia', 'Córdoba']
 const TARIFA_MAX = 999999999
 
+// Valida un único campo del formulario (usado en onBlur y para re-validar en vivo
+// mientras se corrige un campo ya marcado con error). "direccion" no vive aquí:
+// es opcional y no tiene ninguna regla que validar.
+const validarCampo = (name, form) => {
+    switch (name) {
+        case 'departamento':
+            return form.departamento ? '' : 'Selecciona un departamento'
+        case 'ciudad':
+            return form.ciudad?.trim() ? '' : 'La ciudad es obligatoria'
+        case 'tarifaBase':
+            if (form.tarifaBase === '' || form.tarifaBase === undefined) return 'La tarifa base es obligatoria'
+            if (isNaN(Number(form.tarifaBase)) || Number(form.tarifaBase) < 0) return 'La tarifa base debe ser un número positivo'
+            if (Number(form.tarifaBase) > TARIFA_MAX) return `La tarifa base no puede ser mayor a $${TARIFA_MAX.toLocaleString('es-CO')}`
+            return ''
+        default:
+            return ''
+    }
+}
+
 const ActualizarDestino = ({ open, onClose, destino, onSuccess }) => {
     const { actualizarDestino } = useDestino()
     const { showToast } = useToast()
@@ -36,6 +56,7 @@ const ActualizarDestino = ({ open, onClose, destino, onSuccess }) => {
     const [form, setForm] = useState({
         departamento: '',
         ciudad: '',
+        direccion: '',
         tarifaBase: '',
     })
 
@@ -48,6 +69,7 @@ const ActualizarDestino = ({ open, onClose, destino, onSuccess }) => {
             const initial = {
                 departamento: destino.departamento || '',
                 ciudad: destino.ciudad || '',
+                direccion: destino.direccion || '',
                 tarifaBase: destino.tarifaBase !== undefined ? String(destino.tarifaBase) : '',
             }
             setForm(initial)
@@ -61,13 +83,17 @@ const ActualizarDestino = ({ open, onClose, destino, onSuccess }) => {
         if (name === 'ciudad') {
             value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
         }
+        if (name === 'direccion') {
+            value = value.replace(/[^a-zA-Z0-9\s,.\-#/' ]/g, '')
+        }
         if (name === 'tarifaBase') {
             value = value.replace(/[^0-9.]/g, '')
             const num = parseFloat(value)
             if (!isNaN(num) && num > TARIFA_MAX) return
         }
+        const formActualizado = { ...form, [name]: value }
         setForm(prev => ({ ...prev, [name]: value }))
-        setErrores(prev => ({ ...prev, [name]: '' }))
+        setErrores(prev => ({ ...prev, [name]: prev[name] ? validarCampo(name, formActualizado) : '' }))
         setApiError(null)
         setSinCambios(false)
     }
@@ -75,18 +101,13 @@ const ActualizarDestino = ({ open, onClose, destino, onSuccess }) => {
     const validarPaso = (step) => {
         const e = {}
         if (step === 0) {
-            if (!form.departamento) e.departamento = 'Selecciona un departamento'
-            if (!form.ciudad?.trim()) e.ciudad = 'La ciudad es obligatoria'
+            e.departamento = validarCampo('departamento', form)
+            e.ciudad = validarCampo('ciudad', form)
         }
         if (step === 1) {
-            if (form.tarifaBase === '' || form.tarifaBase === undefined) {
-                e.tarifaBase = 'La tarifa base es obligatoria'
-            } else if (isNaN(Number(form.tarifaBase)) || Number(form.tarifaBase) < 0) {
-                e.tarifaBase = 'La tarifa base debe ser un número positivo'
-            } else if (Number(form.tarifaBase) > TARIFA_MAX) {
-                e.tarifaBase = `La tarifa base no puede ser mayor a $${TARIFA_MAX.toLocaleString('es-CO')}`
-            }
+            e.tarifaBase = validarCampo('tarifaBase', form)
         }
+        Object.keys(e).forEach(k => { if (!e[k]) delete e[k] })
         return e
     }
 
@@ -118,6 +139,7 @@ const ActualizarDestino = ({ open, onClose, destino, onSuccess }) => {
                 idDestino: destino.idDestino,
                 departamento: form.departamento,
                 ciudad: form.ciudad,
+                direccion: form.direccion?.trim() || null,
                 tarifaBase: Number(form.tarifaBase) || 0,
             })
             showToast('¡Destino actualizado exitosamente!', 'success')
@@ -134,7 +156,7 @@ const ActualizarDestino = ({ open, onClose, destino, onSuccess }) => {
 
     const handleClose = () => {
         if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
-        setForm({ departamento: '', ciudad: '', tarifaBase: '' })
+        setForm({ departamento: '', ciudad: '', direccion: '', tarifaBase: '' })
         setErrores({})
         setApiError(null)
         setActiveStep(0)
@@ -155,16 +177,27 @@ const ActualizarDestino = ({ open, onClose, destino, onSuccess }) => {
                     <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                         <FormSelect
                             label="Departamento" name="departamento" value={form.departamento}
-                            onChange={handleChange} required error={errores.departamento} helperText={errores.departamento}
+                            onChange={handleChange}
+                            onBlur={() => setErrores(prev => ({ ...prev, departamento: validarCampo('departamento', form) }))}
+                            required error={errores.departamento} helperText={errores.departamento}
                         >
                             {departamentos.map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
                         </FormSelect>
                         <FormField
                             label="Ciudad" name="ciudad" value={form.ciudad} onChange={handleChange}
+                            onBlur={() => setErrores(prev => ({ ...prev, ciudad: validarCampo('ciudad', form) }))}
                             required error={errores.ciudad} helperText={errores.ciudad}
                             icon={LocationOnOutlinedIcon} inputProps={{ maxLength: 60 }}
                             placeholder="Ej: Medellín"
                         />
+                        <Box sx={{ gridColumn: '1 / -1' }}>
+                            <FormField
+                                label="Dirección de la oficina" name="direccion" value={form.direccion} onChange={handleChange}
+                                helperText={`Opcional · ${(form.direccion || '').length}/200`}
+                                icon={HomeOutlinedIcon} inputProps={{ maxLength: 200 }}
+                                placeholder="Ej: Calle 30 #12-45, local 2"
+                            />
+                        </Box>
                     </Box>
                 )
             case 1:
@@ -172,6 +205,7 @@ const ActualizarDestino = ({ open, onClose, destino, onSuccess }) => {
                     <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 2.5 }}>
                         <FormField
                             label="Tarifa Base (COP)" name="tarifaBase" value={form.tarifaBase} onChange={handleChange}
+                            onBlur={() => setErrores(prev => ({ ...prev, tarifaBase: validarCampo('tarifaBase', form) }))}
                             required error={errores.tarifaBase} helperText={errores.tarifaBase || 'Valor en pesos colombianos'}
                             icon={AttachMoneyOutlinedIcon} inputProps={{ maxLength: 12 }}
                             placeholder="Ej: 25000"
@@ -185,6 +219,7 @@ const ActualizarDestino = ({ open, onClose, destino, onSuccess }) => {
                 const camposComparados = originalData ? [
                     [form.departamento, originalData.departamento],
                     [form.ciudad, originalData.ciudad],
+                    [form.direccion, originalData.direccion],
                     [form.tarifaBase, originalData.tarifaBase],
                 ] : []
                 const totalModificados = camposComparados.filter(([a, b]) => sonDistintos(a, b)).length
@@ -216,6 +251,7 @@ const ActualizarDestino = ({ open, onClose, destino, onSuccess }) => {
                             </Typography>
                             <ConfirmRow label="Departamento" value={form.departamento} previousValue={originalData?.departamento} />
                             <ConfirmRow label="Ciudad" value={form.ciudad} previousValue={originalData?.ciudad} />
+                            <ConfirmRow label="Dirección" value={form.direccion || '—'} previousValue={originalData?.direccion || '—'} />
                             <ConfirmRow label="Tarifa Base" value={tarifaActual} previousValue={tarifaOriginal} />
                         </Paper>
                     </Box>

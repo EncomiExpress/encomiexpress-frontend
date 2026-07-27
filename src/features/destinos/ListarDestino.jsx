@@ -313,6 +313,7 @@ const ListarDestino = () => {
                 'ID': destino.idDestino,
                 'Ciudad': destino.ciudad,
                 'Departamento': destino.departamento,
+                'Dirección': destino.direccion || '',
                 'Tarifa base': destino.tarifaBase,
                 'Estado': destino.habilitado === false ? 'Inhabilitado' : 'Habilitado',
             }))
