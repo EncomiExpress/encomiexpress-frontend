@@ -3,7 +3,6 @@ import { useTheme, alpha } from '@mui/material/styles'
 import {
     Box, Typography, Paper, Chip, Button, Dialog, IconButton, Menu, MenuItem
 } from '@mui/material'
-import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined'
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined'
@@ -81,7 +80,7 @@ const ModalConsultarVenta = ({ venta, onClose }) => {
                         border: `1.5px solid ${alpha(theme.palette.primary.main, 0.22)}`,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}>
-                        <LocalShippingOutlinedIcon sx={{ fontSize: 22, color: theme.palette.primary.main }} />
+                        <ReceiptLongOutlinedIcon sx={{ fontSize: 22, color: theme.palette.primary.main }} />
                     </Box>
                     <Box>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
@@ -178,6 +177,11 @@ const ModalConsultarVenta = ({ venta, onClose }) => {
                                 onClick={() => window.open(`/transporte/rutas?highlight=${venta.idRuta}`, '_blank')}
                                 sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem', cursor: 'pointer', '&:hover': { filter: 'brightness(0.92)' } }} />
                         </Box>
+                        {/* Vehículo/conductor del PAQUETE que se está viendo (paquete/i arriba) —
+                        una ruta ahora puede tener varios vehículos y cada paquete de la venta
+                        puede ir en uno distinto, así que esto ya no es un dato único por ruta. */}
+                        <CampoFila label="Vehículo" value={paquete?.asignacion?.vehiculo ? `${paquete.asignacion.vehiculo.placa} — ${paquete.asignacion.vehiculo.marca} ${paquete.asignacion.vehiculo.modelo}` : null} />
+                        <CampoFila label="Conductor" value={paquete?.asignacion?.conductor?.usuario ? `${paquete.asignacion.conductor.usuario.nombre} ${paquete.asignacion.conductor.usuario.apellido}` : null} />
                         <CampoFila label="Método de pago" value={venta.metodoPago} />
                         <CampoFila label="Valor servicio" value={venta.valorServicio != null ? `$${Number(venta.valorServicio).toLocaleString('es-CO')}` : null} />
                         <CampoFila label="Impuestos" value={venta.impuestos != null ? `$${Number(venta.impuestos).toLocaleString('es-CO')}` : null} />

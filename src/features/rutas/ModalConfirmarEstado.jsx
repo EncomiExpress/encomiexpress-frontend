@@ -28,7 +28,7 @@ const EstadoDot = ({ color, fill, label }) => (
     </Box>
 )
 
-const ModalConfirmarEstado = ({ open, nuevoEstado, info, ruta, vehiculo, conductor, onConfirm, onClose, onExited }) => {
+const ModalConfirmarEstado = ({ open, nuevoEstado, info, ruta, pares = [], onConfirm, onClose, onExited }) => {
     const theme = useTheme()
     const { color } = getEstadoColorRuta(nuevoEstado)
     const [detalle, setDetalle] = useState({ anticipos: [], ventas: [], loading: false })
@@ -62,22 +62,22 @@ const ModalConfirmarEstado = ({ open, nuevoEstado, info, ruta, vehiculo, conduct
             .catch(() => setDetalle({ anticipos: [], ventas: [], loading: false }))
     }, [open, nuevoEstado, ruta])
 
-    const vehiculoLabel = vehiculo
-        ? `${vehiculo.placa}${vehiculo.marca ? ` · ${vehiculo.marca}` : ''}`
-        : ruta?.vehiculo?.placa || 'N/A'
-
-    const conductorLabel = conductor
-        ? `${conductor.nombre || conductor.usuario?.nombre || ''} ${conductor.apellido || conductor.usuario?.apellido || ''}`.trim()
-        : ruta?.conductor?.usuario
-            ? `${ruta.conductor.usuario.nombre} ${ruta.conductor.usuario.apellido}`
-            : 'N/A'
-
-    const vDot = vehiculoDot(vehiculo?.estado)
-    const cDot = conductorDot(conductor?.estado)
+    // Una ruta ahora puede tener varios vehículos+conductor (convoy) — se arma un renglón
+    // por cada par en vez de mostrar uno solo.
+    const paresInfo = pares.map((par) => ({
+        vehiculoLabel: par.vehiculo
+            ? `${par.vehiculo.placa}${par.vehiculo.marca ? ` · ${par.vehiculo.marca}` : ''}`
+            : 'N/A',
+        conductorLabel: par.conductor
+            ? `${par.conductor.nombre || ''} ${par.conductor.apellido || ''}`.trim() || 'N/A'
+            : 'N/A',
+        vDot: vehiculoDot(par.vehiculo?.estado),
+        cDot: conductorDot(par.conductor?.estado),
+        vehiculoId: par.vehiculo?.idVehiculo,
+        conductorId: par.conductor?.idConductor,
+    }))
     const isEnCurso = nuevoEstado === 'En Curso'
 
-    const vehiculoId = vehiculo?.idVehiculo || ruta?.vehiculo?.idVehiculo
-    const conductorId = conductor?.idConductor || ruta?.conductor?.idConductor
     const openRecord = (path) => window.open(path, '_blank')
     const openHighlight = (base, id) => openRecord(`${base}?highlight=${id}`)
 
@@ -124,29 +124,31 @@ const ModalConfirmarEstado = ({ open, nuevoEstado, info, ruta, vehiculo, conduct
                 {isEnCurso && (
                     <Box sx={{ mt: 2.5, textAlign: 'left' }}>
 
-                        {/* Sección 1: Vehículo + Conductor */}
+                        {/* Sección 1: Vehículo + Conductor — un bloque por cada par del convoy */}
                         <Typography variant="body2" color={theme.palette.text.primary} sx={{ mb: 1 }}>
-                            El vehículo y el conductor pasarán a{' '}
+                            {paresInfo.length > 1 ? 'Los vehículos y conductores pasarán a' : 'El vehículo y el conductor pasarán a'}{' '}
                             <Box component="span" sx={{ color: '#3B82F6' }}>"En Ruta"</Box>
                         </Typography>
-                        <Paper elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 2, overflow: 'hidden', mb: 2 }}>
-                            <Box onClick={() => vehiculoId && openHighlight('/vehiculos/listar', vehiculoId)}
-                                sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1.5, py: 1, borderBottom: `1px solid ${theme.palette.divider}`, cursor: vehiculoId ? 'pointer' : 'default', '&:hover': vehiculoId ? { backgroundColor: theme.palette.action.hover } : {} }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    <DirectionsCarOutlinedIcon sx={{ fontSize: 16, color: theme.palette.text.secondary }} />
-                                    <Typography variant="body2" fontWeight={500}>{vehiculoLabel}</Typography>
+                        {paresInfo.map((p, i) => (
+                            <Paper key={i} elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 2, overflow: 'hidden', mb: i < paresInfo.length - 1 ? 1 : 2 }}>
+                                <Box onClick={() => p.vehiculoId && openHighlight('/vehiculos/listar', p.vehiculoId)}
+                                    sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1.5, py: 1, borderBottom: `1px solid ${theme.palette.divider}`, cursor: p.vehiculoId ? 'pointer' : 'default', '&:hover': p.vehiculoId ? { backgroundColor: theme.palette.action.hover } : {} }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <DirectionsCarOutlinedIcon sx={{ fontSize: 16, color: theme.palette.text.secondary }} />
+                                        <Typography variant="body2" fontWeight={500}>{p.vehiculoLabel}</Typography>
+                                    </Box>
+                                    <EstadoDot {...p.vDot} />
                                 </Box>
-                                <EstadoDot {...vDot} />
-                            </Box>
-                            <Box onClick={() => conductorId && openHighlight('/transporte/conductores', conductorId)}
-                                sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1.5, py: 1, cursor: conductorId ? 'pointer' : 'default', '&:hover': conductorId ? { backgroundColor: theme.palette.action.hover } : {} }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    <PersonOutlinedIcon sx={{ fontSize: 16, color: theme.palette.text.secondary }} />
-                                    <Typography variant="body2" fontWeight={500}>{conductorLabel}</Typography>
+                                <Box onClick={() => p.conductorId && openHighlight('/transporte/conductores', p.conductorId)}
+                                    sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1.5, py: 1, cursor: p.conductorId ? 'pointer' : 'default', '&:hover': p.conductorId ? { backgroundColor: theme.palette.action.hover } : {} }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <PersonOutlinedIcon sx={{ fontSize: 16, color: theme.palette.text.secondary }} />
+                                        <Typography variant="body2" fontWeight={500}>{p.conductorLabel}</Typography>
+                                    </Box>
+                                    <EstadoDot {...p.cDot} />
                                 </Box>
-                                <EstadoDot {...cDot} />
-                            </Box>
-                        </Paper>
+                            </Paper>
+                        ))}
 
                         {detalle.loading
                             ? <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}><CircularProgress size={22} /></Box>

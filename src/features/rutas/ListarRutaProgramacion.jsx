@@ -216,7 +216,7 @@ const ListarRutaProgramacion = () => {
     const [rutaVer, setRutaVer]               = useState(null)
     const { showToast } = useToast()
     const [confirmInhabilitar, setConfirmInhabilitar] = useState({ open: false, idRuta: null, nombreRuta: '', habilitadoActual: null, estadoRuta: null })
-    const [confirmEstado, setConfirmEstado]   = useState({ open: false, id: null, nuevoEstado: null, info: '', ruta: null, vehiculo: null, conductor: null })
+    const [confirmEstado, setConfirmEstado]   = useState({ open: false, id: null, nuevoEstado: null, info: '', ruta: null, pares: [] })
     const [alertaBloqueo, setAlertaBloqueo]   = useState({ open: false, titulo: '', entidades: [] })
     const [estadoMenu, setEstadoMenu]         = useState({ anchor: null, id: null, estadoActual: null })
     const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
@@ -351,16 +351,18 @@ const getDestinoNombre = (id) => {
   return d ? (d.nombre || `${d.ciudad}, ${d.departamento}`) : 'N/A';
 };
 
-    // Si la API devuelve los datos relacionados embebidos, los usamos directamente
-    const resolveVehiculo = (ruta) =>
-        ruta.vehiculo?.placa ?? getVehiculoPlaca(ruta.idVehiculo)
-
-    const resolveConductor = (ruta) => {
-        if (ruta.conductor?.usuario) {
-            return `${ruta.conductor.usuario.nombre} ${ruta.conductor.usuario.apellido}`
-        }
-        return getConductorNombre(ruta.idConductor)
-    }
+    // Una ruta ahora puede tener varios vehículos+conductor (convoy) — se expone el
+    // array completo de pares, con respaldo a los contextos si la API no trae embebido
+    // el vehículo/conductor de algún par.
+    const resolvePares = (ruta) => (ruta.paresVehiculoConductor || []).map(par => ({
+        idRutaVehiculoConductor: par.idRutaVehiculoConductor,
+        placa: par.vehiculo?.placa ?? getVehiculoPlaca(par.idVehiculo),
+        vehiculoInhabilitado: getVehiculos().find(v => v.idVehiculo === par.idVehiculo)?.habilitado === false,
+        conductorNombre: par.conductor?.usuario
+            ? `${par.conductor.usuario.nombre} ${par.conductor.usuario.apellido}`
+            : getConductorNombre(par.idConductor),
+        conductorInhabilitado: getConductores().find(c => c.idConductor === par.idConductor)?.habilitado === false,
+    }))
 
 const resolveDestino = (ruta) =>
   ruta.destino
@@ -373,17 +375,20 @@ const resolveDestino = (ruta) =>
         setExportando(true)
         try {
             const res = await getRutas({ ...buildRutasParams(), page: 1, limit: 100000 })
-            const rows = (res?.data || []).map(ruta => ({
-                'ID': getId(ruta),
-                'Ruta': ruta.nombreRuta || `Ruta ${getId(ruta)}`,
-                'Destino': resolveDestino(ruta),
-                'Vehículo': resolveVehiculo(ruta),
-                'Conductor': resolveConductor(ruta),
-                'Fecha salida': ruta.fechaSalida,
-                'Hora salida': formatHora12(ruta.horaSalida),
-                'Estado': ruta.estado,
-                'Habilitado': ruta.habilitado === false ? 'No' : 'Sí',
-            }))
+            const rows = (res?.data || []).map(ruta => {
+                const pares = resolvePares(ruta)
+                return {
+                    'ID': getId(ruta),
+                    'Ruta': ruta.nombreRuta || `Ruta ${getId(ruta)}`,
+                    'Destino': resolveDestino(ruta),
+                    'Vehículo': pares.map(p => p.placa).filter(Boolean).join(', ') || 'N/A',
+                    'Conductor': pares.map(p => p.conductorNombre).filter(Boolean).join(', ') || 'N/A',
+                    'Fecha salida': ruta.fechaSalida,
+                    'Hora salida': formatHora12(ruta.horaSalida),
+                    'Estado': ruta.estado,
+                    'Habilitado': ruta.habilitado === false ? 'No' : 'Sí',
+                }
+            })
             await exportToExcel({ data: rows, fileName: 'rutas', sheetName: 'Rutas', themeColor: theme.palette.primary.main })
         } catch (err) {
             showToast(err.message || 'Error al exportar.', 'error')
@@ -404,39 +409,45 @@ const resolveDestino = (ruta) =>
 
     const handleEstadoChange = (id, nuevoEstado) => {
         const rutaActual = rutasProgramadas.find(r => getId(r) === id)
-        const vehiculo = getVehiculos().find(v => v.idVehiculo === rutaActual?.idVehiculo)
-        const conductor = getConductores().find(c => c.idConductor === rutaActual?.idConductor)
+        const paresActual = rutaActual?.paresVehiculoConductor || []
+        // Vehículo/conductor "en vivo" desde los contextos (para el estado actual real,
+        // no el que traía embebido la ruta), con respaldo a los datos de la propia ruta.
+        const paresResueltos = paresActual.map(par => ({
+            idRutaVehiculoConductor: par.idRutaVehiculoConductor,
+            idVehiculo: par.idVehiculo,
+            idConductor: par.idConductor,
+            vehiculo: getVehiculos().find(v => v.idVehiculo === par.idVehiculo) || (par.vehiculo ? { ...par.vehiculo } : null),
+            conductor: getConductores().find(c => c.idConductor === par.idConductor) || (par.conductor?.usuario ? { idConductor: par.idConductor, ...par.conductor.usuario } : null),
+        }))
 
         if (nuevoEstado === 'En Curso') {
-            const otraRutaVehiculo = rutasProgramadas.find(r =>
-                getId(r) !== id &&
-                r.idVehiculo === rutaActual?.idVehiculo &&
-                r.estado === 'En Curso' &&
-                r.habilitado !== false
-            )
-            const otraRutaConductor = rutasProgramadas.find(r =>
-                getId(r) !== id &&
-                r.idConductor === rutaActual?.idConductor &&
-                r.estado === 'En Curso' &&
-                r.habilitado !== false
-            )
-
             const entidades = []
             let vehiculoBlocked = false
             let conductorBlocked = false
 
-            if (vehiculo?.estado === 'Mantenimiento') {
-                vehiculoBlocked = true
-                entidades.push({ tipo: 'vehiculo', etiqueta: vehiculo.placa || '', estado: vehiculo.estado, id: vehiculo.idVehiculo, mensaje: 'está en Mantenimiento y no puede asignarse a una ruta En Curso.' })
-            } else if (otraRutaVehiculo) {
-                vehiculoBlocked = true
-                entidades.push({ tipo: 'vehiculo', etiqueta: vehiculo?.placa || '', estado: vehiculo?.estado, id: vehiculo?.idVehiculo, mensaje: 'ya está asignado a otra ruta activa.' })
-            }
+            for (const par of paresResueltos) {
+                const otraRutaVehiculo = rutasProgramadas.find(r =>
+                    getId(r) !== id && r.estado === 'En Curso' && r.habilitado !== false &&
+                    (r.paresVehiculoConductor || []).some(p => p.idVehiculo === par.idVehiculo)
+                )
+                const otraRutaConductor = rutasProgramadas.find(r =>
+                    getId(r) !== id && r.estado === 'En Curso' && r.habilitado !== false &&
+                    (r.paresVehiculoConductor || []).some(p => p.idConductor === par.idConductor)
+                )
 
-            if (otraRutaConductor) {
-                conductorBlocked = true
-                const nombre = conductor?.nombre ? `${conductor.nombre} ${conductor.apellido || ''}`.trim() : 'Conductor'
-                entidades.push({ tipo: 'conductor', etiqueta: nombre, estado: conductor?.estado || 'en_ruta', id: conductor?.idConductor, mensaje: 'ya está asignado a otra ruta activa.' })
+                if (par.vehiculo?.estado === 'Mantenimiento') {
+                    vehiculoBlocked = true
+                    entidades.push({ tipo: 'vehiculo', etiqueta: par.vehiculo.placa || '', estado: par.vehiculo.estado, id: par.vehiculo.idVehiculo, mensaje: 'está en Mantenimiento y no puede asignarse a una ruta En Curso.' })
+                } else if (otraRutaVehiculo) {
+                    vehiculoBlocked = true
+                    entidades.push({ tipo: 'vehiculo', etiqueta: par.vehiculo?.placa || '', estado: par.vehiculo?.estado, id: par.vehiculo?.idVehiculo, mensaje: 'ya está asignado a otra ruta activa.' })
+                }
+
+                if (otraRutaConductor) {
+                    conductorBlocked = true
+                    const nombre = par.conductor?.nombre ? `${par.conductor.nombre} ${par.conductor.apellido || ''}`.trim() : 'Conductor'
+                    entidades.push({ tipo: 'conductor', etiqueta: nombre, estado: par.conductor?.estado || 'en_ruta', id: par.conductor?.idConductor, mensaje: 'ya está asignado a otra ruta activa.' })
+                }
             }
 
             if (entidades.length > 0) {
@@ -458,7 +469,7 @@ const resolveDestino = (ruta) =>
             'Cancelada': 'El vehículo y el conductor quedarán disponibles, el anticipo pasará a "Excedente pendiente" y las ventas asociadas quedarán pendientes de reasignación a otra ruta.',
         }
         const info = INFO_ESTADOS[nuevoEstado] || ''
-        setConfirmEstado({ open: true, id, nuevoEstado, info, ruta: rutaActual, vehiculo, conductor })
+        setConfirmEstado({ open: true, id, nuevoEstado, info, ruta: rutaActual, pares: paresResueltos })
     }
 
     const handleToggleHabilitado = (id) => {
@@ -806,6 +817,8 @@ const resolveDestino = (ruta) =>
                                 rutasProgramadas.map((ruta) => {
                                     const id = getId(ruta)
                                     const isHighlighted = highlightId && String(id) === String(highlightId)
+                                    const pares = resolvePares(ruta)
+                                    const adicionales = Math.max(0, pares.length - 1)
                                     return (
                                         <TableRow
                                             key={id}
@@ -834,8 +847,24 @@ const resolveDestino = (ruta) =>
                                             </TableCell>
                                             <TableCell sx={{ py: 1.5 }}>
                                                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.4 }}>
-                                                    <PlacaDisplay placa={resolveVehiculo(ruta)} theme={theme} />
-                                                    {getVehiculos().find(v => v.idVehiculo === ruta.idVehiculo)?.habilitado === false && ruta.estado === 'Programada' && (
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                                                        <PlacaDisplay placa={pares[0]?.placa} theme={theme} />
+                                                        {adicionales > 0 && (
+                                                            <Chip
+                                                                label={`+${adicionales} ${adicionales === 1 ? 'vehículo' : 'vehículos'}`}
+                                                                size="small"
+                                                                sx={{
+                                                                    fontWeight: 600,
+                                                                    backgroundColor: theme.palette.primary.light,
+                                                                    color: theme.palette.primary.darker,
+                                                                    fontSize: '0.65rem',
+                                                                    borderRadius: '2px',
+                                                                    height: 18,
+                                                                }}
+                                                            />
+                                                        )}
+                                                    </Box>
+                                                    {pares.some(p => p.vehiculoInhabilitado) && ruta.estado === 'Programada' && (
                                                         <Chip
                                                             label="Reasignar vehículo"
                                                             size="small"
@@ -855,8 +884,24 @@ const resolveDestino = (ruta) =>
                                             </TableCell>
                                             <TableCell sx={{ py: 1.5 }}>
                                                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.4 }}>
-                                                    <Typography sx={{ fontSize: '0.875rem' }}>{resolveConductor(ruta)}</Typography>
-                                                    {getConductores().find(c => c.idConductor === ruta.idConductor)?.habilitado === false && ruta.estado === 'Programada' && (
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                                                        <Typography sx={{ fontSize: '0.875rem' }}>{pares[0]?.conductorNombre || 'N/A'}</Typography>
+                                                        {adicionales > 0 && (
+                                                            <Chip
+                                                                label={`+${adicionales} ${adicionales === 1 ? 'conductor' : 'conductores'}`}
+                                                                size="small"
+                                                                sx={{
+                                                                    fontWeight: 600,
+                                                                    backgroundColor: theme.palette.primary.light,
+                                                                    color: theme.palette.primary.darker,
+                                                                    fontSize: '0.65rem',
+                                                                    borderRadius: '2px',
+                                                                    height: 18,
+                                                                }}
+                                                            />
+                                                        )}
+                                                    </Box>
+                                                    {pares.some(p => p.conductorInhabilitado) && ruta.estado === 'Programada' && (
                                                         <Chip
                                                             label="Reasignar conductor"
                                                             size="small"
@@ -1003,15 +1048,14 @@ const resolveDestino = (ruta) =>
                 nuevoEstado={confirmEstado.nuevoEstado}
                 info={confirmEstado.info}
                 ruta={confirmEstado.ruta}
-                vehiculo={confirmEstado.vehiculo}
-                conductor={confirmEstado.conductor}
+                pares={confirmEstado.pares}
                 onClose={() => setConfirmEstado(c => ({ ...c, open: false }))}
                 onConfirm={async () => {
                     const { id, nuevoEstado } = confirmEstado
                     await ejecutarCambioEstado(id, nuevoEstado)
                     setConfirmEstado(c => ({ ...c, open: false }))
                 }}
-                onExited={() => setConfirmEstado({ open: false, id: null, nuevoEstado: null, info: '', ruta: null, vehiculo: null, conductor: null })}
+                onExited={() => setConfirmEstado({ open: false, id: null, nuevoEstado: null, info: '', ruta: null, pares: [] })}
             />
 
             <ModalInhabilitarRuta

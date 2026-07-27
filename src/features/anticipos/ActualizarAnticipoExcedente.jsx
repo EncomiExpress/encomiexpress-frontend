@@ -24,6 +24,31 @@ import { normalizarTexto } from '../../shared/utils/duplicados.js'
 
 const steps = ['Asignación y Valores', 'Fechas', 'Confirmación']
 
+// Valida un único campo del formulario (usado en onBlur y para re-validar en vivo
+// mientras se corrige un campo ya marcado con error). idRuta/valorAnticipo/fechaEntrega
+// solo son editables (no disabled) cuando puedeEditarAsignacion es true, así que su
+// onBlur nunca dispara fuera de ese caso. fechaEntregaExcedente siempre está disabled
+// en este formulario (se completa sola al confirmar la devolución), así que no lleva onBlur.
+const validarCampo = (name, form) => {
+    switch (name) {
+        case 'idRuta':
+            return form.idRuta ? '' : 'Selecciona una ruta'
+        case 'idRutaVehiculoConductor':
+            return form.idRutaVehiculoConductor ? '' : 'Selecciona el vehículo y conductor de la ruta'
+        case 'valorAnticipo':
+            if (!form.valorAnticipo) return 'El valor del anticipo es obligatorio'
+            if (isNaN(form.valorAnticipo) || parseFloat(form.valorAnticipo) <= 0) return 'Ingresa un valor válido mayor a 0'
+            return ''
+        case 'fechaEntrega':
+            return form.fechaEntrega ? '' : 'La fecha de entrega es obligatoria'
+        case 'fechaEntregaExcedente':
+            if (form.fechaEntregaExcedente && form.fechaEntrega && form.fechaEntregaExcedente < form.fechaEntrega) return 'La fecha de entrega del excedente no puede ser anterior a la fecha de entrega'
+            return ''
+        default:
+            return ''
+    }
+}
+
 const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, onSuccess }) => {
     const { anticipos, actualizarAnticipo, rutas } = useAnticipos()
     const { showToast } = useToast()
@@ -37,6 +62,7 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
     const [form, setForm] = useState(null)
     const cargado = useRef(false)
     const [rutaInput, setRutaInput] = useState('')
+    const [parInput, setParInput] = useState('')
 
     useEffect(() => {
         if (!open) { cargado.current = false; return }
@@ -48,18 +74,33 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
         // Preferir la versión más reciente desde el estado del contexto
         const anticipo = anticipos.find(a => a.idAnticipoExcedente === anticipoProp.idAnticipoExcedente) || anticipoProp
         setAnticipoOriginal(anticipo)
+        // "rutas" del contexto solo trae rutas "Programada" (son las únicas asignables a
+        // un anticipo nuevo) — la ruta real de este anticipo puede ya estar "En Curso" o
+        // más adelante, así que si no aparece ahí se arma un par sintético con los datos
+        // que ya trae el anticipo, solo para mostrarlo (el campo queda deshabilitado).
+        const r = rutas.find(x => x.idRuta === anticipo.idRuta)
+        const parInicial = r?.paresVehiculoConductor?.find(p => p.idConductor === anticipo.idConductor)
+        const nombreConductorAnticipo = anticipo.conductor?.usuario
+            ? `${anticipo.conductor.usuario.nombre} ${anticipo.conductor.usuario.apellido}`
+            : '—'
+        const parSintetico = !r ? {
+            idRutaVehiculoConductor: `original-${anticipo.idConductor}`,
+            idVehiculo: anticipo.ruta?.vehiculo?.idVehiculo,
+            idConductor: anticipo.idConductor,
+            placa: anticipo.ruta?.vehiculo?.placa || '',
+            conductorNombre: nombreConductorAnticipo,
+        } : null
         const datos = {
             ...anticipo,
+            idRutaVehiculoConductor: parInicial?.idRutaVehiculoConductor || parSintetico?.idRutaVehiculoConductor || '',
             fechaEntrega: anticipo.fechaEntrega || '',
             fechaEntregaExcedente: anticipo.fechaEntregaExcedente || '',
         }
         setFormOriginal(datos)
         setForm(datos)
-        // "rutas" del contexto solo trae rutas "Programada" (son las únicas asignables a
-        // un anticipo nuevo) — la ruta real de este anticipo puede ya estar "En Curso" o
-        // más adelante, así que si no aparece ahí se usa el nombre que ya trae el anticipo.
-        const r = rutas.find(x => x.idRuta === anticipo.idRuta)
         setRutaInput(r ? r.nombre : (anticipo.ruta?.nombreRuta || ''))
+        const parActivo = parInicial || parSintetico
+        setParInput(parActivo ? `${parActivo.placa || 'Sin placa'} — ${parActivo.conductorNombre}` : '')
     }, [open, anticipoProp, anticipos, rutas])
 
     const NUMERIC_LIMITS = { valorAnticipo: 999999999 }
@@ -74,24 +115,24 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
             if (!isNaN(num) && num > NUMERIC_LIMITS[name]) return
         }
 
+        const formActualizado = { ...form, [name]: value }
         setForm(prev => ({ ...prev, [name]: value }))
-        setErrores(prev => ({ ...prev, [name]: '' }))
+        setErrores(prev => ({ ...prev, [name]: prev[name] ? validarCampo(name, formActualizado) : '' }))
         setSinCambios(false)
     }
 
     const validarPaso = (step) => {
         const e = {}
         if (step === 0) {
-            if (!form.idRuta) e.idRuta = 'Selecciona una ruta'
-            if (!form.valorAnticipo) e.valorAnticipo = 'El valor del anticipo es obligatorio'
-            else if (isNaN(form.valorAnticipo) || parseFloat(form.valorAnticipo) <= 0)
-                e.valorAnticipo = 'Ingresa un valor válido mayor a 0'
+            e.idRuta = validarCampo('idRuta', form)
+            e.idRutaVehiculoConductor = validarCampo('idRutaVehiculoConductor', form)
+            e.valorAnticipo = validarCampo('valorAnticipo', form)
         }
         if (step === 1) {
-            if (!form.fechaEntrega) e.fechaEntrega = 'La fecha de entrega es obligatoria'
-            if (form.fechaEntregaExcedente && form.fechaEntrega && form.fechaEntregaExcedente < form.fechaEntrega)
-                e.fechaEntregaExcedente = 'La fecha de entrega del excedente no puede ser anterior a la fecha de entrega'
+            e.fechaEntrega = validarCampo('fechaEntrega', form)
+            e.fechaEntregaExcedente = validarCampo('fechaEntregaExcedente', form)
         }
+        Object.keys(e).forEach(k => { if (!e[k]) delete e[k] })
         return e
     }
 
@@ -134,7 +175,7 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
             }
             if (puedeEditarAsignacion) {
                 payload.idRuta = form.idRuta
-                payload.idConductor = form.idConductor
+                payload.idRutaVehiculoConductor = form.idRutaVehiculoConductor
                 payload.valorAnticipo = form.valorAnticipo
                 payload.fechaEntrega = form.fechaEntrega
             }
@@ -178,13 +219,20 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
             ? {
                 idRuta: anticipoOriginal.idRuta,
                 nombre: anticipoOriginal.ruta.nombreRuta || `Ruta ${anticipoOriginal.idRuta}`,
-                idConductor: anticipoOriginal.idConductor,
-                conductorNombre: nombreConductorOriginal,
+                paresVehiculoConductor: [{
+                    idRutaVehiculoConductor: `original-${anticipoOriginal.idConductor}`,
+                    idVehiculo: anticipoOriginal.ruta.vehiculo?.idVehiculo,
+                    idConductor: anticipoOriginal.idConductor,
+                    placa: anticipoOriginal.ruta.vehiculo?.placa || '',
+                    conductorNombre: nombreConductorOriginal,
+                }],
             }
             : null
     )
+    const pares = rutaSeleccionada?.paresVehiculoConductor || []
+    const parSeleccionado = pares.find(p => p.idRutaVehiculoConductor === form?.idRutaVehiculoConductor)
 
-    const getNombreConductor = () => rutaSeleccionada?.conductorNombre || nombreConductorOriginal
+    const getNombreConductor = () => parSeleccionado?.conductorNombre || nombreConductorOriginal
 
     const getNombreRuta = (id) => {
         const r = rutas.find(r => r.idRuta === parseInt(id))
@@ -222,10 +270,12 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
                                 else setRutaInput(newVal)
                             }}
                             onChange={(_, val) => {
-                                setForm(prev => ({ ...prev, idRuta: val ? val.idRuta : '', idConductor: val ? val.idConductor : prev.idConductor }))
-                                setErrores(prev => ({ ...prev, idRuta: '' }))
+                                setForm(prev => ({ ...prev, idRuta: val ? val.idRuta : '', idRutaVehiculoConductor: '' }))
+                                setErrores(prev => ({ ...prev, idRuta: '', idRutaVehiculoConductor: '' }))
+                                setParInput('')
                                 setSinCambios(false)
                             }}
+                            onBlur={() => setErrores(prev => ({ ...prev, idRuta: validarCampo('idRuta', form) }))}
                             filterOptions={(opts, { inputValue }) => {
                                 if (!inputValue.trim()) return [...opts].sort((a, b) => b.idRuta - a.idRuta).slice(0, 5)
                                 const q = normalizarTexto(inputValue)
@@ -236,23 +286,40 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
                                 <TextField {...params} label="Ruta *"
                                     error={!!errores.idRuta}
                                     helperText={errores.idRuta || (puedeEditarAsignacion
-                                        ? 'Busca por nombre de la ruta. (El conductor se autocompletará)'
+                                        ? 'Busca por nombre de la ruta'
                                         : 'La ruta ya arrancó: no se puede reasignar')}
                                     slotProps={{ inputLabel: { shrink: true }, htmlInput: { ...params.inputProps, maxLength: 100 } }}
                                     sx={formFieldStyles} />
                             )}
                         />
 
-                        <TextField
-                            label="Conductor"
-                            value={getNombreConductor()}
-                            disabled
-                            fullWidth
-                            helperText={puedeEditarAsignacion
-                                ? 'Se autocompleta con el conductor asignado a la ruta'
-                                : 'La ruta ya arrancó: no se puede reasignar'}
-                            slotProps={{ inputLabel: { shrink: true } }}
-                            sx={formFieldStyles}
+                        <Autocomplete
+                            options={pares}
+                            disabled={!puedeEditarAsignacion}
+                            getOptionLabel={(p) => `${p.placa || 'Sin placa'} — ${p.conductorNombre}`}
+                            isOptionEqualToValue={(opt, val) => opt.idRutaVehiculoConductor === val.idRutaVehiculoConductor}
+                            value={parSeleccionado || null}
+                            inputValue={parInput}
+                            onInputChange={(_, newVal, reason) => {
+                                if (reason === 'input') setParInput(newVal.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ0-9\s\-_]/g, ''))
+                                else setParInput(newVal)
+                            }}
+                            onChange={(_, val) => {
+                                setForm(prev => ({ ...prev, idRutaVehiculoConductor: val ? val.idRutaVehiculoConductor : '' }))
+                                setErrores(prev => ({ ...prev, idRutaVehiculoConductor: '' }))
+                                setSinCambios(false)
+                            }}
+                            onBlur={() => setErrores(prev => ({ ...prev, idRutaVehiculoConductor: validarCampo('idRutaVehiculoConductor', form) }))}
+                            noOptionsText={form?.idRuta ? 'No hay vehículos en esta ruta' : 'Primero selecciona una ruta'}
+                            renderInput={(params) => (
+                                <TextField {...params} label="Vehículo y conductor *"
+                                    error={!!errores.idRutaVehiculoConductor}
+                                    helperText={errores.idRutaVehiculoConductor || (puedeEditarAsignacion
+                                        ? 'Elige a cuál vehículo/conductor de la ruta corresponde este anticipo'
+                                        : 'La ruta ya arrancó: no se puede reasignar')}
+                                    slotProps={{ inputLabel: { shrink: true } }}
+                                    sx={formFieldStyles} />
+                            )}
                         />
 
                         <FormField
@@ -260,6 +327,7 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
                             name="valorAnticipo"
                             value={form?.valorAnticipo || ''}
                             onChange={handleChange}
+                            onBlur={() => setErrores(prev => ({ ...prev, valorAnticipo: validarCampo('valorAnticipo', form) }))}
                             required
                             disabled={!puedeEditarAsignacion}
                             icon={AttachMoneyOutlinedIcon}
@@ -276,7 +344,8 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                         <TextField
                             fullWidth label="Fecha de entrega" name="fechaEntrega" type="date"
-                            value={form?.fechaEntrega || ''} onChange={handleChange} required
+                            value={form?.fechaEntrega || ''} onChange={handleChange}
+                            onBlur={() => setErrores(prev => ({ ...prev, fechaEntrega: validarCampo('fechaEntrega', form) }))} required
                             disabled={!puedeEditarAsignacion}
                             error={!!errores.fechaEntrega}
                             helperText={errores.fechaEntrega || (puedeEditarAsignacion ? undefined : 'La ruta ya arrancó: no se puede modificar')}
@@ -301,7 +370,7 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
                 // Paso de confirmación / resumen antes de guardar
                 const sonDistintos = (a, b) => String(a ?? '') !== String(b ?? '')
                 const camposComparados = formOriginal ? [
-                    [form.idConductor, formOriginal.idConductor],
+                    [form.idRutaVehiculoConductor, formOriginal.idRutaVehiculoConductor],
                     [form.idRuta, formOriginal.idRuta],
                     [form.valorAnticipo, formOriginal.valorAnticipo],
                     [form.fechaEntrega, formOriginal.fechaEntrega],
@@ -331,6 +400,7 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
                                 </Box>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la asignación del anticipo</Typography>
                                 <ConfirmRow label="Ruta" value={getNombreRuta(form?.idRuta)} previousValue={formOriginal ? getNombreRuta(formOriginal.idRuta) : undefined} />
+                                <ConfirmRow label="Vehículo" value={parSeleccionado?.placa || '—'} />
                                 <ConfirmRow label="Conductor" value={getNombreConductor()} previousValue={formOriginal ? nombreConductorOriginal : undefined} />
                                 <ConfirmRow label="Anticipo" value={formatMoney(form?.valorAnticipo)} previousValue={formOriginal ? formatMoney(formOriginal.valorAnticipo) : undefined} />
                             </Paper>

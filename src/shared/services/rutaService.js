@@ -14,4 +14,14 @@ export const toggleHabilitadoRuta = (id) => fetchWithAuth(`/rutas/${id}/toggle-h
 export const getPageOfRuta = (id, limit = 10) => fetchWithAuth(`/rutas/${id}/page-of?limit=${limit}`)
 export const getAniosDisponiblesRuta = () => fetchWithAuth('/rutas/anios-disponibles')
 
-export default { getRutas, getRutaById, createRuta, updateRuta, updateEstadoRuta, toggleHabilitadoRuta, getPageOfRuta, getAniosDisponiblesRuta }
+// idVehiculos/idConductores: arrays de ids. idRutaExcluir: opcional, para editar sin
+// chocar contra la propia ruta. Usado por CalendarioDisponibilidad.jsx.
+export const getDisponibilidadRuta = ({ idVehiculos = [], idConductores = [], idRutaExcluir } = {}) => {
+  const qs = new URLSearchParams()
+  if (idVehiculos.length) qs.set('idVehiculos', idVehiculos.join(','))
+  if (idConductores.length) qs.set('idConductores', idConductores.join(','))
+  if (idRutaExcluir) qs.set('idRutaExcluir', idRutaExcluir)
+  return fetchWithAuth(`/rutas/disponibilidad?${qs.toString()}`)
+}
+
+export default { getRutas, getRutaById, createRuta, updateRuta, updateEstadoRuta, toggleHabilitadoRuta, getPageOfRuta, getAniosDisponiblesRuta, getDisponibilidadRuta }

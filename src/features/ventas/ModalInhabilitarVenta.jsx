@@ -23,10 +23,12 @@ const renderDot = (dot) => {
     )
 }
 
-const getRutaLabel = (ruta) => {
+// La ruta ya no tiene "el" vehículo (puede repartirse entre varios) — se usa el del
+// primer paquete de la venta como referencia rápida, igual que hace la guía principal.
+const getRutaLabel = (ruta, venta) => {
     if (!ruta) return '—'
     const base = ruta.nombreRuta || ruta.destino?.nombre || '—'
-    const placa = ruta.vehiculo?.placa
+    const placa = venta?.paquetes?.[0]?.asignacion?.vehiculo?.placa
     return placa ? `${base} · ${placa}` : base
 }
 
@@ -124,7 +126,7 @@ const ModalInhabilitarVenta = ({ open, venta, onClose, onExited, onConfirm }) =>
                                             sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1.5, py: 1, cursor: 'pointer', '&:hover': { backgroundColor: theme.palette.action.hover } }}
                                         >
                                             <Typography variant="body2" fontWeight={500} sx={{ fontSize: '0.8rem' }}>
-                                                {getRutaLabel(ruta)}
+                                                {getRutaLabel(ruta, venta)}
                                             </Typography>
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                                                 {renderDot(dot)}

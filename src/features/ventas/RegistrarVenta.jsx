@@ -29,7 +29,88 @@ import { formatFecha } from '../../shared/utils/formatters.js'
 const steps = ['Participantes', 'Paquete', 'Envío', 'Pago', 'Confirmación']
 
 const MAX_PAQUETES = 10
-const PAQUETE_VACIO = { descripcionContenido: '', peso: '', alto: '', ancho: '', profundidad: '', valorDeclarado: '' }
+const PAQUETE_VACIO = { descripcionContenido: '', peso: '', alto: '', ancho: '', profundidad: '', valorDeclarado: '', idRutaVehiculoConductor: '' }
+const CAMPOS_PAQUETE = ['descripcionContenido', 'peso', 'alto', 'ancho', 'profundidad', 'valorDeclarado']
+const SOLO_LETRAS_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/
+
+// Valida un único campo del formulario principal (usado en onBlur y para re-validar
+// en vivo mientras se corrige un campo ya marcado con error). valorServicio/impuestos/
+// total/observaciones no viven aquí: son editables sin ninguna regla de obligatoriedad.
+const validarCampo = (name, form) => {
+    switch (name) {
+        case 'idCliente':
+            return form.idCliente ? '' : 'Selecciona un cliente remitente'
+        case 'nombreDestinatario':
+            if (!form.nombreDestinatario.trim()) return 'El nombre es obligatorio'
+            if (!SOLO_LETRAS_REGEX.test(form.nombreDestinatario)) return 'Solo se permiten letras'
+            return ''
+        case 'telefonoDestinatario':
+            if (!form.telefonoDestinatario.trim()) return 'El teléfono es obligatorio'
+            if (!/^\d{10}$/.test(form.telefonoDestinatario)) return 'Debe tener 10 dígitos'
+            return ''
+        case 'direccionDestinatario':
+            return form.direccionDestinatario.trim() ? '' : 'La dirección es obligatoria'
+        case 'idRuta':
+            return form.idRuta ? '' : 'Selecciona una ruta'
+        case 'fechaEstimadaEntrega':
+            if (!form.fechaEstimadaEntrega) return 'La fecha es obligatoria'
+            if (form.fechaSalidaRuta && form.fechaEstimadaEntrega < form.fechaSalidaRuta) return 'No puede ser anterior a la fecha de salida de la ruta'
+            return ''
+        case 'metodoPago':
+            return form.metodoPago ? '' : 'Selecciona un método de pago'
+        default:
+            return ''
+    }
+}
+
+// Valida un único campo de un paquete (usado en onBlur y para re-validar en vivo).
+const validarCampoPaquete = (campo, paquete) => {
+    switch (campo) {
+        case 'descripcionContenido':
+            if (!paquete.descripcionContenido.trim()) return 'La descripción es obligatoria'
+            if (paquete.descripcionContenido.length > 300) return 'Máximo 300 caracteres'
+            return ''
+        case 'peso': {
+            const n = parseFloat(paquete.peso)
+            if (!paquete.peso) return 'El peso es obligatorio'
+            if (isNaN(n) || n <= 0) return 'Debe ser un número mayor a 0'
+            if (n > 9999) return 'Máximo 9999 kg'
+            return ''
+        }
+        case 'alto': {
+            const n = parseFloat(paquete.alto)
+            if (!paquete.alto) return 'El alto es obligatorio'
+            if (isNaN(n) || n <= 0) return 'Debe ser un número mayor a 0'
+            if (n > 9999) return 'Máximo 9999 cm'
+            return ''
+        }
+        case 'ancho': {
+            const n = parseFloat(paquete.ancho)
+            if (!paquete.ancho) return 'El ancho es obligatorio'
+            if (isNaN(n) || n <= 0) return 'Debe ser un número mayor a 0'
+            if (n > 9999) return 'Máximo 9999 cm'
+            return ''
+        }
+        case 'profundidad': {
+            const n = parseFloat(paquete.profundidad)
+            if (!paquete.profundidad) return 'La profundidad es obligatoria'
+            if (isNaN(n) || n <= 0) return 'Debe ser un número mayor a 0'
+            if (n > 9999) return 'Máximo 9999 cm'
+            return ''
+        }
+        case 'valorDeclarado':
+            if (paquete.valorDeclarado) {
+                const n = parseFloat(paquete.valorDeclarado)
+                if (isNaN(n) || n < 0) return 'Debe ser un número positivo'
+                if (n > 999999999) return 'Valor demasiado alto'
+            }
+            return ''
+        case 'idRutaVehiculoConductor':
+            return paquete.idRutaVehiculoConductor ? '' : 'Asigna un vehículo'
+        default:
+            return ''
+    }
+}
 
 const RegistrarVenta = ({ open, onClose, onSuccess }) => {
     const { agregarVenta } = useVentas()
@@ -127,6 +208,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
             value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ0-9\s,.-]/g, '')
         }
 
+        const formActualizado = { ...form, [name]: value }
         setForm(prev => {
             const updated = { ...prev, [name]: value }
             if (name === 'valorServicio') {
@@ -141,8 +223,18 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
             }
             return updated
         })
-        setErrores(prev => ({ ...prev, [name]: '' }))
+        setErrores(prev => ({ ...prev, [name]: prev[name] ? validarCampo(name, formActualizado) : '' }))
         setApiError(null)
+    }
+
+    // Garantiza que errores.paquetes tenga una entrada por cada paquete actual (sin pisar
+    // los errores ya marcados en otros campos/paquetes) y fija el mensaje de uno solo.
+    const setErrorPaquete = (index, campo, mensaje) => {
+        setErrores(prev => {
+            const erroresPaquetes = form.paquetes.map((_, i) => prev.paquetes?.[i] || {})
+            erroresPaquetes[index] = { ...erroresPaquetes[index], [campo]: mensaje }
+            return { ...prev, paquetes: erroresPaquetes }
+        })
     }
 
     const recalcularValorServicio = (prev, paquetes) => {
@@ -165,18 +257,14 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
         if (campo === 'descripcionContenido') {
             value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
         }
+        const paquetes = form.paquetes.map((p, i) => i === index ? { ...p, [campo]: value } : p)
         setForm(prev => {
-            const paquetes = prev.paquetes.map((p, i) => i === index ? { ...p, [campo]: value } : p)
             const updated = { ...prev, paquetes }
             if (campo === 'peso') Object.assign(updated, recalcularValorServicio(prev, paquetes))
             return updated
         })
-        setErrores(prev => {
-            if (!prev.paquetes?.[index]) return prev
-            const paquetes = [...prev.paquetes]
-            paquetes[index] = { ...paquetes[index], [campo]: '' }
-            return { ...prev, paquetes }
-        })
+        const yaMarcado = errores.paquetes?.[index]?.[campo]
+        setErrorPaquete(index, campo, yaMarcado ? validarCampoPaquete(campo, paquetes[index]) : '')
         setApiError(null)
     }
 
@@ -194,74 +282,63 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
 
     const validarPaso = (step) => {
         const e = {}
-        const soloLetras = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/
 
         if (step === 0) {
-            if (!form.idCliente) e.idCliente = 'Selecciona un cliente remitente'
-            if (!form.nombreDestinatario.trim()) e.nombreDestinatario = 'El nombre es obligatorio'
-            else if (!soloLetras.test(form.nombreDestinatario)) e.nombreDestinatario = 'Solo se permiten letras'
-            if (!form.telefonoDestinatario.trim()) e.telefonoDestinatario = 'El teléfono es obligatorio'
-            else if (!/^\d{10}$/.test(form.telefonoDestinatario)) e.telefonoDestinatario = 'Debe tener 10 dígitos'
-            if (!form.direccionDestinatario.trim()) e.direccionDestinatario = 'La dirección es obligatoria'
+            e.idCliente = validarCampo('idCliente', form)
+            e.nombreDestinatario = validarCampo('nombreDestinatario', form)
+            e.telefonoDestinatario = validarCampo('telefonoDestinatario', form)
+            e.direccionDestinatario = validarCampo('direccionDestinatario', form)
         }
 
         if (step === 1) {
             const erroresPaquetes = form.paquetes.map(p => {
                 const pe = {}
-                if (!p.descripcionContenido.trim()) pe.descripcionContenido = 'La descripción es obligatoria'
-                else if (p.descripcionContenido.length > 300) pe.descripcionContenido = 'Máximo 300 caracteres'
-
-                const pesoNum = parseFloat(p.peso)
-                if (!p.peso) pe.peso = 'El peso es obligatorio'
-                else if (isNaN(pesoNum) || pesoNum <= 0) pe.peso = 'Debe ser un número mayor a 0'
-                else if (pesoNum > 9999) pe.peso = 'Máximo 9999 kg'
-
-                const altoNum = parseFloat(p.alto)
-                if (!p.alto) pe.alto = 'El alto es obligatorio'
-                else if (isNaN(altoNum) || altoNum <= 0) pe.alto = 'Debe ser un número mayor a 0'
-
-                const anchoNum = parseFloat(p.ancho)
-                if (!p.ancho) pe.ancho = 'El ancho es obligatorio'
-                else if (isNaN(anchoNum) || anchoNum <= 0) pe.ancho = 'Debe ser un número mayor a 0'
-
-                const profNum = parseFloat(p.profundidad)
-                if (!p.profundidad) pe.profundidad = 'La profundidad es obligatoria'
-                else if (isNaN(profNum) || profNum <= 0) pe.profundidad = 'Debe ser un número mayor a 0'
-
-                if (p.valorDeclarado) {
-                    const vdNum = parseFloat(p.valorDeclarado)
-                    if (isNaN(vdNum) || vdNum < 0) pe.valorDeclarado = 'Debe ser un número positivo'
-                }
+                CAMPOS_PAQUETE.forEach(campo => {
+                    const err = validarCampoPaquete(campo, p)
+                    if (err) pe[campo] = err
+                })
                 return pe
             })
             if (erroresPaquetes.some(pe => Object.keys(pe).length > 0)) e.paquetes = erroresPaquetes
         }
 
         if (step === 2) {
-            if (!form.idRuta) e.idRuta = 'Selecciona una ruta'
-            if (!form.fechaEstimadaEntrega) e.fechaEstimadaEntrega = 'La fecha es obligatoria'
-            else if (form.fechaSalidaRuta && form.fechaEstimadaEntrega < form.fechaSalidaRuta)
-                e.fechaEstimadaEntrega = 'No puede ser anterior a la fecha de salida de la ruta'
+            e.idRuta = validarCampo('idRuta', form)
+            e.fechaEstimadaEntrega = validarCampo('fechaEstimadaEntrega', form)
 
-            // Mismo cálculo que el aviso de capacidad en el render — bloquea seguir si el
-            // peso total ya no cabe en la ruta elegida (el backend también lo valida al
-            // guardar, pero avisar aquí evita llegar hasta el final para enterarse).
             const rutaSel = rutasProgramadas.find(r => r.idRuta === parseInt(form.idRuta))
-            const capacidadSel = rutaSel?.vehiculo?.capacidad ? Number(rutaSel.vehiculo.capacidad) : null
-            if (capacidadSel != null) {
-                const pesoUsadoSel = Number(rutaSel?.pesoUsado || 0)
-                const pesoTotalForm = form.paquetes.reduce((s, p) => s + (parseFloat(p.peso) || 0), 0)
-                const disponibleSel = capacidadSel - pesoUsadoSel
-                if (pesoTotalForm > disponibleSel) {
-                    e.capacidad = `El peso total (${pesoTotalForm.toFixed(2)} kg) supera lo disponible en la ruta (${disponibleSel.toFixed(2)} kg).`
+            if (rutaSel) {
+                const erroresPaquetes = form.paquetes.map(p => {
+                    const err = validarCampoPaquete('idRutaVehiculoConductor', p)
+                    return err ? { idRutaVehiculoConductor: err } : {}
+                })
+                if (erroresPaquetes.some(pe => Object.keys(pe).length > 0)) e.paquetes = erroresPaquetes
+
+                // Mismo cálculo que el aviso de capacidad en el render — bloquea seguir si el
+                // peso de algún vehículo del convoy ya no alcanza (el backend también lo
+                // valida al guardar, pero avisar aquí evita llegar hasta el final para enterarse).
+                const pares = rutaSel.paresVehiculoConductor || []
+                for (const par of pares) {
+                    const capacidad = par.vehiculo?.capacidad ? Number(par.vehiculo.capacidad) : null
+                    if (capacidad == null) continue
+                    const pesoUsado = Number(par.pesoUsado || 0)
+                    const disponible = capacidad - pesoUsado
+                    const pesoNuevo = form.paquetes
+                        .filter(p => parseInt(p.idRutaVehiculoConductor) === par.idRutaVehiculoConductor)
+                        .reduce((s, p) => s + (parseFloat(p.peso) || 0), 0)
+                    if (pesoNuevo > disponible) {
+                        e.capacidad = `El vehículo ${par.vehiculo?.placa || ''} ya no tiene espacio suficiente. Quedan ${disponible.toFixed(2)} kg disponibles.`
+                        break
+                    }
                 }
             }
         }
 
         if (step === 3) {
-            if (!form.metodoPago) e.metodoPago = 'Selecciona un método de pago'
+            e.metodoPago = validarCampo('metodoPago', form)
         }
 
+        Object.keys(e).forEach(k => { if (!e[k]) delete e[k] })
         return e
     }
 
@@ -295,6 +372,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                     ancho: parseFloat(p.ancho),
                     profundidad: parseFloat(p.profundidad),
                     valorDeclarado: p.valorDeclarado ? parseFloat(p.valorDeclarado) : 0,
+                    idRutaVehiculoConductor: parseInt(p.idRutaVehiculoConductor),
                 })),
                 fechaEstimadaEntrega: form.fechaEstimadaEntrega || null,
                 observaciones: form.observaciones || null,
@@ -313,6 +391,12 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
     }
 
     const clienteSeleccionado = clientes.find(c => c.idCliente === parseInt(form.idCliente))
+
+    const getPlacaPaquete = (paquete) => {
+        const rutaSel = rutasProgramadas.find(r => r.idRuta === parseInt(form.idRuta))
+        const par = (rutaSel?.paresVehiculoConductor || []).find(p => p.idRutaVehiculoConductor === parseInt(paquete.idRutaVehiculoConductor))
+        return par?.vehiculo?.placa || '—'
+    }
 
     const cardSx = {
         flex: 1, minWidth: 0, borderRadius: 2, p: 2.5,
@@ -361,6 +445,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                                     setForm(prev => ({ ...prev, idCliente: newValue ? newValue.idCliente : '' }))
                                     setErrores(prev => ({ ...prev, idCliente: '' }))
                                 }}
+                                onBlur={() => setErrores(prev => ({ ...prev, idCliente: validarCampo('idCliente', form) }))}
                                 noOptionsText="No se encontraron clientes"
                                 renderInput={(params) => (
                                     <TextField {...params} label="Cliente *"
@@ -414,16 +499,22 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                             </Typography>
                             <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                                 <FormField label="Nombre completo" name="nombreDestinatario" value={form.nombreDestinatario}
-                                    onChange={handleChange} required error={errores.nombreDestinatario}
+                                    onChange={handleChange}
+                                    onBlur={() => setErrores(prev => ({ ...prev, nombreDestinatario: validarCampo('nombreDestinatario', form) }))}
+                                    required error={errores.nombreDestinatario}
                                     helperText={errores.nombreDestinatario} icon={PersonOutlinedIcon}
                                     placeholder="Ej: Juan Pérez" inputProps={{ maxLength: 50 }} />
                                 <FormField label="Teléfono" name="telefonoDestinatario" value={form.telefonoDestinatario}
-                                    onChange={handleChange} required error={errores.telefonoDestinatario}
+                                    onChange={handleChange}
+                                    onBlur={() => setErrores(prev => ({ ...prev, telefonoDestinatario: validarCampo('telefonoDestinatario', form) }))}
+                                    required error={errores.telefonoDestinatario}
                                     helperText={errores.telefonoDestinatario || 'Número de 10 dígitos'} icon={PhoneOutlinedIcon}
                                     inputProps={{ maxLength: 10 }} />
                                 <Box sx={{ gridColumn: '1 / -1' }}>
                                     <FormField label="Dirección de entrega" name="direccionDestinatario" value={form.direccionDestinatario}
-                                        onChange={handleChange} required error={errores.direccionDestinatario}
+                                        onChange={handleChange}
+                                        onBlur={() => setErrores(prev => ({ ...prev, direccionDestinatario: validarCampo('direccionDestinatario', form) }))}
+                                        required error={errores.direccionDestinatario}
                                         placeholder="Ej: Cra 23 #80-5"
                                         helperText={errores.direccionDestinatario || `${(form.direccionDestinatario || '').length}/300`}
                                         icon={HomeOutlinedIcon} multiline rows={2} inputProps={{ maxLength: 300 }} />
@@ -455,30 +546,42 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                                         </Box>
                                     )}
                                     <FormField label="Descripción del contenido" name="descripcionContenido" value={paquete.descripcionContenido}
-                                        onChange={(e) => handlePaqueteChange(index, 'descripcionContenido', e.target.value)} required error={errPaquete.descripcionContenido}
+                                        onChange={(e) => handlePaqueteChange(index, 'descripcionContenido', e.target.value)}
+                                        onBlur={() => setErrorPaquete(index, 'descripcionContenido', validarCampoPaquete('descripcionContenido', paquete))}
+                                        required error={errPaquete.descripcionContenido}
                                         helperText={errPaquete.descripcionContenido || `${paquete.descripcionContenido.length}/300`}
                                         multiline rows={2} inputProps={{ maxLength: 300 }} />
                                     <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2.5 }}>
                                         <FormField label="Peso (kg)" name="peso" value={paquete.peso}
-                                            onChange={(e) => handlePaqueteChange(index, 'peso', e.target.value)} required error={errPaquete.peso}
+                                            onChange={(e) => handlePaqueteChange(index, 'peso', e.target.value)}
+                                            onBlur={() => setErrorPaquete(index, 'peso', validarCampoPaquete('peso', paquete))}
+                                            required error={errPaquete.peso}
                                             placeholder="Ej: 1.5" helperText={errPaquete.peso || 'Ej: 1.5'}
                                             inputProps={{ maxLength: 7 }} />
                                         <FormField label="Alto (cm)" name="alto" value={paquete.alto}
-                                            onChange={(e) => handlePaqueteChange(index, 'alto', e.target.value)} required error={errPaquete.alto}
+                                            onChange={(e) => handlePaqueteChange(index, 'alto', e.target.value)}
+                                            onBlur={() => setErrorPaquete(index, 'alto', validarCampoPaquete('alto', paquete))}
+                                            required error={errPaquete.alto}
                                             placeholder="Ej: 30" helperText={errPaquete.alto || 'Ej: 30'}
                                             inputProps={{ maxLength: 4 }} />
                                         <FormField label="Ancho (cm)" name="ancho" value={paquete.ancho}
-                                            onChange={(e) => handlePaqueteChange(index, 'ancho', e.target.value)} required error={errPaquete.ancho}
+                                            onChange={(e) => handlePaqueteChange(index, 'ancho', e.target.value)}
+                                            onBlur={() => setErrorPaquete(index, 'ancho', validarCampoPaquete('ancho', paquete))}
+                                            required error={errPaquete.ancho}
                                             placeholder="Ej: 20" helperText={errPaquete.ancho || 'Ej: 20'}
                                             inputProps={{ maxLength: 4 }} />
                                     </Box>
                                     <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                                         <FormField label="Profundidad (cm)" name="profundidad" value={paquete.profundidad}
-                                            onChange={(e) => handlePaqueteChange(index, 'profundidad', e.target.value)} required error={errPaquete.profundidad}
+                                            onChange={(e) => handlePaqueteChange(index, 'profundidad', e.target.value)}
+                                            onBlur={() => setErrorPaquete(index, 'profundidad', validarCampoPaquete('profundidad', paquete))}
+                                            required error={errPaquete.profundidad}
                                             placeholder="Ej: 15" helperText={errPaquete.profundidad || 'Ej: 15'}
                                             inputProps={{ maxLength: 4 }} />
                                         <FormField label="Valor declarado ($)" name="valorDeclarado" value={paquete.valorDeclarado}
-                                            onChange={(e) => handlePaqueteChange(index, 'valorDeclarado', e.target.value)} helperText={errPaquete.valorDeclarado || 'Opcional'}
+                                            onChange={(e) => handlePaqueteChange(index, 'valorDeclarado', e.target.value)}
+                                            onBlur={() => setErrorPaquete(index, 'valorDeclarado', validarCampoPaquete('valorDeclarado', paquete))}
+                                            helperText={errPaquete.valorDeclarado || 'Opcional'}
                                             placeholder="Ej: 50000" error={errPaquete.valorDeclarado}
                                             inputProps={{ maxLength: 9 }} />
                                     </Box>
@@ -497,10 +600,19 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                 )
             case 2: {
                 const rutaElegida = rutasProgramadas.find(r => r.idRuta === parseInt(form.idRuta))
-                const capacidadElegida = rutaElegida?.vehiculo?.capacidad ? Number(rutaElegida.vehiculo.capacidad) : null
-                const disponibleElegida = capacidadElegida != null ? Math.max(0, capacidadElegida - Number(rutaElegida?.pesoUsado || 0)) : null
-                const pesoTotalActual = form.paquetes.reduce((s, p) => s + (parseFloat(p.peso) || 0), 0)
-                const excedeCapacidad = disponibleElegida != null && pesoTotalActual > disponibleElegida
+                const paresElegida = rutaElegida?.paresVehiculoConductor || []
+                // Un Alert por cada vehículo del convoy que ya tiene paquetes asignados —
+                // la capacidad ahora es por vehículo, no por ruta completa.
+                const paresConUso = paresElegida
+                    .map(par => {
+                        const pesoNuevo = form.paquetes
+                            .filter(p => parseInt(p.idRutaVehiculoConductor) === par.idRutaVehiculoConductor)
+                            .reduce((s, p) => s + (parseFloat(p.peso) || 0), 0)
+                        const capacidad = par.vehiculo?.capacidad ? Number(par.vehiculo.capacidad) : null
+                        const disponible = capacidad != null ? Math.max(0, capacidad - Number(par.pesoUsado || 0)) : null
+                        return { par, pesoNuevo, disponible, excede: disponible != null && pesoNuevo > disponible }
+                    })
+                    .filter(item => item.pesoNuevo > 0)
 
                 return (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
@@ -508,11 +620,11 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                             <Autocomplete
                                 options={rutasProgramadas.filter(r => r.habilitado !== false && r.estado === 'Programada')}
                                 getOptionLabel={(option) => {
-                                    const base = `${option.nombreRuta || 'Sin nombre'} — $${Number(option.destino?.tarifaBase || 0).toLocaleString()}`
-                                    const capacidad = option.vehiculo?.capacidad
-                                    if (!capacidad) return base
-                                    const disponible = Math.max(0, Number(capacidad) - Number(option.pesoUsado || 0))
-                                    return `${base} · ${disponible.toFixed(0)}/${Number(capacidad).toFixed(0)} kg disponibles`
+                                    // Placas de todos los vehículos del convoy en la etiqueta misma: si hay
+                                    // dos rutas con el mismo nombre (ej. mismo conductor, distinto vehículo),
+                                    // así se distinguen directo en la lista, sin tener que elegir una para verlo.
+                                    const placas = (option.paresVehiculoConductor || []).map(p => p.vehiculo?.placa).filter(Boolean).join(', ')
+                                    return `${option.nombreRuta || 'Sin nombre'}${placas ? ` (${placas})` : ''} — $${Number(option.destino?.tarifaBase || 0).toLocaleString()}`
                                 }}
                                 isOptionEqualToValue={(opt, val) => opt.idRuta === val.idRuta}
                                 filterOptions={(opts, { inputValue }) => {
@@ -536,6 +648,9 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                                     }
                                 }}
                                 onChange={(_, newValue) => {
+                                    // Cambiar de ruta invalida cualquier asignación de paquete→vehículo que
+                                    // ya se hubiera hecho (esos idRutaVehiculoConductor pertenecen al convoy
+                                    // de la ruta anterior, no a la nueva).
                                     if (newValue) {
                                         const fechaSalida = newValue.fechaSalida || ''
                                         setForm(prev => {
@@ -552,14 +667,19 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                                                 valorServicio,
                                                 impuestos,
                                                 total: valorServicio + impuestos,
+                                                paquetes: prev.paquetes.map(p => ({ ...p, idRutaVehiculoConductor: '' })),
                                             }
                                         })
                                     } else {
-                                        setForm(prev => ({ ...prev, idRuta: '', destino: '', fechaSalidaRuta: '' }))
+                                        setForm(prev => ({
+                                            ...prev, idRuta: '', destino: '', fechaSalidaRuta: '',
+                                            paquetes: prev.paquetes.map(p => ({ ...p, idRutaVehiculoConductor: '' })),
+                                        }))
                                     }
-                                    setErrores(prev => ({ ...prev, idRuta: '', fechaEstimadaEntrega: '' }))
+                                    setErrores(prev => ({ ...prev, idRuta: '', fechaEstimadaEntrega: '', paquetes: [] }))
                                     setApiError(null)
                                 }}
+                                onBlur={() => setErrores(prev => ({ ...prev, idRuta: validarCampo('idRuta', form) }))}
                                 noOptionsText="No se encontraron rutas"
                                 renderInput={(params) => (
                                     <TextField {...params} label="Ruta *"
@@ -569,19 +689,73 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                                 )}
                             />
                             <TextField fullWidth label="Fecha estimada de entrega" name="fechaEstimadaEntrega"
-                                type="date" value={form.fechaEstimadaEntrega} onChange={handleChange} required
+                                type="date" value={form.fechaEstimadaEntrega} onChange={handleChange}
+                                onBlur={() => setErrores(prev => ({ ...prev, fechaEstimadaEntrega: validarCampo('fechaEstimadaEntrega', form) }))} required
                                 error={!!errores.fechaEstimadaEntrega}
                                 helperText={errores.fechaEstimadaEntrega || (form.fechaSalidaRuta ? `Desde el ${formatFecha(form.fechaSalidaRuta)}` : 'Selecciona primero una ruta')}
                                 slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: form.fechaSalidaRuta || undefined } }}
                                 sx={formFieldStyles} />
                         </Box>
-                        {disponibleElegida != null && (
-                            <Alert severity={excedeCapacidad ? 'error' : 'info'} sx={{ borderRadius: 2, position: 'sticky', top: 0, zIndex: 1 }}>
-                                Peso total de los paquetes: <strong>{pesoTotalActual.toFixed(2)} kg</strong> de{' '}
-                                <strong>{disponibleElegida.toFixed(2)} kg</strong> disponibles en la ruta.
-                                {excedeCapacidad && ' Supera lo disponible — quita peso o quita un paquete antes de continuar.'}
-                            </Alert>
+                        {rutaElegida && (
+                            <Paper elevation={0} sx={{
+                                p: 1.5, borderRadius: 2,
+                                border: `1px solid ${theme.palette.divider}`,
+                                backgroundColor: theme.palette.background.default,
+                            }}>
+                                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.75 }}>
+                                    <Typography variant="body2">
+                                        <Box component="span" sx={{ fontWeight: 600, color: theme.palette.text.secondary, mr: 0.5 }}>Destino:</Box>
+                                        {rutaElegida.destino ? `${rutaElegida.destino.ciudad}, ${rutaElegida.destino.departamento}` : '—'}
+                                    </Typography>
+                                    <Typography variant="body2">
+                                        <Box component="span" sx={{ fontWeight: 600, color: theme.palette.text.secondary, mr: 0.5 }}>Salida:</Box>
+                                        {rutaElegida.fechaSalida ? `${formatFecha(rutaElegida.fechaSalida)}${rutaElegida.horaSalida ? ' · ' + rutaElegida.horaSalida : ''}` : '—'}
+                                    </Typography>
+                                </Box>
+                                <Divider sx={{ my: 1 }} />
+                                <Typography variant="caption" fontWeight={700} color={theme.palette.text.secondary} sx={{ display: 'block', mb: 0.5 }}>
+                                    Vehículos de esta ruta
+                                </Typography>
+                                {paresElegida.map((par) => (
+                                    <Typography key={par.idRutaVehiculoConductor} variant="body2" sx={{ mb: 0.25 }}>
+                                        {par.vehiculo ? `${par.vehiculo.placa} — ${par.vehiculo.marca} ${par.vehiculo.modelo}` : '—'}
+                                        {' · '}
+                                        {par.conductor?.usuario ? `${par.conductor.usuario.nombre} ${par.conductor.usuario.apellido}` : '—'}
+                                    </Typography>
+                                ))}
+                            </Paper>
                         )}
+                        {rutaElegida && (
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                <Typography variant="subtitle2" fontWeight={700} color={theme.palette.text.primary}>
+                                    Asignar paquetes a vehículo
+                                </Typography>
+                                {form.paquetes.map((paquete, index) => (
+                                    <FormSelect key={index}
+                                        label={form.paquetes.length > 1 ? `Paquete ${index + 1} — Vehículo` : 'Vehículo'}
+                                        name="idRutaVehiculoConductor"
+                                        value={paquete.idRutaVehiculoConductor}
+                                        onChange={(e) => handlePaqueteChange(index, 'idRutaVehiculoConductor', e.target.value)}
+                                        onBlur={() => setErrorPaquete(index, 'idRutaVehiculoConductor', validarCampoPaquete('idRutaVehiculoConductor', paquete))}
+                                        required
+                                        error={errores.paquetes?.[index]?.idRutaVehiculoConductor}
+                                        helperText={errores.paquetes?.[index]?.idRutaVehiculoConductor || `¿A cuál vehículo va este paquete?${paquete.peso ? ` (${paquete.peso} kg)` : ''}`}>
+                                        {paresElegida.map((par) => (
+                                            <MenuItem key={par.idRutaVehiculoConductor} value={par.idRutaVehiculoConductor}>
+                                                {par.vehiculo?.placa || 'Sin placa'} — {par.conductor?.usuario ? `${par.conductor.usuario.nombre} ${par.conductor.usuario.apellido}` : 'Sin conductor'}
+                                            </MenuItem>
+                                        ))}
+                                    </FormSelect>
+                                ))}
+                            </Box>
+                        )}
+                        {paresConUso.map(({ par, pesoNuevo, disponible, excede }) => (
+                            <Alert key={par.idRutaVehiculoConductor} severity={excede ? 'error' : 'info'} sx={{ borderRadius: 2 }}>
+                                <strong>{par.vehiculo?.placa || 'Vehículo'}:</strong> {pesoNuevo.toFixed(2)} kg de{' '}
+                                <strong>{disponible != null ? disponible.toFixed(2) : '∞'} kg</strong> disponibles.
+                                {excede && ' Supera lo disponible en este vehículo — reasigna algún paquete o quita peso.'}
+                            </Alert>
+                        ))}
                         <FormField label="Observaciones" name="observaciones" value={form.observaciones}
                             onChange={handleChange} multiline rows={2}
                             helperText={errores.observaciones || `Opcional · ${(form.observaciones || '').length}/500`}
@@ -594,7 +768,8 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                 return (
                     <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                         <FormSelect label="Método de pago" name="metodoPago" value={form.metodoPago}
-                            onChange={handleChange} required error={errores.metodoPago}
+                            onChange={handleChange}
+                            onBlur={() => setErrores(prev => ({ ...prev, metodoPago: validarCampo('metodoPago', form) }))} required error={errores.metodoPago}
                             helperText={errores.metodoPago}>
                             <MenuItem value="Contraentrega">Contraentrega</MenuItem>
                             <MenuItem value="Efectivo">Efectivo</MenuItem>
@@ -666,6 +841,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                                         <ConfirmRow label="Peso" value={p.peso ? `${p.peso} kg` : null} />
                                         <ConfirmRow label="Dimensiones" value={p.alto ? `${p.alto}×${p.ancho}×${p.profundidad} cm` : null} />
                                         <ConfirmRow label="Valor declarado" value={p.valorDeclarado ? `$${parseFloat(p.valorDeclarado).toLocaleString()}` : '$0'} />
+                                        <ConfirmRow label="Vehículo" value={getPlacaPaquete(p)} />
                                         {i < form.paquetes.length - 1 && <Divider sx={{ my: 1 }} />}
                                     </Box>
                                 ))}

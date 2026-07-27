@@ -22,6 +22,37 @@ import { normalizarTexto } from '../../shared/utils/duplicados.js'
 
 const steps = ['Asignación y Valores', 'Estado y Fechas', 'Confirmación']
 
+// Valida un único campo del formulario (usado en onBlur y para re-validar en vivo
+// mientras se corrige un campo ya marcado con error). valorGastado/fechaLegalizacion/
+// fechaEntregaExcedente están siempre deshabilitados en este formulario (create() no
+// acepta valorGastado, esas fechas las pone el backend solas) — sus reglas quedan
+// aquí solo por si en el futuro se habilitan, hoy nunca disparan en onBlur.
+const validarCampo = (name, form) => {
+    switch (name) {
+        case 'idRuta':
+            return form.idRuta ? '' : 'Selecciona una ruta'
+        case 'idRutaVehiculoConductor':
+            return form.idRutaVehiculoConductor ? '' : 'Selecciona el vehículo y conductor de la ruta'
+        case 'valorAnticipo':
+            if (!form.valorAnticipo) return 'El valor del anticipo es obligatorio'
+            if (isNaN(form.valorAnticipo) || parseFloat(form.valorAnticipo) <= 0) return 'Ingresa un valor válido mayor a 0'
+            return ''
+        case 'valorGastado':
+            if (form.valorGastado !== '' && (isNaN(form.valorGastado) || parseFloat(form.valorGastado) < 0)) return 'Ingresa un valor válido'
+            return ''
+        case 'fechaEntrega':
+            return form.fechaEntrega ? '' : 'La fecha de entrega es obligatoria'
+        case 'fechaLegalizacion':
+            if (form.fechaLegalizacion && form.fechaEntrega && form.fechaLegalizacion < form.fechaEntrega) return 'La fecha de legalización no puede ser anterior a la fecha de entrega'
+            return ''
+        case 'fechaEntregaExcedente':
+            if (form.fechaEntregaExcedente && form.fechaEntrega && form.fechaEntregaExcedente < form.fechaEntrega) return 'La fecha de entrega del excedente no puede ser anterior a la fecha de entrega'
+            return ''
+        default:
+            return ''
+    }
+}
+
 const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
     const { agregarAnticipo, rutas } = useAnticipos()
     const { showToast } = useToast()
@@ -30,10 +61,11 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
     const [activeStep, setActiveStep] = useState(0)
     const [submitting, setSubmitting] = useState(false)
     const [rutaInput, setRutaInput] = useState('')
+    const [parInput, setParInput] = useState('')
 
     const formInicial = {
-        idConductor: '',
         idRuta: '',
+        idRutaVehiculoConductor: '',
         valorAnticipo: '',
         valorGastado: '',
         fechaEntrega: '',
@@ -49,6 +81,7 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
         setErrores({})
         setActiveStep(0)
         setRutaInput('')
+        setParInput('')
         onClose()
     }
 
@@ -64,27 +97,25 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
             if (!isNaN(num) && num > NUMERIC_LIMITS[name]) return
         }
 
+        const formActualizado = { ...form, [name]: value }
         setForm(prev => ({ ...prev, [name]: value }))
-        setErrores(prev => ({ ...prev, [name]: '' }))
+        setErrores(prev => ({ ...prev, [name]: prev[name] ? validarCampo(name, formActualizado) : '' }))
     }
 
     const validarPaso = (step) => {
         const e = {}
         if (step === 0) {
-            if (!form.idRuta) e.idRuta = 'Selecciona una ruta'
-            if (!form.valorAnticipo) e.valorAnticipo = 'El valor del anticipo es obligatorio'
-            else if (isNaN(form.valorAnticipo) || parseFloat(form.valorAnticipo) <= 0)
-                e.valorAnticipo = 'Ingresa un valor válido mayor a 0'
-            if (form.valorGastado !== '' && (isNaN(form.valorGastado) || parseFloat(form.valorGastado) < 0))
-                e.valorGastado = 'Ingresa un valor válido'
+            e.idRuta = validarCampo('idRuta', form)
+            e.idRutaVehiculoConductor = validarCampo('idRutaVehiculoConductor', form)
+            e.valorAnticipo = validarCampo('valorAnticipo', form)
+            e.valorGastado = validarCampo('valorGastado', form)
         }
         if (step === 1) {
-            if (!form.fechaEntrega) e.fechaEntrega = 'La fecha de entrega es obligatoria'
-            if (form.fechaLegalizacion && form.fechaEntrega && form.fechaLegalizacion < form.fechaEntrega)
-                e.fechaLegalizacion = 'La fecha de legalización no puede ser anterior a la fecha de entrega'
-            if (form.fechaEntregaExcedente && form.fechaEntrega && form.fechaEntregaExcedente < form.fechaEntrega)
-                e.fechaEntregaExcedente = 'La fecha de entrega del excedente no puede ser anterior a la fecha de entrega'
+            e.fechaEntrega = validarCampo('fechaEntrega', form)
+            e.fechaLegalizacion = validarCampo('fechaLegalizacion', form)
+            e.fechaEntregaExcedente = validarCampo('fechaEntregaExcedente', form)
         }
+        Object.keys(e).forEach(k => { if (!e[k]) delete e[k] })
         return e
     }
 
@@ -122,8 +153,10 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
     }
 
     const rutaSeleccionada = rutas.find(r => r.idRuta === parseInt(form.idRuta))
+    const pares = rutaSeleccionada?.paresVehiculoConductor || []
+    const parSeleccionado = pares.find(p => p.idRutaVehiculoConductor === parseInt(form.idRutaVehiculoConductor))
 
-    const getNombreConductor = () => rutaSeleccionada?.conductorNombre || '—'
+    const getNombreConductor = () => parSeleccionado?.conductorNombre || '—'
 
     const getNombreRuta = (id) => {
         const r = rutas.find(r => r.idRuta === parseInt(id))
@@ -150,9 +183,11 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
                                 else setRutaInput(newVal)
                             }}
                             onChange={(_, val) => {
-                                setForm(prev => ({ ...prev, idRuta: val ? val.idRuta : '', idConductor: val ? val.idConductor : '' }))
-                                setErrores(prev => ({ ...prev, idRuta: '' }))
+                                setForm(prev => ({ ...prev, idRuta: val ? val.idRuta : '', idRutaVehiculoConductor: '' }))
+                                setErrores(prev => ({ ...prev, idRuta: '', idRutaVehiculoConductor: '' }))
+                                setParInput('')
                             }}
+                            onBlur={() => setErrores(prev => ({ ...prev, idRuta: validarCampo('idRuta', form) }))}
                             filterOptions={(opts, { inputValue }) => {
                                 if (!inputValue.trim()) return [...opts].sort((a, b) => b.idRuta - a.idRuta).slice(0, 5)
                                 const q = normalizarTexto(inputValue)
@@ -161,20 +196,35 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
                             noOptionsText="No se encontraron rutas"
                             renderInput={(params) => (
                                 <TextField {...params} label="Ruta *"
-                                    error={!!errores.idRuta} helperText={errores.idRuta || 'Busca por nombre de la ruta. (El conductor se autocompletará)'}
+                                    error={!!errores.idRuta} helperText={errores.idRuta || 'Busca por nombre de la ruta'}
                                     slotProps={{ inputLabel: { shrink: true }, htmlInput: { ...params.inputProps, maxLength: 100 } }}
                                     sx={formFieldStyles} />
                             )}
                         />
 
-                        <TextField
-                            label="Conductor"
-                            value={rutaSeleccionada?.conductorNombre || ''}
-                            disabled
-                            fullWidth
-                            helperText="Se autocompleta con el conductor asignado a la ruta"
-                            slotProps={{ inputLabel: { shrink: true } }}
-                            sx={formFieldStyles}
+                        <Autocomplete
+                            options={pares}
+                            getOptionLabel={(p) => `${p.placa || 'Sin placa'} — ${p.conductorNombre}`}
+                            isOptionEqualToValue={(opt, val) => opt.idRutaVehiculoConductor === val.idRutaVehiculoConductor}
+                            value={parSeleccionado || null}
+                            inputValue={parInput}
+                            disabled={!form.idRuta}
+                            onInputChange={(_, newVal, reason) => {
+                                if (reason === 'input') setParInput(newVal.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ0-9\s\-_]/g, ''))
+                                else setParInput(newVal)
+                            }}
+                            onChange={(_, val) => {
+                                setForm(prev => ({ ...prev, idRutaVehiculoConductor: val ? val.idRutaVehiculoConductor : '' }))
+                                setErrores(prev => ({ ...prev, idRutaVehiculoConductor: '' }))
+                            }}
+                            onBlur={() => setErrores(prev => ({ ...prev, idRutaVehiculoConductor: validarCampo('idRutaVehiculoConductor', form) }))}
+                            noOptionsText={form.idRuta ? 'No hay vehículos en esta ruta' : 'Primero selecciona una ruta'}
+                            renderInput={(params) => (
+                                <TextField {...params} label="Vehículo y conductor *"
+                                    error={!!errores.idRutaVehiculoConductor} helperText={errores.idRutaVehiculoConductor || 'Elige a cuál vehículo/conductor de la ruta corresponde este anticipo'}
+                                    slotProps={{ inputLabel: { shrink: true } }}
+                                    sx={formFieldStyles} />
+                            )}
                         />
 
                         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
@@ -183,6 +233,7 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
                                 name="valorAnticipo"
                                 value={form.valorAnticipo}
                                 onChange={handleChange}
+                                onBlur={() => setErrores(prev => ({ ...prev, valorAnticipo: validarCampo('valorAnticipo', form) }))}
                                 required
                                 icon={AttachMoneyOutlinedIcon}
                                 placeholder="Ej: 500000"
@@ -234,7 +285,8 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
                         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                             <TextField
                                 fullWidth label="Fecha de entrega" name="fechaEntrega" type="date"
-                                value={form.fechaEntrega} onChange={handleChange} required
+                                value={form.fechaEntrega} onChange={handleChange}
+                                onBlur={() => setErrores(prev => ({ ...prev, fechaEntrega: validarCampo('fechaEntrega', form) }))} required
                                 error={!!errores.fechaEntrega} helperText={errores.fechaEntrega}
                                 slotProps={{ inputLabel: { shrink: true } }} sx={formFieldStyles}
                             />
@@ -272,6 +324,7 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
                                 </Box>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la asignación del anticipo</Typography>
                                 <ConfirmRow label="Ruta" value={getNombreRuta(form.idRuta)} />
+                                <ConfirmRow label="Vehículo" value={parSeleccionado?.placa || '—'} />
                                 <ConfirmRow label="Conductor" value={getNombreConductor()} />
                                 <ConfirmRow label="Anticipo" value={formatMoney(form.valorAnticipo)} />
                                 <ConfirmRow label="Excedente" value={formatMoney(excedente)} />

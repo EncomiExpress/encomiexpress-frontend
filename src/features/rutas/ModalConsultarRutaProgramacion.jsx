@@ -86,12 +86,20 @@ const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
 
     if (!ruta) return null
 
-    const resolveVehiculo = (r) => r.vehiculo?.placa ?? (getVehiculos().find(v => v.idVehiculo === r.idVehiculo)?.placa || 'N/A')
-    const resolveConductor = (r) => {
-        if (r.conductor?.usuario) return `${r.conductor.usuario.nombre} ${r.conductor.usuario.apellido}`
-        const c = getConductores().find(c => c.idConductor === r.idConductor)
-        return c ? `${c.nombre} ${c.apellido}` : 'N/A'
-    }
+    // Una ruta ahora puede tener varios vehículos+conductor (convoy) — se expone el
+    // array completo de pares en vez de un solo vehículo/conductor.
+    const resolvePares = (r) => (r.paresVehiculoConductor || []).map(par => {
+        const conductorCtx = getConductores().find(c => c.idConductor === par.idConductor)
+        return {
+            idRutaVehiculoConductor: par.idRutaVehiculoConductor,
+            idVehiculo: par.idVehiculo,
+            placa: par.vehiculo?.placa ?? (getVehiculos().find(v => v.idVehiculo === par.idVehiculo)?.placa || 'N/A'),
+            idConductor: par.idConductor,
+            conductorNombre: par.conductor?.usuario
+                ? `${par.conductor.usuario.nombre} ${par.conductor.usuario.apellido}`
+                : (conductorCtx ? `${conductorCtx.nombre} ${conductorCtx.apellido}` : 'N/A'),
+        }
+    })
     const resolveDestino = (r) => {
         if (r.destino) return `${r.destino.ciudad}, ${r.destino.departamento}`
         const d = destinos.find(d => d.idDestino === r.idDestino)
@@ -139,25 +147,34 @@ const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
                         <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: theme.palette.background.paper, flex: 1 }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                                 <DirectionsCarOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
-                                <Typography fontWeight={700} fontSize="0.95rem">Vehículo y Conductor</Typography>
+                                <Typography fontWeight={700} fontSize="0.95rem">
+                                    {resolvePares(ruta).length > 1 ? 'Vehículos y Conductores' : 'Vehículo y Conductor'}
+                                </Typography>
                             </Box>
                             <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
                                 Recursos asignados a esta ruta
                             </Typography>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
-                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Vehículo</Typography>
-                                <Chip label={resolveVehiculo(ruta) || '—'} size="small"
-                                    onClick={() => window.open(`/vehiculos/listar?highlight=${ruta.idVehiculo}`, '_blank')}
-                                    sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem', cursor: 'pointer', '&:hover': { filter: 'brightness(0.92)' } }} />
-                            </Box>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
-                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Conductor</Typography>
-                                <Typography variant="body2" fontWeight={500}
-                                    onClick={() => window.open(`/transporte/conductores?highlight=${ruta.idConductor}`, '_blank')}
-                                    sx={{ color: theme.palette.primary.main, cursor: 'pointer', textDecoration: 'underline', textDecorationStyle: 'dotted', '&:hover': { opacity: 0.75 } }}>
-                                    {resolveConductor(ruta)}
-                                </Typography>
-                            </Box>
+                            {resolvePares(ruta).map((par, i, arr) => (
+                                <Box key={par.idRutaVehiculoConductor ?? i} sx={{ pb: i < arr.length - 1 ? 1.5 : 0, mb: i < arr.length - 1 ? 1.5 : 0, borderBottom: i < arr.length - 1 ? `1px dashed ${theme.palette.divider}` : 'none' }}>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
+                                        <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Vehículo</Typography>
+                                        <Chip label={par.placa || '—'} size="small"
+                                            onClick={() => window.open(`/vehiculos/listar?highlight=${par.idVehiculo}`, '_blank')}
+                                            sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem', cursor: 'pointer', '&:hover': { filter: 'brightness(0.92)' } }} />
+                                    </Box>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
+                                        <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Conductor</Typography>
+                                        <Typography variant="body2" fontWeight={500}
+                                            onClick={() => window.open(`/transporte/conductores?highlight=${par.idConductor}`, '_blank')}
+                                            sx={{ color: theme.palette.primary.main, cursor: 'pointer', textDecoration: 'underline', textDecorationStyle: 'dotted', '&:hover': { opacity: 0.75 } }}>
+                                            {par.conductorNombre}
+                                        </Typography>
+                                    </Box>
+                                </Box>
+                            ))}
+                            {resolvePares(ruta).length === 0 && (
+                                <Typography variant="body2" color={theme.palette.text.secondary}>Sin vehículos asignados</Typography>
+                            )}
                         </Paper>
 
                         <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: theme.palette.background.paper, flex: 1 }}>

@@ -53,7 +53,13 @@ export const FormField = ({
           ...inputProps
         }
       }}
-      sx={formFieldStyles}
+      sx={{
+        ...formFieldStyles,
+        // Con multiline, el adornment de "start" se centra verticalmente en toda la
+        // caja por defecto — con más de 1 fila el ícono queda flotando abajo en vez
+        // de al lado del texto. Se ancla arriba, alineado con la primera línea.
+        ...(multiline ? { '& .MuiInputAdornment-root': { alignSelf: 'flex-start', mt: '14px' } } : {}),
+      }}
     >
       {children}
     </TextField>
@@ -65,6 +71,7 @@ export const FormSelect = ({
   name,
   value,
   onChange,
+  onBlur,
   required = false,
   error,
   helperText,
@@ -92,6 +99,7 @@ export const FormSelect = ({
         value={value}
         label={label}
         onChange={onChange}
+        onBlur={onBlur}
         displayEmpty={shrink}
         IconComponent={KeyboardArrowDownOutlinedIcon}
       >

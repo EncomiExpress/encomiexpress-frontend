@@ -202,7 +202,7 @@ const ListarTransporte = () => {
     const vehiculosOcupadosIds = new Set(
         rutasProgramadas
             .filter(r => r.estado === 'En Curso' && r.habilitado !== false)
-            .map(r => r.idVehiculo)
+            .flatMap(r => (r.paresVehiculoConductor || []).map(p => p.idVehiculo))
     )
 
     const transportesConEstado = transportes.map(t => {

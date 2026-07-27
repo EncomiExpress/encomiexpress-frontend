@@ -9,6 +9,7 @@ import RouteOutlinedIcon from '@mui/icons-material/RouteOutlined'
 import EventOutlinedIcon from '@mui/icons-material/EventOutlined'
 import ScheduleOutlinedIcon from '@mui/icons-material/ScheduleOutlined'
 import CloseIcon from '@mui/icons-material/Close'
+import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
 import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined'
 import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined'
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined'
@@ -22,6 +23,7 @@ import { FormField } from '../../shared/components/FormularioEstandarizado.jsx'
 import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
+import CalendarioDisponibilidad from '../../shared/components/CalendarioDisponibilidad.jsx'
 import { formatFecha } from '../../shared/utils/formatters.js'
 import { normalizarTexto } from '../../shared/utils/duplicados.js'
 
@@ -32,6 +34,47 @@ const mananaISO = () => {
 }
 
 const steps = ['Datos de la Ruta', 'Horario', 'Confirmación']
+
+// Máximo de pares vehículo+conductor por ruta — igual al tope del backend (MAX_PARES_RUTA
+// en rutaService.js), mismo criterio que MAX_PAQUETES en Ventas.
+const MAX_PARES = 10
+
+// Valida un único campo del formulario (usado en onBlur y para re-validar en vivo
+// mientras se corrige un campo ya marcado con error). "horaLlegadaEstimada" y
+// "observaciones" no viven aquí: son opcionales y no tienen ninguna regla que validar.
+// Sí se mantiene "fecha posterior a hoy" en fechaSalida (a diferencia de otros módulos
+// como Vehículo/Conductor): una ruta solo se puede editar mientras sigue "Programada",
+// así que su fecha de salida real siempre debe seguir siendo futura.
+const validarCampo = (name, form) => {
+    switch (name) {
+        case 'nombreRuta':
+            return form.nombreRuta?.trim() ? '' : 'El nombre de la ruta es obligatorio'
+        case 'idDestino':
+            return form.idDestino ? '' : 'Selecciona un destino'
+        case 'fechaSalida':
+            if (!form.fechaSalida) return 'La fecha de salida es obligatoria'
+            if (form.fechaSalida < mananaISO()) return 'La fecha de salida debe ser posterior a hoy'
+            return ''
+        case 'horaSalida':
+            return form.horaSalida ? '' : 'La hora de salida es obligatoria'
+        default:
+            return ''
+    }
+}
+
+// Valida el array de pares vehículo+conductor (convoy de la ruta) — mismo patrón que
+// validarCategorias() en RegistrarConductor.jsx para categoriasLicencia.
+const validarPares = (pares) => {
+    const completos = pares.filter(p => p.idVehiculo && p.idConductor)
+    const incompletos = pares.some(p => (p.idVehiculo && !p.idConductor) || (!p.idVehiculo && p.idConductor))
+    if (completos.length === 0) return 'Agrega al menos un vehículo y su conductor'
+    if (incompletos) return 'Completa el vehículo y el conductor de cada fila (o quítala)'
+    const idsVehiculo = completos.map(p => p.idVehiculo)
+    const idsConductor = completos.map(p => p.idConductor)
+    if (new Set(idsVehiculo).size !== idsVehiculo.length) return 'No repitas el mismo vehículo en dos filas'
+    if (new Set(idsConductor).size !== idsConductor.length) return 'No repitas el mismo conductor en dos filas'
+    return ''
+}
 
 const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
     const { actualizarRutaProgramada } = useRutaProgramacion()
@@ -48,15 +91,15 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
     const [originalData, setOriginalData] = useState(null)
     const [sinCambios, setSinCambios]   = useState(false)
     const [destinoInput, setDestinoInput]     = useState('')
-    const [conductorInput, setConductorInput] = useState('')
-    const [vehiculoInput, setVehiculoInput]   = useState('')
+    const [vehiculoInputs, setVehiculoInputs]     = useState([''])
+    const [conductorInputs, setConductorInputs]   = useState([''])
 
     const vehiculos   = getVehiculosHabilitados()
     const conductores = getConductoresHabilitados()
     const destinos    = getDestinosHabilitados()
 
     const [form, setForm] = useState({
-        nombreRuta: '', idVehiculo: '', idConductor: '', idDestino: '',
+        nombreRuta: '', pares: [{ idRutaVehiculoConductor: '', idVehiculo: '', idConductor: '' }], idDestino: '',
         fechaSalida: '', horaSalida: '', horaLlegadaEstimada: '', observaciones: ''
     })
 
@@ -66,10 +109,17 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
             setErrores({})
             setApiError(null)
             setSinCambios(false)
+            const paresRuta = ruta.paresVehiculoConductor || []
+            const pares = paresRuta.length > 0
+                ? paresRuta.map(p => ({
+                    idRutaVehiculoConductor: p.idRutaVehiculoConductor,
+                    idVehiculo: p.idVehiculo || '',
+                    idConductor: p.idConductor || '',
+                }))
+                : [{ idRutaVehiculoConductor: '', idVehiculo: '', idConductor: '' }]
             const datos = {
                 nombreRuta:          ruta.nombreRuta          || '',
-                idVehiculo:          ruta.idVehiculo          || '',
-                idConductor:         ruta.idConductor         || '',
+                pares,
                 idDestino:           ruta.idDestino           || '',
                 fechaSalida:         ruta.fechaSalida         || '',
                 horaSalida:          ruta.horaSalida          || '',
@@ -81,11 +131,21 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
             // Si el vehículo/conductor/destino de esta ruta ya fue inhabilitado desde que
             // se creó, no aparece en las listas de habilitados — se usan los datos que ya
             // trae la propia ruta como respaldo, para que el campo nunca se vea vacío.
-            const v = getVehiculosHabilitados().find(x => x.idVehiculo === ruta.idVehiculo)
-            const c = getConductoresHabilitados().find(x => x.idConductor === ruta.idConductor)
+            const vHab = getVehiculosHabilitados()
+            const cHab = getConductoresHabilitados()
             const d = getDestinosHabilitados().find(x => x.idDestino === ruta.idDestino)
-            setVehiculoInput(v ? `${v.placa} — ${v.marca} ${v.modelo}` : (ruta.vehiculo ? `${ruta.vehiculo.placa} — ${ruta.vehiculo.marca} ${ruta.vehiculo.modelo}` : ''))
-            setConductorInput(c ? `${c.nombre} ${c.apellido}` : (ruta.conductor?.usuario ? `${ruta.conductor.usuario.nombre} ${ruta.conductor.usuario.apellido}` : ''))
+            setVehiculoInputs(pares.map(p => {
+                const v = vHab.find(x => x.idVehiculo === parseInt(p.idVehiculo))
+                if (v) return `${v.placa} — ${v.marca} ${v.modelo}`
+                const original = paresRuta.find(x => x.idVehiculo === parseInt(p.idVehiculo))?.vehiculo
+                return original ? `${original.placa} — ${original.marca} ${original.modelo}` : ''
+            }))
+            setConductorInputs(pares.map(p => {
+                const c = cHab.find(x => x.idConductor === parseInt(p.idConductor))
+                if (c) return `${c.nombre} ${c.apellido}`
+                const original = paresRuta.find(x => x.idConductor === parseInt(p.idConductor))?.conductor?.usuario
+                return original ? `${original.nombre} ${original.apellido}` : ''
+            }))
             setDestinoInput(d ? (d.nombre ? `${d.nombre} - ${d.ciudad}` : `${d.departamento} - ${d.ciudad}`) : (ruta.destino ? `${ruta.destino.departamento} - ${ruta.destino.ciudad}` : ''))
         }
     }, [ruta, open, getVehiculosHabilitados, getConductoresHabilitados, getDestinosHabilitados])
@@ -93,25 +153,76 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
     const handleChange = (e) => {
         let { name, value } = e.target
         if (name === 'nombreRuta') value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s\-_]/g, '')
+        const formActualizado = { ...form, [name]: value }
         setForm(prev => ({ ...prev, [name]: value }))
-        setErrores(prev => ({ ...prev, [name]: '' }))
+        setErrores(prev => ({ ...prev, [name]: prev[name] ? validarCampo(name, formActualizado) : '' }))
         setApiError(null)
         setSinCambios(false)
+    }
+
+    const handleParChange = (index, campo, value) => {
+        const pares = form.pares.map((p, i) => i === index ? { ...p, [campo]: value } : p)
+        // Cambiar un vehículo/conductor puede volver inválida la fecha ya elegida (o
+        // liberar una que antes estaba bloqueada) — se limpia para que se vuelva a
+        // elegir contra el calendario ya actualizado.
+        setForm(prev => ({ ...prev, pares, fechaSalida: '' }))
+        setErrores(prev => ({ ...prev, pares: prev.pares ? validarPares(pares) : '', fechaSalida: '' }))
+        setApiError(null)
+        setSinCambios(false)
+    }
+
+    const handleAgregarPar = () => {
+        setForm(prev => ({ ...prev, pares: [...prev.pares, { idRutaVehiculoConductor: '', idVehiculo: '', idConductor: '' }] }))
+        setVehiculoInputs(prev => [...prev, ''])
+        setConductorInputs(prev => [...prev, ''])
+        setSinCambios(false)
+    }
+
+    const handleQuitarPar = (index) => {
+        const pares = form.pares.filter((_, i) => i !== index)
+        setForm(prev => ({ ...prev, pares }))
+        setErrores(prev => ({ ...prev, pares: prev.pares ? validarPares(pares) : '' }))
+        setVehiculoInputs(prev => prev.filter((_, i) => i !== index))
+        setConductorInputs(prev => prev.filter((_, i) => i !== index))
+        setSinCambios(false)
+    }
+
+    // Opciones disponibles para la fila `index`: vehículos/conductores habilitados que no
+    // estén ya usados en OTRA fila, más el propio (aunque esté inhabilitado) si es el que
+    // ya traía esta fila — para que el Autocomplete no se vea vacío al editar.
+    const getVehiculoOpciones = (index) => {
+        const par = form.pares[index]
+        const usados = form.pares.filter((_, i) => i !== index).map(p => parseInt(p.idVehiculo))
+        const base = vehiculos.filter(v => !usados.includes(v.idVehiculo))
+        if (par.idVehiculo && !base.some(v => v.idVehiculo === parseInt(par.idVehiculo))) {
+            const original = (ruta?.paresVehiculoConductor || []).find(p => p.idVehiculo === parseInt(par.idVehiculo))?.vehiculo
+            if (original) return [...base, original]
+        }
+        return base
+    }
+    const getConductorOpciones = (index) => {
+        const par = form.pares[index]
+        const usados = form.pares.filter((_, i) => i !== index).map(p => parseInt(p.idConductor))
+        const base = conductores.filter(c => !usados.includes(c.idConductor))
+        if (par.idConductor && !base.some(c => c.idConductor === parseInt(par.idConductor))) {
+            const original = (ruta?.paresVehiculoConductor || []).find(p => p.idConductor === parseInt(par.idConductor))?.conductor?.usuario
+            if (original) return [...base, { idConductor: parseInt(par.idConductor), nombre: original.nombre, apellido: original.apellido }]
+        }
+        return base
     }
 
     const validarPaso = (step) => {
         const e = {}
         if (step === 0) {
-            if (!form.nombreRuta?.trim()) e.nombreRuta  = 'El nombre de la ruta es obligatorio'
-            if (!form.idVehiculo)         e.idVehiculo  = 'Selecciona un vehículo'
-            if (!form.idConductor)        e.idConductor = 'Selecciona un conductor'
-            if (!form.idDestino)          e.idDestino   = 'Selecciona un destino'
+            e.nombreRuta = validarCampo('nombreRuta', form)
+            e.pares = validarPares(form.pares)
+            e.idDestino = validarCampo('idDestino', form)
         }
         if (step === 1) {
-            if (!form.fechaSalida) e.fechaSalida = 'La fecha de salida es obligatoria'
-            else if (form.fechaSalida < mananaISO()) e.fechaSalida = 'La fecha de salida debe ser posterior a hoy'
-            if (!form.horaSalida)  e.horaSalida  = 'La hora de salida es obligatoria'
+            e.fechaSalida = validarCampo('fechaSalida', form)
+            e.horaSalida = validarCampo('horaSalida', form)
         }
+        Object.keys(e).forEach(k => { if (!e[k]) delete e[k] })
         return e
     }
 
@@ -128,7 +239,11 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
         if (Object.keys(erroresEncontrados).length > 0) { setErrores(erroresEncontrados); return }
 
         if (originalData) {
-            const hayCambios = Object.keys(form).some(key => {
+            // Comparación genérica (String()) no sirve para "pares": es un array de
+            // objetos y String() de eso siempre da "[object Object]" sin importar el
+            // contenido — se compara aparte con JSON.stringify, igual que en Ventas.
+            const hayCambiosPares = JSON.stringify(form.pares) !== JSON.stringify(originalData.pares)
+            const hayCambios = hayCambiosPares || Object.keys(form).filter(k => k !== 'pares').some(key => {
                 const orig = originalData[key] !== undefined ? String(originalData[key]) : ''
                 const act  = form[key]         !== undefined ? String(form[key])         : ''
                 return orig !== act
@@ -145,8 +260,13 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
             await actualizarRutaProgramada({
                 idRuta: id,
                 ...form,
-                idVehiculo:  parseInt(form.idVehiculo),
-                idConductor: parseInt(form.idConductor),
+                pares: form.pares
+                    .filter(p => p.idVehiculo && p.idConductor)
+                    .map(p => ({
+                        ...(p.idRutaVehiculoConductor ? { idRutaVehiculoConductor: p.idRutaVehiculoConductor } : {}),
+                        idVehiculo: parseInt(p.idVehiculo),
+                        idConductor: parseInt(p.idConductor),
+                    })),
                 idDestino:   parseInt(form.idDestino),
                 observaciones: form.observaciones || ''
             })
@@ -161,15 +281,15 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
 
     const handleClose = () => {
         if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
-        setForm({ nombreRuta: '', idVehiculo: '', idConductor: '', idDestino: '', fechaSalida: '', horaSalida: '', horaLlegadaEstimada: '', observaciones: '' })
+        setForm({ nombreRuta: '', pares: [{ idRutaVehiculoConductor: '', idVehiculo: '', idConductor: '' }], idDestino: '', fechaSalida: '', horaSalida: '', horaLlegadaEstimada: '', observaciones: '' })
         setErrores({})
         setApiError(null)
         setActiveStep(0)
         setOriginalData(null)
         setSinCambios(false)
         setDestinoInput('')
-        setConductorInput('')
-        setVehiculoInput('')
+        setVehiculoInputs([''])
+        setConductorInputs([''])
         onClose?.()
     }
 
@@ -183,14 +303,14 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
     const getVehiculoLabel = (id) => {
         const v = vehiculos.find(x => x.idVehiculo === parseInt(id))
         if (v) return `${v.placa} - ${v.marca} ${v.modelo}`
-        if (ruta?.vehiculo && parseInt(id) === ruta.idVehiculo) return `${ruta.vehiculo.placa} - ${ruta.vehiculo.marca} ${ruta.vehiculo.modelo}`
-        return '—'
+        const original = (ruta?.paresVehiculoConductor || []).find(p => p.idVehiculo === parseInt(id))?.vehiculo
+        return original ? `${original.placa} - ${original.marca} ${original.modelo}` : '—'
     }
     const getConductorLabel = (id) => {
         const c = conductores.find(x => x.idConductor === parseInt(id))
         if (c) return `${c.nombre} ${c.apellido}`
-        if (ruta?.conductor?.usuario && parseInt(id) === ruta.idConductor) return `${ruta.conductor.usuario.nombre} ${ruta.conductor.usuario.apellido}`
-        return '—'
+        const original = (ruta?.paresVehiculoConductor || []).find(p => p.idConductor === parseInt(id))?.conductor?.usuario
+        return original ? `${original.nombre} ${original.apellido}` : '—'
     }
     const getDestinoLabel = (id) => {
         const d = destinos.find(x => x.idDestino === parseInt(id))
@@ -206,135 +326,179 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
             ? { idDestino: ruta.idDestino, nombre: ruta.destino.nombre, ciudad: ruta.destino.ciudad, departamento: ruta.destino.departamento }
             : null
     )
-    const conductorSeleccionado = conductores.find(c => c.idConductor === parseInt(form.idConductor)) || (
-        ruta?.conductor?.usuario && parseInt(form.idConductor) === ruta.idConductor
-            ? { idConductor: ruta.idConductor, nombre: ruta.conductor.usuario.nombre, apellido: ruta.conductor.usuario.apellido }
-            : null
-    )
-    const vehiculoSeleccionado = vehiculos.find(v => v.idVehiculo === parseInt(form.idVehiculo)) || (
-        ruta?.vehiculo && parseInt(form.idVehiculo) === ruta.idVehiculo
-            ? { idVehiculo: ruta.idVehiculo, placa: ruta.vehiculo.placa, marca: ruta.vehiculo.marca, modelo: ruta.vehiculo.modelo }
-            : null
-    )
 
     const renderStepContent = () => {
         switch (activeStep) {
             case 0:
                 return (
-                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
-                        <FormField label="Nombre de la Ruta" name="nombreRuta" value={form.nombreRuta}
-                            onChange={handleChange} required error={errores.nombreRuta} helperText={errores.nombreRuta}
-                            icon={RouteOutlinedIcon} inputProps={{ maxLength: 100 }} placeholder="Ej: Ruta Medellín - Bogotá" />
-                        <Autocomplete
-                            options={destinos}
-                            getOptionLabel={(d) => d.nombre ? `${d.nombre} - ${d.ciudad}` : `${d.departamento} - ${d.ciudad}`}
-                            isOptionEqualToValue={(opt, val) => opt.idDestino === val.idDestino}
-                            value={destinoSeleccionado}
-                            inputValue={destinoInput}
-                            onInputChange={(_, newVal, reason) => {
-                                if (reason === 'input') setDestinoInput(newVal.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, ''))
-                                else setDestinoInput(newVal)
-                            }}
-                            onChange={(_, val) => handleChange({ target: { name: 'idDestino', value: val ? val.idDestino : '' } })}
-                            filterOptions={(opts, { inputValue }) => {
-                                if (!inputValue.trim()) return [...opts].sort((a, b) => b.idDestino - a.idDestino).slice(0, 5)
-                                const q = normalizarTexto(inputValue)
-                                return opts.filter(d =>
-                                    normalizarTexto(d.nombre || '').includes(q) ||
-                                    normalizarTexto(d.ciudad || '').includes(q) ||
-                                    normalizarTexto(d.departamento || '').includes(q)
-                                )
-                            }}
-                            noOptionsText="No se encontraron destinos"
-                            renderInput={(params) => (
-                                <TextField {...params} label="Destino *"
-                                    error={!!errores.idDestino} helperText={errores.idDestino || 'Busca por nombre, ciudad o departamento'}
-                                    slotProps={{ inputLabel: { shrink: true }, htmlInput: { ...params.inputProps, maxLength: 50 } }} sx={formFieldStyles} />
-                            )}
-                        />
-                        <Autocomplete
-                            options={conductores}
-                            getOptionLabel={(c) => `${c.nombre} ${c.apellido}`}
-                            isOptionEqualToValue={(opt, val) => opt.idConductor === val.idConductor}
-                            value={conductorSeleccionado}
-                            inputValue={conductorInput}
-                            onInputChange={(_, newVal, reason) => {
-                                if (reason === 'input') setConductorInput(newVal.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ0-9\s]/g, ''))
-                                else setConductorInput(newVal)
-                            }}
-                            onChange={(_, val) => handleChange({ target: { name: 'idConductor', value: val ? val.idConductor : '' } })}
-                            filterOptions={(opts, { inputValue }) => {
-                                if (!inputValue.trim()) return [...opts].sort((a, b) => b.idConductor - a.idConductor).slice(0, 5)
-                                const q = normalizarTexto(inputValue)
-                                return opts.filter(c =>
-                                    normalizarTexto(c.nombre).includes(q) ||
-                                    normalizarTexto(c.apellido).includes(q) ||
-                                    normalizarTexto(`${c.nombre} ${c.apellido}`).includes(q) ||
-                                    normalizarTexto(c.numeroIdentificacion || '').includes(q)
-                                )
-                            }}
-                            noOptionsText="No se encontraron conductores"
-                            renderInput={(params) => (
-                                <TextField {...params} label="Conductor *"
-                                    error={!!errores.idConductor} helperText={errores.idConductor || 'Busca por nombre, apellido o documento'}
-                                    slotProps={{ inputLabel: { shrink: true }, htmlInput: { ...params.inputProps, maxLength: 80 } }} sx={formFieldStyles} />
-                            )}
-                        />
-                        <Autocomplete
-                            options={vehiculos}
-                            getOptionLabel={(v) => `${v.placa} — ${v.marca} ${v.modelo}`}
-                            isOptionEqualToValue={(opt, val) => opt.idVehiculo === val.idVehiculo}
-                            value={vehiculoSeleccionado}
-                            inputValue={vehiculoInput}
-                            onInputChange={(_, newVal, reason) => {
-                                if (reason === 'input') setVehiculoInput(newVal.replace(/[^a-zA-Z0-9\s\-_]/g, ''))
-                                else setVehiculoInput(newVal)
-                            }}
-                            onChange={(_, val) => handleChange({ target: { name: 'idVehiculo', value: val ? val.idVehiculo : '' } })}
-                            filterOptions={(opts, { inputValue }) => {
-                                if (!inputValue.trim()) return [...opts].sort((a, b) => b.idVehiculo - a.idVehiculo).slice(0, 5)
-                                const q = normalizarTexto(inputValue)
-                                return opts.filter(v =>
-                                    normalizarTexto(v.placa).includes(q) ||
-                                    normalizarTexto(v.marca || '').includes(q) ||
-                                    normalizarTexto(v.modelo || '').includes(q)
-                                )
-                            }}
-                            noOptionsText="No se encontraron vehículos"
-                            renderInput={(params) => (
-                                <TextField {...params} label="Vehículo *"
-                                    error={!!errores.idVehiculo} helperText={errores.idVehiculo || 'Busca por placa, marca o modelo'}
-                                    slotProps={{ inputLabel: { shrink: true }, htmlInput: { ...params.inputProps, maxLength: 30 } }} sx={formFieldStyles} />
-                            )}
-                        />
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
+                            <FormField label="Nombre de la Ruta" name="nombreRuta" value={form.nombreRuta}
+                                onChange={handleChange}
+                                onBlur={() => setErrores(prev => ({ ...prev, nombreRuta: validarCampo('nombreRuta', form) }))}
+                                required error={errores.nombreRuta} helperText={errores.nombreRuta}
+                                icon={RouteOutlinedIcon} inputProps={{ maxLength: 100 }} placeholder="Ej: Ruta Medellín - Bogotá" />
+                            <Autocomplete
+                                options={destinos}
+                                getOptionLabel={(d) => d.nombre ? `${d.nombre} - ${d.ciudad}` : `${d.departamento} - ${d.ciudad}`}
+                                isOptionEqualToValue={(opt, val) => opt.idDestino === val.idDestino}
+                                value={destinoSeleccionado}
+                                inputValue={destinoInput}
+                                onInputChange={(_, newVal, reason) => {
+                                    if (reason === 'input') setDestinoInput(newVal.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, ''))
+                                    else setDestinoInput(newVal)
+                                }}
+                                onChange={(_, val) => handleChange({ target: { name: 'idDestino', value: val ? val.idDestino : '' } })}
+                                onBlur={() => setErrores(prev => ({ ...prev, idDestino: validarCampo('idDestino', form) }))}
+                                filterOptions={(opts, { inputValue }) => {
+                                    if (!inputValue.trim()) return [...opts].sort((a, b) => b.idDestino - a.idDestino).slice(0, 5)
+                                    const q = normalizarTexto(inputValue)
+                                    return opts.filter(d =>
+                                        normalizarTexto(d.nombre || '').includes(q) ||
+                                        normalizarTexto(d.ciudad || '').includes(q) ||
+                                        normalizarTexto(d.departamento || '').includes(q)
+                                    )
+                                }}
+                                noOptionsText="No se encontraron destinos"
+                                renderInput={(params) => (
+                                    <TextField {...params} label="Destino *"
+                                        error={!!errores.idDestino} helperText={errores.idDestino || 'Busca por nombre, ciudad o departamento'}
+                                        slotProps={{ inputLabel: { shrink: true }, htmlInput: { ...params.inputProps, maxLength: 50 } }} sx={formFieldStyles} />
+                                )}
+                            />
+                        </Box>
+
+                        <Typography variant="body2" fontWeight={600} color={theme.palette.text.primary}>
+                            Vehículos y conductores de esta ruta
+                        </Typography>
+                        {errores.pares && (
+                            <Typography variant="caption" color="error" sx={{ mt: -1.5 }}>{errores.pares}</Typography>
+                        )}
+                        {form.pares.map((par, index) => {
+                            const opcionesVehiculo = getVehiculoOpciones(index)
+                            const opcionesConductor = getConductorOpciones(index)
+                            const vehiculoSel = opcionesVehiculo.find(v => v.idVehiculo === parseInt(par.idVehiculo)) || null
+                            const conductorSel = opcionesConductor.find(c => c.idConductor === parseInt(par.idConductor)) || null
+                            return (
+                                <Box key={index} sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 1.5, alignItems: 'flex-start' }}>
+                                    <Autocomplete
+                                        options={opcionesVehiculo}
+                                        getOptionLabel={(v) => `${v.placa} — ${v.marca} ${v.modelo}`}
+                                        isOptionEqualToValue={(opt, val) => opt.idVehiculo === val.idVehiculo}
+                                        value={vehiculoSel}
+                                        inputValue={vehiculoInputs[index] || ''}
+                                        onInputChange={(_, newVal, reason) => {
+                                            const limpio = reason === 'input' ? newVal.replace(/[^a-zA-Z0-9\s\-_]/g, '') : newVal
+                                            setVehiculoInputs(prev => prev.map((v, i) => i === index ? limpio : v))
+                                        }}
+                                        onChange={(_, val) => handleParChange(index, 'idVehiculo', val ? val.idVehiculo : '')}
+                                        onBlur={() => setErrores(prev => ({ ...prev, pares: validarPares(form.pares) }))}
+                                        filterOptions={(opts, { inputValue }) => {
+                                            if (!inputValue.trim()) return [...opts].sort((a, b) => b.idVehiculo - a.idVehiculo).slice(0, 5)
+                                            const q = normalizarTexto(inputValue)
+                                            return opts.filter(v =>
+                                                normalizarTexto(v.placa).includes(q) ||
+                                                normalizarTexto(v.marca || '').includes(q) ||
+                                                normalizarTexto(v.modelo || '').includes(q)
+                                            )
+                                        }}
+                                        noOptionsText="No se encontraron vehículos"
+                                        renderInput={(params) => (
+                                            <TextField {...params} label="Vehículo *"
+                                                helperText="Busca por placa, marca o modelo"
+                                                slotProps={{ inputLabel: { shrink: true }, htmlInput: { ...params.inputProps, maxLength: 30 } }} sx={formFieldStyles} />
+                                        )}
+                                    />
+                                    <Autocomplete
+                                        options={opcionesConductor}
+                                        getOptionLabel={(c) => `${c.nombre} ${c.apellido}`}
+                                        isOptionEqualToValue={(opt, val) => opt.idConductor === val.idConductor}
+                                        value={conductorSel}
+                                        inputValue={conductorInputs[index] || ''}
+                                        onInputChange={(_, newVal, reason) => {
+                                            const limpio = reason === 'input' ? newVal.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ0-9\s]/g, '') : newVal
+                                            setConductorInputs(prev => prev.map((v, i) => i === index ? limpio : v))
+                                        }}
+                                        onChange={(_, val) => handleParChange(index, 'idConductor', val ? val.idConductor : '')}
+                                        onBlur={() => setErrores(prev => ({ ...prev, pares: validarPares(form.pares) }))}
+                                        filterOptions={(opts, { inputValue }) => {
+                                            if (!inputValue.trim()) return [...opts].sort((a, b) => b.idConductor - a.idConductor).slice(0, 5)
+                                            const q = normalizarTexto(inputValue)
+                                            return opts.filter(c =>
+                                                normalizarTexto(c.nombre).includes(q) ||
+                                                normalizarTexto(c.apellido).includes(q) ||
+                                                normalizarTexto(`${c.nombre} ${c.apellido}`).includes(q) ||
+                                                normalizarTexto(c.numeroIdentificacion || '').includes(q)
+                                            )
+                                        }}
+                                        noOptionsText="No se encontraron conductores"
+                                        renderInput={(params) => (
+                                            <TextField {...params} label="Conductor *"
+                                                helperText="Busca por nombre, apellido o documento"
+                                                slotProps={{ inputLabel: { shrink: true }, htmlInput: { ...params.inputProps, maxLength: 80 } }} sx={formFieldStyles} />
+                                        )}
+                                    />
+                                    <IconButton onClick={() => handleQuitarPar(index)}
+                                        disabled={form.pares.length === 1}
+                                        sx={{ visibility: form.pares.length === 1 ? 'hidden' : 'visible', mt: 1 }}>
+                                        <CloseIcon fontSize="small" />
+                                    </IconButton>
+                                </Box>
+                            )
+                        })}
+                        <Button
+                            onClick={handleAgregarPar}
+                            startIcon={<AddOutlinedIcon />}
+                            disabled={form.pares.length >= Math.min(MAX_PARES, vehiculos.length, conductores.length)}
+                            sx={{ alignSelf: 'flex-start', textTransform: 'none', fontWeight: 600 }}
+                        >
+                            Agregar vehículo y conductor
+                        </Button>
                     </Box>
                 )
             case 1:
                 return (
-                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
-                        <FormField label="Fecha de Salida" name="fechaSalida" type="date" value={form.fechaSalida}
-                            onChange={handleChange} required error={errores.fechaSalida} helperText={errores.fechaSalida}
-                            icon={EventOutlinedIcon} InputLabelProps={{ shrink: true }}
-                            inputProps={{ min: mananaISO() }} />
-                        <FormField label="Hora de Salida" name="horaSalida" type="time" value={form.horaSalida}
-                            onChange={handleChange} required error={errores.horaSalida} helperText={errores.horaSalida}
-                            icon={ScheduleOutlinedIcon} InputLabelProps={{ shrink: true }} />
-                        <FormField label="Hora Estimada de Llegada" name="horaLlegadaEstimada" type="time" value={form.horaLlegadaEstimada}
-                            onChange={handleChange} icon={ScheduleOutlinedIcon} InputLabelProps={{ shrink: true }}
-                            helperText="Opcional" />
-                        <FormField label="Observaciones" name="observaciones" value={form.observaciones}
-                            onChange={handleChange} icon={RouteOutlinedIcon}
-                            inputProps={{ maxLength: 500 }} placeholder="Ej: Salida por puerta norte"
-                            multiline rows={2}
-                            helperText={`Opcional · ${form.observaciones?.length || 0}/500`} />
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                        <Box sx={{ display: 'flex', gap: 2.5, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                            <CalendarioDisponibilidad
+                                label="Fecha de Salida"
+                                required
+                                value={form.fechaSalida}
+                                onChange={(iso) => {
+                                    setForm(prev => ({ ...prev, fechaSalida: iso }))
+                                    setErrores(prev => ({ ...prev, fechaSalida: '' }))
+                                    setApiError(null)
+                                    setSinCambios(false)
+                                }}
+                                pares={form.pares}
+                                idRutaExcluir={ruta?.idRuta ?? ruta?.idRutaProgramada}
+                                minDate={mananaISO()}
+                                error={errores.fechaSalida}
+                                helperText="Los días en rojo ya tienen a ese vehículo o conductor ocupado en otra ruta"
+                            />
+                            <Box sx={{ flex: 1, minWidth: 220, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                                <FormField label="Hora de Salida" name="horaSalida" type="time" value={form.horaSalida}
+                                    onChange={handleChange}
+                                    onBlur={() => setErrores(prev => ({ ...prev, horaSalida: validarCampo('horaSalida', form) }))}
+                                    required error={errores.horaSalida} helperText={errores.horaSalida}
+                                    icon={ScheduleOutlinedIcon} InputLabelProps={{ shrink: true }} />
+                                <FormField label="Hora Estimada de Llegada" name="horaLlegadaEstimada" type="time" value={form.horaLlegadaEstimada}
+                                    onChange={handleChange} icon={ScheduleOutlinedIcon} InputLabelProps={{ shrink: true }}
+                                    helperText="Opcional" />
+                                <FormField label="Observaciones" name="observaciones" value={form.observaciones}
+                                    onChange={handleChange} icon={RouteOutlinedIcon}
+                                    inputProps={{ maxLength: 500 }} placeholder="Ej: Salida por puerta norte"
+                                    multiline rows={4}
+                                    helperText={`Opcional · ${form.observaciones?.length || 0}/500`} />
+                            </Box>
+                        </Box>
                     </Box>
                 )
             case 2: {
                 const sonDistintos = (a, b) => String(a ?? '') !== String(b ?? '')
                 const camposComparados = originalData ? [
                     [form.nombreRuta, originalData.nombreRuta],
-                    [form.idVehiculo, originalData.idVehiculo],
-                    [form.idConductor, originalData.idConductor],
+                    [JSON.stringify(form.pares), JSON.stringify(originalData.pares)],
                     [form.idDestino, originalData.idDestino],
                     [form.fechaSalida, originalData.fechaSalida],
                     [form.horaSalida, originalData.horaSalida],
@@ -369,8 +533,15 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la información de la ruta</Typography>
                                 <ConfirmRow label="Nombre"    value={form.nombreRuta} previousValue={originalData?.nombreRuta} />
                                 <ConfirmRow label="Destino"   value={getDestinoLabel(form.idDestino)} previousValue={originalData ? getDestinoLabel(originalData.idDestino) : undefined} />
-                                <ConfirmRow label="Conductor" value={getConductorLabel(form.idConductor)} previousValue={originalData ? getConductorLabel(originalData.idConductor) : undefined} />
-                                <ConfirmRow label="Vehículo"  value={getVehiculoLabel(form.idVehiculo)} previousValue={originalData ? getVehiculoLabel(originalData.idVehiculo) : undefined} />
+                                {form.pares.filter(p => p.idVehiculo && p.idConductor).map((par, i) => {
+                                    const orig = originalData?.pares?.[i]
+                                    return (
+                                        <ConfirmRow key={i}
+                                            label={form.pares.length > 1 ? `Vehículo ${i + 1}` : 'Vehículo'}
+                                            value={`${getVehiculoLabel(par.idVehiculo)} · ${getConductorLabel(par.idConductor)}`}
+                                            previousValue={orig ? `${getVehiculoLabel(orig.idVehiculo)} · ${getConductorLabel(orig.idConductor)}` : undefined} />
+                                    )
+                                })}
                             </Paper>
                             <Paper elevation={0} sx={cardSx}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>

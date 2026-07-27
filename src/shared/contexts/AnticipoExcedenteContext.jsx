@@ -71,21 +71,29 @@ export const AnticipoExcedenteProvider = ({ children }) => {
       numeroIdentificacion: c.numeroIdentificacion || '',
     }))
 
-  // Normalizar rutas para el selector: { idRuta, nombre, idConductor, conductorNombre } —
+  // Normalizar rutas para el selector: { idRuta, nombre, paresVehiculoConductor } —
   // solo habilitadas y Programadas (una ruta "En Curso"/"Completada"/"Cancelada" ya no
-  // debería recibir anticipos nuevos). El conductor va incluido porque el anticipo se
-  // autocompleta con el conductor asignado a la ruta elegida, no se selecciona aparte.
+  // debería recibir anticipos nuevos). Una ruta ahora puede tener varios vehículo+conductor
+  // (convoy), así que el conductor ya no se autocompleta solo: el formulario debe dejar
+  // elegir cuál par corresponde entre los de `paresVehiculoConductor`.
   const rutasNormalizadas = rutasProgramadas
     .filter((r) => r.habilitado !== false && r.estado === 'Programada')
-    .map((r) => {
-      const u = r.conductor?.usuario
-      return {
-        idRuta: r.idRuta,
-        nombre: r.nombreRuta || r.nombre || `Ruta ${r.idRuta}`,
-        idConductor: r.idConductor,
-        conductorNombre: u ? `${u.nombre} ${u.apellido}` : `Conductor ${r.idConductor}`,
-      }
-    })
+    .map((r) => ({
+      idRuta: r.idRuta,
+      nombre: r.nombreRuta || r.nombre || `Ruta ${r.idRuta}`,
+      paresVehiculoConductor: (r.paresVehiculoConductor || [])
+        .filter((p) => p.habilitado !== false)
+        .map((p) => {
+          const u = p.conductor?.usuario
+          return {
+            idRutaVehiculoConductor: p.idRutaVehiculoConductor,
+            idVehiculo: p.idVehiculo,
+            idConductor: p.idConductor,
+            placa: p.vehiculo?.placa || '',
+            conductorNombre: u ? `${u.nombre} ${u.apellido}` : `Conductor ${p.idConductor}`,
+          }
+        }),
+    }))
 
   // ── CRUD ────────────────────────────────────────────────────────────────────
 

@@ -328,13 +328,15 @@ const drawGuiaPage = (doc, venta, pkg, index, totalPaginas, assets) => {
   y = firmaY + 22
 
   // Ruta/vehículo/conductor van como referencia secundaria (no es info del envío
-  // en sí, solo un respaldo interno de quién lo transportó).
-  const conductorNombre = venta.ruta?.conductor?.usuario
-    ? `${venta.ruta.conductor.usuario.nombre || ''} ${venta.ruta.conductor.usuario.apellido || ''}`.trim()
+  // en sí, solo un respaldo interno de quién lo transportó). El vehículo/conductor
+  // salen de la asignación de ESTE paquete específico, no de la ruta en general —
+  // una misma venta puede repartir sus paquetes entre varios vehículos del convoy.
+  const conductorNombre = pkg?.asignacion?.conductor?.usuario
+    ? `${pkg.asignacion.conductor.usuario.nombre || ''} ${pkg.asignacion.conductor.usuario.apellido || ''}`.trim()
     : ''
   const refOperativa = [
     venta.ruta?.nombreRuta && `Ruta: ${venta.ruta.nombreRuta}`,
-    venta.ruta?.vehiculo?.placa && `Vehículo: ${venta.ruta.vehiculo.placa}`,
+    pkg?.asignacion?.vehiculo?.placa && `Vehículo: ${pkg.asignacion.vehiculo.placa}`,
     conductorNombre && `Conductor: ${conductorNombre}`,
   ].filter(Boolean).join(' · ')
   if (refOperativa) {
