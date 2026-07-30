@@ -38,6 +38,7 @@ import ModalConfirmarEstado from './ModalConfirmarEstado'
 import ModalInhabilitarRuta from './ModalInhabilitarRuta'
 import { getPageOfRuta, getAniosDisponiblesRuta, getRutas } from '../../shared/services/rutaService'
 import { formatFecha } from '../../shared/utils/formatters.js'
+import { getDocumentoVehiculoVencido, conductorLicenciaVigente } from '../../shared/utils/vigenciaDocumentos.js'
 import { getEstadoColorRuta as getEstadoColor, getVehiculoEstadoDot, getConductorEstadoDot } from '../../shared/utils/estadoColors.js'
 import { exportToExcel } from '../../shared/utils/exportExcel.js'
 
@@ -358,10 +359,16 @@ const getDestinoNombre = (id) => {
         idRutaVehiculoConductor: par.idRutaVehiculoConductor,
         placa: par.vehiculo?.placa ?? getVehiculoPlaca(par.idVehiculo),
         vehiculoInhabilitado: getVehiculos().find(v => v.idVehiculo === par.idVehiculo)?.habilitado === false,
+        // Igual que "inhabilitado" arriba: el backend solo revalida documentos/licencia
+        // al crear la ruta, al cambiar el par, o al pasar a "En Curso" — nunca de forma
+        // continua — así que un documento puede vencerse mientras la ruta ya está
+        // Programada sin que nada lo marque. Esto lo hace visible en el listado.
+        documentoVencido: par.vehiculo ? getDocumentoVehiculoVencido(par.vehiculo) : null,
         conductorNombre: par.conductor?.usuario
             ? `${par.conductor.usuario.nombre} ${par.conductor.usuario.apellido}`
             : getConductorNombre(par.idConductor),
         conductorInhabilitado: getConductores().find(c => c.idConductor === par.idConductor)?.habilitado === false,
+        licenciaVencida: par.conductor ? !conductorLicenciaVigente(par.conductor.categoriasLicencia) : false,
     }))
 
 const resolveDestino = (ruta) =>
@@ -880,6 +887,24 @@ const resolveDestino = (ruta) =>
                                                             }}
                                                         />
                                                     )}
+                                                    {pares.some(p => p.documentoVencido) && ['Programada', 'En Curso'].includes(ruta.estado) && (
+                                                        <Tooltip title={[...new Set(pares.filter(p => p.documentoVencido).map(p => `${p.placa || 'Vehículo'}: ${p.documentoVencido} vencido`))].join(' · ')}>
+                                                            <Chip
+                                                                label={`${pares.find(p => p.documentoVencido)?.documentoVencido} vencido`}
+                                                                size="small"
+                                                                sx={{
+                                                                    height: 18,
+                                                                    fontSize: '0.65rem',
+                                                                    fontWeight: 600,
+                                                                    backgroundColor: alpha(theme.palette.error.main, 0.12),
+                                                                    color: theme.palette.error.dark,
+                                                                    border: `1px solid ${alpha(theme.palette.error.main, 0.35)}`,
+                                                                    width: 'fit-content',
+                                                                    '& .MuiChip-label': { px: 0.8 },
+                                                                }}
+                                                            />
+                                                        </Tooltip>
+                                                    )}
                                                 </Box>
                                             </TableCell>
                                             <TableCell sx={{ py: 1.5 }}>
@@ -916,6 +941,24 @@ const resolveDestino = (ruta) =>
                                                                 '& .MuiChip-label': { px: 0.8 },
                                                             }}
                                                         />
+                                                    )}
+                                                    {pares.some(p => p.licenciaVencida) && ['Programada', 'En Curso'].includes(ruta.estado) && (
+                                                        <Tooltip title={[...new Set(pares.filter(p => p.licenciaVencida).map(p => `${p.conductorNombre || 'Conductor'}: licencia vencida`))].join(' · ')}>
+                                                            <Chip
+                                                                label="Licencia vencida"
+                                                                size="small"
+                                                                sx={{
+                                                                    height: 18,
+                                                                    fontSize: '0.65rem',
+                                                                    fontWeight: 600,
+                                                                    backgroundColor: alpha(theme.palette.error.main, 0.12),
+                                                                    color: theme.palette.error.dark,
+                                                                    border: `1px solid ${alpha(theme.palette.error.main, 0.35)}`,
+                                                                    width: 'fit-content',
+                                                                    '& .MuiChip-label': { px: 0.8 },
+                                                                }}
+                                                            />
+                                                        </Tooltip>
                                                     )}
                                                 </Box>
                                             </TableCell>

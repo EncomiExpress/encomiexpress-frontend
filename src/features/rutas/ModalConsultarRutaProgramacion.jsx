@@ -6,15 +6,16 @@ import { useVehiculo } from '../../shared/contexts/VehiculoContext.jsx'
 import { useConductor } from '../../shared/contexts/ConductorContext.jsx'
 import { useDestino } from '../../shared/contexts/DestinoContext.jsx'
 import {
-    Box, Typography, Paper, Chip, Button, Dialog, IconButton, CircularProgress,
+    Box, Typography, Paper, Chip, Button, Dialog, IconButton, CircularProgress, Divider,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tabs, Tab
 } from '@mui/material'
 import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
-import AccessTimeOutlinedIcon from '@mui/icons-material/AccessTimeOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import RouteIcon from '@mui/icons-material/Route'
+import RouteOutlinedIcon from '@mui/icons-material/RouteOutlined'
 import { getEstadoColorRuta, getAnticipoEstadoDot, getVentaEstadoDot } from '../../shared/utils/estadoColors.js'
 import { formatFecha, getGuiaPrincipal } from '../../shared/utils/formatters.js'
+import { getDocumentoVehiculoVencido, conductorLicenciaVigente } from '../../shared/utils/vigenciaDocumentos.js'
 
 const formatHora12 = (hora) => {
     if (!hora) return null
@@ -98,6 +99,11 @@ const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
             conductorNombre: par.conductor?.usuario
                 ? `${par.conductor.usuario.nombre} ${par.conductor.usuario.apellido}`
                 : (conductorCtx ? `${conductorCtx.nombre} ${conductorCtx.apellido}` : 'N/A'),
+            // El backend solo revalida documentos/licencia al crear/cambiar el par o al
+            // pasar a "En Curso" — nunca de forma continua — así que se marca acá para
+            // que no quede invisible mientras la ruta sigue Programada.
+            documentoVencido: par.vehiculo ? getDocumentoVehiculoVencido(par.vehiculo) : null,
+            licenciaVencida: par.conductor ? !conductorLicenciaVigente(par.conductor.categoriasLicencia) : false,
         }
     })
     const resolveDestino = (r) => {
@@ -142,49 +148,17 @@ const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
             </Box>
 
             {tabIndex === 0 && (
-                <Box sx={{ p: 3 }}>
+                <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
                     <Box sx={{ display: 'flex', gap: 2 }}>
                         <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: theme.palette.background.paper, flex: 1 }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                <DirectionsCarOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
-                                <Typography fontWeight={700} fontSize="0.95rem">
-                                    {resolvePares(ruta).length > 1 ? 'Vehículos y Conductores' : 'Vehículo y Conductor'}
-                                </Typography>
+                                <RouteOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
+                                <Typography fontWeight={700} fontSize="0.95rem">Datos de la Ruta y Horario</Typography>
                             </Box>
                             <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
-                                Recursos asignados a esta ruta
+                                Nombre, destino, fecha, horas y estado de la ruta
                             </Typography>
-                            {resolvePares(ruta).map((par, i, arr) => (
-                                <Box key={par.idRutaVehiculoConductor ?? i} sx={{ pb: i < arr.length - 1 ? 1.5 : 0, mb: i < arr.length - 1 ? 1.5 : 0, borderBottom: i < arr.length - 1 ? `1px dashed ${theme.palette.divider}` : 'none' }}>
-                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
-                                        <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Vehículo</Typography>
-                                        <Chip label={par.placa || '—'} size="small"
-                                            onClick={() => window.open(`/vehiculos/listar?highlight=${par.idVehiculo}`, '_blank')}
-                                            sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem', cursor: 'pointer', '&:hover': { filter: 'brightness(0.92)' } }} />
-                                    </Box>
-                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
-                                        <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Conductor</Typography>
-                                        <Typography variant="body2" fontWeight={500}
-                                            onClick={() => window.open(`/transporte/conductores?highlight=${par.idConductor}`, '_blank')}
-                                            sx={{ color: theme.palette.primary.main, cursor: 'pointer', textDecoration: 'underline', textDecorationStyle: 'dotted', '&:hover': { opacity: 0.75 } }}>
-                                            {par.conductorNombre}
-                                        </Typography>
-                                    </Box>
-                                </Box>
-                            ))}
-                            {resolvePares(ruta).length === 0 && (
-                                <Typography variant="body2" color={theme.palette.text.secondary}>Sin vehículos asignados</Typography>
-                            )}
-                        </Paper>
-
-                        <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: theme.palette.background.paper, flex: 1 }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                <AccessTimeOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
-                                <Typography fontWeight={700} fontSize="0.95rem">Ruta y Horarios</Typography>
-                            </Box>
-                            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
-                                Destino, fechas y estado de la ruta
-                            </Typography>
+                            <CampoFila label="Nombre" value={ruta.nombreRuta} />
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Destino</Typography>
                                 <Chip label={resolveDestino(ruta) || '—'} size="small"
@@ -204,6 +178,56 @@ const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
                                 </Box>
                             </Box>
                             <CampoFila label="Observaciones" value={ruta.observaciones} />
+                        </Paper>
+
+                        <Paper elevation={0} sx={{ borderRadius: 2, p: 3, border: `1px solid ${theme.palette.divider}`, backgroundColor: theme.palette.background.paper, flex: 1 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                <DirectionsCarOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
+                                <Typography fontWeight={700} fontSize="0.95rem">
+                                    {resolvePares(ruta).length > 1 ? 'Vehículos y Conductores' : 'Vehículo y Conductor'}
+                                </Typography>
+                            </Box>
+                            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
+                                Recursos asignados a esta ruta
+                            </Typography>
+                            {resolvePares(ruta).map((par, i, arr) => (
+                                <Box key={par.idRutaVehiculoConductor ?? i}>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
+                                        <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>
+                                            {arr.length > 1 ? `Vehículo ${i + 1}` : 'Vehículo'}
+                                        </Typography>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                                            {par.documentoVencido && (
+                                                <Chip label={`${par.documentoVencido} vencido`} size="small"
+                                                    sx={{ fontWeight: 600, backgroundColor: alpha(theme.palette.error.main, 0.12), color: theme.palette.error.dark, border: `1px solid ${alpha(theme.palette.error.main, 0.35)}`, fontSize: '0.65rem', height: 20 }} />
+                                            )}
+                                            <Chip label={par.placa || '—'} size="small"
+                                                onClick={() => window.open(`/vehiculos/listar?highlight=${par.idVehiculo}`, '_blank')}
+                                                sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem', cursor: 'pointer', '&:hover': { filter: 'brightness(0.92)' } }} />
+                                        </Box>
+                                    </Box>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
+                                        <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>
+                                            {arr.length > 1 ? `Conductor ${i + 1}` : 'Conductor'}
+                                        </Typography>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                                            {par.licenciaVencida && (
+                                                <Chip label="Licencia vencida" size="small"
+                                                    sx={{ fontWeight: 600, backgroundColor: alpha(theme.palette.error.main, 0.12), color: theme.palette.error.dark, border: `1px solid ${alpha(theme.palette.error.main, 0.35)}`, fontSize: '0.65rem', height: 20 }} />
+                                            )}
+                                            <Typography variant="body2" fontWeight={500}
+                                                onClick={() => window.open(`/transporte/conductores?highlight=${par.idConductor}`, '_blank')}
+                                                sx={{ color: theme.palette.primary.main, cursor: 'pointer', textDecoration: 'underline', textDecorationStyle: 'dotted', '&:hover': { opacity: 0.75 } }}>
+                                                {par.conductorNombre}
+                                            </Typography>
+                                        </Box>
+                                    </Box>
+                                    {i < arr.length - 1 && <Divider sx={{ my: 1 }} />}
+                                </Box>
+                            ))}
+                            {resolvePares(ruta).length === 0 && (
+                                <Typography variant="body2" color={theme.palette.text.secondary}>Sin vehículos asignados</Typography>
+                            )}
                         </Paper>
                     </Box>
                 </Box>

@@ -3,9 +3,10 @@ import { useState, useEffect } from 'react'
 import {
     Box, Typography, Paper, Stepper, Step, StepLabel,
     Button, Alert, Dialog, DialogTitle, DialogContent, IconButton,
-    Autocomplete, TextField, CircularProgress
+    Autocomplete, TextField, CircularProgress, Divider
 } from '@mui/material'
 import RouteOutlinedIcon from '@mui/icons-material/RouteOutlined'
+import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
 import EventOutlinedIcon from '@mui/icons-material/EventOutlined'
 import ScheduleOutlinedIcon from '@mui/icons-material/ScheduleOutlined'
 import CloseIcon from '@mui/icons-material/Close'
@@ -26,11 +27,13 @@ import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import CalendarioDisponibilidad from '../../shared/components/CalendarioDisponibilidad.jsx'
 import { formatFecha } from '../../shared/utils/formatters.js'
 import { normalizarTexto } from '../../shared/utils/duplicados.js'
+import { vehiculoDocumentosVigentes, conductorLicenciaVigente } from '../../shared/utils/vigenciaDocumentos.js'
 
 const mananaISO = () => {
     const d = new Date()
     d.setDate(d.getDate() + 1)
-    return d.toISOString().split('T')[0]
+    const pad2 = (n) => String(n).padStart(2, '0')
+    return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
 }
 
 const steps = ['Datos de la Ruta', 'Horario', 'Confirmación']
@@ -98,6 +101,17 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
     const conductores = getConductoresHabilitados()
     const destinos    = getDestinosHabilitados()
 
+    // El backend rechaza igual asignar un vehículo con algún documento vencido o un
+    // conductor sin licencia vigente — se excluyen acá antes para no dejar elegir algo
+    // que de todas formas no puede transitar (ver validarDocumentosVehiculo/
+    // tieneLicenciaVigente en rutaService.js del backend). Solo afecta las opciones
+    // nuevas a elegir — un par ya asignado a esta ruta sigue mostrándose tal cual,
+    // aunque su documento haya vencido después de haberlo asignado.
+    const vehiculosSeleccionables = vehiculos.filter(vehiculoDocumentosVigentes)
+    const conductoresSeleccionables = conductores.filter(c => conductorLicenciaVigente(c.categoriasLicencia))
+    const vehiculosExcluidos = vehiculos.length - vehiculosSeleccionables.length
+    const conductoresExcluidos = conductores.length - conductoresSeleccionables.length
+
     const [form, setForm] = useState({
         nombreRuta: '', pares: [{ idRutaVehiculoConductor: '', idVehiculo: '', idConductor: '' }], idDestino: '',
         fechaSalida: '', horaSalida: '', horaLlegadaEstimada: '', observaciones: ''
@@ -162,11 +176,12 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
 
     const handleParChange = (index, campo, value) => {
         const pares = form.pares.map((p, i) => i === index ? { ...p, [campo]: value } : p)
-        // Cambiar un vehículo/conductor puede volver inválida la fecha ya elegida (o
-        // liberar una que antes estaba bloqueada) — se limpia para que se vuelva a
-        // elegir contra el calendario ya actualizado.
-        setForm(prev => ({ ...prev, pares, fechaSalida: '' }))
-        setErrores(prev => ({ ...prev, pares: prev.pares ? validarPares(pares) : '', fechaSalida: '' }))
+        // La fecha ya elegida se conserva — casi siempre sigue siendo válida con el
+        // vehículo/conductor nuevo. El propio calendario recalcula la disponibilidad
+        // para el par actualizado y marca el día en rojo si de verdad queda bloqueado
+        // (ver CalendarioDisponibilidad, estilo de celda seleccionada+bloqueada).
+        setForm(prev => ({ ...prev, pares }))
+        setErrores(prev => ({ ...prev, pares: prev.pares ? validarPares(pares) : '' }))
         setApiError(null)
         setSinCambios(false)
     }
@@ -193,7 +208,10 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
     const getVehiculoOpciones = (index) => {
         const par = form.pares[index]
         const usados = form.pares.filter((_, i) => i !== index).map(p => parseInt(p.idVehiculo))
-        const base = vehiculos.filter(v => !usados.includes(v.idVehiculo))
+        // El backend rechaza igual un vehículo con documentos vencidos — se excluye acá
+        // salvo que sea el que ya tenía asignado esta fila (ver el fallback abajo, que
+        // igual lo vuelve a mostrar si venció después de haber sido asignado).
+        const base = vehiculos.filter(v => !usados.includes(v.idVehiculo) && vehiculoDocumentosVigentes(v))
         if (par.idVehiculo && !base.some(v => v.idVehiculo === parseInt(par.idVehiculo))) {
             const original = (ruta?.paresVehiculoConductor || []).find(p => p.idVehiculo === parseInt(par.idVehiculo))?.vehiculo
             if (original) return [...base, original]
@@ -203,7 +221,10 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
     const getConductorOpciones = (index) => {
         const par = form.pares[index]
         const usados = form.pares.filter((_, i) => i !== index).map(p => parseInt(p.idConductor))
-        const base = conductores.filter(c => !usados.includes(c.idConductor))
+        // El backend rechaza igual un conductor sin licencia vigente — se excluye acá
+        // salvo que sea el que ya tenía asignado esta fila (ver el fallback abajo, que
+        // igual lo vuelve a mostrar si venció después de haber sido asignado).
+        const base = conductores.filter(c => !usados.includes(c.idConductor) && conductorLicenciaVigente(c.categoriasLicencia))
         if (par.idConductor && !base.some(c => c.idConductor === parseInt(par.idConductor))) {
             const original = (ruta?.paresVehiculoConductor || []).find(p => p.idConductor === parseInt(par.idConductor))?.conductor?.usuario
             if (original) return [...base, { idConductor: parseInt(par.idConductor), nombre: original.nombre, apellido: original.apellido }]
@@ -374,6 +395,13 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
                         {errores.pares && (
                             <Typography variant="caption" color="error" sx={{ mt: -1.5 }}>{errores.pares}</Typography>
                         )}
+                        {(vehiculosExcluidos > 0 || conductoresExcluidos > 0) && (
+                            <Typography variant="caption" color={theme.palette.text.secondary} sx={{ mt: -1.5 }}>
+                                {vehiculosExcluidos > 0 && `${vehiculosExcluidos} vehículo${vehiculosExcluidos > 1 ? 's' : ''} oculto${vehiculosExcluidos > 1 ? 's' : ''} por documentos vencidos`}
+                                {vehiculosExcluidos > 0 && conductoresExcluidos > 0 && ' · '}
+                                {conductoresExcluidos > 0 && `${conductoresExcluidos} conductor${conductoresExcluidos > 1 ? 'es' : ''} oculto${conductoresExcluidos > 1 ? 's' : ''} por licencia vencida`}
+                            </Typography>
+                        )}
                         {form.pares.map((par, index) => {
                             const opcionesVehiculo = getVehiculoOpciones(index)
                             const opcionesConductor = getConductorOpciones(index)
@@ -528,32 +556,46 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
                             <Paper elevation={0} sx={cardSx}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                                     <RouteOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
-                                    <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Datos de la Ruta</Typography>
+                                    <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Datos de la Ruta y Horario</Typography>
                                 </Box>
-                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la información de la ruta</Typography>
+                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la información y el horario de la ruta</Typography>
                                 <ConfirmRow label="Nombre"    value={form.nombreRuta} previousValue={originalData?.nombreRuta} />
                                 <ConfirmRow label="Destino"   value={getDestinoLabel(form.idDestino)} previousValue={originalData ? getDestinoLabel(originalData.idDestino) : undefined} />
-                                {form.pares.filter(p => p.idVehiculo && p.idConductor).map((par, i) => {
-                                    const orig = originalData?.pares?.[i]
-                                    return (
-                                        <ConfirmRow key={i}
-                                            label={form.pares.length > 1 ? `Vehículo ${i + 1}` : 'Vehículo'}
-                                            value={`${getVehiculoLabel(par.idVehiculo)} · ${getConductorLabel(par.idConductor)}`}
-                                            previousValue={orig ? `${getVehiculoLabel(orig.idVehiculo)} · ${getConductorLabel(orig.idConductor)}` : undefined} />
-                                    )
-                                })}
-                            </Paper>
-                            <Paper elevation={0} sx={cardSx}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                                    <ScheduleOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
-                                    <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Horario</Typography>
-                                </Box>
-                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica el horario</Typography>
                                 <ConfirmRow label="Fecha Salida" value={formatFecha(form.fechaSalida)} previousValue={originalData?.fechaSalida ? formatFecha(originalData.fechaSalida) : undefined} />
                                 <ConfirmRow label="Hora Salida"  value={form.horaSalida} previousValue={originalData?.horaSalida} />
                                 <ConfirmRow label="Hora Llegada" value={form.horaLlegadaEstimada || 'N/A'} previousValue={originalData?.horaLlegadaEstimada || 'N/A'} />
                                 <ConfirmRow label="Observaciones" value={form.observaciones} previousValue={originalData?.observaciones} />
                             </Paper>
+                            {(() => {
+                                const paresConfirmacion = form.pares.filter(p => p.idVehiculo && p.idConductor)
+                                return (
+                                    <Paper elevation={0} sx={cardSx}>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                                            <DirectionsCarOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
+                                            <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>
+                                                {paresConfirmacion.length > 1 ? 'Vehículos y Conductores' : 'Vehículo y Conductor'}
+                                            </Typography>
+                                        </Box>
+                                        <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
+                                            Verifica los vehículos y conductores asignados a la ruta
+                                        </Typography>
+                                        {paresConfirmacion.map((par, i, arr) => {
+                                            const orig = originalData?.pares?.[i]
+                                            return (
+                                                <Box key={i}>
+                                                    <ConfirmRow label={arr.length > 1 ? `Vehículo ${i + 1}` : 'Vehículo'}
+                                                        value={getVehiculoLabel(par.idVehiculo)}
+                                                        previousValue={orig ? getVehiculoLabel(orig.idVehiculo) : undefined} />
+                                                    <ConfirmRow label={arr.length > 1 ? `Conductor ${i + 1}` : 'Conductor'}
+                                                        value={getConductorLabel(par.idConductor)}
+                                                        previousValue={orig ? getConductorLabel(orig.idConductor) : undefined} />
+                                                    {i < arr.length - 1 && <Divider sx={{ my: 1 }} />}
+                                                </Box>
+                                            )
+                                        })}
+                                    </Paper>
+                                )
+                            })()}
                         </Box>
                     </Box>
                 )
@@ -569,7 +611,7 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
                 <Box>
                     <Typography variant="h6" fontWeight={700}>Editar Ruta</Typography>
                     <Typography variant="body2" color={theme.palette.text.secondary} sx={{ mt: 0.5, ml: 0.5 }}>
-                        {originalData?.nombreRuta ? `Modificando datos de ${form.nombreRuta}` : 'Modifica los campos que necesites.'}
+                        {originalData?.nombreRuta ? `Modificando datos de ${originalData.nombreRuta}` : 'Modifica los campos que necesites.'}
                     </Typography>
                 </Box>
                 <IconButton onClick={handleClose} sx={{ color: theme.palette.text.secondary }}>

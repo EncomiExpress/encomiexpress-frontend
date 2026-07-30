@@ -3,9 +3,10 @@ import { useState } from 'react'
 import {
     Box, Typography, Paper, Stepper, Step, StepLabel,
     Button, Alert, Dialog, DialogTitle, DialogContent, IconButton,
-    Autocomplete, TextField, CircularProgress
+    Autocomplete, TextField, CircularProgress, Divider
 } from '@mui/material'
 import RouteOutlinedIcon from '@mui/icons-material/RouteOutlined'
+import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
 import EventOutlinedIcon from '@mui/icons-material/EventOutlined'
 import ScheduleOutlinedIcon from '@mui/icons-material/ScheduleOutlined'
 import CloseIcon from '@mui/icons-material/Close'
@@ -25,11 +26,13 @@ import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import CalendarioDisponibilidad from '../../shared/components/CalendarioDisponibilidad.jsx'
 import { normalizarTexto } from '../../shared/utils/duplicados.js'
+import { vehiculoDocumentosVigentes, conductorLicenciaVigente } from '../../shared/utils/vigenciaDocumentos.js'
 
 const mananaISO = () => {
     const d = new Date()
     d.setDate(d.getDate() + 1)
-    return d.toISOString().split('T')[0]
+    const pad2 = (n) => String(n).padStart(2, '0')
+    return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
 }
 
 const steps = ['Datos de la Ruta', 'Horario', 'Confirmación']
@@ -92,6 +95,15 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess }) => {
     const conductores = getConductoresHabilitados()
     const destinos    = getDestinosHabilitados()
 
+    // El backend rechaza igual asignar un vehículo con algún documento vencido o un
+    // conductor sin licencia vigente — se excluyen acá antes para no dejar elegir algo
+    // que de todas formas no puede transitar (ver validarDocumentosVehiculo/
+    // tieneLicenciaVigente en rutaService.js del backend).
+    const vehiculosSeleccionables = vehiculos.filter(vehiculoDocumentosVigentes)
+    const conductoresSeleccionables = conductores.filter(c => conductorLicenciaVigente(c.categoriasLicencia))
+    const vehiculosExcluidos = vehiculos.length - vehiculosSeleccionables.length
+    const conductoresExcluidos = conductores.length - conductoresSeleccionables.length
+
     const [form, setForm] = useState({
         nombreRuta: '',
         pares: [{ idVehiculo: '', idConductor: '' }],
@@ -113,11 +125,12 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess }) => {
 
     const handleParChange = (index, campo, value) => {
         const pares = form.pares.map((p, i) => i === index ? { ...p, [campo]: value } : p)
-        // Cambiar un vehículo/conductor puede volver inválida la fecha ya elegida (o
-        // liberar una que antes estaba bloqueada) — se limpia para que se vuelva a
-        // elegir contra el calendario ya actualizado.
-        setForm(prev => ({ ...prev, pares, fechaSalida: '' }))
-        setErrores(prev => ({ ...prev, pares: prev.pares ? validarPares(pares) : '', fechaSalida: '' }))
+        // La fecha ya elegida se conserva — casi siempre sigue siendo válida con el
+        // vehículo/conductor nuevo. El propio calendario recalcula la disponibilidad
+        // para el par actualizado y marca el día en rojo si de verdad queda bloqueado
+        // (ver CalendarioDisponibilidad, estilo de celda seleccionada+bloqueada).
+        setForm(prev => ({ ...prev, pares }))
+        setErrores(prev => ({ ...prev, pares: prev.pares ? validarPares(pares) : '' }))
         setApiError(null)
     }
 
@@ -261,6 +274,13 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess }) => {
                         {errores.pares && (
                             <Typography variant="caption" color="error" sx={{ mt: -1.5 }}>{errores.pares}</Typography>
                         )}
+                        {(vehiculosExcluidos > 0 || conductoresExcluidos > 0) && (
+                            <Typography variant="caption" color={theme.palette.text.secondary} sx={{ mt: -1.5 }}>
+                                {vehiculosExcluidos > 0 && `${vehiculosExcluidos} vehículo${vehiculosExcluidos > 1 ? 's' : ''} oculto${vehiculosExcluidos > 1 ? 's' : ''} por documentos vencidos`}
+                                {vehiculosExcluidos > 0 && conductoresExcluidos > 0 && ' · '}
+                                {conductoresExcluidos > 0 && `${conductoresExcluidos} conductor${conductoresExcluidos > 1 ? 'es' : ''} oculto${conductoresExcluidos > 1 ? 's' : ''} por licencia vencida`}
+                            </Typography>
+                        )}
                         {form.pares.map((par, index) => {
                             const vehiculosUsados = form.pares.filter((_, i) => i !== index).map(p => p.idVehiculo)
                             const conductoresUsados = form.pares.filter((_, i) => i !== index).map(p => p.idConductor)
@@ -269,7 +289,7 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess }) => {
                             return (
                                 <Box key={index} sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 1.5, alignItems: 'flex-start' }}>
                                     <Autocomplete
-                                        options={vehiculos.filter(v => !vehiculosUsados.includes(v.idVehiculo))}
+                                        options={vehiculosSeleccionables.filter(v => !vehiculosUsados.includes(v.idVehiculo))}
                                         getOptionLabel={(v) => `${v.placa} — ${v.marca} ${v.modelo}`}
                                         isOptionEqualToValue={(opt, val) => opt.idVehiculo === val.idVehiculo}
                                         value={vehiculoSel}
@@ -297,7 +317,7 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess }) => {
                                         )}
                                     />
                                     <Autocomplete
-                                        options={conductores.filter(c => !conductoresUsados.includes(c.idConductor))}
+                                        options={conductoresSeleccionables.filter(c => !conductoresUsados.includes(c.idConductor))}
                                         getOptionLabel={(c) => `${c.nombre} ${c.apellido}`}
                                         isOptionEqualToValue={(opt, val) => opt.idConductor === val.idConductor}
                                         value={conductorSel}
@@ -391,28 +411,41 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess }) => {
                             <Paper elevation={0} sx={cardSx}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                                     <RouteOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
-                                    <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Datos de la Ruta</Typography>
+                                    <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Datos de la Ruta y Horario</Typography>
                                 </Box>
-                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la información de la ruta</Typography>
+                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la información y el horario de la ruta</Typography>
                                 <ConfirmRow label="Nombre"    value={form.nombreRuta} />
                                 <ConfirmRow label="Destino"   value={getDestinoLabel(form.idDestino)} />
-                                {form.pares.filter(p => p.idVehiculo && p.idConductor).map((par, i) => (
-                                    <ConfirmRow key={i}
-                                        label={form.pares.length > 1 ? `Vehículo ${i + 1}` : 'Vehículo'}
-                                        value={`${getVehiculoLabel(par.idVehiculo)} · ${getConductorLabel(par.idConductor)}`} />
-                                ))}
-                            </Paper>
-                            <Paper elevation={0} sx={cardSx}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                                    <ScheduleOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
-                                    <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Horario</Typography>
-                                </Box>
-                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica el horario</Typography>
                                 <ConfirmRow label="Fecha Salida" value={formatFecha(form.fechaSalida)} />
                                 <ConfirmRow label="Hora Salida"  value={form.horaSalida} />
                                 <ConfirmRow label="Hora Llegada" value={form.horaLlegadaEstimada || 'N/A'} />
                                 <ConfirmRow label="Observaciones" value={form.observaciones} />
                             </Paper>
+                            {(() => {
+                                const paresConfirmacion = form.pares.filter(p => p.idVehiculo && p.idConductor)
+                                return (
+                                    <Paper elevation={0} sx={cardSx}>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                                            <DirectionsCarOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
+                                            <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>
+                                                {paresConfirmacion.length > 1 ? 'Vehículos y Conductores' : 'Vehículo y Conductor'}
+                                            </Typography>
+                                        </Box>
+                                        <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
+                                            Verifica los vehículos y conductores asignados a la ruta
+                                        </Typography>
+                                        {paresConfirmacion.map((par, i, arr) => (
+                                            <Box key={i}>
+                                                <ConfirmRow label={arr.length > 1 ? `Vehículo ${i + 1}` : 'Vehículo'}
+                                                    value={getVehiculoLabel(par.idVehiculo)} />
+                                                <ConfirmRow label={arr.length > 1 ? `Conductor ${i + 1}` : 'Conductor'}
+                                                    value={getConductorLabel(par.idConductor)} />
+                                                {i < arr.length - 1 && <Divider sx={{ my: 1 }} />}
+                                            </Box>
+                                        ))}
+                                    </Paper>
+                                )
+                            })()}
                         </Box>
                     </Box>
                 )

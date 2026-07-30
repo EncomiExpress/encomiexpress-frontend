@@ -169,19 +169,27 @@ const CalendarioDisponibilidad = ({
                                     fontSize: '0.7rem',
                                     fontWeight: seleccionado ? 700 : 500,
                                     cursor: clicable ? 'pointer' : 'default',
+                                    // "bloqueado" manda sobre "seleccionado" en los tres — si el día ya
+                                    // elegido queda bloqueado al cambiar de vehículo/conductor (la fecha
+                                    // ya no se limpia automáticamente), tiene que notarse en rojo sólido,
+                                    // no verse igual que una selección normal.
                                     color: esPasado
                                         ? theme.palette.text.disabled
                                         : bloqueado
-                                            ? theme.palette.error.main
+                                            ? (seleccionado ? theme.palette.error.contrastText : theme.palette.error.main)
                                             : seleccionado
                                                 ? theme.palette.primary.contrastText
                                                 : theme.palette.text.primary,
-                                    backgroundColor: seleccionado
-                                        ? theme.palette.primary.main
+                                    backgroundColor: esPasado
+                                        ? 'transparent'
                                         : bloqueado
-                                            ? alpha(theme.palette.error.main, 0.12)
-                                            : 'transparent',
-                                    border: bloqueado ? `1px solid ${alpha(theme.palette.error.main, 0.4)}` : '1px solid transparent',
+                                            ? (seleccionado ? theme.palette.error.main : alpha(theme.palette.error.main, 0.12))
+                                            : seleccionado
+                                                ? theme.palette.primary.main
+                                                : 'transparent',
+                                    border: bloqueado
+                                        ? `1px solid ${alpha(theme.palette.error.main, seleccionado ? 0.9 : 0.4)}`
+                                        : '1px solid transparent',
                                     '&:hover': clicable ? { backgroundColor: alpha(theme.palette.primary.main, 0.1) } : {},
                                 }}
                             >
