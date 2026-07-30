@@ -34,7 +34,7 @@ import ModalInhabilitarVehiculo from './ModalInhabilitarVehiculo'
 import { getPageOfVehiculo, getVehiculos as getVehiculosApi } from '../../shared/services/vehiculoService.js'
 import { getRutas } from '../../shared/services/rutaService'
 import { getEstadoColorRuta } from '../../shared/utils/estadoColors.js'
-import { isVencido } from '../../shared/utils/formatters.js'
+import { isVencido, formatFecha } from '../../shared/utils/formatters.js'
 import { exportToExcel } from '../../shared/utils/exportExcel.js'
 
 const getThStyle = (theme) => ({
@@ -688,7 +688,7 @@ const ListarTransporte = () => {
                                         </TableCell>
                                         <TableCell sx={{ py: 1.5 }}>
                                             <Chip
-                                                label={transporte.vencimientoSOAT ? new Date(transporte.vencimientoSOAT).toLocaleDateString() : 'N/A'}
+                                                label={transporte.vencimientoSOAT ? formatFecha(transporte.vencimientoSOAT) : 'N/A'}
                                                 size="small"
                                                 variant={isVencido(transporte.vencimientoSOAT) ? 'filled' : 'outlined'}
                                                 sx={isVencido(transporte.vencimientoSOAT)
@@ -699,7 +699,7 @@ const ListarTransporte = () => {
                                         </TableCell>
                                         <TableCell sx={{ py: 1.5 }}>
                                             <Chip
-                                                label={transporte.vencimientoRevisionTecnica ? new Date(transporte.vencimientoRevisionTecnica).toLocaleDateString() : 'N/A'}
+                                                label={transporte.vencimientoRevisionTecnica ? formatFecha(transporte.vencimientoRevisionTecnica) : 'N/A'}
                                                 size="small"
                                                 variant={isVencido(transporte.vencimientoRevisionTecnica) ? 'filled' : 'outlined'}
                                                 sx={isVencido(transporte.vencimientoRevisionTecnica)
@@ -710,7 +710,7 @@ const ListarTransporte = () => {
                                         </TableCell>
                                         <TableCell sx={{ py: 1.5 }}>
                                             <Chip
-                                                label={transporte.vencimientoSeguroTerceros ? new Date(transporte.vencimientoSeguroTerceros).toLocaleDateString() : 'N/A'}
+                                                label={transporte.vencimientoSeguroTerceros ? formatFecha(transporte.vencimientoSeguroTerceros) : 'N/A'}
                                                 size="small"
                                                 variant={isVencido(transporte.vencimientoSeguroTerceros) ? 'filled' : 'outlined'}
                                                 sx={isVencido(transporte.vencimientoSeguroTerceros)

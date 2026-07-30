@@ -9,7 +9,7 @@ import {
 import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined'
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined'
 import CloseIcon from '@mui/icons-material/Close'
-import { isVencido } from '../../shared/utils/formatters.js'
+import { isVencido, formatFecha } from '../../shared/utils/formatters.js'
 import { getEstadoColorRuta, getAnticipoEstadoDot } from '../../shared/utils/estadoColors.js'
 
 const renderEstadoRuta = (estado) => {
@@ -141,7 +141,7 @@ const ModalConsultarConductor = ({ conductor, onClose }) => {
                                 <Box key={i} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
                                     <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>{cat.categoria}</Typography>
                                     <Chip
-                                        label={cat.vencimiento ? new Date(cat.vencimiento).toLocaleDateString() : 'N/A'}
+                                        label={cat.vencimiento ? formatFecha(cat.vencimiento) : 'N/A'}
                                         size="small"
                                         variant={isVencido(cat.vencimiento) ? 'filled' : 'outlined'}
                                         sx={isVencido(cat.vencimiento)
@@ -196,7 +196,7 @@ const ModalConsultarConductor = ({ conductor, onClose }) => {
                                             sx={{ cursor: 'pointer', '&:hover': { backgroundColor: theme.palette.background.subtle } }}>
                                             <TableCell sx={{ fontSize: '0.82rem' }}>{r.nombreRuta || '—'}</TableCell>
                                             <TableCell sx={{ fontSize: '0.82rem' }}>{r.destino?.ciudad || '—'}</TableCell>
-                                            <TableCell sx={{ fontSize: '0.82rem' }}>{r.fechaSalida ? new Date(r.fechaSalida).toLocaleDateString() : '—'}</TableCell>
+                                            <TableCell sx={{ fontSize: '0.82rem' }}>{r.fechaSalida ? formatFecha(r.fechaSalida) : '—'}</TableCell>
                                             <TableCell>
                                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                                                     {renderEstadoRuta(r.estado)}

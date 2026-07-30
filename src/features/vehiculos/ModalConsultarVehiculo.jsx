@@ -8,7 +8,7 @@ import {
 import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
 import EventOutlinedIcon from '@mui/icons-material/EventOutlined'
 import CloseIcon from '@mui/icons-material/Close'
-import { isVencido } from '../../shared/utils/formatters.js'
+import { isVencido, formatFecha } from '../../shared/utils/formatters.js'
 import { getEstadoColorRuta } from '../../shared/utils/estadoColors.js'
 
 const PlacaDisplay = ({ placa, theme }) => {
@@ -176,7 +176,7 @@ const ModalConsultarVehiculo = ({ vehiculo, onClose }) => {
                                 <Box key={label} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
                                     <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>{label}</Typography>
                                     <Chip
-                                        label={fecha ? new Date(fecha).toLocaleDateString() : 'N/A'}
+                                        label={fecha ? formatFecha(fecha) : 'N/A'}
                                         size="small"
                                         variant={isVencido(fecha) ? 'filled' : 'outlined'}
                                         sx={isVencido(fecha)
@@ -222,7 +222,7 @@ const ModalConsultarVehiculo = ({ vehiculo, onClose }) => {
                                             sx={{ cursor: 'pointer', '&:hover': { backgroundColor: theme.palette.background.subtle } }}>
                                             <TableCell sx={{ fontSize: '0.82rem' }}>{r.nombreRuta || '—'}</TableCell>
                                             <TableCell sx={{ fontSize: '0.82rem' }}>{r.destino?.ciudad || '—'}</TableCell>
-                                            <TableCell sx={{ fontSize: '0.82rem' }}>{r.fechaSalida ? new Date(r.fechaSalida).toLocaleDateString() : '—'}</TableCell>
+                                            <TableCell sx={{ fontSize: '0.82rem' }}>{r.fechaSalida ? formatFecha(r.fechaSalida) : '—'}</TableCell>
                                             <TableCell>
                                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                                                     {renderEstadoRuta(r.estado)}

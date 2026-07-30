@@ -31,7 +31,7 @@ import ActualizarConductor from './ActualizarConductor'
 import ModalBloqueoInhabilitacion from '../../shared/components/ModalBloqueoInhabilitacion'
 import ModalConsultarConductor from './ModalConsultarConductor'
 import ModalInhabilitarConductor from './ModalInhabilitarConductor'
-import { isVencido } from '../../shared/utils/formatters.js'
+import { isVencido, formatFecha } from '../../shared/utils/formatters.js'
 import { exportToExcel } from '../../shared/utils/exportExcel.js'
 
 const getThStyle = (theme) => ({
@@ -510,7 +510,7 @@ const ListarConductor = () => {
                                                             sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem' }} />
                                                     ) : conductor.categoriasLicencia.map((cat, i) => (
                                                         <Chip key={i}
-                                                            label={`${cat.categoria} · ${cat.vencimiento ? new Date(cat.vencimiento).toLocaleDateString() : 'N/A'}`}
+                                                            label={`${cat.categoria} · ${cat.vencimiento ? formatFecha(cat.vencimiento) : 'N/A'}`}
                                                             size="small"
                                                             variant={isVencido(cat.vencimiento) ? 'filled' : 'outlined'}
                                                             sx={isVencido(cat.vencimiento)

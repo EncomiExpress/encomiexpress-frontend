@@ -18,7 +18,18 @@ export const formatFecha = (fecha) => {
 
 export const isVencido = (fecha) => {
     if (!fecha) return false
-    return new Date(fecha) < new Date()
+    // "fecha" es un DATEONLY del backend ("YYYY-MM-DD") — new Date(fecha) lo interpreta
+    // como medianoche UTC, no medianoche local. En Colombia (UTC-5) eso corre el punto de
+    // corte varias horas hacia atrás y hace que un documento "venza" antes de que termine
+    // su propio día local (mismo tipo de bug ya corregido en mananaISO/hoyISO). Se arma la
+    // fecha con componentes locales y se compara por día calendario. Un documento que
+    // vence hoy ya se considera vencido desde hoy mismo (no hasta que termine el día) —
+    // igual que el backend (validarDocumentosVehiculo en rutaService.js).
+    const [y, m, d] = fecha.split('-').map(Number)
+    const venc = new Date(y, m - 1, d)
+    const hoy = new Date()
+    hoy.setHours(0, 0, 0, 0)
+    return venc <= hoy
 }
 
 // El número de guía ahora vive en cada paquete (uno por paquete físico), no en la

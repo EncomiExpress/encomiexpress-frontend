@@ -18,7 +18,11 @@ import { normalizarTexto } from '../../shared/utils/duplicados.js'
 const steps = ['Datos del Vehículo', 'Documentación y Estado', 'Confirmación']
 
 const TIPOS_VEHICULO = ['Camioneta', 'Camión', 'Furgón', 'Semi Trayler', 'Trayler', 'Otro']
-const hoyISO = () => new Date().toISOString().split('T')[0]
+const hoyISO = () => {
+    const d = new Date()
+    const pad2 = (n) => String(n).padStart(2, '0')
+    return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
+}
 const CAPACIDAD_MAX = 999999
 
 // Valida un único campo del formulario (usado en onBlur y para re-validar en vivo

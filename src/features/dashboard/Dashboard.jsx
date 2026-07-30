@@ -33,8 +33,19 @@ const formatCOP = (n) => '$' + n.toLocaleString('es-CO')
 
 const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1)
 
+// venta.fechaRegistro/desde/hasta son DATEONLY ("YYYY-MM-DD") — new Date(string) los
+// interpreta como medianoche UTC, no medianoche local, y en Colombia (UTC-5) eso corre
+// el punto de corte varias horas hacia atrás (mismo bug ya corregido en isVencido/
+// mananaISO/hoyISO). Sin este fix, una venta registrada el día 1 de cualquier mes caía
+// en el mes anterior en la gráfica. Se arma la fecha con componentes locales.
+const parseFechaLocal = (dateString) => {
+  if (!dateString) return new Date(NaN)
+  const [y, m, d] = dateString.split('-').map(Number)
+  return new Date(y, m - 1, d)
+}
+
 const normalizeMonth = (dateString) => {
-  const date = new Date(dateString)
+  const date = parseFechaLocal(dateString)
   if (Number.isNaN(date.getTime())) return null
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const year = date.getFullYear()
@@ -44,10 +55,10 @@ const normalizeMonth = (dateString) => {
 }
 
 const isWithinRange = (dateString, desde, hasta) => {
-  const fecha = new Date(dateString)
+  const fecha = parseFechaLocal(dateString)
   if (Number.isNaN(fecha.getTime())) return false
-  const inicio = new Date(desde)
-  const fin = new Date(hasta)
+  const inicio = parseFechaLocal(desde)
+  const fin = parseFechaLocal(hasta)
   return fecha >= inicio && fecha <= fin
 }
 
