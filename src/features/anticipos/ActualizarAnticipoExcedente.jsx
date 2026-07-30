@@ -271,7 +271,11 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
                             }}
                             onChange={(_, val) => {
                                 setForm(prev => ({ ...prev, idRuta: val ? val.idRuta : '', idRutaVehiculoConductor: '' }))
-                                setErrores(prev => ({ ...prev, idRuta: '', idRutaVehiculoConductor: '' }))
+                                setErrores(prev => ({
+                                    ...prev,
+                                    idRuta: val ? '' : (prev.idRuta ? validarCampo('idRuta', { idRuta: '' }) : prev.idRuta),
+                                    idRutaVehiculoConductor: '',
+                                }))
                                 setParInput('')
                                 setSinCambios(false)
                             }}
@@ -306,7 +310,10 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
                             }}
                             onChange={(_, val) => {
                                 setForm(prev => ({ ...prev, idRutaVehiculoConductor: val ? val.idRutaVehiculoConductor : '' }))
-                                setErrores(prev => ({ ...prev, idRutaVehiculoConductor: '' }))
+                                setErrores(prev => ({
+                                    ...prev,
+                                    idRutaVehiculoConductor: val ? '' : (prev.idRutaVehiculoConductor ? validarCampo('idRutaVehiculoConductor', { idRutaVehiculoConductor: '' }) : prev.idRutaVehiculoConductor),
+                                }))
                                 setSinCambios(false)
                             }}
                             onBlur={() => setErrores(prev => ({ ...prev, idRutaVehiculoConductor: validarCampo('idRutaVehiculoConductor', form) }))}

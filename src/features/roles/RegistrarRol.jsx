@@ -25,6 +25,7 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
   })
   const [enviando, setEnviando] = useState(false)
   const [error, setError] = useState('')
+  const [errores, setErrores] = useState({})
   const [permisosDisponibles, setPermisosDisponibles] = useState([])
   const [avisoNombreDuplicado, setAvisoNombreDuplicado] = useState('')
 
@@ -70,6 +71,15 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
     cargarPermisos()
   }, [getPermisosBackend])
 
+  // Limpia en vivo el error de "permisos" apenas queda al menos uno seleccionado
+  // (toggleModulo/togglePermiso tienen varios puntos de entrada, un efecto cubre todos)
+  useEffect(() => {
+    if (formData.permisos.length > 0 && errores.permisos) {
+      setErrores(prev => ({ ...prev, permisos: '' }))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.permisos.length])
+
   const verificarNombreRolDuplicado = async () => {
     if (!formData.nombre.trim()) {
       setAvisoNombreDuplicado('')
@@ -80,6 +90,7 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
       if (!res?.success) return
       const duplicado = hayDocumentoDuplicado(res.data, formData.nombre, { getDoc: (r) => r.nombre })
       setAvisoNombreDuplicado(duplicado ? MENSAJE_ROL_DUPLICADO : '')
+      if (duplicado) setErrores(prev => ({ ...prev, nombre: MENSAJE_ROL_DUPLICADO }))
     } catch {
       // Si falla la verificación no bloqueamos el flujo de registro
     }
@@ -88,16 +99,16 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    if (!formData.nombre.trim()) {
-      setError('El nombre del rol es requerido')
+    const erroresEncontrados = {}
+    if (!formData.nombre.trim()) erroresEncontrados.nombre = 'El nombre del rol es obligatorio'
+    else if (avisoNombreDuplicado) erroresEncontrados.nombre = avisoNombreDuplicado
+    if (formData.permisos.length === 0) erroresEncontrados.permisos = 'Debes seleccionar al menos un permiso'
+    if (Object.keys(erroresEncontrados).length > 0) {
+      setErrores(erroresEncontrados)
       return
     }
 
-    if (formData.permisos.length === 0) {
-      setError('Debe seleccionar al menos un permiso')
-      return
-    }
-
+    setErrores({})
     setError('')
     setEnviando(true)
     try {
@@ -133,6 +144,7 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
       permisos: []
     })
     setError('')
+    setErrores({})
     setAvisoNombreDuplicado('')
     onClose()
   }
@@ -235,17 +247,21 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
               name="nombre"
               value={formData.nombre}
               onChange={(e) => {
-                setFormData({ ...formData, nombre: e.target.value })
+                const valor = e.target.value
+                setFormData({ ...formData, nombre: valor })
                 setAvisoNombreDuplicado('')
+                setErrores(prev => prev.nombre ? { ...prev, nombre: valor.trim() ? '' : prev.nombre } : prev)
               }}
-              onBlur={verificarNombreRolDuplicado}
+              onBlur={() => {
+                verificarNombreRolDuplicado()
+                setErrores(prev => ({ ...prev, nombre: formData.nombre.trim() ? '' : 'El nombre del rol es obligatorio' }))
+              }}
+              error={!!errores.nombre}
+              helperText={errores.nombre}
               placeholder="Ej: Gerente, Supervisor, Asesor comercial"
               required
               inputProps={{ maxLength: 50 }}
             />
-            {avisoNombreDuplicado && (
-              <Alert severity="warning" sx={{ mt: 1, borderRadius: 2 }}>{avisoNombreDuplicado}</Alert>
-            )}
           </Box>
 
           <Box sx={{ mb: 2 }}>
@@ -262,11 +278,21 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
             />
           </Box>
 
-          <Typography variant="subtitle1" sx={{ mt: 1, mb: 1, fontWeight: 700, color: theme.palette.text.primary }}>
-            Permisos del Rol
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 1, mb: 1 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, color: theme.palette.text.primary }}>
+              Permisos del Rol
+            </Typography>
+            {errores.permisos && (
+              <Typography variant="caption" fontWeight={600} color={theme.palette.error.main}>
+                {errores.permisos}
+              </Typography>
+            )}
+          </Box>
 
-          <Box sx={{ flex: 1, overflowY: 'auto', pr: 1 }}>
+          <Box sx={{
+            flex: 1, overflowY: 'auto', pr: 1,
+            ...(errores.permisos ? { border: `1px solid ${theme.palette.error.main}`, borderRadius: 2, p: 1 } : {}),
+          }}>
             {modulos.map(([moduloKey, modulo]) => (
               <Paper
                 key={moduloKey}

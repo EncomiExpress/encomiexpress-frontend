@@ -21,13 +21,16 @@ export const hayNombreDuplicado = (registros, nombre, apellido, opciones = {}) =
 
 export const MENSAJE_NOMBRE_DUPLICADO = 'Ya existe un registro con este nombre y apellido. Verifica que no sea un duplicado.'
 
+// Usa normalizarTexto (ignora mayúsculas Y tildes) igual que hayNombreDuplicado — importa
+// sobre todo para texto libre como ciudad ("Necoclí" vs "Necocli" deben contar como el
+// mismo registro). Para números de documento no cambia nada (no llevan tildes).
 export const hayDocumentoDuplicado = (registros, numeroIdentificacion, opciones = {}) => {
     const { getDoc = (r) => r.numeroIdentificacion, getId, excludeId } = opciones
-    const doc = (numeroIdentificacion || '').trim().toLowerCase()
+    const doc = normalizarTexto(numeroIdentificacion)
     if (!doc) return false
     return (registros || []).some(r => {
         if (excludeId !== undefined && getId && getId(r) === excludeId) return false
-        return (getDoc(r) || '').trim().toLowerCase() === doc
+        return normalizarTexto(getDoc(r)) === doc
     })
 }
 

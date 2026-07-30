@@ -1,7 +1,7 @@
 ﻿import { useTheme } from '@mui/material/styles'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Dialog, DialogTitle, DialogContent, IconButton, Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, TextField, Select, InputAdornment, CircularProgress } from '@mui/material'
+import { Dialog, DialogTitle, DialogContent, IconButton, Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, TextField, InputAdornment, CircularProgress } from '@mui/material'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined'
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
@@ -25,7 +25,15 @@ import * as usuarioService from '../../shared/services/usuarioService.js'
 import { hayNombreDuplicado, MENSAJE_NOMBRE_DUPLICADO, hayDocumentoDuplicado, MENSAJE_DOC_DUPLICADO } from '../../shared/utils/duplicados.js'
 import { esDocAlfanumerico, maxLengthDocumento, docHelperText, validarNumeroDocumento } from '../../shared/utils/documento.js'
 
-const DOMINIOS_EMAIL = ['@gmail.com', '@hotmail.com', '@outlook.com', '@yahoo.com', '@icloud.com', '@live.com']
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const validarEmail = (email) => {
+    const valor = (email || '').trim()
+    if (!valor) return 'El correo es obligatorio'
+    if (!valor.includes('@')) return 'El correo debe contener un @ (ej: usuario@dominio.com)'
+    if (!valor.split('@')[1]?.includes('.')) return 'El dominio del correo debe contener un punto (ej: usuario@dominio.com)'
+    if (!EMAIL_REGEX.test(valor)) return 'El correo no es válido'
+    return ''
+}
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s]).{8,64}$/
 const PASSWORD_HELP = '8-64 caracteres, con mayúsculas, minúsculas, números y un carácter especial'
 const SOLO_LETRAS_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/
@@ -53,8 +61,8 @@ const validarCampo = (name, form) => {
             if (!form.telefono.trim()) return 'El teléfono es obligatorio'
             if (!/^\d{10}$/.test(form.telefono)) return 'El teléfono debe tener exactamente 10 dígitos'
             return ''
-        case 'emailLocal':
-            return form.emailLocal.trim() ? '' : 'El correo es obligatorio'
+        case 'email':
+            return validarEmail(form.email)
         case 'idRol':
             return form.idRol ? '' : 'Selecciona un rol'
         case 'password':
@@ -101,8 +109,7 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
         tipoIdentificacion: '',
         numeroIdentificacion: '',
         telefono: '',
-        emailLocal: '',
-        emailDominio: '@gmail.com',
+        email: '',
         idRol: '',
         password: '',
         confirmarPassword: '',
@@ -119,11 +126,7 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
             cambios[key] = original !== actual
         })
 
-        if (form.emailLocal && form.emailDominio) {
-            const originalEmail = (formOriginal.emailLocal || '') + (formOriginal.emailDominio || '')
-            const actualEmail = form.emailLocal + form.emailDominio
-            cambios.email = originalEmail !== actualEmail
-        }
+        cambios.email = (formOriginal.email || '') !== (form.email || '')
 
         if (form.password) {
             cambios.password = true
@@ -138,17 +141,11 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
             setErrores({})
             setSinCambios(false)
             const usuario = usuarioProp
-            const atIdx = usuario.email ? usuario.email.lastIndexOf('@') : -1
-            const emailLocal = atIdx >= 0 ? usuario.email.slice(0, atIdx) : usuario.email || ''
-            const rawDominio = atIdx >= 0 ? '@' + usuario.email.slice(atIdx + 1) : ''
-            const emailDominio = DOMINIOS_EMAIL.includes(rawDominio) ? rawDominio : '@gmail.com'
-
             const rolId = Object.values(ROLES).find(r => r.nombre === usuario.rol?.nombre)?.id || ''
 
             const datosForm = {
                 ...usuario,
-                emailLocal,
-                emailDominio,
+                email: usuario.email || '',
                 idRol: rolId,
                 password: '',
                 confirmarPassword: '',
@@ -164,6 +161,18 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
 
         if (name === 'nombre' || name === 'apellido') {
             value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
+            const formActualizado = { ...form, [name]: value }
+            setForm(prev => ({ ...prev, [name]: value }))
+            setAvisoNombreDuplicado('')
+            setErrores(prev => {
+                const next = { ...prev, [name]: prev[name] ? validarCampo(name, formActualizado) : '' }
+                const otro = name === 'nombre' ? 'apellido' : 'nombre'
+                if (prev[otro] === MENSAJE_NOMBRE_DUPLICADO) next[otro] = validarCampo(otro, formActualizado)
+                return next
+            })
+            setApiError(null)
+            setSinCambios(false)
+            return
         }
         if (name === 'telefono') {
             value = value.replace(/[^0-9]/g, '')
@@ -189,8 +198,8 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
             setSinCambios(false)
             return
         }
-        if (name === 'emailLocal') {
-            value = value.replace(/[^a-zA-Z0-9._-]/g, '')
+        if (name === 'email') {
+            value = value.replace(/[^a-zA-Z0-9@._%+-]/g, '')
         }
 
         const formActualizado = { ...form, [name]: value }
@@ -220,6 +229,7 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
                 getId: (r) => r.idUsuario,
             })
             setAvisoDocDuplicado(duplicado ? MENSAJE_DOC_DUPLICADO : '')
+            if (duplicado) setErrores(prev => ({ ...prev, numeroIdentificacion: MENSAJE_DOC_DUPLICADO }))
         } catch {
             // Si falla la verificación no bloqueamos el flujo
         }
@@ -238,6 +248,7 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
                 getId: (r) => r.idUsuario,
             })
             setAvisoNombreDuplicado(duplicado ? MENSAJE_NOMBRE_DUPLICADO : '')
+            if (duplicado) setErrores(prev => ({ ...prev, nombre: MENSAJE_NOMBRE_DUPLICADO, apellido: MENSAJE_NOMBRE_DUPLICADO }))
         } catch {
             // Si falla la verificación no bloqueamos el flujo de edición
         }
@@ -247,17 +258,17 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
         const e = {}
 
         if (step === 0) {
-            e.nombre = validarCampo('nombre', form)
-            e.apellido = validarCampo('apellido', form)
+            e.nombre = validarCampo('nombre', form) || avisoNombreDuplicado
+            e.apellido = validarCampo('apellido', form) || avisoNombreDuplicado
             e.tipoIdentificacion = validarCampo('tipoIdentificacion', form)
 
             const errorDocumento = validarNumeroDocumento(form.tipoIdentificacion, form.numeroIdentificacion)
-            if (errorDocumento) e.numeroIdentificacion = errorDocumento
+            e.numeroIdentificacion = errorDocumento || avisoDocDuplicado
         }
 
         if (step === 1) {
             e.telefono = validarCampo('telefono', form)
-            e.emailLocal = validarCampo('emailLocal', form)
+            e.email = validarCampo('email', form)
             e.idRol = validarCampo('idRol', form)
             e.password = validarCampo('password', form)
             e.confirmarPassword = validarCampo('confirmarPassword', form)
@@ -303,7 +314,7 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
                 tipoIdentificacion: form.tipoIdentificacion,
                 numeroIdentificacion: form.numeroIdentificacion,
                 telefono: form.telefono,
-                email: form.emailLocal + form.emailDominio,
+                email: form.email,
                 idRol: parseInt(form.idRol),
             }
 
@@ -379,12 +390,6 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
                             error={!!errores.apellido} helperText={errores.apellido}
                             slotProps={{ input: { startAdornment: <InputAdornment position="start"><PersonOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment>, sx: { pl: 1.5 } }, htmlInput: { maxLength: 50 } }}
                             sx={formFieldStyles} />
-                        {avisoDocDuplicado && (
-                            <Alert severity="warning" sx={{ gridColumn: '1 / -1' }}>{avisoDocDuplicado}</Alert>
-                        )}
-                        {avisoNombreDuplicado && (
-                            <Alert severity="warning" sx={{ gridColumn: '1 / -1' }}>{avisoNombreDuplicado}</Alert>
-                        )}
                     </Box>
                 )
             case 1:
@@ -395,32 +400,14 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
                             error={!!errores.telefono} helperText={errores.telefono || 'Número de 10 dígitos'}
                             slotProps={{ input: { startAdornment: <InputAdornment position="start"><PhoneOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment>, sx: { pl: 1.5 } }, htmlInput: { maxLength: 10 } }}
                             sx={formFieldStyles} />
-                        <TextField fullWidth label="Correo electrónico" name="emailLocal"
-                            value={form.emailLocal} onChange={handleChange}
-                            onBlur={() => setErrores(prev => ({ ...prev, emailLocal: validarCampo('emailLocal', form) }))} required
-                            error={!!errores.emailLocal} helperText={errores.emailLocal}
+                        <TextField fullWidth label="Correo electrónico" name="email"
+                            value={form.email} onChange={handleChange}
+                            onBlur={() => setErrores(prev => ({ ...prev, email: validarCampo('email', form) }))} required
+                            placeholder="correo@dominio.com"
+                            error={!!errores.email} helperText={errores.email}
                             slotProps={{
-                                input: {
-                                    startAdornment: (
-                                        <InputAdornment position="start">
-                                            <EmailOutlinedIcon sx={{ color: '#94a3b8' }} />
-                                        </InputAdornment>
-                                    ),
-                                    endAdornment: (
-                                        <InputAdornment position="end">
-                                            <Select name="emailDominio" value={form.emailDominio}
-                                                onChange={handleChange} variant="standard" disableUnderline
-                                                IconComponent={KeyboardArrowDownOutlinedIcon}
-                                                sx={{
-                                                    fontSize: '1rem', color: theme.palette.text.secondary,
-                                                    '& .MuiSelect-select': { py: 0, pl: 0.5, pr: '22px !important' }
-                                                }}>
-                                                {DOMINIOS_EMAIL.map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
-                                            </Select>
-                                        </InputAdornment>
-                                    ),
-                                },
-                                htmlInput: { maxLength: 50 }
+                                input: { startAdornment: <InputAdornment position="start"><EmailOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment>, sx: { pl: 1.5 } },
+                                htmlInput: { maxLength: 100 }
                             }}
                             sx={formFieldStyles} />
                         <TextField fullWidth select label="Rol" name="idRol" value={form.idRol} onChange={handleChange}
@@ -539,7 +526,7 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
                                     </Box>
                                     <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica los datos de acceso</Typography>
                                     <ConfirmRow label="Teléfono" value={form.telefono} previousValue={formOriginal.telefono} />
-                                    <ConfirmRow label="Correo" value={form.emailLocal + form.emailDominio} previousValue={(formOriginal.emailLocal || '') + (formOriginal.emailDominio || '')} />
+                                    <ConfirmRow label="Correo" value={form.email} previousValue={formOriginal.email} />
                                     <ConfirmRow label="Rol" value={getNombreRol(form.idRol)} previousValue={getNombreRol(formOriginal.idRol)} />
                                     <ConfirmRow label="Contraseña" value={form.password ? '••••••••' : 'Sin cambiar'} previousValue="Sin cambiar" />
                                 </Paper>

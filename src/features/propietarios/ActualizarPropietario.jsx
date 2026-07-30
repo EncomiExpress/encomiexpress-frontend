@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import {
     Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel,
-    Button, Alert, TextField, Select, InputAdornment,
+    Button, Alert, TextField, InputAdornment,
     Dialog, DialogTitle, DialogContent, IconButton, CircularProgress
 } from '@mui/material'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
@@ -26,8 +26,15 @@ import * as propietarioService from '../../shared/services/propietarioService.js
 import { hayNombreDuplicado, MENSAJE_NOMBRE_DUPLICADO, hayDocumentoDuplicado, MENSAJE_DOC_DUPLICADO } from '../../shared/utils/duplicados.js'
 import { esDocAlfanumerico, maxLengthDocumento, docHelperText as docHelperTextBase, validarNumeroDocumento } from '../../shared/utils/documento.js'
 
-const DOMINIOS_EMAIL = ['@gmail.com', '@hotmail.com', '@outlook.com', '@yahoo.com', '@icloud.com', '@live.com']
-const DOMINIO_OTRO = '__otro__'
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const validarEmail = (email) => {
+    const valor = (email || '').trim()
+    if (!valor) return 'El correo es obligatorio'
+    if (!valor.includes('@')) return 'El correo debe contener un @ (ej: usuario@dominio.com)'
+    if (!valor.split('@')[1]?.includes('.')) return 'El dominio del correo debe contener un punto (ej: usuario@dominio.com)'
+    if (!EMAIL_REGEX.test(valor)) return 'El correo no es válido'
+    return ''
+}
 const SOLO_LETRAS_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/
 
 const steps = ['Datos Personales', 'Contacto y Flota', 'Confirmación']
@@ -51,10 +58,8 @@ const validarCampo = (name, form) => {
             if (!form.telefono.trim()) return 'El teléfono es obligatorio'
             if (!/^\d{10}$/.test(form.telefono)) return 'El teléfono debe tener 10 dígitos'
             return ''
-        case 'emailLocal':
-            if (!form.emailLocal?.trim()) return 'El correo es obligatorio'
-            if (!/^@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(form.emailDominio)) return 'El dominio del correo no es válido (ej: @empresa.com)'
-            return ''
+        case 'email':
+            return validarEmail(form.email)
         default:
             return ''
     }
@@ -66,8 +71,7 @@ const EMPTY_FORM = {
     nombre: '',
     apellido: '',
     telefono: '',
-    emailLocal: '',
-    emailDominio: '@gmail.com',
+    email: '',
     tipoFlota: '',
 }
 
@@ -99,19 +103,13 @@ const ActualizarPropietario = ({ open, onClose, propietario: propietarioProp, on
         // Preferir datos frescos del context (ya sincronizados con la BD)
         const propietario = propietarios.find(p => p.idPropietario === propietarioProp.idPropietario) || propietarioProp
 
-        const atIdx = propietario.email ? propietario.email.lastIndexOf('@') : -1
-        const emailLocal = atIdx >= 0 ? propietario.email.slice(0, atIdx) : propietario.email || ''
-        const rawDominio = atIdx >= 0 ? '@' + propietario.email.slice(atIdx + 1) : ''
-        const emailDominio = rawDominio || '@gmail.com'
-
         const datosForm = {
             tipoIdentificacion: propietario.tipoIdentificacion || '',
             numeroIdentificacion: propietario.numeroIdentificacion || '',
             nombre: propietario.nombre || '',
             apellido: propietario.apellido || '',
             telefono: propietario.telefono || '',
-            emailLocal,
-            emailDominio,
+            email: propietario.email || '',
             tipoFlota: propietario.tipoFlota || '',
         }
         setForm(datosForm)
@@ -152,7 +150,21 @@ const ActualizarPropietario = ({ open, onClose, propietario: propietarioProp, on
             setSinCambios(false)
             return
         }
-        if (name === 'nombre' || name === 'apellido') value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
+        if (name === 'nombre' || name === 'apellido') {
+            value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
+            const formActualizado = { ...form, [name]: value }
+            setForm(prev => ({ ...prev, [name]: value }))
+            setAvisoNombreDuplicado('')
+            setErrores(prev => {
+                const next = { ...prev, [name]: prev[name] ? validarCampo(name, formActualizado) : '' }
+                const otro = name === 'nombre' ? 'apellido' : 'nombre'
+                if (prev[otro] === MENSAJE_NOMBRE_DUPLICADO) next[otro] = validarCampo(otro, formActualizado)
+                return next
+            })
+            setApiError(null)
+            setSinCambios(false)
+            return
+        }
         if (name === 'numeroIdentificacion') {
             setAvisoDocDuplicado('')
             if (form.tipoIdentificacion === 'NIT') {
@@ -171,22 +183,11 @@ const ActualizarPropietario = ({ open, onClose, propietario: propietarioProp, on
             return
         }
         if (name === 'telefono') value = value.replace(/[^0-9]/g, '')
-        if (name === 'emailLocal') value = value.replace(/[^a-zA-Z0-9._-]/g, '')
-        if (name === 'emailDominio') {
-            if (value === DOMINIO_OTRO) value = '@'
-            else if (!DOMINIOS_EMAIL.includes(value)) value = '@' + value.replace(/@/g, '').replace(/[^a-zA-Z0-9.-]/g, '')
-        }
+        if (name === 'email') value = value.replace(/[^a-zA-Z0-9@._%+-]/g, '')
 
         const formActualizado = { ...form, [name]: value }
         setForm(prev => ({ ...prev, [name]: value }))
-        setErrores(prev => {
-            const siguiente = { ...prev, [name]: prev[name] ? validarCampo(name, formActualizado) : '' }
-            // Si se corrige el dominio del correo, revalida también "emailLocal" si ya estaba marcado con error
-            if (name === 'emailDominio' && prev.emailLocal) {
-                siguiente.emailLocal = validarCampo('emailLocal', formActualizado)
-            }
-            return siguiente
-        })
+        setErrores(prev => ({ ...prev, [name]: prev[name] ? validarCampo(name, formActualizado) : '' }))
         setApiError(null)
         setSinCambios(false)
     }
@@ -204,6 +205,7 @@ const ActualizarPropietario = ({ open, onClose, propietario: propietarioProp, on
                 getId: (r) => r.idPropietario,
             })
             setAvisoDocDuplicado(duplicado ? MENSAJE_DOC_DUPLICADO : '')
+            if (duplicado) setErrores(prev => ({ ...prev, numeroIdentificacion: MENSAJE_DOC_DUPLICADO }))
         } catch {
             // Si falla la verificación no bloqueamos el flujo
         }
@@ -222,6 +224,7 @@ const ActualizarPropietario = ({ open, onClose, propietario: propietarioProp, on
                 getId: (r) => r.idPropietario,
             })
             setAvisoNombreDuplicado(duplicado ? MENSAJE_NOMBRE_DUPLICADO : '')
+            if (duplicado) setErrores(prev => ({ ...prev, nombre: MENSAJE_NOMBRE_DUPLICADO, apellido: MENSAJE_NOMBRE_DUPLICADO }))
         } catch {
             // Si falla la verificación no bloqueamos el flujo de edición
         }
@@ -233,14 +236,14 @@ const ActualizarPropietario = ({ open, onClose, propietario: propietarioProp, on
         if (step === 0) {
             e.tipoIdentificacion = validarCampo('tipoIdentificacion', form)
             const errorDocumento = validarDocumentoCompleto(form.tipoIdentificacion, form.numeroIdentificacion)
-            if (errorDocumento) e.numeroIdentificacion = errorDocumento
-            e.nombre = validarCampo('nombre', form)
-            e.apellido = validarCampo('apellido', form)
+            e.numeroIdentificacion = errorDocumento || avisoDocDuplicado
+            e.nombre = validarCampo('nombre', form) || avisoNombreDuplicado
+            e.apellido = validarCampo('apellido', form) || avisoNombreDuplicado
         }
 
         if (step === 1) {
             e.telefono = validarCampo('telefono', form)
-            e.emailLocal = validarCampo('emailLocal', form)
+            e.email = validarCampo('email', form)
         }
 
         Object.keys(e).forEach(k => { if (!e[k]) delete e[k] })
@@ -269,12 +272,10 @@ const ActualizarPropietario = ({ open, onClose, propietario: propietarioProp, on
         setSubmitting(true)
         setApiError(null)
         try {
-            const { emailLocal, emailDominio, ...resto } = form
             await actualizarPropietario({
                 idPropietario: parseInt(propietarioProp.idPropietario),
-                ...resto,
+                ...form,
                 apellido: form.tipoIdentificacion === 'NIT' ? '' : form.apellido,
-                email: emailLocal ? emailLocal + emailDominio : '',
             })
             showToast('¡Propietario actualizado exitosamente!', 'success')
             setTimeout(() => {
@@ -348,12 +349,6 @@ const ActualizarPropietario = ({ open, onClose, propietario: propietarioProp, on
                                 required error={errores.apellido} helperText={errores.apellido} icon={PersonOutlinedIcon}
                                 inputProps={{ maxLength: 50 }} placeholder="Ej: Gómez López" />
                         )}
-                        {avisoDocDuplicado && (
-                            <Alert severity="warning" sx={{ gridColumn: '1 / -1' }}>{avisoDocDuplicado}</Alert>
-                        )}
-                        {avisoNombreDuplicado && (
-                            <Alert severity="warning" sx={{ gridColumn: '1 / -1' }}>{avisoNombreDuplicado}</Alert>
-                        )}
                     </Box>
                 )
             case 1:
@@ -363,50 +358,12 @@ const ActualizarPropietario = ({ open, onClose, propietario: propietarioProp, on
                             onBlur={() => setErrores(prev => ({ ...prev, telefono: validarCampo('telefono', form) }))}
                             required error={errores.telefono} helperText={errores.telefono || 'Número de 10 dígitos'}
                             icon={PhoneOutlinedIcon} inputProps={{ maxLength: 10 }} />
-                        <TextField fullWidth label="Correo electrónico" name="emailLocal"
-                            value={form.emailLocal} onChange={handleChange}
-                            onBlur={() => setErrores(prev => ({ ...prev, emailLocal: validarCampo('emailLocal', form) }))} required
-                            error={!!errores.emailLocal} helperText={errores.emailLocal}
-                            slotProps={{
-                                input: {
-                                    startAdornment: (
-                                        <InputAdornment position="start">
-                                            <EmailOutlinedIcon sx={{ color: '#94a3b8' }} />
-                                        </InputAdornment>
-                                    ),
-                                    endAdornment: (
-                                        <InputAdornment position="end">
-                                            {!DOMINIOS_EMAIL.includes(form.emailDominio) ? (
-                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
-                                                    <Box component="input" name="emailDominio" value={form.emailDominio}
-                                                        onChange={handleChange}
-                                                        onBlur={() => errores.emailLocal && setErrores(prev => ({ ...prev, emailLocal: validarCampo('emailLocal', form) }))}
-                                                        placeholder="@empresa.com" maxLength={40}
-                                                        sx={{
-                                                            border: 'none', outline: 'none', background: 'transparent',
-                                                            fontSize: '1rem', fontFamily: 'inherit', color: theme.palette.text.secondary,
-                                                            width: 110, p: 0,
-                                                        }} />
-                                                    <IconButton size="small" sx={{ p: 0.3 }}
-                                                        onClick={() => handleChange({ target: { name: 'emailDominio', value: '@gmail.com' } })}>
-                                                        <CloseIcon sx={{ fontSize: 14, color: '#94a3b8' }} />
-                                                    </IconButton>
-                                                </Box>
-                                            ) : (
-                                                <Select name="emailDominio" value={form.emailDominio}
-                                                    onChange={handleChange} variant="standard" disableUnderline
-                                                    IconComponent={KeyboardArrowDownOutlinedIcon}
-                                                    sx={{ fontSize: '1rem', color: theme.palette.text.secondary, '& .MuiSelect-select': { py: 0, pl: 0.5, pr: '22px !important' } }}>
-                                                    {DOMINIOS_EMAIL.map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
-                                                    <MenuItem value={DOMINIO_OTRO}>Otro...</MenuItem>
-                                                </Select>
-                                            )}
-                                        </InputAdornment>
-                                    ),
-                                },
-                                htmlInput: { maxLength: 50 }
-                            }}
-                            sx={formFieldStyles} />
+                        <FormField label="Correo electrónico" name="email" value={form.email}
+                            onChange={handleChange}
+                            onBlur={() => setErrores(prev => ({ ...prev, email: validarCampo('email', form) }))}
+                            required error={errores.email} helperText={errores.email}
+                            icon={EmailOutlinedIcon} placeholder="correo@dominio.com"
+                            inputProps={{ maxLength: 100 }} />
                         <FormSelect label="Tipo de flota" name="tipoFlota" value={form.tipoFlota}
                             onChange={handleChange} helperText="Opcional">
                             <MenuItem value="">Sin especificar</MenuItem>
@@ -418,8 +375,8 @@ const ActualizarPropietario = ({ open, onClose, propietario: propietarioProp, on
                     </Box>
                 )
             case 2: {
-                const emailActual = form.emailLocal ? form.emailLocal + form.emailDominio : '—'
-                const emailOriginal = formOriginal ? (formOriginal.emailLocal ? formOriginal.emailLocal + formOriginal.emailDominio : '—') : undefined
+                const emailActual = form.email || '—'
+                const emailOriginal = formOriginal ? (formOriginal.email || '—') : undefined
                 const sonDistintos = (a, b) => String(a ?? '') !== String(b ?? '')
                 const camposComparados = [
                     [form.tipoIdentificacion, formOriginal?.tipoIdentificacion],

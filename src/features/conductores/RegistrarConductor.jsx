@@ -1,6 +1,6 @@
 ﻿import { useTheme } from '@mui/material/styles'
 import { useState, useEffect } from 'react'
-import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, TextField, Select, InputAdornment, Dialog, DialogTitle, DialogContent, IconButton, CircularProgress } from '@mui/material'
+import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, TextField, InputAdornment, Dialog, DialogTitle, DialogContent, IconButton, CircularProgress } from '@mui/material'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined'
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
@@ -26,9 +26,21 @@ import * as conductorService from '../../shared/services/conductorService.js'
 import { hayNombreDuplicado, MENSAJE_NOMBRE_DUPLICADO, hayDocumentoDuplicado, MENSAJE_DOC_DUPLICADO } from '../../shared/utils/duplicados.js'
 import { esDocAlfanumerico, maxLengthDocumento, docHelperText, validarNumeroDocumento } from '../../shared/utils/documento.js'
 
-const hoyISO = () => new Date().toISOString().split('T')[0]
+const hoyISO = () => {
+    const d = new Date()
+    const pad2 = (n) => String(n).padStart(2, '0')
+    return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
+}
 
-const DOMINIOS_EMAIL = ['@gmail.com', '@hotmail.com', '@outlook.com', '@yahoo.com', '@icloud.com', '@live.com']
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const validarEmail = (email) => {
+    const valor = (email || '').trim()
+    if (!valor) return 'El correo es obligatorio'
+    if (!valor.includes('@')) return 'El correo debe contener un @ (ej: usuario@dominio.com)'
+    if (!valor.split('@')[1]?.includes('.')) return 'El dominio del correo debe contener un punto (ej: usuario@dominio.com)'
+    if (!EMAIL_REGEX.test(valor)) return 'El correo no es válido'
+    return ''
+}
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s]).{8,64}$/
 const PASSWORD_HELP = '8-64 caracteres, con mayúsculas, minúsculas, números y un carácter especial'
 const SOLO_LETRAS_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/
@@ -52,8 +64,8 @@ const validarCampo = (name, form) => {
             if (!form.telefono.trim()) return 'El teléfono es obligatorio'
             if (!/^\d{10}$/.test(form.telefono)) return 'El teléfono debe tener 10 dígitos'
             return ''
-        case 'emailLocal':
-            return form.emailLocal?.trim() ? '' : 'El correo es obligatorio'
+        case 'email':
+            return validarEmail(form.email)
         case 'password':
             if (!form.password) return 'La contraseña es obligatoria'
             if (!PASSWORD_REGEX.test(form.password)) return PASSWORD_HELP
@@ -107,8 +119,7 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
         nombre: '',
         apellido: '',
         telefono: '',
-        emailLocal: '',
-        emailDominio: '@gmail.com',
+        email: '',
         password: '',
         confirmarPassword: '',
         categoriasLicencia: [{ categoria: '', vencimiento: '' }],
@@ -128,6 +139,17 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
         }
         if (name === 'nombre' || name === 'apellido') {
             value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
+            const formActualizado = { ...form, [name]: value }
+            setForm(prev => ({ ...prev, [name]: value }))
+            setAvisoNombreDuplicado('')
+            setErrores(prev => {
+                const next = { ...prev, [name]: prev[name] ? validarCampo(name, formActualizado) : '' }
+                const otro = name === 'nombre' ? 'apellido' : 'nombre'
+                if (prev[otro] === MENSAJE_NOMBRE_DUPLICADO) next[otro] = validarCampo(otro, formActualizado)
+                return next
+            })
+            setApiError(null)
+            return
         }
         if (name === 'numeroIdentificacion') {
             setAvisoDocDuplicado('')
@@ -144,8 +166,8 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
         if (name === 'telefono') {
             value = value.replace(/[^0-9]/g, '')
         }
-        if (name === 'emailLocal') {
-            value = value.replace(/[^a-zA-Z0-9._-]/g, '')
+        if (name === 'email') {
+            value = value.replace(/[^a-zA-Z0-9@._%+-]/g, '')
         }
         const formActualizado = { ...form, [name]: value }
         setForm(prev => ({ ...prev, [name]: value }))
@@ -198,6 +220,7 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
                 getDoc: (r) => r.usuario?.numeroIdentificacion || r.numeroIdentificacion,
             })
             setAvisoDocDuplicado(duplicado ? MENSAJE_DOC_DUPLICADO : '')
+            if (duplicado) setErrores(prev => ({ ...prev, numeroIdentificacion: MENSAJE_DOC_DUPLICADO }))
         } catch {
             // Si falla la verificación no bloqueamos el flujo
         }
@@ -216,6 +239,7 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
                 getApellido: (r) => r.usuario?.apellido,
             })
             setAvisoNombreDuplicado(duplicado ? MENSAJE_NOMBRE_DUPLICADO : '')
+            if (duplicado) setErrores(prev => ({ ...prev, nombre: MENSAJE_NOMBRE_DUPLICADO, apellido: MENSAJE_NOMBRE_DUPLICADO }))
         } catch {
             // Si falla la verificación no bloqueamos el flujo de registro
         }
@@ -227,14 +251,14 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
         if (step === 0) {
             e.tipoIdentificacion = validarCampo('tipoIdentificacion', form)
             const errorDocumento = validarNumeroDocumento(form.tipoIdentificacion, form.numeroIdentificacion)
-            if (errorDocumento) e.numeroIdentificacion = errorDocumento
-            e.nombre = validarCampo('nombre', form)
-            e.apellido = validarCampo('apellido', form)
+            e.numeroIdentificacion = errorDocumento || avisoDocDuplicado
+            e.nombre = validarCampo('nombre', form) || avisoNombreDuplicado
+            e.apellido = validarCampo('apellido', form) || avisoNombreDuplicado
         }
 
         if (step === 1) {
             e.telefono = validarCampo('telefono', form)
-            e.emailLocal = validarCampo('emailLocal', form)
+            e.email = validarCampo('email', form)
             e.password = validarCampo('password', form)
             e.confirmarPassword = validarCampo('confirmarPassword', form)
         }
@@ -269,8 +293,7 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
             tipoIdentificacion: '',
             numeroIdentificacion: '',
             telefono: '',
-            emailLocal: '',
-            emailDominio: '@gmail.com',
+            email: '',
             password: '',
             confirmarPassword: '',
             categoriasLicencia: [{ categoria: '', vencimiento: '' }],
@@ -287,10 +310,9 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
         setSubmitting(true)
         setApiError(null)
         try {
-            const { emailLocal, emailDominio, confirmarPassword: _confirmarPassword, ...resto } = form
+            const { confirmarPassword: _confirmarPassword, ...resto } = form
             await registrarConductor({
                 ...resto,
-                email: emailLocal ? emailLocal + emailDominio : '',
                 habilitado: true,
                 estado: 'Disponible'
             })
@@ -357,12 +379,6 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
                             onBlur={() => { verificarNombreDuplicado(); setErrores(prev => ({ ...prev, apellido: validarCampo('apellido', form) })) }}
                             required error={errores.apellido} helperText={errores.apellido} icon={PersonOutlinedIcon}
                             inputProps={{ maxLength: 50 }} placeholder="Ej: Gómez López" />
-                        {avisoDocDuplicado && (
-                            <Alert severity="warning" sx={{ gridColumn: '1 / -1' }}>{avisoDocDuplicado}</Alert>
-                        )}
-                        {avisoNombreDuplicado && (
-                            <Alert severity="warning" sx={{ gridColumn: '1 / -1' }}>{avisoNombreDuplicado}</Alert>
-                        )}
                     </Box>
                 )
             case 1:
@@ -372,34 +388,12 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
                             onBlur={() => setErrores(prev => ({ ...prev, telefono: validarCampo('telefono', form) }))}
                             required error={errores.telefono} helperText={errores.telefono || 'Número de 10 dígitos'}
                             icon={PhoneOutlinedIcon} inputProps={{ maxLength: 10 }} />
-                        <TextField fullWidth label="Correo electrónico" name="emailLocal"
-                            value={form.emailLocal} onChange={handleChange}
-                            onBlur={() => setErrores(prev => ({ ...prev, emailLocal: validarCampo('emailLocal', form) }))} required
-                            error={!!errores.emailLocal} helperText={errores.emailLocal}
-                            slotProps={{
-                                input: {
-                                    startAdornment: (
-                                        <InputAdornment position="start">
-                                            <EmailOutlinedIcon sx={{ color: '#94a3b8' }} />
-                                        </InputAdornment>
-                                    ),
-                                    endAdornment: (
-                                        <InputAdornment position="end">
-                                            <Select name="emailDominio" value={form.emailDominio}
-                                                onChange={handleChange} variant="standard" disableUnderline
-                                                IconComponent={KeyboardArrowDownOutlinedIcon}
-                                                sx={{
-                                                    fontSize: '1rem', color: theme.palette.text.secondary,
-                                                    '& .MuiSelect-select': { py: 0, pl: 0.5, pr: '22px !important' }
-                                                }}>
-                                                {DOMINIOS_EMAIL.map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
-                                            </Select>
-                                        </InputAdornment>
-                                    ),
-                                },
-                                htmlInput: { maxLength: 50 }
-                            }}
-                            sx={formFieldStyles} />
+                        <FormField label="Correo electrónico" name="email" value={form.email}
+                            onChange={handleChange}
+                            onBlur={() => setErrores(prev => ({ ...prev, email: validarCampo('email', form) }))}
+                            required error={errores.email} helperText={errores.email}
+                            icon={EmailOutlinedIcon} placeholder="correo@dominio.com"
+                            inputProps={{ maxLength: 100 }} />
                         <Box sx={{ gridColumn: '1 / -1', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                             <TextField fullWidth label="Contraseña inicial" name="password"
                                 type={showPassword ? 'text' : 'password'}
@@ -528,7 +522,7 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
                                 </Box>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica los datos de acceso</Typography>
                                 <ConfirmRow label="Teléfono" value={form.telefono} />
-                                <ConfirmRow label="Correo" value={form.emailLocal + form.emailDominio} />
+                                <ConfirmRow label="Correo" value={form.email} />
                                 <ConfirmRow label="Contraseña" value="••••••••" />
                             </Paper>
                         </Box>
