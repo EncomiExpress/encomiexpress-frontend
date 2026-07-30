@@ -148,6 +148,20 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
         total: '',
     })
 
+    // Si la ruta elegida tiene un solo vehículo, no tiene caso elegir — todos los
+    // paquetes (incluidos los que se agreguen después) van directo a ese único vehículo.
+    useEffect(() => {
+        const ruta = rutasProgramadas.find(r => r.idRuta === parseInt(form.idRuta))
+        const pares = ruta?.paresVehiculoConductor || []
+        if (pares.length !== 1) return
+        const unico = pares[0].idRutaVehiculoConductor
+        setForm(prev => {
+            if (prev.paquetes.every(p => p.idRutaVehiculoConductor === unico)) return prev
+            return { ...prev, paquetes: prev.paquetes.map(p => ({ ...p, idRutaVehiculoConductor: unico })) }
+        })
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [form.idRuta, form.paquetes.length, rutasProgramadas])
+
     const handleClose = () => {
         if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
         setForm({
@@ -312,25 +326,27 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                     const err = validarCampoPaquete('idRutaVehiculoConductor', p)
                     return err ? { idRutaVehiculoConductor: err } : {}
                 })
-                if (erroresPaquetes.some(pe => Object.keys(pe).length > 0)) e.paquetes = erroresPaquetes
 
-                // Mismo cálculo que el aviso de capacidad en el render — bloquea seguir si el
-                // peso de algún vehículo del convoy ya no alcanza (el backend también lo
-                // valida al guardar, pero avisar aquí evita llegar hasta el final para enterarse).
+                // Mismo cálculo que el aviso de capacidad en el render — si algún vehículo
+                // del convoy ya no alcanza, se marca en rojo el select del paquete
+                // correspondiente (el backend también lo valida al guardar, pero avisar
+                // aquí evita llegar hasta el final para enterarse).
                 const pares = rutaSel.paresVehiculoConductor || []
                 for (const par of pares) {
                     const capacidad = par.vehiculo?.capacidad ? Number(par.vehiculo.capacidad) : null
                     if (capacidad == null) continue
-                    const pesoUsado = Number(par.pesoUsado || 0)
-                    const disponible = capacidad - pesoUsado
-                    const pesoNuevo = form.paquetes
-                        .filter(p => parseInt(p.idRutaVehiculoConductor) === par.idRutaVehiculoConductor)
-                        .reduce((s, p) => s + (parseFloat(p.peso) || 0), 0)
+                    const disponible = capacidad - Number(par.pesoUsado || 0)
+                    const indices = form.paquetes
+                        .map((p, i) => i)
+                        .filter(i => parseInt(form.paquetes[i].idRutaVehiculoConductor) === par.idRutaVehiculoConductor)
+                    const pesoNuevo = indices.reduce((s, i) => s + (parseFloat(form.paquetes[i].peso) || 0), 0)
                     if (pesoNuevo > disponible) {
-                        e.capacidad = `El vehículo ${par.vehiculo?.placa || ''} ya no tiene espacio suficiente. Quedan ${disponible.toFixed(2)} kg disponibles.`
-                        break
+                        const mensaje = `${par.vehiculo?.placa || 'Este vehículo'} ya no tiene espacio — supera la capacidad en ${(pesoNuevo - disponible).toFixed(2)} kg.`
+                        indices.forEach(i => { erroresPaquetes[i] = { ...erroresPaquetes[i], idRutaVehiculoConductor: mensaje } })
                     }
                 }
+
+                if (erroresPaquetes.some(pe => Object.keys(pe).length > 0)) e.paquetes = erroresPaquetes
             }
         }
 
@@ -443,7 +459,9 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                                 }}
                                 onChange={(_, newValue) => {
                                     setForm(prev => ({ ...prev, idCliente: newValue ? newValue.idCliente : '' }))
-                                    setErrores(prev => ({ ...prev, idCliente: '' }))
+                                    setErrores(prev => newValue
+                                        ? { ...prev, idCliente: '' }
+                                        : (prev.idCliente ? { ...prev, idCliente: validarCampo('idCliente', { idCliente: '' }) } : prev))
                                 }}
                                 onBlur={() => setErrores(prev => ({ ...prev, idCliente: validarCampo('idCliente', form) }))}
                                 noOptionsText="No se encontraron clientes"
@@ -613,6 +631,18 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                         return { par, pesoNuevo, disponible, excede: disponible != null && pesoNuevo > disponible }
                     })
                     .filter(item => item.pesoNuevo > 0)
+                // Cada alerta de capacidad se ancla al último paquete asignado a ese
+                // vehículo, en vez de mostrarlas todas juntas al final — así queda
+                // pegada al vehículo al que corresponde y no se desordena cuando hay
+                // varios paquetes/vehículos.
+                const alertaPorIndice = new Map()
+                paresConUso.forEach(item => {
+                    let ultimoIndice = -1
+                    form.paquetes.forEach((p, i) => {
+                        if (parseInt(p.idRutaVehiculoConductor) === item.par.idRutaVehiculoConductor) ultimoIndice = i
+                    })
+                    if (ultimoIndice >= 0) alertaPorIndice.set(ultimoIndice, item)
+                })
 
                 return (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
@@ -651,8 +681,9 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                                     // Cambiar de ruta invalida cualquier asignación de paquete→vehículo que
                                     // ya se hubiera hecho (esos idRutaVehiculoConductor pertenecen al convoy
                                     // de la ruta anterior, no a la nueva).
+                                    const fechaSalida = newValue?.fechaSalida || ''
+                                    const fechaResetea = !!(newValue && form.fechaEstimadaEntrega && fechaSalida && form.fechaEstimadaEntrega < fechaSalida)
                                     if (newValue) {
-                                        const fechaSalida = newValue.fechaSalida || ''
                                         setForm(prev => {
                                             const pesoTotal = prev.paquetes.reduce((s, p) => s + (parseFloat(p.peso) || 0), 0)
                                             const valorServicio = calcularValorServicio(newValue.destino?.tarifaBase, pesoTotal)
@@ -676,7 +707,19 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                                             paquetes: prev.paquetes.map(p => ({ ...p, idRutaVehiculoConductor: '' })),
                                         }))
                                     }
-                                    setErrores(prev => ({ ...prev, idRuta: '', fechaEstimadaEntrega: '', paquetes: [] }))
+                                    setErrores(prev => ({
+                                        ...prev,
+                                        idRuta: newValue ? '' : (prev.idRuta ? validarCampo('idRuta', { idRuta: '' }) : prev.idRuta),
+                                        fechaEstimadaEntrega: fechaResetea && prev.fechaEstimadaEntrega
+                                            ? validarCampo('fechaEstimadaEntrega', { fechaEstimadaEntrega: '' })
+                                            : (newValue ? prev.fechaEstimadaEntrega : ''),
+                                        // El cambio de ruta invalida el vehículo asignado, pero no otros
+                                        // errores del paquete (peso, dimensiones, etc.) que no dependen de la ruta.
+                                        paquetes: prev.paquetes?.map(pe => {
+                                            const { idRutaVehiculoConductor: _omit, ...resto } = pe || {}
+                                            return resto
+                                        }),
+                                    }))
                                     setApiError(null)
                                 }}
                                 onBlur={() => setErrores(prev => ({ ...prev, idRuta: validarCampo('idRuta', form) }))}
@@ -730,32 +773,40 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                                 <Typography variant="subtitle2" fontWeight={700} color={theme.palette.text.primary}>
                                     Asignar paquetes a vehículo
                                 </Typography>
-                                {form.paquetes.map((paquete, index) => (
-                                    <FormSelect key={index}
-                                        label={form.paquetes.length > 1 ? `Paquete ${index + 1} — Vehículo` : 'Vehículo'}
-                                        name="idRutaVehiculoConductor"
-                                        value={paquete.idRutaVehiculoConductor}
-                                        onChange={(e) => handlePaqueteChange(index, 'idRutaVehiculoConductor', e.target.value)}
-                                        onBlur={() => setErrorPaquete(index, 'idRutaVehiculoConductor', validarCampoPaquete('idRutaVehiculoConductor', paquete))}
-                                        required
-                                        error={errores.paquetes?.[index]?.idRutaVehiculoConductor}
-                                        helperText={errores.paquetes?.[index]?.idRutaVehiculoConductor || `¿A cuál vehículo va este paquete?${paquete.peso ? ` (${paquete.peso} kg)` : ''}`}>
-                                        {paresElegida.map((par) => (
-                                            <MenuItem key={par.idRutaVehiculoConductor} value={par.idRutaVehiculoConductor}>
-                                                {par.vehiculo?.placa || 'Sin placa'} — {par.conductor?.usuario ? `${par.conductor.usuario.nombre} ${par.conductor.usuario.apellido}` : 'Sin conductor'}
-                                            </MenuItem>
-                                        ))}
-                                    </FormSelect>
-                                ))}
+                                {form.paquetes.map((paquete, index) => {
+                                    const alerta = alertaPorIndice.get(index)
+                                    const mensajeCapacidad = alerta?.excede
+                                        ? `${alerta.par.vehiculo?.placa || 'Este vehículo'} ya no tiene espacio — supera la capacidad en ${(alerta.pesoNuevo - alerta.disponible).toFixed(2)} kg. Reasígnalo a otro vehículo.`
+                                        : null
+                                    const errorCampo = errores.paquetes?.[index]?.idRutaVehiculoConductor || mensajeCapacidad
+                                    return (
+                                        <Box key={index} sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                            <FormSelect
+                                                label={form.paquetes.length > 1 ? `Paquete ${index + 1} — Vehículo` : 'Vehículo'}
+                                                name="idRutaVehiculoConductor"
+                                                value={paquete.idRutaVehiculoConductor}
+                                                onChange={(e) => handlePaqueteChange(index, 'idRutaVehiculoConductor', e.target.value)}
+                                                onBlur={() => setErrorPaquete(index, 'idRutaVehiculoConductor', validarCampoPaquete('idRutaVehiculoConductor', paquete))}
+                                                required
+                                                error={!!errorCampo}
+                                                helperText={errorCampo || `¿A cuál vehículo va este paquete?${paquete.peso ? ` (${paquete.peso} kg)` : ''}`}>
+                                                {paresElegida.map((par) => (
+                                                    <MenuItem key={par.idRutaVehiculoConductor} value={par.idRutaVehiculoConductor}>
+                                                        {par.vehiculo?.placa || 'Sin placa'} — {par.conductor?.usuario ? `${par.conductor.usuario.nombre} ${par.conductor.usuario.apellido}` : 'Sin conductor'}
+                                                    </MenuItem>
+                                                ))}
+                                            </FormSelect>
+                                            {alerta && !alerta.excede && (
+                                                <Alert severity="info" sx={{ borderRadius: 2 }}>
+                                                    <strong>{alerta.par.vehiculo?.placa || 'Vehículo'}:</strong> quedan{' '}
+                                                    <strong>{alerta.disponible != null ? alerta.disponible.toFixed(2) : '∞'} kg</strong> disponibles.
+                                                </Alert>
+                                            )}
+                                        </Box>
+                                    )
+                                })}
                             </Box>
                         )}
-                        {paresConUso.map(({ par, pesoNuevo, disponible, excede }) => (
-                            <Alert key={par.idRutaVehiculoConductor} severity={excede ? 'error' : 'info'} sx={{ borderRadius: 2 }}>
-                                <strong>{par.vehiculo?.placa || 'Vehículo'}:</strong> {pesoNuevo.toFixed(2)} kg de{' '}
-                                <strong>{disponible != null ? disponible.toFixed(2) : '∞'} kg</strong> disponibles.
-                                {excede && ' Supera lo disponible en este vehículo — reasigna algún paquete o quita peso.'}
-                            </Alert>
-                        ))}
                         <FormField label="Observaciones" name="observaciones" value={form.observaciones}
                             onChange={handleChange} multiline rows={2}
                             helperText={errores.observaciones || `Opcional · ${(form.observaciones || '').length}/500`}
