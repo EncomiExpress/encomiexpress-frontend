@@ -9,6 +9,7 @@ import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined'
 import AttachMoneyOutlinedIcon from '@mui/icons-material/AttachMoneyOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import { getEstadoColorRuta } from '../../shared/utils/estadoColors.js'
+import { formatFecha } from '../../shared/utils/formatters.js'
 
 const NacionSVG = ({ color }) => (
     <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
@@ -234,7 +235,7 @@ const ModalConsultarDestino = ({ destino, onClose }) => {
                                                 {r.paresVehiculoConductor?.[0]?.vehiculo?.placa || '—'}
                                                 {r.paresVehiculoConductor?.length > 1 ? ` +${r.paresVehiculoConductor.length - 1}` : ''}
                                             </TableCell>
-                                            <TableCell sx={{ fontSize: '0.82rem' }}>{r.fechaSalida ? new Date(r.fechaSalida).toLocaleDateString() : '—'}</TableCell>
+                                            <TableCell sx={{ fontSize: '0.82rem' }}>{r.fechaSalida ? formatFecha(r.fechaSalida) : '—'}</TableCell>
                                             <TableCell>
                                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                                                     {renderEstadoRuta(r.estado)}

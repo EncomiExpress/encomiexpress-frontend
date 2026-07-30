@@ -16,12 +16,14 @@ import { useDestino } from '../../shared/contexts/DestinoContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { FormField, FormSelect } from '../../shared/components/FormularioEstandarizado.jsx'
 import { getErrorMessage } from '../../shared/utils/errorMessage.js'
+import { hayDocumentoDuplicado } from '../../shared/utils/duplicados.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 
 const steps = ['Ubicación', 'Tarifa', 'Confirmación']
 
 const departamentos = ['Antioquia', 'Córdoba']
 const TARIFA_MAX = 999999999
+const MENSAJE_CIUDAD_DUPLICADA = 'Ya existe un destino registrado con esta ciudad.'
 
 // Valida un único campo del formulario (usado en onBlur y para re-validar en vivo
 // mientras se corrige un campo ya marcado con error). "direccion" no vive aquí:
@@ -43,7 +45,7 @@ const validarCampo = (name, form) => {
 }
 
 const ActualizarDestino = ({ open, onClose, destino, onSuccess }) => {
-    const { actualizarDestino } = useDestino()
+    const { actualizarDestino, destinos } = useDestino()
     const { showToast } = useToast()
     const theme = useTheme()
     const [errores, setErrores] = useState({})
@@ -77,6 +79,13 @@ const ActualizarDestino = ({ open, onClose, destino, onSuccess }) => {
         }
     }, [destino, open])
 
+    // Mismo criterio de comparación (sin mayúsculas/acentos) que ya usan Cliente/Conductor/
+    // etc. para nombre y documento duplicado — se excluye este mismo destino de la
+    // comparación (si no cambió de ciudad, no debe marcarse como duplicado de sí mismo).
+    const validarCiudadDuplicada = (ciudad) =>
+        hayDocumentoDuplicado(destinos, ciudad, { getDoc: d => d.ciudad, getId: d => d.idDestino, excludeId: destino?.idDestino })
+            ? MENSAJE_CIUDAD_DUPLICADA : ''
+
     const handleChange = (e) => {
         const { name } = e.target
         let { value } = e.target
@@ -93,7 +102,11 @@ const ActualizarDestino = ({ open, onClose, destino, onSuccess }) => {
         }
         const formActualizado = { ...form, [name]: value }
         setForm(prev => ({ ...prev, [name]: value }))
-        setErrores(prev => ({ ...prev, [name]: prev[name] ? validarCampo(name, formActualizado) : '' }))
+        setErrores(prev => {
+            if (!prev[name]) return prev
+            if (name === 'ciudad') return { ...prev, ciudad: validarCampo('ciudad', formActualizado) || validarCiudadDuplicada(value) }
+            return { ...prev, [name]: validarCampo(name, formActualizado) }
+        })
         setApiError(null)
         setSinCambios(false)
     }
@@ -102,7 +115,7 @@ const ActualizarDestino = ({ open, onClose, destino, onSuccess }) => {
         const e = {}
         if (step === 0) {
             e.departamento = validarCampo('departamento', form)
-            e.ciudad = validarCampo('ciudad', form)
+            e.ciudad = validarCampo('ciudad', form) || validarCiudadDuplicada(form.ciudad)
         }
         if (step === 1) {
             e.tarifaBase = validarCampo('tarifaBase', form)
@@ -185,7 +198,7 @@ const ActualizarDestino = ({ open, onClose, destino, onSuccess }) => {
                         </FormSelect>
                         <FormField
                             label="Ciudad" name="ciudad" value={form.ciudad} onChange={handleChange}
-                            onBlur={() => setErrores(prev => ({ ...prev, ciudad: validarCampo('ciudad', form) }))}
+                            onBlur={() => setErrores(prev => ({ ...prev, ciudad: validarCampo('ciudad', form) || validarCiudadDuplicada(form.ciudad) }))}
                             required error={errores.ciudad} helperText={errores.ciudad}
                             icon={LocationOnOutlinedIcon} inputProps={{ maxLength: 60 }}
                             placeholder="Ej: Medellín"
