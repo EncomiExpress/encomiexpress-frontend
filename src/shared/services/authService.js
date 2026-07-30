@@ -32,13 +32,32 @@ export const fetchWithAuth = async (endpoint, options = {}) => {
       reqHeaders['Authorization'] = `Bearer ${authToken}`;
     }
 
-    const response = await fetch(`${API_URL}${endpoint}`, {
-      ...options,
-      headers: reqHeaders,
-      cache: 'no-store',
-    });
+    let response;
+    try {
+      response = await fetch(`${API_URL}${endpoint}`, {
+        ...options,
+        headers: reqHeaders,
+        cache: 'no-store',
+      });
+    } catch {
+      // fetch() nunca llegó a obtener una respuesta (sin internet, servidor caído, CORS,
+      // DNS) — sin esto, el usuario vería el mensaje crudo del navegador ("Failed to
+      // fetch"), en inglés y sin indicarle qué hacer.
+      const error = new Error('No se pudo conectar con el servidor. Verifica tu conexión a internet e intenta de nuevo.');
+      error.status = 0;
+      throw error;
+    }
 
-    const data = await response.json();
+    let data;
+    try {
+      data = await response.json();
+    } catch {
+      // Respuesta que no es JSON (ej. una página de error HTML de un proxy/gateway
+      // caído) — mismo motivo: sin esto se filtraría un error críptico de parseo.
+      const error = new Error('El servidor respondió de forma inesperada. Intenta de nuevo en un momento.');
+      error.status = response.status;
+      throw error;
+    }
 
     if (response.status === 401) {
       const error = new Error(data.message || 'No autorizado');

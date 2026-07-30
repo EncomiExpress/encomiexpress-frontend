@@ -53,13 +53,18 @@ export const FormField = ({
           ...inputProps
         }
       }}
-      sx={{
-        ...formFieldStyles,
+      sx={[
+        // formFieldStyles es una función (theme) => estilos — pasarla directo en el
+        // array de sx es el patrón correcto para que MUI la invoque con el theme real;
+        // antes se hacía spread ({...formFieldStyles}) dentro de un objeto, lo cual solo
+        // copia las propiedades propias de la función (ninguna útil) y nunca llegaba a
+        // ejecutarla — por eso el anillo de foco (boxShadow) nunca se aplicaba.
+        formFieldStyles,
         // Con multiline, el adornment de "start" se centra verticalmente en toda la
         // caja por defecto — con más de 1 fila el ícono queda flotando abajo en vez
         // de al lado del texto. Se ancla arriba, alineado con la primera línea.
-        ...(multiline ? { '& .MuiInputAdornment-root': { alignSelf: 'flex-start', mt: '14px' } } : {}),
-      }}
+        multiline && { '& .MuiInputAdornment-root': { alignSelf: 'flex-start', mt: '14px' } },
+      ]}
     >
       {children}
     </TextField>

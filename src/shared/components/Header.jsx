@@ -462,8 +462,25 @@ const Header = ({ collapsed }) => {
 
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 3, textAlign: 'left' }}>
               <TextField {...campoPassword('Contraseña actual',          passwordActual,  setPasswordActual,  showActual,  setShowActual)} />
-              <TextField {...campoPassword('Nueva contraseña',           passwordNueva,   setPasswordNueva,   showNueva,   setShowNueva,  'nueva',   PASSWORD_HELP)} />
-              <TextField {...campoPassword('Confirmar nueva contraseña', passwordConfirm, setPasswordConfirm, showConfirm, setShowConfirm, 'confirm')} />
+              <TextField {...campoPassword('Nueva contraseña',           passwordNueva,   setPasswordNueva,   showNueva,   setShowNueva,  'nueva',   PASSWORD_HELP)}
+                onChange={(e) => {
+                  const valor = e.target.value
+                  setPasswordNueva(valor)
+                  setErroresCambiar(prev => {
+                    const next = { ...prev }
+                    if (prev.nueva) next.nueva = PASSWORD_REGEX.test(valor) ? '' : PASSWORD_HELP
+                    if (prev.confirm) next.confirm = !passwordConfirm ? 'Confirma la nueva contraseña' : (valor !== passwordConfirm ? 'Las contraseñas no coinciden' : '')
+                    return next
+                  })
+                }} />
+              <TextField {...campoPassword('Confirmar nueva contraseña', passwordConfirm, setPasswordConfirm, showConfirm, setShowConfirm, 'confirm')}
+                onChange={(e) => {
+                  const valor = e.target.value
+                  setPasswordConfirm(valor)
+                  setErroresCambiar(prev => prev.confirm
+                    ? { ...prev, confirm: !valor ? 'Confirma la nueva contraseña' : (passwordNueva !== valor ? 'Las contraseñas no coinciden' : '') }
+                    : prev)
+                }} />
               {cambiarMensaje && (
                 <Alert severity={cambiarMensaje.tipo} sx={{ fontSize: '0.82rem', borderRadius: 2 }}>
                   {cambiarMensaje.texto}

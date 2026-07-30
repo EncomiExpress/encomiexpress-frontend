@@ -180,7 +180,17 @@ const ResetearPassword = () => {
                   <TextField
                     fullWidth label="Nueva contraseña" type={showPassword ? 'text' : 'password'}
                     value={passwordNueva}
-                    onChange={(e) => { setPasswordNueva(e.target.value); setErrores(prev => ({ ...prev, passwordNueva: '' })); setError('') }}
+                    onChange={(e) => {
+                      const valor = e.target.value
+                      setPasswordNueva(valor)
+                      setErrores(prev => {
+                        const next = { ...prev }
+                        if (prev.passwordNueva) next.passwordNueva = !valor ? 'La contraseña es obligatoria' : (!PASSWORD_REGEX.test(valor) ? PASSWORD_HELP : '')
+                        if (prev.confirmarPassword) next.confirmarPassword = !confirmarPassword ? 'Confirma la contraseña' : (valor !== confirmarPassword ? 'Las contraseñas no coinciden' : '')
+                        return next
+                      })
+                      setError('')
+                    }}
                     required disabled={!token}
                     error={!!errores.passwordNueva} helperText={errores.passwordNueva || PASSWORD_HELP}
                     InputProps={{
@@ -200,7 +210,14 @@ const ResetearPassword = () => {
                   <TextField
                     fullWidth label="Confirmar nueva contraseña" type={showConfirmarPassword ? 'text' : 'password'}
                     value={confirmarPassword}
-                    onChange={(e) => { setConfirmarPassword(e.target.value); setErrores(prev => ({ ...prev, confirmarPassword: '' })); setError('') }}
+                    onChange={(e) => {
+                      const valor = e.target.value
+                      setConfirmarPassword(valor)
+                      setErrores(prev => prev.confirmarPassword
+                        ? { ...prev, confirmarPassword: !valor ? 'Confirma la contraseña' : (passwordNueva !== valor ? 'Las contraseñas no coinciden' : '') }
+                        : prev)
+                      setError('')
+                    }}
                     required disabled={!token}
                     error={!!errores.confirmarPassword} helperText={errores.confirmarPassword}
                     InputProps={{
