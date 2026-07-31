@@ -256,7 +256,7 @@ const ListarConductor = () => {
                 'Estado': conductoresEnRutaIds.has(conductor.idConductor) ? 'En Ruta' : 'Disponible',
                 'Habilitado': conductor.habilitado === false ? 'No' : 'Sí',
             }))
-            await exportToExcel({ data: rows, fileName: 'conductores', sheetName: 'Conductores', themeColor: theme.palette.primary.main })
+            await exportToExcel({ data: rows, fileName: 'Conductores', sheetName: 'Conductores', themeColor: theme.palette.primary.main })
         } catch (err) {
             showToast(err.message || 'Error al exportar.', 'error')
         } finally {

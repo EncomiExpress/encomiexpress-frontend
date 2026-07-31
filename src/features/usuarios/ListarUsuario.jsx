@@ -203,7 +203,7 @@ const ListarUsuario = () => {
 
             await exportToExcel({
                 data: rows,
-                fileName: 'usuarios',
+                fileName: 'Usuarios',
                 sheetName: 'Usuarios',
                 themeColor: theme.palette.primary.main,
             })

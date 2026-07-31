@@ -28,7 +28,7 @@ import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import * as conductorService from '../../shared/services/conductorService.js'
-import { hayNombreDuplicado, MENSAJE_NOMBRE_DUPLICADO, hayDocumentoDuplicado, MENSAJE_DOC_DUPLICADO } from '../../shared/utils/duplicados.js'
+import { hayNombreDuplicado, MENSAJE_NOMBRE_DUPLICADO, hayDocumentoDuplicado, MENSAJE_DOC_DUPLICADO, MENSAJE_EMAIL_DUPLICADO, MENSAJE_LICENCIA_DUPLICADA } from '../../shared/utils/duplicados.js'
 import { esDocAlfanumerico, maxLengthDocumento, docHelperText, validarNumeroDocumento } from '../../shared/utils/documento.js'
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -136,6 +136,8 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
     const [sinCambios, setSinCambios] = useState(false)
     const [avisoNombreDuplicado, setAvisoNombreDuplicado] = useState('')
     const [avisoDocDuplicado, setAvisoDocDuplicado] = useState('')
+    const [avisoEmailDuplicado, setAvisoEmailDuplicado] = useState('')
+    const [avisoLicenciaDuplicada, setAvisoLicenciaDuplicada] = useState('')
     const [showPassword, setShowPassword] = useState(false)
     const [showConfirmarPassword, setShowConfirmarPassword] = useState(false)
     const [form, setForm] = useState(FORM_INICIAL)
@@ -212,7 +214,11 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
             return
         }
         if (name === 'telefono') value = value.replace(/[^0-9]/g, '')
-        if (name === 'email') value = value.replace(/[^a-zA-Z0-9@._%+-]/g, '')
+        if (name === 'email') {
+            value = value.replace(/[^a-zA-Z0-9@._%+-]/g, '')
+            setAvisoEmailDuplicado('')
+        }
+        if (name === 'numeroLicencia') setAvisoLicenciaDuplicada('')
         const formActualizado = { ...form, [name]: value }
         setForm(prev => ({ ...prev, [name]: value }))
         setErrores(prev => {
@@ -267,6 +273,47 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
         }
     }
 
+    const verificarEmailDuplicado = async () => {
+        const valor = form.email.trim()
+        if (!valor || validarEmail(valor)) {
+            setAvisoEmailDuplicado('')
+            return
+        }
+        try {
+            const res = await conductorService.getConductores(undefined, { q: valor, limit: 10 })
+            if (!res?.success) return
+            const duplicado = hayDocumentoDuplicado(res.data, valor, {
+                getDoc: (r) => r.usuario?.email || r.email,
+                excludeId: conductorProp?.idConductor,
+                getId: (r) => r.idConductor,
+            })
+            setAvisoEmailDuplicado(duplicado ? MENSAJE_EMAIL_DUPLICADO : '')
+            if (duplicado) setErrores(prev => ({ ...prev, email: MENSAJE_EMAIL_DUPLICADO }))
+        } catch {
+            // Si falla la verificación no bloqueamos el flujo
+        }
+    }
+
+    const verificarLicenciaDuplicada = async () => {
+        if (!form.numeroLicencia.trim()) {
+            setAvisoLicenciaDuplicada('')
+            return
+        }
+        try {
+            const res = await conductorService.getConductores(undefined, { q: form.numeroLicencia.trim(), limit: 10 })
+            if (!res?.success) return
+            const duplicado = hayDocumentoDuplicado(res.data, form.numeroLicencia, {
+                getDoc: (r) => r.numeroLicencia,
+                excludeId: conductorProp?.idConductor,
+                getId: (r) => r.idConductor,
+            })
+            setAvisoLicenciaDuplicada(duplicado ? MENSAJE_LICENCIA_DUPLICADA : '')
+            if (duplicado) setErrores(prev => ({ ...prev, numeroLicencia: MENSAJE_LICENCIA_DUPLICADA }))
+        } catch {
+            // Si falla la verificación no bloqueamos el flujo
+        }
+    }
+
     const verificarNombreDuplicado = async () => {
         if (!form.nombre.trim() || !form.apellido.trim()) {
             setAvisoNombreDuplicado('')
@@ -299,13 +346,14 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
         }
         if (step === 1) {
             e.telefono = validarCampo('telefono', form)
-            e.email = validarCampo('email', form)
+            e.email = validarCampo('email', form) || avisoEmailDuplicado
             e.password = validarCampo('password', form)
             e.confirmarPassword = validarCampo('confirmarPassword', form)
         }
         if (step === 2) {
             const errorCategorias = validarCategorias(form.categoriasLicencia)
             if (errorCategorias) e.categoriasLicencia = errorCategorias
+            e.numeroLicencia = avisoLicenciaDuplicada
         }
         Object.keys(e).forEach(k => { if (!e[k]) delete e[k] })
         return e
@@ -417,7 +465,10 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
                             icon={PhoneOutlinedIcon} inputProps={{ maxLength: 10 }} />
                         <FormField label="Correo electrónico" name="email" value={form.email}
                             onChange={handleChange}
-                            onBlur={() => setErrores(prev => ({ ...prev, email: validarCampo('email', form) }))}
+                            onBlur={() => {
+                                verificarEmailDuplicado()
+                                setErrores(prev => ({ ...prev, email: validarCampo('email', form) }))
+                            }}
                             required error={errores.email} helperText={errores.email}
                             icon={EmailOutlinedIcon} placeholder="correo@dominio.com"
                             inputProps={{ maxLength: 100 }} />
@@ -475,9 +526,10 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
                 return (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                         <FormField label="N° de Licencia" name="numeroLicencia" value={form.numeroLicencia}
-                            onChange={handleChange} icon={BadgeOutlinedIcon}
+                            onChange={handleChange} onBlur={verificarLicenciaDuplicada} icon={BadgeOutlinedIcon}
+                            error={errores.numeroLicencia}
                             inputProps={{ maxLength: 20 }} placeholder="Ej: 123456789"
-                            helperText="Opcional" />
+                            helperText={errores.numeroLicencia || 'Opcional'} />
 
                         <Typography variant="body2" fontWeight={600} color={theme.palette.text.primary}>
                             Categorías de licencia

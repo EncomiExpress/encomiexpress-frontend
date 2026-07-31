@@ -35,3 +35,9 @@ export const hayDocumentoDuplicado = (registros, numeroIdentificacion, opciones 
 }
 
 export const MENSAJE_DOC_DUPLICADO = 'Ya existe un registro con este número de documento. Verifica que no sea un duplicado.'
+
+export const MENSAJE_PLACA_DUPLICADA = 'Ya existe un vehículo registrado con esta placa. Verifica que no sea un duplicado.'
+
+export const MENSAJE_EMAIL_DUPLICADO = 'Ya existe un usuario registrado con este correo electrónico.'
+
+export const MENSAJE_LICENCIA_DUPLICADA = 'Ya existe un conductor registrado con este número de licencia.'

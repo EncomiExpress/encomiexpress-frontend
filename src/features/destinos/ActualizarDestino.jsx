@@ -17,6 +17,7 @@ import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { FormField, FormSelect } from '../../shared/components/FormularioEstandarizado.jsx'
 import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { hayDocumentoDuplicado } from '../../shared/utils/duplicados.js'
+import { formatearMoneda, limpiarMonedaInput } from '../../shared/utils/formatters.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 
 const steps = ['Ubicación', 'Tarifa', 'Confirmación']
@@ -72,7 +73,12 @@ const ActualizarDestino = ({ open, onClose, destino, onSuccess }) => {
                 departamento: destino.departamento || '',
                 ciudad: destino.ciudad || '',
                 direccion: destino.direccion || '',
-                tarifaBase: destino.tarifaBase !== undefined ? String(destino.tarifaBase) : '',
+                // destino.tarifaBase llega como string desde el backend por ser una columna
+                // DECIMAL (ej. "10000.00") — se limpia a un entero plano ("10000") para que
+                // nunca se vea ".00" en el campo ni en la comparación de cambios.
+                tarifaBase: destino.tarifaBase !== undefined && destino.tarifaBase !== null
+                    ? String(Math.round(Number(destino.tarifaBase)))
+                    : '',
             }
             setForm(initial)
             setOriginalData(initial)
@@ -96,7 +102,7 @@ const ActualizarDestino = ({ open, onClose, destino, onSuccess }) => {
             value = value.replace(/[^a-zA-Z0-9\s,.\-#/' ]/g, '')
         }
         if (name === 'tarifaBase') {
-            value = value.replace(/[^0-9.]/g, '')
+            value = limpiarMonedaInput(value)
             const num = parseFloat(value)
             if (!isNaN(num) && num > TARIFA_MAX) return
         }
@@ -217,11 +223,11 @@ const ActualizarDestino = ({ open, onClose, destino, onSuccess }) => {
                 return (
                     <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 2.5 }}>
                         <FormField
-                            label="Tarifa Base (COP)" name="tarifaBase" value={form.tarifaBase} onChange={handleChange}
+                            label="Tarifa Base (COP)" name="tarifaBase" value={formatearMoneda(form.tarifaBase)} onChange={handleChange}
                             onBlur={() => setErrores(prev => ({ ...prev, tarifaBase: validarCampo('tarifaBase', form) }))}
                             required error={errores.tarifaBase} helperText={errores.tarifaBase || 'Valor en pesos colombianos'}
-                            icon={AttachMoneyOutlinedIcon} inputProps={{ maxLength: 12 }}
-                            placeholder="Ej: 25000"
+                            icon={AttachMoneyOutlinedIcon} inputProps={{ maxLength: 11 }}
+                            placeholder="Ej: 25.000"
                         />
                     </Box>
                 )

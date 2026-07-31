@@ -44,7 +44,13 @@ export const FormField = ({
       slotProps={{
         input: {
           startAdornment: Icon ? (
-            <InputAdornment position="start">
+            // Con multiline, InputBase centra verticalmente TODOS sus hijos (incluido
+            // el adornment) via "align-items: center" en el contenedor flex — con más
+            // de 1 fila el ícono queda flotando en medio de la caja en vez de al lado
+            // de la primera línea. alignSelf:flex-start solo (sin margen extra) ya deja
+            // el ícono exactamente a la altura del top del textarea — medido en vivo con
+            // getBoundingClientRect(); un mt agregado a ojo aquí solo lo empuja de más.
+            <InputAdornment position="start" sx={multiline ? { alignSelf: 'flex-start' } : undefined}>
               <Icon sx={{ color: '#94a3b8' }} />
             </InputAdornment>
           ) : undefined,
@@ -60,10 +66,6 @@ export const FormField = ({
         // copia las propiedades propias de la función (ninguna útil) y nunca llegaba a
         // ejecutarla — por eso el anillo de foco (boxShadow) nunca se aplicaba.
         formFieldStyles,
-        // Con multiline, el adornment de "start" se centra verticalmente en toda la
-        // caja por defecto — con más de 1 fila el ícono queda flotando abajo en vez
-        // de al lado del texto. Se ancla arriba, alineado con la primera línea.
-        multiline && { '& .MuiInputAdornment-root': { alignSelf: 'flex-start', mt: '14px' } },
       ]}
     >
       {children}
@@ -81,6 +83,7 @@ export const FormSelect = ({
   error,
   helperText,
   shrink = false,
+  renderValue,
   children
 }) => {
   const theme = useTheme()
@@ -106,6 +109,7 @@ export const FormSelect = ({
         onChange={onChange}
         onBlur={onBlur}
         displayEmpty={shrink}
+        renderValue={renderValue}
         IconComponent={KeyboardArrowDownOutlinedIcon}
       >
         {children}

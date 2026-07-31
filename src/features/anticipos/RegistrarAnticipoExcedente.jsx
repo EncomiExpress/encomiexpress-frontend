@@ -1,17 +1,19 @@
-﻿import { useTheme, alpha } from '@mui/material/styles'
-import { useState } from 'react'
+﻿import { useTheme } from '@mui/material/styles'
+import { useState, useEffect } from 'react'
 import {
     Box, Typography, Paper, Stepper, Step, StepLabel,
     Button, Alert, TextField, Dialog, DialogTitle, DialogContent, IconButton,
-    Autocomplete, CircularProgress
+    Autocomplete, CircularProgress, Avatar, Divider
 } from '@mui/material'
 import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined'
 import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined'
-import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
 import AttachMoneyOutlinedIcon from '@mui/icons-material/AttachMoneyOutlined'
 import CloseIcon from '@mui/icons-material/Close'
+import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
+import RouteOutlinedIcon from '@mui/icons-material/RouteOutlined'
+import PlacaDisplay from '../../shared/components/PlacaDisplay.jsx'
 import { useAnticipos } from '../../shared/contexts/AnticipoExcedenteContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { FormField } from '../../shared/components/FormularioEstandarizado.jsx'
@@ -19,14 +21,15 @@ import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import { normalizarTexto } from '../../shared/utils/duplicados.js'
+import { formatearMoneda, limpiarMonedaInput } from '../../shared/utils/formatters.js'
 
-const steps = ['Asignación y Valores', 'Estado y Fechas', 'Confirmación']
+const steps = ['Datos del Anticipo', 'Confirmación']
 
 // Valida un único campo del formulario (usado en onBlur y para re-validar en vivo
-// mientras se corrige un campo ya marcado con error). valorGastado/fechaLegalizacion/
-// fechaEntregaExcedente están siempre deshabilitados en este formulario (create() no
-// acepta valorGastado, esas fechas las pone el backend solas) — sus reglas quedan
-// aquí solo por si en el futuro se habilitan, hoy nunca disparan en onBlur.
+// mientras se corrige un campo ya marcado con error). "Valor gastado" y las fechas de
+// legalización/entrega de excedente no viven en este formulario — las registra el
+// conductor cuando legaliza el anticipo, no el admin al crearlo (create() ni siquiera
+// las acepta).
 const validarCampo = (name, form) => {
     switch (name) {
         case 'idRuta':
@@ -37,17 +40,8 @@ const validarCampo = (name, form) => {
             if (!form.valorAnticipo) return 'El valor del anticipo es obligatorio'
             if (isNaN(form.valorAnticipo) || parseFloat(form.valorAnticipo) <= 0) return 'Ingresa un valor válido mayor a 0'
             return ''
-        case 'valorGastado':
-            if (form.valorGastado !== '' && (isNaN(form.valorGastado) || parseFloat(form.valorGastado) < 0)) return 'Ingresa un valor válido'
-            return ''
         case 'fechaEntrega':
             return form.fechaEntrega ? '' : 'La fecha de entrega es obligatoria'
-        case 'fechaLegalizacion':
-            if (form.fechaLegalizacion && form.fechaEntrega && form.fechaLegalizacion < form.fechaEntrega) return 'La fecha de legalización no puede ser anterior a la fecha de entrega'
-            return ''
-        case 'fechaEntregaExcedente':
-            if (form.fechaEntregaExcedente && form.fechaEntrega && form.fechaEntregaExcedente < form.fechaEntrega) return 'La fecha de entrega del excedente no puede ser anterior a la fecha de entrega'
-            return ''
         default:
             return ''
     }
@@ -67,13 +61,24 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
         idRuta: '',
         idRutaVehiculoConductor: '',
         valorAnticipo: '',
-        valorGastado: '',
         fechaEntrega: '',
-        fechaLegalizacion: '',
-        fechaEntregaExcedente: '',
     }
 
     const [form, setForm] = useState(formInicial)
+
+    // Si la ruta elegida tiene un solo vehículo+conductor, no tiene caso elegir — se
+    // autocompleta, igual que en Ventas con los paquetes cuando la ruta tiene 1 solo vehículo.
+    useEffect(() => {
+        const ruta = rutas.find(r => r.idRuta === parseInt(form.idRuta))
+        const pares = ruta?.paresVehiculoConductor || []
+        if (pares.length !== 1) return
+        const unico = pares[0]
+        setForm(prev => prev.idRutaVehiculoConductor === unico.idRutaVehiculoConductor
+            ? prev
+            : { ...prev, idRutaVehiculoConductor: unico.idRutaVehiculoConductor })
+        setParInput(`${unico.placa || 'Sin placa'} — ${unico.conductorNombre}`)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [form.idRuta, rutas])
 
     const handleClose = () => {
         if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
@@ -85,14 +90,14 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
         onClose()
     }
 
-    const NUMERIC_LIMITS = { valorAnticipo: 999999999, valorGastado: 999999999 }
+    const NUMERIC_LIMITS = { valorAnticipo: 999999999 }
 
     const handleChange = (e) => {
         const { name } = e.target
         let { value } = e.target
 
         if (name in NUMERIC_LIMITS) {
-            value = value.replace(/[^0-9.]/g, '')
+            value = limpiarMonedaInput(value)
             const num = parseFloat(value)
             if (!isNaN(num) && num > NUMERIC_LIMITS[name]) return
         }
@@ -108,12 +113,7 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
             e.idRuta = validarCampo('idRuta', form)
             e.idRutaVehiculoConductor = validarCampo('idRutaVehiculoConductor', form)
             e.valorAnticipo = validarCampo('valorAnticipo', form)
-            e.valorGastado = validarCampo('valorGastado', form)
-        }
-        if (step === 1) {
             e.fechaEntrega = validarCampo('fechaEntrega', form)
-            e.fechaLegalizacion = validarCampo('fechaLegalizacion', form)
-            e.fechaEntregaExcedente = validarCampo('fechaEntregaExcedente', form)
         }
         Object.keys(e).forEach(k => { if (!e[k]) delete e[k] })
         return e
@@ -163,8 +163,6 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
         return r ? r.nombre : '—'
     }
 
-    const excedente = parseFloat(form.valorAnticipo || 0) - parseFloat(form.valorGastado || 0)
-
     const cardSx = { flex: 1, borderRadius: 2, p: 2.5, border: `1px solid ${theme.palette.divider}`, backgroundColor: theme.palette.background.paper }
 
     const renderStepContent = () => {
@@ -174,6 +172,7 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                         <Autocomplete
                             options={rutas}
+                            popupIcon={<KeyboardArrowDownOutlinedIcon />}
                             getOptionLabel={(r) => r.nombre}
                             isOptionEqualToValue={(opt, val) => opt.idRuta === val.idRuta}
                             value={rutaSeleccionada || null}
@@ -192,6 +191,23 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
                                 setParInput('')
                             }}
                             onBlur={() => setErrores(prev => ({ ...prev, idRuta: validarCampo('idRuta', form) }))}
+                            renderOption={(props, r) => {
+                                const { key, ...rest } = props
+                                return (
+                                    <Box component="li" key={key} {...rest} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                        <Avatar sx={{
+                                            width: 34, height: 34, flexShrink: 0,
+                                            backgroundColor: theme.palette.avatarDefault.bg,
+                                            color: theme.palette.avatarDefault.color,
+                                        }}>
+                                            <RouteOutlinedIcon sx={{ fontSize: 18 }} />
+                                        </Avatar>
+                                        <Typography variant="body2" fontWeight={500} noWrap sx={{ flex: 1, minWidth: 0 }}>
+                                            {r.nombre}
+                                        </Typography>
+                                    </Box>
+                                )
+                            }}
                             filterOptions={(opts, { inputValue }) => {
                                 if (!inputValue.trim()) return [...opts].sort((a, b) => b.idRuta - a.idRuta).slice(0, 5)
                                 const q = normalizarTexto(inputValue)
@@ -208,6 +224,7 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
 
                         <Autocomplete
                             options={pares}
+                            popupIcon={<KeyboardArrowDownOutlinedIcon />}
                             getOptionLabel={(p) => `${p.placa || 'Sin placa'} — ${p.conductorNombre}`}
                             isOptionEqualToValue={(opt, val) => opt.idRutaVehiculoConductor === val.idRutaVehiculoConductor}
                             value={parSeleccionado || null}
@@ -225,6 +242,29 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
                                 }))
                             }}
                             onBlur={() => setErrores(prev => ({ ...prev, idRutaVehiculoConductor: validarCampo('idRutaVehiculoConductor', form) }))}
+                            renderOption={(props, p) => {
+                                const { key, ...rest } = props
+                                const iniciales = (p.conductorNombre || '').split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase()
+                                return (
+                                    <Box component="li" key={key} {...rest} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                        <PlacaDisplay placa={p.placa} theme={theme} />
+                                        <Divider orientation="vertical" flexItem sx={{ my: 0.5 }} />
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
+                                            <Avatar sx={{
+                                                width: 28, height: 28, flexShrink: 0,
+                                                backgroundColor: theme.palette.avatarDefault.bg,
+                                                color: theme.palette.avatarDefault.color,
+                                                fontSize: '0.68rem', fontWeight: 700,
+                                            }}>
+                                                {iniciales}
+                                            </Avatar>
+                                            <Typography variant="body2" fontWeight={500} noWrap sx={{ minWidth: 0 }}>
+                                                {p.conductorNombre}
+                                            </Typography>
+                                        </Box>
+                                    </Box>
+                                )
+                            }}
                             noOptionsText={form.idRuta ? 'No hay vehículos en esta ruta' : 'Primero selecciona una ruta'}
                             renderInput={(params) => (
                                 <TextField {...params} label="Vehículo y conductor *"
@@ -238,58 +278,16 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
                             <FormField
                                 label="Valor del anticipo (COP)"
                                 name="valorAnticipo"
-                                value={form.valorAnticipo}
+                                value={formatearMoneda(form.valorAnticipo)}
                                 onChange={handleChange}
                                 onBlur={() => setErrores(prev => ({ ...prev, valorAnticipo: validarCampo('valorAnticipo', form) }))}
                                 required
                                 icon={AttachMoneyOutlinedIcon}
-                                placeholder="Ej: 500000"
+                                placeholder="Ej: 500.000"
                                 error={errores.valorAnticipo}
                                 helperText={errores.valorAnticipo || 'Valor en pesos colombianos'}
-                                inputProps={{ maxLength: 12 }}
+                                inputProps={{ maxLength: 11 }}
                             />
-                            <FormField
-                                label="Valor gastado (COP)"
-                                name="valorGastado"
-                                value={form.valorGastado}
-                                onChange={handleChange}
-                                disabled
-                                icon={AttachMoneyOutlinedIcon}
-                                placeholder="Ej: 500000"
-                                error={errores.valorGastado}
-                                helperText={errores.valorGastado || 'Se diligencia cuando la ruta esté en curso'}
-                                inputProps={{ maxLength: 12 }}
-                            />
-                        </Box>
-
-                        {/* Cálculo excedente — mismos colores que el chip "+$" del listado
-                        (theme.palette.success), no fijos, para que coincidan entre sí y
-                        para que sí cambien en modo oscuro. */}
-                        <Box sx={{
-                            p: 3, borderRadius: 2,
-                            backgroundColor: alpha(theme.palette.success.main, 0.1),
-                            border: `1px solid ${alpha(theme.palette.success.main, 0.3)}`,
-                            display: 'flex', alignItems: 'center', gap: 2,
-                        }}>
-                            <AttachMoneyIcon sx={{ color: theme.palette.success.dark, fontSize: 32 }} />
-                            <Box>
-                                <Typography variant="caption" fontWeight={700}
-                                    color={theme.palette.success.dark}
-                                    letterSpacing={0.3}>
-                                    Excedente a Devolver
-                                </Typography>
-                                <Typography variant="h5" fontWeight={800} color={theme.palette.success.dark}>
-                                    {formatMoney(excedente)}
-                                </Typography>
-                            </Box>
-                        </Box>
-                    </Box>
-                )
-
-            case 1:
-                return (
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                             <TextField
                                 fullWidth label="Fecha de entrega" name="fechaEntrega" type="date"
                                 value={form.fechaEntrega} onChange={handleChange}
@@ -297,54 +295,29 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
                                 error={!!errores.fechaEntrega} helperText={errores.fechaEntrega}
                                 slotProps={{ inputLabel: { shrink: true } }} sx={formFieldStyles}
                             />
-                            <TextField
-                                fullWidth label="Fecha de legalización" name="fechaLegalizacion" type="date"
-                                value={form.fechaLegalizacion} onChange={handleChange}
-                                disabled
-                                error={!!errores.fechaLegalizacion} helperText={errores.fechaLegalizacion || 'Se completará sola cuando se legalice el anticipo'}
-                                slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: form.fechaEntrega || undefined } }} sx={formFieldStyles}
-                            />
                         </Box>
-
-                        <TextField
-                            fullWidth label="Fecha entrega excedente" name="fechaEntregaExcedente" type="date"
-                            value={form.fechaEntregaExcedente} onChange={handleChange}
-                            disabled
-                            error={!!errores.fechaEntregaExcedente} helperText={errores.fechaEntregaExcedente || 'Se completará sola al confirmar la devolución del excedente'}
-                            slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: form.fechaEntrega || undefined } }} sx={formFieldStyles}
-                        />
                     </Box>
                 )
 
-            case 2:
+            case 1:
                 // Paso de confirmación antes de enviar (resumen)
                 return (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                         {errores.submit && (
                             <Alert severity="error" sx={{ borderRadius: 2 }}>{errores.submit}</Alert>
                         )}
-                        <Box sx={{ display: 'flex', gap: 2 }}>
-                            <Paper elevation={0} sx={cardSx}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                                    <AssignmentIndOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
-                                    <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Asignación</Typography>
-                                </Box>
-                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la asignación del anticipo</Typography>
-                                <ConfirmRow label="Ruta" value={getNombreRuta(form.idRuta)} />
-                                <ConfirmRow label="Vehículo" value={parSeleccionado?.placa || '—'} />
-                                <ConfirmRow label="Conductor" value={getNombreConductor()} />
-                                <ConfirmRow label="Anticipo" value={formatMoney(form.valorAnticipo)} />
-                                <ConfirmRow label="Excedente" value={formatMoney(excedente)} />
-                            </Paper>
-                            <Paper elevation={0} sx={cardSx}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                                    <AttachMoneyIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
-                                    <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Estado y Fechas</Typography>
-                                </Box>
-                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica el estado y las fechas</Typography>
-                                <ConfirmRow label="F. Entrega" value={form.fechaEntrega || '—'} />
-                            </Paper>
-                        </Box>
+                        <Paper elevation={0} sx={cardSx}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                                <AssignmentIndOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
+                                <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Datos del Anticipo</Typography>
+                            </Box>
+                            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica los datos antes de registrar</Typography>
+                            <ConfirmRow label="Ruta" value={getNombreRuta(form.idRuta)} />
+                            <ConfirmRow label="Vehículo" value={parSeleccionado?.placa || '—'} />
+                            <ConfirmRow label="Conductor" value={getNombreConductor()} />
+                            <ConfirmRow label="Anticipo" value={formatMoney(form.valorAnticipo)} />
+                            <ConfirmRow label="F. Entrega" value={form.fechaEntrega || '—'} />
+                        </Paper>
                     </Box>
                 )
 

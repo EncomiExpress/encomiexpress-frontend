@@ -19,6 +19,7 @@ import RouteIcon from '@mui/icons-material/Route'
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import ToggleSwitch from '../../shared/components/ToggleSwitch.jsx'
 import TablaPaginacionFooter from '../../shared/components/TablaPaginacionFooter.jsx'
+import PlacaDisplay from '../../shared/components/PlacaDisplay.jsx'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import DoNotDisturbOutlinedIcon from '@mui/icons-material/DoNotDisturbOutlined'
@@ -119,32 +120,6 @@ l31 -49 -16 -52 c-32 -101 -18 -186 40 -244 14 -14 35 -40 47 -59 43 -68 61
     </svg>
 )
 
-const PlacaDisplay = ({ placa, theme }) => {
-    const letras = placa?.slice(0, 3) ?? ''
-    const numeros = placa?.slice(3) ?? ''
-    const c = theme.palette.primary.main
-    return (
-        <Box sx={{
-            position: 'relative',
-            width: 60,
-            height: 25,
-            backgroundColor: alpha(c, 0.07),
-            border: `1.5px solid ${alpha(c, 0.28)}`,
-            borderRadius: '4px',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-        }}>
-            <Typography sx={{ fontWeight: 800, fontSize: '0.8rem', color: c, lineHeight: 1, fontFamily: "'Arial Narrow', Arial, sans-serif" }}>
-                {letras}
-            </Typography>
-            <Box sx={{ width: 3, height: 3, backgroundColor: alpha(c, 0.5), borderRadius: '50%', mx: '2px', flexShrink: 0 }} />
-            <Typography sx={{ fontWeight: 700, fontSize: '0.8rem', color: c, lineHeight: 1, fontFamily: "'Arial Narrow', Arial, sans-serif" }}>
-                {numeros}
-            </Typography>
-        </Box>
-    )
-}
 
 const formatHora12 = (hora) => {
     if (!hora) return null
@@ -396,7 +371,7 @@ const resolveDestino = (ruta) =>
                     'Habilitado': ruta.habilitado === false ? 'No' : 'Sí',
                 }
             })
-            await exportToExcel({ data: rows, fileName: 'rutas', sheetName: 'Rutas', themeColor: theme.palette.primary.main })
+            await exportToExcel({ data: rows, fileName: 'Rutas', sheetName: 'Rutas', themeColor: theme.palette.primary.main })
         } catch (err) {
             showToast(err.message || 'Error al exportar.', 'error')
         } finally {

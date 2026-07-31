@@ -9,6 +9,7 @@ import {
 import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import CloseIcon from '@mui/icons-material/Close'
+import AdsClickOutlinedIcon from '@mui/icons-material/AdsClickOutlined'
 import { getVentaEstadoDot } from '../../shared/utils/estadoColors.js'
 import { getGuiaPrincipal } from '../../shared/utils/formatters.js'
 
@@ -111,7 +112,15 @@ const ModalConsultarCliente = ({ cliente, onClose }) => {
 
             {tabIndex === 1 && (
                 <Box sx={{ p: 3 }}>
-                    <Typography variant="body2" color={theme.palette.text.secondary} sx={{ mb: tabVentas.total > 100 ? 0.5 : 2 }}>Encomiendas registradas para este cliente</Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, mb: tabVentas.total > 100 ? 0.5 : 2 }}>
+                        <Typography variant="body2" color={theme.palette.text.secondary}>Encomiendas registradas para este cliente</Typography>
+                        {!tabVentas.loading && tabVentas.data.length > 0 && (
+                            <Typography variant="caption" color={theme.palette.text.secondary} sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
+                                <AdsClickOutlinedIcon sx={{ fontSize: 14 }} />
+                                Puedes hacer clic en cada fila para abrirla en otra pestaña
+                            </Typography>
+                        )}
+                    </Box>
                     {tabVentas.total > 100 && (
                         <Typography variant="caption" color={theme.palette.text.secondary} sx={{ display: 'block', mb: 2 }}>
                             Mostrando los 100 más recientes de {tabVentas.total}.

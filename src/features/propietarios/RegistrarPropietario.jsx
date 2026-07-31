@@ -123,8 +123,12 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
 
         if (name === 'tipoIdentificacion') {
             setForm(prev => ({ ...prev, tipoIdentificacion: value, numeroIdentificacion: '' }))
-            setErrores(prev => ({ ...prev, tipoIdentificacion: '', numeroIdentificacion: '' }))
+            // Al cambiar entre NIT y persona natural, "apellido" aparece/desaparece del
+            // formulario y "nombre" pasa a validarse distinto (razón social) — cualquier
+            // error de nombre/apellido de antes del cambio queda obsoleto.
+            setErrores(prev => ({ ...prev, tipoIdentificacion: '', numeroIdentificacion: '', nombre: '', apellido: '' }))
             setAvisoDocDuplicado('')
+            setAvisoNombreDuplicado('')
             setApiError(null)
             return
         }

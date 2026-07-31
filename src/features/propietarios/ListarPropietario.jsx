@@ -204,7 +204,7 @@ const ListarPropietario = () => {
                 'Tipo de flota': propietario.tipoFlota,
                 'Estado': propietario.habilitado === false ? 'Inhabilitado' : 'Habilitado',
             }))
-            await exportToExcel({ data: rows, fileName: 'propietarios', sheetName: 'Propietarios', themeColor: theme.palette.primary.main })
+            await exportToExcel({ data: rows, fileName: 'Propietarios', sheetName: 'Propietarios', themeColor: theme.palette.primary.main })
         } catch (err) {
             showToast(err.message || 'Error al exportar.', 'error')
         } finally {

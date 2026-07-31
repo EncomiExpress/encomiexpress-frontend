@@ -12,6 +12,7 @@ import {
 } from '../../shared/components/FormularioEstandarizado.jsx'
 
 const MENSAJE_ROL_DUPLICADO = 'Ya existe un rol con este nombre.'
+const SOLO_LETRAS_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/
 
 const RegistrarRol = ({ open, onClose, onSuccess }) => {
   const { tienePermiso, registrarRol, getPermisosBackend, getRolesBackend } = useAuth()
@@ -101,6 +102,7 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
 
     const erroresEncontrados = {}
     if (!formData.nombre.trim()) erroresEncontrados.nombre = 'El nombre del rol es obligatorio'
+    else if (!SOLO_LETRAS_REGEX.test(formData.nombre)) erroresEncontrados.nombre = 'El nombre solo puede contener letras'
     else if (avisoNombreDuplicado) erroresEncontrados.nombre = avisoNombreDuplicado
     if (formData.permisos.length === 0) erroresEncontrados.permisos = 'Debes seleccionar al menos un permiso'
     if (Object.keys(erroresEncontrados).length > 0) {
@@ -247,14 +249,21 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
               name="nombre"
               value={formData.nombre}
               onChange={(e) => {
-                const valor = e.target.value
+                const valor = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
                 setFormData({ ...formData, nombre: valor })
                 setAvisoNombreDuplicado('')
                 setErrores(prev => prev.nombre ? { ...prev, nombre: valor.trim() ? '' : prev.nombre } : prev)
               }}
               onBlur={() => {
                 verificarNombreRolDuplicado()
-                setErrores(prev => ({ ...prev, nombre: formData.nombre.trim() ? '' : 'El nombre del rol es obligatorio' }))
+                setErrores(prev => ({
+                  ...prev,
+                  nombre: !formData.nombre.trim()
+                    ? 'El nombre del rol es obligatorio'
+                    : !SOLO_LETRAS_REGEX.test(formData.nombre)
+                    ? 'El nombre solo puede contener letras'
+                    : ''
+                }))
               }}
               error={!!errores.nombre}
               helperText={errores.nombre}
@@ -269,7 +278,7 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
               label="Descripción (opcional)"
               name="descripcion"
               value={formData.descripcion}
-              onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, descripcion: e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '') })}
               placeholder="Descripción del rol"
               multiline
               rows={2}

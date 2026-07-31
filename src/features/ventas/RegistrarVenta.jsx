@@ -1,6 +1,6 @@
 ﻿import { useTheme } from '@mui/material/styles'
 import { useEffect, useState } from 'react'
-import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, TextField, Autocomplete, Dialog, DialogTitle, DialogContent, IconButton, Divider, CircularProgress } from '@mui/material'
+import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, TextField, Autocomplete, Dialog, DialogTitle, DialogContent, IconButton, Divider, CircularProgress, Avatar } from '@mui/material'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined'
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
@@ -14,6 +14,8 @@ import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
+import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
+import RouteOutlinedIcon from '@mui/icons-material/RouteOutlined'
 import { useVentas } from '../../shared/contexts/VentaContext.jsx'
 import { useClientes } from '../../shared/contexts/ClienteContext.jsx'
 import { useRutaProgramacion } from '../../shared/contexts/RutaProgramacionContext.jsx'
@@ -23,8 +25,9 @@ import { FormField, FormSelect } from '../../shared/components/FormularioEstanda
 import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
+import PlacaDisplay from '../../shared/components/PlacaDisplay.jsx'
 import { normalizarTexto } from '../../shared/utils/duplicados.js'
-import { formatFecha } from '../../shared/utils/formatters.js'
+import { formatFecha, formatearMoneda, limpiarMonedaInput, limpiarDecimalInput } from '../../shared/utils/formatters.js'
 
 const steps = ['Participantes', 'Paquete', 'Envío', 'Pago', 'Confirmación']
 
@@ -73,35 +76,35 @@ const validarCampoPaquete = (campo, paquete) => {
         case 'peso': {
             const n = parseFloat(paquete.peso)
             if (!paquete.peso) return 'El peso es obligatorio'
-            if (isNaN(n) || n <= 0) return 'Debe ser un número mayor a 0'
+            if (isNaN(n) || n < 1) return 'El peso debe ser de al menos 1 kg'
             if (n > 9999) return 'Máximo 9999 kg'
             return ''
         }
         case 'alto': {
             const n = parseFloat(paquete.alto)
             if (!paquete.alto) return 'El alto es obligatorio'
-            if (isNaN(n) || n <= 0) return 'Debe ser un número mayor a 0'
+            if (isNaN(n) || n < 1) return 'Debe ser de al menos 1 cm'
             if (n > 9999) return 'Máximo 9999 cm'
             return ''
         }
         case 'ancho': {
             const n = parseFloat(paquete.ancho)
             if (!paquete.ancho) return 'El ancho es obligatorio'
-            if (isNaN(n) || n <= 0) return 'Debe ser un número mayor a 0'
+            if (isNaN(n) || n < 1) return 'Debe ser de al menos 1 cm'
             if (n > 9999) return 'Máximo 9999 cm'
             return ''
         }
         case 'profundidad': {
             const n = parseFloat(paquete.profundidad)
             if (!paquete.profundidad) return 'La profundidad es obligatoria'
-            if (isNaN(n) || n <= 0) return 'Debe ser un número mayor a 0'
+            if (isNaN(n) || n < 1) return 'Debe ser de al menos 1 cm'
             if (n > 9999) return 'Máximo 9999 cm'
             return ''
         }
         case 'valorDeclarado':
             if (paquete.valorDeclarado) {
                 const n = parseFloat(paquete.valorDeclarado)
-                if (isNaN(n) || n < 0) return 'Debe ser un número positivo'
+                if (isNaN(n) || n < 1) return 'Debe ser de al menos $1'
                 if (n > 999999999) return 'Valor demasiado alto'
             }
             return ''
@@ -203,7 +206,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
         let { value } = e.target
 
         if (name in NUMERIC_LIMITS) {
-            value = value.replace(/[^0-9.]/g, '')
+            value = limpiarMonedaInput(value)
             if (value !== '') {
                 const num = parseFloat(value)
                 if (!isNaN(num) && (num > NUMERIC_LIMITS[name] || num < 0)) return
@@ -262,14 +265,13 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
 
     const handlePaqueteChange = (index, campo, value) => {
         if (campo in PAQUETE_NUMERIC_LIMITS) {
-            value = value.replace(/[^0-9.]/g, '')
+            // valorDeclarado es dinero (sin decimales, puntos de miles automáticos);
+            // peso/alto/ancho/profundidad son medidas físicas y sí aceptan decimales.
+            value = campo === 'valorDeclarado' ? limpiarMonedaInput(value) : limpiarDecimalInput(value)
             if (value !== '') {
                 const num = parseFloat(value)
                 if (!isNaN(num) && (num > PAQUETE_NUMERIC_LIMITS[campo] || num < 0)) return
             }
-        }
-        if (campo === 'descripcionContenido') {
-            value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
         }
         const paquetes = form.paquetes.map((p, i) => i === index ? { ...p, [campo]: value } : p)
         setForm(prev => {
@@ -279,6 +281,21 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
         })
         const yaMarcado = errores.paquetes?.[index]?.[campo]
         setErrorPaquete(index, campo, yaMarcado ? validarCampoPaquete(campo, paquetes[index]) : '')
+        // El peso o el vehículo asignado de un paquete afecta la capacidad de TODOS los
+        // paquetes que comparten ese mismo vehículo, no solo este — el error de
+        // "ya no tiene espacio" (guardado al intentar "Siguiente") puede quedar
+        // desactualizado en los DEMÁS paquetes. Se limpia acá; el cálculo en vivo del
+        // render (alertaPorIndice) ya refleja el estado real mientras tanto.
+        if (campo === 'peso' || campo === 'idRutaVehiculoConductor') {
+            setErrores(prev => ({
+                ...prev,
+                paquetes: (prev.paquetes || []).map((pe, i) => {
+                    if (i === index || !pe?.idRutaVehiculoConductor) return pe
+                    const { idRutaVehiculoConductor: _omit, ...resto } = pe
+                    return resto
+                }),
+            }))
+        }
         setApiError(null)
     }
 
@@ -291,7 +308,19 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
             const paquetes = prev.paquetes.filter((_, i) => i !== index)
             return { ...prev, paquetes, ...recalcularValorServicio(prev, paquetes) }
         })
-        setErrores(prev => ({ ...prev, paquetes: (prev.paquetes || []).filter((_, i) => i !== index) }))
+        // Quitar un paquete puede aliviar la sobrecarga de un vehículo compartido con
+        // otros paquetes — se limpia el error de capacidad de los que quedan, igual
+        // que en handlePaqueteChange.
+        setErrores(prev => ({
+            ...prev,
+            paquetes: (prev.paquetes || [])
+                .filter((_, i) => i !== index)
+                .map(pe => {
+                    if (!pe?.idRutaVehiculoConductor) return pe
+                    const { idRutaVehiculoConductor: _omit, ...resto } = pe
+                    return resto
+                }),
+        }))
     }
 
     const validarPaso = (step) => {
@@ -431,6 +460,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                                 Remitente
                             </Typography>
                             <Autocomplete
+                                popupIcon={<KeyboardArrowDownOutlinedIcon />}
                                 options={clientes.filter(c => c.habilitado)}
                                 getOptionLabel={(option) => {
                                     const nombre = option.apellido ? `${option.nombre} ${option.apellido}` : option.nombre
@@ -464,6 +494,29 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                                         : (prev.idCliente ? { ...prev, idCliente: validarCampo('idCliente', { idCliente: '' }) } : prev))
                                 }}
                                 onBlur={() => setErrores(prev => ({ ...prev, idCliente: validarCampo('idCliente', form) }))}
+                                renderOption={(props, option) => {
+                                    const { key, ...rest } = props
+                                    const nombre = option.apellido ? `${option.nombre} ${option.apellido}` : option.nombre
+                                    const iniciales = option.iniciales && option.iniciales !== 'U' ? option.iniciales : (option.nombre?.[0] || '') + (option.apellido?.[0] || '') || 'C'
+                                    return (
+                                        <Box component="li" key={key} {...rest} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                            <Avatar sx={{
+                                                width: 34, height: 34, flexShrink: 0,
+                                                backgroundColor: theme.palette.avatarDefault.bg,
+                                                color: theme.palette.avatarDefault.color,
+                                                fontSize: '0.73rem', fontWeight: 700,
+                                            }}>
+                                                {iniciales}
+                                            </Avatar>
+                                            <Typography variant="body2" fontWeight={500} noWrap sx={{ flex: 1, minWidth: 0 }}>
+                                                {nombre}
+                                            </Typography>
+                                            <Typography variant="caption" color={theme.palette.text.secondary} sx={{ flexShrink: 0 }}>
+                                                {option.numeroIdentificacion}
+                                            </Typography>
+                                        </Box>
+                                    )
+                                }}
                                 noOptionsText="No se encontraron clientes"
                                 renderInput={(params) => (
                                     <TextField {...params} label="Cliente *"
@@ -596,12 +649,12 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                                             required error={errPaquete.profundidad}
                                             placeholder="Ej: 15" helperText={errPaquete.profundidad || 'Ej: 15'}
                                             inputProps={{ maxLength: 4 }} />
-                                        <FormField label="Valor declarado ($)" name="valorDeclarado" value={paquete.valorDeclarado}
+                                        <FormField label="Valor declarado ($)" name="valorDeclarado" value={formatearMoneda(paquete.valorDeclarado)}
                                             onChange={(e) => handlePaqueteChange(index, 'valorDeclarado', e.target.value)}
                                             onBlur={() => setErrorPaquete(index, 'valorDeclarado', validarCampoPaquete('valorDeclarado', paquete))}
                                             helperText={errPaquete.valorDeclarado || 'Opcional'}
-                                            placeholder="Ej: 50000" error={errPaquete.valorDeclarado}
-                                            inputProps={{ maxLength: 9 }} />
+                                            placeholder="Ej: 50.000" error={errPaquete.valorDeclarado}
+                                            inputProps={{ maxLength: 11 }} />
                                     </Box>
                                 </Box>
                             )
@@ -648,6 +701,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                             <Autocomplete
+                                popupIcon={<KeyboardArrowDownOutlinedIcon />}
                                 options={rutasProgramadas.filter(r => r.habilitado !== false && r.estado === 'Programada')}
                                 getOptionLabel={(option) => {
                                     // Placas de todos los vehículos del convoy en la etiqueta misma: si hay
@@ -657,6 +711,26 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                                     return `${option.nombreRuta || 'Sin nombre'}${placas ? ` (${placas})` : ''} — $${Number(option.destino?.tarifaBase || 0).toLocaleString()}`
                                 }}
                                 isOptionEqualToValue={(opt, val) => opt.idRuta === val.idRuta}
+                                renderOption={(props, option) => {
+                                    const { key, ...rest } = props
+                                    return (
+                                        <Box component="li" key={key} {...rest} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                            <Avatar sx={{
+                                                width: 34, height: 34, flexShrink: 0,
+                                                backgroundColor: theme.palette.avatarDefault.bg,
+                                                color: theme.palette.avatarDefault.color,
+                                            }}>
+                                                <RouteOutlinedIcon sx={{ fontSize: 18 }} />
+                                            </Avatar>
+                                            <Typography variant="body2" fontWeight={500} noWrap sx={{ flex: 1, minWidth: 0 }}>
+                                                {option.nombreRuta || 'Sin nombre'}
+                                            </Typography>
+                                            <Typography variant="caption" color={theme.palette.text.secondary} sx={{ flexShrink: 0 }}>
+                                                ${Number(option.destino?.tarifaBase || 0).toLocaleString('es-CO')}
+                                            </Typography>
+                                        </Box>
+                                    )
+                                }}
                                 filterOptions={(opts, { inputValue }) => {
                                     if (!inputValue.trim()) return [...opts].sort((a, b) => b.idRuta - a.idRuta).slice(0, 5)
                                     const q = normalizarTexto(inputValue)
@@ -789,10 +863,30 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                                                 onBlur={() => setErrorPaquete(index, 'idRutaVehiculoConductor', validarCampoPaquete('idRutaVehiculoConductor', paquete))}
                                                 required
                                                 error={!!errorCampo}
-                                                helperText={errorCampo || `¿A cuál vehículo va este paquete?${paquete.peso ? ` (${paquete.peso} kg)` : ''}`}>
+                                                helperText={errorCampo || `¿A cuál vehículo va este paquete?${paquete.peso ? ` (${paquete.peso} kg)` : ''}`}
+                                                renderValue={(val) => {
+                                                    const par = paresElegida.find(p => p.idRutaVehiculoConductor === val)
+                                                    if (!par) return ''
+                                                    const nombreConductor = par.conductor?.usuario ? `${par.conductor.usuario.nombre} ${par.conductor.usuario.apellido}` : 'Sin conductor'
+                                                    return `${par.vehiculo?.placa || 'Sin placa'} — ${nombreConductor}`
+                                                }}>
                                                 {paresElegida.map((par) => (
-                                                    <MenuItem key={par.idRutaVehiculoConductor} value={par.idRutaVehiculoConductor}>
-                                                        {par.vehiculo?.placa || 'Sin placa'} — {par.conductor?.usuario ? `${par.conductor.usuario.nombre} ${par.conductor.usuario.apellido}` : 'Sin conductor'}
+                                                    <MenuItem key={par.idRutaVehiculoConductor} value={par.idRutaVehiculoConductor} sx={{ py: 1 }}>
+                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, width: '100%' }}>
+                                                            <PlacaDisplay placa={par.vehiculo?.placa} theme={theme} />
+                                                            <Divider orientation="vertical" flexItem sx={{ my: 0.5 }} />
+                                                            <Avatar sx={{
+                                                                width: 28, height: 28, flexShrink: 0,
+                                                                backgroundColor: theme.palette.avatarDefault.bg,
+                                                                color: theme.palette.avatarDefault.color,
+                                                                fontSize: '0.68rem', fontWeight: 700,
+                                                            }}>
+                                                                {(par.conductor?.usuario?.nombre?.[0] || '')}{(par.conductor?.usuario?.apellido?.[0] || '')}
+                                                            </Avatar>
+                                                            <Typography variant="body2" fontWeight={500} noWrap sx={{ minWidth: 0 }}>
+                                                                {par.conductor?.usuario ? `${par.conductor.usuario.nombre} ${par.conductor.usuario.apellido}` : 'Sin conductor'}
+                                                            </Typography>
+                                                        </Box>
                                                     </MenuItem>
                                                 ))}
                                             </FormSelect>
@@ -828,15 +922,15 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                             <MenuItem value="Nequi">Nequi</MenuItem>
                         </FormSelect>
                         <FormField label="Valor del servicio ($)" name="valorServicio"
-                            value={form.valorServicio} onChange={handleChange}
+                            value={formatearMoneda(form.valorServicio)} onChange={handleChange}
                             helperText="Tarifa del destino + peso × tarifa por kg (editable)"
-                            inputProps={{ maxLength: 9 }} />
+                            inputProps={{ maxLength: 11 }} />
                         <FormField label="Impuestos ($)" name="impuestos"
-                            value={form.impuestos} onChange={handleChange}
+                            value={formatearMoneda(form.impuestos)} onChange={handleChange}
                             helperText="10% del valor del servicio (editable)"
-                            inputProps={{ maxLength: 9 }} />
+                            inputProps={{ maxLength: 11 }} />
                         <FormField label="Total a pagar ($)" name="total"
-                            value={form.total} onChange={handleChange} disabled />
+                            value={formatearMoneda(form.total)} onChange={handleChange} disabled />
                     </Box>
                 )
             case 4:

@@ -6,7 +6,7 @@ import { useVehiculo } from '../../shared/contexts/VehiculoContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import {
   Box, Typography, Paper, Button, TextField,
-  LinearProgress, Divider, CircularProgress
+  LinearProgress, Divider, CircularProgress, Skeleton
 } from '@mui/material'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
@@ -21,6 +21,7 @@ import BarChartOutlinedIcon from '@mui/icons-material/BarChartOutlined'
 import { formatRutaDestino } from '../../shared/utils/formatters.js'
 import { exportToExcel } from '../../shared/utils/exportExcel.js'
 import { getVentaEstadoDot } from '../../shared/utils/estadoColors.js'
+import { getRangoFechasVentas } from '../../shared/services/ventaService.js'
 
 const STATUS_LABEL = {
   'Programada':  'Programada',
@@ -60,6 +61,12 @@ const isWithinRange = (dateString, desde, hasta) => {
   const inicio = parseFechaLocal(desde)
   const fin = parseFechaLocal(hasta)
   return fecha >= inicio && fecha <= fin
+}
+
+const hoyISO = () => {
+  const d = new Date()
+  const pad2 = (n) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
 }
 
 const KpiCard = ({ icon, label, main, sub, height = '100%', minHeight = 0 }) => {
@@ -146,18 +153,13 @@ const Dashboard = () => {
     const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
     return firstDay.toISOString().split('T')[0];
   });
-  const [hasta, setHasta] = useState(() => {
-    const date = new Date();
-    const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
-    return lastDay.toISOString().split('T')[0];
-  });
+  const [hasta, setHasta] = useState(hoyISO)
   const [filtroActivo, setFiltroActivo] = useState(() => {
     const date = new Date();
     const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
-    const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
     return {
       desde: firstDay.toISOString().split('T')[0],
-      hasta: lastDay.toISOString().split('T')[0]
+      hasta: hoyISO()
     };
   });
 
@@ -177,6 +179,41 @@ const Dashboard = () => {
     fetchVentas(abortController.signal, { limit: 1000 })
     return () => abortController.abort()
   }, [fetchVentas])
+
+  const hoy = hoyISO()
+  // Límites reales del filtro de período: la fecha de la primera y la última venta
+  // registrada, calculadas con MIN/MAX directo en la BD (no sobre las ventas ya
+  // cargadas arriba, que se limitan a 1000 y podrían no incluir la más antigua).
+  const [rangoFechas, setRangoFechas] = useState({ primerRegistro: undefined, ultimoRegistro: undefined, loading: true })
+  useEffect(() => {
+    let cancelado = false
+    getRangoFechasVentas()
+      .then(res => {
+        if (cancelado || !res?.success) return
+        setRangoFechas({ primerRegistro: res.data?.primerRegistro || undefined, ultimoRegistro: res.data?.ultimoRegistro || undefined, loading: false })
+      })
+      .catch(() => { if (!cancelado) setRangoFechas(prev => ({ ...prev, loading: false })) })
+    return () => { cancelado = true }
+  }, [])
+  const primerRegistroISO = rangoFechas.primerRegistro
+  // "Hasta" no debe dejar elegir más allá de hoy, ni más allá de la última venta
+  // registrada si esta ya quedó en el pasado (evita días vacíos por delante sin sentido).
+  const hastaMaxISO = rangoFechas.ultimoRegistro && rangoFechas.ultimoRegistro < hoy ? rangoFechas.ultimoRegistro : hoy
+
+  // Por si el navegador permite escribir una fecha fuera de min/max a mano (los atributos
+  // nativos min/max del <input type="date"> bloquean el selector pero no siempre el tecleo).
+  const clamp = (valor, min, max) => {
+    if (min && valor < min) return min
+    if (max && valor > max) return max
+    return valor
+  }
+  const aplicarFiltro = () => {
+    const desdeClamp = clamp(desde, primerRegistroISO, hastaMaxISO)
+    const hastaClamp = clamp(hasta, desdeClamp, hastaMaxISO)
+    setDesde(desdeClamp)
+    setHasta(hastaClamp)
+    setFiltroActivo({ desde: desdeClamp, hasta: hastaClamp })
+  }
 
   const ingresosMes = useMemo(() => {
     const meses = new Map()
@@ -261,7 +298,7 @@ const Dashboard = () => {
         },
       ]
 
-      await exportToExcel({ sheets, fileName: 'dashboard', themeColor: theme.palette.primary.main })
+      await exportToExcel({ sheets, fileName: 'Dashboard', themeColor: theme.palette.primary.main })
     } catch (err) {
       showToast(err.message || 'Error al exportar.', 'error')
     } finally {
@@ -320,36 +357,48 @@ const Dashboard = () => {
         <Divider orientation="vertical" flexItem />
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Typography variant="caption" fontWeight={600} color={theme.palette.text.secondary}>Desde:</Typography>
-          <TextField
-            type="date" size="small" value={desde}
-            onChange={e => setDesde(e.target.value)}
-            sx={{ width: 150, '& .MuiOutlinedInput-root': { borderRadius: 2, fontSize: '0.8rem' } }}
-          />
+          {rangoFechas.loading ? (
+            <Skeleton variant="rounded" width={150} height={36} sx={{ borderRadius: 2 }} />
+          ) : (
+            <TextField
+              type="date" size="small" value={desde}
+              onChange={e => setDesde(clamp(e.target.value, primerRegistroISO, hastaMaxISO))}
+              slotProps={{ htmlInput: { min: primerRegistroISO, max: hastaMaxISO } }}
+              sx={{ width: 150, '& .MuiOutlinedInput-root': { borderRadius: 2, fontSize: '0.8rem' } }}
+            />
+          )}
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Typography variant="caption" fontWeight={600} color={theme.palette.text.secondary}>Hasta:</Typography>
-          <TextField
-            type="date" size="small" value={hasta}
-            onChange={e => setHasta(e.target.value)}
-            sx={{ width: 150, '& .MuiOutlinedInput-root': { borderRadius: 2, fontSize: '0.8rem' } }}
-          />
+          {rangoFechas.loading ? (
+            <Skeleton variant="rounded" width={150} height={36} sx={{ borderRadius: 2 }} />
+          ) : (
+            <TextField
+              type="date" size="small" value={hasta}
+              onChange={e => setHasta(clamp(e.target.value, desde || primerRegistroISO, hastaMaxISO))}
+              slotProps={{ htmlInput: { min: desde || primerRegistroISO, max: hastaMaxISO } }}
+              sx={{ width: 150, '& .MuiOutlinedInput-root': { borderRadius: 2, fontSize: '0.8rem' } }}
+            />
+          )}
         </Box>
         <Button
           variant="contained" size="small"
-          onClick={() => setFiltroActivo({ desde, hasta })}
+          onClick={aplicarFiltro}
+          disabled={rangoFechas.loading}
           sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600, fontSize: '0.8rem', px: 2 }}
         >
           Aplicar
         </Button>
         <Button
           variant="outlined" size="small"
+          disabled={rangoFechas.loading}
           onClick={() => {
             const date = new Date();
             const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
-            const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
-            setDesde(firstDay.toISOString().split('T')[0]);
-            setHasta(lastDay.toISOString().split('T')[0]);
-            setFiltroActivo({ desde: firstDay.toISOString().split('T')[0], hasta: lastDay.toISOString().split('T')[0] });
+            const firstDayISO = clamp(firstDay.toISOString().split('T')[0], primerRegistroISO, hastaMaxISO);
+            setDesde(firstDayISO);
+            setHasta(hastaMaxISO);
+            setFiltroActivo({ desde: firstDayISO, hasta: hastaMaxISO });
           }}
           sx={{
             borderRadius: 2, textTransform: 'none', fontWeight: 500, fontSize: '0.8rem', px: 2,

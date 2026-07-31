@@ -1,15 +1,31 @@
-import { Box } from '@mui/material'
+import { Box, useMediaQuery } from '@mui/material'
 import { useState } from 'react'
 import { useTheme } from '@mui/material/styles'
 import Sidebar from './Sidebar.jsx'
 import Header from './Header.jsx'
 import TopNav from './TopNav.jsx'
 import { useDarkMode } from '../contexts/ThemeContext.jsx'
+import { STORAGE_KEYS } from '../config/storageKeys.js'
 
 const Layout = ({ children }) => {
-  const [collapsed, setCollapsed] = useState(false)
+  // Con pantallas angostas (ej. 1517px de ancho) el sidebar expandido (250px) le
+  // deja muy poco espacio a las tablas y toca hacer scroll horizontal para llegar
+  // a la columna de Acciones. Arranca contraído por debajo de este ancho — pero
+  // si el usuario ya lo abrió/cerró a mano antes, esa preferencia guardada manda
+  // sobre el tamaño de pantalla (igual que darkMode/paletteKey/navLayout).
+  const pantallaAngosta = useMediaQuery('(max-width:1550px)')
+  const [collapsed, setCollapsed] = useState(() => {
+    const guardado = localStorage.getItem(STORAGE_KEYS.SIDEBAR_COLLAPSED)
+    return guardado !== null ? guardado === 'true' : pantallaAngosta
+  })
   const theme = useTheme()
   const { navLayout } = useDarkMode()
+
+  const toggleCollapsed = () =>
+    setCollapsed(prev => {
+      localStorage.setItem(STORAGE_KEYS.SIDEBAR_COLLAPSED, String(!prev))
+      return !prev
+    })
 
   const isSidebar = navLayout === 'sidebar'
 
@@ -23,7 +39,7 @@ const Layout = ({ children }) => {
       }} />
 
       {isSidebar && (
-        <Sidebar collapsed={collapsed} onToggleCollapsed={() => setCollapsed(p => !p)} />
+        <Sidebar collapsed={collapsed} onToggleCollapsed={toggleCollapsed} />
       )}
 
       <Header collapsed={collapsed} />

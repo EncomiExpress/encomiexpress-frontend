@@ -11,6 +11,7 @@ import {
 } from '@mui/material'
 import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
 import CloseIcon from '@mui/icons-material/Close'
+import AdsClickOutlinedIcon from '@mui/icons-material/AdsClickOutlined'
 import RouteIcon from '@mui/icons-material/Route'
 import RouteOutlinedIcon from '@mui/icons-material/RouteOutlined'
 import { getEstadoColorRuta, getAnticipoEstadoDot, getVentaEstadoDot } from '../../shared/utils/estadoColors.js'
@@ -235,9 +236,17 @@ const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
 
             {tabIndex === 1 && (
                 <Box sx={{ p: 3 }}>
-                    <Typography variant="body2" color={theme.palette.text.secondary} sx={{ mb: tabEncomiendas.total > 100 ? 0.5 : 2 }}>
-                        Encomiendas registradas en esta ruta
-                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, mb: tabEncomiendas.total > 100 ? 0.5 : 2 }}>
+                        <Typography variant="body2" color={theme.palette.text.secondary}>
+                            Encomiendas registradas en esta ruta
+                        </Typography>
+                        {!tabEncomiendas.loading && tabEncomiendas.data.length > 0 && (
+                            <Typography variant="caption" color={theme.palette.text.secondary} sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
+                                <AdsClickOutlinedIcon sx={{ fontSize: 14 }} />
+                                Puedes hacer clic en cada fila para abrirla en otra pestaña
+                            </Typography>
+                        )}
+                    </Box>
                     {tabEncomiendas.total > 100 && (
                         <Typography variant="caption" color={theme.palette.text.secondary} sx={{ display: 'block', mb: 2 }}>
                             Mostrando los 100 más recientes de {tabEncomiendas.total}.

@@ -183,7 +183,7 @@ const ListarCliente = () => {
                 'Dirección': cliente.direccion,
                 'Estado': cliente.habilitado === false ? 'Inhabilitado' : 'Habilitado',
             }))
-            await exportToExcel({ data: rows, fileName: 'clientes', sheetName: 'Clientes', themeColor: theme.palette.primary.main })
+            await exportToExcel({ data: rows, fileName: 'Clientes', sheetName: 'Clientes', themeColor: theme.palette.primary.main })
         } catch (err) {
             showToast(err.message || 'Error al exportar.', 'error')
         } finally {

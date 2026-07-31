@@ -32,6 +32,40 @@ export const isVencido = (fecha) => {
     return venc <= hoy
 }
 
+// Formatea un valor en pesos colombianos con puntos de miles para MOSTRAR en pantalla
+// (ej. "25.000") — el valor real que se guarda/envía nunca lleva puntos ni decimales,
+// es solo dígitos. Mismo patrón que la raya automática de la placa de vehículo: se ve
+// formateado en el campo, pero por dentro es un string limpio.
+export const formatearMoneda = (raw) => {
+    const limpio = String(raw ?? '').replace(/[^0-9]/g, '')
+    if (!limpio) return ''
+    return Number(limpio).toLocaleString('es-CO')
+}
+
+// Filtra el input en vivo de un campo de dinero: solo dígitos, nada de puntos ni
+// decimales — los puntos que se ven en pantalla los pone formatearMoneda(), nunca se
+// escriben a mano.
+export const limpiarMonedaInput = (value) => String(value ?? '').replace(/[^0-9]/g, '')
+
+// Filtra el input en vivo de un campo decimal físico (peso, capacidad, dimensiones):
+// dígitos + como máximo UN punto decimal. El regex simple `[^0-9.]` que se usaba antes
+// solo bloqueaba letras, pero dejaba escribir cualquier cantidad de puntos seguidos
+// (ej. "0.0.08") — acá se descarta cualquier punto adicional después del primero,
+// carácter por carácter, en vez de rechazar todo el input.
+export const limpiarDecimalInput = (value) => {
+    let yaHuboPunto = false
+    return String(value ?? '')
+        .replace(/[^0-9.]/g, '')
+        .split('')
+        .filter((ch) => {
+            if (ch !== '.') return true
+            if (yaHuboPunto) return false
+            yaHuboPunto = true
+            return true
+        })
+        .join('')
+}
+
 // El número de guía ahora vive en cada paquete (uno por paquete físico), no en la
 // venta — esto da "la" guía representativa de una venta para vistas que solo
 // necesitan mostrar/exportar un identificador (listados de dependencias, Excel,

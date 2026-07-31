@@ -5,4 +5,5 @@ export const STORAGE_KEYS = {
   DARK_MODE: 'darkMode',
   PALETTE_KEY: 'paletteKey',
   NAV_LAYOUT: 'navLayout',
+  SIDEBAR_COLLAPSED: 'sidebarCollapsed',
 }

@@ -1,10 +1,10 @@
 ﻿import { useTheme } from '@mui/material/styles'
 import { useState, useEffect, useRef } from 'react'
-import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, Dialog, DialogTitle, DialogContent, IconButton, TextField, Autocomplete, InputAdornment, CircularProgress } from '@mui/material'
+import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, Dialog, DialogTitle, DialogContent, IconButton, TextField, Autocomplete, InputAdornment, CircularProgress, Avatar } from '@mui/material'
 import {
   DirectionsCarOutlined, BadgeOutlined, SellOutlined, InvertColorsOutlined,
   EventOutlined, SpeedOutlined, SaveOutlined, ArrowBackOutlined, ArrowForwardOutlined, Close, EditOutlined,
-  DescriptionOutlined
+  DescriptionOutlined, KeyboardArrowDownOutlined
 } from '@mui/icons-material'
 import { useVehiculo } from '../../shared/contexts/VehiculoContext.jsx'
 import { usePropietario } from '../../shared/contexts/PropietarioContext.jsx'
@@ -13,11 +13,34 @@ import { FormField, FormSelect } from '../../shared/components/FormularioEstanda
 import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
-import { normalizarTexto } from '../../shared/utils/duplicados.js'
+import { normalizarTexto, hayDocumentoDuplicado, MENSAJE_PLACA_DUPLICADA } from '../../shared/utils/duplicados.js'
+import * as vehiculoService from '../../shared/services/vehiculoService.js'
+import { limpiarDecimalInput } from '../../shared/utils/formatters.js'
 
 const steps = ['Datos del Vehículo', 'Documentación', 'Confirmación']
 
 const TIPOS_VEHICULO = ['Camioneta', 'Camión', 'Furgón', 'Semi Trayler', 'Trayler', 'Otro']
+// La placa se guarda siempre sin guion (6 caracteres alfanuméricos) — el guion que se ve
+// en el campo es solo un formato visual mientras se escribe, igual que el punto decorativo
+// que ya se usa en los chips de Listar/Consultar (ver PlacaDisplay en ListarVehiculo.jsx).
+const formatearPlaca = (raw) => {
+  const limpio = (raw || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6)
+  return limpio.length > 3 ? `${limpio.slice(0, 3)}-${limpio.slice(3)}` : limpio
+}
+const PLACA_REGEX = /^[A-Z]{3}[0-9]{3}$/
+// Placa colombiana estándar: 3 letras + 3 números. Filtra letra por letra según la
+// posición (no solo alfanumérico general) para que no se pueda ni siquiera escribir
+// un número en las primeras 3 posiciones ni una letra en las últimas 3.
+const limpiarPlacaInput = (value) => {
+  const chars = value.toUpperCase().replace(/[^A-Z0-9]/g, '').split('')
+  let resultado = ''
+  for (const c of chars) {
+    if (resultado.length >= 6) break
+    if (resultado.length < 3) { if (/[A-Z]/.test(c)) resultado += c }
+    else { if (/[0-9]/.test(c)) resultado += c }
+  }
+  return resultado
+}
 const CAPACIDAD_MAX = 999999
 
 // Valida un único campo del formulario (usado en onBlur y para re-validar en vivo
@@ -27,7 +50,9 @@ const CAPACIDAD_MAX = 999999
 const validarCampo = (name, formData) => {
   switch (name) {
     case 'placa':
-      return formData.placa?.trim() ? '' : 'La placa es obligatoria'
+      if (!formData.placa?.trim()) return 'La placa es obligatoria'
+      if (!PLACA_REGEX.test(formData.placa)) return 'La placa debe tener 3 letras seguidas de 3 números'
+      return ''
     case 'marca':
       return formData.marca?.trim() ? '' : 'La marca es obligatoria'
     case 'modelo':
@@ -40,7 +65,7 @@ const validarCampo = (name, formData) => {
       return (formData.tipo === 'Otro' && !formData.tipoOtro?.trim()) ? 'Especifica el tipo de vehículo' : ''
     case 'capacidad':
       if (!formData.capacidad) return 'La capacidad es obligatoria'
-      if (parseFloat(formData.capacidad) <= 0) return 'La capacidad debe ser mayor a 0'
+      if (parseFloat(formData.capacidad) < 1) return 'La capacidad debe ser de al menos 1 kg'
       if (parseFloat(formData.capacidad) > CAPACIDAD_MAX) return `La capacidad no puede ser mayor a ${CAPACIDAD_MAX.toLocaleString('es-CO')} kg`
       return ''
     case 'idPropietario':
@@ -73,6 +98,7 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
   const [formOriginal, setFormOriginal] = useState(null)
   const [sinCambios, setSinCambios] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [avisoPlacaDuplicada, setAvisoPlacaDuplicada] = useState('')
   const cargado = useRef(false)
 
   useEffect(() => {
@@ -103,13 +129,16 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
     const { name } = e.target
     let { value } = e.target
 
-    if (name === 'placa') value = value.toUpperCase().replace(/[^A-Z0-9-]/g, '')
+    if (name === 'placa') {
+      setAvisoPlacaDuplicada('')
+      value = limpiarPlacaInput(value)
+    }
     if (name === 'marca') value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
     if (name === 'modelo') value = value.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚüÜñÑ\s-]/g, '')
     if (name === 'color') value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
     if (name === 'tipoOtro') value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
     if (name === 'capacidad') {
-      value = value.replace(/[^0-9.]/g, '')
+      value = limpiarDecimalInput(value)
       if (value !== '') {
         const num = parseFloat(value)
         if (!isNaN(num) && num > CAPACIDAD_MAX) return
@@ -130,10 +159,30 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
     setSinCambios(false)
   }
 
+  const verificarPlacaDuplicada = async () => {
+    if (!formData.placa.trim() || formData.placa.length < 6) {
+      setAvisoPlacaDuplicada('')
+      return
+    }
+    try {
+      const res = await vehiculoService.getVehiculos(undefined, { q: formData.placa.trim(), limit: 10 })
+      if (!res?.success) return
+      const duplicado = hayDocumentoDuplicado(res.data, formData.placa, {
+        getDoc: (r) => r.placa,
+        excludeId: formData.idVehiculo,
+        getId: (r) => r.idVehiculo,
+      })
+      setAvisoPlacaDuplicada(duplicado ? MENSAJE_PLACA_DUPLICADA : '')
+      if (duplicado) setErrores(prev => ({ ...prev, placa: MENSAJE_PLACA_DUPLICADA }))
+    } catch {
+      // Si falla la verificación no bloqueamos el flujo
+    }
+  }
+
   const validarPaso = (step) => {
     const e = {}
     if (step === 0) {
-      e.placa = validarCampo('placa', formData)
+      e.placa = validarCampo('placa', formData) || avisoPlacaDuplicada
       e.marca = validarCampo('marca', formData)
       e.modelo = validarCampo('modelo', formData)
       e.color = validarCampo('color', formData)
@@ -198,11 +247,14 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
       case 0:
         return (
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
-            <FormField label="Placa" name="placa" value={formData.placa} onChange={handleChange}
-              onBlur={() => setErrores(prev => ({ ...prev, placa: validarCampo('placa', formData) }))} required
-              placeholder="Ej: ABC-1234" icon={BadgeOutlined}
+            <FormField label="Placa" name="placa" value={formatearPlaca(formData.placa)} onChange={handleChange}
+              onBlur={() => {
+                verificarPlacaDuplicada()
+                setErrores(prev => ({ ...prev, placa: validarCampo('placa', formData) }))
+              }} required
+              placeholder="Ej: ABC-123" icon={BadgeOutlined}
               error={errores.placa} helperText={errores.placa}
-              inputProps={{ maxLength: 8 }} />
+              inputProps={{ maxLength: 7 }} />
             <FormField label="Marca" name="marca" value={formData.marca} onChange={handleChange}
               onBlur={() => setErrores(prev => ({ ...prev, marca: validarCampo('marca', formData) }))} required
               placeholder="Ej: Toyota" icon={SellOutlined}
@@ -258,11 +310,33 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
             <Autocomplete
               options={propietarios.filter(p => p.habilitado !== false)}
+              popupIcon={<KeyboardArrowDownOutlined />}
               getOptionLabel={(p) => `${p.nombre} ${p.apellido} — ${p.numeroIdentificacion}`}
               isOptionEqualToValue={(opt, val) => opt.idPropietario === val.idPropietario}
               value={propietarios.find(p => p.idPropietario === formData.idPropietario) || null}
               onChange={(_, val) => handleChange({ target: { name: 'idPropietario', value: val ? val.idPropietario : '' } })}
               onBlur={() => setErrores(prev => ({ ...prev, idPropietario: validarCampo('idPropietario', formData) }))}
+              renderOption={(props, p) => {
+                const { key, ...rest } = props
+                return (
+                  <Box component="li" key={key} {...rest} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <Avatar sx={{
+                      width: 34, height: 34, flexShrink: 0,
+                      backgroundColor: theme.palette.avatarDefault.bg,
+                      color: theme.palette.avatarDefault.color,
+                      fontSize: '0.73rem', fontWeight: 700,
+                    }}>
+                      {(p.nombre?.[0] || '').toUpperCase()}{(p.apellido?.[0] || '').toUpperCase()}
+                    </Avatar>
+                    <Typography variant="body2" fontWeight={500} noWrap sx={{ flex: 1, minWidth: 0 }}>
+                      {p.nombre} {p.apellido}
+                    </Typography>
+                    <Typography variant="caption" color={theme.palette.text.secondary} sx={{ flexShrink: 0 }}>
+                      {p.numeroIdentificacion}
+                    </Typography>
+                  </Box>
+                )
+              }}
               filterOptions={(opts, { inputValue }) => {
                 if (!inputValue.trim()) {
                   return [...opts].sort((a, b) => b.idPropietario - a.idPropietario).slice(0, 5)
@@ -350,7 +424,7 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
                   <Typography fontWeight={700} fontSize="0.95rem">Datos del Vehículo</Typography>
                 </Box>
                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la información del vehículo</Typography>
-                <ConfirmRow label="Placa" value={formData.placa} previousValue={formOriginal?.placa} />
+                <ConfirmRow label="Placa" value={formatearPlaca(formData.placa)} previousValue={formatearPlaca(formOriginal?.placa)} />
                 <ConfirmRow label="Marca" value={formData.marca} previousValue={formOriginal?.marca} />
                 <ConfirmRow label="Modelo" value={formData.modelo} previousValue={formOriginal?.modelo} />
                 <ConfirmRow label="Color" value={formData.color} previousValue={formOriginal?.color} />

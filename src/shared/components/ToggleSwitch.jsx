@@ -21,7 +21,7 @@ const getToggleCss = (primaryColor) => `
     height: calc(var(--sz) * 2);
     background: var(--no);
     border-radius: var(--sz);
-    pointer-events: none;
+    cursor: pointer;
     transition: var(--tr);
   }
   .ee-toggle .ee-input:checked + label { background: var(--on); }

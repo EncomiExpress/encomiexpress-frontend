@@ -1,4 +1,4 @@
-import { useTheme, alpha } from '@mui/material/styles'
+import { useTheme } from '@mui/material/styles'
 import { useState, useEffect } from 'react'
 import * as rutaService from '../../shared/services/rutaService'
 import {
@@ -8,25 +8,10 @@ import {
 import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
 import EventOutlinedIcon from '@mui/icons-material/EventOutlined'
 import CloseIcon from '@mui/icons-material/Close'
+import AdsClickOutlinedIcon from '@mui/icons-material/AdsClickOutlined'
 import { isVencido, formatFecha } from '../../shared/utils/formatters.js'
 import { getEstadoColorRuta } from '../../shared/utils/estadoColors.js'
-
-const PlacaDisplay = ({ placa, theme }) => {
-    const letras = placa?.slice(0, 3) ?? ''
-    const numeros = placa?.slice(3) ?? ''
-    const c = theme.palette.primary.main
-    return (
-        <Box sx={{
-            position: 'relative', width: 60, height: 25,
-            backgroundColor: alpha(c, 0.07), border: `1.5px solid ${alpha(c, 0.28)}`,
-            borderRadius: '4px', display: 'flex', justifyContent: 'center', alignItems: 'center',
-        }}>
-            <Typography sx={{ fontWeight: 800, fontSize: '0.8rem', color: c, lineHeight: 1, fontFamily: "'Arial Narrow', Arial, sans-serif" }}>{letras}</Typography>
-            <Box sx={{ width: 3, height: 3, backgroundColor: alpha(c, 0.5), borderRadius: '50%', mx: '2px', flexShrink: 0 }} />
-            <Typography sx={{ fontWeight: 700, fontSize: '0.8rem', color: c, lineHeight: 1, fontFamily: "'Arial Narrow', Arial, sans-serif" }}>{numeros}</Typography>
-        </Box>
-    )
-}
+import PlacaDisplay from '../../shared/components/PlacaDisplay.jsx'
 
 const renderEstadoRuta = (estado) => {
     const color = getEstadoColorRuta(estado).color
@@ -193,9 +178,17 @@ const ModalConsultarVehiculo = ({ vehiculo, onClose }) => {
 
             {tabIndex === 1 && (
                 <Box sx={{ p: 3 }}>
-                    <Typography variant="body2" color={theme.palette.text.secondary} sx={{ mb: tabRutas.total > 100 ? 0.5 : 2 }}>
-                        Rutas asignadas a este vehículo
-                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, mb: tabRutas.total > 100 ? 0.5 : 2 }}>
+                        <Typography variant="body2" color={theme.palette.text.secondary}>
+                            Rutas asignadas a este vehículo
+                        </Typography>
+                        {!tabRutas.loading && tabRutas.data.length > 0 && (
+                            <Typography variant="caption" color={theme.palette.text.secondary} sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
+                                <AdsClickOutlinedIcon sx={{ fontSize: 14 }} />
+                                Puedes hacer clic en cada fila para abrirla en otra pestaña
+                            </Typography>
+                        )}
+                    </Box>
                     {tabRutas.total > 100 && (
                         <Typography variant="caption" color={theme.palette.text.secondary} sx={{ display: 'block', mb: 2 }}>
                             Mostrando los 100 más recientes de {tabRutas.total}.

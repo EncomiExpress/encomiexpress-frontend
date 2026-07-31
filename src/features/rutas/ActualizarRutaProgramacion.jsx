@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import {
     Box, Typography, Paper, Stepper, Step, StepLabel,
     Button, Alert, Dialog, DialogTitle, DialogContent, IconButton,
-    Autocomplete, TextField, CircularProgress, Divider
+    Autocomplete, TextField, CircularProgress, Divider, Avatar
 } from '@mui/material'
 import RouteOutlinedIcon from '@mui/icons-material/RouteOutlined'
 import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
@@ -15,12 +15,15 @@ import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined'
 import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined'
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
+import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import { useRutaProgramacion } from '../../shared/contexts/RutaProgramacionContext.jsx'
 import { useVehiculo } from '../../shared/contexts/VehiculoContext.jsx'
 import { useConductor } from '../../shared/contexts/ConductorContext.jsx'
 import { useDestino } from '../../shared/contexts/DestinoContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { FormField } from '../../shared/components/FormularioEstandarizado.jsx'
+import NacionSVG from '../../shared/components/NacionSVG.jsx'
+import PlacaDisplay from '../../shared/components/PlacaDisplay.jsx'
 import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
@@ -361,7 +364,8 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
                                 icon={RouteOutlinedIcon} inputProps={{ maxLength: 100 }} placeholder="Ej: Ruta Medellín - Bogotá" />
                             <Autocomplete
                                 options={destinos}
-                                getOptionLabel={(d) => d.nombre ? `${d.nombre} - ${d.ciudad}` : `${d.departamento} - ${d.ciudad}`}
+                                popupIcon={<KeyboardArrowDownOutlinedIcon />}
+                                getOptionLabel={(d) => `${d.ciudad} - ${d.departamento}`}
                                 isOptionEqualToValue={(opt, val) => opt.idDestino === val.idDestino}
                                 value={destinoSeleccionado}
                                 inputValue={destinoInput}
@@ -371,6 +375,22 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
                                 }}
                                 onChange={(_, val) => handleChange({ target: { name: 'idDestino', value: val ? val.idDestino : '' } })}
                                 onBlur={() => setErrores(prev => ({ ...prev, idDestino: validarCampo('idDestino', form) }))}
+                                renderOption={(props, d) => {
+                                    const { key, ...rest } = props
+                                    return (
+                                        <Box component="li" key={key} {...rest} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                            <Box sx={{ width: 28, height: 30, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                <NacionSVG color={theme.palette.primary.main} />
+                                            </Box>
+                                            <Typography variant="body2" fontWeight={500} noWrap sx={{ flex: 1, minWidth: 0 }}>
+                                                {d.ciudad}
+                                            </Typography>
+                                            <Typography variant="caption" color={theme.palette.text.secondary} sx={{ flexShrink: 0 }}>
+                                                {d.departamento}
+                                            </Typography>
+                                        </Box>
+                                    )
+                                }}
                                 filterOptions={(opts, { inputValue }) => {
                                     if (!inputValue.trim()) return [...opts].sort((a, b) => b.idDestino - a.idDestino).slice(0, 5)
                                     const q = normalizarTexto(inputValue)
@@ -411,6 +431,7 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
                                 <Box key={index} sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 1.5, alignItems: 'flex-start' }}>
                                     <Autocomplete
                                         options={opcionesVehiculo}
+                                        popupIcon={<KeyboardArrowDownOutlinedIcon />}
                                         getOptionLabel={(v) => `${v.placa} — ${v.marca} ${v.modelo}`}
                                         isOptionEqualToValue={(opt, val) => opt.idVehiculo === val.idVehiculo}
                                         value={vehiculoSel}
@@ -421,6 +442,17 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
                                         }}
                                         onChange={(_, val) => handleParChange(index, 'idVehiculo', val ? val.idVehiculo : '')}
                                         onBlur={() => setErrores(prev => ({ ...prev, pares: validarPares(form.pares) }))}
+                                        renderOption={(props, v) => {
+                                            const { key, ...rest } = props
+                                            return (
+                                                <Box component="li" key={key} {...rest} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                                    <PlacaDisplay placa={v.placa} theme={theme} />
+                                                    <Typography variant="body2" fontWeight={500} noWrap sx={{ flex: 1, minWidth: 0 }}>
+                                                        {v.marca} {v.modelo}
+                                                    </Typography>
+                                                </Box>
+                                            )
+                                        }}
                                         filterOptions={(opts, { inputValue }) => {
                                             if (!inputValue.trim()) return [...opts].sort((a, b) => b.idVehiculo - a.idVehiculo).slice(0, 5)
                                             const q = normalizarTexto(inputValue)
@@ -439,6 +471,7 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
                                     />
                                     <Autocomplete
                                         options={opcionesConductor}
+                                        popupIcon={<KeyboardArrowDownOutlinedIcon />}
                                         getOptionLabel={(c) => `${c.nombre} ${c.apellido}`}
                                         isOptionEqualToValue={(opt, val) => opt.idConductor === val.idConductor}
                                         value={conductorSel}
@@ -449,6 +482,27 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
                                         }}
                                         onChange={(_, val) => handleParChange(index, 'idConductor', val ? val.idConductor : '')}
                                         onBlur={() => setErrores(prev => ({ ...prev, pares: validarPares(form.pares) }))}
+                                        renderOption={(props, c) => {
+                                            const { key, ...rest } = props
+                                            return (
+                                                <Box component="li" key={key} {...rest} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                                    <Avatar sx={{
+                                                        width: 34, height: 34, flexShrink: 0,
+                                                        backgroundColor: theme.palette.avatarDefault.bg,
+                                                        color: theme.palette.avatarDefault.color,
+                                                        fontSize: '0.73rem', fontWeight: 700,
+                                                    }}>
+                                                        {c.nombre?.[0] || ''}{c.apellido?.[0] || ''}
+                                                    </Avatar>
+                                                    <Typography variant="body2" fontWeight={500} noWrap sx={{ flex: 1, minWidth: 0 }}>
+                                                        {c.nombre} {c.apellido}
+                                                    </Typography>
+                                                    <Typography variant="caption" color={theme.palette.text.secondary} sx={{ flexShrink: 0 }}>
+                                                        {c.numeroIdentificacion}
+                                                    </Typography>
+                                                </Box>
+                                            )
+                                        }}
                                         filterOptions={(opts, { inputValue }) => {
                                             if (!inputValue.trim()) return [...opts].sort((a, b) => b.idConductor - a.idConductor).slice(0, 5)
                                             const q = normalizarTexto(inputValue)

@@ -8,6 +8,7 @@ import {
 import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined'
 import AttachMoneyOutlinedIcon from '@mui/icons-material/AttachMoneyOutlined'
 import CloseIcon from '@mui/icons-material/Close'
+import AdsClickOutlinedIcon from '@mui/icons-material/AdsClickOutlined'
 import { getEstadoColorRuta } from '../../shared/utils/estadoColors.js'
 import { formatFecha } from '../../shared/utils/formatters.js'
 
@@ -203,9 +204,17 @@ const ModalConsultarDestino = ({ destino, onClose }) => {
 
             {tabIndex === 1 && (
                 <Box sx={{ p: 3 }}>
-                    <Typography variant="body2" color={theme.palette.text.secondary} sx={{ mb: tabRutas.total > 100 ? 0.5 : 2 }}>
-                        Rutas programadas hacia este destino
-                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, mb: tabRutas.total > 100 ? 0.5 : 2 }}>
+                        <Typography variant="body2" color={theme.palette.text.secondary}>
+                            Rutas programadas hacia este destino
+                        </Typography>
+                        {!tabRutas.loading && tabRutas.data.length > 0 && (
+                            <Typography variant="caption" color={theme.palette.text.secondary} sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
+                                <AdsClickOutlinedIcon sx={{ fontSize: 14 }} />
+                                Puedes hacer clic en cada fila para abrirla en otra pestaña
+                            </Typography>
+                        )}
+                    </Box>
                     {tabRutas.total > 100 && (
                         <Typography variant="caption" color={theme.palette.text.secondary} sx={{ display: 'block', mb: 2 }}>
                             Mostrando los 100 más recientes de {tabRutas.total}.

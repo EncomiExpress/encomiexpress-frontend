@@ -19,6 +19,7 @@ import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import ToggleSwitch from '../../shared/components/ToggleSwitch.jsx'
 import TablaPaginacionFooter from '../../shared/components/TablaPaginacionFooter.jsx'
+import PlacaDisplay from '../../shared/components/PlacaDisplay.jsx'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import SwapHorizOutlinedIcon from '@mui/icons-material/SwapHorizOutlined'
 import CloseIcon from '@mui/icons-material/Close'
@@ -75,32 +76,6 @@ const FILTROS_HABILITADO = [
 const ESTADOS_VEHICULO = ['Disponible', 'Mantenimiento', 'En Ruta']
 const TIPOS_VEHICULO = ['Camioneta', 'Camión', 'Furgón', 'Semi Trayler', 'Trayler', 'Motocicleta', 'Otro']
 
-const PlacaDisplay = ({ placa, theme }) => {
-    const letras = placa?.slice(0, 3) ?? ''
-    const numeros = placa?.slice(3) ?? ''
-    const c = theme.palette.primary.main
-    return (
-        <Box sx={{
-            position: 'relative',
-            width: 60,
-            height: 25,
-            backgroundColor: alpha(c, 0.07),
-            border: `1.5px solid ${alpha(c, 0.28)}`,
-            borderRadius: '4px',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-        }}>
-                <Typography sx={{ fontWeight: 800, fontSize: '0.8rem', color: c, lineHeight: 1, fontFamily: "'Arial Narrow', Arial, sans-serif" }}>
-                    {letras}
-                </Typography>
-                <Box sx={{ width: 3, height: 3, backgroundColor: alpha(c, 0.5), borderRadius: '50%', mx: '2px', flexShrink: 0 }} />
-                <Typography sx={{ fontWeight: 700, fontSize: '0.8rem', color: c, lineHeight: 1, fontFamily: "'Arial Narrow', Arial, sans-serif" }}>
-                    {numeros}
-                </Typography>
-        </Box>
-    )
-}
 
 const RutasMiniTabla = ({ rutas, theme }) => (
     <Paper elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 2, overflow: 'hidden', mt: 1.5 }}>
@@ -357,7 +332,7 @@ const ListarTransporte = () => {
                 'Estado': vehiculo.estadoEfectivo || vehiculo.estado,
                 'Habilitado': vehiculo.habilitado === false ? 'No' : 'Sí',
             }))
-            await exportToExcel({ data: rows, fileName: 'vehiculos', sheetName: 'Vehículos', themeColor: theme.palette.primary.main })
+            await exportToExcel({ data: rows, fileName: 'Vehiculos', sheetName: 'Vehículos', themeColor: theme.palette.primary.main })
         } catch (err) {
             showToast(err.message || 'Error al exportar.', 'error')
         } finally {
@@ -603,8 +578,7 @@ const ListarTransporte = () => {
                                         Placa
                                     </TableSortLabel>
                                 </TableCell>
-                                <TableCell sx={thStyle}>Marca</TableCell>
-                                <TableCell sx={thStyle}>Modelo</TableCell>
+                                <TableCell sx={thStyle}>Marca / Modelo</TableCell>
                                 <TableCell sx={thStyle}>Tipo</TableCell>
                                 <TableCell sx={thStyle}>Propietario</TableCell>
                                 <TableCell sx={thStyle}>SOAT</TableCell>
@@ -617,7 +591,7 @@ const ListarTransporte = () => {
                         <TableBody>
                             {loading && initialLoad.current ? (
                                 <TableRow>
-                                    <TableCell colSpan={10} align="center" sx={{ py: 7 }}>
+                                    <TableCell colSpan={9} align="center" sx={{ py: 7 }}>
                                         <CircularProgress size={28} sx={{ color: theme.palette.primary.main }} />
                                         <Typography variant="body2" color={theme.palette.text.secondary} mt={1.5}>
                                             Cargando vehículos...
@@ -626,7 +600,7 @@ const ListarTransporte = () => {
                                 </TableRow>
                             ) : error ? (
                                 <TableRow>
-                                    <TableCell colSpan={10} align="center" sx={{ py: 5 }}>
+                                    <TableCell colSpan={9} align="center" sx={{ py: 5 }}>
                                         <Typography color="error" variant="body2">
                                             No se pudieron cargar los vehículos. Verifica la conexión con el servidor.
                                         </Typography>
@@ -639,7 +613,7 @@ const ListarTransporte = () => {
                                 </TableRow>
                             ) : !loading && filteredTransportes.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={10} align="center" sx={{ py: 7 }}>
+                                    <TableCell colSpan={9} align="center" sx={{ py: 7 }}>
                                         <Typography color={theme.palette.text.secondary} variant="body2">
                                             {filtroEstadoVehiculo !== '' || filtroTipo !== '' || filtroHabilitado !== 'todo'
                                                 ? 'No se encontraron vehículos que coincidan con los filtros aplicados.'
@@ -672,8 +646,14 @@ const ListarTransporte = () => {
                                         <TableCell>
                                             <PlacaDisplay placa={transporte.placa} theme={theme} />
                                         </TableCell>
-                                        <TableCell sx={{ py: 1.5 }}>{transporte.marca}</TableCell>
-                                        <TableCell sx={{ py: 1.5 }}>{transporte.modelo}</TableCell>
+                                        <TableCell sx={{ py: 1.5 }}>
+                                            <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary} noWrap>
+                                                {transporte.marca}
+                                            </Typography>
+                                            <Typography variant="caption" color={theme.palette.text.secondary} noWrap>
+                                                {transporte.modelo}
+                                            </Typography>
+                                        </TableCell>
                                         <TableCell sx={{ py: 1.5 }}>
                                             <Chip
                                                 label={transporte.tipo || '—'}

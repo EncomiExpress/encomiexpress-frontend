@@ -16,6 +16,7 @@ import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { FormField, FormSelect } from '../../shared/components/FormularioEstandarizado.jsx'
 import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { hayDocumentoDuplicado } from '../../shared/utils/duplicados.js'
+import { formatearMoneda, limpiarMonedaInput } from '../../shared/utils/formatters.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 
 const steps = ['Ubicación', 'Tarifa', 'Confirmación']
@@ -75,8 +76,10 @@ const RegistrarDestino = ({ open, onClose, onSuccess }) => {
             value = value.replace(/[^a-zA-Z0-9\s,.\-#/' ]/g, '')
         }
         if (name === 'tarifaBase') {
-            // Solo números y punto decimal
-            value = value.replace(/[^0-9.]/g, '')
+            // Solo dígitos — los puntos de miles se muestran solos (formatearMoneda),
+            // nunca se escriben a mano. Sin decimales: los valores de tarifa en pesos
+            // colombianos no manejan centavos.
+            value = limpiarMonedaInput(value)
             const num = parseFloat(value)
             if (!isNaN(num) && num > TARIFA_MAX) return
         }
@@ -185,11 +188,11 @@ const RegistrarDestino = ({ open, onClose, onSuccess }) => {
                 return (
                     <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 2.5 }}>
                         <FormField
-                            label="Tarifa Base (COP)" name="tarifaBase" value={form.tarifaBase} onChange={handleChange}
+                            label="Tarifa Base (COP)" name="tarifaBase" value={formatearMoneda(form.tarifaBase)} onChange={handleChange}
                             onBlur={() => setErrores(prev => ({ ...prev, tarifaBase: validarCampo('tarifaBase', form) }))}
                             required error={errores.tarifaBase} helperText={errores.tarifaBase || 'Valor en pesos colombianos'}
-                            icon={AttachMoneyOutlinedIcon} inputProps={{ maxLength: 12 }}
-                            placeholder="Ej: 25000"
+                            icon={AttachMoneyOutlinedIcon} inputProps={{ maxLength: 11 }}
+                            placeholder="Ej: 25.000"
                         />
                     </Box>
                 )

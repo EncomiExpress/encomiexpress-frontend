@@ -146,14 +146,26 @@ const downloadWorkbook = async (workbook, safeFileName) => {
   URL.revokeObjectURL(url)
 }
 
-export const exportToExcel = async ({ data = [], fileName = 'reporte', sheetName = 'Datos', sheets = null, themeColor = null }) => {
+// DDMMYY — formato corto de fecha, sin separadores (ej. "310726").
+const getFechaCorta = () => {
+  const d = new Date()
+  const pad2 = (n) => String(n).padStart(2, '0')
+  return `${pad2(d.getDate())}${pad2(d.getMonth() + 1)}${String(d.getFullYear()).slice(-2)}`
+}
+
+// fileName aquí es solo el nombre del módulo (ej. "Vehículos") — esta función arma
+// el nombre completo del archivo: marca + "Reporte" + módulo + fecha corta, así
+// todos los módulos exportan con el mismo patrón sin repetirlo en cada Listar*.jsx.
+export const exportToExcel = async ({ data = [], fileName = 'Reporte', sheetName = 'Datos', sheets = null, themeColor = null }) => {
   const headerColor = toArgb(themeColor)
   const workbook = sheets && Array.isArray(sheets) && sheets.length > 0
     ? await buildWorkbook(sheets, headerColor)
     : await buildWorkbook([{ name: sheetName, rows: data }], headerColor)
 
-  const safeFileName = String(fileName)
+  const nombreCompleto = `EncomiExpress_Reporte_${fileName}_${getFechaCorta()}`
+  const safeFileName = String(nombreCompleto)
     .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '') // quita tildes sin dejar un "_" en su lugar
     .replace(/[^a-zA-Z0-9._-]+/g, '_')
     .replace(/_+/g, '_')
     .replace(/^_|_$/g, '') || 'reporte'

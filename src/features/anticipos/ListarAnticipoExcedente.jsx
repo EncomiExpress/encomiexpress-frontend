@@ -252,14 +252,14 @@ const ListarAnticipoExcedente = () => {
                 'ID': anticipo.idAnticipoExcedente || anticipo.idAnticipo,
                 'Conductor': getNombreConductor(anticipo),
                 'Ruta': anticipo.ruta?.nombreRuta || anticipo.idRuta || '-',
-                'Valor anticipo': anticipo.valorAnticipo,
-                'Valor gastado': anticipo.valorGastado,
-                'Excedente': anticipo.excedente,
+                'Valor anticipo': Math.round(Number(anticipo.valorAnticipo)) || 0,
+                'Valor gastado': Math.round(Number(anticipo.valorGastado)) || 0,
+                'Excedente': Math.round(Number(anticipo.excedente)) || 0,
                 'Fecha de entrega': anticipo.fechaEntrega,
                 'Estado': anticipo.estado,
                 'Habilitado': anticipo.habilitado === false ? 'No' : 'Sí',
             }))
-            await exportToExcel({ data: rows, fileName: 'anticipos', sheetName: 'Anticipos', themeColor: theme.palette.primary.main })
+            await exportToExcel({ data: rows, fileName: 'Anticipos', sheetName: 'Anticipos', themeColor: theme.palette.primary.main })
         } catch (err) {
             showToast(err.message || 'Error al exportar.', 'error')
         } finally {

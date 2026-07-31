@@ -22,7 +22,7 @@ import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import * as usuarioService from '../../shared/services/usuarioService.js'
-import { hayNombreDuplicado, MENSAJE_NOMBRE_DUPLICADO, hayDocumentoDuplicado, MENSAJE_DOC_DUPLICADO } from '../../shared/utils/duplicados.js'
+import { hayNombreDuplicado, MENSAJE_NOMBRE_DUPLICADO, hayDocumentoDuplicado, MENSAJE_DOC_DUPLICADO, MENSAJE_EMAIL_DUPLICADO } from '../../shared/utils/duplicados.js'
 import { esDocAlfanumerico, maxLengthDocumento, docHelperText, validarNumeroDocumento } from '../../shared/utils/documento.js'
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -90,6 +90,7 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
     const [rolesDisponibles, setRolesDisponibles] = useState([])
     const [avisoNombreDuplicado, setAvisoNombreDuplicado] = useState('')
     const [avisoDocDuplicado, setAvisoDocDuplicado] = useState('')
+    const [avisoEmailDuplicado, setAvisoEmailDuplicado] = useState('')
     const [showPassword, setShowPassword] = useState(false)
     const [showConfirmarPassword, setShowConfirmarPassword] = useState(false)
 
@@ -200,6 +201,7 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
         }
         if (name === 'email') {
             value = value.replace(/[^a-zA-Z0-9@._%+-]/g, '')
+            setAvisoEmailDuplicado('')
         }
 
         const formActualizado = { ...form, [name]: value }
@@ -230,6 +232,27 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
             })
             setAvisoDocDuplicado(duplicado ? MENSAJE_DOC_DUPLICADO : '')
             if (duplicado) setErrores(prev => ({ ...prev, numeroIdentificacion: MENSAJE_DOC_DUPLICADO }))
+        } catch {
+            // Si falla la verificación no bloqueamos el flujo
+        }
+    }
+
+    const verificarEmailDuplicado = async () => {
+        const valor = form.email.trim()
+        if (!valor || validarEmail(valor)) {
+            setAvisoEmailDuplicado('')
+            return
+        }
+        try {
+            const res = await usuarioService.getUsuarios({ q: valor, limit: 10 })
+            if (!res?.success) return
+            const duplicado = hayDocumentoDuplicado(res.data, valor, {
+                getDoc: (r) => r.email,
+                excludeId: usuarioProp?.idUsuario,
+                getId: (r) => r.idUsuario,
+            })
+            setAvisoEmailDuplicado(duplicado ? MENSAJE_EMAIL_DUPLICADO : '')
+            if (duplicado) setErrores(prev => ({ ...prev, email: MENSAJE_EMAIL_DUPLICADO }))
         } catch {
             // Si falla la verificación no bloqueamos el flujo
         }
@@ -268,7 +291,7 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
 
         if (step === 1) {
             e.telefono = validarCampo('telefono', form)
-            e.email = validarCampo('email', form)
+            e.email = validarCampo('email', form) || avisoEmailDuplicado
             e.idRol = validarCampo('idRol', form)
             e.password = validarCampo('password', form)
             e.confirmarPassword = validarCampo('confirmarPassword', form)
@@ -402,7 +425,10 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
                             sx={formFieldStyles} />
                         <TextField fullWidth label="Correo electrónico" name="email"
                             value={form.email} onChange={handleChange}
-                            onBlur={() => setErrores(prev => ({ ...prev, email: validarCampo('email', form) }))} required
+                            onBlur={() => {
+                                verificarEmailDuplicado()
+                                setErrores(prev => ({ ...prev, email: validarCampo('email', form) }))
+                            }} required
                             placeholder="correo@dominio.com"
                             error={!!errores.email} helperText={errores.email}
                             slotProps={{

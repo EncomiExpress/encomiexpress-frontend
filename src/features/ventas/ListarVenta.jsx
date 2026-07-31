@@ -242,12 +242,12 @@ const ListarVenta = () => {
                 'Estado': venta.estado,
                 'Estado de pago': venta.estadoPago,
                 'Método de pago': venta.metodoPago,
-                'Valor servicio': venta.valorServicio,
-                'Impuestos': venta.impuestos,
-                'Total': venta.total,
+                'Valor servicio': Math.round(Number(venta.valorServicio)) || 0,
+                'Impuestos': Math.round(Number(venta.impuestos)) || 0,
+                'Total': Math.round(Number(venta.total)) || 0,
                 'Habilitado': venta.habilitado === false ? 'No' : 'Sí',
             }))
-            await exportToExcel({ data: rows, fileName: 'ventas', sheetName: 'Ventas', themeColor: theme.palette.primary.main })
+            await exportToExcel({ data: rows, fileName: 'Ventas', sheetName: 'Ventas', themeColor: theme.palette.primary.main })
         } catch (err) {
             showToast(err.message || 'Error al exportar.', 'error')
         } finally {
