@@ -23,6 +23,7 @@ import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import * as clienteService from '../../shared/services/clienteService.js'
 import { hayNombreDuplicado, MENSAJE_NOMBRE_DUPLICADO, hayDocumentoDuplicado, MENSAJE_DOC_DUPLICADO } from '../../shared/utils/duplicados.js'
 import { esDocAlfanumerico, maxLengthDocumento, docHelperText as docHelperTextBase, validarNumeroDocumento } from '../../shared/utils/documento.js'
+import { esSoloRelleno } from '../../shared/utils/formatters.js'
 
 const steps = ['Datos Personales', 'Contacto', 'Confirmación']
 
@@ -49,6 +50,7 @@ const validarCampo = (name, form) => {
             return form.tipoIdentificacion ? '' : 'Selecciona un tipo de documento'
         case 'nombre':
             if (!form.nombre.trim()) return esNIT ? 'La razón social es obligatoria' : 'El nombre es obligatorio'
+            if (esNIT && esSoloRelleno(form.nombre)) return 'La razón social no puede contener solo espacios o guiones'
             if (!esNIT && !SOLO_LETRAS_REGEX.test(form.nombre)) return 'El nombre solo puede contener letras'
             return ''
         case 'apellido':
@@ -63,7 +65,9 @@ const validarCampo = (name, form) => {
         case 'email':
             return validarEmail(form.email)
         case 'direccion':
-            return form.direccion.trim() ? '' : 'La dirección es obligatoria'
+            if (!form.direccion.trim()) return 'La dirección es obligatoria'
+            if (esSoloRelleno(form.direccion)) return 'La dirección no puede contener solo espacios o guiones'
+            return ''
         default:
             return ''
     }
@@ -125,6 +129,7 @@ const ActualizarCliente = ({ open, onClose, cliente: clienteProp, onSuccess }) =
         if (!limpio) return 'El número de documento es obligatorio'
         if (tipo === 'NIT') {
             if (!/^[0-9-]+$/.test(limpio)) return 'Solo se permiten números y guión'
+            if (!/\d/.test(limpio)) return 'Debe contener al menos un número'
             if (limpio.length > 15) return 'Máximo 15 caracteres'
             return null
         }

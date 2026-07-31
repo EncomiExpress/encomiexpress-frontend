@@ -10,6 +10,16 @@ export const formatRutaDestino = (destino) => {
     return String(destino)
 }
 
+// Primera letra en mayúscula, el resto en minúscula — sin importar cómo lo haya escrito
+// el usuario (ej. "ROJO", "rojo", "RoJo" → todos quedan "Rojo"). Se aplica en vivo en el
+// onChange (no solo al guardar), recalculando sobre el valor completo en cada tecla —
+// así "ROJO" tipeado letra por letra igual termina en "Rojo", no en "ROJO" a medio corregir.
+export const capitalizarPrimeraLetra = (value) => {
+    const limpio = String(value ?? '')
+    if (!limpio) return limpio
+    return limpio.charAt(0).toUpperCase() + limpio.slice(1).toLowerCase()
+}
+
 export const formatFecha = (fecha) => {
     if (!fecha) return '—'
     const [y, m, d] = fecha.split('-')
@@ -65,6 +75,13 @@ export const limpiarDecimalInput = (value) => {
         })
         .join('')
 }
+
+// Detecta texto "de relleno": vacío, o compuesto solo por espacios/guiones/guiones bajos
+// (ej. "   ", "-------", "_______", "- _ -") — nada de eso es contenido real, así que se
+// trata igual que un campo vacío. Usar en validarCampo de cualquier texto libre (además
+// del required.trim() de siempre), tanto en campos obligatorios como opcionales que sí
+// traigan contenido.
+export const esSoloRelleno = (value) => /^[\s\-_]*$/.test(value ?? '')
 
 // El número de guía ahora vive en cada paquete (uno por paquete físico), no en la
 // venta — esto da "la" guía representativa de una venta para vistas que solo

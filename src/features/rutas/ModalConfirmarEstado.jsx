@@ -86,7 +86,7 @@ const ModalConfirmarEstado = ({ open, nuevoEstado, info, ruta, pares = [], onCon
             TransitionProps={{ onExited: () => { setDetalle({ anticipos: [], ventas: [], loading: false }); onExited?.() } }}
             slotProps={{ paper: { sx: { borderRadius: 3, p: 0, maxHeight: '85vh', overflow: 'hidden' } } }}>
 
-            <DialogContent sx={{ p: 3, pb: isEnCurso ? 1 : 3, textAlign: 'center', position: 'relative', overflowY: 'unset' }}>
+            <DialogContent sx={{ p: 3, pb: isEnCurso ? 1 : 3, textAlign: 'center', position: 'relative', overflowY: 'auto' }}>
                 <IconButton onClick={onClose} sx={{ position: 'absolute', top: 8, right: 8, color: theme.palette.text.secondary }}>
                     <CloseIcon />
                 </IconButton>

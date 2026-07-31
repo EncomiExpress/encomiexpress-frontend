@@ -5,6 +5,7 @@ import { Security, Close, SaveOutlined } from '@mui/icons-material'
 import { MODULOS, ROLES, useAuth } from '../../shared/contexts/AuthContext.jsx'
 import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { hayDocumentoDuplicado } from '../../shared/utils/duplicados.js'
+import { esSoloRelleno } from '../../shared/utils/formatters.js'
 import {
   FormField, PrimaryButton, SecondaryButton,
   FormButtonGroup
@@ -161,6 +162,7 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
       if (!formData.nombre.trim()) erroresEncontrados.nombre = 'El nombre del rol es obligatorio'
       else if (!SOLO_LETRAS_REGEX.test(formData.nombre)) erroresEncontrados.nombre = 'El nombre solo puede contener letras'
       else if (avisoNombreDuplicado) erroresEncontrados.nombre = avisoNombreDuplicado
+      if (formData.descripcion && esSoloRelleno(formData.descripcion)) erroresEncontrados.descripcion = 'La descripción no puede contener solo espacios'
       if (formData.permisos.length === 0) erroresEncontrados.permisos = 'Debes seleccionar al menos un permiso'
       if (Object.keys(erroresEncontrados).length > 0) {
         setErrores(erroresEncontrados)
@@ -261,12 +263,18 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
               label="Descripción (opcional)"
               name="descripcion"
               value={formData.descripcion}
-              onChange={(e) => setFormData({ ...formData, descripcion: e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '') })}
+              onChange={(e) => {
+                const valor = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
+                setFormData({ ...formData, descripcion: valor })
+                setErrores(prev => prev.descripcion ? { ...prev, descripcion: esSoloRelleno(valor) ? prev.descripcion : '' } : prev)
+              }}
+              onBlur={() => setErrores(prev => ({ ...prev, descripcion: (formData.descripcion && esSoloRelleno(formData.descripcion)) ? 'La descripción no puede contener solo espacios' : '' }))}
               placeholder="Descripción del rol"
               multiline
               rows={2}
               inputProps={{ maxLength: 200 }}
-              helperText={`${formData.descripcion.length}/200`}
+              error={!!errores.descripcion}
+              helperText={errores.descripcion || `${formData.descripcion.length}/200`}
             />
           </Box>
 

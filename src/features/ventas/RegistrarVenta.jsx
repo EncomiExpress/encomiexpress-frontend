@@ -27,7 +27,7 @@ import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import PlacaDisplay from '../../shared/components/PlacaDisplay.jsx'
 import { normalizarTexto } from '../../shared/utils/duplicados.js'
-import { formatFecha, formatearMoneda, limpiarMonedaInput, limpiarDecimalInput } from '../../shared/utils/formatters.js'
+import { formatFecha, formatearMoneda, limpiarMonedaInput, limpiarDecimalInput, esSoloRelleno } from '../../shared/utils/formatters.js'
 
 const steps = ['Participantes', 'Paquete', 'Envío', 'Pago', 'Confirmación']
 
@@ -38,7 +38,7 @@ const SOLO_LETRAS_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/
 
 // Valida un único campo del formulario principal (usado en onBlur y para re-validar
 // en vivo mientras se corrige un campo ya marcado con error). valorServicio/impuestos/
-// total/observaciones no viven aquí: son editables sin ninguna regla de obligatoriedad.
+// total no viven aquí: son editables sin ninguna regla de obligatoriedad.
 const validarCampo = (name, form) => {
     switch (name) {
         case 'idCliente':
@@ -52,7 +52,9 @@ const validarCampo = (name, form) => {
             if (!/^\d{10}$/.test(form.telefonoDestinatario)) return 'Debe tener 10 dígitos'
             return ''
         case 'direccionDestinatario':
-            return form.direccionDestinatario.trim() ? '' : 'La dirección es obligatoria'
+            if (!form.direccionDestinatario.trim()) return 'La dirección es obligatoria'
+            if (esSoloRelleno(form.direccionDestinatario)) return 'La dirección no puede contener solo espacios o guiones'
+            return ''
         case 'idRuta':
             return form.idRuta ? '' : 'Selecciona una ruta'
         case 'fechaEstimadaEntrega':
@@ -61,6 +63,9 @@ const validarCampo = (name, form) => {
             return ''
         case 'metodoPago':
             return form.metodoPago ? '' : 'Selecciona un método de pago'
+        case 'observaciones':
+            if (form.observaciones && esSoloRelleno(form.observaciones)) return 'Las observaciones no pueden contener solo espacios o guiones'
+            return ''
         default:
             return ''
     }
@@ -72,6 +77,7 @@ const validarCampoPaquete = (campo, paquete) => {
         case 'descripcionContenido':
             if (!paquete.descripcionContenido.trim()) return 'La descripción es obligatoria'
             if (paquete.descripcionContenido.length > 300) return 'Máximo 300 caracteres'
+            if (esSoloRelleno(paquete.descripcionContenido)) return 'La descripción no puede contener solo espacios o guiones'
             return ''
         case 'peso': {
             const n = parseFloat(paquete.peso)
@@ -348,6 +354,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
         if (step === 2) {
             e.idRuta = validarCampo('idRuta', form)
             e.fechaEstimadaEntrega = validarCampo('fechaEstimadaEntrega', form)
+            e.observaciones = validarCampo('observaciones', form)
 
             const rutaSel = rutasProgramadas.find(r => r.idRuta === parseInt(form.idRuta))
             if (rutaSel) {
@@ -902,7 +909,9 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                             </Box>
                         )}
                         <FormField label="Observaciones" name="observaciones" value={form.observaciones}
-                            onChange={handleChange} multiline rows={2}
+                            onChange={handleChange}
+                            onBlur={() => setErrores(prev => ({ ...prev, observaciones: validarCampo('observaciones', form) }))}
+                            multiline rows={2}
                             helperText={errores.observaciones || `Opcional · ${(form.observaciones || '').length}/500`}
                             error={errores.observaciones}
                             inputProps={{ maxLength: 500 }} />
@@ -919,7 +928,6 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                             <MenuItem value="Contraentrega">Contraentrega</MenuItem>
                             <MenuItem value="Efectivo">Efectivo</MenuItem>
                             <MenuItem value="Transferencia">Transferencia</MenuItem>
-                            <MenuItem value="Nequi">Nequi</MenuItem>
                         </FormSelect>
                         <FormField label="Valor del servicio ($)" name="valorServicio"
                             value={formatearMoneda(form.valorServicio)} onChange={handleChange}

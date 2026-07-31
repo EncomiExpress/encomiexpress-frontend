@@ -26,7 +26,7 @@ import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import PlacaDisplay from '../../shared/components/PlacaDisplay.jsx'
 import { normalizarTexto } from '../../shared/utils/duplicados.js'
-import { formatFecha, getGuiaPrincipal, formatearMoneda, limpiarMonedaInput, limpiarDecimalInput } from '../../shared/utils/formatters.js'
+import { formatFecha, getGuiaPrincipal, formatearMoneda, limpiarMonedaInput, limpiarDecimalInput, esSoloRelleno } from '../../shared/utils/formatters.js'
 
 const steps = ['Participantes', 'Paquete', 'Envío', 'Pago', 'Confirmación']
 
@@ -51,7 +51,9 @@ const validarCampo = (name, form, ventaOriginal) => {
             if (!/^\d{10}$/.test(form.telefonoDestinatario)) return 'Debe tener 10 dígitos'
             return ''
         case 'direccionDestinatario':
-            return form.direccionDestinatario.trim() ? '' : 'La dirección es obligatoria'
+            if (!form.direccionDestinatario.trim()) return 'La dirección es obligatoria'
+            if (esSoloRelleno(form.direccionDestinatario)) return 'La dirección no puede contener solo espacios o guiones'
+            return ''
         case 'idRuta':
             return form.idRuta ? '' : 'La ruta es obligatoria'
         case 'fechaEstimadaEntrega':
@@ -59,7 +61,9 @@ const validarCampo = (name, form, ventaOriginal) => {
             if (form.fechaSalidaRuta && form.fechaEstimadaEntrega < form.fechaSalidaRuta) return 'No puede ser anterior a la fecha de salida de la ruta'
             return ''
         case 'observaciones':
-            return (form.observaciones && form.observaciones.length > 500) ? 'Máximo 500 caracteres' : ''
+            if (form.observaciones && form.observaciones.length > 500) return 'Máximo 500 caracteres'
+            if (form.observaciones && esSoloRelleno(form.observaciones)) return 'Las observaciones no pueden contener solo espacios o guiones'
+            return ''
         case 'metodoPago':
             return form.metodoPago ? '' : 'Selecciona un método de pago'
         default:
@@ -75,6 +79,7 @@ const validarCampoPaquete = (campo, paquete) => {
         case 'descripcionContenido':
             if (!paquete.descripcionContenido.trim()) return 'La descripción es obligatoria'
             if (paquete.descripcionContenido.length > 300) return 'Máximo 300 caracteres'
+            if (esSoloRelleno(paquete.descripcionContenido)) return 'La descripción no puede contener solo espacios o guiones'
             return ''
         case 'peso': {
             const n = parseFloat(paquete.peso)
@@ -1025,7 +1030,6 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                             <MenuItem value="Contraentrega">Contraentrega</MenuItem>
                             <MenuItem value="Efectivo">Efectivo</MenuItem>
                             <MenuItem value="Transferencia">Transferencia</MenuItem>
-                            <MenuItem value="Nequi">Nequi</MenuItem>
                         </FormSelect>
                         <FormField label="Valor del servicio ($)" name="valorServicio"
                             value={formatearMoneda(form.valorServicio)} onChange={handleChange}

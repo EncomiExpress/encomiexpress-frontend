@@ -35,7 +35,7 @@ import ModalInhabilitarVehiculo from './ModalInhabilitarVehiculo'
 import { getPageOfVehiculo, getVehiculos as getVehiculosApi } from '../../shared/services/vehiculoService.js'
 import { getRutas } from '../../shared/services/rutaService'
 import { getEstadoColorRuta } from '../../shared/utils/estadoColors.js'
-import { isVencido, formatFecha } from '../../shared/utils/formatters.js'
+import { isVencido, formatFecha, capitalizarPrimeraLetra } from '../../shared/utils/formatters.js'
 import { exportToExcel } from '../../shared/utils/exportExcel.js'
 
 const getThStyle = (theme) => ({
@@ -321,7 +321,7 @@ const ListarTransporte = () => {
             const rows = filtrados.map(vehiculo => ({
                 'ID': vehiculo.idVehiculo,
                 'Placa': vehiculo.placa,
-                'Marca': vehiculo.marca,
+                'Marca': capitalizarPrimeraLetra(vehiculo.marca),
                 'Modelo': vehiculo.modelo,
                 'Tipo': vehiculo.tipo,
                 'Capacidad (kg)': vehiculo.capacidad,
@@ -648,7 +648,7 @@ const ListarTransporte = () => {
                                         </TableCell>
                                         <TableCell sx={{ py: 1.5 }}>
                                             <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary} noWrap>
-                                                {transporte.marca}
+                                                {capitalizarPrimeraLetra(transporte.marca)}
                                             </Typography>
                                             <Typography variant="caption" color={theme.palette.text.secondary} noWrap>
                                                 {transporte.modelo}

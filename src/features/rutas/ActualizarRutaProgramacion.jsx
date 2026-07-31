@@ -28,7 +28,7 @@ import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import CalendarioDisponibilidad from '../../shared/components/CalendarioDisponibilidad.jsx'
-import { formatFecha } from '../../shared/utils/formatters.js'
+import { formatFecha, esSoloRelleno } from '../../shared/utils/formatters.js'
 import { normalizarTexto } from '../../shared/utils/duplicados.js'
 import { vehiculoDocumentosVigentes, conductorLicenciaVigente } from '../../shared/utils/vigenciaDocumentos.js'
 
@@ -46,15 +46,17 @@ const steps = ['Datos de la Ruta', 'Horario', 'Confirmación']
 const MAX_PARES = 10
 
 // Valida un único campo del formulario (usado en onBlur y para re-validar en vivo
-// mientras se corrige un campo ya marcado con error). "horaLlegadaEstimada" y
-// "observaciones" no viven aquí: son opcionales y no tienen ninguna regla que validar.
+// mientras se corrige un campo ya marcado con error). "horaLlegadaEstimada" no vive
+// aquí: es opcional y no tiene ninguna regla que validar.
 // Sí se mantiene "fecha posterior a hoy" en fechaSalida (a diferencia de otros módulos
 // como Vehículo/Conductor): una ruta solo se puede editar mientras sigue "Programada",
 // así que su fecha de salida real siempre debe seguir siendo futura.
 const validarCampo = (name, form) => {
     switch (name) {
         case 'nombreRuta':
-            return form.nombreRuta?.trim() ? '' : 'El nombre de la ruta es obligatorio'
+            if (!form.nombreRuta?.trim()) return 'El nombre de la ruta es obligatorio'
+            if (esSoloRelleno(form.nombreRuta)) return 'El nombre de la ruta no puede contener solo espacios o guiones'
+            return ''
         case 'idDestino':
             return form.idDestino ? '' : 'Selecciona un destino'
         case 'fechaSalida':
@@ -63,6 +65,9 @@ const validarCampo = (name, form) => {
             return ''
         case 'horaSalida':
             return form.horaSalida ? '' : 'La hora de salida es obligatoria'
+        case 'observaciones':
+            if (form.observaciones && esSoloRelleno(form.observaciones)) return 'Las observaciones no pueden contener solo espacios o guiones'
+            return ''
         default:
             return ''
     }
@@ -245,6 +250,7 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
         if (step === 1) {
             e.fechaSalida = validarCampo('fechaSalida', form)
             e.horaSalida = validarCampo('horaSalida', form)
+            e.observaciones = validarCampo('observaciones', form)
         }
         Object.keys(e).forEach(k => { if (!e[k]) delete e[k] })
         return e
@@ -568,10 +574,13 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
                                     onChange={handleChange} icon={ScheduleOutlinedIcon} InputLabelProps={{ shrink: true }}
                                     helperText="Opcional" />
                                 <FormField label="Observaciones" name="observaciones" value={form.observaciones}
-                                    onChange={handleChange} icon={RouteOutlinedIcon}
+                                    onChange={handleChange}
+                                    onBlur={() => setErrores(prev => ({ ...prev, observaciones: validarCampo('observaciones', form) }))}
+                                    icon={RouteOutlinedIcon}
                                     inputProps={{ maxLength: 500 }} placeholder="Ej: Salida por puerta norte"
                                     multiline rows={4}
-                                    helperText={`Opcional · ${form.observaciones?.length || 0}/500`} />
+                                    error={errores.observaciones}
+                                    helperText={errores.observaciones || `Opcional · ${form.observaciones?.length || 0}/500`} />
                             </Box>
                         </Box>
                     </Box>

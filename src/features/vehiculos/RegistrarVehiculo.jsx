@@ -15,7 +15,7 @@ import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import { normalizarTexto, hayDocumentoDuplicado, MENSAJE_PLACA_DUPLICADA } from '../../shared/utils/duplicados.js'
 import * as vehiculoService from '../../shared/services/vehiculoService.js'
-import { limpiarDecimalInput } from '../../shared/utils/formatters.js'
+import { limpiarDecimalInput, esSoloRelleno, capitalizarPrimeraLetra } from '../../shared/utils/formatters.js'
 
 const steps = ['Datos del Vehículo', 'Documentación y Estado', 'Confirmación']
 
@@ -59,9 +59,14 @@ const validarCampo = (name, formData) => {
     case 'marca':
       return formData.marca?.trim() ? '' : 'La marca es obligatoria'
     case 'modelo':
-      return formData.modelo?.trim() ? '' : 'El modelo es obligatorio'
+      if (!formData.modelo?.trim()) return 'El modelo es obligatorio'
+      if (esSoloRelleno(formData.modelo)) return 'El modelo no puede contener solo espacios o guiones'
+      return ''
     case 'color':
       return formData.color?.trim() ? '' : 'El color es obligatorio'
+    case 'tarjetaPropiedad':
+      if (formData.tarjetaPropiedad && esSoloRelleno(formData.tarjetaPropiedad)) return 'La tarjeta de propiedad no puede contener solo espacios o guiones'
+      return ''
     case 'tipo':
       return formData.tipo ? '' : 'El tipo de vehículo es obligatorio'
     case 'tipoOtro':
@@ -125,9 +130,9 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
       setAvisoPlacaDuplicada('')
       value = limpiarPlacaInput(value)
     }
-    if (name === 'marca') value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
+    if (name === 'marca') value = capitalizarPrimeraLetra(value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, ''))
     if (name === 'modelo') value = value.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚüÜñÑ\s-]/g, '')
-    if (name === 'color') value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
+    if (name === 'color') value = capitalizarPrimeraLetra(value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, ''))
     if (name === 'tipoOtro') value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
     if (name === 'capacidad') {
       value = limpiarDecimalInput(value)
@@ -194,6 +199,7 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
     }
     if (activeStep === 1) {
       e.idPropietario = validarCampo('idPropietario', formData)
+      e.tarjetaPropiedad = validarCampo('tarjetaPropiedad', formData)
       e.vencimientoSOAT = validarCampo('vencimientoSOAT', formData)
       e.vencimientoRevisionTecnica = validarCampo('vencimientoRevisionTecnica', formData)
       e.vencimientoSeguroTerceros = validarCampo('vencimientoSeguroTerceros', formData)
@@ -347,9 +353,11 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
               )}
             />
             <FormField label="Tarjeta de propiedad" name="tarjetaPropiedad" value={formData.tarjetaPropiedad}
-              onChange={handleChange} icon={DescriptionOutlined}
+              onChange={handleChange}
+              onBlur={() => setErrores(prev => ({ ...prev, tarjetaPropiedad: validarCampo('tarjetaPropiedad', formData) }))}
+              icon={DescriptionOutlined}
               inputProps={{ maxLength: 50 }} placeholder="Ej: TC-001-2020"
-              helperText="Opcional" />
+              error={errores.tarjetaPropiedad} helperText={errores.tarjetaPropiedad || 'Opcional'} />
             <FormSelect label="Origen" name="origen" value={formData.origen} onChange={handleChange} required>
               <MenuItem value="Propio">Propio</MenuItem>
               <MenuItem value="Tercerizado">Tercerizado</MenuItem>

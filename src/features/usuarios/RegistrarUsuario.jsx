@@ -37,7 +37,7 @@ const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s]).{8,6
 const PASSWORD_HELP = '8-64 caracteres, con mayúsculas, minúsculas, números y un carácter especial'
 const SOLO_LETRAS_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/
 
-const steps = ['Datos Personales', 'Credenciales', 'Confirmación']
+const steps = ['Datos Personales', 'Contacto y Credenciales', 'Confirmación']
 
 // Valida un único campo del formulario (usado en onBlur y para re-validar en vivo
 // mientras se corrige un campo ya marcado con error). numeroIdentificacion no
@@ -389,38 +389,6 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
                                 htmlInput: { maxLength: 100 }
                             }}
                             sx={formFieldStyles} />
-                        <TextField fullWidth select label="Rol" name="idRol" value={form.idRol} onChange={handleChange}
-                            onBlur={() => setErrores(prev => ({ ...prev, idRol: validarCampo('idRol', form) }))} required
-                            error={!!errores.idRol} helperText={errores.idRol || (
-                                <>
-                                    ¿Buscas registrar un conductor? Hazlo desde el módulo de{' '}
-                                    <Box component="span" onClick={() => navigate('/transporte/conductores')}
-                                        sx={{ color: theme.palette.primary.main, fontWeight: 600, textDecoration: 'underline', cursor: 'pointer' }}>
-                                        Conductores
-                                    </Box>
-                                </>
-                            )}
-                            slotProps={{ input: { startAdornment: <InputAdornment position="start"><AssignmentIndOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment> } }}
-                            sx={formFieldStyles}>
-                            {rolesDisponibles.map((rol) => (
-                                <MenuItem key={rol.idRol} value={rol.idRol} sx={{ p: 0, justifyContent: 'flex-start', my: 0.5 }}>
-                                    <Box sx={{
-                                        backgroundColor: 'transparent',
-                                        color: theme.palette.primary.main,
-                                        border: `1px solid ${theme.palette.divider}`,
-                                        px: 1.5,
-                                        py: 0.3,
-                                        borderRadius: 8,
-                                        fontWeight: 600,
-                                        fontSize: '0.75rem',
-                                        display: 'inline-flex',
-                                        ml: 1,
-                                    }}>
-                                        {rol.nombre}
-                                    </Box>
-                                </MenuItem>
-                            ))}
-                        </TextField>
                         <Box sx={{ gridColumn: '1 / -1', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                             <TextField fullWidth label="Contraseña" name="password" type={showPassword ? 'text' : 'password'}
                                 value={form.password} onChange={handleChange}
@@ -461,6 +429,41 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
                                 }}
                                 sx={formFieldStyles} />
                         </Box>
+                        <TextField fullWidth select label="Rol" name="idRol" value={form.idRol} onChange={handleChange}
+                            onBlur={() => setErrores(prev => ({ ...prev, idRol: validarCampo('idRol', form) }))} required
+                            error={!!errores.idRol} helperText={errores.idRol || (
+                                <>
+                                    ¿Buscas registrar un conductor? Hazlo desde el módulo de{' '}
+                                    <Box component="span" onClick={() => navigate('/transporte/conductores')}
+                                        sx={{ color: theme.palette.primary.main, fontWeight: 600, textDecoration: 'underline', cursor: 'pointer' }}>
+                                        Conductores
+                                    </Box>
+                                </>
+                            )}
+                            slotProps={{
+                                input: { startAdornment: <InputAdornment position="start"><AssignmentIndOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment> },
+                                select: { IconComponent: KeyboardArrowDownOutlinedIcon }
+                            }}
+                            sx={formFieldStyles}>
+                            {rolesDisponibles.map((rol) => (
+                                <MenuItem key={rol.idRol} value={rol.idRol} sx={{ p: 0, justifyContent: 'flex-start', my: 0.5 }}>
+                                    <Box sx={{
+                                        backgroundColor: 'transparent',
+                                        color: theme.palette.primary.main,
+                                        border: `1px solid ${theme.palette.divider}`,
+                                        px: 1.5,
+                                        py: 0.3,
+                                        borderRadius: 8,
+                                        fontWeight: 600,
+                                        fontSize: '0.75rem',
+                                        display: 'inline-flex',
+                                        ml: 1,
+                                    }}>
+                                        {rol.nombre}
+                                    </Box>
+                                </MenuItem>
+                            ))}
+                        </TextField>
                     </Box>
                 )
             case 2:
@@ -486,7 +489,7 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
                             <Paper elevation={0} sx={cardSx}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                                     <LockOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
-                                    <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Credenciales</Typography>
+                                    <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Contacto y Credenciales</Typography>
                                 </Box>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica los datos de acceso</Typography>
                                 <ConfirmRow label="Teléfono" value={form.telefono} />

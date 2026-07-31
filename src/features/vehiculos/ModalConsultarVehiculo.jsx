@@ -9,7 +9,7 @@ import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined
 import EventOutlinedIcon from '@mui/icons-material/EventOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import AdsClickOutlinedIcon from '@mui/icons-material/AdsClickOutlined'
-import { isVencido, formatFecha } from '../../shared/utils/formatters.js'
+import { isVencido, formatFecha, capitalizarPrimeraLetra } from '../../shared/utils/formatters.js'
 import { getEstadoColorRuta } from '../../shared/utils/estadoColors.js'
 import PlacaDisplay from '../../shared/components/PlacaDisplay.jsx'
 
@@ -89,7 +89,7 @@ const ModalConsultarVehiculo = ({ vehiculo, onClose }) => {
                     <PlacaDisplay placa={vehiculo.placa} theme={theme} />
                     <Box>
                         <Typography fontWeight={700} fontSize="1rem" color={theme.palette.text.primary}>
-                            {vehiculo.marca} {vehiculo.modelo}
+                            {capitalizarPrimeraLetra(vehiculo.marca)} {vehiculo.modelo}
                         </Typography>
                         <Typography variant="caption" color={theme.palette.text.secondary}>{vehiculo.tipo}</Typography>
                     </Box>
@@ -114,9 +114,9 @@ const ModalConsultarVehiculo = ({ vehiculo, onClose }) => {
                             <CampoFila label="Placa" value={vehiculo.placa} esChip />
                             <CampoFila label="Tarjeta propiedad" value={vehiculo.tarjetaPropiedad || '—'} />
                             <CampoFila label="Tipo" value={vehiculo.tipo} esChip />
-                            <CampoFila label="Marca" value={vehiculo.marca} />
+                            <CampoFila label="Marca" value={capitalizarPrimeraLetra(vehiculo.marca)} />
                             <CampoFila label="Modelo" value={vehiculo.modelo} />
-                            <CampoFila label="Color" value={vehiculo.color} />
+                            <CampoFila label="Color" value={capitalizarPrimeraLetra(vehiculo.color)} />
                             <CampoFila label="Capacidad" value={vehiculo.capacidad ? `${vehiculo.capacidad} kg` : '—'} />
                         </Paper>
 

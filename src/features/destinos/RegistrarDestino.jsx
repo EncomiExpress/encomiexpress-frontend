@@ -16,7 +16,7 @@ import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { FormField, FormSelect } from '../../shared/components/FormularioEstandarizado.jsx'
 import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { hayDocumentoDuplicado } from '../../shared/utils/duplicados.js'
-import { formatearMoneda, limpiarMonedaInput } from '../../shared/utils/formatters.js'
+import { formatearMoneda, limpiarMonedaInput, esSoloRelleno } from '../../shared/utils/formatters.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 
 const steps = ['Ubicación', 'Tarifa', 'Confirmación']
@@ -26,14 +26,16 @@ const TARIFA_MAX = 999999999
 const MENSAJE_CIUDAD_DUPLICADA = 'Ya existe un destino registrado con esta ciudad.'
 
 // Valida un único campo del formulario (usado en onBlur y para re-validar en vivo
-// mientras se corrige un campo ya marcado con error). "direccion" no vive aquí:
-// es opcional y no tiene ninguna regla que validar.
+// mientras se corrige un campo ya marcado con error).
 const validarCampo = (name, form) => {
     switch (name) {
         case 'departamento':
             return form.departamento ? '' : 'Selecciona un departamento'
         case 'ciudad':
             return form.ciudad?.trim() ? '' : 'La ciudad es obligatoria'
+        case 'direccion':
+            if (form.direccion && esSoloRelleno(form.direccion)) return 'La dirección no puede contener solo espacios o guiones'
+            return ''
         case 'tarifaBase':
             if (form.tarifaBase === '' || form.tarifaBase === undefined) return 'La tarifa base es obligatoria'
             if (isNaN(Number(form.tarifaBase)) || Number(form.tarifaBase) < 0) return 'La tarifa base debe ser un número positivo'
@@ -98,6 +100,7 @@ const RegistrarDestino = ({ open, onClose, onSuccess }) => {
         if (step === 0) {
             e.departamento = validarCampo('departamento', form)
             e.ciudad = validarCampo('ciudad', form) || validarCiudadDuplicada(form.ciudad)
+            e.direccion = validarCampo('direccion', form)
         }
         if (step === 1) {
             e.tarifaBase = validarCampo('tarifaBase', form)
@@ -177,7 +180,9 @@ const RegistrarDestino = ({ open, onClose, onSuccess }) => {
                         <Box sx={{ gridColumn: '1 / -1' }}>
                             <FormField
                                 label="Dirección de la oficina" name="direccion" value={form.direccion} onChange={handleChange}
-                                helperText={`Opcional · ${(form.direccion || '').length}/200`}
+                                onBlur={() => setErrores(prev => ({ ...prev, direccion: validarCampo('direccion', form) }))}
+                                error={errores.direccion}
+                                helperText={errores.direccion || `Opcional · ${(form.direccion || '').length}/200`}
                                 icon={HomeOutlinedIcon} inputProps={{ maxLength: 200 }}
                                 placeholder="Ej: Calle 30 #12-45, local 2"
                             />

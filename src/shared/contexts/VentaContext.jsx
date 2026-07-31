@@ -13,7 +13,7 @@ export const ESTADOS_ENCOMIENDA = [
   'Cancelada',
 ]
 
-export const METODOS_PAGO = ['Contraentrega', 'Efectivo', 'Transferencia', 'Nequi']
+export const METODOS_PAGO = ['Contraentrega', 'Efectivo', 'Transferencia']
 
 export const ESTADOS_PAGO = ['Pendiente', 'Pagado']
 

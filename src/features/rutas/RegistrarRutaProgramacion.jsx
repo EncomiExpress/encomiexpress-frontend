@@ -23,7 +23,7 @@ import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { FormField } from '../../shared/components/FormularioEstandarizado.jsx'
 import NacionSVG from '../../shared/components/NacionSVG.jsx'
 import PlacaDisplay from '../../shared/components/PlacaDisplay.jsx'
-import { formatFecha } from '../../shared/utils/formatters.js'
+import { formatFecha, esSoloRelleno } from '../../shared/utils/formatters.js'
 import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
@@ -45,12 +45,14 @@ const steps = ['Datos de la Ruta', 'Horario', 'Confirmación']
 const MAX_PARES = 10
 
 // Valida un único campo del formulario (usado en onBlur y para re-validar en vivo
-// mientras se corrige un campo ya marcado con error). "horaLlegadaEstimada" y
-// "observaciones" no viven aquí: son opcionales y no tienen ninguna regla que validar.
+// mientras se corrige un campo ya marcado con error). "horaLlegadaEstimada" no vive
+// aquí: es opcional y no tiene ninguna regla que validar.
 const validarCampo = (name, form) => {
     switch (name) {
         case 'nombreRuta':
-            return form.nombreRuta?.trim() ? '' : 'El nombre de la ruta es obligatorio'
+            if (!form.nombreRuta?.trim()) return 'El nombre de la ruta es obligatorio'
+            if (esSoloRelleno(form.nombreRuta)) return 'El nombre de la ruta no puede contener solo espacios o guiones'
+            return ''
         case 'idDestino':
             return form.idDestino ? '' : 'Selecciona un destino'
         case 'fechaSalida':
@@ -59,6 +61,9 @@ const validarCampo = (name, form) => {
             return ''
         case 'horaSalida':
             return form.horaSalida ? '' : 'La hora de salida es obligatoria'
+        case 'observaciones':
+            if (form.observaciones && esSoloRelleno(form.observaciones)) return 'Las observaciones no pueden contener solo espacios o guiones'
+            return ''
         default:
             return ''
     }
@@ -161,6 +166,7 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess }) => {
         if (step === 1) {
             e.fechaSalida = validarCampo('fechaSalida', form)
             e.horaSalida = validarCampo('horaSalida', form)
+            e.observaciones = validarCampo('observaciones', form)
         }
         Object.keys(e).forEach(k => { if (!e[k]) delete e[k] })
         return e
@@ -445,10 +451,13 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess }) => {
                                     onChange={handleChange} icon={ScheduleOutlinedIcon} InputLabelProps={{ shrink: true }}
                                     helperText="Opcional" />
                                 <FormField label="Observaciones" name="observaciones" value={form.observaciones}
-                                    onChange={handleChange} icon={RouteOutlinedIcon}
+                                    onChange={handleChange}
+                                    onBlur={() => setErrores(prev => ({ ...prev, observaciones: validarCampo('observaciones', form) }))}
+                                    icon={RouteOutlinedIcon}
                                     inputProps={{ maxLength: 500 }} placeholder="Ej: Salida por puerta norte"
                                     multiline rows={4}
-                                    helperText={`Opcional · ${form.observaciones?.length || 0}/500`} />
+                                    error={errores.observaciones}
+                                    helperText={errores.observaciones || `Opcional · ${form.observaciones?.length || 0}/500`} />
                             </Box>
                         </Box>
                     </Box>

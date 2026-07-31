@@ -30,6 +30,7 @@ import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import * as conductorService from '../../shared/services/conductorService.js'
 import { hayNombreDuplicado, MENSAJE_NOMBRE_DUPLICADO, hayDocumentoDuplicado, MENSAJE_DOC_DUPLICADO, MENSAJE_EMAIL_DUPLICADO, MENSAJE_LICENCIA_DUPLICADA } from '../../shared/utils/duplicados.js'
 import { esDocAlfanumerico, maxLengthDocumento, docHelperText, validarNumeroDocumento } from '../../shared/utils/documento.js'
+import { esSoloRelleno } from '../../shared/utils/formatters.js'
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const validarEmail = (email) => {
@@ -44,7 +45,7 @@ const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s]).{8,6
 const PASSWORD_HELP = '8-64 caracteres, con mayúsculas, minúsculas, números y un carácter especial'
 const SOLO_LETRAS_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/
 
-const steps = ['Datos Personales', 'Credenciales', 'Licencia', 'Confirmación']
+const steps = ['Datos Personales', 'Contacto y Credenciales', 'Licencia', 'Confirmación']
 
 // Valida un único campo del formulario (usado en onBlur y para re-validar en vivo
 // mientras se corrige un campo ya marcado con error). numeroIdentificacion no vive
@@ -72,6 +73,9 @@ const validarCampo = (name, form) => {
             return ''
         case 'confirmarPassword':
             if (form.password && form.password !== form.confirmarPassword) return 'Las contraseñas no coinciden'
+            return ''
+        case 'numeroLicencia':
+            if (form.numeroLicencia && esSoloRelleno(form.numeroLicencia)) return 'El número de licencia no puede contener solo espacios o guiones'
             return ''
         default:
             return ''
@@ -299,6 +303,11 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
             setAvisoLicenciaDuplicada('')
             return
         }
+        const errorRelleno = validarCampo('numeroLicencia', form)
+        if (errorRelleno) {
+            setErrores(prev => ({ ...prev, numeroLicencia: errorRelleno }))
+            return
+        }
         try {
             const res = await conductorService.getConductores(undefined, { q: form.numeroLicencia.trim(), limit: 10 })
             if (!res?.success) return
@@ -353,7 +362,7 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
         if (step === 2) {
             const errorCategorias = validarCategorias(form.categoriasLicencia)
             if (errorCategorias) e.categoriasLicencia = errorCategorias
-            e.numeroLicencia = avisoLicenciaDuplicada
+            e.numeroLicencia = validarCampo('numeroLicencia', form) || avisoLicenciaDuplicada
         }
         Object.keys(e).forEach(k => { if (!e[k]) delete e[k] })
         return e
@@ -622,7 +631,7 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
                             <Paper elevation={0} sx={cardSx}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                                     <EmailOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
-                                    <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Credenciales</Typography>
+                                    <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Contacto y Credenciales</Typography>
                                 </Box>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica los datos de contacto</Typography>
                                 <ConfirmRow label="Teléfono" value={form.telefono} previousValue={formOriginal?.telefono} />

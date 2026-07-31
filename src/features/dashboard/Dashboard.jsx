@@ -190,15 +190,25 @@ const Dashboard = () => {
     getRangoFechasVentas()
       .then(res => {
         if (cancelado || !res?.success) return
-        setRangoFechas({ primerRegistro: res.data?.primerRegistro || undefined, ultimoRegistro: res.data?.ultimoRegistro || undefined, loading: false })
+        const primerRegistro = res.data?.primerRegistro || undefined
+        setRangoFechas({ primerRegistro, ultimoRegistro: res.data?.ultimoRegistro || undefined, loading: false })
+        // El "Desde"/"Hasta" iniciales (primer día del mes actual / hoy) se eligen antes
+        // de saber cuál es la venta más antigua real — si esa venta es más reciente que
+        // el primer día del mes, el valor inicial queda por debajo del mínimo real.
+        if (primerRegistro) {
+          setDesde(prev => prev < primerRegistro ? primerRegistro : prev)
+          setFiltroActivo(prev => prev.desde < primerRegistro ? { ...prev, desde: primerRegistro } : prev)
+        }
       })
       .catch(() => { if (!cancelado) setRangoFechas(prev => ({ ...prev, loading: false })) })
     return () => { cancelado = true }
   }, [])
   const primerRegistroISO = rangoFechas.primerRegistro
-  // "Hasta" no debe dejar elegir más allá de hoy, ni más allá de la última venta
-  // registrada si esta ya quedó en el pasado (evita días vacíos por delante sin sentido).
-  const hastaMaxISO = rangoFechas.ultimoRegistro && rangoFechas.ultimoRegistro < hoy ? rangoFechas.ultimoRegistro : hoy
+  // "Hasta" siempre puede llegar hasta hoy, sin importar cuándo fue la última venta
+  // registrada — taparlo con la última venta (como se hacía antes) dejaba el rango casi
+  // sin días elegibles cuando los datos son recientes o de un solo día (ej. datos de
+  // prueba), y de todos modos "hoy" siempre es una fecha válida para filtrar.
+  const hastaMaxISO = hoy
 
   // Por si el navegador permite escribir una fecha fuera de min/max a mano (los atributos
   // nativos min/max del <input type="date"> bloquean el selector pero no siempre el tecleo).

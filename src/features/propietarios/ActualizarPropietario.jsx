@@ -132,6 +132,7 @@ const ActualizarPropietario = ({ open, onClose, propietario: propietarioProp, on
         if (!limpio) return 'El número de documento es obligatorio'
         if (tipo === 'NIT') {
             if (!/^[0-9-]+$/.test(limpio)) return 'Solo se permiten números y guión'
+            if (!/\d/.test(limpio)) return 'Debe contener al menos un número'
             if (limpio.length > 15) return 'Máximo 15 caracteres'
             return null
         }
