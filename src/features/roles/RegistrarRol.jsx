@@ -1,6 +1,6 @@
 import { useTheme } from '@mui/material/styles'
 import { useState, useEffect } from 'react'
-import { Box, Typography, Paper, FormControlLabel, Checkbox, Grid, IconButton, Dialog, DialogTitle, DialogContent, Button, CircularProgress, Alert } from '@mui/material'
+import { Box, Typography, Paper, FormControlLabel, Checkbox, IconButton, Dialog, DialogTitle, DialogContent, Button, CircularProgress, Alert } from '@mui/material'
 import { Security, Close, CheckOutlined } from '@mui/icons-material'
 import { useAuth, PERMISOS, MODULOS } from '../../shared/contexts/AuthContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
@@ -222,8 +222,8 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
   }
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth
-      slotProps={{ paper: { sx: { borderRadius: 3, p: 0, maxHeight: '90vh' } } }}>
+    <Dialog open={open} onClose={handleClose} maxWidth={false} fullWidth
+      slotProps={{ paper: { sx: { borderRadius: 3, p: 0, maxHeight: '90vh', width: '100%', maxWidth: 1040 } } }}>
       <DialogTitle sx={{ m: 0, p: 2, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${theme.palette.divider}` }}>
         <Box>
           <Typography variant="h6" fontWeight={700}>
@@ -245,7 +245,7 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
         )}
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', paddingTop: 20 }}>
-          <Box sx={{ mb: 2 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2.5, mb: 2 }}>
             <FormField
               label="Nombre del Rol"
               name="nombre"
@@ -273,9 +273,7 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
               required
               inputProps={{ maxLength: 50 }}
             />
-          </Box>
 
-          <Box sx={{ mb: 2 }}>
             <FormField
               label="Descripción (opcional)"
               name="descripcion"
@@ -287,8 +285,6 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
               }}
               onBlur={() => setErrores(prev => ({ ...prev, descripcion: (formData.descripcion && esSoloRelleno(formData.descripcion)) ? 'La descripción no puede contener solo espacios' : '' }))}
               placeholder="Descripción del rol"
-              multiline
-              rows={2}
               inputProps={{ maxLength: 200 }}
               error={!!errores.descripcion}
               helperText={errores.descripcion || `${formData.descripcion.length}/200`}
@@ -308,6 +304,7 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
 
           <Box sx={{
             flex: 1, overflowY: 'auto', pr: 1,
+            display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.5, alignContent: 'start',
             ...(errores.permisos ? { border: `1px solid ${theme.palette.error.main}`, borderRadius: 2, p: 1 } : {}),
           }}>
             {modulos.map(([moduloKey, modulo]) => (
@@ -317,7 +314,6 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
                 sx={{
                   border: `1px solid ${theme.palette.divider}`,
                   borderRadius: 2,
-                  mb: 1.5,
                   backgroundColor: theme.palette.background.muted
                 }}
               >
@@ -338,6 +334,7 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
                     </Typography>
                   </Box>
                   <FormControlLabel
+                    sx={{ m: 0 }}
                     control={
                       <Checkbox
                         checked={modulo.permisos.every(p => formData.permisos.includes(p))}
@@ -360,31 +357,40 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
                   />
                 </Box>
 
-                <Box sx={{ p: 1.5, backgroundColor: theme.palette.background.paper }}>
-                  <Grid container spacing={0.5}>
-                    {modulo.permisos.map((permiso) => (
-                      <Grid size={{ xs: 6, sm: 4, md: 3 }} key={permiso}>
-                        <FormControlLabel
-                          control={
-                            <Checkbox
-                              checked={formData.permisos.includes(permiso)}
-                              onChange={(e) => togglePermiso(modulo, permiso, e.target.checked)}
-                              sx={{
-                                color: theme.palette.primary.main,
-                                '&.Mui-checked': { color: theme.palette.primary.main }
-                              }}
-                              size="small"
-                            />
-                          }
-                          label={
-                            <Typography variant="caption">
-                              {getPermisoLabel(permiso)}
-                            </Typography>
-                          }
-                        />
-                      </Grid>
-                    ))}
-                  </Grid>
+                <Box sx={{ p: 1.5, backgroundColor: theme.palette.background.paper, display: 'flex', flexWrap: 'nowrap', gap: 0.75, overflowX: 'auto' }}>
+                  {modulo.permisos.map((permiso) => {
+                    const marcado = formData.permisos.includes(permiso)
+                    return (
+                      <FormControlLabel
+                        key={permiso}
+                        control={
+                          <Checkbox
+                            checked={marcado}
+                            onChange={(e) => togglePermiso(modulo, permiso, e.target.checked)}
+                            size="small"
+                            sx={{
+                              p: 0.25, mr: 0.5,
+                              color: theme.palette.primary.main,
+                              '&.Mui-checked': { color: theme.palette.primary.main },
+                              '& .MuiSvgIcon-root': { fontSize: 16 },
+                            }}
+                          />
+                        }
+                        label={
+                          <Typography variant="caption" sx={{ fontWeight: 600, whiteSpace: 'nowrap', color: marcado ? theme.palette.primary.dark : theme.palette.text.secondary }}>
+                            {getPermisoLabel(permiso)}
+                          </Typography>
+                        }
+                        sx={{
+                          m: 0, pl: 0.5, pr: 1.25, py: 0.25, flexShrink: 0,
+                          borderRadius: 999,
+                          border: `1px solid ${marcado ? theme.palette.primary.main : theme.palette.divider}`,
+                          backgroundColor: marcado ? theme.palette.primary.activeBg : theme.palette.background.muted,
+                          '&:hover': { backgroundColor: marcado ? theme.palette.primary.activeBg : theme.palette.background.subtle },
+                        }}
+                      />
+                    )
+                  })}
                 </Box>
               </Paper>
             ))}

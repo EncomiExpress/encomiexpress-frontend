@@ -36,7 +36,14 @@ export const FormField = ({
       required={required}
       placeholder={placeholder}
       error={!!error}
-      helperText={error || helperText}
+      // "error" tiene dos usos distintos según el llamador: unos pasan el mensaje mismo
+      // (ej. error={errores.nombre}) y confían en que sirva de helperText si no se pasa
+      // uno aparte; otros pasan un booleano (error={!!errores.nombre}) y sí mandan su
+      // propio helperText. Con solo `error || helperText`, el segundo caso mostraba el
+      // booleano `true` como texto — es decir, no mostraba nada, porque React no
+      // renderiza booleanos. Por eso acá solo se usa "error" como texto de ayuda si de
+      // verdad es un string.
+      helperText={(typeof error === 'string' && error) || helperText}
       multiline={multiline}
       rows={multiline ? rows : 1}
       select={select}
