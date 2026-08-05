@@ -165,7 +165,7 @@ const Dashboard = () => {
 
   const { ventas, fetchVentas } = useVentas()
   const { conductores } = useConductor()
-  const { getVehiculos } = useVehiculo()
+  const { getVehiculos, fetchVehiculos } = useVehiculo()
   const transportes = getVehiculos()
   const { showToast } = useToast()
   const [exportando, setExportando] = useState(false)
@@ -179,6 +179,15 @@ const Dashboard = () => {
     fetchVentas(abortController.signal, { limit: 1000 })
     return () => abortController.abort()
   }, [fetchVentas])
+
+  // VehiculoContext se carga una sola vez al montar la app y nunca se refresca — si el
+  // estado de un vehículo cambió (ej. otra ruta arrancó) durante la sesión del navegador,
+  // el KPI quedaba con el valor viejo. Se refresca cada vez que se entra al Dashboard.
+  useEffect(() => {
+    const abortController = new AbortController()
+    fetchVehiculos(abortController.signal, { limit: 1000 })
+    return () => abortController.abort()
+  }, [fetchVehiculos])
 
   const hoy = hoyISO()
   // Límites reales del filtro de período: la fecha de la primera y la última venta

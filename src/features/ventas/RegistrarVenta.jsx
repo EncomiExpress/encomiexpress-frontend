@@ -1,5 +1,5 @@
 ﻿import { useTheme } from '@mui/material/styles'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, TextField, Autocomplete, Dialog, DialogTitle, DialogContent, IconButton, Divider, CircularProgress, Avatar } from '@mui/material'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined'
@@ -28,6 +28,7 @@ import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import PlacaDisplay from '../../shared/components/PlacaDisplay.jsx'
 import { normalizarTexto } from '../../shared/utils/duplicados.js'
 import { formatFecha, formatearMoneda, limpiarMonedaInput, limpiarDecimalInput, esSoloRelleno } from '../../shared/utils/formatters.js'
+import { sumarDias } from '../../shared/utils/horarioLaboral.js'
 
 const steps = ['Participantes', 'Paquete', 'Envío', 'Pago', 'Confirmación']
 
@@ -57,10 +58,18 @@ const validarCampo = (name, form) => {
             return ''
         case 'idRuta':
             return form.idRuta ? '' : 'Selecciona una ruta'
-        case 'fechaEstimadaEntrega':
+        case 'fechaEstimadaEntrega': {
             if (!form.fechaEstimadaEntrega) return 'La fecha es obligatoria'
-            if (form.fechaSalidaRuta && form.fechaEstimadaEntrega < form.fechaSalidaRuta) return 'No puede ser anterior a la fecha de salida de la ruta'
+            if (form.fechaSalidaRuta) {
+                const minima = sumarDias(form.fechaSalidaRuta, 1)
+                if (form.fechaEstimadaEntrega < minima) return 'Debe ser al menos un día después de la salida de la ruta'
+            }
+            if (form.fechaLlegadaEstimadaRuta) {
+                const maxima = sumarDias(form.fechaLlegadaEstimadaRuta, -1)
+                if (form.fechaEstimadaEntrega > maxima) return 'Debe ser al menos un día antes de la llegada de la ruta'
+            }
             return ''
+        }
         case 'metodoPago':
             return form.metodoPago ? '' : 'Selecciona un método de pago'
         case 'observaciones':
@@ -127,7 +136,13 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
     const theme = useTheme()
     const { clientes } = useClientes()
     const { rutasProgramadas, fetchRutasProgramadas } = useRutaProgramacion()
-    const { tarifaPorKg } = useConfiguracion()
+    const { tarifaPorKg, fetchConfiguracion } = useConfiguracion()
+    // true en cuanto el admin edita "Valor del servicio"/"Impuestos" a mano — a partir de
+    // ahí el refresco de tarifas del paso "Pago" (más abajo) deja de recalcularlos por
+    // encima. Editar valorServicio SÍ resetea impuestosManualRef (vuelve a ser el 10%
+    // automático), pero editar impuestos NO resetea valorServicioManualRef.
+    const valorServicioManualRef = useRef(false)
+    const impuestosManualRef = useRef(false)
     const [errores, setErrores] = useState({})
     const [apiError, setApiError] = useState(null)
     const [activeStep, setActiveStep] = useState(0)
@@ -139,6 +154,46 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
         fetchRutasProgramadas({ limit: 1000 }).catch(() => null)
     }, [fetchRutasProgramadas])
 
+    // No hay tiempo real (WebSockets) en este proyecto — el peso ya usado de cada
+    // vehículo (pesoUsado) se trae una sola vez al montar y puede quedar desactualizado
+    // si alguien más registra otra venta mientras este formulario sigue abierto. Para
+    // no dejarlo obsoleto toda la sesión, se refresca cada vez que se ENTRA al paso
+    // "Envío" (índice 2) — sin importar la dirección (llegando con "Siguiente" desde
+    // Paquete, o volviendo con "Anterior" desde Pago): ambos casos hacen que activeStep
+    // pase a valer 2, así que basta con reaccionar a ese valor, no a qué botón se usó.
+    useEffect(() => {
+        if (activeStep !== 2) return
+        fetchRutasProgramadas({ limit: 1000 }).catch(() => null)
+    }, [activeStep, fetchRutasProgramadas])
+
+    // La tarifa del destino y la tarifa por kg (fija en Configuración) pueden cambiar
+    // mientras el formulario sigue abierto — igual que arriba con la capacidad, se
+    // refrescan al ENTRAR al paso "Pago" y se recalcula valorServicio con los datos
+    // frescos, pero solo si el admin no lo editó a mano (valorServicioManualRef):
+    // si ya lo tocó, se respeta ese ajuste manual y no se pisa.
+    useEffect(() => {
+        if (activeStep !== 3) return
+        let cancelado = false
+        Promise.all([
+            fetchConfiguracion(),
+            fetchRutasProgramadas({ limit: 1000 }),
+        ]).then(([tarifaFresca, rutasFrescas]) => {
+            if (cancelado || valorServicioManualRef.current) return
+            setForm(prev => {
+                const ruta = (rutasFrescas || []).find(r => r.idRuta === parseInt(prev.idRuta))
+                if (!ruta || !prev.idRuta) return prev
+                const pesoTotal = prev.paquetes.reduce((s, p) => s + (parseFloat(p.peso) || 0), 0)
+                const vs = Number(ruta.destino?.tarifaBase || 0) + (pesoTotal * (tarifaFresca ?? tarifaPorKg))
+                // impuestos respeta su propio "manual" — si el admin ya lo editó a mano,
+                // no se pisa aunque valorServicio sí se haya recalculado.
+                const imp = impuestosManualRef.current ? (Number(prev.impuestos) || 0) : Math.round(vs * 0.10)
+                return { ...prev, valorServicio: vs, impuestos: imp, total: vs + imp }
+            })
+        }).catch(() => {})
+        return () => { cancelado = true }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeStep])
+
     const [form, setForm] = useState({
         idCliente: '',
         nombreDestinatario: '',
@@ -148,6 +203,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
         idRuta: '',
         destino: '',
         fechaSalidaRuta: '',
+        fechaLlegadaEstimadaRuta: '',
         fechaEstimadaEntrega: '',
         observaciones: '',
         metodoPago: '',
@@ -179,7 +235,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
             telefonoDestinatario: '',
             direccionDestinatario: '',
             paquetes: [{ ...PAQUETE_VACIO }],
-            idRuta: '', destino: '', fechaSalidaRuta: '',
+            idRuta: '', destino: '', fechaSalidaRuta: '', fechaLlegadaEstimadaRuta: '',
             fechaEstimadaEntrega: '', observaciones: '',
             metodoPago: '', estadoPago: 'Pendiente',
             valorServicio: '', impuestos: '', total: '',
@@ -231,6 +287,12 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
             value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ0-9\s,.-]/g, '')
         }
 
+        if (name === 'valorServicio') {
+            valorServicioManualRef.current = true
+            impuestosManualRef.current = false
+        }
+        if (name === 'impuestos') impuestosManualRef.current = true
+
         const formActualizado = { ...form, [name]: value }
         setForm(prev => {
             const updated = { ...prev, [name]: value }
@@ -262,6 +324,8 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
 
     const recalcularValorServicio = (prev, paquetes) => {
         if (!prev.idRuta) return {}
+        valorServicioManualRef.current = false
+        impuestosManualRef.current = false
         const ruta = rutasProgramadas.find(r => r.idRuta === parseInt(prev.idRuta))
         const pesoTotal = paquetes.reduce((s, p) => s + (parseFloat(p.peso) || 0), 0)
         const vs = calcularValorServicio(ruta?.destino?.tarifaBase, pesoTotal)
@@ -377,7 +441,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                         .filter(i => parseInt(form.paquetes[i].idRutaVehiculoConductor) === par.idRutaVehiculoConductor)
                     const pesoNuevo = indices.reduce((s, i) => s + (parseFloat(form.paquetes[i].peso) || 0), 0)
                     if (pesoNuevo > disponible) {
-                        const mensaje = `${par.vehiculo?.placa || 'Este vehículo'} ya no tiene espacio — supera la capacidad en ${(pesoNuevo - disponible).toFixed(2)} kg.`
+                        const mensaje = `${par.vehiculo?.placa || 'Este vehículo'} ya no tiene espacio — supera la capacidad en ${Number((pesoNuevo - disponible).toFixed(2))} kg.`
                         indices.forEach(i => { erroresPaquetes[i] = { ...erroresPaquetes[i], idRutaVehiculoConductor: mensaje } })
                     }
                 }
@@ -687,8 +751,14 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                             .filter(p => parseInt(p.idRutaVehiculoConductor) === par.idRutaVehiculoConductor)
                             .reduce((s, p) => s + (parseFloat(p.peso) || 0), 0)
                         const capacidad = par.vehiculo?.capacidad ? Number(par.vehiculo.capacidad) : null
+                        // "disponible" es el espacio que había ANTES de esta venta (contra el
+                        // que se compara si pesoNuevo se pasa o no). "disponibleFinal" es lo
+                        // que de verdad queda después de contar los paquetes que se están
+                        // registrando ahora mismo — como si la venta ya estuviera guardada —
+                        // para que el aviso muestre el sobrante real en vivo, no el de antes.
                         const disponible = capacidad != null ? Math.max(0, capacidad - Number(par.pesoUsado || 0)) : null
-                        return { par, pesoNuevo, disponible, excede: disponible != null && pesoNuevo > disponible }
+                        const disponibleFinal = disponible != null ? Math.max(0, disponible - pesoNuevo) : null
+                        return { par, pesoNuevo, disponible, disponibleFinal, excede: disponible != null && pesoNuevo > disponible }
                     })
                     .filter(item => item.pesoNuevo > 0)
                 // Cada alerta de capacidad se ancla al último paquete asignado a ese
@@ -763,8 +833,16 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                                     // ya se hubiera hecho (esos idRutaVehiculoConductor pertenecen al convoy
                                     // de la ruta anterior, no a la nueva).
                                     const fechaSalida = newValue?.fechaSalida || ''
-                                    const fechaResetea = !!(newValue && form.fechaEstimadaEntrega && fechaSalida && form.fechaEstimadaEntrega < fechaSalida)
+                                    const fechaLlegadaEstimada = newValue?.fechaLlegadaEstimada || ''
+                                    const minimaNueva = fechaSalida ? sumarDias(fechaSalida, 1) : ''
+                                    const maximaNueva = fechaLlegadaEstimada ? sumarDias(fechaLlegadaEstimada, -1) : ''
+                                    const fechaResetea = !!(newValue && form.fechaEstimadaEntrega && (
+                                        (minimaNueva && form.fechaEstimadaEntrega < minimaNueva) ||
+                                        (maximaNueva && form.fechaEstimadaEntrega > maximaNueva)
+                                    ))
                                     if (newValue) {
+                                        valorServicioManualRef.current = false
+                                        impuestosManualRef.current = false
                                         setForm(prev => {
                                             const pesoTotal = prev.paquetes.reduce((s, p) => s + (parseFloat(p.peso) || 0), 0)
                                             const valorServicio = calcularValorServicio(newValue.destino?.tarifaBase, pesoTotal)
@@ -774,8 +852,11 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                                                 idRuta: newValue.idRuta,
                                                 destino: newValue.nombreRuta || 'Sin nombre',
                                                 fechaSalidaRuta: fechaSalida,
-                                                fechaEstimadaEntrega: prev.fechaEstimadaEntrega && fechaSalida && prev.fechaEstimadaEntrega < fechaSalida
-                                                    ? '' : prev.fechaEstimadaEntrega,
+                                                fechaLlegadaEstimadaRuta: fechaLlegadaEstimada,
+                                                fechaEstimadaEntrega: prev.fechaEstimadaEntrega && (
+                                                    (minimaNueva && prev.fechaEstimadaEntrega < minimaNueva) ||
+                                                    (maximaNueva && prev.fechaEstimadaEntrega > maximaNueva)
+                                                ) ? '' : prev.fechaEstimadaEntrega,
                                                 valorServicio,
                                                 impuestos,
                                                 total: valorServicio + impuestos,
@@ -784,7 +865,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                                         })
                                     } else {
                                         setForm(prev => ({
-                                            ...prev, idRuta: '', destino: '', fechaSalidaRuta: '',
+                                            ...prev, idRuta: '', destino: '', fechaSalidaRuta: '', fechaLlegadaEstimadaRuta: '',
                                             paquetes: prev.paquetes.map(p => ({ ...p, idRutaVehiculoConductor: '' })),
                                         }))
                                     }
@@ -816,8 +897,13 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                                 type="date" value={form.fechaEstimadaEntrega} onChange={handleChange}
                                 onBlur={() => setErrores(prev => ({ ...prev, fechaEstimadaEntrega: validarCampo('fechaEstimadaEntrega', form) }))} required
                                 error={!!errores.fechaEstimadaEntrega}
-                                helperText={errores.fechaEstimadaEntrega || (form.fechaSalidaRuta ? `Desde el ${formatFecha(form.fechaSalidaRuta)}` : 'Selecciona primero una ruta')}
-                                slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: form.fechaSalidaRuta || undefined } }}
+                                helperText={errores.fechaEstimadaEntrega || (form.fechaSalidaRuta
+                                    ? `Desde el ${formatFecha(sumarDias(form.fechaSalidaRuta, 1))}${form.fechaLlegadaEstimadaRuta ? ` hasta el ${formatFecha(sumarDias(form.fechaLlegadaEstimadaRuta, -1))}` : ''}`
+                                    : 'Selecciona primero una ruta')}
+                                slotProps={{ inputLabel: { shrink: true }, htmlInput: {
+                                    min: form.fechaSalidaRuta ? sumarDias(form.fechaSalidaRuta, 1) : undefined,
+                                    max: form.fechaLlegadaEstimadaRuta ? sumarDias(form.fechaLlegadaEstimadaRuta, -1) : undefined,
+                                } }}
                                 sx={formFieldStyles} />
                         </Box>
                         {rutaElegida && (
@@ -826,27 +912,20 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                                 border: `1px solid ${theme.palette.divider}`,
                                 backgroundColor: theme.palette.background.default,
                             }}>
-                                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.75 }}>
+                                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 0.75 }}>
                                     <Typography variant="body2">
                                         <Box component="span" sx={{ fontWeight: 600, color: theme.palette.text.secondary, mr: 0.5 }}>Destino:</Box>
                                         {rutaElegida.destino ? `${rutaElegida.destino.ciudad}, ${rutaElegida.destino.departamento}` : '—'}
                                     </Typography>
                                     <Typography variant="body2">
                                         <Box component="span" sx={{ fontWeight: 600, color: theme.palette.text.secondary, mr: 0.5 }}>Salida:</Box>
-                                        {rutaElegida.fechaSalida ? `${formatFecha(rutaElegida.fechaSalida)}${rutaElegida.horaSalida ? ' · ' + rutaElegida.horaSalida : ''}` : '—'}
+                                        {rutaElegida.fechaSalida ? `${formatFecha(rutaElegida.fechaSalida)}${rutaElegida.horaSalida ? ' · ' + rutaElegida.horaSalida.slice(0, 5) : ''}` : '—'}
+                                    </Typography>
+                                    <Typography variant="body2">
+                                        <Box component="span" sx={{ fontWeight: 600, color: theme.palette.text.secondary, mr: 0.5 }}>Llegada:</Box>
+                                        {rutaElegida.fechaLlegadaEstimada ? `${formatFecha(rutaElegida.fechaLlegadaEstimada)}${rutaElegida.horaLlegadaEstimada ? ' · ' + rutaElegida.horaLlegadaEstimada.slice(0, 5) : ''}` : '—'}
                                     </Typography>
                                 </Box>
-                                <Divider sx={{ my: 1 }} />
-                                <Typography variant="caption" fontWeight={700} color={theme.palette.text.secondary} sx={{ display: 'block', mb: 0.5 }}>
-                                    Vehículos de esta ruta
-                                </Typography>
-                                {paresElegida.map((par) => (
-                                    <Typography key={par.idRutaVehiculoConductor} variant="body2" sx={{ mb: 0.25 }}>
-                                        {par.vehiculo ? `${par.vehiculo.placa} — ${par.vehiculo.marca} ${par.vehiculo.modelo}` : '—'}
-                                        {' · '}
-                                        {par.conductor?.usuario ? `${par.conductor.usuario.nombre} ${par.conductor.usuario.apellido}` : '—'}
-                                    </Typography>
-                                ))}
                             </Paper>
                         )}
                         {rutaElegida && (
@@ -857,7 +936,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                                 {form.paquetes.map((paquete, index) => {
                                     const alerta = alertaPorIndice.get(index)
                                     const mensajeCapacidad = alerta?.excede
-                                        ? `${alerta.par.vehiculo?.placa || 'Este vehículo'} ya no tiene espacio — supera la capacidad en ${(alerta.pesoNuevo - alerta.disponible).toFixed(2)} kg. Reasígnalo a otro vehículo.`
+                                        ? `${alerta.par.vehiculo?.placa || 'Este vehículo'} ya no tiene espacio — supera la capacidad en ${Number((alerta.pesoNuevo - alerta.disponible).toFixed(2))} kg. Reasígnalo a otro vehículo.`
                                         : null
                                     const errorCampo = errores.paquetes?.[index]?.idRutaVehiculoConductor || mensajeCapacidad
                                     return (
@@ -874,13 +953,17 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                                                 renderValue={(val) => {
                                                     const par = paresElegida.find(p => p.idRutaVehiculoConductor === val)
                                                     if (!par) return ''
+                                                    const marcaModelo = [par.vehiculo?.marca, par.vehiculo?.modelo].filter(Boolean).join(' ')
                                                     const nombreConductor = par.conductor?.usuario ? `${par.conductor.usuario.nombre} ${par.conductor.usuario.apellido}` : 'Sin conductor'
-                                                    return `${par.vehiculo?.placa || 'Sin placa'} — ${nombreConductor}`
+                                                    return `${par.vehiculo?.placa || 'Sin placa'}${marcaModelo ? ' — ' + marcaModelo : ''} — ${nombreConductor}`
                                                 }}>
                                                 {paresElegida.map((par) => (
                                                     <MenuItem key={par.idRutaVehiculoConductor} value={par.idRutaVehiculoConductor} sx={{ py: 1 }}>
                                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, width: '100%' }}>
                                                             <PlacaDisplay placa={par.vehiculo?.placa} theme={theme} />
+                                                            <Typography variant="body2" color={theme.palette.text.secondary} noWrap sx={{ minWidth: 0 }}>
+                                                                {[par.vehiculo?.marca, par.vehiculo?.modelo].filter(Boolean).join(' ')}
+                                                            </Typography>
                                                             <Divider orientation="vertical" flexItem sx={{ my: 0.5 }} />
                                                             <Avatar sx={{
                                                                 width: 28, height: 28, flexShrink: 0,
@@ -900,7 +983,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                                             {alerta && !alerta.excede && (
                                                 <Alert severity="info" sx={{ borderRadius: 2 }}>
                                                     <strong>{alerta.par.vehiculo?.placa || 'Vehículo'}:</strong> quedan{' '}
-                                                    <strong>{alerta.disponible != null ? alerta.disponible.toFixed(2) : '∞'} kg</strong> disponibles.
+                                                    <strong>{alerta.disponibleFinal != null ? Number(alerta.disponibleFinal.toFixed(2)) : '∞'} kg</strong> disponibles.
                                                 </Alert>
                                             )}
                                         </Box>

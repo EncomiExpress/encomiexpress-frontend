@@ -62,6 +62,16 @@ const ModalConfirmarEstado = ({ open, nuevoEstado, info, ruta, pares = [], onCon
             .catch(() => setDetalle({ anticipos: [], ventas: [], loading: false }))
     }, [open, nuevoEstado, ruta])
 
+    // Cuántos paquetes tiene cada par vehículo+conductor — un vehículo del convoy puede
+    // salir vacío (nada lo bloquea, ver LOGICA.md) así que esto es solo para avisar, no
+    // para impedir el cambio de estado.
+    const paquetesPorPar = detalle.ventas
+        .flatMap(v => v.paquetes || [])
+        .reduce((acc, p) => {
+            acc[p.idRutaVehiculoConductor] = (acc[p.idRutaVehiculoConductor] || 0) + 1
+            return acc
+        }, {})
+
     // Una ruta ahora puede tener varios vehículos+conductor (convoy) — se arma un renglón
     // por cada par en vez de mostrar uno solo.
     const paresInfo = pares.map((par) => ({
@@ -75,6 +85,7 @@ const ModalConfirmarEstado = ({ open, nuevoEstado, info, ruta, pares = [], onCon
         cDot: conductorDot(par.conductor?.estado),
         vehiculoId: par.vehiculo?.idVehiculo,
         conductorId: par.conductor?.idConductor,
+        sinPaquetes: !detalle.loading && !(paquetesPorPar[par.idRutaVehiculoConductor] > 0),
     }))
     const isEnCurso = nuevoEstado === 'En Curso'
 
@@ -147,6 +158,13 @@ const ModalConfirmarEstado = ({ open, nuevoEstado, info, ruta, pares = [], onCon
                                     </Box>
                                     <EstadoDot {...p.cDot} />
                                 </Box>
+                                {p.sinPaquetes && (
+                                    <Box sx={{ px: 1.5, py: 0.75, backgroundColor: '#f59e0b1a', borderTop: `1px solid ${theme.palette.divider}` }}>
+                                        <Typography sx={{ fontSize: '0.72rem', fontWeight: 600, color: '#b45309' }}>
+                                            Sin paquetes asignados — este vehículo saldría vacío
+                                        </Typography>
+                                    </Box>
+                                )}
                             </Paper>
                         ))}
 

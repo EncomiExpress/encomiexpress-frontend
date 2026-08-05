@@ -1,5 +1,5 @@
 ﻿import { useTheme } from '@mui/material/styles'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
     Box, Typography, Paper, Stepper, Step, StepLabel,
     Button, Alert, Dialog, DialogTitle, DialogContent, IconButton,
@@ -28,8 +28,10 @@ import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import CalendarioDisponibilidad from '../../shared/components/CalendarioDisponibilidad.jsx'
+import SelectorHora from '../../shared/components/SelectorHora.jsx'
 import { normalizarTexto } from '../../shared/utils/duplicados.js'
 import { vehiculoDocumentosVigentes, conductorLicenciaVigente } from '../../shared/utils/vigenciaDocumentos.js'
+import { getRangoHorario, esDomingo, sumarDias, hoyISO, MIN_DIAS_SALIDA_LLEGADA, MAX_DIAS_ANTICIPACION } from '../../shared/utils/horarioLaboral.js'
 
 const mananaISO = () => {
     const d = new Date()
@@ -37,6 +39,14 @@ const mananaISO = () => {
     const pad2 = (n) => String(n).padStart(2, '0')
     return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
 }
+
+// Rutas son recorridos regionales cortos — no tiene sentido dejar programar una salida
+// o llegada con meses/años de anticipación. Mismo tope para ambas fechas (no se reduce
+// el de salida para "dejar espacio" al mínimo de llegada — si una combinación puntual
+// no deja ningún día de llegada válido, se explica con un mensaje claro en el campo de
+// llegada, en vez de reducir el calendario de salida sin avisar por qué). Debe
+// coincidir con MAX_DIAS_ANTICIPACION del backend (rutaService.js/horarioLaboral.js).
+const maxISO = () => sumarDias(hoyISO(), MAX_DIAS_ANTICIPACION)
 
 const steps = ['Datos de la Ruta', 'Horario', 'Confirmación']
 
@@ -58,9 +68,30 @@ const validarCampo = (name, form) => {
         case 'fechaSalida':
             if (!form.fechaSalida) return 'La fecha de salida es obligatoria'
             if (form.fechaSalida < mananaISO()) return 'La fecha de salida debe ser posterior a hoy'
+            if (form.fechaSalida > maxISO()) return `No se puede programar con más de ${MAX_DIAS_ANTICIPACION} días de anticipación (máximo el ${formatFecha(maxISO())})`
+            if (esDomingo(form.fechaSalida)) return 'No se puede salir en domingo (la empresa permanece cerrada)'
             return ''
-        case 'horaSalida':
-            return form.horaSalida ? '' : 'La hora de salida es obligatoria'
+        case 'horaSalida': {
+            if (!form.horaSalida) return 'La hora de salida es obligatoria'
+            const rango = getRangoHorario(form.fechaSalida)
+            if (rango && (form.horaSalida < rango.min || form.horaSalida > rango.max)) return `Debe estar entre las ${rango.min} y las ${rango.max}`
+            return ''
+        }
+        case 'fechaLlegadaEstimada': {
+            if (!form.fechaSalida) return 'Primero selecciona la fecha de salida'
+            if (!form.fechaLlegadaEstimada) return 'La fecha de llegada es obligatoria'
+            if (esDomingo(form.fechaLlegadaEstimada)) return 'No se puede llegar en domingo (la empresa permanece cerrada)'
+            if (form.fechaLlegadaEstimada > maxISO()) return `No se puede programar con más de ${MAX_DIAS_ANTICIPACION} días de anticipación (máximo el ${formatFecha(maxISO())})`
+            const minima = sumarDias(form.fechaSalida, MIN_DIAS_SALIDA_LLEGADA)
+            if (form.fechaLlegadaEstimada < minima) return `Debe ser al menos ${MIN_DIAS_SALIDA_LLEGADA} días después de la salida (mínimo el ${formatFecha(minima)})`
+            return ''
+        }
+        case 'horaLlegadaEstimada': {
+            if (!form.horaLlegadaEstimada) return ''
+            const rango = getRangoHorario(form.fechaLlegadaEstimada)
+            if (rango && (form.horaLlegadaEstimada < rango.min || form.horaLlegadaEstimada > rango.max)) return `Debe estar entre las ${rango.min} y las ${rango.max}`
+            return ''
+        }
         case 'observaciones':
             if (form.observaciones && esSoloRelleno(form.observaciones)) return 'Las observaciones no pueden contener solo espacios o guiones'
             return ''
@@ -98,6 +129,18 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess }) => {
     const [destinoInput, setDestinoInput]     = useState('')
     const [vehiculoInputs, setVehiculoInputs]     = useState([''])
     const [conductorInputs, setConductorInputs]   = useState([''])
+    const [refrescarDisponibilidad, setRefrescarDisponibilidad] = useState(0)
+
+    // Sin tiempo real (WebSockets) en este proyecto, el calendario de disponibilidad
+    // trae los datos una sola vez y podría quedar desactualizado si alguien más
+    // programa otra ruta con el mismo vehículo/conductor mientras este formulario
+    // sigue abierto. Se refresca cada vez que se ENTRA al paso "Horario" (índice 1) —
+    // en cualquier dirección (con "Siguiente" desde Datos de la Ruta, o con "Anterior"
+    // desde Confirmación) — mismo patrón ya usado para la capacidad en Ventas.
+    useEffect(() => {
+        if (activeStep !== 1) return
+        setRefrescarDisponibilidad(k => k + 1)
+    }, [activeStep])
 
     const vehiculos   = getVehiculosHabilitados()
     const conductores = getConductoresHabilitados()
@@ -118,6 +161,7 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess }) => {
         idDestino: '',
         fechaSalida: '',
         horaSalida: '',
+        fechaLlegadaEstimada: '',
         horaLlegadaEstimada: '',
         observaciones: ''
     })
@@ -166,6 +210,8 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess }) => {
         if (step === 1) {
             e.fechaSalida = validarCampo('fechaSalida', form)
             e.horaSalida = validarCampo('horaSalida', form)
+            e.fechaLlegadaEstimada = validarCampo('fechaLlegadaEstimada', form)
+            e.horaLlegadaEstimada = validarCampo('horaLlegadaEstimada', form)
             e.observaciones = validarCampo('observaciones', form)
         }
         Object.keys(e).forEach(k => { if (!e[k]) delete e[k] })
@@ -207,7 +253,7 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess }) => {
 
     const handleClose = () => {
         if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
-        setForm({ nombreRuta: '', pares: [{ idVehiculo: '', idConductor: '' }], idDestino: '', fechaSalida: '', horaSalida: '', horaLlegadaEstimada: '', observaciones: '' })
+        setForm({ nombreRuta: '', pares: [{ idVehiculo: '', idConductor: '' }], idDestino: '', fechaSalida: '', horaSalida: '', fechaLlegadaEstimada: '', horaLlegadaEstimada: '', observaciones: '' })
         setErrores({})
         setApiError(null)
         setActiveStep(0)
@@ -432,34 +478,81 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess }) => {
                                 required
                                 value={form.fechaSalida}
                                 onChange={(iso) => {
-                                    setForm(prev => ({ ...prev, fechaSalida: iso }))
-                                    setErrores(prev => ({ ...prev, fechaSalida: '' }))
+                                    // Si la salida cambia, la llegada ya elegida podría dejar de ser
+                                    // válida (mínimo de días, o un nuevo choque con otra ruta) — se
+                                    // limpia para que el usuario la vuelva a elegir sobre el calendario
+                                    // ya actualizado, en vez de dejar una fecha inválida sin avisar.
+                                    const formActualizado = { ...form, fechaSalida: iso, fechaLlegadaEstimada: '' }
+                                    setForm(formActualizado)
+                                    setErrores(prev => ({
+                                        ...prev,
+                                        fechaSalida: '',
+                                        fechaLlegadaEstimada: '',
+                                        horaSalida: prev.horaSalida ? validarCampo('horaSalida', formActualizado) : '',
+                                    }))
                                     setApiError(null)
                                 }}
                                 pares={form.pares}
                                 minDate={mananaISO()}
+                                maxDate={maxISO()}
+                                refrescarKey={refrescarDisponibilidad}
                                 error={errores.fechaSalida}
                                 helperText="Los días en rojo ya tienen a ese vehículo o conductor ocupado en otra ruta"
                             />
-                            <Box sx={{ flex: 1, minWidth: 220, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                                <FormField label="Hora de Salida" name="horaSalida" type="time" value={form.horaSalida}
-                                    onChange={handleChange}
+                            <CalendarioDisponibilidad
+                                modo="llegada"
+                                fechaReferencia={form.fechaSalida}
+                                label="Fecha Estimada de Llegada"
+                                required
+                                disabled={!form.fechaSalida}
+                                value={form.fechaLlegadaEstimada}
+                                onChange={(iso) => {
+                                    setForm(prev => ({ ...prev, fechaLlegadaEstimada: iso }))
+                                    setErrores(prev => ({ ...prev, fechaLlegadaEstimada: '' }))
+                                    setApiError(null)
+                                }}
+                                pares={form.pares}
+                                minDate={form.fechaSalida ? sumarDias(form.fechaSalida, MIN_DIAS_SALIDA_LLEGADA) : mananaISO()}
+                                maxDate={maxISO()}
+                                refrescarKey={refrescarDisponibilidad}
+                                error={errores.fechaLlegadaEstimada}
+                                helperText={form.fechaSalida ? 'Los días en rojo ya tienen a ese vehículo o conductor ocupado en otra ruta' : 'Selecciona primero la fecha de salida'}
+                            />
+                        </Box>
+                        <Box sx={{ display: 'flex', gap: 2.5, flexWrap: 'wrap' }}>
+                            <Box sx={{ flex: 1, minWidth: 220 }}>
+                                <SelectorHora label="Hora de Salida" required
+                                    value={form.horaSalida}
+                                    onChange={(v) => {
+                                        setForm(prev => ({ ...prev, horaSalida: v }))
+                                        setErrores(prev => ({ ...prev, horaSalida: '' }))
+                                    }}
                                     onBlur={() => setErrores(prev => ({ ...prev, horaSalida: validarCampo('horaSalida', form) }))}
-                                    required error={errores.horaSalida} helperText={errores.horaSalida}
-                                    icon={ScheduleOutlinedIcon} InputLabelProps={{ shrink: true }} />
-                                <FormField label="Hora Estimada de Llegada" name="horaLlegadaEstimada" type="time" value={form.horaLlegadaEstimada}
-                                    onChange={handleChange} icon={ScheduleOutlinedIcon} InputLabelProps={{ shrink: true }}
-                                    helperText="Opcional" />
-                                <FormField label="Observaciones" name="observaciones" value={form.observaciones}
-                                    onChange={handleChange}
-                                    onBlur={() => setErrores(prev => ({ ...prev, observaciones: validarCampo('observaciones', form) }))}
-                                    icon={RouteOutlinedIcon}
-                                    inputProps={{ maxLength: 500 }} placeholder="Ej: Salida por puerta norte"
-                                    multiline rows={4}
-                                    error={errores.observaciones}
-                                    helperText={errores.observaciones || `Opcional · ${form.observaciones?.length || 0}/500`} />
+                                    rango={getRangoHorario(form.fechaSalida)}
+                                    error={errores.horaSalida}
+                                    helperText={form.fechaSalida ? 'Solo horario laboral' : 'Selecciona primero la fecha de salida'} />
+                            </Box>
+                            <Box sx={{ flex: 1, minWidth: 220 }}>
+                                <SelectorHora label="Hora Estimada de Llegada"
+                                    value={form.horaLlegadaEstimada}
+                                    onChange={(v) => {
+                                        setForm(prev => ({ ...prev, horaLlegadaEstimada: v }))
+                                        setErrores(prev => ({ ...prev, horaLlegadaEstimada: '' }))
+                                    }}
+                                    onBlur={() => setErrores(prev => ({ ...prev, horaLlegadaEstimada: validarCampo('horaLlegadaEstimada', form) }))}
+                                    rango={getRangoHorario(form.fechaLlegadaEstimada)}
+                                    error={errores.horaLlegadaEstimada}
+                                    helperText={form.fechaLlegadaEstimada ? 'Opcional' : 'Selecciona primero la fecha de llegada'} />
                             </Box>
                         </Box>
+                        <FormField label="Observaciones" name="observaciones" value={form.observaciones}
+                            onChange={handleChange}
+                            onBlur={() => setErrores(prev => ({ ...prev, observaciones: validarCampo('observaciones', form) }))}
+                            icon={RouteOutlinedIcon}
+                            inputProps={{ maxLength: 500 }} placeholder="Ej: Salida por puerta norte"
+                            multiline rows={3}
+                            error={errores.observaciones}
+                            helperText={errores.observaciones || `Opcional · ${form.observaciones?.length || 0}/500`} />
                     </Box>
                 )
             case 2:
@@ -481,6 +574,7 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess }) => {
                                 <ConfirmRow label="Destino"   value={getDestinoLabel(form.idDestino)} />
                                 <ConfirmRow label="Fecha Salida" value={formatFecha(form.fechaSalida)} />
                                 <ConfirmRow label="Hora Salida"  value={form.horaSalida} />
+                                <ConfirmRow label="Fecha Estimada de Llegada" value={formatFecha(form.fechaLlegadaEstimada)} />
                                 <ConfirmRow label="Hora Llegada" value={form.horaLlegadaEstimada || 'N/A'} />
                                 <ConfirmRow label="Observaciones" value={form.observaciones} />
                             </Paper>

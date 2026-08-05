@@ -16,7 +16,9 @@ export const ConfiguracionProvider = ({ children }) => {
     try {
       const res = await configuracionService.getConfiguracion(signal)
       if (res?.success) {
-        setTarifaPorKg(Number(res.data.tarifaPorKg) || 0)
+        const nueva = Number(res.data.tarifaPorKg) || 0
+        setTarifaPorKg(nueva)
+        return nueva
       }
     } catch (e) {
       if (e?.name !== 'AbortError') {

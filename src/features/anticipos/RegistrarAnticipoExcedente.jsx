@@ -14,6 +14,7 @@ import CloseIcon from '@mui/icons-material/Close'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import RouteOutlinedIcon from '@mui/icons-material/RouteOutlined'
 import PlacaDisplay from '../../shared/components/PlacaDisplay.jsx'
+import * as ventaService from '../../shared/services/ventaService'
 import { useAnticipos } from '../../shared/contexts/AnticipoExcedenteContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { FormField } from '../../shared/components/FormularioEstandarizado.jsx'
@@ -66,6 +67,30 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
 
     const [form, setForm] = useState(formInicial)
 
+    // Cuántos paquetes tiene asignados cada par vehículo+conductor de la ruta elegida —
+    // solo para avisar (no bloquear) si el par elegido para el anticipo va a salir vacío.
+    const [paquetesPorPar, setPaquetesPorPar] = useState({})
+    useEffect(() => {
+        if (!form.idRuta) {
+            setPaquetesPorPar({})
+            return
+        }
+        let cancelado = false
+        ventaService.getEncomiendas(undefined, { idRuta: form.idRuta, limit: 100 })
+            .then(res => {
+                if (cancelado) return
+                const conteo = (res?.data || [])
+                    .flatMap(v => v.paquetes || [])
+                    .reduce((acc, p) => {
+                        acc[p.idRutaVehiculoConductor] = (acc[p.idRutaVehiculoConductor] || 0) + 1
+                        return acc
+                    }, {})
+                setPaquetesPorPar(conteo)
+            })
+            .catch(() => setPaquetesPorPar({}))
+        return () => { cancelado = true }
+    }, [form.idRuta])
+
     // Si la ruta elegida tiene un solo vehículo+conductor, no tiene caso elegir — se
     // autocompleta, igual que en Ventas con los paquetes cuando la ruta tiene 1 solo vehículo.
     useEffect(() => {
@@ -87,6 +112,7 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
         setActiveStep(0)
         setRutaInput('')
         setParInput('')
+        setPaquetesPorPar({})
         onClose()
     }
 
@@ -273,6 +299,12 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
                                     sx={formFieldStyles} />
                             )}
                         />
+
+                        {parSeleccionado && !(paquetesPorPar[parSeleccionado.idRutaVehiculoConductor] > 0) && (
+                            <Alert severity="warning" sx={{ borderRadius: 2, mt: -1 }}>
+                                Este vehículo no tiene paquetes asignados en esta ruta — el anticipo se registrará igual, solo confírmalo a propósito.
+                            </Alert>
+                        )}
 
                         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                             <FormField

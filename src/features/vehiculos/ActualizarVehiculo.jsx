@@ -62,7 +62,7 @@ const validarCampo = (name, formData) => {
     case 'color':
       return formData.color?.trim() ? '' : 'El color es obligatorio'
     case 'tarjetaPropiedad':
-      if (formData.tarjetaPropiedad && esSoloRelleno(formData.tarjetaPropiedad)) return 'La tarjeta de propiedad no puede contener solo espacios o guiones'
+      if (formData.tarjetaPropiedad && (formData.tarjetaPropiedad.length < 6 || formData.tarjetaPropiedad.length > 11)) return 'Debe tener entre 6 y 11 dígitos'
       return ''
     case 'tipo':
       return formData.tipo ? '' : 'El tipo de vehículo es obligatorio'
@@ -142,6 +142,7 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
     if (name === 'modelo') value = value.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚüÜñÑ\s-]/g, '')
     if (name === 'color') value = capitalizarPrimeraLetra(value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, ''))
     if (name === 'tipoOtro') value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
+    if (name === 'tarjetaPropiedad') value = value.replace(/[^0-9]/g, '')
     if (name === 'capacidad') {
       value = limpiarDecimalInput(value)
       if (value !== '') {
@@ -368,8 +369,8 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
               onChange={handleChange}
               onBlur={() => setErrores(prev => ({ ...prev, tarjetaPropiedad: validarCampo('tarjetaPropiedad', formData) }))}
               icon={DescriptionOutlined}
-              inputProps={{ maxLength: 50 }} placeholder="Ej: TC-001-2020"
-              error={errores.tarjetaPropiedad} helperText={errores.tarjetaPropiedad || 'Opcional'} />
+              inputProps={{ maxLength: 11 }} placeholder="Ej: 12345678901"
+              error={errores.tarjetaPropiedad} helperText={errores.tarjetaPropiedad || 'Opcional · solo números, entre 6 y 11 dígitos'} />
             <FormSelect label="Origen" name="origen" value={formData.origen} onChange={handleChange} required>
               <MenuItem value="Propio">Propio</MenuItem>
               <MenuItem value="Tercerizado">Tercerizado</MenuItem>

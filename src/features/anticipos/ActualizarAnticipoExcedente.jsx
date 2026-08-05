@@ -15,6 +15,7 @@ import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import RouteOutlinedIcon from '@mui/icons-material/RouteOutlined'
 import PlacaDisplay from '../../shared/components/PlacaDisplay.jsx'
+import * as ventaService from '../../shared/services/ventaService'
 import { useAnticipos } from '../../shared/contexts/AnticipoExcedenteContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { FormField } from '../../shared/components/FormularioEstandarizado.jsx'
@@ -122,6 +123,30 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
         setParInput(`${unico.placa || 'Sin placa'} — ${unico.conductorNombre}`)
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [form?.idRuta, rutas, anticipoOriginal])
+
+    // Cuántos paquetes tiene asignados cada par vehículo+conductor de la ruta elegida —
+    // solo para avisar (no bloquear) si el par elegido para el anticipo va a salir vacío.
+    const [paquetesPorPar, setPaquetesPorPar] = useState({})
+    useEffect(() => {
+        if (!form?.idRuta) {
+            setPaquetesPorPar({})
+            return
+        }
+        let cancelado = false
+        ventaService.getEncomiendas(undefined, { idRuta: form.idRuta, limit: 100 })
+            .then(res => {
+                if (cancelado) return
+                const conteo = (res?.data || [])
+                    .flatMap(v => v.paquetes || [])
+                    .reduce((acc, p) => {
+                        acc[p.idRutaVehiculoConductor] = (acc[p.idRutaVehiculoConductor] || 0) + 1
+                        return acc
+                    }, {})
+                setPaquetesPorPar(conteo)
+            })
+            .catch(() => setPaquetesPorPar({}))
+        return () => { cancelado = true }
+    }, [form?.idRuta])
 
     const NUMERIC_LIMITS = { valorAnticipo: 999999999 }
 
@@ -386,6 +411,12 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
                                     sx={formFieldStyles} />
                             )}
                         />
+
+                        {puedeEditarAsignacion && parSeleccionado && !(paquetesPorPar[parSeleccionado.idRutaVehiculoConductor] > 0) && (
+                            <Alert severity="warning" sx={{ borderRadius: 2, mt: -1 }}>
+                                Este vehículo no tiene paquetes asignados en esta ruta — el anticipo se registrará igual, solo confírmalo a propósito.
+                            </Alert>
+                        )}
 
                         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                             <FormField

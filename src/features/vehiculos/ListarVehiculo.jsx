@@ -27,7 +27,6 @@ import UnfoldMoreOutlinedIcon from '@mui/icons-material/UnfoldMoreOutlined'
 import { useVehiculo } from '../../shared/contexts/VehiculoContext.jsx'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
-import { useRutaProgramacion } from '../../shared/contexts/RutaProgramacionContext.jsx'
 import RegistrarVehiculo from './RegistrarVehiculo'
 import ActualizarVehiculo from './ActualizarVehiculo'
 import ModalConsultarVehiculo from './ModalConsultarVehiculo'
@@ -167,18 +166,21 @@ const ListarTransporte = () => {
     const [vehiculoEditar, setVehiculoEditar] = useState(null)
     const [sortBy, setSortBy] = useState({ field: '', dir: '' })
     const { getVehiculos, getTotal, updateEstado, toggleHabilitado, fetchVehiculos } = useVehiculo()
-    const { rutasProgramadas, fetchRutasProgramadas } = useRutaProgramacion()
     const { usuario, tienePermiso, PERMISOS } = useAuth()
     const navigate = useNavigate()
 
     const transportes = getVehiculos()
     const totalBackend = getTotal()
 
-    const vehiculosOcupadosIds = new Set(
-        rutasProgramadas
-            .filter(r => r.estado === 'En Curso' && r.habilitado !== false)
-            .flatMap(r => (r.paresVehiculoConductor || []).map(p => p.idVehiculo))
-    )
+    // Consulta dedicada y fresca (no la lista paginada de Rutas, que puede no traer
+    // todas las rutas En Curso) — mismo patrón que ListarConductor.jsx.
+    const [vehiculosOcupadosIds, setVehiculosOcupadosIds] = useState(new Set())
+    useEffect(() => {
+        if (!usuario) return
+        getRutas({ estado: 'En Curso', habilitado: 'true', limit: 100 })
+            .then(res => setVehiculosOcupadosIds(new Set((res?.data || []).flatMap(r => (r.paresVehiculoConductor || []).map(p => p.idVehiculo)))))
+            .catch(() => {})
+    }, [usuario])
 
     const transportesConEstado = transportes.map(t => {
         const estaOcupado = vehiculosOcupadosIds.has(t.idVehiculo)
@@ -235,13 +237,6 @@ const ListarTransporte = () => {
     useEffect(() => {
         if (!loading) initialLoad.current = false
     }, [loading])
-
-    useEffect(() => {
-        if (!usuario) return
-        if (rutasProgramadas.length === 0) {
-            fetchRutasProgramadas()
-        }
-    }, [usuario, rutasProgramadas.length, fetchRutasProgramadas])
 
     useEffect(() => {
         if (!highlightId || hasNavigated.current) return

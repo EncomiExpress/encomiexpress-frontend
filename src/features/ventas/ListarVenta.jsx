@@ -705,6 +705,24 @@ const ListarVenta = () => {
                                                         }}
                                                     />
                                                 )}
+                                                {venta.estado === 'Programada' && !venta.fechaEstimadaEntrega && (
+                                                    // Queda así cuando alguien mueve la fecha de la ruta y esta venta
+                                                    // deja de caber en el rango nuevo — ver rutaService.update() en el
+                                                    // backend, que vacía el campo en vez de bloquear el cambio de ruta.
+                                                    <Chip
+                                                        label="Falta fecha de entrega"
+                                                        size="small"
+                                                        sx={{
+                                                            height: 18,
+                                                            fontSize: '0.65rem',
+                                                            fontWeight: 600,
+                                                            backgroundColor: alpha(theme.palette.warning.main, 0.12),
+                                                            color: theme.palette.warning.dark,
+                                                            border: `1px solid ${alpha(theme.palette.warning.main, 0.35)}`,
+                                                            mt: 0.5,
+                                                        }}
+                                                    />
+                                                )}
                                             </TableCell>
 
                                             {/* Total + método de pago */}

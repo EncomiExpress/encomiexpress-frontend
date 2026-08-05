@@ -11,4 +11,8 @@ export const formFieldStyles = (theme) => ({
     },
   },
   '& .MuiInputLabel-root.Mui-focused': { color: theme.palette.primary.main },
+  // Los placeholders de ejemplo ("Ej: ...") por defecto se veían casi tan oscuros
+  // como un valor ya escrito — parecía que el campo ya estaba lleno. Se baja la
+  // opacidad para que se note claramente que es solo un ejemplo, no un valor real.
+  '& input::placeholder, & textarea::placeholder': { opacity: '0.25 !important' },
 })
