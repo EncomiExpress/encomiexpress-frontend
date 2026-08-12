@@ -45,7 +45,7 @@ const ModalConfirmarEstado = ({ open, nuevoEstado, info, ruta, pares = [], onCon
 
     useEffect(() => {
         if (!open) return
-        if (nuevoEstado !== 'En Curso' || !ruta?.idRuta) {
+        if (nuevoEstado !== 'En Ruta' || !ruta?.idRuta) {
             setDetalle({ anticipos: [], ventas: [], loading: false })
             return
         }
@@ -87,7 +87,7 @@ const ModalConfirmarEstado = ({ open, nuevoEstado, info, ruta, pares = [], onCon
         conductorId: par.conductor?.idConductor,
         sinPaquetes: !detalle.loading && !(paquetesPorPar[par.idRutaVehiculoConductor] > 0),
     }))
-    const isEnCurso = nuevoEstado === 'En Curso'
+    const isEnCurso = nuevoEstado === 'En Ruta'
 
     const openRecord = (path) => window.open(path, '_blank')
     const openHighlight = (base, id) => openRecord(`${base}?highlight=${id}`)
@@ -114,7 +114,7 @@ const ModalConfirmarEstado = ({ open, nuevoEstado, info, ruta, pares = [], onCon
                         <Typography fontWeight={700} fontSize="1.4rem" color={theme.palette.text.primary}>
                             Cambiar estado
                         </Typography>
-                        {(nuevoEstado === 'Completada' || nuevoEstado === 'En Curso') && (
+                        {(nuevoEstado === 'Completada' || nuevoEstado === 'En Ruta') && (
                             <Typography fontWeight={700} fontSize="0.8rem" color={theme.palette.text.secondary}>
                                 Estado irreversible.
                             </Typography>
@@ -217,7 +217,7 @@ const ModalConfirmarEstado = ({ open, nuevoEstado, info, ruta, pares = [], onCon
                                         <>
                                             <Typography variant="body2" color={theme.palette.text.primary} sx={{ mb: 1 }}>
                                                 Las ventas asociadas pasarán a{' '}
-                                                <Box component="span" sx={{ color: getVentaEstadoDot('En Tránsito').color }}>"En Tránsito"</Box>
+                                                <Box component="span" sx={{ color: getVentaEstadoDot('En Ruta').color }}>"En Ruta"</Box>
                                             </Typography>
                                             <Paper elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 2, overflow: 'hidden', mb: 1 }}>
                                                 <TableContainer sx={{ maxHeight: 180 }}>

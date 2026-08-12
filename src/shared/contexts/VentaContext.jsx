@@ -8,8 +8,9 @@ export const useVentas = () => useContext(VentaContext)
 
 export const ESTADOS_ENCOMIENDA = [
   'Programada',
-  'En Tránsito',
+  'En Ruta',
   'Entregada',
+  'Completada con novedades',
   'Cancelada',
 ]
 

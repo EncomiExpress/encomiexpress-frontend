@@ -54,13 +54,13 @@ const ModalInhabilitarRuta = ({ open, data, onClose, onExited, onConfirm }) => {
         }
     }
 
-    const enCurso = data?.habilitadoActual && data?.estadoRuta === 'En Curso'
+    const enCurso = data?.habilitadoActual && data?.estadoRuta === 'En Ruta'
     const nVentas = deps.ventas.length
     const hayAnticipo = deps.anticipos.length > 0
     const bloqueado = data?.habilitadoActual && (enCurso || nVentas > 0 || hayAnticipo)
     const cargando = data?.habilitadoActual && deps.loading
 
-    const nombre = data?.nombreRuta || `#${data?.idRuta}`
+    const nombre = data?.origen || `#${data?.idRuta}`
 
     const titulo = !data?.habilitadoActual
         ? '¿Habilitar ruta?'

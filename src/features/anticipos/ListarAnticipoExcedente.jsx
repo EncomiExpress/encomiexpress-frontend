@@ -251,7 +251,7 @@ const ListarAnticipoExcedente = () => {
             const rows = (res?.data || []).map(anticipo => ({
                 'ID': anticipo.idAnticipoExcedente || anticipo.idAnticipo,
                 'Conductor': getNombreConductor(anticipo),
-                'Ruta': anticipo.ruta?.nombreRuta || anticipo.idRuta || '-',
+                'Ruta': anticipo.ruta?.origen || anticipo.idRuta || '-',
                 'Valor anticipo': Math.round(Number(anticipo.valorAnticipo)) || 0,
                 'Valor gastado': Math.round(Number(anticipo.valorGastado)) || 0,
                 'Excedente': Math.round(Number(anticipo.excedente)) || 0,
@@ -633,7 +633,7 @@ const ListarAnticipoExcedente = () => {
                                             {/* Ruta */}
                                             <TableCell sx={{ py: 2.5 }}>
                                                 <Typography variant="body2" fontWeight={500} sx={{ fontSize: '0.8rem', color: theme.palette.text.primary }} noWrap>
-                                                    {anticipo.ruta?.nombreRuta || '—'}
+                                                    {anticipo.ruta?.origen || '—'}
                                                 </Typography>
                                             </TableCell>
 

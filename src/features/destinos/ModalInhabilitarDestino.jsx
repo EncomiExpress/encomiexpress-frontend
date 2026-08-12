@@ -30,7 +30,7 @@ const RutasMiniTabla = ({ rutas, theme }) => (
                                 onClick={() => window.open(`/transporte/rutas?highlight=${r.idRuta}`, '_blank')}
                                 sx={{ cursor: 'pointer', '&:hover td': { backgroundColor: theme.palette.action.hover } }}>
                                 <TableCell sx={{ fontSize: '0.8rem', fontWeight: 600, py: 0.75 }}>
-                                    {r.nombreRuta || `#${r.idRuta}`}
+                                    {r.origen || `#${r.idRuta}`}
                                 </TableCell>
                                 <TableCell sx={{ fontSize: '0.8rem', py: 0.75 }}>
                                     {r.fechaSalida ? new Date(r.fechaSalida + 'T00:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
@@ -60,7 +60,7 @@ const ModalInhabilitarDestino = ({ open, data, onClose, onExited, onConfirm }) =
         setRutasInhabilitar({ data: [], loading: true })
         rutaService.getRutas({ idDestino: data.id, habilitado: 'true', limit: 100 })
             .then(res => {
-                const activas = (res?.data || []).filter(r => r.estado === 'Programada' || r.estado === 'En Curso')
+                const activas = (res?.data || []).filter(r => r.estado === 'Programada' || r.estado === 'En Ruta')
                 setRutasInhabilitar({ data: activas, loading: false })
             })
             .catch(() => setRutasInhabilitar({ data: [], loading: false }))

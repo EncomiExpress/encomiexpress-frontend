@@ -101,7 +101,7 @@ const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
                 ? `${par.conductor.usuario.nombre} ${par.conductor.usuario.apellido}`
                 : (conductorCtx ? `${conductorCtx.nombre} ${conductorCtx.apellido}` : 'N/A'),
             // El backend solo revalida documentos/licencia al crear/cambiar el par o al
-            // pasar a "En Curso" — nunca de forma continua — así que se marca acá para
+            // pasar a "En Ruta" — nunca de forma continua — así que se marca acá para
             // que no quede invisible mientras la ruta sigue Programada.
             documentoVencido: par.vehiculo ? getDocumentoVehiculoVencido(par.vehiculo) : null,
             licenciaVencida: par.conductor ? !conductorLicenciaVigente(par.conductor.categoriasLicencia) : false,
@@ -136,7 +136,7 @@ const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
                     </Box>
                     <Box>
                         <Typography fontWeight={700} fontSize="1rem" color={theme.palette.text.primary}>
-                            {ruta.nombreRuta || 'Ruta Programada'}
+                            {ruta.origen || 'Ruta Programada'}
                         </Typography>
                         <Typography variant="caption" color={theme.palette.text.secondary}>{resolveDestino(ruta)}</Typography>
                     </Box>
@@ -157,9 +157,9 @@ const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
                                 <Typography fontWeight={700} fontSize="0.95rem">Datos de la Ruta y Horario</Typography>
                             </Box>
                             <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
-                                Nombre, destino, fecha, horas y estado de la ruta
+                                Origen, destino, fecha, horas y estado de la ruta
                             </Typography>
-                            <CampoFila label="Nombre" value={ruta.nombreRuta} />
+                            <CampoFila label="Origen" value={ruta.origen} />
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Destino</Typography>
                                 <Chip label={resolveDestino(ruta) || '—'} size="small"

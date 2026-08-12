@@ -25,7 +25,7 @@ import { getRangoFechasVentas } from '../../shared/services/ventaService.js'
 
 const STATUS_LABEL = {
   'Programada':  'Programada',
-  'En Tránsito': 'En Tránsito',
+  'En Ruta': 'En Ruta',
   'Entregada':   'Entregada',
   'Cancelada':   'Cancelada',
 }
@@ -255,7 +255,7 @@ const Dashboard = () => {
       if (!estadoKey) return
       contador[estadoKey] = (contador[estadoKey] || 0) + 1
     })
-    const orden = ['Entregada', 'En Tránsito', 'Programada', 'Cancelada']
+    const orden = ['Entregada', 'En Ruta', 'Programada', 'Cancelada']
     return orden
       .filter(key => contador[key])
       .map(key => ({

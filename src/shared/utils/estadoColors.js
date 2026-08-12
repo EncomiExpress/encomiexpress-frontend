@@ -1,17 +1,28 @@
 export const getVentaEstadoDot = (estado) => {
     switch (estado) {
-        case 'Programada':  return { type: 'circle', fill: false, color: '#A855F7', label: 'Programada' }
-        case 'En Tránsito': return { type: 'circle', fill: true,  color: '#3B82F6', label: 'En Tránsito' }
-        case 'Entregada':   return { type: 'symbol', char: '✓',   color: '#059669', label: 'Entregada' }
-        case 'Cancelada':   return { type: 'symbol', char: '−',   color: '#3F3F46', label: 'Cancelada' }
-        default:            return { type: 'circle', fill: false, color: '#9CA3AF', label: estado || '—' }
+        case 'Programada':               return { type: 'circle', fill: false, color: '#A855F7', label: 'Programada' }
+        case 'En Ruta':               return { type: 'circle', fill: true,  color: '#3B82F6', label: 'En Ruta' }
+        case 'Entregada':                return { type: 'symbol', char: '✓',   color: '#059669', label: 'Entregada' }
+        case 'Completada con novedades': return { type: 'symbol', char: '!',   color: '#F59E0B', label: 'Completada con novedades' }
+        case 'Cancelada':                return { type: 'symbol', char: '−',   color: '#3F3F46', label: 'Cancelada' }
+        default:                         return { type: 'circle', fill: false, color: '#9CA3AF', label: estado || '—' }
+    }
+}
+
+export const getPaqueteEstadoDot = (estado) => {
+    switch (estado) {
+        case 'Por entregar': return { type: 'circle', fill: false, color: '#A855F7', label: 'Por entregar' }
+        case 'En reparto':   return { type: 'circle', fill: true,  color: '#3B82F6', label: 'En reparto' }
+        case 'Entregado':    return { type: 'symbol', char: '✓',   color: '#059669', label: 'Entregado' }
+        case 'Devuelto':     return { type: 'symbol', char: '!',   color: '#F59E0B', label: 'Devuelto' }
+        default:             return { type: 'circle', fill: false, color: '#9CA3AF', label: estado || '—' }
     }
 }
 
 export const getEstadoColorRuta = (estado) => {
     switch (estado) {
         case 'Programada': return { bg: '#F3E8FF', color: '#A855F7' }
-        case 'En Curso':   return { bg: '#DBEAFE', color: '#3B82F6' }
+        case 'En Ruta':   return { bg: '#DBEAFE', color: '#3B82F6' }
         case 'Completada': return { bg: '#D1FAE5', color: '#059669' }
         case 'Cancelada':  return { bg: '#E4E4E7', color: '#3F3F46' }
         default:           return { bg: '#F3F4F6', color: '#6B7280' }
@@ -33,7 +44,7 @@ export const getEstadoColorAnticipo = (estado) => {
 export const getRutaEstadoDot = (estado) => {
     switch (estado) {
         case 'Programada':  return { type: 'circle', fill: false, color: '#A855F7', label: 'Programada' }
-        case 'En Curso':    return { type: 'circle', fill: true,  color: '#3B82F6', label: 'En Curso' }
+        case 'En Ruta':    return { type: 'circle', fill: true,  color: '#3B82F6', label: 'En Ruta' }
         case 'Completada':  return { type: 'symbol', char: '✓',  color: '#059669', label: 'Completada' }
         case 'Cancelada':   return { type: 'symbol', char: '−',  color: '#3F3F46', label: 'Cancelada' }
         default:            return { type: 'circle', fill: false, color: '#9CA3AF', label: estado || '—' }

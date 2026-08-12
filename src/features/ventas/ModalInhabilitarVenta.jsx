@@ -27,7 +27,7 @@ const renderDot = (dot) => {
 // primer paquete de la venta como referencia rápida, igual que hace la guía principal.
 const getRutaLabel = (ruta, venta) => {
     if (!ruta) return '—'
-    const base = ruta.nombreRuta || ruta.destino?.nombre || '—'
+    const base = ruta.origen || ruta.destino?.nombre || '—'
     const placa = venta?.paquetes?.[0]?.asignacion?.vehiculo?.placa
     return placa ? `${base} · ${placa}` : base
 }
@@ -68,7 +68,7 @@ const ModalInhabilitarVenta = ({ open, venta, onClose, onExited, onConfirm }) =>
             : <>La guía <strong>{guia}</strong> quedará inhabilitada en el sistema.</>
 
     const rutaLabel = bloqueado && ruta
-        ? venta.estado === 'En Tránsito'
+        ? venta.estado === 'En Ruta'
             ? 'La ruta en curso que impide la inhabilitación'
             : 'La ruta asociada a esta venta'
         : null

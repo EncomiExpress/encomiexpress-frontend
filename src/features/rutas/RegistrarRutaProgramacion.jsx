@@ -59,9 +59,9 @@ const MAX_PARES = 10
 // aquí: es opcional y no tiene ninguna regla que validar.
 const validarCampo = (name, form) => {
     switch (name) {
-        case 'nombreRuta':
-            if (!form.nombreRuta?.trim()) return 'El nombre de la ruta es obligatorio'
-            if (esSoloRelleno(form.nombreRuta)) return 'El nombre de la ruta no puede contener solo espacios o guiones'
+        case 'origen':
+            if (!form.origen?.trim()) return 'El origen de la ruta es obligatorio'
+            if (esSoloRelleno(form.origen)) return 'El origen de la ruta no puede contener solo espacios o guiones'
             return ''
         case 'idDestino':
             return form.idDestino ? '' : 'Selecciona un destino'
@@ -156,7 +156,7 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess }) => {
     const conductoresExcluidos = conductores.length - conductoresSeleccionables.length
 
     const [form, setForm] = useState({
-        nombreRuta: '',
+        origen: 'Medellín',
         pares: [{ idVehiculo: '', idConductor: '' }],
         idDestino: '',
         fechaSalida: '',
@@ -168,7 +168,7 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess }) => {
 
     const handleChange = (e) => {
         let { name, value } = e.target
-        if (name === 'nombreRuta') value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s\-_]/g, '')
+        if (name === 'origen') value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s\-_]/g, '')
         const formActualizado = { ...form, [name]: value }
         setForm(prev => ({ ...prev, [name]: value }))
         setErrores(prev => ({ ...prev, [name]: prev[name] ? validarCampo(name, formActualizado) : '' }))
@@ -203,7 +203,7 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess }) => {
     const validarPaso = (step) => {
         const e = {}
         if (step === 0) {
-            e.nombreRuta = validarCampo('nombreRuta', form)
+            e.origen = validarCampo('origen', form)
             e.pares = validarPares(form.pares)
             e.idDestino = validarCampo('idDestino', form)
         }
@@ -253,7 +253,7 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess }) => {
 
     const handleClose = () => {
         if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
-        setForm({ nombreRuta: '', pares: [{ idVehiculo: '', idConductor: '' }], idDestino: '', fechaSalida: '', horaSalida: '', fechaLlegadaEstimada: '', horaLlegadaEstimada: '', observaciones: '' })
+        setForm({ origen: 'Medellín', pares: [{ idVehiculo: '', idConductor: '' }], idDestino: '', fechaSalida: '', horaSalida: '', fechaLlegadaEstimada: '', horaLlegadaEstimada: '', observaciones: '' })
         setErrores({})
         setApiError(null)
         setActiveStep(0)
@@ -288,11 +288,11 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess }) => {
                 return (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
-                            <FormField label="Nombre de la Ruta" name="nombreRuta" value={form.nombreRuta}
+                            <FormField label="Origen" name="origen" value={form.origen}
                                 onChange={handleChange}
-                                onBlur={() => setErrores(prev => ({ ...prev, nombreRuta: validarCampo('nombreRuta', form) }))}
-                                required error={errores.nombreRuta} helperText={errores.nombreRuta}
-                                icon={RouteOutlinedIcon} inputProps={{ maxLength: 100 }} placeholder="Ej: Ruta Medellín - Bogotá" />
+                                onBlur={() => setErrores(prev => ({ ...prev, origen: validarCampo('origen', form) }))}
+                                required error={errores.origen} helperText={errores.origen}
+                                icon={RouteOutlinedIcon} inputProps={{ maxLength: 100 }} placeholder="Ej: Medellín" />
                             <Autocomplete
                                 options={destinos}
                                 popupIcon={<KeyboardArrowDownOutlinedIcon />}
@@ -570,7 +570,7 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess }) => {
                                     <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Datos de la Ruta y Horario</Typography>
                                 </Box>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la información y el horario de la ruta</Typography>
-                                <ConfirmRow label="Nombre"    value={form.nombreRuta} />
+                                <ConfirmRow label="Origen"    value={form.origen} />
                                 <ConfirmRow label="Destino"   value={getDestinoLabel(form.idDestino)} />
                                 <ConfirmRow label="Fecha Salida" value={formatFecha(form.fechaSalida)} />
                                 <ConfirmRow label="Hora Salida"  value={form.horaSalida} />

@@ -32,7 +32,7 @@ const RutasTabla = ({ rutas, theme }) => (
                             <TableRow key={r.idRuta}
                                 onClick={() => window.open(`/transporte/rutas?highlight=${r.idRuta}`, '_blank')}
                                 sx={{ cursor: 'pointer', '&:hover td': { backgroundColor: theme.palette.action.hover } }}>
-                                <TableCell sx={{ fontSize: '0.8rem', fontWeight: 600, py: 0.75 }}>{r.nombreRuta || `#${r.idRuta}`}</TableCell>
+                                <TableCell sx={{ fontSize: '0.8rem', fontWeight: 600, py: 0.75 }}>{r.origen || `#${r.idRuta}`}</TableCell>
                                 <TableCell sx={{ fontSize: '0.8rem', py: 0.75 }}>{r.destino?.ciudad || '—'}</TableCell>
                                 <TableCell sx={{ py: 0.75, textAlign: 'right' }}>
                                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.75 }}>
@@ -91,7 +91,7 @@ const ModalInhabilitarConductor = ({ open, data, onClose, onExited, onConfirm })
         }
     }
 
-    const rutasEnCurso = rutasDetalle.data.filter(r => r.estado === 'En Curso')
+    const rutasEnCurso = rutasDetalle.data.filter(r => r.estado === 'En Ruta')
     const rutasProgramadas = rutasDetalle.data.filter(r => r.estado === 'Programada')
     const anticiposBloqueo = anticiposDetalle.data.filter(a => ESTADOS_BLOQUEO_ANTICIPO.includes(a.estado))
     const cargando = rutasDetalle.loading || anticiposDetalle.loading
@@ -141,7 +141,7 @@ const ModalInhabilitarConductor = ({ open, data, onClose, onExited, onConfirm })
                         {rutasEnCurso.length > 0 && (
                             <Box sx={{ mt: 2.5, textAlign: 'left' }}>
                                 <Typography variant="body2" color={theme.palette.text.primary} sx={{ mb: 1 }}>
-                                    {rutasEnCurso.length === 1 ? 'La ruta En Curso que impide la inhabilitación' : 'Las rutas En Curso que impiden la inhabilitación'}
+                                    {rutasEnCurso.length === 1 ? 'La ruta En Ruta que impide la inhabilitación' : 'Las rutas En Ruta que impiden la inhabilitación'}
                                 </Typography>
                                 <RutasTabla rutas={rutasEnCurso} theme={theme} />
                             </Box>

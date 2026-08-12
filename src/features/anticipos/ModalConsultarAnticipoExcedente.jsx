@@ -56,9 +56,9 @@ const ModalConsultarAnticipoExcedente = ({ anticipo, conductores, rutas, onClose
     }
 
     const resolveRuta = () => {
-        if (anticipo.ruta?.nombreRuta) return anticipo.ruta.nombreRuta
+        if (anticipo.ruta?.origen) return anticipo.ruta.origen
         const r = rutas?.find(r => r.idRuta === parseInt(anticipo.idRuta))
-        return r ? (r.nombreRuta || r.nombre) : '—'
+        return r ? (r.origen || r.nombre) : '—'
     }
 
     const resolveDestino = () => {
@@ -69,7 +69,7 @@ const ModalConsultarAnticipoExcedente = ({ anticipo, conductores, rutas, onClose
     }
 
     const nombreConductor = resolveConductor()
-    const nombreRuta = resolveRuta()
+    const origen = resolveRuta()
     const destinoTexto = resolveDestino()
     // Filtra entradas vacías/rotas — subidas viejas hechas antes de corregir el
     // backend (guardaba `undefined` en vez de la URL real) quedaron como `null`.
@@ -102,7 +102,7 @@ const ModalConsultarAnticipoExcedente = ({ anticipo, conductores, rutas, onClose
                             {nombreConductor}
                         </Typography>
                         <Typography variant="caption" color={theme.palette.text.secondary}>
-                            {nombreRuta}
+                            {origen}
                         </Typography>
                     </Box>
                 </Box>
@@ -128,7 +128,7 @@ const ModalConsultarAnticipoExcedente = ({ anticipo, conductores, rutas, onClose
                         </Box>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
                             <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Ruta</Typography>
-                            <Chip label={nombreRuta || '—'} size="small"
+                            <Chip label={origen || '—'} size="small"
                                 onClick={() => window.open(`/transporte/rutas?highlight=${anticipo.idRuta}`, '_blank')}
                                 sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem', cursor: 'pointer', '&:hover': { filter: 'brightness(0.92)' } }} />
                         </Box>

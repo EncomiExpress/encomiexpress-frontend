@@ -10,6 +10,7 @@ import {
   RouteOutlined as RouteIcon,
   AttachMoneyOutlined as MoneyIcon,
   ReceiptOutlined as SalesIcon,
+  Inventory2Outlined as PaqueteDevueltoIcon,
 } from '@mui/icons-material'
 
 export const DASHBOARD_ITEM = { id: 'dashboard', label: 'Dashboard', icon: DashboardIcon, path: '/dashboard' }
@@ -41,6 +42,7 @@ export const SECTIONS = [
     items: [
       { id: 'clientes', label: 'Clientes', icon: PeopleIcon, path: '/clientes/listar' },
       { id: 'ventas',   label: 'Ventas',   icon: SalesIcon,  path: '/ventas/listar' },
+      { id: 'paquetes-devueltos', label: 'Paquetes devueltos', icon: PaqueteDevueltoIcon, path: '/paquetes-devueltos/listar' },
     ],
   },
 ]

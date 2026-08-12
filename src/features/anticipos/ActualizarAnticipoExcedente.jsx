@@ -75,7 +75,7 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
         const anticipo = anticipos.find(a => a.idAnticipoExcedente === anticipoProp.idAnticipoExcedente) || anticipoProp
         setAnticipoOriginal(anticipo)
         // "rutas" del contexto solo trae rutas "Programada" (son las únicas asignables a
-        // un anticipo nuevo) — la ruta real de este anticipo puede ya estar "En Curso" o
+        // un anticipo nuevo) — la ruta real de este anticipo puede ya estar "En Ruta" o
         // más adelante, así que si no aparece ahí se arma un par sintético con los datos
         // que ya trae el anticipo, solo para mostrarlo (el campo queda deshabilitado).
         const r = rutas.find(x => x.idRuta === anticipo.idRuta)
@@ -103,7 +103,7 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
         }
         setFormOriginal(datos)
         setForm(datos)
-        setRutaInput(r ? r.nombre : (anticipo.ruta?.nombreRuta || ''))
+        setRutaInput(r ? getEtiquetaRuta(r) : (getEtiquetaRuta(anticipo.ruta) || ''))
         const parActivo = parInicial || parSintetico
         setParInput(parActivo ? `${parActivo.placa || 'Sin placa'} — ${parActivo.conductorNombre}` : '')
     }, [open, anticipoProp, anticipos, rutas])
@@ -259,7 +259,7 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
         anticipoOriginal?.ruta
             ? {
                 idRuta: anticipoOriginal.idRuta,
-                nombre: anticipoOriginal.ruta.nombreRuta || `Ruta ${anticipoOriginal.idRuta}`,
+                nombre: anticipoOriginal.ruta.origen || `Ruta ${anticipoOriginal.idRuta}`,
                 paresVehiculoConductor: [{
                     idRutaVehiculoConductor: `original-${anticipoOriginal.idConductor}`,
                     idVehiculo: anticipoOriginal.ruta.vehiculo?.idVehiculo,
@@ -275,9 +275,18 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
 
     const getNombreConductor = () => parSeleccionado?.conductorNombre || nombreConductorOriginal
 
+    const getEtiquetaRuta = (ruta) => {
+        if (!ruta) return null
+        const origen = ruta.nombre || ruta.origen || 'Sin nombre'
+        const destino = ruta.destino
+        const destinoTxt = destino ? destino.ciudad : 'Sin destino'
+        const tarifa = destino?.tarifaBase != null ? ` — $${Number(destino.tarifaBase).toLocaleString('es-CO')}` : ''
+        return `${origen} → ${destinoTxt}${tarifa}`
+    }
+
     const getNombreRuta = (id) => {
         const r = rutas.find(r => r.idRuta === parseInt(id))
-        return r ? r.nombre : (anticipoOriginal?.ruta?.nombreRuta || '—')
+        return r ? getEtiquetaRuta(r) : (getEtiquetaRuta(anticipoOriginal?.ruta) || '—')
     }
 
     // La ruta/conductor/valor del anticipo/fecha de entrega solo se pueden tocar
@@ -303,7 +312,7 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
                             options={rutas}
                             popupIcon={<KeyboardArrowDownOutlinedIcon />}
                             disabled={!puedeEditarAsignacion}
-                            getOptionLabel={(r) => r.nombre}
+                            getOptionLabel={getEtiquetaRuta}
                             isOptionEqualToValue={(opt, val) => opt.idRuta === val.idRuta}
                             value={rutaSeleccionada || null}
                             inputValue={rutaInput}
@@ -334,7 +343,10 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
                                             <RouteOutlinedIcon sx={{ fontSize: 18 }} />
                                         </Avatar>
                                         <Typography variant="body2" fontWeight={500} noWrap sx={{ flex: 1, minWidth: 0 }}>
-                                            {r.nombre}
+                                            {r.nombre} → {r.destino?.ciudad || 'Sin destino'}
+                                        </Typography>
+                                        <Typography variant="caption" color={theme.palette.text.secondary} sx={{ flexShrink: 0 }}>
+                                            ${Number(r.destino?.tarifaBase || 0).toLocaleString('es-CO')}
                                         </Typography>
                                     </Box>
                                 )
@@ -342,14 +354,18 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
                             filterOptions={(opts, { inputValue }) => {
                                 if (!inputValue.trim()) return [...opts].sort((a, b) => b.idRuta - a.idRuta).slice(0, 5)
                                 const q = normalizarTexto(inputValue)
-                                return opts.filter(r => normalizarTexto(r.nombre).includes(q))
+                                return opts.filter(r =>
+                                    normalizarTexto(r.nombre).includes(q) ||
+                                    normalizarTexto(r.destino?.ciudad || '').includes(q) ||
+                                    normalizarTexto(r.destino?.departamento || '').includes(q)
+                                )
                             }}
                             noOptionsText="No se encontraron rutas"
                             renderInput={(params) => (
                                 <TextField {...params} label="Ruta *"
                                     error={!!errores.idRuta}
                                     helperText={errores.idRuta || (puedeEditarAsignacion
-                                        ? 'Busca por nombre de la ruta'
+                                        ? 'Busca por origen de la ruta'
                                         : 'La ruta ya arrancó: no se puede reasignar')}
                                     slotProps={{ inputLabel: { shrink: true }, htmlInput: { ...params.inputProps, maxLength: 100 } }}
                                     sx={formFieldStyles} />

@@ -24,7 +24,7 @@ const renderDot = (dot) => {
 
 const getRutaLabel = (ruta) => {
     if (!ruta) return '—'
-    const partes = [ruta.nombreRuta, ruta.destino?.nombre].filter(Boolean)
+    const partes = [ruta.origen, ruta.destino?.nombre].filter(Boolean)
     const placa = ruta.vehiculo?.placa
     const base = partes[0] || '—'
     return placa ? `${base} · ${placa}` : base

@@ -139,7 +139,7 @@ const getThStyle = (theme) => ({
     whiteSpace: 'nowrap',
 })
 
-const ESTADOS_RUTA = ['Programada', 'En Curso', 'Completada', 'Cancelada']
+const ESTADOS_RUTA = ['Programada', 'En Ruta', 'Completada', 'Cancelada']
 
 const FILTROS = [
     { value: 'todo', label: 'Todo' },
@@ -191,7 +191,7 @@ const ListarRutaProgramacion = () => {
     const [debouncedSearch, setDebouncedSearch] = useState('')
     const [rutaVer, setRutaVer]               = useState(null)
     const { showToast } = useToast()
-    const [confirmInhabilitar, setConfirmInhabilitar] = useState({ open: false, idRuta: null, nombreRuta: '', habilitadoActual: null, estadoRuta: null })
+    const [confirmInhabilitar, setConfirmInhabilitar] = useState({ open: false, idRuta: null, origen: '', habilitadoActual: null, estadoRuta: null })
     const [confirmEstado, setConfirmEstado]   = useState({ open: false, id: null, nuevoEstado: null, info: '', ruta: null, pares: [] })
     const [alertaBloqueo, setAlertaBloqueo]   = useState({ open: false, tipo: 'conflicto', titulo: '', entidades: [] })
     const [estadoMenu, setEstadoMenu]         = useState({ anchor: null, id: null, estadoActual: null })
@@ -335,7 +335,7 @@ const getDestinoNombre = (id) => {
         placa: par.vehiculo?.placa ?? getVehiculoPlaca(par.idVehiculo),
         vehiculoInhabilitado: getVehiculos().find(v => v.idVehiculo === par.idVehiculo)?.habilitado === false,
         // Igual que "inhabilitado" arriba: el backend solo revalida documentos/licencia
-        // al crear la ruta, al cambiar el par, o al pasar a "En Curso" — nunca de forma
+        // al crear la ruta, al cambiar el par, o al pasar a "En Ruta" — nunca de forma
         // continua — así que un documento puede vencerse mientras la ruta ya está
         // Programada sin que nada lo marque. Esto lo hace visible en el listado.
         documentoVencido: par.vehiculo ? getDocumentoVehiculoVencido(par.vehiculo) : null,
@@ -361,7 +361,7 @@ const resolveDestino = (ruta) =>
                 const pares = resolvePares(ruta)
                 return {
                     'ID': getId(ruta),
-                    'Ruta': ruta.nombreRuta || `Ruta ${getId(ruta)}`,
+                    'Origen': ruta.origen || `Ruta ${getId(ruta)}`,
                     'Destino': resolveDestino(ruta),
                     'Vehículo': pares.map(p => p.placa).filter(Boolean).join(', ') || 'N/A',
                     'Conductor': pares.map(p => p.conductorNombre).filter(Boolean).join(', ') || 'N/A',
@@ -389,7 +389,7 @@ const resolveDestino = (ruta) =>
                 setAlertaBloqueo({
                     open: true,
                     tipo: 'ventas',
-                    titulo: 'La ruta no puede ponerse En Curso',
+                    titulo: 'La ruta no puede ponerse En Ruta',
                     entidades: err.details || [],
                 })
                 return
@@ -403,9 +403,9 @@ const resolveDestino = (ruta) =>
         const paresActual = rutaActual?.paresVehiculoConductor || []
 
         let disponibilidad = []
-        if (nuevoEstado === 'En Curso') {
+        if (nuevoEstado === 'En Ruta') {
             // Refresca vehículos/conductores y consulta disponibilidad real contra TODAS
-            // las rutas En Curso — antes este chequeo solo miraba `rutasProgramadas`
+            // las rutas En Ruta — antes este chequeo solo miraba `rutasProgramadas`
             // (limitada por la paginación de la tabla) y podía dejar pasar conflictos
             // reales que estuvieran fuera de la página cargada.
             const idVehiculos = paresActual.map(p => p.idVehiculo).filter(Boolean)
@@ -425,7 +425,7 @@ const resolveDestino = (ruta) =>
         }
 
         // Vehículo/conductor "en vivo" desde los contextos (recién refrescados arriba
-        // si el nuevo estado es En Curso), con respaldo a los datos de la propia ruta.
+        // si el nuevo estado es En Ruta), con respaldo a los datos de la propia ruta.
         const paresResueltos = paresActual.map(par => ({
             idRutaVehiculoConductor: par.idRutaVehiculoConductor,
             idVehiculo: par.idVehiculo,
@@ -434,27 +434,27 @@ const resolveDestino = (ruta) =>
             conductor: getConductores().find(c => c.idConductor === par.idConductor) || (par.conductor?.usuario ? { idConductor: par.idConductor, ...par.conductor.usuario } : null),
         }))
 
-        if (nuevoEstado === 'En Curso') {
+        if (nuevoEstado === 'En Ruta') {
             const entidades = []
             let vehiculoBlocked = false
             let conductorBlocked = false
 
             for (const par of paresResueltos) {
-                const conflictoVehiculo = disponibilidad.find(d => d.idVehiculo === par.idVehiculo && d.estado === 'En Curso')
-                const conflictoConductor = disponibilidad.find(d => d.idConductor === par.idConductor && d.estado === 'En Curso')
+                const conflictoVehiculo = disponibilidad.find(d => d.idVehiculo === par.idVehiculo && d.estado === 'En Ruta')
+                const conflictoConductor = disponibilidad.find(d => d.idConductor === par.idConductor && d.estado === 'En Ruta')
 
                 if (par.vehiculo?.estado === 'Mantenimiento') {
                     vehiculoBlocked = true
-                    entidades.push({ tipo: 'vehiculo', etiqueta: par.vehiculo.placa || '', estado: par.vehiculo.estado, id: par.vehiculo.idVehiculo, mensaje: 'está en Mantenimiento y no puede asignarse a una ruta En Curso.' })
+                    entidades.push({ tipo: 'vehiculo', etiqueta: par.vehiculo.placa || '', estado: par.vehiculo.estado, id: par.vehiculo.idVehiculo, mensaje: 'está en Mantenimiento y no puede asignarse a una ruta En Ruta.' })
                 } else if (conflictoVehiculo) {
                     vehiculoBlocked = true
-                    entidades.push({ tipo: 'vehiculo', etiqueta: par.vehiculo?.placa || '', estado: par.vehiculo?.estado, id: par.vehiculo?.idVehiculo, mensaje: `ya está asignado a la Ruta #${conflictoVehiculo.idRuta} que se encuentra En Curso.` })
+                    entidades.push({ tipo: 'vehiculo', etiqueta: par.vehiculo?.placa || '', estado: par.vehiculo?.estado, id: par.vehiculo?.idVehiculo, mensaje: `ya está asignado a la Ruta #${conflictoVehiculo.idRuta} que se encuentra En Ruta.` })
                 }
 
                 if (conflictoConductor) {
                     conductorBlocked = true
                     const nombre = par.conductor?.nombre ? `${par.conductor.nombre} ${par.conductor.apellido || ''}`.trim() : 'Conductor'
-                    entidades.push({ tipo: 'conductor', etiqueta: nombre, estado: par.conductor?.estado || 'en_ruta', id: par.conductor?.idConductor, mensaje: `ya está asignado a la Ruta #${conflictoConductor.idRuta} que se encuentra En Curso.` })
+                    entidades.push({ tipo: 'conductor', etiqueta: nombre, estado: par.conductor?.estado || 'en_ruta', id: par.conductor?.idConductor, mensaje: `ya está asignado a la Ruta #${conflictoConductor.idRuta} que se encuentra En Ruta.` })
                 }
             }
 
@@ -486,7 +486,7 @@ const resolveDestino = (ruta) =>
         setConfirmInhabilitar({
             open: true,
             idRuta: id,
-            nombreRuta: rutaActual?.nombreRuta || '',
+            origen: rutaActual?.origen || '',
             habilitadoActual: rutaActual?.habilitado !== false,
             estadoRuta: rutaActual?.estado || null,
         })
@@ -765,10 +765,10 @@ const resolveDestino = (ruta) =>
                             <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
                                 <TableCell sx={thStyle}>
                                     <TableSortLabel
-                                        active={sortBy.field === 'nombreRuta'}
+                                        active={sortBy.field === 'origen'}
                                         direction={sortBy.dir === 'desc' ? 'desc' : 'asc'}
-                                        onClick={() => handleSort('nombreRuta')}
-                                        IconComponent={sortBy.field === 'nombreRuta' ? undefined : UnfoldMoreOutlinedIcon}
+                                        onClick={() => handleSort('origen')}
+                                        IconComponent={sortBy.field === 'origen' ? undefined : UnfoldMoreOutlinedIcon}
                                         sx={{
                                             color: 'inherit',
                                             '&:hover': { color: 'inherit' },
@@ -777,9 +777,10 @@ const resolveDestino = (ruta) =>
                                             '& .MuiTableSortLabel-icon': { opacity: 1, fontSize: 16 },
                                         }}
                                     >
-                                        Ruta
+                                        Origen
                                     </TableSortLabel>
                                 </TableCell>
+                                <TableCell sx={thStyle}>Destino</TableCell>
                                 <TableCell sx={thStyle}>Fecha y hora salida</TableCell>
                                 <TableCell sx={thStyle}>Vehículo</TableCell>
                                 <TableCell sx={thStyle}>Conductor</TableCell>
@@ -790,7 +791,7 @@ const resolveDestino = (ruta) =>
                         <TableBody>
                             {loading && initialLoad.current ? (
                                 <TableRow>
-                                    <TableCell colSpan={6} align="center" sx={{ py: 7 }}>
+                                    <TableCell colSpan={7} align="center" sx={{ py: 7 }}>
                                         <CircularProgress size={28} sx={{ color: theme.palette.primary.main }} />
                                         <Typography variant="body2" color={theme.palette.text.secondary} mt={1.5}>
                                             Cargando rutas...
@@ -799,7 +800,7 @@ const resolveDestino = (ruta) =>
                                 </TableRow>
                             ) : error ? (
                                 <TableRow>
-                                    <TableCell colSpan={6} align="center" sx={{ py: 5 }}>
+                                    <TableCell colSpan={7} align="center" sx={{ py: 5 }}>
                                         <Typography color="error" variant="body2">
                                             No se pudieron cargar las rutas. Verifica la conexión con el servidor.
                                         </Typography>
@@ -812,7 +813,7 @@ const resolveDestino = (ruta) =>
                                 </TableRow>
                             ) : !loading && rutasProgramadas.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={6} align="center" sx={{ py: 7 }}>
+                                    <TableCell colSpan={7} align="center" sx={{ py: 7 }}>
                                         <Typography color={theme.palette.text.secondary} variant="body2">
                                             {filtroHabilitado !== 'todo' || filtroEstadoRuta !== '' || filtroAnio !== '' || filtroMes !== ''
                                                 ? 'No se encontraron rutas que coincidan con los filtros aplicados.'
@@ -846,7 +847,10 @@ const resolveDestino = (ruta) =>
                                             }}
                                         >
                                             <TableCell sx={{ py: 1.5, fontSize: '0.85rem' }}>
-                                                {ruta.nombreRuta || '—'}
+                                                {ruta.origen || '—'}
+                                            </TableCell>
+                                            <TableCell sx={{ py: 1.5, fontSize: '0.85rem' }}>
+                                                {resolveDestino(ruta)}
                                             </TableCell>
                                             <TableCell sx={{ py: 1.5 }}>
                                                 <Typography sx={{ fontSize: '0.875rem' }}>{formatFecha(ruta.fechaSalida)}</Typography>
@@ -889,7 +893,7 @@ const resolveDestino = (ruta) =>
                                                             }}
                                                         />
                                                     )}
-                                                    {pares.some(p => p.documentoVencido) && ['Programada', 'En Curso'].includes(ruta.estado) && (
+                                                    {pares.some(p => p.documentoVencido) && ['Programada', 'En Ruta'].includes(ruta.estado) && (
                                                         <Tooltip title={[...new Set(pares.filter(p => p.documentoVencido).map(p => `${p.placa || 'Vehículo'}: ${p.documentoVencido} vencido`))].join(' · ')}>
                                                             <Chip
                                                                 label={`${pares.find(p => p.documentoVencido)?.documentoVencido} vencido`}
@@ -944,7 +948,7 @@ const resolveDestino = (ruta) =>
                                                             }}
                                                         />
                                                     )}
-                                                    {pares.some(p => p.licenciaVencida) && ['Programada', 'En Curso'].includes(ruta.estado) && (
+                                                    {pares.some(p => p.licenciaVencida) && ['Programada', 'En Ruta'].includes(ruta.estado) && (
                                                         <Tooltip title={[...new Set(pares.filter(p => p.licenciaVencida).map(p => `${p.conductorNombre || 'Conductor'}: licencia vencida`))].join(' · ')}>
                                                             <Chip
                                                                 label="Licencia vencida"
@@ -970,13 +974,13 @@ const resolveDestino = (ruta) =>
                                                         {renderEstadoDot('Completada', getEstadoColor)}
                                                         <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: '#059669' }}>Completada</Typography>
                                                     </Box>
-                                                ) : ruta.estado === 'En Curso' && ruta.pendienteLegalizacion ? (
+                                                ) : ruta.estado === 'En Ruta' && ruta.pendienteLegalizacion ? (
                                                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                                                         <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', border: `1px solid ${theme.palette.divider}`, borderRadius: 1.5, overflow: 'hidden' }}>
                                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1, py: 0.6, flex: 1 }}>
-                                                                {renderEstadoDot('En Curso', getEstadoColor)}
-                                                                <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: getEstadoColor('En Curso').color }}>
-                                                                    En Curso
+                                                                {renderEstadoDot('En Ruta', getEstadoColor)}
+                                                                <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: getEstadoColor('En Ruta').color }}>
+                                                                    En Ruta
                                                                 </Typography>
                                                             </Box>
                                                             <Box sx={{ width: '1px', height: 28, backgroundColor: theme.palette.divider, flexShrink: 0 }} />
@@ -1107,7 +1111,7 @@ const resolveDestino = (ruta) =>
                 open={confirmInhabilitar.open}
                 data={confirmInhabilitar}
                 onClose={() => setConfirmInhabilitar(s => ({ ...s, open: false }))}
-                onExited={() => setConfirmInhabilitar({ open: false, idRuta: null, nombreRuta: '', habilitadoActual: null, estadoRuta: null })}
+                onExited={() => setConfirmInhabilitar({ open: false, idRuta: null, origen: '', habilitadoActual: null, estadoRuta: null })}
                 onConfirm={onConfirmarInhabilitar}
             />
 
@@ -1205,9 +1209,9 @@ const resolveDestino = (ruta) =>
             >
                 {ESTADOS_RUTA.filter(op => {
                     if (op === estadoMenu.estadoActual) return false
-                    if (estadoMenu.estadoActual === 'Programada') return op === 'En Curso'
+                    if (estadoMenu.estadoActual === 'Programada') return op === 'En Ruta'
                     if (estadoMenu.estadoActual === 'Cancelada') return op === 'Programada'
-                    if (estadoMenu.estadoActual === 'En Curso' && op === 'Programada') return false
+                    if (estadoMenu.estadoActual === 'En Ruta' && op === 'Programada') return false
                     return true
                 }).map(op => (
                     <MenuItem key={op} onClick={() => {

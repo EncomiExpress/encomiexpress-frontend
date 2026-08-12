@@ -96,7 +96,7 @@ const RutasMiniTabla = ({ rutas, theme }) => (
                                 onClick={() => window.open(`/transporte/rutas?highlight=${r.idRuta}`, '_blank')}
                                 sx={{ cursor: 'pointer', '&:hover td': { backgroundColor: theme.palette.action.hover } }}>
                                 <TableCell sx={{ fontSize: '0.8rem', fontWeight: 600, py: 0.75 }}>
-                                    {r.nombreRuta || `#${r.idRuta}`}
+                                    {r.origen || `#${r.idRuta}`}
                                 </TableCell>
                                 <TableCell sx={{ fontSize: '0.8rem', py: 0.75 }}>
                                     {r.destino?.ciudad || '—'}
@@ -173,11 +173,11 @@ const ListarTransporte = () => {
     const totalBackend = getTotal()
 
     // Consulta dedicada y fresca (no la lista paginada de Rutas, que puede no traer
-    // todas las rutas En Curso) — mismo patrón que ListarConductor.jsx.
+    // todas las rutas En Ruta) — mismo patrón que ListarConductor.jsx.
     const [vehiculosOcupadosIds, setVehiculosOcupadosIds] = useState(new Set())
     useEffect(() => {
         if (!usuario) return
-        getRutas({ estado: 'En Curso', habilitado: 'true', limit: 100 })
+        getRutas({ estado: 'En Ruta', habilitado: 'true', limit: 100 })
             .then(res => setVehiculosOcupadosIds(new Set((res?.data || []).flatMap(r => (r.paresVehiculoConductor || []).map(p => p.idVehiculo)))))
             .catch(() => {})
     }, [usuario])

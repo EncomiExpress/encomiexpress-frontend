@@ -263,7 +263,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
             direccionDestinatario: destinatario?.direccionDestinatario || '',
             paquetes: paquetesArr,
             idRuta: ventaData.idRuta || ventaData.ruta?.idRuta || '',
-            destino: ventaData.ruta?.nombreRuta || '',
+            destino: ventaData.ruta?.origen || '',
             fechaSalidaRuta: ventaData.ruta?.fechaSalida || '',
             fechaLlegadaEstimadaRuta: ventaData.ruta?.fechaLlegadaEstimada || '',
             fechaEstimadaEntrega: ventaData.fechaEstimadaEntrega
@@ -286,7 +286,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
         }
         const r = ventaData.ruta
         if (r) {
-            setRutaInput(`${r.nombreRuta || 'Sin nombre'} — $${Number(r.destino?.tarifaBase || 0).toLocaleString()}`)
+            setRutaInput(`${r.origen || 'Sin nombre'} — $${Number(r.destino?.tarifaBase || 0).toLocaleString()}`)
         } else {
             setRutaInput('')
         }
@@ -887,7 +887,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                                     // dos rutas con el mismo nombre (ej. mismo conductor, distinto vehículo),
                                     // así se distinguen directo en la lista, sin tener que elegir una para verlo.
                                     const placas = (option.paresVehiculoConductor || []).map(p => p.vehiculo?.placa).filter(Boolean).join(', ')
-                                    return `${option.nombreRuta || 'Sin nombre'}${placas ? ` (${placas})` : ''} — $${Number(option.destino?.tarifaBase || 0).toLocaleString()}`
+                                    return `${option.origen || 'Sin nombre'}${placas ? ` (${placas})` : ''} — $${Number(option.destino?.tarifaBase || 0).toLocaleString()}`
                                 }}
                                 isOptionEqualToValue={(opt, val) => opt.idRuta === val.idRuta}
                                 renderOption={(props, option) => {
@@ -902,7 +902,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                                                 <RouteOutlinedIcon sx={{ fontSize: 18 }} />
                                             </Avatar>
                                             <Typography variant="body2" fontWeight={500} noWrap sx={{ flex: 1, minWidth: 0 }}>
-                                                {option.nombreRuta || 'Sin nombre'}
+                                                {option.origen || 'Sin nombre'}
                                             </Typography>
                                             <Typography variant="caption" color={theme.palette.text.secondary} sx={{ flexShrink: 0 }}>
                                                 ${Number(option.destino?.tarifaBase || 0).toLocaleString('es-CO')}
@@ -914,7 +914,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                                     if (!inputValue.trim()) return [...opts].sort((a, b) => b.idRuta - a.idRuta).slice(0, 5)
                                     const q = normalizarTexto(inputValue)
                                     return opts.filter(r =>
-                                        normalizarTexto(r.nombreRuta || '').includes(q) ||
+                                        normalizarTexto(r.origen || '').includes(q) ||
                                         normalizarTexto(r.destino?.ciudad || '').includes(q) ||
                                         normalizarTexto(r.destino?.departamento || '').includes(q)
                                     )
@@ -952,7 +952,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                                             return {
                                                 ...prev,
                                                 idRuta: newValue.idRuta,
-                                                destino: newValue.nombreRuta || 'Sin nombre',
+                                                destino: newValue.origen || 'Sin nombre',
                                                 fechaSalidaRuta: fechaSalida,
                                                 fechaLlegadaEstimadaRuta: fechaLlegadaEstimada,
                                                 fechaEstimadaEntrega: prev.fechaEstimadaEntrega && (
@@ -991,7 +991,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                                 noOptionsText="No se encontraron rutas"
                                 renderInput={(params) => (
                                     <TextField {...params} label="Ruta *"
-                                        error={!!errores.idRuta} helperText={errores.idRuta || 'Busca por nombre de ruta o destino'}
+                                        error={!!errores.idRuta} helperText={errores.idRuta || 'Busca por origen o destino'}
                                         slotProps={{ inputLabel: { shrink: true }, htmlInput: { ...params.inputProps, maxLength: 100 } }}
                                         sx={formFieldStyles} />
                                 )}

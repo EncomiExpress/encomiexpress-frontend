@@ -72,7 +72,7 @@ export const AnticipoExcedenteProvider = ({ children }) => {
     }))
 
   // Normalizar rutas para el selector: { idRuta, nombre, paresVehiculoConductor } —
-  // solo habilitadas y Programadas (una ruta "En Curso"/"Completada"/"Cancelada" ya no
+  // solo habilitadas y Programadas (una ruta "En Ruta"/"Completada"/"Cancelada" ya no
   // debería recibir anticipos nuevos). Una ruta ahora puede tener varios vehículo+conductor
   // (convoy), así que el conductor ya no se autocompleta solo: el formulario debe dejar
   // elegir cuál par corresponde entre los de `paresVehiculoConductor`.
@@ -80,7 +80,8 @@ export const AnticipoExcedenteProvider = ({ children }) => {
     .filter((r) => r.habilitado !== false && r.estado === 'Programada')
     .map((r) => ({
       idRuta: r.idRuta,
-      nombre: r.nombreRuta || r.nombre || `Ruta ${r.idRuta}`,
+      nombre: r.origen || r.nombre || `Ruta ${r.idRuta}`,
+      destino: r.destino || null,
       paresVehiculoConductor: (r.paresVehiculoConductor || [])
         .filter((p) => p.habilitado !== false)
         .map((p) => {

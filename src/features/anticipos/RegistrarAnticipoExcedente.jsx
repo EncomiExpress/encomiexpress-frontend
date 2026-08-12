@@ -184,10 +184,14 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
 
     const getNombreConductor = () => parSeleccionado?.conductorNombre || '—'
 
-    const getNombreRuta = (id) => {
-        const r = rutas.find(r => r.idRuta === parseInt(id))
-        return r ? r.nombre : '—'
+    const getEtiquetaRuta = (r) => {
+        if (!r) return '—'
+        const destinoTxt = r.destino ? `${r.destino.ciudad}` : 'Sin destino'
+        const tarifa = r.destino?.tarifaBase != null ? ` — $${Number(r.destino.tarifaBase).toLocaleString('es-CO')}` : ''
+        return `${r.nombre} → ${destinoTxt}${tarifa}`
     }
+
+    const getNombreRuta = (id) => getEtiquetaRuta(rutas.find(r => r.idRuta === parseInt(id)))
 
     const cardSx = { flex: 1, borderRadius: 2, p: 2.5, border: `1px solid ${theme.palette.divider}`, backgroundColor: theme.palette.background.paper }
 
@@ -199,7 +203,7 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
                         <Autocomplete
                             options={rutas}
                             popupIcon={<KeyboardArrowDownOutlinedIcon />}
-                            getOptionLabel={(r) => r.nombre}
+                            getOptionLabel={getEtiquetaRuta}
                             isOptionEqualToValue={(opt, val) => opt.idRuta === val.idRuta}
                             value={rutaSeleccionada || null}
                             inputValue={rutaInput}
@@ -229,7 +233,10 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
                                             <RouteOutlinedIcon sx={{ fontSize: 18 }} />
                                         </Avatar>
                                         <Typography variant="body2" fontWeight={500} noWrap sx={{ flex: 1, minWidth: 0 }}>
-                                            {r.nombre}
+                                            {r.nombre} → {r.destino?.ciudad || 'Sin destino'}
+                                        </Typography>
+                                        <Typography variant="caption" color={theme.palette.text.secondary} sx={{ flexShrink: 0 }}>
+                                            ${Number(r.destino?.tarifaBase || 0).toLocaleString('es-CO')}
                                         </Typography>
                                     </Box>
                                 )
@@ -237,12 +244,16 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
                             filterOptions={(opts, { inputValue }) => {
                                 if (!inputValue.trim()) return [...opts].sort((a, b) => b.idRuta - a.idRuta).slice(0, 5)
                                 const q = normalizarTexto(inputValue)
-                                return opts.filter(r => normalizarTexto(r.nombre).includes(q))
+                                return opts.filter(r =>
+                                    normalizarTexto(r.nombre).includes(q) ||
+                                    normalizarTexto(r.destino?.ciudad || '').includes(q) ||
+                                    normalizarTexto(r.destino?.departamento || '').includes(q)
+                                )
                             }}
                             noOptionsText="No se encontraron rutas"
                             renderInput={(params) => (
                                 <TextField {...params} label="Ruta *"
-                                    error={!!errores.idRuta} helperText={errores.idRuta || 'Busca por nombre de la ruta'}
+                                    error={!!errores.idRuta} helperText={errores.idRuta || 'Busca por origen o destino'}
                                     slotProps={{ inputLabel: { shrink: true }, htmlInput: { ...params.inputProps, maxLength: 100 } }}
                                     sx={formFieldStyles} />
                             )}

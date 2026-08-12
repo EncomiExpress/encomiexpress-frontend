@@ -235,7 +235,7 @@ const ListarVenta = () => {
                 'ID': venta.idEncomiendaVenta || venta.idVenta,
                 'Guía': (venta.paquetes || []).map(p => p.numeroGuia).filter(Boolean).join(', ') || getGuiaPrincipal(venta) || '—',
                 'Cliente': `${venta.cliente?.nombre || ''} ${venta.cliente?.apellido || ''}`.trim() || venta.idCliente || '-',
-                'Ruta': venta.ruta?.nombreRuta || '-',
+                'Ruta': venta.ruta?.origen || '-',
                 'Destino': venta.ruta?.destino?.ciudad || '-',
                 'Fecha registro': venta.fechaRegistro,
                 'Fecha est. entrega': venta.fechaEstimadaEntrega,
@@ -572,6 +572,7 @@ const ListarVenta = () => {
                                 </TableCell>
                                 <TableCell sx={thStyle}>Remitente / Destinatario</TableCell>
                                 <TableCell sx={thStyle}>Destino</TableCell>
+                                <TableCell sx={thStyle}>Paquetes por entregar</TableCell>
                                 <TableCell sx={thStyle}>Total</TableCell>
                                 <TableCell sx={thStyle}>Estado pago</TableCell>
                                 <TableCell sx={thStyle}>
@@ -584,7 +585,7 @@ const ListarVenta = () => {
                         <TableBody>
                             {loading && initialLoad.current ? (
                                 <TableRow>
-                                    <TableCell colSpan={7} align="center" sx={{ py: 7 }}>
+                                    <TableCell colSpan={8} align="center" sx={{ py: 7 }}>
                                         <CircularProgress size={28} sx={{ color: theme.palette.primary.main }} />
                                         <Typography variant="body2" color={theme.palette.text.secondary} mt={1.5}>
                                             Cargando ventas...
@@ -593,7 +594,7 @@ const ListarVenta = () => {
                                 </TableRow>
                             ) : error ? (
                                 <TableRow>
-                                    <TableCell colSpan={7} align="center" sx={{ py: 5 }}>
+                                    <TableCell colSpan={8} align="center" sx={{ py: 5 }}>
                                         <Typography color="error" variant="body2">
                                             No se pudieron cargar las ventas. Verifica la conexión con el servidor.
                                         </Typography>
@@ -606,7 +607,7 @@ const ListarVenta = () => {
                                 </TableRow>
                             ) : !loading && ventas.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={7} align="center" sx={{ py: 7 }}>
+                                    <TableCell colSpan={8} align="center" sx={{ py: 7 }}>
                                         <Typography color={theme.palette.text.secondary} variant="body2">
                                             {filtroHabilitado !== 'todo' || filtroEstadoEncomienda !== '' || filtroPago !== '' || filtroMetodoPago !== ''
                                                 ? 'No se encontraron ventas que coincidan con los filtros aplicados.'
@@ -725,6 +726,26 @@ const ListarVenta = () => {
                                                 )}
                                             </TableCell>
 
+                                            {/* Paquetes por entregar (Por entregar / En reparto) vs. total de la venta */}
+                                            <TableCell sx={{ py: 1.5 }}>
+                                                {(() => {
+                                                    const paquetes = venta.paquetes || []
+                                                    const pendientes = paquetes.filter(p => ['Por entregar', 'En reparto'].includes(p.estado)).length
+                                                    return (
+                                                        <Chip
+                                                            label={`${pendientes} de ${paquetes.length}`}
+                                                            size="small"
+                                                            sx={{
+                                                                fontWeight: 600,
+                                                                fontSize: '0.7rem',
+                                                                backgroundColor: pendientes > 0 ? alpha(theme.palette.warning.main, 0.12) : theme.palette.primary.light,
+                                                                color: pendientes > 0 ? theme.palette.warning.dark : theme.palette.primary.darker,
+                                                            }}
+                                                        />
+                                                    )
+                                                })()}
+                                            </TableCell>
+
                                             {/* Total + método de pago */}
                                             <TableCell sx={{ py: 1.5 }}>
                                                 <Chip
@@ -828,7 +849,7 @@ const ListarVenta = () => {
                                                         </Tooltip>
                                                     ) : venta.estado !== 'Programada' ? (
                                                         <Tooltip title={
-                                                            venta.estado === 'En Tránsito' ? 'Esta venta ya está en tránsito: no se puede editar'
+                                                            venta.estado === 'En Ruta' ? 'Esta venta ya está en tránsito: no se puede editar'
                                                                 : venta.estado === 'Entregada' ? 'Esta venta ya fue entregada: no se puede editar'
                                                                     : 'Esta venta fue cancelada: no se puede editar'
                                                         }>

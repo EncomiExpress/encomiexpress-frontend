@@ -213,7 +213,7 @@ const ModalConsultarVehiculo = ({ vehiculo, onClose }) => {
                                         <TableRow key={r.idRuta}
                                             onClick={() => window.open(`/transporte/rutas?highlight=${r.idRuta}`, '_blank')}
                                             sx={{ cursor: 'pointer', '&:hover': { backgroundColor: theme.palette.background.subtle } }}>
-                                            <TableCell sx={{ fontSize: '0.82rem' }}>{r.nombreRuta || '—'}</TableCell>
+                                            <TableCell sx={{ fontSize: '0.82rem' }}>{r.origen || '—'}</TableCell>
                                             <TableCell sx={{ fontSize: '0.82rem' }}>{r.destino?.ciudad || '—'}</TableCell>
                                             <TableCell sx={{ fontSize: '0.82rem' }}>{r.fechaSalida ? formatFecha(r.fechaSalida) : '—'}</TableCell>
                                             <TableCell>

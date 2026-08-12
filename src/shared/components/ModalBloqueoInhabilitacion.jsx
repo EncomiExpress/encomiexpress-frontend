@@ -16,7 +16,7 @@ import WarningAmberOutlinedIcon from '@mui/icons-material/WarningAmberOutlined'
 const ICONOS_TIPO = {
     'Vehículo': <DirectionsCarOutlinedIcon sx={{ fontSize: 16 }} />,
     'Ruta': <RouteOutlinedIcon sx={{ fontSize: 16 }} />,
-    'Ruta En Curso': <RouteOutlinedIcon sx={{ fontSize: 16 }} />,
+    'Ruta activa': <RouteOutlinedIcon sx={{ fontSize: 16 }} />,
     'Encomienda': <LocalShippingOutlinedIcon sx={{ fontSize: 16 }} />,
     'Anticipo Pendiente': <AccountBalanceWalletOutlinedIcon sx={{ fontSize: 16 }} />,
     'Estado del anticipo': <AccountBalanceWalletOutlinedIcon sx={{ fontSize: 16 }} />,

@@ -68,6 +68,9 @@ import RegistrarVenta from './features/ventas/RegistrarVenta.jsx'
 import ListarVenta from './features/ventas/ListarVenta.jsx'
 import ActualizarVenta from './features/ventas/ActualizarVenta.jsx'
 
+// Paquetes devueltos
+import ListarPaqueteDevuelto from './features/paquetesDevueltos/ListarPaqueteDevuelto.jsx'
+
 const SinPermisos = () => {
   const theme = useTheme()
   return (
@@ -199,6 +202,7 @@ const AppRoutes = () => {
       <Route path="/ventas/listar" element={<PrivateRoute permisosRequeridos={[PERMISOS.LISTAR_VENTA]}><ListarVenta /></PrivateRoute>} />
       <Route path="/ventas/registrar" element={<PrivateRoute permisosRequeridos={[PERMISOS.REGISTRAR_VENTA]}><RegistrarVenta /></PrivateRoute>} />
       <Route path="/ventas/actualizar/:id" element={<PrivateRoute permisosRequeridos={[PERMISOS.ACTUALIZAR_VENTA]}><ActualizarVenta /></PrivateRoute>} />
+      <Route path="/paquetes-devueltos/listar" element={<PrivateRoute permisosRequeridos={[PERMISOS.LISTAR_VENTA]}><ListarPaqueteDevuelto /></PrivateRoute>} />
 
       {/* Cualquier ruta no reconocida redirige al inicio */}
       <Route path="*" element={<Navigate to="/" replace />} />

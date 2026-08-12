@@ -335,7 +335,7 @@ const drawGuiaPage = (doc, venta, pkg, index, totalPaginas, assets) => {
     ? `${pkg.asignacion.conductor.usuario.nombre || ''} ${pkg.asignacion.conductor.usuario.apellido || ''}`.trim()
     : ''
   const refOperativa = [
-    venta.ruta?.nombreRuta && `Ruta: ${venta.ruta.nombreRuta}`,
+    venta.ruta?.origen && `Ruta: ${venta.ruta.origen}`,
     pkg?.asignacion?.vehiculo?.placa && `Vehículo: ${pkg.asignacion.vehiculo.placa}`,
     conductorNombre && `Conductor: ${conductorNombre}`,
   ].filter(Boolean).join(' · ')

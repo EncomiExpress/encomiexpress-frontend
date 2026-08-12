@@ -785,7 +785,8 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                                     // dos rutas con el mismo nombre (ej. mismo conductor, distinto vehículo),
                                     // así se distinguen directo en la lista, sin tener que elegir una para verlo.
                                     const placas = (option.paresVehiculoConductor || []).map(p => p.vehiculo?.placa).filter(Boolean).join(', ')
-                                    return `${option.nombreRuta || 'Sin nombre'}${placas ? ` (${placas})` : ''} — $${Number(option.destino?.tarifaBase || 0).toLocaleString()}`
+                                    const destinoTxt = option.destino?.ciudad || 'Sin destino'
+                                    return `${option.origen || 'Sin nombre'} → ${destinoTxt}${placas ? ` (${placas})` : ''} — $${Number(option.destino?.tarifaBase || 0).toLocaleString()}`
                                 }}
                                 isOptionEqualToValue={(opt, val) => opt.idRuta === val.idRuta}
                                 renderOption={(props, option) => {
@@ -800,7 +801,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                                                 <RouteOutlinedIcon sx={{ fontSize: 18 }} />
                                             </Avatar>
                                             <Typography variant="body2" fontWeight={500} noWrap sx={{ flex: 1, minWidth: 0 }}>
-                                                {option.nombreRuta || 'Sin nombre'}
+                                                {option.origen || 'Sin nombre'} → {option.destino?.ciudad || 'Sin destino'}
                                             </Typography>
                                             <Typography variant="caption" color={theme.palette.text.secondary} sx={{ flexShrink: 0 }}>
                                                 ${Number(option.destino?.tarifaBase || 0).toLocaleString('es-CO')}
@@ -812,7 +813,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                                     if (!inputValue.trim()) return [...opts].sort((a, b) => b.idRuta - a.idRuta).slice(0, 5)
                                     const q = normalizarTexto(inputValue)
                                     return opts.filter(r =>
-                                        normalizarTexto(r.nombreRuta || '').includes(q) ||
+                                        normalizarTexto(r.origen || '').includes(q) ||
                                         normalizarTexto(r.destino?.ciudad || '').includes(q) ||
                                         normalizarTexto(r.destino?.departamento || '').includes(q)
                                     )
@@ -850,7 +851,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                                             return {
                                                 ...prev,
                                                 idRuta: newValue.idRuta,
-                                                destino: newValue.nombreRuta || 'Sin nombre',
+                                                destino: `${newValue.origen || 'Sin nombre'} → ${newValue.destino?.ciudad || 'Sin destino'} — $${Number(newValue.destino?.tarifaBase || 0).toLocaleString('es-CO')}`,
                                                 fechaSalidaRuta: fechaSalida,
                                                 fechaLlegadaEstimadaRuta: fechaLlegadaEstimada,
                                                 fechaEstimadaEntrega: prev.fechaEstimadaEntrega && (
@@ -888,7 +889,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                                 noOptionsText="No se encontraron rutas"
                                 renderInput={(params) => (
                                     <TextField {...params} label="Ruta *"
-                                        error={!!errores.idRuta} helperText={errores.idRuta || 'Busca por nombre de ruta o destino'}
+                                        error={!!errores.idRuta} helperText={errores.idRuta || 'Busca por origen o destino'}
                                         slotProps={{ inputLabel: { shrink: true }, htmlInput: { ...params.inputProps, maxLength: 100 } }}
                                         sx={formFieldStyles} />
                                 )}

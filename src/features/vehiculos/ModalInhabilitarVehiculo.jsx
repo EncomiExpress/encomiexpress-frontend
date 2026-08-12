@@ -29,7 +29,7 @@ const RutasMiniTabla = ({ rutas, theme }) => (
                                 onClick={() => window.open(`/transporte/rutas?highlight=${r.idRuta}`, '_blank')}
                                 sx={{ cursor: 'pointer', '&:hover td': { backgroundColor: theme.palette.action.hover } }}>
                                 <TableCell sx={{ fontSize: '0.8rem', fontWeight: 600, py: 0.75 }}>
-                                    {r.nombreRuta || `#${r.idRuta}`}
+                                    {r.origen || `#${r.idRuta}`}
                                 </TableCell>
                                 <TableCell sx={{ py: 0.75, textAlign: 'right' }}>
                                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.75 }}>
@@ -56,7 +56,7 @@ const ModalInhabilitarVehiculo = ({ open, data, onClose, onExited, onConfirm }) 
         setRutasInhabilitar({ data: [], loading: true })
         rutaService.getRutas({ idVehiculo: data.id, habilitado: 'true', limit: 100 })
             .then(res => {
-                const activas = (res?.data || []).filter(r => r.estado === 'Programada' || r.estado === 'En Curso')
+                const activas = (res?.data || []).filter(r => r.estado === 'Programada' || r.estado === 'En Ruta')
                 setRutasInhabilitar({ data: activas, loading: false })
             })
             .catch(() => setRutasInhabilitar({ data: [], loading: false }))
@@ -80,7 +80,7 @@ const ModalInhabilitarVehiculo = ({ open, data, onClose, onExited, onConfirm }) 
     }
 
     const modalCargando = rutasInhabilitar.loading
-    const modalBloqueado = data.habilitadoActual && rutasInhabilitar.data.some(r => r.estado === 'En Curso')
+    const modalBloqueado = data.habilitadoActual && rutasInhabilitar.data.some(r => r.estado === 'En Ruta')
     const modalProgramadas = rutasInhabilitar.data.filter(r => r.estado === 'Programada')
 
     return (
@@ -128,7 +128,7 @@ const ModalInhabilitarVehiculo = ({ open, data, onClose, onExited, onConfirm }) 
                             <Typography variant="body2" color={theme.palette.text.primary} sx={{ mb: 0.5 }}>
                                 Ruta activa que impide la inhabilitación
                             </Typography>
-                            <RutasMiniTabla rutas={rutasInhabilitar.data.filter(r => r.estado === 'En Curso')} theme={theme} />
+                            <RutasMiniTabla rutas={rutasInhabilitar.data.filter(r => r.estado === 'En Ruta')} theme={theme} />
                         </Box>
                     </Box>
                 ) : data.estadoVehiculo === 'Mantenimiento' && modalProgramadas.length === 0 ? (
