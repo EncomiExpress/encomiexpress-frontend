@@ -10,7 +10,7 @@ import PaymentOutlinedIcon from '@mui/icons-material/PaymentOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
-import { getVentaEstadoDot } from '../../shared/utils/estadoColors.js'
+import { getVentaEstadoDot, getPaqueteEstadoDot } from '../../shared/utils/estadoColors.js'
 import { descargarGuiaPaquete } from '../../shared/utils/exportGuiaPdf.js'
 import { formatFecha } from '../../shared/utils/formatters.js'
 
@@ -44,6 +44,7 @@ const ModalConsultarVenta = ({ venta, onClose }) => {
     const theme = useTheme()
     const [paqueteIndex, setPaqueteIndex] = useState(0)
     const [menuAnchor, setMenuAnchor] = useState(null)
+    const [imagenAmpliada, setImagenAmpliada] = useState(null)
 
     if (!venta) return null
 
@@ -151,6 +152,26 @@ const ModalConsultarVenta = ({ venta, onClose }) => {
                             <CampoFila label="Peso" value={paquete?.peso != null ? `${paquete.peso} kg` : null} />
                             <CampoFila label="Dimensiones" value={dim} />
                             <CampoFila label="Valor declarado" value={paquete?.valorDeclarado != null ? `$${Number(paquete.valorDeclarado).toLocaleString('es-CO')}` : null} />
+
+                            <Box sx={{ borderTop: `1px solid ${theme.palette.divider}`, mt: 1, pt: 1.5 }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
+                                    <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Estado del paquete</Typography>
+                                    <EstadoDot info={getPaqueteEstadoDot(paquete?.estado)} label={paquete?.estado || '—'} />
+                                </Box>
+                                <CampoFila label="Observación" value={paquete?.observacionEstado || null} />
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
+                                    <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Evidencia</Typography>
+                                    {paquete?.fotoEntrega ? (
+                                        <Typography variant="body2" fontWeight={500}
+                                            onClick={() => setImagenAmpliada(paquete.fotoEntrega)}
+                                            sx={{ color: theme.palette.primary.main, cursor: 'pointer', textDecoration: 'underline', textDecorationStyle: 'dotted', '&:hover': { opacity: 0.75 } }}>
+                                            Ver foto
+                                        </Typography>
+                                    ) : (
+                                        <Typography variant="body2" fontWeight={500} color={theme.palette.text.medium}>—</Typography>
+                                    )}
+                                </Box>
+                            </Box>
                         </Paper>
                     </Box>
 
@@ -211,6 +232,22 @@ const ModalConsultarVenta = ({ venta, onClose }) => {
                     Cerrar
                 </Button>
             </Box>
+
+            {imagenAmpliada && (
+                <Dialog open onClose={() => setImagenAmpliada(null)} maxWidth="md"
+                    slotProps={{ paper: { sx: { backgroundColor: 'transparent', boxShadow: 'none', overflow: 'visible' } } }}>
+                    <Box sx={{ position: 'relative' }}>
+                        <IconButton onClick={() => setImagenAmpliada(null)} size="small" sx={{
+                            position: 'absolute', right: -16, top: -16, backgroundColor: theme.palette.background.paper,
+                            boxShadow: 2, '&:hover': { backgroundColor: theme.palette.background.paper },
+                        }}>
+                            <CloseIcon fontSize="small" />
+                        </IconButton>
+                        <Box component="img" src={imagenAmpliada} alt="Evidencia de entrega"
+                            sx={{ maxWidth: '80vw', maxHeight: '85vh', display: 'block', borderRadius: 2 }} />
+                    </Box>
+                </Dialog>
+            )}
         </Dialog>
     )
 }

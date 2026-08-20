@@ -27,6 +27,7 @@ const STATUS_LABEL = {
   'Programada':  'Programada',
   'En Ruta': 'En Ruta',
   'Entregada':   'Entregada',
+  'Completada con novedades': 'Completada con novedades',
   'Cancelada':   'Cancelada',
 }
 
@@ -255,7 +256,7 @@ const Dashboard = () => {
       if (!estadoKey) return
       contador[estadoKey] = (contador[estadoKey] || 0) + 1
     })
-    const orden = ['Entregada', 'En Ruta', 'Programada', 'Cancelada']
+    const orden = ['Entregada', 'Completada con novedades', 'En Ruta', 'Programada', 'Cancelada']
     return orden
       .filter(key => contador[key])
       .map(key => ({

@@ -7,4 +7,7 @@ export const getPaquetesDevueltos = (params = {}, signal) => {
   return fetchWithAuth(`/encomiendas/paquetes/devueltos${suffix}`, { signal })
 }
 
-export default { getPaquetesDevueltos }
+export const getAniosDisponiblesPaquetesDevueltos = () =>
+  fetchWithAuth('/encomiendas/paquetes/devueltos/anios-disponibles')
+
+export default { getPaquetesDevueltos, getAniosDisponiblesPaquetesDevueltos }

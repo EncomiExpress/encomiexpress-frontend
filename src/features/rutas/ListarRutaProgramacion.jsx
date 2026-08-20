@@ -974,7 +974,7 @@ const resolveDestino = (ruta) =>
                                                         {renderEstadoDot('Completada', getEstadoColor)}
                                                         <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: '#059669' }}>Completada</Typography>
                                                     </Box>
-                                                ) : ruta.estado === 'En Ruta' && ruta.pendienteLegalizacion ? (
+                                                ) : ruta.estado === 'En Ruta' && (ruta.pendienteLegalizacion || ruta.paquetesPendientes) ? (
                                                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                                                         <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', border: `1px solid ${theme.palette.divider}`, borderRadius: 1.5, overflow: 'hidden' }}>
                                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1, py: 0.6, flex: 1 }}>
@@ -995,7 +995,11 @@ const resolveDestino = (ruta) =>
                                                             </Box>
                                                         </Box>
                                                         <Typography sx={{ fontSize: '0.68rem', color: theme.palette.text.secondary, px: 0.5 }}>
-                                                            Legalización pendiente
+                                                            {ruta.pendienteLegalizacion && ruta.paquetesPendientes
+                                                                ? 'Legalización y paquetes pendientes'
+                                                                : ruta.pendienteLegalizacion
+                                                                    ? 'Legalización pendiente'
+                                                                    : 'Paquetes pendientes de entrega'}
                                                         </Typography>
                                                     </Box>
                                                 ) : (

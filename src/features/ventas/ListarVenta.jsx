@@ -572,7 +572,6 @@ const ListarVenta = () => {
                                 </TableCell>
                                 <TableCell sx={thStyle}>Remitente / Destinatario</TableCell>
                                 <TableCell sx={thStyle}>Destino</TableCell>
-                                <TableCell sx={thStyle}>Paquetes por entregar</TableCell>
                                 <TableCell sx={thStyle}>Total</TableCell>
                                 <TableCell sx={thStyle}>Estado pago</TableCell>
                                 <TableCell sx={thStyle}>
@@ -726,26 +725,6 @@ const ListarVenta = () => {
                                                 )}
                                             </TableCell>
 
-                                            {/* Paquetes por entregar (Por entregar / En reparto) vs. total de la venta */}
-                                            <TableCell sx={{ py: 1.5 }}>
-                                                {(() => {
-                                                    const paquetes = venta.paquetes || []
-                                                    const pendientes = paquetes.filter(p => ['Por entregar', 'En reparto'].includes(p.estado)).length
-                                                    return (
-                                                        <Chip
-                                                            label={`${pendientes} de ${paquetes.length}`}
-                                                            size="small"
-                                                            sx={{
-                                                                fontWeight: 600,
-                                                                fontSize: '0.7rem',
-                                                                backgroundColor: pendientes > 0 ? alpha(theme.palette.warning.main, 0.12) : theme.palette.primary.light,
-                                                                color: pendientes > 0 ? theme.palette.warning.dark : theme.palette.primary.darker,
-                                                            }}
-                                                        />
-                                                    )
-                                                })()}
-                                            </TableCell>
-
                                             {/* Total + método de pago */}
                                             <TableCell sx={{ py: 1.5 }}>
                                                 <Chip
@@ -820,6 +799,26 @@ const ListarVenta = () => {
                                                         <VentaEstadoDot estado="Programada" />
                                                         <KeyboardArrowDownOutlinedIcon sx={{ fontSize: 13, color: theme.palette.text.secondary }} />
                                                     </Box>
+                                                ) : venta.estado === 'En Ruta' ? (
+                                                    <Box sx={{ pl: 1 }}>
+                                                        {(() => {
+                                                            const paquetes = venta.paquetes || []
+                                                            const entregados = paquetes.filter(p => p.estado === 'Entregado').length
+                                                            const devueltos = paquetes.filter(p => p.estado === 'Devuelto').length
+                                                            const pendientes = paquetes.length - entregados - devueltos
+                                                            const info = getVentaEstadoDot('En Ruta')
+                                                            return (
+                                                                <Tooltip title={`${entregados} entregados · ${devueltos} devueltos · ${pendientes} pendientes`}>
+                                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                                                                        <Box sx={{ width: 9, height: 9, borderRadius: '50%', flexShrink: 0, backgroundColor: info.color }} />
+                                                                        <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: info.color }}>
+                                                                            {`${entregados} de ${paquetes.length} entregados`}
+                                                                        </Typography>
+                                                                    </Box>
+                                                                </Tooltip>
+                                                            )
+                                                        })()}
+                                                    </Box>
                                                 ) : (
                                                     <Box sx={{ pl: 1 }}><VentaEstadoDot estado={venta.estado} /></Box>
                                                 )}
@@ -851,7 +850,8 @@ const ListarVenta = () => {
                                                         <Tooltip title={
                                                             venta.estado === 'En Ruta' ? 'Esta venta ya está en tránsito: no se puede editar'
                                                                 : venta.estado === 'Entregada' ? 'Esta venta ya fue entregada: no se puede editar'
-                                                                    : 'Esta venta fue cancelada: no se puede editar'
+                                                                    : venta.estado === 'Completada con novedades' ? 'Esta venta ya se cerró con novedades: no se puede editar'
+                                                                        : 'Esta venta fue cancelada: no se puede editar'
                                                         }>
                                                             <span>
                                                                 <IconButton size="small" disabled>

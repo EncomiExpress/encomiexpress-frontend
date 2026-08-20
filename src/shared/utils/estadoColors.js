@@ -9,16 +9,6 @@ export const getVentaEstadoDot = (estado) => {
     }
 }
 
-export const getPaqueteEstadoDot = (estado) => {
-    switch (estado) {
-        case 'Por entregar': return { type: 'circle', fill: false, color: '#A855F7', label: 'Por entregar' }
-        case 'En reparto':   return { type: 'circle', fill: true,  color: '#3B82F6', label: 'En reparto' }
-        case 'Entregado':    return { type: 'symbol', char: '✓',   color: '#059669', label: 'Entregado' }
-        case 'Devuelto':     return { type: 'symbol', char: '!',   color: '#F59E0B', label: 'Devuelto' }
-        default:             return { type: 'circle', fill: false, color: '#9CA3AF', label: estado || '—' }
-    }
-}
-
 export const getEstadoColorRuta = (estado) => {
     switch (estado) {
         case 'Programada': return { bg: '#F3E8FF', color: '#A855F7' }
@@ -62,6 +52,15 @@ export const getVehiculoEstadoDot = (estado) => {
 export const getConductorEstadoDot = (estado) => {
     if (estado === 'en_ruta' || estado === 'En Ruta') return { type: 'circle', fill: true, color: '#3B82F6', label: 'En Ruta' }
     return { type: 'circle', fill: false, color: '#10b981', label: 'Disponible' }
+}
+
+export const getPaqueteEstadoDot = (estado) => {
+    switch (estado) {
+        case 'Por entregar': return { type: 'circle', fill: true,  color: '#3B82F6', label: 'Por entregar' }
+        case 'Entregado':    return { type: 'symbol', char: '✓',   color: '#059669', label: 'Entregado' }
+        case 'Devuelto':     return { type: 'circle', fill: true,  color: '#DC2626', label: 'Devuelto' }
+        default:              return { type: 'circle', fill: false, color: '#9CA3AF', label: estado || '—' }
+    }
 }
 
 export const getAnticipoEstadoDot = (estado) => {
