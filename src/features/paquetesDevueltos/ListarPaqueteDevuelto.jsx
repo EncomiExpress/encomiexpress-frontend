@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
     Box, Typography, Paper, Table, TableBody, TableCell,
-    TableContainer, TableHead, TableRow, Chip, IconButton,
+    TableContainer, TableHead, TableRow, IconButton,
     TextField, InputAdornment, Tooltip, CircularProgress, Dialog,
     Select, MenuItem, FormControl,
 } from '@mui/material'
@@ -17,7 +17,7 @@ import PhotoCameraOutlinedIcon from '@mui/icons-material/PhotoCameraOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import TablaPaginacionFooter from '../../shared/components/TablaPaginacionFooter.jsx'
 import { getPaquetesDevueltos, getAniosDisponiblesPaquetesDevueltos } from '../../shared/services/paqueteService.js'
-import { formatFecha } from '../../shared/utils/formatters.js'
+import { formatFechaHora } from '../../shared/utils/formatters.js'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
 
 const getThStyle = (theme) => ({
@@ -238,7 +238,7 @@ const ListarPaqueteDevuelto = () => {
                             <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
                                 <TableCell sx={thStyle}>Guía</TableCell>
                                 <TableCell sx={thStyle}>Cliente</TableCell>
-                                <TableCell sx={thStyle}>Venta</TableCell>
+                                <TableCell sx={thStyle}>Ruta</TableCell>
                                 <TableCell sx={thStyle}>Fecha último estado</TableCell>
                                 <TableCell sx={thStyle}>Observación</TableCell>
                                 <TableCell sx={{ ...thStyle, width: 130 }}>Acciones</TableCell>
@@ -283,6 +283,7 @@ const ListarPaqueteDevuelto = () => {
                             ) : (
                                 paquetes.map(paquete => {
                                     const cliente = paquete.encomienda?.cliente
+                                    const ruta = paquete.asignacion?.ruta
                                     return (
                                         <TableRow
                                             key={paquete.idPaquete}
@@ -307,23 +308,14 @@ const ListarPaqueteDevuelto = () => {
                                             </TableCell>
 
                                             <TableCell sx={{ py: 1.5 }}>
-                                                <Chip
-                                                    label={`Venta #${paquete.idEncomiendaVenta}`}
-                                                    size="small"
-                                                    sx={{
-                                                        fontWeight: 600,
-                                                        backgroundColor: theme.palette.primary.light,
-                                                        color: theme.palette.primary.darker,
-                                                        fontSize: '0.7rem',
-                                                        borderRadius: '2px',
-                                                        height: 22,
-                                                    }}
-                                                />
+                                                <Typography variant="body2" color={theme.palette.text.primary}>
+                                                    {ruta?.origen || '—'}
+                                                </Typography>
                                             </TableCell>
 
                                             <TableCell sx={{ py: 1.5 }}>
                                                 <Typography variant="body2" color={theme.palette.text.primary}>
-                                                    {paquete.fechaUltimoEstado ? formatFecha(paquete.fechaUltimoEstado) : '—'}
+                                                    {paquete.fechaUltimoEstado ? formatFechaHora(paquete.fechaUltimoEstado) : '—'}
                                                 </Typography>
                                             </TableCell>
 

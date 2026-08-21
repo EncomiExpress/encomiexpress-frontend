@@ -26,6 +26,18 @@ export const formatFecha = (fecha) => {
     return `${d}/${m}/${y}`
 }
 
+// Para timestamps completos (DATETIME, con hora) — a diferencia de formatFecha, que
+// asume un DATEONLY "YYYY-MM-DD" y rompe si le llega un ISO con hora incluida.
+export const formatFechaHora = (fecha) => {
+    if (!fecha) return '—'
+    const date = new Date(fecha)
+    if (isNaN(date.getTime())) return '—'
+    return date.toLocaleString('es-CO', {
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit', hour12: true,
+    })
+}
+
 export const isVencido = (fecha) => {
     if (!fecha) return false
     // "fecha" es un DATEONLY del backend ("YYYY-MM-DD") — new Date(fecha) lo interpreta
