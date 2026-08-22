@@ -1,7 +1,7 @@
 import { useTheme, alpha } from '@mui/material/styles'
 import { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { useVentas, ESTADOS_ENCOMIENDA, METODOS_PAGO, ESTADOS_PAGO } from '../../shared/contexts/VentaContext.jsx'
+import { useVentas, ESTADOS_ENCOMIENDA, METODOS_PAGO, ESTADOS_PAGO } from './context/VentaContext.jsx'
 import {
     Box, Typography, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, TextField,
@@ -27,7 +27,7 @@ import SwapHorizOutlinedIcon from '@mui/icons-material/SwapHorizOutlined'
 import UnfoldMoreOutlinedIcon from '@mui/icons-material/UnfoldMoreOutlined'
 import { useAuth, PERMISOS } from '../../shared/contexts/AuthContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
-import { getPageOfEncomienda, getEncomiendas } from '../../shared/services/ventaService'
+import { getPageOfEncomienda, getEncomiendas } from './services/ventaService.js'
 import { descargarGuiaPdf } from '../../shared/utils/exportGuiaPdf.js'
 import { formatFecha, getGuiaPrincipal } from '../../shared/utils/formatters.js'
 import RegistrarVenta from './RegistrarVenta'

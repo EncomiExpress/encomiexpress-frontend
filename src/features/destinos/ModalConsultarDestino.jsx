@@ -1,6 +1,6 @@
 import { useTheme } from '@mui/material/styles'
 import { useState, useEffect } from 'react'
-import * as rutaService from '../../shared/services/rutaService'
+import * as rutaService from '../rutas/services/rutaService.js'
 import {
     Box, Typography, Paper, Chip, Button, Dialog, IconButton, CircularProgress,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tabs, Tab

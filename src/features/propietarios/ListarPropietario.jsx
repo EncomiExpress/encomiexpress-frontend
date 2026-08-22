@@ -18,7 +18,7 @@ import TablaPaginacionFooter from '../../shared/components/TablaPaginacionFooter
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import UnfoldMoreOutlinedIcon from '@mui/icons-material/UnfoldMoreOutlined'
-import { usePropietario } from '../../shared/contexts/PropietarioContext.jsx'
+import { usePropietario } from './context/PropietarioContext.jsx'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import RegistrarPropietario from './RegistrarPropietario'
@@ -26,7 +26,7 @@ import ActualizarPropietario from './ActualizarPropietario'
 import ModalBloqueoInhabilitacion from '../../shared/components/ModalBloqueoInhabilitacion'
 import ModalConsultarPropietario from './ModalConsultarPropietario'
 import ModalInhabilitarPropietario from './ModalInhabilitarPropietario'
-import { getPageOfPropietario, getPropietarios } from '../../shared/services/propietarioService'
+import { getPageOfPropietario, getPropietarios } from './services/propietarioService.js'
 import { exportToExcel } from '../../shared/utils/exportExcel.js'
 
 const getThStyle = (theme) => ({

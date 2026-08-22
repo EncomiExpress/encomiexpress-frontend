@@ -16,7 +16,7 @@ import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined'
 import PhotoCameraOutlinedIcon from '@mui/icons-material/PhotoCameraOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import TablaPaginacionFooter from '../../shared/components/TablaPaginacionFooter.jsx'
-import { getPaquetesDevueltos, getAniosDisponiblesPaquetesDevueltos } from '../../shared/services/paqueteService.js'
+import { getPaquetesDevueltos, getAniosDisponiblesPaquetesDevueltos } from './services/paqueteService.js'
 import { formatFechaHora } from '../../shared/utils/formatters.js'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
 

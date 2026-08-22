@@ -22,7 +22,7 @@ import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import { capitalizarPalabras } from '../../shared/utils/formatters.js'
 import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
-import * as usuarioService from '../../shared/services/usuarioService.js'
+import * as usuarioService from './services/usuarioService.js'
 import { hayNombreDuplicado, MENSAJE_NOMBRE_DUPLICADO, hayDocumentoDuplicado, MENSAJE_DOC_DUPLICADO, MENSAJE_EMAIL_DUPLICADO } from '../../shared/utils/duplicados.js'
 import { esDocAlfanumerico, maxLengthDocumento, docHelperText, validarNumeroDocumento } from '../../shared/utils/documento.js'
 

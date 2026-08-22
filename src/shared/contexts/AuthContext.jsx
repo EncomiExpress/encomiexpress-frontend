@@ -2,7 +2,7 @@
 import { API_URL } from '../config/api.js'
 import { STORAGE_KEYS } from '../config/storageKeys.js'
 import * as rolService from '../services/rolService'
-import * as usuarioService from '../services/usuarioService'
+import * as usuarioService from '../../features/usuarios/services/usuarioService.js'
 import { fetchWithAuth, getToken } from '../services/authService.js'
 
 const AuthContext = createContext()

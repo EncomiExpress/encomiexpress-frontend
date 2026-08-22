@@ -3,7 +3,7 @@ import { Box, Typography, IconButton, Tooltip, CircularProgress } from '@mui/mat
 import { useTheme, alpha } from '@mui/material/styles'
 import ChevronLeftOutlinedIcon from '@mui/icons-material/ChevronLeftOutlined'
 import ChevronRightOutlinedIcon from '@mui/icons-material/ChevronRightOutlined'
-import { getDisponibilidadRuta } from '../services/rutaService'
+import { getDisponibilidadRuta } from '../../features/rutas/services/rutaService.js'
 import { formatFecha } from '../utils/formatters'
 import { MIN_DIAS_SALIDA_LLEGADA, DIAS_MARGEN_ENTRE_RUTAS } from '../utils/horarioLaboral'
 

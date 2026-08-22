@@ -8,8 +8,8 @@ import {
 import DoNotDisturbOutlinedIcon from '@mui/icons-material/DoNotDisturbOutlined'
 import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined'
 import CloseIcon from '@mui/icons-material/Close'
-import * as ventaService from '../../shared/services/ventaService'
-import * as anticipoService from '../../shared/services/anticipoService'
+import * as ventaService from '../ventas/services/ventaService.js'
+import * as anticipoService from '../anticipos/services/anticipoService.js'
 import { getVentaEstadoDot, getAnticipoEstadoDot } from '../../shared/utils/estadoColors'
 import { getGuiaPrincipal } from '../../shared/utils/formatters'
 

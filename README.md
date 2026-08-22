@@ -99,6 +99,10 @@ src/
 - **Control de permisos**: Sistema basado en permisos granulares (`PERMISOS.*`)
 - **Navegación protegida**: `PrivateRoute` con verificación de permisos automática
 
+### Notas por módulo
+
+- **`features/paquetesDevueltos`**: módulo de solo lectura. No tiene pantallas `Registrar*`/`Actualizar*`/`Modal*` porque un paquete devuelto no se crea ni edita ahí: se marca como devuelto desde el flujo de `features/ventas`, y este módulo solo lo consulta (vía `paqueteService.js`), protegido con el mismo permiso `LISTAR_VENTA`.
+
 ---
 
 ## Sistema de Navegación

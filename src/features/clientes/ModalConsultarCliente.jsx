@@ -1,6 +1,6 @@
 import { useTheme } from '@mui/material/styles'
 import { useState, useEffect } from 'react'
-import * as ventaService from '../../shared/services/ventaService'
+import * as ventaService from '../ventas/services/ventaService.js'
 import {
     Box, Typography, Paper, Button, Dialog, Avatar, IconButton,
     Tabs, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,

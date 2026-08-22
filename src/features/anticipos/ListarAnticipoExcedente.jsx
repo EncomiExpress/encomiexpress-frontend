@@ -1,7 +1,7 @@
 import { useTheme, alpha } from '@mui/material/styles'
 import { useState, useEffect, useRef, useLayoutEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { useAnticipos } from '../../shared/contexts/AnticipoExcedenteContext.jsx'
+import { useAnticipos } from './context/AnticipoExcedenteContext.jsx'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import {
@@ -30,7 +30,7 @@ import ActualizarAnticipoExcedente from './ActualizarAnticipoExcedente'
 import ModalInhabilitarAnticipo from './ModalInhabilitarAnticipo'
 import ModalConsultarAnticipoExcedente from './ModalConsultarAnticipoExcedente'
 import { getAnticipoEstadoDot } from '../../shared/utils/estadoColors.js'
-import { getPageOfAnticipo, getAniosDisponiblesAnticipo, getAnticipos } from '../../shared/services/anticipoService'
+import { getPageOfAnticipo, getAniosDisponiblesAnticipo, getAnticipos } from './services/anticipoService.js'
 import { formatFecha } from '../../shared/utils/formatters.js'
 import { exportToExcel } from '../../shared/utils/exportExcel.js'
 

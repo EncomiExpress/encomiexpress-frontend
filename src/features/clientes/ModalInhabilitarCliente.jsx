@@ -8,7 +8,7 @@ import {
 import DoNotDisturbOutlinedIcon from '@mui/icons-material/DoNotDisturbOutlined'
 import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined'
 import CloseIcon from '@mui/icons-material/Close'
-import { getEncomiendas } from '../../shared/services/ventaService'
+import { getEncomiendas } from '../ventas/services/ventaService.js'
 import { getVentaEstadoDot } from '../../shared/utils/estadoColors'
 import { getGuiaPrincipal } from '../../shared/utils/formatters'
 

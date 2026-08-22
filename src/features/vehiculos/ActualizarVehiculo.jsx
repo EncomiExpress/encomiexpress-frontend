@@ -6,15 +6,15 @@ import {
   EventOutlined, SpeedOutlined, SaveOutlined, ArrowBackOutlined, ArrowForwardOutlined, Close, EditOutlined,
   DescriptionOutlined, KeyboardArrowDownOutlined
 } from '@mui/icons-material'
-import { useVehiculo } from '../../shared/contexts/VehiculoContext.jsx'
-import { usePropietario } from '../../shared/contexts/PropietarioContext.jsx'
+import { useVehiculo } from './context/VehiculoContext.jsx'
+import { usePropietario } from '../propietarios/context/PropietarioContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { FormField, FormSelect } from '../../shared/components/FormularioEstandarizado.jsx'
 import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import { normalizarTexto, hayDocumentoDuplicado, MENSAJE_PLACA_DUPLICADA } from '../../shared/utils/duplicados.js'
-import * as vehiculoService from '../../shared/services/vehiculoService.js'
+import * as vehiculoService from './services/vehiculoService.js'
 import { limpiarDecimalInput, esSoloRelleno, capitalizarPrimeraLetra } from '../../shared/utils/formatters.js'
 
 const steps = ['Datos del Vehículo', 'Documentación', 'Confirmación']

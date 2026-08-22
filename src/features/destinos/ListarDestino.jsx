@@ -1,7 +1,7 @@
 import { useTheme, alpha } from '@mui/material/styles'
 import { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { getPageOfDestino, getDestinos } from '../../shared/services/destinoService.js'
+import { getPageOfDestino, getDestinos } from './services/destinoService.js'
 import {
     Box, Typography, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, Chip, IconButton,
@@ -24,7 +24,7 @@ import LockOutlinedIcon from '@mui/icons-material/LockOutlined'
 import ScaleOutlinedIcon from '@mui/icons-material/ScaleOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import UnfoldMoreOutlinedIcon from '@mui/icons-material/UnfoldMoreOutlined'
-import { useDestino } from '../../shared/contexts/DestinoContext.jsx'
+import { useDestino } from './context/DestinoContext.jsx'
 import { useConfiguracion } from '../../shared/contexts/ConfiguracionContext.jsx'
 import { formatearMoneda, limpiarMonedaInput } from '../../shared/utils/formatters.js'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'

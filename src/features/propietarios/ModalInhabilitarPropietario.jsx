@@ -7,7 +7,7 @@ import {
 import BlockOutlinedIcon from '@mui/icons-material/BlockOutlined'
 import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined'
 import CloseIcon from '@mui/icons-material/Close'
-import * as vehiculoService from '../../shared/services/vehiculoService'
+import * as vehiculoService from '../vehiculos/services/vehiculoService.js'
 
 const ModalInhabilitarPropietario = ({ open, data, onClose, onExited, onConfirm }) => {
     const theme = useTheme()

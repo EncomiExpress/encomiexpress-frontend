@@ -7,7 +7,7 @@ import {
 import BlockOutlinedIcon from '@mui/icons-material/BlockOutlined'
 import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined'
 import CloseIcon from '@mui/icons-material/Close'
-import * as rutaService from '../../shared/services/rutaService'
+import * as rutaService from '../rutas/services/rutaService.js'
 import { getEstadoColorRuta } from '../../shared/utils/estadoColors.js'
 
 const RutasMiniTabla = ({ rutas, theme }) => (

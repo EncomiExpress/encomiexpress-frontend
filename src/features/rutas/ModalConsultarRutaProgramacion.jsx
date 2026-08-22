@@ -1,10 +1,10 @@
 import { useTheme, alpha } from '@mui/material/styles'
 import { useState, useEffect } from 'react'
-import * as ventaService from '../../shared/services/ventaService'
-import * as anticipoService from '../../shared/services/anticipoService'
-import { useVehiculo } from '../../shared/contexts/VehiculoContext.jsx'
-import { useConductor } from '../../shared/contexts/ConductorContext.jsx'
-import { useDestino } from '../../shared/contexts/DestinoContext.jsx'
+import * as ventaService from '../ventas/services/ventaService.js'
+import * as anticipoService from '../anticipos/services/anticipoService.js'
+import { useVehiculo } from '../vehiculos/context/VehiculoContext.jsx'
+import { useConductor } from '../conductores/context/ConductorContext.jsx'
+import { useDestino } from '../destinos/context/DestinoContext.jsx'
 import {
     Box, Typography, Paper, Chip, Button, Dialog, IconButton, CircularProgress, Divider,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tabs, Tab

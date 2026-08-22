@@ -1,7 +1,7 @@
 import { useTheme } from '@mui/material/styles'
 import { useState, useEffect } from 'react'
-import * as rutaService from '../../shared/services/rutaService'
-import * as anticipoService from '../../shared/services/anticipoService'
+import * as rutaService from '../rutas/services/rutaService.js'
+import * as anticipoService from '../anticipos/services/anticipoService.js'
 import {
     Box, Typography, Paper, Chip, Button, Dialog, Avatar, IconButton, CircularProgress,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tabs, Tab

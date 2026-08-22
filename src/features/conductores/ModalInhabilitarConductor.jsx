@@ -7,8 +7,8 @@ import {
 import BlockOutlinedIcon from '@mui/icons-material/BlockOutlined'
 import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined'
 import CloseIcon from '@mui/icons-material/Close'
-import * as rutaService from '../../shared/services/rutaService'
-import * as anticipoService from '../../shared/services/anticipoService'
+import * as rutaService from '../rutas/services/rutaService.js'
+import * as anticipoService from '../anticipos/services/anticipoService.js'
 import { getEstadoColorRuta, getAnticipoEstadoDot } from '../../shared/utils/estadoColors.js'
 
 const ESTADOS_BLOQUEO_ANTICIPO = ['Entregado', 'En Legalización', 'Excedente pendiente']

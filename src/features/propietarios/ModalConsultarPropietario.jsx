@@ -1,6 +1,6 @@
 import { useTheme } from '@mui/material/styles'
 import { useState, useEffect } from 'react'
-import * as vehiculoService from '../../shared/services/vehiculoService'
+import * as vehiculoService from '../vehiculos/services/vehiculoService.js'
 import {
     Box, Typography, Paper, Chip, Button, Dialog, Avatar, IconButton, CircularProgress,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tabs, Tab

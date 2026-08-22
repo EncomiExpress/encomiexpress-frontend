@@ -1,8 +1,8 @@
 import { useTheme } from '@mui/material/styles'
 import { useState, useMemo, useEffect } from 'react'
-import { useVentas } from '../../shared/contexts/VentaContext.jsx'
-import { useConductor } from '../../shared/contexts/ConductorContext.jsx'
-import { useVehiculo } from '../../shared/contexts/VehiculoContext.jsx'
+import { useVentas } from '../ventas/context/VentaContext.jsx'
+import { useConductor } from '../conductores/context/ConductorContext.jsx'
+import { useVehiculo } from '../vehiculos/context/VehiculoContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import {
   Box, Typography, Paper, Button, TextField,
@@ -21,7 +21,7 @@ import BarChartOutlinedIcon from '@mui/icons-material/BarChartOutlined'
 import { formatRutaDestino } from '../../shared/utils/formatters.js'
 import { exportToExcel } from '../../shared/utils/exportExcel.js'
 import { getVentaEstadoDot } from '../../shared/utils/estadoColors.js'
-import { getRangoFechasVentas } from '../../shared/services/ventaService.js'
+import { getRangoFechasVentas } from '../ventas/services/ventaService.js'
 
 const STATUS_LABEL = {
   'Programada':  'Programada',
