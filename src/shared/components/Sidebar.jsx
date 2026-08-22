@@ -318,7 +318,13 @@ const Sidebar = ({ collapsed, onToggleCollapsed }) => {
             />
             {!collapsed && (
               <Collapse in={openSections[section.id]}>
-                {section.items.map(item => (
+                {section.items.map(item => item.subItem ? (
+                  <Box key={item.id} sx={{ ml: 2, borderLeft: `1px solid ${colors.divider}`, pl: 0.5 }}>
+                    <NavItem item={item} depth={1}
+                      location={location} collapsed={collapsed}
+                      darkMode={darkMode} colors={colors} />
+                  </Box>
+                ) : (
                   <NavItem key={item.id} item={item} depth={0}
                     location={location} collapsed={collapsed}
                     darkMode={darkMode} colors={colors} />

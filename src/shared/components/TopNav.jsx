@@ -121,7 +121,9 @@ const TopNav = () => {
                         onClick={() => setOpenSection(null)}
                         sx={{
                           display: 'flex', alignItems: 'center', gap: 1.5,
-                          px: 2, py: 0.85, mx: 0.5,
+                          pl: item.subItem ? 3.5 : 2, pr: 2, py: 0.85, mx: 0.5,
+                          ml: item.subItem ? 1 : 0,
+                          borderLeft: item.subItem ? `1px solid ${borderColor}` : 'none',
                           borderRadius: '8px',
                           textDecoration: 'none',
                           background: itemActive
@@ -138,7 +140,7 @@ const TopNav = () => {
                         }}
                       >
                         <Icon className="nav-icon" sx={{
-                          fontSize: '1rem',
+                          fontSize: item.subItem ? '0.85rem' : '1rem',
                           color: itemActive ? pal.primary.main : (darkMode ? '#808080' : '#9ca3af'),
                           transition: 'color 0.15s ease',
                           flexShrink: 0,

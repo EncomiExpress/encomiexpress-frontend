@@ -42,7 +42,10 @@ export const SECTIONS = [
     items: [
       { id: 'clientes', label: 'Clientes', icon: PeopleIcon, path: '/clientes/listar' },
       { id: 'ventas',   label: 'Ventas',   icon: SalesIcon,  path: '/ventas/listar' },
-      { id: 'paquetes-devueltos', label: 'Paquetes devueltos', icon: PaqueteDevueltoIcon, path: '/paquetes-devueltos/listar' },
+      // subItem: se pinta indentado con conector en L bajo Ventas, no como un módulo
+      // aparte -- Paquetes devueltos es una extensión de Ventas, no una entidad propia
+      // (ver AuthContext.jsx: no tiene permiso propio, usa listar_venta).
+      { id: 'paquetes-devueltos', label: 'Paquetes devueltos', icon: PaqueteDevueltoIcon, path: '/paquetes-devueltos/listar', subItem: true },
     ],
   },
 ]
