@@ -120,8 +120,11 @@ export default function useEntityCrud({
       cancelled = true
       controller.abort()
     }
+    // fetchPage se pasa como closure inline en cada render (no está memoizada por el
+    // caller), así que no entra en las deps: solo nos interesa reaccionar a los
+    // filtros/paginación reales, no a que el componente se haya vuelto a renderizar.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, rowsPerPage, filtroEstado, debouncedBusqueda, sortBy, fetchPage, ...extraDeps])
+  }, [page, rowsPerPage, filtroEstado, debouncedBusqueda, sortBy, ...extraDeps])
 
   useEffect(() => {
     if (!loading) initialLoad.current = false
@@ -150,6 +153,8 @@ export default function useEntityCrud({
     }
   }
 
+  const refetch = () => fetchPage(undefined, queryParams)
+
   return {
     theme,
     highlightId, highlightRef,
@@ -157,6 +162,7 @@ export default function useEntityCrud({
     busqueda, setBusqueda, debouncedBusqueda,
     filtroEstado, setFiltroEstado,
     sortBy, handleSort,
+    refetch,
     page, setPage, rowsPerPage, setRowsPerPage,
     exportando, handleExportar: exportConfig ? handleExportar : undefined,
     filtroContainerRef, filtroBtnRefs, filtroPillStyle,
