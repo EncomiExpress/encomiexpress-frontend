@@ -1,11 +1,11 @@
 import { useTheme } from '@mui/material/styles'
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
     Box, Typography, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, IconButton,
     TextField, InputAdornment, Tooltip, CircularProgress, Dialog,
-    Select, MenuItem, FormControl,
+    Select, MenuItem, FormControl, Button,
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import ClearIcon from '@mui/icons-material/Clear'
@@ -50,6 +50,12 @@ const getFilterMenuProps = (theme) => ({
     },
 })
 
+const FILTROS_HABILITADO = [
+    { value: 'todo', label: 'Todo' },
+    { value: 'habilitado', label: 'Habilitado' },
+    { value: 'inhabilitado', label: 'Inhabilitado' },
+]
+
 const MESES = [
     { value: '1', label: 'Enero' }, { value: '2', label: 'Febrero' },
     { value: '3', label: 'Marzo' }, { value: '4', label: 'Abril' },
@@ -68,6 +74,20 @@ const ListarPaqueteDevuelto = () => {
 
     const [searchTerm, setSearchTerm] = useState('')
     const [debouncedSearch, setDebouncedSearch] = useState('')
+    const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
+    const filtroContainerRef = useRef(null)
+    const filtroBtnRefs = useRef([])
+    const [filtroPillStyle, setFiltroPillStyle] = useState({ left: 0, width: 0 })
+
+    useLayoutEffect(() => {
+        const activeIndex = FILTROS_HABILITADO.findIndex(f => f.value === filtroHabilitado)
+        const btn = filtroBtnRefs.current[activeIndex]
+        const container = filtroContainerRef.current
+        if (btn && container) {
+            setFiltroPillStyle({ left: btn.offsetLeft, width: btn.offsetWidth })
+        }
+    }, [filtroHabilitado])
+
     const [filtroAnio, setFiltroAnio] = useState('')
     const [filtroMes, setFiltroMes] = useState('')
     const [aniosDisponibles, setAniosDisponibles] = useState([])
@@ -93,8 +113,9 @@ const ListarPaqueteDevuelto = () => {
         return getPaquetesDevueltos({
             page, limit: rowsPerPage, q: debouncedSearch.trim() || undefined,
             anio: filtroAnio || undefined, mes: filtroMes || undefined,
+            habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
         }, signal)
-    }, [page, rowsPerPage, debouncedSearch, filtroAnio, filtroMes])
+    }, [page, rowsPerPage, debouncedSearch, filtroAnio, filtroMes, filtroHabilitado])
 
     useEffect(() => {
         getAniosDisponiblesPaquetesDevueltos()
@@ -144,7 +165,61 @@ const ListarPaqueteDevuelto = () => {
             </Box>
 
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+                    <Box ref={filtroContainerRef} sx={{
+                        position: 'relative',
+                        display: 'inline-flex',
+                        backgroundColor: theme.palette.primary.light,
+                        borderRadius: 4,
+                        p: '4px',
+                        gap: '5px',
+                    }}>
+                        <Box sx={{
+                            position: 'absolute',
+                            top: '4px',
+                            bottom: '4px',
+                            left: `${filtroPillStyle.left}px`,
+                            width: `${filtroPillStyle.width}px`,
+                            borderRadius: 3,
+                            backgroundColor: theme.palette.background.paper,
+                            boxShadow: '0 1px 4px rgba(0,0,0,0.12)',
+                            transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                            pointerEvents: 'none',
+                        }} />
+                        {FILTROS_HABILITADO.map((f, i) => (
+                            <Button
+                                key={f.value}
+                                ref={el => { filtroBtnRefs.current[i] = el }}
+                                onClick={() => { setFiltroHabilitado(f.value); setPage(1) }}
+                                size="small"
+                                disableElevation
+                                disableRipple
+                                sx={{
+                                    position: 'relative',
+                                    zIndex: 1,
+                                    borderRadius: 3,
+                                    textTransform: 'none',
+                                    fontSize: '0.75rem',
+                                    px: 2,
+                                    py: 0.5,
+                                    minWidth: 0,
+                                    fontWeight: filtroHabilitado === f.value ? 600 : 400,
+                                    backgroundColor: 'transparent',
+                                    color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.primary.darker,
+                                    transition: 'color 0.3s ease',
+                                    border: 'none',
+                                    '&:hover': {
+                                        backgroundColor: 'transparent',
+                                        color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.primary.dark,
+                                        border: 'none',
+                                    },
+                                }}
+                            >
+                                {f.label}
+                            </Button>
+                        ))}
+                    </Box>
+
                     <FormControl size="small" sx={{ minWidth: 120 }}>
                         <Select
                             value={filtroAnio}
@@ -284,10 +359,12 @@ const ListarPaqueteDevuelto = () => {
                                 paquetes.map(paquete => {
                                     const cliente = paquete.encomienda?.cliente
                                     const ruta = paquete.asignacion?.ruta
+                                    const inhabilitado = paquete.encomienda?.habilitado === false
                                     return (
                                         <TableRow
                                             key={paquete.idPaquete}
                                             sx={{
+                                                opacity: inhabilitado ? 0.55 : 1,
                                                 '&:hover': { backgroundColor: theme.palette.background.subtle },
                                                 transition: 'background-color 0.15s',
                                             }}

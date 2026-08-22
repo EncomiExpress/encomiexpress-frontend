@@ -20,6 +20,19 @@ export const capitalizarPrimeraLetra = (value) => {
     return limpio.charAt(0).toUpperCase() + limpio.slice(1).toLowerCase()
 }
 
+// Igual que capitalizarPrimeraLetra pero palabra por palabra — para nombres/apellidos
+// de personas, que casi siempre tienen más de una palabra (ej. "juan PEREZ alcachofa"
+// → "Juan Perez Alcachofa"). Mismo criterio: se aplica en vivo en el onChange, sobre
+// el valor completo en cada tecla, no solo al guardar.
+export const capitalizarPalabras = (value) => {
+    const limpio = String(value ?? '')
+    if (!limpio) return limpio
+    return limpio
+        .split(' ')
+        .map((palabra) => palabra ? palabra.charAt(0).toUpperCase() + palabra.slice(1).toLowerCase() : palabra)
+        .join(' ')
+}
+
 export const formatFecha = (fecha) => {
     if (!fecha) return '—'
     const [y, m, d] = fecha.split('-')

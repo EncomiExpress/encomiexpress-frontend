@@ -18,6 +18,7 @@ import CloseIcon from '@mui/icons-material/Close'
 import { useAuth, ROLES } from '../../shared/contexts/AuthContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { formFieldStyles } from '../../shared/utils/formStyles.js'
+import { capitalizarPalabras } from '../../shared/utils/formatters.js'
 import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import * as usuarioService from '../../shared/services/usuarioService.js'
@@ -121,7 +122,7 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
         let { value } = e.target
 
         if (name === 'nombre' || name === 'apellido') {
-            value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
+            value = capitalizarPalabras(value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, ''))
             const formActualizado = { ...form, [name]: value }
             setForm(prev => ({ ...prev, [name]: value }))
             setAvisoNombreDuplicado('')

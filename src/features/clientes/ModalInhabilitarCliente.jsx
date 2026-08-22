@@ -38,7 +38,7 @@ const ModalInhabilitarCliente = ({ open, data, onClose, onExited, onConfirm }) =
         setVentas([])
         getEncomiendas(undefined, { idCliente: data.idCliente, habilitado: 'true', limit: 100 })
             .then(res => {
-                const activas = (res?.data || []).filter(v => v.estado !== 'Entregada' && v.estado !== 'Cancelada')
+                const activas = (res?.data || []).filter(v => v.estado !== 'Entregada' && v.estado !== 'Completada con novedades' && v.estado !== 'Cancelada')
                 setVentas(activas)
             })
             .catch(() => setVentas([]))

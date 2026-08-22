@@ -760,7 +760,7 @@ const ListarVenta = () => {
                                                             <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: '#D97706' }}>Pendiente</Typography>
                                                         </Box>
                                                     )
-                                                ) : (venta.metodoPago === 'Contraentrega' && venta.estado !== 'Entregada') ? (
+                                                ) : (venta.metodoPago === 'Contraentrega' && venta.estado !== 'Entregada' && venta.estado !== 'Completada con novedades') ? (
                                                     <Tooltip title="Es Contraentrega: el pago solo se puede confirmar cuando la venta sea entregada">
                                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, pl: 1, opacity: 0.55 }}>
                                                             <Box sx={{ width: 9, height: 9, borderRadius: '50%', border: '2px solid #D97706', backgroundColor: 'transparent', flexShrink: 0 }} />
@@ -924,7 +924,7 @@ const ListarVenta = () => {
                     if (wasPending && venta) {
                         const habilitadoActual = venta.habilitado
                         toggleHabilitadoVenta(venta.idEncomiendaVenta)
-                            .then(() => showToast(`Venta ${habilitadoActual ? 'inhabilitada' : 'habilitada'} correctamente.`, habilitadoActual ? 'warning' : 'success'))
+                            .then(() => showToast(`Venta ${habilitadoActual ? 'inhabilitada' : 'habilitada'} correctamente.`, 'success'))
                             .catch(() => {})
                     }
                 }}

@@ -38,7 +38,8 @@ import ModalConsultarRutaProgramacion from './ModalConsultarRutaProgramacion'
 import ModalConfirmarEstado from './ModalConfirmarEstado'
 import ModalInhabilitarRuta from './ModalInhabilitarRuta'
 import { getPageOfRuta, getAniosDisponiblesRuta, getRutas, getDisponibilidadRuta } from '../../shared/services/rutaService'
-import { formatFecha } from '../../shared/utils/formatters.js'
+import { getEncomiendas } from '../../shared/services/ventaService'
+import { formatFecha, getGuiaPrincipal } from '../../shared/utils/formatters.js'
 import { getDocumentoVehiculoVencido, conductorLicenciaVigente } from '../../shared/utils/vigenciaDocumentos.js'
 import { getEstadoColorRuta as getEstadoColor, getVehiculoEstadoDot, getConductorEstadoDot } from '../../shared/utils/estadoColors.js'
 import { exportToExcel } from '../../shared/utils/exportExcel.js'
@@ -383,13 +384,21 @@ const resolveDestino = (ruta) =>
     const ejecutarCambioEstado = async (id, nuevoEstado) => {
         try {
             await updateEstado(id, nuevoEstado)
+            // updateEstado del contexto solo parcha el campo "estado" en memoria — los
+            // indicadores "pendienteLegalizacion"/"paquetesPendientes" salen de una
+            // consulta agregada aparte (rutaService.getAll) y quedarían desactualizados
+            // (ej. al pasar a "En Ruta" recién ahí nace el anticipo "En Legalización" y
+            // los paquetes "Por entregar", pero la fila seguiría mostrando el selector
+            // normal hasta el próximo refresco). Se refresca la lista completa para que
+            // el selector dividido de bloqueo aparezca de inmediato si corresponde.
+            fetchRutasProgramadas(buildRutasParams())
             showToast(`Estado actualizado a "${nuevoEstado}".`, 'success')
         } catch (err) {
             if (err.errorCode === 'MISSING_DELIVERY_DATE') {
                 setAlertaBloqueo({
                     open: true,
                     tipo: 'ventas',
-                    titulo: 'La ruta no puede ponerse En Ruta',
+                    titulo: 'No se puede iniciar la ruta',
                     entidades: err.details || [],
                 })
                 return
@@ -445,16 +454,24 @@ const resolveDestino = (ruta) =>
 
                 if (par.vehiculo?.estado === 'Mantenimiento') {
                     vehiculoBlocked = true
-                    entidades.push({ tipo: 'vehiculo', etiqueta: par.vehiculo.placa || '', estado: par.vehiculo.estado, id: par.vehiculo.idVehiculo, mensaje: 'está en Mantenimiento y no puede asignarse a una ruta En Ruta.' })
+                    entidades.push({ tipo: 'vehiculo', etiqueta: par.vehiculo.placa || '', estado: par.vehiculo.estado, id: par.vehiculo.idVehiculo, mensaje: 'está en Mantenimiento y no puede asignarse a una ruta En Ruta.', rutaConflicto: null })
                 } else if (conflictoVehiculo) {
                     vehiculoBlocked = true
-                    entidades.push({ tipo: 'vehiculo', etiqueta: par.vehiculo?.placa || '', estado: par.vehiculo?.estado, id: par.vehiculo?.idVehiculo, mensaje: `ya está asignado a la Ruta #${conflictoVehiculo.idRuta} que se encuentra En Ruta.` })
+                    entidades.push({
+                        tipo: 'vehiculo', etiqueta: par.vehiculo?.placa || '', estado: par.vehiculo?.estado, id: par.vehiculo?.idVehiculo,
+                        mensaje: 'ya está asignado a la ruta', mensajeFin: 'que se encuentra En Ruta.',
+                        rutaConflicto: { idRuta: conflictoVehiculo.idRuta, label: conflictoVehiculo.origen ? `${conflictoVehiculo.origen} → ${conflictoVehiculo.destino?.ciudad || 'Sin destino'}` : `#${conflictoVehiculo.idRuta}` },
+                    })
                 }
 
                 if (conflictoConductor) {
                     conductorBlocked = true
                     const nombre = par.conductor?.nombre ? `${par.conductor.nombre} ${par.conductor.apellido || ''}`.trim() : 'Conductor'
-                    entidades.push({ tipo: 'conductor', etiqueta: nombre, estado: par.conductor?.estado || 'en_ruta', id: par.conductor?.idConductor, mensaje: `ya está asignado a la Ruta #${conflictoConductor.idRuta} que se encuentra En Ruta.` })
+                    entidades.push({
+                        tipo: 'conductor', etiqueta: nombre, estado: par.conductor?.estado || 'en_ruta', id: par.conductor?.idConductor,
+                        mensaje: 'ya está asignado a la ruta', mensajeFin: 'que se encuentra En Ruta.',
+                        rutaConflicto: { idRuta: conflictoConductor.idRuta, label: conflictoConductor.origen ? `${conflictoConductor.origen} → ${conflictoConductor.destino?.ciudad || 'Sin destino'}` : `#${conflictoConductor.idRuta}` },
+                    })
                 }
             }
 
@@ -469,6 +486,29 @@ const resolveDestino = (ruta) =>
                     entidades,
                 })
                 return
+            }
+
+            // Mismo chequeo que hace el backend al confirmar (updateEstado) — se
+            // adelanta acá para no dejar que el modal normal de "cambiar a En Ruta"
+            // (que ya dice que vehículo/conductor pasarán a ocupados, dando a entender
+            // que todo está bien) se muestre primero y recién al confirmar salga este
+            // bloqueo. Si algo bloquea, se avisa antes de llegar a ese modal.
+            try {
+                const ventasRes = await getEncomiendas(undefined, { idRuta: id, habilitado: 'true', limit: 1000 })
+                const ventasSinFecha = (ventasRes?.data || []).filter(v => v.estado !== 'Cancelada' && !v.fechaEstimadaEntrega)
+                if (ventasSinFecha.length > 0) {
+                    setAlertaBloqueo({
+                        open: true,
+                        tipo: 'ventas',
+                        titulo: 'No se puede iniciar la ruta',
+                        entidades: ventasSinFecha.map(v => ({ id: v.idEncomiendaVenta, guia: getGuiaPrincipal(v) })),
+                    })
+                    return
+                }
+            } catch (err) {
+                // Si el chequeo previo falla, no se bloquea el flujo — el backend
+                // igual revalida MISSING_DELIVERY_DATE al confirmar.
+                showToast(err.message || 'No se pudo verificar las fechas de entrega, se validará al confirmar.', 'warning')
             }
         }
 
@@ -1167,10 +1207,20 @@ const resolveDestino = (ruta) =>
                                 return (
                                     <Box key={i} sx={{ width: '100%', mt: i > 0 ? 1.5 : 0.5, textAlign: 'left' }}>
                                         <Typography fontSize="0.95rem" color={theme.palette.text.secondary} sx={{ mb: 1, textAlign: 'center' }}>
-                                            {e.tipo === 'vehiculo'
-                                                ? <>El vehículo <strong>{e.etiqueta}</strong> {e.mensaje}</>
-                                                : <><strong>{e.etiqueta}</strong> {e.mensaje}</>
-                                            }
+                                            {e.tipo === 'vehiculo' ? <>El vehículo <strong>{e.etiqueta}</strong> </> : <><strong>{e.etiqueta}</strong> </>}
+                                            {e.mensaje}
+                                            {e.rutaConflicto && (
+                                                <>
+                                                    {' '}
+                                                    <Box component="span"
+                                                        onClick={() => window.open(`/transporte/rutas?highlight=${e.rutaConflicto.idRuta}`, '_blank')}
+                                                        sx={{ color: theme.palette.primary.main, cursor: 'pointer', textDecoration: 'underline', textDecorationStyle: 'dotted', fontWeight: 600, '&:hover': { opacity: 0.75 } }}>
+                                                        {e.rutaConflicto.label}
+                                                    </Box>
+                                                    {' '}
+                                                </>
+                                            )}
+                                            {e.mensajeFin}
                                         </Typography>
                                         <Paper elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 2, overflow: 'hidden' }}>
                                             <Box

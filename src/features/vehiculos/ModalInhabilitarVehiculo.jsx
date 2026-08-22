@@ -17,6 +17,7 @@ const RutasMiniTabla = ({ rutas, theme }) => (
                 <TableHead>
                     <TableRow>
                         <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', py: 0.75, backgroundColor: theme.palette.background.subtle }}>Ruta</TableCell>
+                        <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', py: 0.75, backgroundColor: theme.palette.background.subtle }}>Destino</TableCell>
                         <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', py: 0.75, backgroundColor: theme.palette.background.subtle, textAlign: 'right' }}>Estado</TableCell>
                     </TableRow>
                 </TableHead>
@@ -30,6 +31,9 @@ const RutasMiniTabla = ({ rutas, theme }) => (
                                 sx={{ cursor: 'pointer', '&:hover td': { backgroundColor: theme.palette.action.hover } }}>
                                 <TableCell sx={{ fontSize: '0.8rem', fontWeight: 600, py: 0.75 }}>
                                     {r.origen || `#${r.idRuta}`}
+                                </TableCell>
+                                <TableCell sx={{ fontSize: '0.8rem', py: 0.75 }}>
+                                    {r.destino?.ciudad || '—'}
                                 </TableCell>
                                 <TableCell sx={{ py: 0.75, textAlign: 'right' }}>
                                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.75 }}>

@@ -26,7 +26,7 @@ import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import PlacaDisplay from '../../shared/components/PlacaDisplay.jsx'
 import { normalizarTexto } from '../../shared/utils/duplicados.js'
-import { formatFecha, getGuiaPrincipal, formatearMoneda, limpiarMonedaInput, limpiarDecimalInput, esSoloRelleno } from '../../shared/utils/formatters.js'
+import { formatFecha, getGuiaPrincipal, formatearMoneda, limpiarMonedaInput, limpiarDecimalInput, esSoloRelleno, capitalizarPalabras } from '../../shared/utils/formatters.js'
 import { sumarDias } from '../../shared/utils/horarioLaboral.js'
 
 const steps = ['Participantes', 'Paquete', 'Envío', 'Pago', 'Confirmación']
@@ -168,7 +168,32 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
     // pase a valer 2, así que basta con reaccionar a ese valor, no a qué botón se usó.
     useEffect(() => {
         if (activeStep !== 2) return
-        fetchRutasProgramadas({ limit: 1000 }).catch(() => null)
+        let cancelado = false
+        fetchRutasProgramadas({ limit: 1000 }).then(rutasFrescas => {
+            if (cancelado) return
+            setForm(prev => {
+                if (!prev.idRuta) return prev
+                const ruta = (rutasFrescas || []).find(r => r.idRuta === parseInt(prev.idRuta))
+                if (!ruta) return prev
+                const fechaSalida = ruta.fechaSalida || ''
+                const fechaLlegadaEstimada = ruta.fechaLlegadaEstimada || ''
+                if (fechaSalida === prev.fechaSalidaRuta && fechaLlegadaEstimada === prev.fechaLlegadaEstimadaRuta) return prev
+                const minimaNueva = fechaSalida ? sumarDias(fechaSalida, 1) : ''
+                const maximaNueva = fechaLlegadaEstimada ? sumarDias(fechaLlegadaEstimada, -1) : ''
+                const fechaFueraDeRango = !!(prev.fechaEstimadaEntrega && (
+                    (minimaNueva && prev.fechaEstimadaEntrega < minimaNueva) ||
+                    (maximaNueva && prev.fechaEstimadaEntrega > maximaNueva)
+                ))
+                if (fechaFueraDeRango) setErrores(e => ({ ...e, fechaEstimadaEntrega: validarCampo('fechaEstimadaEntrega', { fechaEstimadaEntrega: '' }, null) }))
+                return {
+                    ...prev,
+                    fechaSalidaRuta: fechaSalida,
+                    fechaLlegadaEstimadaRuta: fechaLlegadaEstimada,
+                    fechaEstimadaEntrega: fechaFueraDeRango ? '' : prev.fechaEstimadaEntrega,
+                }
+            })
+        }).catch(() => null)
+        return () => { cancelado = true }
     }, [activeStep, fetchRutasProgramadas])
 
     // La tarifa del destino y la tarifa por kg (fija en Configuración) pueden cambiar
@@ -329,7 +354,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
         }
 
         if (name === 'nombreDestinatario') {
-            value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
+            value = capitalizarPalabras(value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, ''))
         }
         if (name === 'telefonoDestinatario') {
             value = value.replace(/[^0-9]/g, '')

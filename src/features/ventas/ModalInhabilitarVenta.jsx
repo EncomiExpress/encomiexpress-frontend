@@ -49,7 +49,7 @@ const ModalInhabilitarVenta = ({ open, venta, onClose, onExited, onConfirm }) =>
     }
 
     const habilitadoActual = venta?.habilitado === true
-    const bloqueado = habilitadoActual && venta?.estado !== 'Entregada' && venta?.estado !== 'Cancelada'
+    const bloqueado = habilitadoActual && venta?.estado !== 'Entregada' && venta?.estado !== 'Completada con novedades' && venta?.estado !== 'Cancelada'
     const guia = getGuiaPrincipal(venta) || '—'
     const ruta = venta?.ruta || null
 
@@ -72,6 +72,13 @@ const ModalInhabilitarVenta = ({ open, venta, onClose, onExited, onConfirm }) =>
             ? 'La ruta en curso que impide la inhabilitación'
             : 'La ruta asociada a esta venta'
         : null
+
+    // Los paquetes no tienen su propio "habilitado" — dependen del de la venta (ver
+    // encomiendaService.getPaquetesDevueltos). Si esta venta tiene algún paquete
+    // Devuelto, inhabilitarla también los va a mostrar como inhabilitados en el
+    // listado de Paquetes devueltos — se avisa antes de confirmar, no después.
+    const paquetesDevueltos = habilitadoActual ? (venta?.paquetes || []).filter(p => p.estado === 'Devuelto') : []
+    const tieneDevueltos = paquetesDevueltos.length > 0
 
     return (
         <Dialog
@@ -108,6 +115,14 @@ const ModalInhabilitarVenta = ({ open, venta, onClose, onExited, onConfirm }) =>
                         </Typography>
                     </Box>
                 </Box>
+
+                {!bloqueado && tieneDevueltos && (
+                    <Box sx={{ mt: 2, mx: 0.5, p: 1.5, borderRadius: 2, textAlign: 'left', backgroundColor: `${theme.palette.warning.main}14`, border: `1px solid ${theme.palette.warning.main}44` }}>
+                        <Typography variant="caption" sx={{ color: theme.palette.warning.dark, lineHeight: 1.5 }}>
+                            Esta venta tiene {paquetesDevueltos.length === 1 ? '1 paquete devuelto' : `${paquetesDevueltos.length} paquetes devueltos`}. Al inhabilitarla, también se mostrará{paquetesDevueltos.length === 1 ? '' : 'n'} como inhabilitado{paquetesDevueltos.length === 1 ? '' : 's'} en el listado de Paquetes devueltos.
+                        </Typography>
+                    </Box>
+                )}
 
                 {bloqueado && (
                     <Box sx={{ mt: 2.5, textAlign: 'left' }}>
@@ -153,7 +168,7 @@ const ModalInhabilitarVenta = ({ open, venta, onClose, onExited, onConfirm }) =>
                             )
                         })()}
                         <Typography variant="caption" color={theme.palette.text.secondary} sx={{ mt: 1, display: 'block' }}>
-                            Solo se puede inhabilitar una venta cuando esté Entregada o Cancelada.
+                            Solo se puede inhabilitar una venta cuando esté Entregada, Completada con novedades o Cancelada.
                         </Typography>
                     </Box>
                 )}

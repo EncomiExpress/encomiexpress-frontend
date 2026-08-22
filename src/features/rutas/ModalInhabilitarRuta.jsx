@@ -30,7 +30,7 @@ const ModalInhabilitarRuta = ({ open, data, onClose, onExited, onConfirm }) => {
             anticipoService.getAnticipos(undefined, { idRuta: data.idRuta, habilitado: 'true', limit: 100 }),
         ])
             .then(([ventRes, antRes]) => {
-                const ventas = (ventRes?.data || []).filter(v => v.estado !== 'Entregada' && v.estado !== 'Cancelada')
+                const ventas = (ventRes?.data || []).filter(v => v.estado !== 'Entregada' && v.estado !== 'Completada con novedades' && v.estado !== 'Cancelada')
                 const anticipos = (antRes?.data || []).filter(a => ESTADOS_BLOQUEO_ANTICIPO.includes(a.estado))
                 setDeps({ ventas, anticipos, loading: false })
             })

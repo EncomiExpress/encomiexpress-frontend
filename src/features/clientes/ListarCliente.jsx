@@ -534,7 +534,7 @@ const ListarCliente = () => {
                     if (wasPending && data) {
                         const habilitadoActual = data.habilitadoActual
                         toggleHabilitadoCliente(data.idCliente)
-                            .then(() => showToast(`Cliente ${habilitadoActual ? 'inhabilitado' : 'habilitado'} correctamente`, habilitadoActual ? 'warning' : 'success'))
+                            .then(() => showToast(`Cliente ${habilitadoActual ? 'inhabilitado' : 'habilitado'} correctamente`, 'success'))
                             .catch(() => {})
                     }
                 }}

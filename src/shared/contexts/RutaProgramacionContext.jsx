@@ -8,6 +8,7 @@ import {
   updateEstadoRuta
 } from '../services/rutaService'
 import { useVehiculo } from './VehiculoContext'
+import { useConductor } from './ConductorContext'
 
 const RutaProgramacionContext = createContext()
 
@@ -19,6 +20,7 @@ export const RutaProgramacionProvider = ({ children }) => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const { fetchVehiculos } = useVehiculo()
+  const { fetchConductores } = useConductor()
 
   const fetchRutasProgramadas = useCallback(async (params = {}, signal) => {
     setLoading(true)
@@ -83,10 +85,10 @@ export const RutaProgramacionProvider = ({ children }) => {
       setRutasProgramadas(prev =>
         prev.map(r => (r.idRuta === id ? { ...r, estado: actualizada.estado } : r))
       )
-      await fetchVehiculos()
+      await Promise.all([fetchVehiculos(), fetchConductores()])
     }
     return actualizada
-  }, [fetchVehiculos])
+  }, [fetchVehiculos, fetchConductores])
 
   return (
     <RutaProgramacionContext.Provider value={{

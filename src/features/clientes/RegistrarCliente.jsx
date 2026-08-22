@@ -22,7 +22,7 @@ import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import * as clienteService from '../../shared/services/clienteService.js'
 import { hayNombreDuplicado, MENSAJE_NOMBRE_DUPLICADO, hayDocumentoDuplicado, MENSAJE_DOC_DUPLICADO } from '../../shared/utils/duplicados.js'
 import { esDocAlfanumerico, maxLengthDocumento, docHelperText as docHelperTextBase, validarNumeroDocumento } from '../../shared/utils/documento.js'
-import { esSoloRelleno } from '../../shared/utils/formatters.js'
+import { esSoloRelleno, capitalizarPalabras } from '../../shared/utils/formatters.js'
 
 const steps = ['Datos Personales', 'Contacto', 'Confirmación']
 
@@ -151,7 +151,7 @@ const RegistrarCliente = ({ open, onClose, onSuccess }) => {
             return
         }
         if (name === 'nombre' || name === 'apellido') {
-            if (!(name === 'nombre' && form.tipoIdentificacion === 'NIT')) value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
+            if (!(name === 'nombre' && form.tipoIdentificacion === 'NIT')) value = capitalizarPalabras(value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, ''))
             const formActualizado = { ...form, [name]: value }
             setForm(prev => ({ ...prev, [name]: value }))
             setAvisoNombreDuplicado('')

@@ -28,9 +28,10 @@ import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import * as conductorService from '../../shared/services/conductorService.js'
+import * as usuarioService from '../../shared/services/usuarioService.js'
 import { hayNombreDuplicado, MENSAJE_NOMBRE_DUPLICADO, hayDocumentoDuplicado, MENSAJE_DOC_DUPLICADO, MENSAJE_EMAIL_DUPLICADO, MENSAJE_LICENCIA_DUPLICADA } from '../../shared/utils/duplicados.js'
 import { esDocAlfanumerico, maxLengthDocumento, docHelperText, validarNumeroDocumento } from '../../shared/utils/documento.js'
-import { esSoloRelleno } from '../../shared/utils/formatters.js'
+import { esSoloRelleno, capitalizarPalabras } from '../../shared/utils/formatters.js'
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const validarEmail = (email) => {
@@ -190,7 +191,7 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
             return
         }
         if (name === 'nombre' || name === 'apellido') {
-            value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
+            value = capitalizarPalabras(value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, ''))
             const formActualizado = { ...form, [name]: value }
             setForm(prev => ({ ...prev, [name]: value }))
             setAvisoNombreDuplicado('')
@@ -284,12 +285,12 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
             return
         }
         try {
-            const res = await conductorService.getConductores(undefined, { q: valor, limit: 10 })
+            const res = await usuarioService.getUsuarios({ q: valor, limit: 10 })
             if (!res?.success) return
             const duplicado = hayDocumentoDuplicado(res.data, valor, {
-                getDoc: (r) => r.usuario?.email || r.email,
-                excludeId: conductorProp?.idConductor,
-                getId: (r) => r.idConductor,
+                getDoc: (r) => r.email,
+                excludeId: conductorProp?.usuario?.idUsuario,
+                getId: (r) => r.idUsuario,
             })
             setAvisoEmailDuplicado(duplicado ? MENSAJE_EMAIL_DUPLICADO : '')
             if (duplicado) setErrores(prev => ({ ...prev, email: MENSAJE_EMAIL_DUPLICADO }))

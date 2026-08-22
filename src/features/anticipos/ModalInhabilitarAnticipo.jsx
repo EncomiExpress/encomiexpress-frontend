@@ -65,7 +65,9 @@ const ModalInhabilitarAnticipo = ({ open, anticipo, onClose, onExited, onConfirm
             ? anticipo.estado === 'En Legalización'
                 ? <><strong>{nombreConductor}</strong> aún no ha registrado los gastos del anticipo.</>
                 : anticipo.estado === 'Excedente pendiente'
-                    ? <>El conductor tiene un excedente pendiente de devolución.</>
+                    ? (parseFloat(anticipo.excedente) < 0
+                        ? <>Hay un faltante pendiente de reponerle al conductor.</>
+                        : <>El conductor tiene un excedente pendiente de devolución.</>)
                     : <>El anticipo aún no ha sido completado.</>
             : <>El anticipo de <strong>{nombreConductor}</strong> quedará inhabilitado.</>
 

@@ -23,9 +23,10 @@ import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import * as conductorService from '../../shared/services/conductorService.js'
+import * as usuarioService from '../../shared/services/usuarioService.js'
 import { hayNombreDuplicado, MENSAJE_NOMBRE_DUPLICADO, hayDocumentoDuplicado, MENSAJE_DOC_DUPLICADO, MENSAJE_EMAIL_DUPLICADO, MENSAJE_LICENCIA_DUPLICADA } from '../../shared/utils/duplicados.js'
 import { esDocAlfanumerico, maxLengthDocumento, docHelperText, validarNumeroDocumento } from '../../shared/utils/documento.js'
-import { esSoloRelleno } from '../../shared/utils/formatters.js'
+import { esSoloRelleno, capitalizarPalabras } from '../../shared/utils/formatters.js'
 
 const hoyISO = () => {
     const d = new Date()
@@ -144,7 +145,7 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
             return
         }
         if (name === 'nombre' || name === 'apellido') {
-            value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
+            value = capitalizarPalabras(value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, ''))
             const formActualizado = { ...form, [name]: value }
             setForm(prev => ({ ...prev, [name]: value }))
             setAvisoNombreDuplicado('')
@@ -243,9 +244,12 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
             return
         }
         try {
-            const res = await conductorService.getConductores(undefined, { q: valor, limit: 10 })
+            // El correo es único en toda la tabla usuario (admin, conductor o cualquier
+            // otro rol) -- se busca ahí, no solo entre conductores, porque si no un correo
+            // ya usado por un admin (u otro rol) no se detecta como duplicado acá.
+            const res = await usuarioService.getUsuarios({ q: valor, limit: 10 })
             if (!res?.success) return
-            const duplicado = hayDocumentoDuplicado(res.data, valor, { getDoc: (r) => r.usuario?.email || r.email })
+            const duplicado = hayDocumentoDuplicado(res.data, valor, { getDoc: (r) => r.email })
             setAvisoEmailDuplicado(duplicado ? MENSAJE_EMAIL_DUPLICADO : '')
             if (duplicado) setErrores(prev => ({ ...prev, email: MENSAJE_EMAIL_DUPLICADO }))
         } catch {

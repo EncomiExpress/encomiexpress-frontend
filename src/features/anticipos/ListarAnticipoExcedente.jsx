@@ -158,7 +158,7 @@ const ListarAnticipoExcedente = () => {
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [anticipoEditar, setAnticipoEditar] = useState(null)
     const [sortBy, setSortBy] = useState({ field: '', dir: '' })
-    const [confirmDev, setConfirmDev] = useState({ open: false, id: null })
+    const [confirmDev, setConfirmDev] = useState({ open: false, id: null, esFaltante: false })
     const [confirmandoEstado, setConfirmandoEstado] = useState(false)
 
     useEffect(() => {
@@ -279,12 +279,12 @@ const ListarAnticipoExcedente = () => {
         setConfirmandoEstado(true)
         try {
             await entregarExcedente(confirmDev.id)
-            showToast('Devolución confirmada: el anticipo quedó Completado', 'success')
+            showToast(confirmDev.esFaltante ? 'Reposición confirmada: el anticipo quedó Completado' : 'Devolución confirmada: el anticipo quedó Completado', 'success')
         } catch (err) {
-            showToast(err.message || 'No se pudo confirmar la devolución', 'error')
+            showToast(err.message || (confirmDev.esFaltante ? 'No se pudo confirmar la reposición' : 'No se pudo confirmar la devolución'), 'error')
         }
         setConfirmandoEstado(false)
-        setConfirmDev({ open: false, id: null })
+        setConfirmDev({ open: false, id: null, esFaltante: false })
     }
 
     return (
@@ -673,16 +673,17 @@ const ListarAnticipoExcedente = () => {
                                                 )}
                                             </TableCell>
 
-                                            {/* Excedente */}
+                                            {/* Excedente — positivo: a favor de la empresa (verde). Negativo: la
+                                                empresa le debe reponer al conductor (rojo), sin el "+" fijo. */}
                                             <TableCell sx={{ py: 2.5 }}>
                                                 {anticipo.valorGastado ? (
                                                     <Chip
-                                                        label={`+${formatMoney(excedente)}`}
+                                                        label={excedente < 0 ? formatMoney(excedente) : `+${formatMoney(excedente)}`}
                                                         size="small"
                                                         sx={{
                                                             fontWeight: 600,
-                                                            backgroundColor: alpha(theme.palette.success.main, 0.1),
-                                                            color: theme.palette.success.dark,
+                                                            backgroundColor: alpha(excedente < 0 ? theme.palette.error.main : theme.palette.success.main, 0.1),
+                                                            color: excedente < 0 ? theme.palette.error.dark : theme.palette.success.dark,
                                                             fontSize: '0.7rem',
                                                             borderRadius: '2px',
                                                             height: 24,
@@ -704,9 +705,11 @@ const ListarAnticipoExcedente = () => {
                                                     <AnticipoEstadoDot estado={anticipo.estado} />
                                                     {anticipo.estado === 'Excedente pendiente' && tienePermiso(PERMISOS.ACTUALIZAR_ANTICIPO) && (
                                                         <Button size="small" variant="outlined"
-                                                            onClick={() => setConfirmDev({ open: true, id: anticipo.idAnticipoExcedente })}
-                                                            sx={{ fontSize: '0.68rem', textTransform: 'none', fontWeight: 600, borderRadius: 1.5, px: 1, py: 0.2, borderColor: '#059669', color: '#059669', '&:hover': { backgroundColor: '#f0fdf4', borderColor: '#059669' }, lineHeight: 1.4 }}>
-                                                            Confirmar devolución
+                                                            onClick={() => setConfirmDev({ open: true, id: anticipo.idAnticipoExcedente, esFaltante: excedente < 0 })}
+                                                            sx={excedente < 0
+                                                                ? { fontSize: '0.68rem', textTransform: 'none', fontWeight: 600, borderRadius: 1.5, px: 1, py: 0.2, borderColor: theme.palette.error.main, color: theme.palette.error.main, '&:hover': { backgroundColor: alpha(theme.palette.error.main, 0.08), borderColor: theme.palette.error.main }, lineHeight: 1.4 }
+                                                                : { fontSize: '0.68rem', textTransform: 'none', fontWeight: 600, borderRadius: 1.5, px: 1, py: 0.2, borderColor: '#059669', color: '#059669', '&:hover': { backgroundColor: '#f0fdf4', borderColor: '#059669' }, lineHeight: 1.4 }}>
+                                                            {excedente < 0 ? 'Confirmar reposición' : 'Confirmar devolución'}
                                                         </Button>
                                                     )}
                                                 </Box>
@@ -810,7 +813,7 @@ const ListarAnticipoExcedente = () => {
                     if (wasPending && anticipo) {
                         const habilitadoActual = anticipo.habilitado === true
                         toggleHabilitado(anticipo.idAnticipoExcedente)
-                            .then(() => showToast(habilitadoActual ? 'Anticipo inhabilitado' : 'Anticipo habilitado', habilitadoActual ? 'warning' : 'success'))
+                            .then(() => showToast(habilitadoActual ? 'Anticipo inhabilitado' : 'Anticipo habilitado', 'success'))
                             .catch(() => {})
                     }
                 }}
@@ -820,36 +823,38 @@ const ListarAnticipoExcedente = () => {
             {/* Modal confirmación devolución de excedente */}
             <Dialog
                 open={confirmDev.open}
-                onClose={() => setConfirmDev({ open: false, id: null })}
+                onClose={() => setConfirmDev({ open: false, id: null, esFaltante: false })}
                 maxWidth="xs"
                 fullWidth
                 onClick={(e) => e.stopPropagation()}
                 slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}
             >
                 <DialogContent sx={{ p: 3, pb: 2, textAlign: 'center', position: 'relative' }}>
-                    <IconButton onClick={() => setConfirmDev({ open: false, id: null })}
+                    <IconButton onClick={() => setConfirmDev({ open: false, id: null, esFaltante: false })}
                         sx={{ position: 'absolute', top: 8, right: 8, color: theme.palette.text.secondary }}>
                         <CloseIcon />
                     </IconButton>
                     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5, pt: 2 }}>
-                        <Box sx={{ width: 67, height: 67, borderRadius: '50%', backgroundColor: '#05996922', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <TaskAltOutlinedIcon sx={{ fontSize: 35, color: '#059669' }} />
+                        <Box sx={{ width: 67, height: 67, borderRadius: '50%', backgroundColor: confirmDev.esFaltante ? alpha(theme.palette.error.main, 0.13) : '#05996922', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <TaskAltOutlinedIcon sx={{ fontSize: 35, color: confirmDev.esFaltante ? theme.palette.error.main : '#059669' }} />
                         </Box>
                         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
                             <Typography fontWeight={700} fontSize="1.4rem" color={theme.palette.text.primary}>
-                                Confirmar devolución
+                                {confirmDev.esFaltante ? 'Confirmar reposición' : 'Confirmar devolución'}
                             </Typography>
                             <Typography fontSize="1rem" color={theme.palette.text.secondary}>
-                                ¿El conductor devolvió el excedente?
+                                {confirmDev.esFaltante ? '¿Ya le repusiste el faltante al conductor?' : '¿El conductor devolvió el excedente?'}
                             </Typography>
                         </Box>
                     </Box>
                     <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
-                        El anticipo pasará a <strong>Completado</strong> y la fecha de entrega del excedente quedará registrada a la de hoy.
+                        {confirmDev.esFaltante
+                            ? <>El anticipo pasará a <strong>Completado</strong> y quedará registrada la fecha de hoy.</>
+                            : <>El anticipo pasará a <strong>Completado</strong> y la fecha de entrega del excedente quedará registrada a la de hoy.</>}
                     </Typography>
                 </DialogContent>
                 <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 3, px: 3, pt: 1, pb: 3 }}>
-                    <Button onClick={() => setConfirmDev({ open: false, id: null })} disableRipple sx={{
+                    <Button onClick={() => setConfirmDev({ open: false, id: null, esFaltante: false })} disableRipple sx={{
                         textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500,
                         borderRadius: 2, px: 3.5, py: 0.75, fontSize: '0.875rem',
                         border: `1px solid ${theme.palette.divider}`,
@@ -860,8 +865,8 @@ const ListarAnticipoExcedente = () => {
                     <Button onClick={handleConfirmarDevolucion} disabled={confirmandoEstado} variant="contained" disableRipple sx={{
                         textTransform: 'none', borderRadius: 2, fontWeight: 600, minWidth: 140,
                         px: 5, py: 0.76, fontSize: '0.875rem',
-                        backgroundColor: '#059669',
-                        '&:hover': { backgroundColor: '#059669', filter: 'brightness(0.88)' },
+                        backgroundColor: confirmDev.esFaltante ? theme.palette.error.main : '#059669',
+                        '&:hover': { backgroundColor: confirmDev.esFaltante ? theme.palette.error.dark : '#059669', filter: confirmDev.esFaltante ? undefined : 'brightness(0.88)' },
                     }}>
                         {confirmandoEstado ? <CircularProgress size={18} sx={{ color: 'white' }} /> : 'Confirmar'}
                     </Button>

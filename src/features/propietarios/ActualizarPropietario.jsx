@@ -21,6 +21,7 @@ import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { FormField, FormSelect } from '../../shared/components/FormularioEstandarizado.jsx'
 import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { formFieldStyles } from '../../shared/utils/formStyles.js'
+import { capitalizarPalabras } from '../../shared/utils/formatters.js'
 import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
 import * as propietarioService from '../../shared/services/propietarioService.js'
 import { hayNombreDuplicado, MENSAJE_NOMBRE_DUPLICADO, hayDocumentoDuplicado, MENSAJE_DOC_DUPLICADO } from '../../shared/utils/duplicados.js'
@@ -156,7 +157,7 @@ const ActualizarPropietario = ({ open, onClose, propietario: propietarioProp, on
             return
         }
         if (name === 'nombre' || name === 'apellido') {
-            value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
+            value = capitalizarPalabras(value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, ''))
             const formActualizado = { ...form, [name]: value }
             setForm(prev => ({ ...prev, [name]: value }))
             setAvisoNombreDuplicado('')

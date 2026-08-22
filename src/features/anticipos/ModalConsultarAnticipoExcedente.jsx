@@ -71,6 +71,9 @@ const ModalConsultarAnticipoExcedente = ({ anticipo, conductores, rutas, onClose
     const nombreConductor = resolveConductor()
     const origen = resolveRuta()
     const destinoTexto = resolveDestino()
+    const destinoCiudad = anticipo.ruta?.destino?.ciudad
+        || rutas?.find(r => r.idRuta === parseInt(anticipo.idRuta))?.destino?.ciudad
+        || null
     // Filtra entradas vacías/rotas — subidas viejas hechas antes de corregir el
     // backend (guardaba `undefined` en vez de la URL real) quedaron como `null`.
     const soporteValido = (anticipo.soporte || []).filter(Boolean)
@@ -102,7 +105,7 @@ const ModalConsultarAnticipoExcedente = ({ anticipo, conductores, rutas, onClose
                             {nombreConductor}
                         </Typography>
                         <Typography variant="caption" color={theme.palette.text.secondary}>
-                            {origen}
+                            {destinoCiudad ? `${origen} → ${destinoCiudad}` : origen}
                         </Typography>
                     </Box>
                 </Box>
@@ -157,7 +160,7 @@ const ModalConsultarAnticipoExcedente = ({ anticipo, conductores, rutas, onClose
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
                             <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Excedente</Typography>
                             {tieneGasto
-                                ? <Chip label={`+${formatMoney(excedente)}`} size="small" sx={{ fontWeight: 600, backgroundColor: alpha(theme.palette.success.main, 0.1), color: theme.palette.success.dark, fontSize: '0.7rem', borderRadius: '2px', height: 24 }} />
+                                ? <Chip label={excedente < 0 ? formatMoney(excedente) : `+${formatMoney(excedente)}`} size="small" sx={{ fontWeight: 600, backgroundColor: alpha(excedente < 0 ? theme.palette.error.main : theme.palette.success.main, 0.1), color: excedente < 0 ? theme.palette.error.dark : theme.palette.success.dark, fontSize: '0.7rem', borderRadius: '2px', height: 24 }} />
                                 : <Typography variant="body2" fontWeight={500} color={theme.palette.text.medium}>—</Typography>
                             }
                         </Box>

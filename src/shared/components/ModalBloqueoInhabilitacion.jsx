@@ -34,6 +34,20 @@ const agruparPorTipo = (dependencias) => {
     return grupos
 }
 
+// A qué módulo lleva cada tipo de dependencia al hacer clic (siempre con
+// ?highlight=id, mismo comportamiento que el resto del sistema: abre en otra
+// pestaña, ubica la página correcta y resalta la fila).
+const RUTA_POR_TIPO = {
+    'Vehículo': '/vehiculos/listar',
+    'Ruta': '/transporte/rutas',
+    'Ruta activa': '/transporte/rutas',
+    'Encomienda': '/ventas/listar',
+    'Anticipo Pendiente': '/anticipos/listar',
+    'Estado del anticipo': '/anticipos/listar',
+    'Conflicto de vehículo': '/transporte/rutas',
+    'Conflicto de conductor': '/transporte/rutas',
+}
+
 const ModalBloqueoInhabilitacion = ({ open, onClose, entidad = 'registro', mensaje, dependencias = [] }) => {
     const theme = useTheme()
 
@@ -132,16 +146,23 @@ const ModalBloqueoInhabilitacion = ({ open, onClose, entidad = 'registro', mensa
                             </Box>
 
                             {/* Items del grupo */}
-                            {grupos[tipo].map((dep, idx) => (
-                                <Box key={dep.id ?? idx}>
-                                    {idx > 0 && <Divider />}
-                                    <Box sx={{ px: 2, py: 1.2 }}>
-                                        <Typography variant="body2" color={theme.palette.text.secondary} lineHeight={1.5}>
-                                            {dep.descripcion}
-                                        </Typography>
+                            {grupos[tipo].map((dep, idx) => {
+                                const ruta = RUTA_POR_TIPO[dep.tipo]
+                                const clickeable = !!(ruta && dep.id)
+                                return (
+                                    <Box key={dep.id ?? idx}>
+                                        {idx > 0 && <Divider />}
+                                        <Box
+                                            onClick={clickeable ? () => window.open(`${ruta}?highlight=${dep.id}`, '_blank') : undefined}
+                                            sx={{ px: 2, py: 1.2, cursor: clickeable ? 'pointer' : 'default', '&:hover': clickeable ? { backgroundColor: theme.palette.background.subtle } : {} }}>
+                                            <Typography variant="body2" color={clickeable ? theme.palette.primary.main : theme.palette.text.secondary} lineHeight={1.5}
+                                                sx={clickeable ? { textDecoration: 'underline', textDecorationStyle: 'dotted' } : undefined}>
+                                                {dep.descripcion}
+                                            </Typography>
+                                        </Box>
                                     </Box>
-                                </Box>
-                            ))}
+                                )
+                            })}
                         </Box>
                     ))}
                 </Box>
