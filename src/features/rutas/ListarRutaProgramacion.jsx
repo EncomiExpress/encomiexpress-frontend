@@ -4,18 +4,15 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
     Box, Typography, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, Chip, IconButton,
-    TextField, InputAdornment, Select, MenuItem, FormControl, Menu,
+    Select, MenuItem, FormControl, Menu,
     Tooltip, Button,
-    Avatar, CircularProgress, TableSortLabel,
+    CircularProgress,
     Dialog, DialogContent
 } from '@mui/material'
-import SearchIcon from '@mui/icons-material/Search'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
-import ClearIcon from '@mui/icons-material/Clear'
-import RouteIcon from '@mui/icons-material/Route'
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import ToggleSwitch from '../../shared/components/ToggleSwitch.jsx'
 import TablaPaginacionFooter from '../../shared/components/TablaPaginacionFooter.jsx'
@@ -25,7 +22,7 @@ import CloseIcon from '@mui/icons-material/Close'
 import DoNotDisturbOutlinedIcon from '@mui/icons-material/DoNotDisturbOutlined'
 import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
-import UnfoldMoreOutlinedIcon from '@mui/icons-material/UnfoldMoreOutlined'
+import DataTable, { FiltroEstadoTabs, BuscadorField } from '../../shared/components/DataTable.jsx'
 import { useRutaProgramacion } from './context/RutaProgramacionContext.jsx'
 import { useVehiculo } from '../vehiculos/context/VehiculoContext.jsx'
 import { useConductor } from '../conductores/context/ConductorContext.jsx'
@@ -58,70 +55,6 @@ const renderEstadoDot = (estado, getEstadoColor) => {
     return <Box sx={{ width: 10, height: 10, borderRadius: '50%', flexShrink: 0, backgroundColor: color, border: `2px solid ${color}` }} />
 }
 
-const NacionSVG = ({ color }) => (
-    <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
-        <g transform="translate(0,512) scale(0.1,-0.1)" fill={color} stroke="none">
-            <path d="M2980 5033 c-8 -3 -38 -16 -65 -28 -28 -13 -62 -26 -75 -30 -46 -12
--90 -61 -90 -102 0 -13 -8 -24 -21 -28 -12 -4 -58 -32 -103 -63 l-81 -55 -80
-2 c-85 2 -127 -8 -160 -39 -16 -15 -34 -19 -75 -18 -75 2 -107 -17 -221 -132
--70 -70 -99 -106 -104 -130 -4 -19 -14 -44 -21 -56 -8 -11 -16 -45 -18 -75 -5
--59 -20 -109 -34 -109 -13 0 -82 -72 -98 -102 -8 -15 -35 -41 -60 -59 -40 -27
--49 -30 -70 -20 -39 18 -98 13 -127 -9 -58 -46 -92 -139 -76 -210 9 -39 8 -42
--35 -83 -29 -27 -48 -56 -55 -84 -6 -23 -18 -54 -26 -70 -24 -45 -19 -114 10
--157 14 -21 36 -59 50 -85 21 -43 23 -53 13 -85 -9 -28 -9 -48 0 -81 10 -36 9
--50 -4 -82 -15 -35 -15 -45 0 -124 24 -126 23 -191 -4 -229 -35 -50 -38 -110
--6 -169 32 -63 24 -91 -35 -121 -29 -15 -46 -33 -58 -60 -10 -25 -26 -44 -44
--51 -15 -6 -35 -21 -45 -33 -9 -12 -29 -29 -45 -39 -40 -26 -84 -92 -92 -138
--4 -23 -14 -43 -26 -49 -25 -14 -65 -86 -73 -132 -9 -47 13 -101 51 -124 15
--10 58 -46 94 -80 78 -72 142 -118 204 -145 27 -12 51 -31 59 -48 8 -15 31
--42 50 -58 44 -40 187 -75 287 -72 59 2 73 -1 106 -24 60 -40 154 -79 201 -81
-61 -3 97 -34 116 -98 21 -71 57 -121 103 -143 63 -30 96 -63 114 -118 10 -30
-32 -64 53 -84 20 -19 36 -43 36 -54 0 -48 46 -102 117 -138 33 -17 63 -21 155
--23 107 -3 116 -1 162 25 44 25 53 26 84 16 19 -6 60 -9 91 -6 39 3 63 0 75
--9 18 -13 17 -18 -28 -104 -53 -106 -61 -170 -26 -228 24 -38 75 -72 111 -72
-29 0 50 -20 68 -67 28 -70 106 -102 169 -69 40 21 56 51 86 170 23 87 33 161
-66 480 6 59 20 152 32 205 23 109 19 188 -11 251 -10 22 -24 63 -31 91 -10 39
--24 64 -61 102 -29 30 -49 60 -49 73 0 21 3 22 35 13 133 -37 240 134 169 272
-l-13 26 117 7 c64 3 126 9 138 12 18 5 22 0 28 -37 10 -60 66 -115 129 -124
-38 -6 55 -3 94 16 91 46 109 130 60 284 -14 44 -29 103 -33 130 -8 64 -24 102
--59 144 l-29 33 28 50 c24 43 28 58 24 109 -4 49 -11 69 -50 126 -53 78 -68
-134 -68 257 0 68 3 86 19 100 10 9 25 38 32 64 7 26 23 63 35 82 72 110 15
-246 -120 285 -43 13 -62 13 -97 4 -65 -16 -165 -28 -246 -28 l-71 -1 -42 68
-c-71 112 -118 152 -180 152 -17 0 -41 7 -54 15 -36 24 -117 30 -168 13 -25 -8
--53 -11 -68 -7 -14 4 -41 7 -61 8 -27 1 -40 8 -58 31 -20 28 -21 35 -10 67 23
-69 15 137 -24 216 -19 40 -41 94 -47 120 -7 26 -25 65 -40 86 -21 28 -25 42
--18 55 5 9 18 60 29 113 25 123 57 182 120 222 32 19 58 46 75 78 24 42 37 52
-103 83 122 56 191 134 191 215 0 74 -87 179 -168 203 -40 12 -105 15 -132 5z
-m-365 -574 c-14 -27 -37 -100 -50 -160 -18 -82 -34 -126 -65 -177 -44 -75 -50
--117 -23 -163 18 -30 67 -59 101 -59 15 0 21 -9 25 -38 4 -20 21 -60 38 -87
-l31 -49 -16 -52 c-32 -101 -18 -186 40 -244 14 -14 35 -40 47 -59 43 -68 61
--74 214 -78 78 -1 152 2 171 8 24 8 37 8 46 0 8 -7 32 -17 54 -24 36 -11 48
--22 94 -97 78 -124 81 -125 306 -124 100 0 182 -2 182 -6 0 -4 -15 -35 -32
--70 -32 -62 -33 -66 -33 -194 0 -171 28 -290 86 -364 18 -23 17 -24 -31 -70
--58 -57 -76 -108 -56 -157 14 -33 59 -75 82 -75 22 0 27 -21 8 -35 -13 -9 -34
--12 -65 -8 -49 6 -105 -15 -116 -43 -5 -13 -30 -15 -167 -12 -146 3 -164 1
--195 -17 -59 -35 -73 -75 -68 -187 3 -53 9 -104 15 -114 8 -14 4 -24 -19 -46
--38 -39 -52 -96 -46 -193 6 -96 25 -147 77 -200 22 -23 43 -57 49 -80 6 -22
-17 -49 25 -60 21 -27 20 -65 -4 -176 -11 -52 -20 -105 -20 -118 0 -18 -4 -22
--17 -16 -10 4 -29 10 -43 13 -14 3 -40 18 -57 33 -51 44 -103 56 -156 35 -41
--15 -44 -15 -82 5 -54 27 -102 20 -172 -26 -44 -30 -62 -36 -96 -33 -41 3 -42
-4 -47 43 -7 51 -33 90 -70 105 -23 10 -32 23 -44 64 -16 54 -33 75 -90 111
--100 62 -103 65 -117 113 -28 101 -227 253 -313 239 -38 -6 -41 -4 -150 82
--71 55 -124 64 -184 31 -50 -28 -105 -22 -124 15 -18 33 -115 115 -137 115
--23 0 -90 37 -131 72 l-31 28 22 29 c18 25 21 38 16 85 l-5 55 41 6 c62 10
-142 68 167 121 11 24 20 48 20 53 0 5 11 23 25 39 14 17 31 45 37 64 6 18 24
-47 41 65 50 53 48 170 -4 206 -16 12 -16 17 -3 72 16 70 18 156 4 239 -8 53
--7 63 11 93 17 27 20 43 15 86 -4 28 -6 86 -6 127 1 71 -1 80 -45 164 l-47 88
-41 35 c23 19 55 55 72 79 19 28 37 44 50 44 12 0 36 15 55 34 31 31 34 39 34
-94 l0 59 56 37 c32 22 66 55 82 81 21 35 34 46 67 54 75 19 121 89 108 165 -3
-21 3 59 16 100 11 36 21 71 21 77 0 7 14 25 32 39 32 27 32 27 63 9 38 -24 92
--24 130 -1 17 11 44 45 62 77 l31 58 68 -2 c38 -1 80 2 94 8 14 5 26 10 28 10
-1 1 -9 -22 -23 -50z"/>
-        </g>
-    </svg>
-)
-
-
 const formatHora12 = (hora) => {
     if (!hora) return null
     const [h, m] = hora.split(':').map(Number)
@@ -130,23 +63,7 @@ const formatHora12 = (hora) => {
     return `${h12}:${String(m).padStart(2, '0')} ${periodo}`
 }
 
-const getThStyle = (theme) => ({
-    fontWeight: 700,
-    fontSize: '0.80rem',
-    color: theme.palette.text.primary,
-    letterSpacing: 0.5,
-    py: 1.5,
-    borderBottom: `1px solid ${theme.palette.divider}`,
-    whiteSpace: 'nowrap',
-})
-
 const ESTADOS_RUTA = ['Programada', 'En Ruta', 'Completada', 'Cancelada']
-
-const FILTROS = [
-    { value: 'todo', label: 'Todo' },
-    { value: 'habilitado', label: 'Habilitado' },
-    { value: 'inhabilitado', label: 'Inhabilitado' },
-]
 
 const getFilterMenuProps = (theme) => ({
     slotProps: {
@@ -179,7 +96,6 @@ const MESES = [
 
 const ListarRutaProgramacion = () => {
     const theme = useTheme()
-    const thStyle = getThStyle(theme)
     const filterMenuProps = getFilterMenuProps(theme)
     const navigate = useNavigate()
     const [searchParams] = useSearchParams()
@@ -202,7 +118,8 @@ const ListarRutaProgramacion = () => {
     const [filtroPillStyle, setFiltroPillStyle] = useState({ left: 0, width: 0 })
 
     useLayoutEffect(() => {
-        const activeIndex = FILTROS.findIndex(f => f.value === filtroHabilitado)
+        const FILTROS_VALORES = ['todo', 'habilitado', 'inhabilitado']
+        const activeIndex = FILTROS_VALORES.findIndex(v => v === filtroHabilitado)
         const btn = filtroBtnRefs.current[activeIndex]
         const container = filtroContainerRef.current
         if (btn && container) {
@@ -323,10 +240,10 @@ const ListarRutaProgramacion = () => {
         const c = getConductores().find(c => c.idConductor === id)
         return c ? `${c.nombre} ${c.apellido}` : 'N/A'
     }
-const getDestinoNombre = (id) => {
-  const d = destinos.find(d => d.idDestino === id);
-  return d ? (d.nombre || `${d.ciudad}, ${d.departamento}`) : 'N/A';
-};
+    const getDestinoNombre = (id) => {
+        const d = destinos.find(d => d.idDestino === id)
+        return d ? (d.nombre || `${d.ciudad}, ${d.departamento}`) : 'N/A'
+    }
 
     // Una ruta ahora puede tener varios vehículos+conductor (convoy) — se expone el
     // array completo de pares, con respaldo a los contextos si la API no trae embebido
@@ -347,10 +264,10 @@ const getDestinoNombre = (id) => {
         licenciaVencida: par.conductor ? !conductorLicenciaVigente(par.conductor.categoriasLicencia) : false,
     }))
 
-const resolveDestino = (ruta) =>
-  ruta.destino
-    ? `${ruta.destino.ciudad}, ${ruta.destino.departamento}`
-    : getDestinoNombre(ruta.idDestino);
+    const resolveDestino = (ruta) =>
+        ruta.destino
+            ? `${ruta.destino.ciudad}, ${ruta.destino.departamento}`
+            : getDestinoNombre(ruta.idDestino)
 
     const getId = (ruta) => ruta.idRuta ?? ruta.idRutaProgramada
 
@@ -379,7 +296,6 @@ const resolveDestino = (ruta) =>
             setExportando(false)
         }
     }
-
 
     const ejecutarCambioEstado = async (id, nuevoEstado) => {
         try {
@@ -553,6 +469,200 @@ const resolveDestino = (ruta) =>
         showToast('Ruta actualizada correctamente', 'success')
     }
 
+    const emptyMessage = filtroHabilitado !== 'todo' || filtroEstadoRuta !== '' || filtroAnio !== '' || filtroMes !== ''
+        ? 'No se encontraron rutas que coincidan con los filtros aplicados.'
+        : debouncedSearch.trim()
+            ? 'No se encontraron rutas que coincidan con la búsqueda.'
+            : 'No hay rutas programadas en el sistema.'
+
+    const columns = [
+        { key: 'origen', label: 'Origen', sortField: 'origen', cellSx: { py: 1.5, fontSize: '0.85rem' }, render: (ruta) => ruta.origen || '—' },
+        { key: 'destino', label: 'Destino', cellSx: { py: 1.5, fontSize: '0.85rem' }, render: (ruta) => resolveDestino(ruta) },
+        {
+            key: 'fechaHora', label: 'Fecha y hora salida', cellSx: { py: 1.5 },
+            render: (ruta) => (
+                <>
+                    <Typography sx={{ fontSize: '0.875rem' }}>{formatFecha(ruta.fechaSalida)}</Typography>
+                    {ruta.horaSalida && (
+                        <Typography sx={{ fontSize: '0.75rem', color: theme.palette.text.secondary }}>{formatHora12(ruta.horaSalida)}</Typography>
+                    )}
+                </>
+            ),
+        },
+        {
+            key: 'vehiculo', label: 'Vehículo', cellSx: { py: 1.5 },
+            render: (ruta) => {
+                const pares = resolvePares(ruta)
+                const adicionales = Math.max(0, pares.length - 1)
+                return (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.4 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                            <PlacaDisplay placa={pares[0]?.placa} theme={theme} />
+                            {adicionales > 0 && (
+                                <Chip
+                                    label={`+${adicionales} ${adicionales === 1 ? 'vehículo' : 'vehículos'}`}
+                                    size="small"
+                                    sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.65rem', borderRadius: '2px', height: 18 }}
+                                />
+                            )}
+                        </Box>
+                        {pares.some(p => p.vehiculoInhabilitado) && ruta.estado === 'Programada' && (
+                            <Chip
+                                label="Reasignar vehículo"
+                                size="small"
+                                sx={{ height: 18, fontSize: '0.65rem', fontWeight: 600, backgroundColor: alpha(theme.palette.warning.main, 0.12), color: theme.palette.warning.dark, border: `1px solid ${alpha(theme.palette.warning.main, 0.35)}`, width: 'fit-content', '& .MuiChip-label': { px: 0.8 } }}
+                            />
+                        )}
+                        {pares.some(p => p.documentoVencido) && ['Programada', 'En Ruta'].includes(ruta.estado) && (
+                            <Tooltip title={[...new Set(pares.filter(p => p.documentoVencido).map(p => `${p.placa || 'Vehículo'}: ${p.documentoVencido} vencido`))].join(' · ')}>
+                                <Chip
+                                    label={`${pares.find(p => p.documentoVencido)?.documentoVencido} vencido`}
+                                    size="small"
+                                    sx={{ height: 18, fontSize: '0.65rem', fontWeight: 600, backgroundColor: alpha(theme.palette.error.main, 0.12), color: theme.palette.error.dark, border: `1px solid ${alpha(theme.palette.error.main, 0.35)}`, width: 'fit-content', '& .MuiChip-label': { px: 0.8 } }}
+                                />
+                            </Tooltip>
+                        )}
+                    </Box>
+                )
+            },
+        },
+        {
+            key: 'conductor', label: 'Conductor', cellSx: { py: 1.5 },
+            render: (ruta) => {
+                const pares = resolvePares(ruta)
+                const adicionales = Math.max(0, pares.length - 1)
+                return (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.4 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                            <Typography sx={{ fontSize: '0.875rem' }}>{pares[0]?.conductorNombre || 'N/A'}</Typography>
+                            {adicionales > 0 && (
+                                <Chip
+                                    label={`+${adicionales} ${adicionales === 1 ? 'conductor' : 'conductores'}`}
+                                    size="small"
+                                    sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.65rem', borderRadius: '2px', height: 18 }}
+                                />
+                            )}
+                        </Box>
+                        {pares.some(p => p.conductorInhabilitado) && ruta.estado === 'Programada' && (
+                            <Chip
+                                label="Reasignar conductor"
+                                size="small"
+                                sx={{ height: 18, fontSize: '0.65rem', fontWeight: 600, backgroundColor: alpha(theme.palette.warning.main, 0.12), color: theme.palette.warning.dark, border: `1px solid ${alpha(theme.palette.warning.main, 0.35)}`, width: 'fit-content', '& .MuiChip-label': { px: 0.8 } }}
+                            />
+                        )}
+                        {pares.some(p => p.licenciaVencida) && ['Programada', 'En Ruta'].includes(ruta.estado) && (
+                            <Tooltip title={[...new Set(pares.filter(p => p.licenciaVencida).map(p => `${p.conductorNombre || 'Conductor'}: licencia vencida`))].join(' · ')}>
+                                <Chip
+                                    label="Licencia vencida"
+                                    size="small"
+                                    sx={{ height: 18, fontSize: '0.65rem', fontWeight: 600, backgroundColor: alpha(theme.palette.error.main, 0.12), color: theme.palette.error.dark, border: `1px solid ${alpha(theme.palette.error.main, 0.35)}`, width: 'fit-content', '& .MuiChip-label': { px: 0.8 } }}
+                                />
+                            </Tooltip>
+                        )}
+                    </Box>
+                )
+            },
+        },
+        {
+            key: 'estado', label: 'Estado', width: 150, cellSx: { py: 1.5, minWidth: 150 },
+            render: (ruta) => {
+                const id = getId(ruta)
+                return ruta.estado === 'Completada' ? (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1, py: 0.6 }}>
+                        {renderEstadoDot('Completada', getEstadoColor)}
+                        <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: '#059669' }}>Completada</Typography>
+                    </Box>
+                ) : ruta.estado === 'En Ruta' && (ruta.pendienteLegalizacion || ruta.paquetesPendientes) ? (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', border: `1px solid ${theme.palette.divider}`, borderRadius: 1.5, overflow: 'hidden' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1, py: 0.6, flex: 1 }}>
+                                {renderEstadoDot('En Ruta', getEstadoColor)}
+                                <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: getEstadoColor('En Ruta').color }}>
+                                    En Ruta
+                                </Typography>
+                            </Box>
+                            <Box sx={{ width: '1px', height: 28, backgroundColor: theme.palette.divider, flexShrink: 0 }} />
+                            <Box
+                                onClick={() => handleEstadoChange(id, 'Cancelada')}
+                                sx={{ display: 'flex', alignItems: 'center', gap: 0.5, px: 0.75, py: 0.5, cursor: 'pointer' }}
+                            >
+                                {renderEstadoDot('Cancelada', getEstadoColor)}
+                                <Typography variant="body2" sx={{ fontSize: '0.72rem', fontWeight: 500, color: getEstadoColor('Cancelada').color }}>
+                                    Cancelada
+                                </Typography>
+                            </Box>
+                        </Box>
+                        <Typography sx={{ fontSize: '0.68rem', color: theme.palette.text.secondary, px: 0.5 }}>
+                            {ruta.pendienteLegalizacion && ruta.paquetesPendientes
+                                ? 'Legalización y paquetes pendientes'
+                                : ruta.pendienteLegalizacion
+                                    ? 'Legalización pendiente'
+                                    : 'Paquetes pendientes de entrega'}
+                        </Typography>
+                    </Box>
+                ) : (
+                    <Box
+                        onClick={(e) => setEstadoMenu({ anchor: e.currentTarget, id, estadoActual: ruta.estado || 'Programada' })}
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer', width: '100%', border: `1px solid ${theme.palette.divider}`, borderRadius: 1.5, px: 1, py: 0.6, '&:hover': { borderColor: theme.palette.text.secondary } }}
+                    >
+                        {renderEstadoDot(ruta.estado || 'Programada', getEstadoColor)}
+                        <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: getEstadoColor(ruta.estado).color }}>
+                            {ruta.estado || 'Programada'}
+                        </Typography>
+                        <KeyboardArrowDownOutlinedIcon sx={{ fontSize: 14, color: '#9CA3AF', ml: 'auto' }} />
+                    </Box>
+                )
+            },
+        },
+        {
+            key: 'acciones', label: 'Acciones', width: 130, cellSx: { py: 1.5 },
+            render: (ruta) => {
+                const id = getId(ruta)
+                return (
+                    <Box sx={{ display: 'flex', gap: 0.5 }}>
+                        {tienePermiso(PERMISOS.CONSULTAR_RUTA) && (
+                            <Tooltip title="Ver detalle">
+                                <IconButton size="small" onClick={() => setRutaVer(ruta)}
+                                    sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}>
+                                    <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
+                                </IconButton>
+                            </Tooltip>
+                        )}
+                        {tienePermiso(PERMISOS.ACTUALIZAR_RUTA) && (
+                            ruta.habilitado === false ? (
+                                <Tooltip title="Habilita el registro para poder editarlo">
+                                    <span>
+                                        <IconButton size="small" disabled>
+                                            <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                                        </IconButton>
+                                    </span>
+                                </Tooltip>
+                            ) : !['Programada', 'Cancelada'].includes(ruta.estado) ? (
+                                <Tooltip title="Solo se puede editar una ruta Programada o Cancelada">
+                                    <span>
+                                        <IconButton size="small" disabled>
+                                            <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                                        </IconButton>
+                                    </span>
+                                </Tooltip>
+                            ) : (
+                                <Tooltip title="Editar">
+                                    <IconButton size="small" onClick={() => { setRutaEditar(ruta); setModalActualizarOpen(true) }}
+                                        sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}>
+                                        <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                                    </IconButton>
+                                </Tooltip>
+                            )
+                        )}
+                        {tienePermiso(PERMISOS.INHABILITAR_RUTA) && (
+                            <ToggleSwitch id={id} checked={ruta.habilitado !== false} onChange={() => handleToggleHabilitado(id)} />
+                        )}
+                    </Box>
+                )
+            },
+        },
+    ]
+
     return (
         <Box sx={{ p: 3.5 }}>
             <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
@@ -617,59 +727,13 @@ const resolveDestino = (ruta) =>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, mb: 1.5, flexWrap: 'wrap' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <Box ref={filtroContainerRef} sx={{
-                            position: 'relative',
-                            display: 'inline-flex',
-                            backgroundColor: theme.palette.primary.light,
-                            borderRadius: 4,
-                            p: '4px',
-                            gap: '5px',
-                        }}>
-                            <Box sx={{
-                                position: 'absolute',
-                                top: '4px',
-                                bottom: '4px',
-                                left: `${filtroPillStyle.left}px`,
-                                width: `${filtroPillStyle.width}px`,
-                                borderRadius: 3,
-                                backgroundColor: theme.palette.background.paper,
-                                boxShadow: '0 1px 4px rgba(0,0,0,0.12)',
-                                transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                pointerEvents: 'none',
-                            }} />
-                            {FILTROS.map((f, i) => (
-                                <Button
-                                    key={f.value}
-                                    ref={el => { filtroBtnRefs.current[i] = el }}
-                                    onClick={() => { setFiltroHabilitado(f.value); setPage(1) }}
-                                    size="small"
-                                    disableElevation
-                                    disableRipple
-                                    sx={{
-                                        position: 'relative',
-                                        zIndex: 1,
-                                        borderRadius: 3,
-                                        textTransform: 'none',
-                                        fontSize: '0.75rem',
-                                        px: 2,
-                                        py: 0.5,
-                                        minWidth: 0,
-                                        fontWeight: filtroHabilitado === f.value ? 600 : 400,
-                                        backgroundColor: 'transparent',
-                                        color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.primary.darker,
-                                        transition: 'color 0.3s ease',
-                                        border: 'none',
-                                        '&:hover': {
-                                            backgroundColor: 'transparent',
-                                            color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.primary.dark,
-                                            border: 'none',
-                                        },
-                                    }}
-                                >
-                                    {f.label}
-                                </Button>
-                            ))}
-                        </Box>
+                        <FiltroEstadoTabs
+                            value={filtroHabilitado}
+                            onChange={(v) => { setFiltroHabilitado(v); setPage(1) }}
+                            containerRef={filtroContainerRef}
+                            btnRefs={filtroBtnRefs}
+                            pillStyle={filtroPillStyle}
+                        />
 
                         <FormControl size="small" sx={{ minWidth: 140 }}>
                             <Select
@@ -764,352 +828,29 @@ const resolveDestino = (ruta) =>
 
                 </Box>
 
-                <TextField
-                    size="small"
-                    placeholder="Buscar rutas..."
-                    sx={{
-                        width: 320,
-                        '& .MuiOutlinedInput-root': {
-                            borderRadius: 4,
-                            '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` },
-                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                borderColor: theme.palette.primary.main, borderWidth: '1px',
-                            },
-                        },
-                    }}
+                <BuscadorField
                     value={searchTerm}
-                    onChange={e => { setSearchTerm(e.target.value); setPage(1) }}
-                    slotProps={{
-                        input: {
-                            startAdornment: (
-                                <InputAdornment position="start">
-                                    <SearchIcon sx={{ color: theme.palette.text.secondary, fontSize: 20 }} />
-                                </InputAdornment>
-                            ),
-                            endAdornment: searchTerm && (
-                                <InputAdornment position="end">
-                                    <IconButton size="small" onClick={() => setSearchTerm('')}>
-                                        <ClearIcon sx={{ fontSize: 16 }} />
-                                    </IconButton>
-                                </InputAdornment>
-                            )
-                        }
-                    }}
+                    onChange={(v) => { setSearchTerm(v); setPage(1) }}
+                    placeholder="Buscar rutas..."
                 />
             </Box>
 
-            <Paper elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 3, overflow: 'hidden' }}>
-                <TableContainer>
-                    <Table>
-                        <TableHead>
-                            <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
-                                <TableCell sx={thStyle}>
-                                    <TableSortLabel
-                                        active={sortBy.field === 'origen'}
-                                        direction={sortBy.dir === 'desc' ? 'desc' : 'asc'}
-                                        onClick={() => handleSort('origen')}
-                                        IconComponent={sortBy.field === 'origen' ? undefined : UnfoldMoreOutlinedIcon}
-                                        sx={{
-                                            color: 'inherit',
-                                            '&:hover': { color: 'inherit' },
-                                            '&.Mui-active': { color: theme.palette.primary.main },
-                                            '&.Mui-active:hover': { color: theme.palette.primary.main },
-                                            '& .MuiTableSortLabel-icon': { opacity: 1, fontSize: 16 },
-                                        }}
-                                    >
-                                        Origen
-                                    </TableSortLabel>
-                                </TableCell>
-                                <TableCell sx={thStyle}>Destino</TableCell>
-                                <TableCell sx={thStyle}>Fecha y hora salida</TableCell>
-                                <TableCell sx={thStyle}>Vehículo</TableCell>
-                                <TableCell sx={thStyle}>Conductor</TableCell>
-                                <TableCell sx={thStyle}>Estado</TableCell>
-                                <TableCell sx={{ ...thStyle, width: 130 }}>Acciones</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {loading && initialLoad.current ? (
-                                <TableRow>
-                                    <TableCell colSpan={7} align="center" sx={{ py: 7 }}>
-                                        <CircularProgress size={28} sx={{ color: theme.palette.primary.main }} />
-                                        <Typography variant="body2" color={theme.palette.text.secondary} mt={1.5}>
-                                            Cargando rutas...
-                                        </Typography>
-                                    </TableCell>
-                                </TableRow>
-                            ) : error ? (
-                                <TableRow>
-                                    <TableCell colSpan={7} align="center" sx={{ py: 5 }}>
-                                        <Typography color="error" variant="body2">
-                                            No se pudieron cargar las rutas. Verifica la conexión con el servidor.
-                                        </Typography>
-                                        {import.meta.env.DEV && (
-                                            <Box component="pre" sx={{ mt: 0.5, fontSize: 11, opacity: 0.7, whiteSpace: 'pre-wrap', m: 0 }}>
-                                                {String(error)}
-                                            </Box>
-                                        )}
-                                    </TableCell>
-                                </TableRow>
-                            ) : !loading && rutasProgramadas.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={7} align="center" sx={{ py: 7 }}>
-                                        <Typography color={theme.palette.text.secondary} variant="body2">
-                                            {filtroHabilitado !== 'todo' || filtroEstadoRuta !== '' || filtroAnio !== '' || filtroMes !== ''
-                                                ? 'No se encontraron rutas que coincidan con los filtros aplicados.'
-                                                : debouncedSearch.trim()
-                                                    ? 'No se encontraron rutas que coincidan con la búsqueda.'
-                                                    : 'No hay rutas programadas en el sistema.'}
-                                        </Typography>
-                                    </TableCell>
-                                </TableRow>
-                            ) : (
-                                rutasProgramadas.map((ruta) => {
-                                    const id = getId(ruta)
-                                    const isHighlighted = highlightId && String(id) === String(highlightId)
-                                    const pares = resolvePares(ruta)
-                                    const adicionales = Math.max(0, pares.length - 1)
-                                    return (
-                                        <TableRow
-                                            key={id}
-                                            ref={isHighlighted ? highlightRef : null}
-                                            sx={{
-                                                '&:hover': { backgroundColor: theme.palette.background.subtle },
-                                                transition: 'background-color 0.15s',
-                                                opacity: ruta.habilitado !== false ? 1 : 0.55,
-                                                ...(isHighlighted && {
-                                                    animation: 'highlightPulse 1.1s ease-in-out 4',
-                                                    '@keyframes highlightPulse': {
-                                                        '0%, 100%': { backgroundColor: 'transparent' },
-                                                        '50%': { backgroundColor: alpha(theme.palette.primary.main, 0.13) },
-                                                    },
-                                                }),
-                                            }}
-                                        >
-                                            <TableCell sx={{ py: 1.5, fontSize: '0.85rem' }}>
-                                                {ruta.origen || '—'}
-                                            </TableCell>
-                                            <TableCell sx={{ py: 1.5, fontSize: '0.85rem' }}>
-                                                {resolveDestino(ruta)}
-                                            </TableCell>
-                                            <TableCell sx={{ py: 1.5 }}>
-                                                <Typography sx={{ fontSize: '0.875rem' }}>{formatFecha(ruta.fechaSalida)}</Typography>
-                                                {ruta.horaSalida && (
-                                                    <Typography sx={{ fontSize: '0.75rem', color: theme.palette.text.secondary }}>{formatHora12(ruta.horaSalida)}</Typography>
-                                                )}
-                                            </TableCell>
-                                            <TableCell sx={{ py: 1.5 }}>
-                                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.4 }}>
-                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                                                        <PlacaDisplay placa={pares[0]?.placa} theme={theme} />
-                                                        {adicionales > 0 && (
-                                                            <Chip
-                                                                label={`+${adicionales} ${adicionales === 1 ? 'vehículo' : 'vehículos'}`}
-                                                                size="small"
-                                                                sx={{
-                                                                    fontWeight: 600,
-                                                                    backgroundColor: theme.palette.primary.light,
-                                                                    color: theme.palette.primary.darker,
-                                                                    fontSize: '0.65rem',
-                                                                    borderRadius: '2px',
-                                                                    height: 18,
-                                                                }}
-                                                            />
-                                                        )}
-                                                    </Box>
-                                                    {pares.some(p => p.vehiculoInhabilitado) && ruta.estado === 'Programada' && (
-                                                        <Chip
-                                                            label="Reasignar vehículo"
-                                                            size="small"
-                                                            sx={{
-                                                                height: 18,
-                                                                fontSize: '0.65rem',
-                                                                fontWeight: 600,
-                                                                backgroundColor: alpha(theme.palette.warning.main, 0.12),
-                                                                color: theme.palette.warning.dark,
-                                                                border: `1px solid ${alpha(theme.palette.warning.main, 0.35)}`,
-                                                                width: 'fit-content',
-                                                                '& .MuiChip-label': { px: 0.8 },
-                                                            }}
-                                                        />
-                                                    )}
-                                                    {pares.some(p => p.documentoVencido) && ['Programada', 'En Ruta'].includes(ruta.estado) && (
-                                                        <Tooltip title={[...new Set(pares.filter(p => p.documentoVencido).map(p => `${p.placa || 'Vehículo'}: ${p.documentoVencido} vencido`))].join(' · ')}>
-                                                            <Chip
-                                                                label={`${pares.find(p => p.documentoVencido)?.documentoVencido} vencido`}
-                                                                size="small"
-                                                                sx={{
-                                                                    height: 18,
-                                                                    fontSize: '0.65rem',
-                                                                    fontWeight: 600,
-                                                                    backgroundColor: alpha(theme.palette.error.main, 0.12),
-                                                                    color: theme.palette.error.dark,
-                                                                    border: `1px solid ${alpha(theme.palette.error.main, 0.35)}`,
-                                                                    width: 'fit-content',
-                                                                    '& .MuiChip-label': { px: 0.8 },
-                                                                }}
-                                                            />
-                                                        </Tooltip>
-                                                    )}
-                                                </Box>
-                                            </TableCell>
-                                            <TableCell sx={{ py: 1.5 }}>
-                                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.4 }}>
-                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                                                        <Typography sx={{ fontSize: '0.875rem' }}>{pares[0]?.conductorNombre || 'N/A'}</Typography>
-                                                        {adicionales > 0 && (
-                                                            <Chip
-                                                                label={`+${adicionales} ${adicionales === 1 ? 'conductor' : 'conductores'}`}
-                                                                size="small"
-                                                                sx={{
-                                                                    fontWeight: 600,
-                                                                    backgroundColor: theme.palette.primary.light,
-                                                                    color: theme.palette.primary.darker,
-                                                                    fontSize: '0.65rem',
-                                                                    borderRadius: '2px',
-                                                                    height: 18,
-                                                                }}
-                                                            />
-                                                        )}
-                                                    </Box>
-                                                    {pares.some(p => p.conductorInhabilitado) && ruta.estado === 'Programada' && (
-                                                        <Chip
-                                                            label="Reasignar conductor"
-                                                            size="small"
-                                                            sx={{
-                                                                height: 18,
-                                                                fontSize: '0.65rem',
-                                                                fontWeight: 600,
-                                                                backgroundColor: alpha(theme.palette.warning.main, 0.12),
-                                                                color: theme.palette.warning.dark,
-                                                                border: `1px solid ${alpha(theme.palette.warning.main, 0.35)}`,
-                                                                width: 'fit-content',
-                                                                '& .MuiChip-label': { px: 0.8 },
-                                                            }}
-                                                        />
-                                                    )}
-                                                    {pares.some(p => p.licenciaVencida) && ['Programada', 'En Ruta'].includes(ruta.estado) && (
-                                                        <Tooltip title={[...new Set(pares.filter(p => p.licenciaVencida).map(p => `${p.conductorNombre || 'Conductor'}: licencia vencida`))].join(' · ')}>
-                                                            <Chip
-                                                                label="Licencia vencida"
-                                                                size="small"
-                                                                sx={{
-                                                                    height: 18,
-                                                                    fontSize: '0.65rem',
-                                                                    fontWeight: 600,
-                                                                    backgroundColor: alpha(theme.palette.error.main, 0.12),
-                                                                    color: theme.palette.error.dark,
-                                                                    border: `1px solid ${alpha(theme.palette.error.main, 0.35)}`,
-                                                                    width: 'fit-content',
-                                                                    '& .MuiChip-label': { px: 0.8 },
-                                                                }}
-                                                            />
-                                                        </Tooltip>
-                                                    )}
-                                                </Box>
-                                            </TableCell>
-                                            <TableCell sx={{ py: 1.5, minWidth: 150 }}>
-                                                {ruta.estado === 'Completada' ? (
-                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1, py: 0.6 }}>
-                                                        {renderEstadoDot('Completada', getEstadoColor)}
-                                                        <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: '#059669' }}>Completada</Typography>
-                                                    </Box>
-                                                ) : ruta.estado === 'En Ruta' && (ruta.pendienteLegalizacion || ruta.paquetesPendientes) ? (
-                                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                                                        <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', border: `1px solid ${theme.palette.divider}`, borderRadius: 1.5, overflow: 'hidden' }}>
-                                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1, py: 0.6, flex: 1 }}>
-                                                                {renderEstadoDot('En Ruta', getEstadoColor)}
-                                                                <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: getEstadoColor('En Ruta').color }}>
-                                                                    En Ruta
-                                                                </Typography>
-                                                            </Box>
-                                                            <Box sx={{ width: '1px', height: 28, backgroundColor: theme.palette.divider, flexShrink: 0 }} />
-                                                            <Box
-                                                                onClick={() => handleEstadoChange(id, 'Cancelada')}
-                                                                sx={{ display: 'flex', alignItems: 'center', gap: 0.5, px: 0.75, py: 0.5, cursor: 'pointer' }}
-                                                            >
-                                                                {renderEstadoDot('Cancelada', getEstadoColor)}
-                                                                <Typography variant="body2" sx={{ fontSize: '0.72rem', fontWeight: 500, color: getEstadoColor('Cancelada').color }}>
-                                                                    Cancelada
-                                                                </Typography>
-                                                            </Box>
-                                                        </Box>
-                                                        <Typography sx={{ fontSize: '0.68rem', color: theme.palette.text.secondary, px: 0.5 }}>
-                                                            {ruta.pendienteLegalizacion && ruta.paquetesPendientes
-                                                                ? 'Legalización y paquetes pendientes'
-                                                                : ruta.pendienteLegalizacion
-                                                                    ? 'Legalización pendiente'
-                                                                    : 'Paquetes pendientes de entrega'}
-                                                        </Typography>
-                                                    </Box>
-                                                ) : (
-                                                    <Box
-                                                        onClick={(e) => setEstadoMenu({ anchor: e.currentTarget, id, estadoActual: ruta.estado || 'Programada' })}
-                                                        sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer', width: '100%', border: `1px solid ${theme.palette.divider}`, borderRadius: 1.5, px: 1, py: 0.6, '&:hover': { borderColor: theme.palette.text.secondary } }}
-                                                    >
-                                                        {renderEstadoDot(ruta.estado || 'Programada', getEstadoColor)}
-                                                        <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: getEstadoColor(ruta.estado).color }}>
-                                                            {ruta.estado || 'Programada'}
-                                                        </Typography>
-                                                        <KeyboardArrowDownOutlinedIcon sx={{ fontSize: 14, color: '#9CA3AF', ml: 'auto' }} />
-                                                    </Box>
-                                                )}
-                                            </TableCell>
-                                            <TableCell sx={{ py: 1.5 }}>
-                                                <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                                    {tienePermiso(PERMISOS.CONSULTAR_RUTA) && (
-                                                        <Tooltip title="Ver detalle">
-                                                            <IconButton
-                                                                size="small"
-                                                                onClick={() => setRutaVer(ruta)}
-                                                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}
-                                                            >
-                                                                <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
-                                                            </IconButton>
-                                                        </Tooltip>
-                                                    )}
-                                                    {tienePermiso(PERMISOS.ACTUALIZAR_RUTA) && (
-                                                        ruta.habilitado === false ? (
-                                                            <Tooltip title="Habilita el registro para poder editarlo">
-                                                                <span>
-                                                                    <IconButton size="small" disabled>
-                                                                        <EditOutlinedIcon sx={{ fontSize: 18 }} />
-                                                                    </IconButton>
-                                                                </span>
-                                                            </Tooltip>
-                                                        ) : !['Programada', 'Cancelada'].includes(ruta.estado) ? (
-                                                            <Tooltip title="Solo se puede editar una ruta Programada o Cancelada">
-                                                                <span>
-                                                                    <IconButton size="small" disabled>
-                                                                        <EditOutlinedIcon sx={{ fontSize: 18 }} />
-                                                                    </IconButton>
-                                                                </span>
-                                                            </Tooltip>
-                                                        ) : (
-                                                            <Tooltip title="Editar">
-                                                                <IconButton
-                                                                    size="small"
-                                                                    onClick={() => { setRutaEditar(ruta); setModalActualizarOpen(true) }}
-                                                                    sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}
-                                                                >
-                                                                    <EditOutlinedIcon sx={{ fontSize: 18 }} />
-                                                                </IconButton>
-                                                            </Tooltip>
-                                                        )
-                                                    )}
-                                                    {tienePermiso(PERMISOS.INHABILITAR_RUTA) && (
-                                                        <ToggleSwitch id={id} checked={ruta.habilitado !== false} onChange={() => handleToggleHabilitado(id)} />
-                                                    )}
-                                                </Box>
-                                            </TableCell>
-                                        </TableRow>
-                                    )
-                                })
-                            )}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
-            </Paper>
+            <DataTable
+                columns={columns}
+                rows={rutasProgramadas}
+                rowKey={getId}
+                loading={loading}
+                initialLoad={initialLoad}
+                error={error}
+                sortBy={sortBy}
+                onSort={handleSort}
+                highlightId={highlightId}
+                highlightRef={highlightRef}
+                rowSx={(ruta) => ({ opacity: ruta.habilitado !== false ? 1 : 0.55 })}
+                emptyMessage={emptyMessage}
+                loadingMessage="Cargando rutas..."
+                errorMessage="No se pudieron cargar las rutas. Verifica la conexión con el servidor."
+            />
 
             <TablaPaginacionFooter
                 total={total}
@@ -1283,4 +1024,3 @@ const resolveDestino = (ruta) =>
 }
 
 export default ListarRutaProgramacion
-
