@@ -263,7 +263,9 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
             direccionDestinatario: destinatario?.direccionDestinatario || '',
             paquetes: paquetesArr,
             idRuta: ventaData.idRuta || ventaData.ruta?.idRuta || '',
-            destino: ventaData.ruta?.origen || '',
+            destino: ventaData.ruta
+                ? `${ventaData.ruta.origen || 'Sin nombre'} → ${ventaData.ruta.destino?.ciudad || 'Sin destino'} — $${Number(ventaData.ruta.destino?.tarifaBase || 0).toLocaleString('es-CO')}`
+                : '',
             fechaSalidaRuta: ventaData.ruta?.fechaSalida || '',
             fechaLlegadaEstimadaRuta: ventaData.ruta?.fechaLlegadaEstimada || '',
             fechaEstimadaEntrega: ventaData.fechaEstimadaEntrega
@@ -286,7 +288,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
         }
         const r = ventaData.ruta
         if (r) {
-            setRutaInput(`${r.origen || 'Sin nombre'} — $${Number(r.destino?.tarifaBase || 0).toLocaleString()}`)
+            setRutaInput(`${r.origen || 'Sin nombre'} → ${r.destino?.ciudad || 'Sin destino'} — $${Number(r.destino?.tarifaBase || 0).toLocaleString()}`)
         } else {
             setRutaInput('')
         }
@@ -706,7 +708,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                                             {clienteSeleccionado.nombre} {clienteSeleccionado.apellido}
                                         </Typography>
                                         <Typography variant="body2">
-                                            <Box component="span" sx={{ fontWeight: 600, color: theme.palette.text.secondary, mr: 0.5 }}>ID:</Box>
+                                            <Box component="span" sx={{ fontWeight: 600, color: theme.palette.text.secondary, mr: 0.5 }}>{clienteSeleccionado.tipoIdentificacion || 'ID'}:</Box>
                                             {clienteSeleccionado.numeroIdentificacion}
                                         </Typography>
                                         <Typography variant="body2">
@@ -887,7 +889,8 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                                     // dos rutas con el mismo nombre (ej. mismo conductor, distinto vehículo),
                                     // así se distinguen directo en la lista, sin tener que elegir una para verlo.
                                     const placas = (option.paresVehiculoConductor || []).map(p => p.vehiculo?.placa).filter(Boolean).join(', ')
-                                    return `${option.origen || 'Sin nombre'}${placas ? ` (${placas})` : ''} — $${Number(option.destino?.tarifaBase || 0).toLocaleString()}`
+                                    const destinoTxt = option.destino?.ciudad || 'Sin destino'
+                                    return `${option.origen || 'Sin nombre'} → ${destinoTxt}${placas ? ` (${placas})` : ''} — $${Number(option.destino?.tarifaBase || 0).toLocaleString()}`
                                 }}
                                 isOptionEqualToValue={(opt, val) => opt.idRuta === val.idRuta}
                                 renderOption={(props, option) => {
@@ -902,7 +905,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                                                 <RouteOutlinedIcon sx={{ fontSize: 18 }} />
                                             </Avatar>
                                             <Typography variant="body2" fontWeight={500} noWrap sx={{ flex: 1, minWidth: 0 }}>
-                                                {option.origen || 'Sin nombre'}
+                                                {option.origen || 'Sin nombre'} → {option.destino?.ciudad || 'Sin destino'}
                                             </Typography>
                                             <Typography variant="caption" color={theme.palette.text.secondary} sx={{ flexShrink: 0 }}>
                                                 ${Number(option.destino?.tarifaBase || 0).toLocaleString('es-CO')}
@@ -952,7 +955,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                                             return {
                                                 ...prev,
                                                 idRuta: newValue.idRuta,
-                                                destino: newValue.origen || 'Sin nombre',
+                                                destino: `${newValue.origen || 'Sin nombre'} → ${newValue.destino?.ciudad || 'Sin destino'} — $${Number(newValue.destino?.tarifaBase || 0).toLocaleString('es-CO')}`,
                                                 fechaSalidaRuta: fechaSalida,
                                                 fechaLlegadaEstimadaRuta: fechaLlegadaEstimada,
                                                 fechaEstimadaEntrega: prev.fechaEstimadaEntrega && (
@@ -1208,8 +1211,8 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                                     const pOriginal = formOriginal?.paquetes?.[i]
                                     const dimensionesActual = p.alto ? `${p.alto}×${p.ancho}×${p.profundidad} cm` : null
                                     const dimensionesOriginal = pOriginal?.alto ? `${pOriginal.alto}×${pOriginal.ancho}×${pOriginal.profundidad} cm` : undefined
-                                    const valorDeclaradoActual = p.valorDeclarado ? `$${parseFloat(p.valorDeclarado).toLocaleString()}` : '$0'
-                                    const valorDeclaradoOriginal = pOriginal ? (pOriginal.valorDeclarado ? `$${parseFloat(pOriginal.valorDeclarado).toLocaleString()}` : '$0') : undefined
+                                    const valorDeclaradoActual = p.valorDeclarado ? `$${parseFloat(p.valorDeclarado).toLocaleString()}` : null
+                                    const valorDeclaradoOriginal = pOriginal ? (pOriginal.valorDeclarado ? `$${parseFloat(pOriginal.valorDeclarado).toLocaleString()}` : null) : undefined
                                     const rutaSelActual = rutasProgramadas.find(r => r.idRuta === parseInt(form.idRuta))
                                     const placaActual = (rutaSelActual?.paresVehiculoConductor || []).find(par => par.idRutaVehiculoConductor === parseInt(p.idRutaVehiculoConductor))?.vehiculo?.placa || '—'
                                     const placaOriginal = pOriginal ? (ventaOriginal?.paquetes?.[i]?.asignacion?.vehiculo?.placa || '—') : undefined

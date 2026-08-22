@@ -113,7 +113,8 @@ const CalendarioDisponibilidad = ({
             const rango = o.fechaLlegadaEstimada
                 ? `del ${formatFecha(o.fechaSalida)} al ${formatFecha(o.fechaLlegadaEstimada)}`
                 : `sale el ${formatFecha(o.fechaSalida)}`
-            const texto = `${motivos.join(' y ')} ocupado — ${o.origen || 'otra ruta'}, ${rango}`
+            const rutaTexto = o.origen ? `${o.origen} → ${o.destino?.ciudad || 'Sin destino'}` : 'otra ruta'
+            const texto = `${motivos.join(' y ')} ocupado — ${rutaTexto}, ${rango}`
 
             let desde, hasta
             if (modo === 'llegada') {

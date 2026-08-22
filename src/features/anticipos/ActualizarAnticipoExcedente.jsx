@@ -260,6 +260,7 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
             ? {
                 idRuta: anticipoOriginal.idRuta,
                 nombre: anticipoOriginal.ruta.origen || `Ruta ${anticipoOriginal.idRuta}`,
+                destino: anticipoOriginal.ruta.destino || null,
                 paresVehiculoConductor: [{
                     idRutaVehiculoConductor: `original-${anticipoOriginal.idConductor}`,
                     idVehiculo: anticipoOriginal.ruta.vehiculo?.idVehiculo,

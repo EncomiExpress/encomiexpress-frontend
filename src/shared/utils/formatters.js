@@ -28,6 +28,9 @@ export const formatFecha = (fecha) => {
 
 // Para timestamps completos (DATETIME, con hora) — a diferencia de formatFecha, que
 // asume un DATEONLY "YYYY-MM-DD" y rompe si le llega un ISO con hora incluida.
+// timeZone fijo a Bogotá a propósito: la empresa opera solo en Colombia, así que la
+// hora mostrada no debe depender de en qué zona horaria esté configurado el computador
+// de quien la esté viendo.
 export const formatFechaHora = (fecha) => {
     if (!fecha) return '—'
     const date = new Date(fecha)
@@ -35,6 +38,7 @@ export const formatFechaHora = (fecha) => {
     return date.toLocaleString('es-CO', {
         day: '2-digit', month: '2-digit', year: 'numeric',
         hour: '2-digit', minute: '2-digit', hour12: true,
+        timeZone: 'America/Bogota',
     })
 }
 

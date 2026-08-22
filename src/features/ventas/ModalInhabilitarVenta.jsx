@@ -27,7 +27,7 @@ const renderDot = (dot) => {
 // primer paquete de la venta como referencia rápida, igual que hace la guía principal.
 const getRutaLabel = (ruta, venta) => {
     if (!ruta) return '—'
-    const base = ruta.origen || ruta.destino?.nombre || '—'
+    const base = ruta.origen ? `${ruta.origen} → ${ruta.destino?.ciudad || 'Sin destino'}` : '—'
     const placa = venta?.paquetes?.[0]?.asignacion?.vehiculo?.placa
     return placa ? `${base} · ${placa}` : base
 }

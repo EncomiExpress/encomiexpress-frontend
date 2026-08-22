@@ -11,7 +11,7 @@ import SearchIcon from '@mui/icons-material/Search'
 import ClearIcon from '@mui/icons-material/Clear'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
-import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
+import OpenInNewOutlinedIcon from '@mui/icons-material/OpenInNewOutlined'
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined'
 import PhotoCameraOutlinedIcon from '@mui/icons-material/PhotoCameraOutlined'
 import CloseIcon from '@mui/icons-material/Close'
@@ -309,7 +309,7 @@ const ListarPaqueteDevuelto = () => {
 
                                             <TableCell sx={{ py: 1.5 }}>
                                                 <Typography variant="body2" color={theme.palette.text.primary}>
-                                                    {ruta?.origen || '—'}
+                                                    {ruta ? `${ruta.origen || '—'} → ${ruta.destino?.ciudad || '—'}` : '—'}
                                                 </Typography>
                                             </TableCell>
 
@@ -333,7 +333,7 @@ const ListarPaqueteDevuelto = () => {
                                                             onClick={() => navigate(`/ventas/listar?highlight=${paquete.idEncomiendaVenta}`)}
                                                             sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}
                                                         >
-                                                            <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
+                                                            <OpenInNewOutlinedIcon sx={{ fontSize: 18 }} />
                                                         </IconButton>
                                                     </Tooltip>
                                                     {paquete.fotoEntrega ? (

@@ -194,7 +194,7 @@ const ModalConsultarVenta = ({ venta, onClose }) => {
                         </Box>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
                             <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Ruta</Typography>
-                            <Chip label={venta.ruta?.origen || '—'} size="small"
+                            <Chip label={venta.ruta ? `${venta.ruta.origen || '—'} → ${venta.ruta.destino?.ciudad || '—'}` : '—'} size="small"
                                 onClick={() => window.open(`/transporte/rutas?highlight=${venta.idRuta}`, '_blank')}
                                 sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem', cursor: 'pointer', '&:hover': { filter: 'brightness(0.92)' } }} />
                         </Box>

@@ -168,6 +168,7 @@ const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
                             </Box>
                             <CampoFila label="Fecha salida" value={formatFecha(ruta.fechaSalida)} />
                             <CampoFila label="Hora salida" value={formatHora12(ruta.horaSalida) || '—'} />
+                            <CampoFila label="Fecha llegada est." value={formatFecha(ruta.fechaLlegadaEstimada)} />
                             <CampoFila label="Hora llegada est." value={formatHora12(ruta.horaLlegadaEstimada) || '—'} />
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Estado</Typography>
