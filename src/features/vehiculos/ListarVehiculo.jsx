@@ -1,21 +1,17 @@
-import { useTheme, alpha } from '@mui/material/styles'
-import { useState, useEffect, useRef, useLayoutEffect } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { alpha } from '@mui/material/styles'
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
     Box, Typography, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, Chip, IconButton,
-    TextField, InputAdornment, Select, MenuItem, FormControl, Menu,
+    Select, MenuItem, FormControl, Menu,
     Dialog, DialogContent,
-    Tooltip, Button, Avatar, CircularProgress,
-    TableSortLabel
+    Tooltip, Button, CircularProgress,
 } from '@mui/material'
-import SearchIcon from '@mui/icons-material/Search'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
-import ClearIcon from '@mui/icons-material/Clear'
-import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import ToggleSwitch from '../../shared/components/ToggleSwitch.jsx'
 import TablaPaginacionFooter from '../../shared/components/TablaPaginacionFooter.jsx'
@@ -23,7 +19,8 @@ import PlacaDisplay from '../../shared/components/PlacaDisplay.jsx'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import SwapHorizOutlinedIcon from '@mui/icons-material/SwapHorizOutlined'
 import CloseIcon from '@mui/icons-material/Close'
-import UnfoldMoreOutlinedIcon from '@mui/icons-material/UnfoldMoreOutlined'
+import DataTable, { FiltroEstadoTabs, BuscadorField } from '../../shared/components/DataTable.jsx'
+import useEntityCrud from '../../shared/hooks/useEntityCrud.js'
 import { useVehiculo } from './context/VehiculoContext.jsx'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
@@ -36,16 +33,6 @@ import { getRutas } from '../rutas/services/rutaService.js'
 import { getEstadoColorRuta } from '../../shared/utils/estadoColors.js'
 import { isVencido, formatFecha, capitalizarPrimeraLetra } from '../../shared/utils/formatters.js'
 import { exportToExcel } from '../../shared/utils/exportExcel.js'
-
-const getThStyle = (theme) => ({
-    fontWeight: 700,
-    fontSize: '0.80rem',
-    color: theme.palette.text.primary,
-    letterSpacing: 0.5,
-    py: 1.5,
-    borderBottom: `1px solid ${theme.palette.divider}`,
-    whiteSpace: 'nowrap',
-})
 
 const getFilterMenuProps = (theme) => ({
     slotProps: {
@@ -66,15 +53,8 @@ const getFilterMenuProps = (theme) => ({
     },
 })
 
-const FILTROS_HABILITADO = [
-    { value: 'todo', label: 'Todo' },
-    { value: 'habilitado', label: 'Habilitado' },
-    { value: 'inhabilitado', label: 'Inhabilitado' },
-]
-
 const ESTADOS_VEHICULO = ['Disponible', 'Mantenimiento', 'En Ruta']
 const TIPOS_VEHICULO = ['Camioneta', 'Camión', 'Furgón', 'Semi Trayler', 'Trayler', 'Motocicleta', 'Otro']
-
 
 const RutasMiniTabla = ({ rutas, theme }) => (
     <Paper elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 2, overflow: 'hidden', mt: 1.5 }}>
@@ -117,26 +97,6 @@ const RutasMiniTabla = ({ rutas, theme }) => (
 )
 
 const ListarTransporte = () => {
-    const theme = useTheme()
-    const thStyle = getThStyle(theme)
-    const filterMenuProps = getFilterMenuProps(theme)
-    const [searchParams] = useSearchParams()
-    const highlightId = searchParams.get('highlight')
-    const highlightRef = useRef(null)
-    const hasScrolled = useRef(false)
-    const hasNavigated = useRef(false)
-    useEffect(() => {
-        if (highlightId && highlightRef.current && !hasScrolled.current) {
-            hasScrolled.current = true
-            setTimeout(() => highlightRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 400)
-        }
-    })
-    const [searchTerm, setSearchTerm] = useState('')
-    const [debouncedSearch, setDebouncedSearch] = useState('')
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState(null)
-    const [exportando, setExportando] = useState(false)
-    const initialLoad = useRef(true)
     const [vehiculoVer, setVehiculoVer] = useState(null)
     const { showToast } = useToast()
     const [estadoMenu, setEstadoMenu] = useState({ anchor: null, id: null, estadoActual: null })
@@ -144,33 +104,68 @@ const ListarTransporte = () => {
     const [confirmandoEstado, setConfirmandoEstado] = useState(false)
     const [confirmInhabilitar, setConfirmInhabilitar] = useState({ open: false, id: null, habilitadoActual: null, placa: '', estadoVehiculo: null })
     const [rutasMantenimiento, setRutasMantenimiento] = useState({ data: [], loading: false })
-    const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
-    const filtroContainerRef = useRef(null)
-    const filtroBtnRefs = useRef([])
-    const [filtroPillStyle, setFiltroPillStyle] = useState({ left: 0, width: 0 })
-
-    useLayoutEffect(() => {
-        const activeIndex = FILTROS_HABILITADO.findIndex(f => f.value === filtroHabilitado)
-        const btn = filtroBtnRefs.current[activeIndex]
-        const container = filtroContainerRef.current
-        if (btn && container) {
-            setFiltroPillStyle({ left: btn.offsetLeft, width: btn.offsetWidth })
-        }
-    }, [filtroHabilitado])
     const [filtroEstadoVehiculo, setFiltroEstadoVehiculo] = useState('')
     const [filtroTipo, setFiltroTipo] = useState('')
-    const [page, setPage] = useState(1)
-    const [rowsPerPage, setRowsPerPage] = useState(5)
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [vehiculoEditar, setVehiculoEditar] = useState(null)
-    const [sortBy, setSortBy] = useState({ field: '', dir: '' })
     const { getVehiculos, getTotal, updateEstado, toggleHabilitado, fetchVehiculos } = useVehiculo()
     const { usuario, tienePermiso, PERMISOS } = useAuth()
     const navigate = useNavigate()
 
     const transportes = getVehiculos()
     const totalBackend = getTotal()
+
+    const {
+        theme,
+        highlightId, highlightRef,
+        loading, error, initialLoad,
+        busqueda, setBusqueda, debouncedBusqueda,
+        filtroEstado: filtroHabilitado, setFiltroEstado: setFiltroHabilitado,
+        sortBy, handleSort,
+        page, setPage, rowsPerPage, setRowsPerPage,
+        exportando, handleExportar,
+        filtroContainerRef, filtroBtnRefs, filtroPillStyle,
+    } = useEntityCrud({
+        fetchPage: (signal, params) => fetchVehiculos(signal, {
+            ...params,
+            estado: filtroEstadoVehiculo === '' || filtroEstadoVehiculo === 'En Ruta' ? undefined : filtroEstadoVehiculo,
+            tipo: filtroTipo || undefined,
+        }),
+        extraDeps: [filtroEstadoVehiculo, filtroTipo],
+        fetchPageForHighlight: (id, limit) => getPageOfVehiculo(id, limit),
+        exportConfig: {
+            fetchAll: (params) => getVehiculosApi(undefined, {
+                ...params,
+                estado: filtroEstadoVehiculo === '' || filtroEstadoVehiculo === 'En Ruta' ? undefined : filtroEstadoVehiculo,
+                tipo: filtroTipo || undefined,
+                limit: 100000,
+            }),
+            mapRow: (vehiculo) => ({
+                'ID': vehiculo.idVehiculo,
+                'Placa': vehiculo.placa,
+                'Marca': capitalizarPrimeraLetra(vehiculo.marca),
+                'Modelo': vehiculo.modelo,
+                'Tipo': vehiculo.tipo,
+                'Capacidad (kg)': vehiculo.capacidad,
+                'Propietario': vehiculo.propietario ? `${vehiculo.propietario.nombre} ${vehiculo.propietario.apellido}`.trim() : '-',
+                'Vencimiento SOAT': vehiculo.vencimientoSOAT,
+                'Vencimiento Rev. Técnica': vehiculo.vencimientoRevisionTecnica,
+                'Vencimiento Seguro Terceros': vehiculo.vencimientoSeguroTerceros,
+                'Estado': (vehiculosOcupadosIds.has(vehiculo.idVehiculo) ? 'En Ruta' : vehiculo.estado),
+                'Habilitado': vehiculo.habilitado === false ? 'No' : 'Sí',
+            }),
+            fileName: 'Vehiculos',
+            sheetName: 'Vehículos',
+        },
+        onExportError: (err) => showToast(err.message || 'Error al exportar.', 'error'),
+    })
+
+    const filterMenuProps = getFilterMenuProps(theme)
+
+    useEffect(() => {
+        if (!usuario) navigate('/login')
+    }, [usuario, navigate])
 
     // Consulta dedicada y fresca (no la lista paginada de Rutas, que puede no traer
     // todas las rutas En Ruta) — mismo patrón que ListarConductor.jsx.
@@ -189,64 +184,6 @@ const ListarTransporte = () => {
             estadoEfectivo: estaOcupado ? 'En Ruta' : t.estado,
         }
     })
-
-    useEffect(() => {
-        const t = setTimeout(() => setDebouncedSearch(searchTerm), 300)
-        return () => clearTimeout(t)
-    }, [searchTerm])
-
-    useEffect(() => {
-        if (!usuario) {
-            navigate('/login')
-            return
-        }
-
-        let cancelled = false
-        const doFetch = async () => {
-            setLoading(true)
-            setError(null)
-            try {
-                await fetchVehiculos(undefined, {
-                    page,
-                    limit: rowsPerPage,
-                    estado: filtroEstadoVehiculo === '' || filtroEstadoVehiculo === 'En Ruta' ? undefined : filtroEstadoVehiculo,
-                    tipo: filtroTipo || undefined,
-                    habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
-                    sortBy: sortBy.field ? `${sortBy.field}.${sortBy.dir}` : undefined,
-                    q: debouncedSearch.trim() || undefined,
-                })
-            } catch (err) {
-                if (!cancelled) setError(err.message)
-            } finally {
-                if (!cancelled) setLoading(false)
-            }
-        }
-        doFetch()
-        return () => { cancelled = true }
-    }, [usuario, navigate, page, rowsPerPage, filtroEstadoVehiculo, filtroTipo, filtroHabilitado, debouncedSearch, sortBy, fetchVehiculos])
-
-    const handleSort = (field) => {
-        setSortBy(prev => {
-            if (prev.field !== field) return { field, dir: 'asc' }
-            if (prev.dir === 'asc') return { field, dir: 'desc' }
-            return { field: '', dir: '' }
-        })
-        setPage(1)
-    }
-
-    useEffect(() => {
-        if (!loading) initialLoad.current = false
-    }, [loading])
-
-    useEffect(() => {
-        if (!highlightId || hasNavigated.current) return
-        hasNavigated.current = true
-        getPageOfVehiculo(highlightId, rowsPerPage)
-            .then(res => { if (res?.data?.page) setPage(res.data.page) })
-            .catch(() => {})
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [highlightId])
-
 
     useEffect(() => {
         if (!confirmMantenimiento.open || !confirmMantenimiento.id) return
@@ -278,8 +215,10 @@ const ListarTransporte = () => {
         }
     }
 
+    // Re-filtro en cliente: el backend ya filtra, pero "En Ruta" es un estado
+    // derivado (vehiculosOcupadosIds) que el backend no conoce.
     const filteredTransportes = transportesConEstado.filter(t => {
-        const q = debouncedSearch.toLowerCase()
+        const q = debouncedBusqueda.toLowerCase()
         const coincideBusqueda = !q ||
             t.placa.toLowerCase().includes(q) ||
             (t.marca || '').toLowerCase().includes(q) ||
@@ -296,50 +235,143 @@ const ListarTransporte = () => {
         return coincideBusqueda && coincideHabilitado && coincideEstado
     })
 
-    const handleExportar = async () => {
-        setExportando(true)
-        try {
-            const res = await getVehiculosApi(undefined, {
-                limit: 100000,
-                estado: filtroEstadoVehiculo === '' || filtroEstadoVehiculo === 'En Ruta' ? undefined : filtroEstadoVehiculo,
-                tipo: filtroTipo || undefined,
-                habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
-                q: debouncedSearch.trim() || undefined,
-            })
-            const todos = (res?.data || []).map(t => ({
-                ...t,
-                estadoEfectivo: vehiculosOcupadosIds.has(t.idVehiculo) ? 'En Ruta' : t.estado,
-            }))
-            const filtrados = filtroEstadoVehiculo === 'En Ruta'
-                ? todos.filter(t => t.estadoEfectivo === 'En Ruta')
-                : todos
-            const rows = filtrados.map(vehiculo => ({
-                'ID': vehiculo.idVehiculo,
-                'Placa': vehiculo.placa,
-                'Marca': capitalizarPrimeraLetra(vehiculo.marca),
-                'Modelo': vehiculo.modelo,
-                'Tipo': vehiculo.tipo,
-                'Capacidad (kg)': vehiculo.capacidad,
-                'Propietario': vehiculo.propietario ? `${vehiculo.propietario.nombre} ${vehiculo.propietario.apellido}`.trim() : '-',
-                'Vencimiento SOAT': vehiculo.vencimientoSOAT,
-                'Vencimiento Rev. Técnica': vehiculo.vencimientoRevisionTecnica,
-                'Vencimiento Seguro Terceros': vehiculo.vencimientoSeguroTerceros,
-                'Estado': vehiculo.estadoEfectivo || vehiculo.estado,
-                'Habilitado': vehiculo.habilitado === false ? 'No' : 'Sí',
-            }))
-            await exportToExcel({ data: rows, fileName: 'Vehiculos', sheetName: 'Vehículos', themeColor: theme.palette.primary.main })
-        } catch (err) {
-            showToast(err.message || 'Error al exportar.', 'error')
-        } finally {
-            setExportando(false)
-        }
-    }
+    const emptyMessage = filtroEstadoVehiculo !== '' || filtroTipo !== '' || filtroHabilitado !== 'todo'
+        ? 'No se encontraron vehículos que coincidan con los filtros aplicados.'
+        : debouncedBusqueda.trim()
+            ? 'No se encontraron vehículos que coincidan con la búsqueda.'
+            : 'No hay vehículos registrados en el sistema.'
 
-    const limpiarBusqueda = () => {
-        setSearchTerm('')
-        setPage(1)
-    }
-
+    const columns = [
+        { key: 'placa', label: 'Placa', sortField: 'placa', render: (transporte) => <PlacaDisplay placa={transporte.placa} theme={theme} /> },
+        {
+            key: 'marcaModelo', label: 'Marca / Modelo', cellSx: { py: 1.5 },
+            render: (transporte) => (
+                <>
+                    <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary} noWrap>
+                        {capitalizarPrimeraLetra(transporte.marca)}
+                    </Typography>
+                    <Typography variant="caption" color={theme.palette.text.secondary} noWrap>
+                        {transporte.modelo}
+                    </Typography>
+                </>
+            ),
+        },
+        {
+            key: 'tipo', label: 'Tipo', cellSx: { py: 1.5 },
+            render: (transporte) => (
+                <Chip label={transporte.tipo || '—'} size="small" sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem' }} />
+            ),
+        },
+        {
+            key: 'propietario', label: 'Propietario', cellSx: { py: 1.5 },
+            render: (transporte) => transporte.propietario ? `${transporte.propietario.nombre} ${transporte.propietario.apellido}` : '—',
+        },
+        {
+            key: 'soat', label: 'SOAT', cellSx: { py: 1.5 },
+            render: (transporte) => (
+                <Chip
+                    label={transporte.vencimientoSOAT ? formatFecha(transporte.vencimientoSOAT) : 'N/A'}
+                    size="small"
+                    variant={isVencido(transporte.vencimientoSOAT) ? 'filled' : 'outlined'}
+                    sx={isVencido(transporte.vencimientoSOAT)
+                        ? { fontSize: '0.7rem', backgroundColor: theme.palette.primary.main, color: 'white', borderColor: theme.palette.primary.main }
+                        : { fontSize: '0.7rem', color: theme.palette.primary.main, borderColor: theme.palette.primary.main }}
+                />
+            ),
+        },
+        {
+            key: 'revTecnica', label: 'Rev. Técnica', cellSx: { py: 1.5 },
+            render: (transporte) => (
+                <Chip
+                    label={transporte.vencimientoRevisionTecnica ? formatFecha(transporte.vencimientoRevisionTecnica) : 'N/A'}
+                    size="small"
+                    variant={isVencido(transporte.vencimientoRevisionTecnica) ? 'filled' : 'outlined'}
+                    sx={isVencido(transporte.vencimientoRevisionTecnica)
+                        ? { fontSize: '0.7rem', backgroundColor: theme.palette.primary.main, color: 'white', borderColor: theme.palette.primary.main }
+                        : { fontSize: '0.7rem', color: theme.palette.primary.main, borderColor: theme.palette.primary.main }}
+                />
+            ),
+        },
+        {
+            key: 'segTerceros', label: 'Seg. Terceros', cellSx: { py: 1.5 },
+            render: (transporte) => (
+                <Chip
+                    label={transporte.vencimientoSeguroTerceros ? formatFecha(transporte.vencimientoSeguroTerceros) : 'N/A'}
+                    size="small"
+                    variant={isVencido(transporte.vencimientoSeguroTerceros) ? 'filled' : 'outlined'}
+                    sx={isVencido(transporte.vencimientoSeguroTerceros)
+                        ? { fontSize: '0.7rem', backgroundColor: theme.palette.primary.main, color: 'white', borderColor: theme.palette.primary.main }
+                        : { fontSize: '0.7rem', color: theme.palette.primary.main, borderColor: theme.palette.primary.main }}
+                />
+            ),
+        },
+        {
+            key: 'estado', label: 'Estado', cellSx: { py: 1.5 },
+            render: (transporte) => (
+                transporte.estadoEfectivo === 'En Ruta' ? (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1, py: 0.6 }}>
+                        <Box sx={{ width: 10, height: 10, borderRadius: '50%', flexShrink: 0, backgroundColor: '#3B82F6', border: '2px solid #3B82F6' }} />
+                        <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: '#3B82F6' }}>En Ruta</Typography>
+                    </Box>
+                ) : (
+                    <Box
+                        onClick={(e) => setEstadoMenu({ anchor: e.currentTarget, id: transporte.idVehiculo, estadoActual: transporte.estadoEfectivo })}
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer', width: '100%', border: `1px solid ${theme.palette.divider}`, borderRadius: 1.5, px: 1, py: 0.6, '&:hover': { borderColor: theme.palette.text.secondary } }}
+                    >
+                        <Box sx={{
+                            width: 10, height: 10, borderRadius: '50%', flexShrink: 0,
+                            ...(transporte.estadoEfectivo === 'Disponible'
+                                ? { backgroundColor: 'transparent', border: '2px solid #10b981' }
+                                : { backgroundColor: '#ea580c', border: '2px solid #ea580c' })
+                        }} />
+                        <Typography variant="body2" sx={{
+                            fontSize: '0.82rem', fontWeight: 500,
+                            color: transporte.estadoEfectivo === 'Disponible' ? '#10b981' : '#ea580c',
+                        }}>
+                            {transporte.estadoEfectivo}
+                        </Typography>
+                        <KeyboardArrowDownOutlinedIcon sx={{ fontSize: 14, color: '#9CA3AF', ml: 'auto' }} />
+                    </Box>
+                )
+            ),
+        },
+        {
+            key: 'acciones', label: 'Acciones', width: 130, cellSx: { py: 1.5 },
+            render: (transporte) => (
+                <Box sx={{ display: 'flex', gap: 0.5 }}>
+                    {tienePermiso(PERMISOS.CONSULTAR_VEHICULO) && (
+                        <Tooltip title="Ver detalle">
+                            <IconButton size="small" onClick={() => setVehiculoVer(transporte)}
+                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}>
+                                <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
+                            </IconButton>
+                        </Tooltip>
+                    )}
+                    {tienePermiso(PERMISOS.ACTUALIZAR_VEHICULO) && (
+                        transporte.habilitado === false ? (
+                            <Tooltip title="Habilita el registro para poder editarlo">
+                                <span>
+                                    <IconButton size="small" disabled>
+                                        <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                                    </IconButton>
+                                </span>
+                            </Tooltip>
+                        ) : (
+                            <Tooltip title="Editar">
+                                <IconButton size="small" onClick={() => { setVehiculoEditar(transporte); setModalActualizarOpen(true) }}
+                                    sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}>
+                                    <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                                </IconButton>
+                            </Tooltip>
+                        )
+                    )}
+                    {tienePermiso(PERMISOS.INHABILITAR_VEHICULO) && (
+                        <ToggleSwitch id={transporte.idVehiculo} checked={transporte.habilitado !== false} onChange={() => handleToggleHabilitado(transporte.idVehiculo, transporte.habilitado, transporte.estadoEfectivo, transporte.placa)} />
+                    )}
+                </Box>
+            ),
+        },
+    ]
 
     return (
         <Box sx={{ p: 3.5 }}>
@@ -404,59 +436,13 @@ const ListarTransporte = () => {
 
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-                    <Box ref={filtroContainerRef} sx={{
-                        position: 'relative',
-                        display: 'inline-flex',
-                        backgroundColor: theme.palette.primary.light,
-                        borderRadius: 4,
-                        p: '4px',
-                        gap: '5px',
-                    }}>
-                        <Box sx={{
-                            position: 'absolute',
-                            top: '4px',
-                            bottom: '4px',
-                            left: `${filtroPillStyle.left}px`,
-                            width: `${filtroPillStyle.width}px`,
-                            borderRadius: 3,
-                            backgroundColor: theme.palette.background.paper,
-                            boxShadow: '0 1px 4px rgba(0,0,0,0.12)',
-                            transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                            pointerEvents: 'none',
-                        }} />
-                        {FILTROS_HABILITADO.map((f, i) => (
-                            <Button
-                                key={f.value}
-                                ref={el => { filtroBtnRefs.current[i] = el }}
-                                onClick={() => { setFiltroHabilitado(f.value); setPage(1) }}
-                                size="small"
-                                disableElevation
-                                disableRipple
-                                sx={{
-                                    position: 'relative',
-                                    zIndex: 1,
-                                    borderRadius: 3,
-                                    textTransform: 'none',
-                                    fontSize: '0.75rem',
-                                    px: 2,
-                                    py: 0.5,
-                                    minWidth: 0,
-                                    fontWeight: filtroHabilitado === f.value ? 600 : 400,
-                                    backgroundColor: 'transparent',
-                                    color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.primary.darker,
-                                    transition: 'color 0.3s ease',
-                                    border: 'none',
-                                    '&:hover': {
-                                        backgroundColor: 'transparent',
-                                        color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.primary.dark,
-                                        border: 'none',
-                                    },
-                                }}
-                            >
-                                {f.label}
-                            </Button>
-                        ))}
-                    </Box>
+                    <FiltroEstadoTabs
+                        value={filtroHabilitado}
+                        onChange={setFiltroHabilitado}
+                        containerRef={filtroContainerRef}
+                        btnRefs={filtroBtnRefs}
+                        pillStyle={filtroPillStyle}
+                    />
 
                     <FormControl size="small" sx={{ minWidth: 150 }}>
                         <Select
@@ -514,267 +500,32 @@ const ListarTransporte = () => {
                     </FormControl>
                 </Box>
 
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-                    <TextField
-                        size="small"
-                        placeholder="Buscar vehículos..."
-                        sx={{
-                            width: 280,
-                            '& .MuiOutlinedInput-root': {
-                                borderRadius: 4,
-                                '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` },
-                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                    borderColor: theme.palette.primary.main, borderWidth: '1px',
-                                },
-                            },
-                        }}
-                        value={searchTerm}
-                        onChange={e => { setSearchTerm(e.target.value); setPage(1) }}
-                        slotProps={{
-                            input: {
-                                startAdornment: (
-                                    <InputAdornment position="start">
-                                        <SearchIcon sx={{ color: theme.palette.text.secondary, fontSize: 20 }} />
-                                    </InputAdornment>
-                                ),
-                                endAdornment: searchTerm && (
-                                    <InputAdornment position="end">
-                                        <IconButton size="small" onClick={limpiarBusqueda}>
-                                            <ClearIcon sx={{ fontSize: 16 }} />
-                                        </IconButton>
-                                    </InputAdornment>
-                                )
-                            }
-                        }}
-                    />
-
-                </Box>
+                <BuscadorField value={busqueda} onChange={setBusqueda} placeholder="Buscar vehículos..." width={280} />
             </Box>
 
-            <Paper elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 3, overflow: 'hidden' }}>
-                <TableContainer>
-                    <Table>
-                        <TableHead>
-                            <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
-                                <TableCell sx={thStyle}>
-                                    <TableSortLabel
-                                        active={sortBy.field === 'placa'}
-                                        direction={sortBy.dir === 'desc' ? 'desc' : 'asc'}
-                                        onClick={() => handleSort('placa')}
-                                        IconComponent={sortBy.field === 'placa' ? undefined : UnfoldMoreOutlinedIcon}
-                                        sx={{
-                                            color: 'inherit',
-                                            '&:hover': { color: 'inherit' },
-                                            '&.Mui-active': { color: theme.palette.primary.main },
-                                            '&.Mui-active:hover': { color: theme.palette.primary.main },
-                                            '& .MuiTableSortLabel-icon': { opacity: 1, fontSize: 16 },
-                                        }}
-                                    >
-                                        Placa
-                                    </TableSortLabel>
-                                </TableCell>
-                                <TableCell sx={thStyle}>Marca / Modelo</TableCell>
-                                <TableCell sx={thStyle}>Tipo</TableCell>
-                                <TableCell sx={thStyle}>Propietario</TableCell>
-                                <TableCell sx={thStyle}>SOAT</TableCell>
-                                <TableCell sx={thStyle}>Rev. Técnica</TableCell>
-                                <TableCell sx={thStyle}>Seg. Terceros</TableCell>
-                                <TableCell sx={thStyle}>Estado</TableCell>
-                                <TableCell sx={{ ...thStyle, width: 130 }}>Acciones</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {loading && initialLoad.current ? (
-                                <TableRow>
-                                    <TableCell colSpan={9} align="center" sx={{ py: 7 }}>
-                                        <CircularProgress size={28} sx={{ color: theme.palette.primary.main }} />
-                                        <Typography variant="body2" color={theme.palette.text.secondary} mt={1.5}>
-                                            Cargando vehículos...
-                                        </Typography>
-                                    </TableCell>
-                                </TableRow>
-                            ) : error ? (
-                                <TableRow>
-                                    <TableCell colSpan={9} align="center" sx={{ py: 5 }}>
-                                        <Typography color="error" variant="body2">
-                                            No se pudieron cargar los vehículos. Verifica la conexión con el servidor.
-                                        </Typography>
-                                        {import.meta.env.DEV && (
-                                            <Box component="pre" sx={{ mt: 0.5, fontSize: 11, opacity: 0.7, whiteSpace: 'pre-wrap', m: 0 }}>
-                                                {String(error)}
-                                            </Box>
-                                        )}
-                                    </TableCell>
-                                </TableRow>
-                            ) : !loading && filteredTransportes.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={9} align="center" sx={{ py: 7 }}>
-                                        <Typography color={theme.palette.text.secondary} variant="body2">
-                                            {filtroEstadoVehiculo !== '' || filtroTipo !== '' || filtroHabilitado !== 'todo'
-                                                ? 'No se encontraron vehículos que coincidan con los filtros aplicados.'
-                                                : debouncedSearch.trim()
-                                                    ? 'No se encontraron vehículos que coincidan con la búsqueda.'
-                                                    : 'No hay vehículos registrados en el sistema.'}
-                                        </Typography>
-                                    </TableCell>
-                                </TableRow>
-                            ) : (
-                                filteredTransportes.map((transporte) => {
-                                    const isHighlighted = highlightId && String(transporte.idVehiculo) === String(highlightId)
-                                    return (
-                                    <TableRow
-                                        key={transporte.idVehiculo}
-                                        ref={isHighlighted ? highlightRef : null}
-                                        sx={{
-                                            '&:hover': { backgroundColor: theme.palette.background.subtle },
-                                            transition: 'background-color 0.15s',
-                                            opacity: transporte.habilitado !== false ? 1 : 0.55,
-                                            ...(isHighlighted && {
-                                                animation: 'highlightPulse 1.1s ease-in-out 4',
-                                                '@keyframes highlightPulse': {
-                                                    '0%, 100%': { backgroundColor: 'transparent' },
-                                                    '50%': { backgroundColor: alpha(theme.palette.primary.main, 0.13) },
-                                                },
-                                            }),
-                                        }}
-                                    >
-                                        <TableCell>
-                                            <PlacaDisplay placa={transporte.placa} theme={theme} />
-                                        </TableCell>
-                                        <TableCell sx={{ py: 1.5 }}>
-                                            <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary} noWrap>
-                                                {capitalizarPrimeraLetra(transporte.marca)}
-                                            </Typography>
-                                            <Typography variant="caption" color={theme.palette.text.secondary} noWrap>
-                                                {transporte.modelo}
-                                            </Typography>
-                                        </TableCell>
-                                        <TableCell sx={{ py: 1.5 }}>
-                                            <Chip
-                                                label={transporte.tipo || '—'}
-                                                size="small"
-                                                sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem' }}
-                                            />
-                                        </TableCell>
-                                        <TableCell sx={{ py: 1.5 }}>
-                                            {transporte.propietario
-                                                ? `${transporte.propietario.nombre} ${transporte.propietario.apellido}`
-                                                : '—'}
-                                        </TableCell>
-                                        <TableCell sx={{ py: 1.5 }}>
-                                            <Chip
-                                                label={transporte.vencimientoSOAT ? formatFecha(transporte.vencimientoSOAT) : 'N/A'}
-                                                size="small"
-                                                variant={isVencido(transporte.vencimientoSOAT) ? 'filled' : 'outlined'}
-                                                sx={isVencido(transporte.vencimientoSOAT)
-                                                    ? { fontSize: '0.7rem', backgroundColor: theme.palette.primary.main, color: 'white', borderColor: theme.palette.primary.main }
-                                                    : { fontSize: '0.7rem', color: theme.palette.primary.main, borderColor: theme.palette.primary.main }
-                                                }
-                                            />
-                                        </TableCell>
-                                        <TableCell sx={{ py: 1.5 }}>
-                                            <Chip
-                                                label={transporte.vencimientoRevisionTecnica ? formatFecha(transporte.vencimientoRevisionTecnica) : 'N/A'}
-                                                size="small"
-                                                variant={isVencido(transporte.vencimientoRevisionTecnica) ? 'filled' : 'outlined'}
-                                                sx={isVencido(transporte.vencimientoRevisionTecnica)
-                                                    ? { fontSize: '0.7rem', backgroundColor: theme.palette.primary.main, color: 'white', borderColor: theme.palette.primary.main }
-                                                    : { fontSize: '0.7rem', color: theme.palette.primary.main, borderColor: theme.palette.primary.main }
-                                                }
-                                            />
-                                        </TableCell>
-                                        <TableCell sx={{ py: 1.5 }}>
-                                            <Chip
-                                                label={transporte.vencimientoSeguroTerceros ? formatFecha(transporte.vencimientoSeguroTerceros) : 'N/A'}
-                                                size="small"
-                                                variant={isVencido(transporte.vencimientoSeguroTerceros) ? 'filled' : 'outlined'}
-                                                sx={isVencido(transporte.vencimientoSeguroTerceros)
-                                                    ? { fontSize: '0.7rem', backgroundColor: theme.palette.primary.main, color: 'white', borderColor: theme.palette.primary.main }
-                                                    : { fontSize: '0.7rem', color: theme.palette.primary.main, borderColor: theme.palette.primary.main }
-                                                }
-                                            />
-                                        </TableCell>
-                                        <TableCell sx={{ py: 1.5 }}>
-                                            {transporte.estadoEfectivo === 'En Ruta' ? (
-                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1, py: 0.6 }}>
-                                                    <Box sx={{ width: 10, height: 10, borderRadius: '50%', flexShrink: 0, backgroundColor: '#3B82F6', border: '2px solid #3B82F6' }} />
-                                                    <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: '#3B82F6' }}>En Ruta</Typography>
-                                                </Box>
-                                            ) : (
-                                                <Box
-                                                    onClick={(e) => setEstadoMenu({ anchor: e.currentTarget, id: transporte.idVehiculo, estadoActual: transporte.estadoEfectivo })}
-                                                    sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer', width: '100%', border: `1px solid ${theme.palette.divider}`, borderRadius: 1.5, px: 1, py: 0.6, '&:hover': { borderColor: theme.palette.text.secondary } }}
-                                                >
-                                                    <Box sx={{
-                                                        width: 10, height: 10, borderRadius: '50%', flexShrink: 0,
-                                                        ...(transporte.estadoEfectivo === 'Disponible'
-                                                            ? { backgroundColor: 'transparent', border: '2px solid #10b981' }
-                                                            : { backgroundColor: '#ea580c', border: '2px solid #ea580c' })
-                                                    }} />
-                                                    <Typography variant="body2" sx={{
-                                                        fontSize: '0.82rem', fontWeight: 500,
-                                                        color: transporte.estadoEfectivo === 'Disponible' ? '#10b981' : '#ea580c',
-                                                    }}>
-                                                        {transporte.estadoEfectivo}
-                                                    </Typography>
-                                                    <KeyboardArrowDownOutlinedIcon sx={{ fontSize: 14, color: '#9CA3AF', ml: 'auto' }} />
-                                                </Box>
-                                            )}
-                                        </TableCell>
-                                        <TableCell sx={{ py: 1.5 }}>
-                                            <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                                {tienePermiso(PERMISOS.CONSULTAR_VEHICULO) && (
-                                                    <Tooltip title="Ver detalle">
-                                                        <IconButton
-                                                            size="small"
-                                                            onClick={() => setVehiculoVer(transporte)}
-                                                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}
-                                                        >
-                                                            <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
-                                                        </IconButton>
-                                                    </Tooltip>
-                                                )}
-                                                {tienePermiso(PERMISOS.ACTUALIZAR_VEHICULO) && (
-                                                    transporte.habilitado === false ? (
-                                                        <Tooltip title="Habilita el registro para poder editarlo">
-                                                            <span>
-                                                                <IconButton size="small" disabled>
-                                                                    <EditOutlinedIcon sx={{ fontSize: 18 }} />
-                                                                </IconButton>
-                                                            </span>
-                                                        </Tooltip>
-                                                    ) : (
-                                                        <Tooltip title="Editar">
-                                                            <IconButton
-                                                                size="small"
-                                                                onClick={() => { setVehiculoEditar(transporte); setModalActualizarOpen(true) }}
-                                                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}
-                                                            >
-                                                                <EditOutlinedIcon sx={{ fontSize: 18 }} />
-                                                            </IconButton>
-                                                        </Tooltip>
-                                                    )
-                                                )}
-                                                {tienePermiso(PERMISOS.INHABILITAR_VEHICULO) && (
-                                                    <ToggleSwitch id={transporte.idVehiculo} checked={transporte.habilitado !== false} onChange={() => handleToggleHabilitado(transporte.idVehiculo, transporte.habilitado, transporte.estadoEfectivo, transporte.placa)} />
-                                                )}
-                                            </Box>
-                                        </TableCell>
-                                    </TableRow>
-                                    )
-                                })
-                            )}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
-            </Paper>
+            <DataTable
+                columns={columns}
+                rows={filteredTransportes}
+                rowKey={(transporte) => transporte.idVehiculo}
+                loading={loading}
+                initialLoad={initialLoad}
+                error={error}
+                sortBy={sortBy}
+                onSort={handleSort}
+                highlightId={highlightId}
+                highlightRef={highlightRef}
+                rowSx={(transporte) => ({ opacity: transporte.habilitado !== false ? 1 : 0.55 })}
+                emptyMessage={emptyMessage}
+                loadingMessage="Cargando vehículos..."
+                errorMessage="No se pudieron cargar los vehículos. Verifica la conexión con el servidor."
+            />
 
             <TablaPaginacionFooter
                 total={totalBackend}
                 page={page}
                 rowsPerPage={rowsPerPage}
                 onPageChange={setPage}
-                onRowsPerPageChange={(n) => { setRowsPerPage(n); setPage(1) }}
+                onRowsPerPageChange={setRowsPerPage}
             />
 
             {vehiculoVer && (
@@ -901,4 +652,3 @@ const ListarTransporte = () => {
 }
 
 export default ListarTransporte
-
