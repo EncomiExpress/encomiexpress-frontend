@@ -62,42 +62,56 @@ El proyecto sigue un patrón **feature-based** que separa las funcionalidades po
 ```bash
 src/
 │
-├── features/                  # Módulos funcionales de la aplicación
-│   ├── auth/                  # Autenticación y gestión de usuarios
+├── features/                  # Módulos funcionales de la aplicación — cada uno
+│   │                           # autocontenido con su propio context/, services/ y
+│   │                           # <entidad>.routes.jsx
+│   ├── home/                  # Página pública de inicio
+│   ├── auth/                  # Autenticación (login, resetear contraseña)
 │   ├── dashboard/             # Panel principal con indicadores
-│   ├── clientes/              # Gestión de clientes
-│   ├── ventas/                # Gestión de ventas/encomiendas
-│   ├── conductores/           # Administración de conductores
-│   ├── destinos/              # Catálogo de ubicaciones
-│   ├── propietarios/          # Gestión de propietarios de vehículos
-│   ├── rutas/                 # Programación de rutas
-│   ├── vehiculos/             # Gestión de vehículos
-│   ├── usuarios/              # Gestión de usuarios
-│   ├── roles/                 # Gestión de roles y permisos
-│   └── anticipos/             # Control de anticipos y excedentes
+│   ├── clientes/              # Gestión de clientes (context/, services/)
+│   ├── ventas/                # Gestión de ventas/encomiendas (context/, services/,
+│   │   │                       # components/registrar-venta/, components/actualizar-venta/)
+│   │   └── components/        # Subcomponentes de los wizards Registrar/ActualizarVenta,
+│   │                           # uno por paso del Stepper (Participantes, Paquetes, Envío...)
+│   ├── conductores/           # Administración de conductores (context/, services/, utils/)
+│   ├── destinos/              # Catálogo de ubicaciones (context/, services/)
+│   ├── propietarios/          # Gestión de propietarios de vehículos (context/, services/)
+│   ├── rutas/                 # Programación de rutas (context/, services/)
+│   ├── vehiculos/             # Gestión de vehículos (context/, services/)
+│   ├── usuarios/              # Gestión de usuarios (services/)
+│   ├── roles/                 # Gestión de roles y permisos (vía AuthContext, ver nota abajo)
+│   ├── anticipos/             # Control de anticipos y excedentes (context/, services/)
+│   └── paquetesDevueltos/     # Consulta de paquetes devueltos — solo lectura (services/)
 │
-├── shared/                    # Recursos compartidos entre features
+├── shared/                    # Recursos verdaderamente transversales (usados por 3+ features
+│   │                           # o sin dueño de dominio único — no datos de una sola entidad)
 │   ├── styles/                # Tema centralizado (theme.js con createTheme)
-│   ├── contexts/              # Contextos globales (estado con React Context)
-│   ├── components/            # Componentes reutilizables
-│   ├── hooks/                 # Hooks personalizados
-│   ├── services/              # Servicios API (auth, ventas, clientes, etc.)
-│   ├── utils/                 # Formatters, colores por estado, export a Excel/PDF
-│   └── config/                # Configuración (API URL, constantes, secciones de nav)
+│   ├── contexts/              # Auth, Toast, Theme, Configuración — estado realmente global
+│   ├── layouts/                # Sidebar, TopNav, Header, LayoutAdmin, PrivateRoute
+│   ├── components/            # Átomos reutilizables (DataTable, ToggleSwitch, etc.)
+│   ├── hooks/                  # useEntityCrud (búsqueda/orden/paginación/exportar
+│   │                           # reutilizado por las pantallas Listar*) y otros hooks genéricos
+│   ├── services/               # authService (cliente HTTP base), configuracionService,
+│   │                           # rolService — infraestructura o sin dueño de una sola feature
+│   ├── utils/                  # Formatters, colores por estado, export a Excel/PDF
+│   └── config/                 # Configuración (API URL, constantes, secciones de nav)
 │
 ├── assets/                    # Imágenes estáticas (logos, ilustraciones)
 ├── App.jsx                    # Providers anidados y configuración
-├── AppRoutes.jsx              # Definición de rutas protegidas
+├── AppRoutes.jsx               # Compone las rutas de cada feature (<entidad>.routes.jsx)
 └── main.jsx                   # Punto de entrada
 ```
 
 ### Principios de Arquitectura Implementados
 
-- **Feature-based Structure**: Cada dominio funcional tiene su propia carpeta con sus páginas
-- **Context API**: Gestión de estado global centralizada en `shared/contexts/`
-- **Providers anidados**: Inyección de dependencias en `App.jsx` para disponibilidad global
-- **Control de permisos**: Sistema basado en permisos granulares (`PERMISOS.*`)
-- **Navegación protegida**: `PrivateRoute` con verificación de permisos automática
+- **Feature-based Structure**: Cada dominio funcional tiene su propia carpeta con su propio estado (`context/`), su propia capa de datos (`services/`) y sus propias rutas (`<entidad>.routes.jsx`) — no solo sus páginas.
+- **Context API**: Estado por entidad vive en la feature dueña de esa entidad; solo Auth/Toast/Theme/Configuración (usados por múltiples features sin un dueño único) quedan en `shared/contexts/`.
+- **Providers anidados**: Inyección de dependencias en `App.jsx` para disponibilidad global.
+- **Control de permisos**: Sistema basado en permisos granulares (`PERMISOS.*`).
+- **Navegación protegida**: `PrivateRoute` (en `shared/layouts/`) con verificación de permisos automática, reutilizado por el archivo de rutas de cada feature.
+- **Tabla reutilizable**: `shared/components/DataTable.jsx` + `shared/hooks/useEntityCrud.js` centralizan el patrón de búsqueda/filtro/orden/paginación/exportación que usan las 10 pantallas `Listar*`.
+
+> **Nota:** `rolService.js` y `configuracionService.js` viven en `shared/services/` en vez de en `features/roles/` o `features/destinos/` porque su único consumidor es un context compartido (`AuthContext`/`ConfiguracionContext`); moverlos habría invertido la dependencia (shared importando de features/).
 
 ### Notas por módulo
 
