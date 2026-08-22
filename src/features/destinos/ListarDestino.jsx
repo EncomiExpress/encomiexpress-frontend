@@ -1,20 +1,15 @@
-import { useTheme, alpha } from '@mui/material/styles'
-import { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { getPageOfDestino, getDestinos } from './services/destinoService.js'
 import {
-    Box, Typography, Paper, Table, TableBody, TableCell,
-    TableContainer, TableHead, TableRow, Chip, IconButton,
+    Box, Typography, Chip, IconButton,
     TextField, InputAdornment,
     Tooltip, Button, CircularProgress,
-    Select, MenuItem, FormControl, TableSortLabel,
+    Select, MenuItem, FormControl,
 } from '@mui/material'
-import SearchIcon from '@mui/icons-material/Search'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
-import ClearIcon from '@mui/icons-material/Clear'
-import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined'
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import ToggleSwitch from '../../shared/components/ToggleSwitch.jsx'
 import TablaPaginacionFooter from '../../shared/components/TablaPaginacionFooter.jsx'
@@ -23,7 +18,8 @@ import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined'
 import ScaleOutlinedIcon from '@mui/icons-material/ScaleOutlined'
 import CloseIcon from '@mui/icons-material/Close'
-import UnfoldMoreOutlinedIcon from '@mui/icons-material/UnfoldMoreOutlined'
+import DataTable, { FiltroEstadoTabs, BuscadorField } from '../../shared/components/DataTable.jsx'
+import useEntityCrud from '../../shared/hooks/useEntityCrud.js'
 import { useDestino } from './context/DestinoContext.jsx'
 import { useConfiguracion } from '../../shared/contexts/ConfiguracionContext.jsx'
 import { formatearMoneda, limpiarMonedaInput } from '../../shared/utils/formatters.js'
@@ -33,24 +29,7 @@ import RegistrarDestino from './RegistrarDestino'
 import ActualizarDestino from './ActualizarDestino'
 import ModalConsultarDestino from './ModalConsultarDestino'
 import ModalInhabilitarDestino from './ModalInhabilitarDestino'
-import { exportToExcel } from '../../shared/utils/exportExcel.js'
 import NacionSVG from '../../shared/components/NacionSVG.jsx'
-
-const getThStyle = (theme) => ({
-    fontWeight: 700,
-    fontSize: '0.80rem',
-    color: theme.palette.text.primary,
-    letterSpacing: 0.5,
-    py: 1.5,
-    borderBottom: `1px solid ${theme.palette.divider}`,
-    whiteSpace: 'nowrap',
-})
-
-const FILTROS = [
-    { value: 'todo', label: 'Todo' },
-    { value: 'habilitado', label: 'Habilitado' },
-    { value: 'inhabilitado', label: 'Inhabilitado' },
-]
 
 const DEPARTAMENTOS = ['Antioquia', 'Córdoba']
 
@@ -74,44 +53,13 @@ const getFilterMenuProps = (theme) => ({
 })
 
 const ListarDestino = () => {
-    const theme = useTheme()
-    const thStyle = getThStyle(theme)
-    const filterMenuProps = getFilterMenuProps(theme)
-    const [searchTerm, setSearchTerm] = useState('')
-    const [debouncedSearch, setDebouncedSearch] = useState('')
-    const [destinoVer, setDestinoVer] = useState(null)
     const { showToast } = useToast()
+    const [destinoVer, setDestinoVer] = useState(null)
     const [confirmInhabilitar, setConfirmInhabilitar] = useState({ open: false, id: null, ciudad: '', habilitadoActual: null })
-    const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
-    const filtroContainerRef = useRef(null)
-    const filtroBtnRefs = useRef([])
-    const [filtroPillStyle, setFiltroPillStyle] = useState({ left: 0, width: 0 })
-
-    useLayoutEffect(() => {
-        const activeIndex = FILTROS.findIndex(f => f.value === filtroHabilitado)
-        const btn = filtroBtnRefs.current[activeIndex]
-        const container = filtroContainerRef.current
-        if (btn && container) {
-            setFiltroPillStyle({ left: btn.offsetLeft, width: btn.offsetWidth })
-        }
-    }, [filtroHabilitado])
     const [filtroDepartamento, setFiltroDepartamento] = useState('')
-    const [page, setPage] = useState(1)
-    const [rowsPerPage, setRowsPerPage] = useState(5)
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [destinoEditar, setDestinoEditar] = useState(null)
-    const [sortBy, setSortBy] = useState({ field: '', dir: '' })
-    const initialLoad = useRef(true)
-    const [searchParams] = useSearchParams()
-    const highlightId = searchParams.get('highlight')
-    const highlightRef = useRef(null)
-    const hasScrolled = useRef(false)
-    const hasNavigated = useRef(false)
-
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState(null)
-    const [exportando, setExportando] = useState(false)
     const { destinos, total, fetchDestinos, toggleHabilitado } = useDestino()
     const { tarifaPorKg, actualizarTarifaPorKg } = useConfiguracion()
     const { usuario, tienePermiso, PERMISOS } = useAuth()
@@ -120,6 +68,43 @@ const ListarDestino = () => {
     const [editandoTarifa, setEditandoTarifa] = useState(false)
     const [tarifaInput, setTarifaInput] = useState('')
     const [guardandoTarifa, setGuardandoTarifa] = useState(false)
+
+    const {
+        theme,
+        highlightId, highlightRef,
+        loading, error, initialLoad,
+        busqueda, setBusqueda, debouncedBusqueda,
+        filtroEstado: filtroHabilitado, setFiltroEstado: setFiltroHabilitado,
+        sortBy, handleSort,
+        page, setPage, rowsPerPage, setRowsPerPage,
+        exportando, handleExportar,
+        filtroContainerRef, filtroBtnRefs, filtroPillStyle,
+        refetch,
+    } = useEntityCrud({
+        fetchPage: (signal, params) => fetchDestinos(signal, { ...params, departamento: filtroDepartamento || undefined }),
+        extraDeps: [filtroDepartamento],
+        fetchPageForHighlight: (id, limit) => getPageOfDestino(id, limit),
+        exportConfig: {
+            fetchAll: (params) => getDestinos(undefined, { ...params, departamento: filtroDepartamento || undefined, limit: 100000 }),
+            mapRow: (destino) => ({
+                'ID': destino.idDestino,
+                'Ciudad': destino.ciudad,
+                'Departamento': destino.departamento,
+                'Dirección': destino.direccion || '',
+                'Tarifa base': Math.round(Number(destino.tarifaBase)) || 0,
+                'Estado': destino.habilitado === false ? 'Inhabilitado' : 'Habilitado',
+            }),
+            fileName: 'Destinos',
+            sheetName: 'Destinos',
+        },
+        onExportError: (err) => showToast(err.message || 'Error al exportar.', 'error'),
+    })
+
+    const filterMenuProps = getFilterMenuProps(theme)
+
+    useEffect(() => {
+        if (!usuario) navigate('/login')
+    }, [usuario, navigate])
 
     const handleAbrirEdicionTarifa = () => {
         setTarifaInput(String(tarifaPorKg))
@@ -149,81 +134,6 @@ const ListarDestino = () => {
         }
     }
 
-    useEffect(() => {
-      const t = setTimeout(() => setDebouncedSearch(searchTerm), 300)
-      return () => clearTimeout(t)
-    }, [searchTerm])
-
-    const fetchDestinosBackend = useCallback((signal) => {
-      return fetchDestinos(signal, {
-        page,
-        limit: rowsPerPage,
-        habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
-        departamento: filtroDepartamento || undefined,
-        sortBy: sortBy.field ? `${sortBy.field}.${sortBy.dir}` : undefined,
-        q: debouncedSearch.trim() || undefined,
-      })
-    }, [page, rowsPerPage, filtroHabilitado, filtroDepartamento, debouncedSearch, sortBy, fetchDestinos])
-
-    useEffect(() => {
-      const controller = new AbortController()
-      let cancelled = false
-
-      const cargar = async () => {
-        setLoading(true)
-        setError(null)
-        try {
-          await fetchDestinosBackend(controller.signal)
-        } catch (err) {
-          if (!cancelled) setError(err.message)
-        } finally {
-          if (!cancelled) setLoading(false)
-        }
-      }
-
-      cargar()
-      return () => {
-        cancelled = true
-        controller.abort()
-      }
-    }, [fetchDestinosBackend])
-
-    useEffect(() => {
-      if (!loading) { initialLoad.current = false }
-    }, [loading])
-
-    useEffect(() => {
-        if (highlightId && highlightRef.current && !hasScrolled.current) {
-            hasScrolled.current = true
-            setTimeout(() => highlightRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 400)
-        }
-    })
-
-    useEffect(() => {
-        if (!highlightId || hasNavigated.current) return
-        hasNavigated.current = true
-        getPageOfDestino(highlightId, rowsPerPage)
-            .then(res => { if (res?.data?.page) setPage(res.data.page) })
-            .catch(() => {})
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [highlightId])
-
-    const handleSort = (field) => {
-        setSortBy(prev => {
-            if (prev.field !== field) return { field, dir: 'asc' }
-            if (prev.dir === 'asc') return { field, dir: 'desc' }
-            return { field: '', dir: '' }
-        })
-        setPage(1)
-    }
-
-    useEffect(() => {
-      if (!usuario) {
-        navigate('/login')
-      }
-    }, [usuario, navigate])
-
-
     const handleToggleHabilitado = (id, habilitadoActual, ciudad) => {
         setConfirmInhabilitar({ open: true, id, ciudad: ciudad || '', habilitadoActual })
     }
@@ -238,31 +148,79 @@ const ListarDestino = () => {
         }
     }
 
-    const handleExportar = async () => {
-        setExportando(true)
-        try {
-            const res = await getDestinos(undefined, {
-                limit: 100000,
-                habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
-                departamento: filtroDepartamento || undefined,
-                q: debouncedSearch.trim() || undefined,
-            })
-            const rows = (res?.data || []).map(destino => ({
-                'ID': destino.idDestino,
-                'Ciudad': destino.ciudad,
-                'Departamento': destino.departamento,
-                'Dirección': destino.direccion || '',
-                'Tarifa base': Math.round(Number(destino.tarifaBase)) || 0,
-                'Estado': destino.habilitado === false ? 'Inhabilitado' : 'Habilitado',
-            }))
-            await exportToExcel({ data: rows, fileName: 'Destinos', sheetName: 'Destinos', themeColor: theme.palette.primary.main })
-        } catch (err) {
-            showToast(err.message || 'Error al exportar.', 'error')
-        } finally {
-            setExportando(false)
-        }
-    }
+    const emptyMessage = filtroHabilitado !== 'todo'
+        ? 'No se encontraron destinos que coincidan con los filtros aplicados.'
+        : debouncedBusqueda.trim()
+            ? 'No se encontraron destinos que coincidan con la búsqueda.'
+            : 'No hay destinos registrados en el sistema.'
 
+    const columns = [
+        {
+            key: 'ciudad', label: 'Ciudad', sortField: 'ciudad',
+            render: (destino) => (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                    <Box sx={{ width: 28, height: 30, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <NacionSVG color={destino.habilitado ? theme.palette.primary.main : theme.palette.text.disabled} />
+                    </Box>
+                    <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary} noWrap>
+                        {destino.ciudad}
+                    </Typography>
+                </Box>
+            ),
+        },
+        {
+            key: 'departamento', label: 'Departamento',
+            cellSx: { fontSize: '0.85rem', color: theme.palette.text.primary, py: 1.5 },
+            render: (destino) => destino.departamento,
+        },
+        {
+            key: 'tarifaBase', label: 'Tarifa Base', cellSx: { py: 1.5 },
+            render: (destino) => (
+                <Chip
+                    label={destino.tarifaBase !== undefined ? `$${Number(destino.tarifaBase).toLocaleString('es-CO')}` : '—'}
+                    size="small"
+                    sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem', borderRadius: '2px', height: 26 }}
+                />
+            ),
+        },
+        {
+            key: 'acciones', label: 'Acciones', width: 130, cellSx: { py: 1.5 },
+            render: (destino) => (
+                <Box sx={{ display: 'flex', gap: 0.5 }}>
+                    {tienePermiso(PERMISOS.CONSULTAR_DESTINO) && (
+                        <Tooltip title="Ver detalle">
+                            <IconButton size="small" onClick={() => setDestinoVer(destino)}
+                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}>
+                                <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
+                            </IconButton>
+                        </Tooltip>
+                    )}
+                    {tienePermiso(PERMISOS.ACTUALIZAR_DESTINO) && (
+                        destino.habilitado === false ? (
+                            <Tooltip title="Habilita el registro para poder editarlo">
+                                <span>
+                                    <IconButton size="small" disabled>
+                                        <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                                    </IconButton>
+                                </span>
+                            </Tooltip>
+                        ) : (
+                            <Tooltip title="Editar">
+                                <IconButton size="small"
+                                    onClick={() => { setDestinoEditar(destino); setModalActualizarOpen(true) }}
+                                    sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}>
+                                    <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                                </IconButton>
+                            </Tooltip>
+                        )
+                    )}
+                    {tienePermiso(PERMISOS.INHABILITAR_DESTINO) && (
+                        <ToggleSwitch id={destino.idDestino} checked={destino.habilitado} onChange={() => handleToggleHabilitado(destino.idDestino, destino.habilitado, destino.ciudad)} />
+                    )}
+                </Box>
+            ),
+        },
+    ]
 
     return (
         <Box sx={{ p: 3.5 }}>
@@ -392,43 +350,13 @@ const ListarDestino = () => {
 
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <Box ref={filtroContainerRef} sx={{
-                        position: 'relative',
-                        display: 'inline-flex',
-                        backgroundColor: theme.palette.primary.light,
-                        borderRadius: 4,
-                        p: '4px',
-                        gap: '5px',
-                    }}>
-                        <Box sx={{
-                            position: 'absolute',
-                            top: '4px',
-                            bottom: '4px',
-                            left: `${filtroPillStyle.left}px`,
-                            width: `${filtroPillStyle.width}px`,
-                            borderRadius: 3,
-                            backgroundColor: theme.palette.background.paper,
-                            boxShadow: '0 1px 4px rgba(0,0,0,0.12)',
-                            transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                            pointerEvents: 'none',
-                        }} />
-                        {FILTROS.map((f, i) => (
-                            <Button key={f.value} ref={el => { filtroBtnRefs.current[i] = el }} onClick={() => { setFiltroHabilitado(f.value); setPage(1) }}
-                                size="small" disableElevation disableRipple
-                                sx={{
-                                    position: 'relative', zIndex: 1,
-                                    borderRadius: 3, textTransform: 'none', fontSize: '0.75rem', px: 2, py: 0.5, minWidth: 0,
-                                    fontWeight: filtroHabilitado === f.value ? 600 : 400,
-                                    backgroundColor: 'transparent',
-                                    color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.primary.darker,
-                                    transition: 'color 0.3s ease',
-                                    border: 'none',
-                                    '&:hover': { backgroundColor: 'transparent', color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.primary.dark, border: 'none' },
-                                }}>
-                                {f.label}
-                            </Button>
-                        ))}
-                    </Box>
+                    <FiltroEstadoTabs
+                        value={filtroHabilitado}
+                        onChange={setFiltroHabilitado}
+                        containerRef={filtroContainerRef}
+                        btnRefs={filtroBtnRefs}
+                        pillStyle={filtroPillStyle}
+                    />
                     <FormControl size="small" sx={{ minWidth: 150 }}>
                         <Select
                             displayEmpty
@@ -458,200 +386,32 @@ const ListarDestino = () => {
                     </FormControl>
                 </Box>
 
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-                    <TextField
-                        size="small" placeholder="Buscar destinos..."
-                        sx={{
-                            width: 320,
-                            '& .MuiOutlinedInput-root': {
-                                borderRadius: 4,
-                                '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` },
-                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
-                            },
-                        }}
-                        value={searchTerm} onChange={e => { setSearchTerm(e.target.value); setPage(1) }}
-                        slotProps={{
-                            input: {
-                                startAdornment: <InputAdornment position="start"><SearchIcon sx={{ color: theme.palette.text.secondary, fontSize: 20 }} /></InputAdornment>,
-                                endAdornment: searchTerm && (
-                                    <InputAdornment position="end">
-                                        <IconButton size="small" onClick={() => { setSearchTerm(''); setPage(1) }}><ClearIcon sx={{ fontSize: 16 }} /></IconButton>
-                                    </InputAdornment>
-                                ),
-                            }
-                        }}
-                    />
-                </Box>
+                <BuscadorField value={busqueda} onChange={setBusqueda} placeholder="Buscar destinos..." />
             </Box>
 
-            {/* ── Tabla ── */}
-            <Paper elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 3, overflow: 'hidden' }}>
-                <TableContainer>
-                    <Table>
-                        <TableHead>
-                            <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
-                                <TableCell sx={thStyle}>
-                                    <TableSortLabel
-                                        active={sortBy.field === 'ciudad'}
-                                        direction={sortBy.dir === 'desc' ? 'desc' : 'asc'}
-                                        onClick={() => handleSort('ciudad')}
-                                        IconComponent={sortBy.field === 'ciudad' ? undefined : UnfoldMoreOutlinedIcon}
-                                        sx={{
-                                            color: 'inherit',
-                                            '&:hover': { color: 'inherit' },
-                                            '&.Mui-active': { color: theme.palette.primary.main },
-                                            '&.Mui-active:hover': { color: theme.palette.primary.main },
-                                            '& .MuiTableSortLabel-icon': { opacity: 1, fontSize: 16 },
-                                        }}
-                                    >
-                                        Ciudad
-                                    </TableSortLabel>
-                                </TableCell>
-                                <TableCell sx={thStyle}>Departamento</TableCell>
-                                <TableCell sx={thStyle}>Tarifa Base</TableCell>
-                                <TableCell sx={{ ...thStyle, width: 130 }}>Acciones</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {loading && initialLoad.current ? (
-                                <TableRow>
-                                    <TableCell colSpan={4} align="center" sx={{ py: 7 }}>
-                                        <CircularProgress size={28} sx={{ color: theme.palette.primary.main }} />
-                                        <Typography variant="body2" color={theme.palette.text.secondary} mt={1.5}>
-                                            Cargando destinos...
-                                        </Typography>
-                                    </TableCell>
-                                </TableRow>
-                            ) : error ? (
-                                <TableRow>
-                                    <TableCell colSpan={4} align="center" sx={{ py: 7 }}>
-                                        <Typography variant="body2" color="error">No se pudieron cargar los destinos. Verifica la conexión con el servidor.</Typography>
-                                        {import.meta.env.DEV && (
-                                            <Box component="pre" sx={{ mt: 0.5, fontSize: 11, opacity: 0.7, whiteSpace: 'pre-wrap', m: 0 }}>
-                                                {String(error)}
-                                            </Box>
-                                        )}
-                                    </TableCell>
-                                </TableRow>
-                            ) : !loading && destinos.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={4} align="center" sx={{ py: 7 }}>
-                                        <Typography color={theme.palette.text.secondary} variant="body2">
-                                            {filtroHabilitado !== 'todo'
-                                                ? 'No se encontraron destinos que coincidan con los filtros aplicados.'
-                                                : debouncedSearch.trim()
-                                                    ? 'No se encontraron destinos que coincidan con la búsqueda.'
-                                                    : 'No hay destinos registrados en el sistema.'}
-                                        </Typography>
-                                    </TableCell>
-                                </TableRow>
-                            ) : (
-                                destinos.map(destino => {
-                                    const isHighlighted = highlightId && String(destino.idDestino) === String(highlightId)
-                                    return (
-                                    <TableRow key={destino.idDestino}
-                                        ref={isHighlighted ? highlightRef : null}
-                                        sx={{
-                                            '&:hover': { backgroundColor: theme.palette.background.subtle },
-                                            transition: 'background-color 0.15s',
-                                            opacity: destino.habilitado ? 1 : 0.55,
-                                            ...(isHighlighted && {
-                                                animation: 'highlightPulse 1.1s ease-in-out 4',
-                                                '@keyframes highlightPulse': {
-                                                    '0%, 100%': { backgroundColor: 'transparent' },
-                                                    '50%': { backgroundColor: alpha(theme.palette.primary.main, 0.13) },
-                                                },
-                                            }),
-                                        }}>
-
-                                        {/* Ciudad */}
-                                        <TableCell>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                                                <Box sx={{
-                                                    width: 28, height: 30, flexShrink: 0,
-                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                }}>
-                                                    <NacionSVG color={destino.habilitado ? theme.palette.primary.main : theme.palette.text.disabled} />
-                                                </Box>
-                                                <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary} noWrap>
-                                                    {destino.ciudad}
-                                                </Typography>
-                                            </Box>
-                                        </TableCell>
-
-                                        {/* Departamento */}
-                                        <TableCell sx={{ fontSize: '0.85rem', color: theme.palette.text.primary, py: 1.5 }}>
-                                            {destino.departamento}
-                                        </TableCell>
-
-                                        {/* Tarifa base */}
-                                        <TableCell sx={{ py: 1.5 }}>
-                                            <Chip
-                                                label={destino.tarifaBase !== undefined
-                                                    ? `$${Number(destino.tarifaBase).toLocaleString('es-CO')}`
-                                                    : '—'}
-                                                size="small"
-                                                sx={{
-                                                    fontWeight: 600,
-                                                    backgroundColor: theme.palette.primary.light,
-                                                    color: theme.palette.primary.darker,
-                                                    fontSize: '0.7rem',
-                                                    borderRadius: '2px',
-                                                    height: 26,
-                                                }}
-                                            />
-                                        </TableCell>
-
-                                        {/* Acciones */}
-                                        <TableCell sx={{ py: 1.5 }}>
-                                            <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                                {tienePermiso(PERMISOS.CONSULTAR_DESTINO) && (
-                                                    <Tooltip title="Ver detalle">
-                                                        <IconButton size="small" onClick={() => setDestinoVer(destino)}
-                                                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}>
-                                                            <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
-                                                        </IconButton>
-                                                    </Tooltip>
-                                                )}
-                                                {tienePermiso(PERMISOS.ACTUALIZAR_DESTINO) && (
-                                                    destino.habilitado === false ? (
-                                                        <Tooltip title="Habilita el registro para poder editarlo">
-                                                            <span>
-                                                                <IconButton size="small" disabled>
-                                                                    <EditOutlinedIcon sx={{ fontSize: 18 }} />
-                                                                </IconButton>
-                                                            </span>
-                                                        </Tooltip>
-                                                    ) : (
-                                                        <Tooltip title="Editar">
-                                                            <IconButton size="small"
-                                                                onClick={() => { setDestinoEditar(destino); setModalActualizarOpen(true) }}
-                                                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}>
-                                                                <EditOutlinedIcon sx={{ fontSize: 18 }} />
-                                                            </IconButton>
-                                                        </Tooltip>
-                                                    )
-                                                )}
-                                                {tienePermiso(PERMISOS.INHABILITAR_DESTINO) && (
-                                                    <ToggleSwitch id={destino.idDestino} checked={destino.habilitado} onChange={() => handleToggleHabilitado(destino.idDestino, destino.habilitado, destino.ciudad)} />
-                                                )}
-                                            </Box>
-                                        </TableCell>
-                                    </TableRow>
-                                    )
-                                })
-                            )}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
-            </Paper>
+            <DataTable
+                columns={columns}
+                rows={destinos}
+                rowKey={(destino) => destino.idDestino}
+                loading={loading}
+                initialLoad={initialLoad}
+                error={error}
+                sortBy={sortBy}
+                onSort={handleSort}
+                highlightId={highlightId}
+                highlightRef={highlightRef}
+                rowSx={(destino) => ({ opacity: destino.habilitado ? 1 : 0.55 })}
+                emptyMessage={emptyMessage}
+                loadingMessage="Cargando destinos..."
+                errorMessage="No se pudieron cargar los destinos. Verifica la conexión con el servidor."
+            />
 
             <TablaPaginacionFooter
                 total={total}
                 page={page}
                 rowsPerPage={rowsPerPage}
                 onPageChange={setPage}
-                onRowsPerPageChange={(n) => { setRowsPerPage(n); setPage(1) }}
+                onRowsPerPageChange={setRowsPerPage}
             />
 
             {destinoVer && (
@@ -663,7 +423,7 @@ const ListarDestino = () => {
                 open={modalRegistrarOpen}
                 onClose={() => setModalRegistrarOpen(false)}
                 onSuccess={() => {
-                    fetchDestinosBackend()
+                    refetch()
                     showToast('Destino registrado correctamente', 'success')
                 }}
             />
@@ -673,7 +433,7 @@ const ListarDestino = () => {
                 onClose={() => { setModalActualizarOpen(false); setDestinoEditar(null) }}
                 destino={destinoEditar}
                 onSuccess={() => {
-                    fetchDestinosBackend()
+                    refetch()
                     showToast('Destino actualizado correctamente', 'success')
                 }}
             />
@@ -690,4 +450,3 @@ const ListarDestino = () => {
 }
 
 export default ListarDestino
-
