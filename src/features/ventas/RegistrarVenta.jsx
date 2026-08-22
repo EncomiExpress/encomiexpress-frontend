@@ -16,6 +16,7 @@ import CloseIcon from '@mui/icons-material/Close'
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import RouteOutlinedIcon from '@mui/icons-material/RouteOutlined'
+import RegistrarCliente from '../clientes/RegistrarCliente.jsx'
 import { useVentas } from '../../shared/contexts/VentaContext.jsx'
 import { useClientes } from '../../shared/contexts/ClienteContext.jsx'
 import { useRutaProgramacion } from '../../shared/contexts/RutaProgramacionContext.jsx'
@@ -36,6 +37,10 @@ const MAX_PAQUETES = 10
 const PAQUETE_VACIO = { descripcionContenido: '', peso: '', alto: '', ancho: '', profundidad: '', valorDeclarado: '', idRutaVehiculoConductor: '' }
 const CAMPOS_PAQUETE = ['descripcionContenido', 'peso', 'alto', 'ancho', 'profundidad', 'valorDeclarado']
 const SOLO_LETRAS_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/
+
+// Opción sentinel que se agrega al final de las sugerencias de Cliente — al elegirla
+// se abre RegistrarCliente en un modal encima, en vez de seleccionar un cliente real.
+const OPCION_CLIENTE_NUEVO = { idCliente: '__nuevo__', esNuevo: true }
 
 // Valida un único campo del formulario principal (usado en onBlur y para re-validar
 // en vivo mientras se corrige un campo ya marcado con error). valorServicio/impuestos/
@@ -149,6 +154,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
     const [submitting, setSubmitting] = useState(false)
     const [clienteInput, setClienteInput] = useState('')
     const [rutaInput, setRutaInput] = useState('')
+    const [modalNuevoCliente, setModalNuevoCliente] = useState(false)
 
     useEffect(() => {
         fetchRutasProgramadas({ limit: 1000 }).catch(() => null)
@@ -487,7 +493,9 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                     alto: parseFloat(p.alto),
                     ancho: parseFloat(p.ancho),
                     profundidad: parseFloat(p.profundidad),
-                    valorDeclarado: p.valorDeclarado ? parseFloat(p.valorDeclarado) : 0,
+                    // null y no 0 -- el validador del backend acepta el campo vacío
+                    // (optional nullable), pero 0 sí choca contra isFloat({min:1}).
+                    valorDeclarado: p.valorDeclarado ? parseFloat(p.valorDeclarado) : null,
                     idRutaVehiculoConductor: parseInt(p.idRutaVehiculoConductor),
                 })),
                 fechaEstimadaEntrega: form.fechaEstimadaEntrega || null,
@@ -534,18 +542,21 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                                 popupIcon={<KeyboardArrowDownOutlinedIcon />}
                                 options={clientes.filter(c => c.habilitado)}
                                 getOptionLabel={(option) => {
+                                    if (option.esNuevo) return ''
                                     const nombre = option.apellido ? `${option.nombre} ${option.apellido}` : option.nombre
                                     return `${nombre} — ${option.numeroIdentificacion}`
                                 }}
                                 isOptionEqualToValue={(opt, val) => opt.idCliente === val.idCliente}
                                 filterOptions={(opts, { inputValue }) => {
-                                    if (!inputValue.trim()) return [...opts].sort((a, b) => b.idCliente - a.idCliente).slice(0, 5)
-                                    const q = normalizarTexto(inputValue)
-                                    return opts.filter(c =>
-                                        normalizarTexto(c.nombre || '').includes(q) ||
-                                        normalizarTexto(c.apellido || '').includes(q) ||
-                                        normalizarTexto(c.numeroIdentificacion || '').includes(q)
-                                    )
+                                    const base = !inputValue.trim()
+                                        ? [...opts].sort((a, b) => b.idCliente - a.idCliente).slice(0, 5)
+                                        : opts.filter(c => {
+                                            const q = normalizarTexto(inputValue)
+                                            return normalizarTexto(c.nombre || '').includes(q) ||
+                                                normalizarTexto(c.apellido || '').includes(q) ||
+                                                normalizarTexto(c.numeroIdentificacion || '').includes(q)
+                                        })
+                                    return [...base, OPCION_CLIENTE_NUEVO]
                                 }}
                                 value={clienteSeleccionado || null}
                                 inputValue={clienteInput}
@@ -559,6 +570,10 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                                     }
                                 }}
                                 onChange={(_, newValue) => {
+                                    if (newValue?.esNuevo) {
+                                        setModalNuevoCliente(true)
+                                        return
+                                    }
                                     setForm(prev => ({ ...prev, idCliente: newValue ? newValue.idCliente : '' }))
                                     setErrores(prev => newValue
                                         ? { ...prev, idCliente: '' }
@@ -567,6 +582,22 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                                 onBlur={() => setErrores(prev => ({ ...prev, idCliente: validarCampo('idCliente', form) }))}
                                 renderOption={(props, option) => {
                                     const { key, ...rest } = props
+                                    if (option.esNuevo) {
+                                        return (
+                                            <Box component="li" key={key} {...rest} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, borderTop: `1px solid ${theme.palette.divider}` }}>
+                                                <Box sx={{
+                                                    width: 34, height: 34, flexShrink: 0, borderRadius: '50%',
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                    backgroundColor: theme.palette.primary.activeBg, color: theme.palette.primary.main,
+                                                }}>
+                                                    <AddOutlinedIcon sx={{ fontSize: 20 }} />
+                                                </Box>
+                                                <Typography variant="body2" fontWeight={600} color={theme.palette.primary.main}>
+                                                    Registrar nuevo cliente
+                                                </Typography>
+                                            </Box>
+                                        )
+                                    }
                                     const nombre = option.apellido ? `${option.nombre} ${option.apellido}` : option.nombre
                                     const iniciales = option.iniciales && option.iniciales !== 'U' ? option.iniciales : (option.nombre?.[0] || '') + (option.apellido?.[0] || '') || 'C'
                                     return (
@@ -588,7 +619,6 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                                         </Box>
                                     )
                                 }}
-                                noOptionsText="No se encontraron clientes"
                                 renderInput={(params) => (
                                     <TextField {...params} label="Cliente *"
                                         error={!!errores.idCliente} helperText={errores.idCliente || 'Busca por nombre, apellido o documento'}
@@ -608,7 +638,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                                             {clienteSeleccionado.nombre} {clienteSeleccionado.apellido}
                                         </Typography>
                                         <Typography variant="body2">
-                                            <Box component="span" sx={{ fontWeight: 600, color: theme.palette.text.secondary, mr: 0.5 }}>ID:</Box>
+                                            <Box component="span" sx={{ fontWeight: 600, color: theme.palette.text.secondary, mr: 0.5 }}>{clienteSeleccionado.tipoIdentificacion || 'ID'}:</Box>
                                             {clienteSeleccionado.numeroIdentificacion}
                                         </Typography>
                                         <Typography variant="body2">
@@ -1077,7 +1107,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                                         <ConfirmRow label="Contenido" value={p.descripcionContenido} />
                                         <ConfirmRow label="Peso" value={p.peso ? `${p.peso} kg` : null} />
                                         <ConfirmRow label="Dimensiones" value={p.alto ? `${p.alto}×${p.ancho}×${p.profundidad} cm` : null} />
-                                        <ConfirmRow label="Valor declarado" value={p.valorDeclarado ? `$${parseFloat(p.valorDeclarado).toLocaleString()}` : '$0'} />
+                                        <ConfirmRow label="Valor declarado" value={p.valorDeclarado ? `$${parseFloat(p.valorDeclarado).toLocaleString()}` : null} />
                                         <ConfirmRow label="Vehículo" value={getPlacaPaquete(p)} />
                                         {i < form.paquetes.length - 1 && <Divider sx={{ my: 1 }} />}
                                     </Box>
@@ -1106,6 +1136,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
     }
 
     return (
+        <>
         <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth
             slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}>
             <DialogTitle sx={{ m: 0, p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${theme.palette.divider}` }}>
@@ -1186,6 +1217,20 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                 </Box>
             </Box>
         </Dialog>
+        <RegistrarCliente
+            open={modalNuevoCliente}
+            onClose={() => setModalNuevoCliente(false)}
+            onSuccess={(nuevoCliente) => {
+                setModalNuevoCliente(false)
+                if (nuevoCliente) {
+                    setForm(prev => ({ ...prev, idCliente: nuevoCliente.idCliente }))
+                    setErrores(prev => ({ ...prev, idCliente: '' }))
+                    const nombre = nuevoCliente.apellido ? `${nuevoCliente.nombre} ${nuevoCliente.apellido}` : nuevoCliente.nombre
+                    setClienteInput(`${nombre} — ${nuevoCliente.numeroIdentificacion}`)
+                }
+            }}
+        />
+        </>
     )
 }
 

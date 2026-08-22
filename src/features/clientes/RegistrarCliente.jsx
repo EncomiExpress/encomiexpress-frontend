@@ -267,11 +267,11 @@ const RegistrarCliente = ({ open, onClose, onSuccess }) => {
         setSubmitting(true)
         setApiError(null)
         try {
-            await agregarCliente({ ...form, apellido: form.tipoIdentificacion === 'NIT' ? '' : form.apellido })
+            const creado = await agregarCliente({ ...form, apellido: form.tipoIdentificacion === 'NIT' ? '' : form.apellido })
             showToast('¡Cliente registrado exitosamente!', 'success')
             setTimeout(() => {
                 handleClose()
-                if (onSuccess) onSuccess()
+                if (onSuccess) onSuccess(creado)
             }, 1500)
         } catch (err) {
             setApiError(getErrorMessage(err, 'Error al registrar el cliente'))

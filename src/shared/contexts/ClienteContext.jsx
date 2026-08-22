@@ -47,7 +47,9 @@ export const ClienteProvider = ({ children }) => {
 
   const agregarCliente = useCallback(async (nuevoCliente) => {
     const res = await clienteService.createCliente(nuevoCliente)
-    setClientes(prev => [...prev, normalize(res.data)])
+    const creado = normalize(res.data)
+    setClientes(prev => [...prev, creado])
+    return creado
   }, [])
 
   const actualizarCliente = useCallback(async (clienteActualizado) => {
