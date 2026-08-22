@@ -184,7 +184,9 @@ export default function DataTable({
             ) : !loading && rows.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={colSpan} align="center" sx={{ py: 7 }}>
-                  <Typography color={theme.palette.text.secondary} variant="body2">{emptyMessage}</Typography>
+                  {typeof emptyMessage === 'string' ? (
+                    <Typography color={theme.palette.text.secondary} variant="body2">{emptyMessage}</Typography>
+                  ) : emptyMessage}
                 </TableCell>
               </TableRow>
             ) : (

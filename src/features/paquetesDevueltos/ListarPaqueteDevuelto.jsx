@@ -1,14 +1,10 @@
-import { useTheme } from '@mui/material/styles'
-import { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-    Box, Typography, Paper, Table, TableBody, TableCell,
-    TableContainer, TableHead, TableRow, IconButton,
-    TextField, InputAdornment, Tooltip, CircularProgress, Dialog,
-    Select, MenuItem, FormControl, Button,
+    Box, Typography, IconButton,
+    Tooltip, Dialog,
+    Select, MenuItem, FormControl,
 } from '@mui/material'
-import SearchIcon from '@mui/icons-material/Search'
-import ClearIcon from '@mui/icons-material/Clear'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import OpenInNewOutlinedIcon from '@mui/icons-material/OpenInNewOutlined'
@@ -16,19 +12,11 @@ import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined'
 import PhotoCameraOutlinedIcon from '@mui/icons-material/PhotoCameraOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import TablaPaginacionFooter from '../../shared/components/TablaPaginacionFooter.jsx'
+import DataTable, { FiltroEstadoTabs, BuscadorField } from '../../shared/components/DataTable.jsx'
+import useEntityCrud from '../../shared/hooks/useEntityCrud.js'
 import { getPaquetesDevueltos, getAniosDisponiblesPaquetesDevueltos } from './services/paqueteService.js'
 import { formatFechaHora } from '../../shared/utils/formatters.js'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
-
-const getThStyle = (theme) => ({
-    fontWeight: 700,
-    fontSize: '0.80rem',
-    color: theme.palette.text.primary,
-    letterSpacing: 0.5,
-    py: 1.5,
-    borderBottom: `1px solid ${theme.palette.divider}`,
-    whiteSpace: 'nowrap',
-})
 
 const getFilterMenuProps = (theme) => ({
     slotProps: {
@@ -50,12 +38,6 @@ const getFilterMenuProps = (theme) => ({
     },
 })
 
-const FILTROS_HABILITADO = [
-    { value: 'todo', label: 'Todo' },
-    { value: 'habilitado', label: 'Habilitado' },
-    { value: 'inhabilitado', label: 'Inhabilitado' },
-]
-
 const MESES = [
     { value: '1', label: 'Enero' }, { value: '2', label: 'Febrero' },
     { value: '3', label: 'Marzo' }, { value: '4', label: 'Abril' },
@@ -66,56 +48,37 @@ const MESES = [
 ]
 
 const ListarPaqueteDevuelto = () => {
-    const theme = useTheme()
-    const thStyle = getThStyle(theme)
-    const filterMenuProps = getFilterMenuProps(theme)
     const navigate = useNavigate()
     const { usuario } = useAuth()
-
-    const [searchTerm, setSearchTerm] = useState('')
-    const [debouncedSearch, setDebouncedSearch] = useState('')
-    const [filtroHabilitado, setFiltroHabilitado] = useState('todo')
-    const filtroContainerRef = useRef(null)
-    const filtroBtnRefs = useRef([])
-    const [filtroPillStyle, setFiltroPillStyle] = useState({ left: 0, width: 0 })
-
-    useLayoutEffect(() => {
-        const activeIndex = FILTROS_HABILITADO.findIndex(f => f.value === filtroHabilitado)
-        const btn = filtroBtnRefs.current[activeIndex]
-        const container = filtroContainerRef.current
-        if (btn && container) {
-            setFiltroPillStyle({ left: btn.offsetLeft, width: btn.offsetWidth })
-        }
-    }, [filtroHabilitado])
 
     const [filtroAnio, setFiltroAnio] = useState('')
     const [filtroMes, setFiltroMes] = useState('')
     const [aniosDisponibles, setAniosDisponibles] = useState([])
-    const [page, setPage] = useState(1)
-    const [rowsPerPage, setRowsPerPage] = useState(5)
     const [paquetes, setPaquetes] = useState([])
     const [total, setTotal] = useState(0)
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState(null)
     const [imagenAmpliada, setImagenAmpliada] = useState(null)
-    const initialLoad = useRef(true)
+
+    const {
+        theme,
+        loading, error, initialLoad,
+        busqueda, setBusqueda, debouncedBusqueda,
+        filtroEstado: filtroHabilitado, setFiltroEstado: setFiltroHabilitado,
+        page, setPage, rowsPerPage, setRowsPerPage,
+        filtroContainerRef, filtroBtnRefs, filtroPillStyle,
+    } = useEntityCrud({
+        fetchPage: async (signal, params) => {
+            const res = await getPaquetesDevueltos({ ...params, anio: filtroAnio || undefined, mes: filtroMes || undefined }, signal)
+            setPaquetes(res?.data || [])
+            setTotal(res?.total || 0)
+        },
+        extraDeps: [filtroAnio, filtroMes],
+    })
+
+    const filterMenuProps = getFilterMenuProps(theme)
 
     useEffect(() => {
         if (!usuario) navigate('/login')
     }, [usuario, navigate])
-
-    useEffect(() => {
-        const t = setTimeout(() => setDebouncedSearch(searchTerm), 300)
-        return () => clearTimeout(t)
-    }, [searchTerm])
-
-    const fetchPaquetes = useCallback((signal) => {
-        return getPaquetesDevueltos({
-            page, limit: rowsPerPage, q: debouncedSearch.trim() || undefined,
-            anio: filtroAnio || undefined, mes: filtroMes || undefined,
-            habilitado: filtroHabilitado === 'todo' ? undefined : filtroHabilitado === 'habilitado' ? 'true' : 'false',
-        }, signal)
-    }, [page, rowsPerPage, debouncedSearch, filtroAnio, filtroMes, filtroHabilitado])
 
     useEffect(() => {
         getAniosDisponiblesPaquetesDevueltos()
@@ -123,33 +86,98 @@ const ListarPaqueteDevuelto = () => {
             .catch(() => setAniosDisponibles([]))
     }, [])
 
-    useEffect(() => {
-        const controller = new AbortController()
-        let cancelled = false
+    const emptyMessage = debouncedBusqueda.trim()
+        ? 'No se encontraron paquetes devueltos que coincidan con la búsqueda.'
+        : 'No hay paquetes devueltos en este momento.'
 
-        const cargar = async () => {
-            setLoading(true)
-            setError(null)
-            try {
-                const res = await fetchPaquetes(controller.signal)
-                if (!cancelled) {
-                    setPaquetes(res?.data || [])
-                    setTotal(res?.total || 0)
-                }
-            } catch (err) {
-                if (!cancelled) setError(err.message)
-            } finally {
-                if (!cancelled) setLoading(false)
-            }
-        }
-
-        cargar()
-        return () => { cancelled = true; controller.abort() }
-    }, [fetchPaquetes])
-
-    useEffect(() => {
-        if (!loading) { initialLoad.current = false }
-    }, [loading])
+    const columns = [
+        {
+            key: 'guia', label: 'Guía', cellSx: { py: 1.5 },
+            render: (paquete) => (
+                <Typography variant="body2" fontWeight={600} color={theme.palette.primary.main}>
+                    {paquete.numeroGuia}
+                </Typography>
+            ),
+        },
+        {
+            key: 'cliente', label: 'Cliente', cellSx: { py: 1.5 },
+            render: (paquete) => {
+                const cliente = paquete.encomienda?.cliente
+                return (
+                    <>
+                        <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary} noWrap>
+                            {cliente ? `${cliente.nombre} ${cliente.apellido}` : '—'}
+                        </Typography>
+                        <Typography variant="caption" color={theme.palette.text.secondary} noWrap>
+                            {cliente?.email || 'Sin correo registrado'}
+                        </Typography>
+                    </>
+                )
+            },
+        },
+        {
+            key: 'ruta', label: 'Ruta', cellSx: { py: 1.5 },
+            render: (paquete) => {
+                const ruta = paquete.asignacion?.ruta
+                return (
+                    <Typography variant="body2" color={theme.palette.text.primary}>
+                        {ruta ? `${ruta.origen || '—'} → ${ruta.destino?.ciudad || '—'}` : '—'}
+                    </Typography>
+                )
+            },
+        },
+        {
+            key: 'fecha', label: 'Fecha último estado', cellSx: { py: 1.5 },
+            render: (paquete) => (
+                <Typography variant="body2" color={theme.palette.text.primary}>
+                    {paquete.fechaUltimoEstado ? formatFechaHora(paquete.fechaUltimoEstado) : '—'}
+                </Typography>
+            ),
+        },
+        {
+            key: 'observacion', label: 'Observación', cellSx: { py: 1.5, maxWidth: 260 },
+            render: (paquete) => (
+                <Typography variant="body2" color={theme.palette.text.secondary} noWrap>
+                    {paquete.observacionEstado || '—'}
+                </Typography>
+            ),
+        },
+        {
+            key: 'acciones', label: 'Acciones', width: 130, cellSx: { py: 1.5 },
+            render: (paquete) => (
+                <Box sx={{ display: 'flex', gap: 0.5 }}>
+                    <Tooltip title="Ver venta">
+                        <IconButton
+                            size="small"
+                            onClick={() => navigate(`/ventas/listar?highlight=${paquete.idEncomiendaVenta}`)}
+                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}
+                        >
+                            <OpenInNewOutlinedIcon sx={{ fontSize: 18 }} />
+                        </IconButton>
+                    </Tooltip>
+                    {paquete.fotoEntrega ? (
+                        <Tooltip title="Ver evidencia">
+                            <IconButton
+                                size="small"
+                                onClick={() => setImagenAmpliada(paquete.fotoEntrega)}
+                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}
+                            >
+                                <PhotoCameraOutlinedIcon sx={{ fontSize: 18 }} />
+                            </IconButton>
+                        </Tooltip>
+                    ) : (
+                        <Tooltip title="Sin evidencia adjunta">
+                            <span>
+                                <IconButton size="small" disabled>
+                                    <PhotoCameraOutlinedIcon sx={{ fontSize: 18 }} />
+                                </IconButton>
+                            </span>
+                        </Tooltip>
+                    )}
+                </Box>
+            ),
+        },
+    ]
 
     return (
         <Box sx={{ p: 3.5 }}>
@@ -166,59 +194,13 @@ const ListarPaqueteDevuelto = () => {
 
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-                    <Box ref={filtroContainerRef} sx={{
-                        position: 'relative',
-                        display: 'inline-flex',
-                        backgroundColor: theme.palette.primary.light,
-                        borderRadius: 4,
-                        p: '4px',
-                        gap: '5px',
-                    }}>
-                        <Box sx={{
-                            position: 'absolute',
-                            top: '4px',
-                            bottom: '4px',
-                            left: `${filtroPillStyle.left}px`,
-                            width: `${filtroPillStyle.width}px`,
-                            borderRadius: 3,
-                            backgroundColor: theme.palette.background.paper,
-                            boxShadow: '0 1px 4px rgba(0,0,0,0.12)',
-                            transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                            pointerEvents: 'none',
-                        }} />
-                        {FILTROS_HABILITADO.map((f, i) => (
-                            <Button
-                                key={f.value}
-                                ref={el => { filtroBtnRefs.current[i] = el }}
-                                onClick={() => { setFiltroHabilitado(f.value); setPage(1) }}
-                                size="small"
-                                disableElevation
-                                disableRipple
-                                sx={{
-                                    position: 'relative',
-                                    zIndex: 1,
-                                    borderRadius: 3,
-                                    textTransform: 'none',
-                                    fontSize: '0.75rem',
-                                    px: 2,
-                                    py: 0.5,
-                                    minWidth: 0,
-                                    fontWeight: filtroHabilitado === f.value ? 600 : 400,
-                                    backgroundColor: 'transparent',
-                                    color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.primary.darker,
-                                    transition: 'color 0.3s ease',
-                                    border: 'none',
-                                    '&:hover': {
-                                        backgroundColor: 'transparent',
-                                        color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.primary.dark,
-                                        border: 'none',
-                                    },
-                                }}
-                            >
-                                {f.label}
-                            </Button>
-                        ))}
-                    </Box>
+                    <FiltroEstadoTabs
+                        value={filtroHabilitado}
+                        onChange={setFiltroHabilitado}
+                        containerRef={filtroContainerRef}
+                        btnRefs={filtroBtnRefs}
+                        pillStyle={filtroPillStyle}
+                    />
 
                     <FormControl size="small" sx={{ minWidth: 120 }}>
                         <Select
@@ -282,173 +264,35 @@ const ListarPaqueteDevuelto = () => {
                     </Tooltip>
                 </Box>
 
-                <TextField
-                    size="small" placeholder="Buscar paquetes..."
-                    sx={{
-                        width: 320,
-                        '& .MuiOutlinedInput-root': {
-                            borderRadius: 4,
-                            '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` },
-                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
-                        },
-                    }}
-                    value={searchTerm} onChange={e => { setSearchTerm(e.target.value); setPage(1) }}
-                    slotProps={{
-                        input: {
-                            startAdornment: <InputAdornment position="start"><SearchIcon sx={{ color: theme.palette.text.secondary, fontSize: 20 }} /></InputAdornment>,
-                            endAdornment: searchTerm && (
-                                <InputAdornment position="end">
-                                    <IconButton size="small" onClick={() => { setSearchTerm(''); setPage(1) }}><ClearIcon sx={{ fontSize: 16 }} /></IconButton>
-                                </InputAdornment>
-                            ),
-                        }
-                    }}
-                />
+                <BuscadorField value={busqueda} onChange={setBusqueda} placeholder="Buscar paquetes..." />
             </Box>
 
-            <Paper elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 3, overflow: 'hidden' }}>
-                <TableContainer>
-                    <Table>
-                        <TableHead>
-                            <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
-                                <TableCell sx={thStyle}>Guía</TableCell>
-                                <TableCell sx={thStyle}>Cliente</TableCell>
-                                <TableCell sx={thStyle}>Ruta</TableCell>
-                                <TableCell sx={thStyle}>Fecha último estado</TableCell>
-                                <TableCell sx={thStyle}>Observación</TableCell>
-                                <TableCell sx={{ ...thStyle, width: 130 }}>Acciones</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {loading && initialLoad.current ? (
-                                <TableRow>
-                                    <TableCell colSpan={6} align="center" sx={{ py: 7 }}>
-                                        <CircularProgress size={28} sx={{ color: theme.palette.primary.main }} />
-                                        <Typography variant="body2" color={theme.palette.text.secondary} mt={1.5}>
-                                            Cargando paquetes devueltos...
-                                        </Typography>
-                                    </TableCell>
-                                </TableRow>
-                            ) : error ? (
-                                <TableRow>
-                                    <TableCell colSpan={6} align="center" sx={{ py: 5 }}>
-                                        <Typography color="error" variant="body2">
-                                            No se pudieron cargar los paquetes devueltos. Verifica la conexión con el servidor.
-                                        </Typography>
-                                        {import.meta.env.DEV && (
-                                            <Box component="pre" sx={{ mt: 0.5, fontSize: 11, opacity: 0.7, whiteSpace: 'pre-wrap', m: 0 }}>
-                                                {String(error)}
-                                            </Box>
-                                        )}
-                                    </TableCell>
-                                </TableRow>
-                            ) : !loading && paquetes.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={6} align="center" sx={{ py: 7 }}>
-                                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-                                            <Inventory2OutlinedIcon sx={{ fontSize: 32, color: theme.palette.text.disabled }} />
-                                            <Typography color={theme.palette.text.secondary} variant="body2">
-                                                {debouncedSearch.trim()
-                                                    ? 'No se encontraron paquetes devueltos que coincidan con la búsqueda.'
-                                                    : 'No hay paquetes devueltos en este momento.'}
-                                            </Typography>
-                                        </Box>
-                                    </TableCell>
-                                </TableRow>
-                            ) : (
-                                paquetes.map(paquete => {
-                                    const cliente = paquete.encomienda?.cliente
-                                    const ruta = paquete.asignacion?.ruta
-                                    const inhabilitado = paquete.encomienda?.habilitado === false
-                                    return (
-                                        <TableRow
-                                            key={paquete.idPaquete}
-                                            sx={{
-                                                opacity: inhabilitado ? 0.55 : 1,
-                                                '&:hover': { backgroundColor: theme.palette.background.subtle },
-                                                transition: 'background-color 0.15s',
-                                            }}
-                                        >
-                                            <TableCell sx={{ py: 1.5 }}>
-                                                <Typography variant="body2" fontWeight={600} color={theme.palette.primary.main}>
-                                                    {paquete.numeroGuia}
-                                                </Typography>
-                                            </TableCell>
-
-                                            <TableCell sx={{ py: 1.5 }}>
-                                                <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary} noWrap>
-                                                    {cliente ? `${cliente.nombre} ${cliente.apellido}` : '—'}
-                                                </Typography>
-                                                <Typography variant="caption" color={theme.palette.text.secondary} noWrap>
-                                                    {cliente?.email || 'Sin correo registrado'}
-                                                </Typography>
-                                            </TableCell>
-
-                                            <TableCell sx={{ py: 1.5 }}>
-                                                <Typography variant="body2" color={theme.palette.text.primary}>
-                                                    {ruta ? `${ruta.origen || '—'} → ${ruta.destino?.ciudad || '—'}` : '—'}
-                                                </Typography>
-                                            </TableCell>
-
-                                            <TableCell sx={{ py: 1.5 }}>
-                                                <Typography variant="body2" color={theme.palette.text.primary}>
-                                                    {paquete.fechaUltimoEstado ? formatFechaHora(paquete.fechaUltimoEstado) : '—'}
-                                                </Typography>
-                                            </TableCell>
-
-                                            <TableCell sx={{ py: 1.5, maxWidth: 260 }}>
-                                                <Typography variant="body2" color={theme.palette.text.secondary} noWrap>
-                                                    {paquete.observacionEstado || '—'}
-                                                </Typography>
-                                            </TableCell>
-
-                                            <TableCell sx={{ py: 1.5 }}>
-                                                <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                                    <Tooltip title="Ver venta">
-                                                        <IconButton
-                                                            size="small"
-                                                            onClick={() => navigate(`/ventas/listar?highlight=${paquete.idEncomiendaVenta}`)}
-                                                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}
-                                                        >
-                                                            <OpenInNewOutlinedIcon sx={{ fontSize: 18 }} />
-                                                        </IconButton>
-                                                    </Tooltip>
-                                                    {paquete.fotoEntrega ? (
-                                                        <Tooltip title="Ver evidencia">
-                                                            <IconButton
-                                                                size="small"
-                                                                onClick={() => setImagenAmpliada(paquete.fotoEntrega)}
-                                                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}
-                                                            >
-                                                                <PhotoCameraOutlinedIcon sx={{ fontSize: 18 }} />
-                                                            </IconButton>
-                                                        </Tooltip>
-                                                    ) : (
-                                                        <Tooltip title="Sin evidencia adjunta">
-                                                            <span>
-                                                                <IconButton size="small" disabled>
-                                                                    <PhotoCameraOutlinedIcon sx={{ fontSize: 18 }} />
-                                                                </IconButton>
-                                                            </span>
-                                                        </Tooltip>
-                                                    )}
-                                                </Box>
-                                            </TableCell>
-                                        </TableRow>
-                                    )
-                                })
-                            )}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
-            </Paper>
+            <DataTable
+                columns={columns}
+                rows={paquetes}
+                rowKey={(paquete) => paquete.idPaquete}
+                loading={loading}
+                initialLoad={initialLoad}
+                error={error}
+                sortBy={{ field: '', dir: '' }}
+                onSort={() => {}}
+                rowSx={(paquete) => ({ opacity: paquete.encomienda?.habilitado === false ? 0.55 : 1 })}
+                emptyMessage={
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                        <Inventory2OutlinedIcon sx={{ fontSize: 32, color: theme.palette.text.disabled }} />
+                        <Typography color={theme.palette.text.secondary} variant="body2">{emptyMessage}</Typography>
+                    </Box>
+                }
+                loadingMessage="Cargando paquetes devueltos..."
+                errorMessage="No se pudieron cargar los paquetes devueltos. Verifica la conexión con el servidor."
+            />
 
             <TablaPaginacionFooter
                 total={total}
                 page={page}
                 rowsPerPage={rowsPerPage}
                 onPageChange={setPage}
-                onRowsPerPageChange={(n) => { setRowsPerPage(n); setPage(1) }}
+                onRowsPerPageChange={setRowsPerPage}
             />
 
             {imagenAmpliada && (

@@ -32,7 +32,6 @@ import { getPageOfVehiculo, getVehiculos as getVehiculosApi } from './services/v
 import { getRutas } from '../rutas/services/rutaService.js'
 import { getEstadoColorRuta } from '../../shared/utils/estadoColors.js'
 import { isVencido, formatFecha, capitalizarPrimeraLetra } from '../../shared/utils/formatters.js'
-import { exportToExcel } from '../../shared/utils/exportExcel.js'
 
 const getFilterMenuProps = (theme) => ({
     slotProps: {

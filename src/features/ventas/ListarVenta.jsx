@@ -1,16 +1,13 @@
 import { useTheme, alpha } from '@mui/material/styles'
-import { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useVentas, ESTADOS_ENCOMIENDA, METODOS_PAGO, ESTADOS_PAGO } from './context/VentaContext.jsx'
 import {
-    Box, Typography, Paper, Table, TableBody, TableCell,
-    TableContainer, TableHead, TableRow, TextField,
-    IconButton, Chip, Tooltip, InputAdornment,
+    Box, Typography, IconButton, Chip, Tooltip,
     Button, Select, MenuItem,
-    CircularProgress, FormControl, TableSortLabel,
+    CircularProgress, FormControl,
     Menu, Dialog, DialogContent
 } from '@mui/material'
-import SearchIcon from '@mui/icons-material/Search'
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
@@ -18,13 +15,12 @@ import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
-import ClearIcon from '@mui/icons-material/Clear'
 import ToggleSwitch from '../../shared/components/ToggleSwitch.jsx'
 import TablaPaginacionFooter from '../../shared/components/TablaPaginacionFooter.jsx'
 import CloseIcon from '@mui/icons-material/Close'
 import PaidOutlinedIcon from '@mui/icons-material/PaidOutlined'
 import SwapHorizOutlinedIcon from '@mui/icons-material/SwapHorizOutlined'
-import UnfoldMoreOutlinedIcon from '@mui/icons-material/UnfoldMoreOutlined'
+import DataTable, { FiltroEstadoTabs, BuscadorField } from '../../shared/components/DataTable.jsx'
 import { useAuth, PERMISOS } from '../../shared/contexts/AuthContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { getPageOfEncomienda, getEncomiendas } from './services/ventaService.js'
@@ -64,17 +60,6 @@ const VentaEstadoDot = ({ estado }) => {
     )
 }
 
-const getThStyle = (theme) => ({
-    fontWeight: 700,
-    fontSize: '0.80rem',
-    color: theme.palette.text.primary,
-    letterSpacing: 0.5,
-    py: 1.5,
-    borderBottom: `1px solid ${theme.palette.divider}`,
-    whiteSpace: 'nowrap',
-})
-
-
 const getFilterMenuProps = (theme) => ({
     slotProps: {
         paper: {
@@ -94,15 +79,8 @@ const getFilterMenuProps = (theme) => ({
     },
 })
 
-const FILTROS_HABILITADO = [
-    { value: 'todo', label: 'Todo' },
-    { value: 'habilitado', label: 'Habilitado' },
-    { value: 'inhabilitado', label: 'Inhabilitado' },
-]
-
 const ListarVenta = () => {
     const theme = useTheme()
-    const thStyle = getThStyle(theme)
     const filterMenuProps = getFilterMenuProps(theme)
     const [searchParams] = useSearchParams()
     const highlightId = searchParams.get('highlight')
@@ -138,14 +116,6 @@ const ListarVenta = () => {
     const filtroBtnRefs = useRef([])
     const [filtroPillStyle, setFiltroPillStyle] = useState({ left: 0, width: 0 })
 
-    useLayoutEffect(() => {
-        const activeIndex = FILTROS_HABILITADO.findIndex(f => f.value === filtroHabilitado)
-        const btn = filtroBtnRefs.current[activeIndex]
-        const container = filtroContainerRef.current
-        if (btn && container) {
-            setFiltroPillStyle({ left: btn.offsetLeft, width: btn.offsetWidth })
-        }
-    }, [filtroHabilitado])
     const [filtroEstadoEncomienda, setFiltroEstadoEncomienda] = useState('')
     const [filtroPago, setFiltroPago] = useState('')
     const [filtroMetodoPago, setFiltroMetodoPago] = useState('')
@@ -309,6 +279,224 @@ const ListarVenta = () => {
         pendingConfirm.current = true
     }
 
+    const emptyMessage = filtroHabilitado !== 'todo' || filtroEstadoEncomienda !== '' || filtroPago !== '' || filtroMetodoPago !== ''
+        ? 'No se encontraron ventas que coincidan con los filtros aplicados.'
+        : debouncedBusqueda.trim()
+            ? 'No se encontraron ventas que coincidan con la búsqueda.'
+            : 'No hay ventas registradas en el sistema.'
+
+    const columns = [
+        {
+            key: 'guia', label: 'Guía', sortField: 'numeroGuia', cellSx: { py: 1.5 },
+            render: (venta) => {
+                const q = debouncedBusqueda.trim().toLowerCase()
+                const paquetes = venta.paquetes || []
+                // Si la búsqueda coincide con la guía de un paquete que NO es el primero,
+                // se muestra esa — para no contradecir lo que la usuaria buscó.
+                const guiaVisible = (q && paquetes.find(p => p.numeroGuia?.toLowerCase().includes(q))?.numeroGuia)
+                    || paquetes[0]?.numeroGuia
+                    || '—'
+                const adicionales = Math.max(0, paquetes.length - 1)
+                return (
+                    <>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                            <Typography variant="body2" fontWeight={600} color={theme.palette.primary.main}>
+                                {guiaVisible}
+                            </Typography>
+                            {adicionales > 0 && (
+                                <Chip
+                                    label={`+${adicionales} ${adicionales === 1 ? 'paquete' : 'paquetes'}`}
+                                    size="small"
+                                    sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.65rem', borderRadius: '2px', height: 18 }}
+                                />
+                            )}
+                        </Box>
+                        <Typography variant="caption" color={theme.palette.text.secondary}>
+                            {formatFecha(venta.fechaRegistro)}
+                        </Typography>
+                    </>
+                )
+            },
+        },
+        {
+            key: 'remitenteDestinatario', label: 'Remitente / Destinatario', cellSx: { py: 1.5 },
+            render: (venta) => (
+                <>
+                    <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary} noWrap>
+                        {venta.cliente?.nombre} {venta.cliente?.apellido}
+                    </Typography>
+                    <Typography variant="caption" color={theme.palette.text.secondary} noWrap>
+                        → {venta.destinatario?.nombreDestinatario || '—'}
+                    </Typography>
+                </>
+            ),
+        },
+        {
+            key: 'destino', label: 'Destino', cellSx: { py: 1.5 },
+            render: (venta) => (
+                <>
+                    <Typography variant="body2" color={theme.palette.text.primary}>
+                        {venta.ruta?.destino?.ciudad || '—'}
+                    </Typography>
+                    {venta.estado === 'Programada' && venta.ruta?.estado === 'Cancelada' && (
+                        <Chip
+                            label="Ruta cancelada · Reasignar"
+                            size="small"
+                            sx={{ height: 18, fontSize: '0.65rem', fontWeight: 600, backgroundColor: alpha(theme.palette.warning.main, 0.12), color: theme.palette.warning.dark, border: `1px solid ${alpha(theme.palette.warning.main, 0.35)}`, mt: 0.5 }}
+                        />
+                    )}
+                    {venta.estado === 'Programada' && !venta.fechaEstimadaEntrega && (
+                        // Queda así cuando alguien mueve la fecha de la ruta y esta venta
+                        // deja de caber en el rango nuevo — ver rutaService.update() en el
+                        // backend, que vacía el campo en vez de bloquear el cambio de ruta.
+                        <Chip
+                            label="Falta fecha de entrega"
+                            size="small"
+                            sx={{ height: 18, fontSize: '0.65rem', fontWeight: 600, backgroundColor: alpha(theme.palette.warning.main, 0.12), color: theme.palette.warning.dark, border: `1px solid ${alpha(theme.palette.warning.main, 0.35)}`, mt: 0.5 }}
+                        />
+                    )}
+                </>
+            ),
+        },
+        {
+            key: 'total', label: 'Total', cellSx: { py: 1.5 },
+            render: (venta) => (
+                <>
+                    <Chip
+                        label={venta.total !== undefined ? `$${Number(venta.total).toLocaleString('es-CO')}` : '—'}
+                        size="small"
+                        sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem', borderRadius: '2px', height: 24 }}
+                    />
+                    <Typography variant="caption" color={theme.palette.text.secondary} sx={{ display: 'block', mt: 0.5 }}>
+                        {venta.metodoPago || '—'}
+                    </Typography>
+                </>
+            ),
+        },
+        {
+            key: 'estadoPago', label: 'Estado pago', width: 130, cellSx: { py: 1.5, minWidth: 130 },
+            render: (venta) => (
+                (venta.estadoPago === 'Pagado' || venta.estado === 'Cancelada') ? (
+                    venta.estadoPago === 'Pagado' ? (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, pl: 1 }}>
+                            <Box sx={{ width: 9, height: 9, borderRadius: '50%', backgroundColor: '#059669', flexShrink: 0 }} />
+                            <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: '#059669' }}>Pagado</Typography>
+                        </Box>
+                    ) : (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, pl: 1 }}>
+                            <Box sx={{ width: 9, height: 9, borderRadius: '50%', border: '2px solid #D97706', backgroundColor: 'transparent', flexShrink: 0 }} />
+                            <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: '#D97706' }}>Pendiente</Typography>
+                        </Box>
+                    )
+                ) : (venta.metodoPago === 'Contraentrega' && venta.estado !== 'Entregada' && venta.estado !== 'Completada con novedades') ? (
+                    <Tooltip title="Es Contraentrega: el pago solo se puede confirmar cuando la venta sea entregada">
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, pl: 1, opacity: 0.55 }}>
+                            <Box sx={{ width: 9, height: 9, borderRadius: '50%', border: '2px solid #D97706', backgroundColor: 'transparent', flexShrink: 0 }} />
+                            <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: '#D97706' }}>Pendiente</Typography>
+                        </Box>
+                    </Tooltip>
+                ) : (
+                    <Box
+                        onClick={(e) => { e.stopPropagation(); setPagoMenuAnchor(e.currentTarget); setPagoMenuId(venta.idEncomiendaVenta) }}
+                        sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75, border: `1px solid ${theme.palette.divider}`, borderRadius: 1.5, px: 1, py: 0.3, cursor: 'pointer', '&:hover': { backgroundColor: theme.palette.action.hover } }}
+                    >
+                        <Box sx={{ width: 9, height: 9, borderRadius: '50%', border: '2px solid #D97706', backgroundColor: 'transparent', flexShrink: 0 }} />
+                        <Typography variant="body2" sx={{ fontSize: '0.8rem', fontWeight: 500, color: '#D97706' }}>Pendiente</Typography>
+                        <KeyboardArrowDownOutlinedIcon sx={{ fontSize: 13, color: theme.palette.text.secondary, ml: 0.25 }} />
+                    </Box>
+                )
+            ),
+        },
+        {
+            key: 'estado', label: 'Estado', width: 155, cellSx: { py: 1.5, minWidth: 155 },
+            render: (venta) => (
+                venta.estado === 'Programada' ? (
+                    <Box
+                        onClick={(e) => { e.stopPropagation(); setEstadoMenuAnchor(e.currentTarget); setEstadoMenuId(venta.idEncomiendaVenta) }}
+                        sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, border: `1px solid ${theme.palette.divider}`, borderRadius: 1.5, px: 1, py: 0.3, cursor: 'pointer', '&:hover': { backgroundColor: theme.palette.action.hover } }}
+                    >
+                        <VentaEstadoDot estado="Programada" />
+                        <KeyboardArrowDownOutlinedIcon sx={{ fontSize: 13, color: theme.palette.text.secondary }} />
+                    </Box>
+                ) : venta.estado === 'En Ruta' ? (
+                    <Box sx={{ pl: 1 }}>
+                        {(() => {
+                            const paquetes = venta.paquetes || []
+                            const entregados = paquetes.filter(p => p.estado === 'Entregado').length
+                            const devueltos = paquetes.filter(p => p.estado === 'Devuelto').length
+                            const pendientes = paquetes.length - entregados - devueltos
+                            const info = getVentaEstadoDot('En Ruta')
+                            return (
+                                <Tooltip title={`${entregados} entregados · ${devueltos} devueltos · ${pendientes} pendientes`}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                                        <Box sx={{ width: 9, height: 9, borderRadius: '50%', flexShrink: 0, backgroundColor: info.color }} />
+                                        <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: info.color }}>
+                                            {`${entregados} de ${paquetes.length} entregados`}
+                                        </Typography>
+                                    </Box>
+                                </Tooltip>
+                            )
+                        })()}
+                    </Box>
+                ) : (
+                    <Box sx={{ pl: 1 }}><VentaEstadoDot estado={venta.estado} /></Box>
+                )
+            ),
+        },
+        {
+            key: 'acciones', label: 'Acciones', width: 130, cellSx: { py: 1.5 },
+            render: (venta) => (
+                <Box sx={{ display: 'flex', gap: 0.5 }}>
+                    <Tooltip title="Ver detalle">
+                        <IconButton size="small" onClick={() => setVentaConsulta(venta)}
+                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.action.hover } }}>
+                            <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
+                        </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Descargar guía">
+                        <IconButton size="small" onClick={() => handleDescargarGuia(venta)}
+                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.action.hover } }}>
+                            <ReceiptLongOutlinedIcon sx={{ fontSize: 18 }} />
+                        </IconButton>
+                    </Tooltip>
+                    {venta.habilitado === false ? (
+                        <Tooltip title="Habilita el registro para poder editarlo">
+                            <span>
+                                <IconButton size="small" disabled>
+                                    <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                                </IconButton>
+                            </span>
+                        </Tooltip>
+                    ) : venta.estado !== 'Programada' ? (
+                        <Tooltip title={
+                            venta.estado === 'En Ruta' ? 'Esta venta ya está en tránsito: no se puede editar'
+                                : venta.estado === 'Entregada' ? 'Esta venta ya fue entregada: no se puede editar'
+                                    : venta.estado === 'Completada con novedades' ? 'Esta venta ya se cerró con novedades: no se puede editar'
+                                        : 'Esta venta fue cancelada: no se puede editar'
+                        }>
+                            <span>
+                                <IconButton size="small" disabled>
+                                    <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                                </IconButton>
+                            </span>
+                        </Tooltip>
+                    ) : (
+                        <Tooltip title="Editar">
+                            <IconButton size="small"
+                                onClick={() => { setVentaEditar(venta); setModalActualizarOpen(true) }}
+                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.action.hover } }}>
+                                <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                            </IconButton>
+                        </Tooltip>
+                    )}
+                    {tienePermiso(PERMISOS.INHABILITAR_VENTA) && (
+                        <ToggleSwitch id={venta.idEncomiendaVenta} checked={venta.habilitado} onChange={() => handleToggleHabilitado(venta)} />
+                    )}
+                </Box>
+            ),
+        },
+    ]
+
     return (
         <Box sx={{ p: 3.5 }}>
             <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
@@ -368,63 +556,15 @@ const ListarVenta = () => {
                 </Box>
             </Box>
 
-
-
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-                    <Box ref={filtroContainerRef} sx={{
-                        position: 'relative',
-                        display: 'inline-flex',
-                        backgroundColor: theme.palette.primary.light,
-                        borderRadius: 4,
-                        p: '4px',
-                        gap: '5px',
-                    }}>
-                        <Box sx={{
-                            position: 'absolute',
-                            top: '4px',
-                            bottom: '4px',
-                            left: `${filtroPillStyle.left}px`,
-                            width: `${filtroPillStyle.width}px`,
-                            borderRadius: 3,
-                            backgroundColor: theme.palette.background.paper,
-                            boxShadow: '0 1px 4px rgba(0,0,0,0.12)',
-                            transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                            pointerEvents: 'none',
-                        }} />
-                        {FILTROS_HABILITADO.map((f, i) => (
-                            <Button
-                                key={f.value}
-                                ref={el => { filtroBtnRefs.current[i] = el }}
-                                onClick={() => { setFiltroHabilitado(f.value); setPage(1) }}
-                                size="small"
-                                disableElevation
-                                disableRipple
-                                sx={{
-                                    position: 'relative',
-                                    zIndex: 1,
-                                    borderRadius: 3,
-                                    textTransform: 'none',
-                                    fontSize: '0.75rem',
-                                    px: 2,
-                                    py: 0.5,
-                                    minWidth: 0,
-                                    fontWeight: filtroHabilitado === f.value ? 600 : 400,
-                                    backgroundColor: 'transparent',
-                                    color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.primary.darker,
-                                    transition: 'color 0.3s ease',
-                                    border: 'none',
-                                    '&:hover': {
-                                        backgroundColor: 'transparent',
-                                        color: filtroHabilitado === f.value ? theme.palette.text.primary : theme.palette.primary.dark,
-                                        border: 'none',
-                                    },
-                                }}
-                            >
-                                {f.label}
-                            </Button>
-                        ))}
-                    </Box>
+                    <FiltroEstadoTabs
+                        value={filtroHabilitado}
+                        onChange={(v) => { setFiltroHabilitado(v); setPage(1) }}
+                        containerRef={filtroContainerRef}
+                        btnRefs={filtroBtnRefs}
+                        pillStyle={filtroPillStyle}
+                    />
 
                     <FormControl size="small" sx={{ minWidth: 150 }}>
                         <Select
@@ -511,376 +651,25 @@ const ListarVenta = () => {
                     </FormControl>
                 </Box>
 
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-                    <TextField
-                        size="small"
-                        placeholder="Buscar ventas..."
-                        sx={{
-                            width: 320,
-                            '& .MuiOutlinedInput-root': {
-                                borderRadius: 4,
-                                '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` },
-                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                    borderColor: theme.palette.primary.main, borderWidth: '1px',
-                                },
-                            },
-                        }}
-                        value={busqueda}
-                        onChange={e => { setBusqueda(e.target.value); setPage(1) }}
-                        slotProps={{
-                            input: {
-                                startAdornment: (
-                                    <InputAdornment position="start">
-                                        <SearchIcon sx={{ color: theme.palette.text.secondary, fontSize: 20 }} />
-                                    </InputAdornment>
-                                ),
-                                endAdornment: busqueda && (
-                                    <InputAdornment position="end">
-                                        <IconButton size="small" onClick={() => { setBusqueda(''); setPage(1) }}>
-                                            <ClearIcon sx={{ fontSize: 16 }} />
-                                        </IconButton>
-                                    </InputAdornment>
-                                )
-                            }
-                        }}
-                    />
-
-                </Box>
+                <BuscadorField value={busqueda} onChange={(v) => { setBusqueda(v); setPage(1) }} placeholder="Buscar ventas..." />
             </Box>
 
-            <Paper elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 3, overflow: 'hidden' }}>
-                <TableContainer>
-                    <Table>
-                        <TableHead>
-                            <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
-                                <TableCell sx={thStyle}>
-                                    <TableSortLabel
-                                        active={sortBy.field === 'numeroGuia'}
-                                        direction={sortBy.dir === 'desc' ? 'desc' : 'asc'}
-                                        onClick={() => handleSort('numeroGuia')}
-                                        IconComponent={sortBy.field === 'numeroGuia' ? undefined : UnfoldMoreOutlinedIcon}
-                                        sx={{
-                                            color: 'inherit',
-                                            '&:hover': { color: 'inherit' },
-                                            '&.Mui-active': { color: theme.palette.primary.main },
-                                            '&.Mui-active:hover': { color: theme.palette.primary.main },
-                                            '& .MuiTableSortLabel-icon': { opacity: 1, fontSize: 16 },
-                                        }}
-                                    >
-                                        Guía
-                                    </TableSortLabel>
-                                </TableCell>
-                                <TableCell sx={thStyle}>Remitente / Destinatario</TableCell>
-                                <TableCell sx={thStyle}>Destino</TableCell>
-                                <TableCell sx={thStyle}>Total</TableCell>
-                                <TableCell sx={thStyle}>Estado pago</TableCell>
-                                <TableCell sx={thStyle}>
-                                    Estado
-                                </TableCell>
-                                <TableCell sx={{ ...thStyle, width: 130 }}>Acciones</TableCell>
-                            </TableRow>
-                        </TableHead>
-
-                        <TableBody>
-                            {loading && initialLoad.current ? (
-                                <TableRow>
-                                    <TableCell colSpan={8} align="center" sx={{ py: 7 }}>
-                                        <CircularProgress size={28} sx={{ color: theme.palette.primary.main }} />
-                                        <Typography variant="body2" color={theme.palette.text.secondary} mt={1.5}>
-                                            Cargando ventas...
-                                        </Typography>
-                                    </TableCell>
-                                </TableRow>
-                            ) : error ? (
-                                <TableRow>
-                                    <TableCell colSpan={8} align="center" sx={{ py: 5 }}>
-                                        <Typography color="error" variant="body2">
-                                            No se pudieron cargar las ventas. Verifica la conexión con el servidor.
-                                        </Typography>
-                                        {import.meta.env.DEV && (
-                                            <Box component="pre" sx={{ mt: 0.5, fontSize: 11, opacity: 0.7, whiteSpace: 'pre-wrap', m: 0 }}>
-                                                {String(error)}
-                                            </Box>
-                                        )}
-                                    </TableCell>
-                                </TableRow>
-                            ) : !loading && ventas.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={8} align="center" sx={{ py: 7 }}>
-                                        <Typography color={theme.palette.text.secondary} variant="body2">
-                                            {filtroHabilitado !== 'todo' || filtroEstadoEncomienda !== '' || filtroPago !== '' || filtroMetodoPago !== ''
-                                                ? 'No se encontraron ventas que coincidan con los filtros aplicados.'
-                                                : debouncedBusqueda.trim()
-                                                    ? 'No se encontraron ventas que coincidan con la búsqueda.'
-                                                    : 'No hay ventas registradas en el sistema.'
-                                            }
-                                        </Typography>
-                                    </TableCell>
-                                </TableRow>
-                            ) : (
-                                ventas.map(venta => {
-                                    const isHighlighted = highlightId && String(venta.idEncomiendaVenta) === String(highlightId)
-                                    return (
-                                        <TableRow
-                                            key={venta.idEncomiendaVenta}
-                                            ref={isHighlighted ? highlightRef : null}
-                                            sx={{
-                                                '&:hover': { backgroundColor: theme.palette.background.subtle },
-                                                transition: 'background-color 0.15s',
-                                                opacity: venta.habilitado ? 1 : 0.55,
-                                                ...(isHighlighted && {
-                                                    animation: 'highlightPulse 1.1s ease-in-out 4',
-                                                    '@keyframes highlightPulse': {
-                                                        '0%, 100%': { backgroundColor: 'transparent' },
-                                                        '50%': { backgroundColor: alpha(theme.palette.primary.main, 0.13) },
-                                                    },
-                                                }),
-                                            }}
-                                        >
-                                            {/* Guía + fecha */}
-                                            <TableCell sx={{ py: 1.5 }}>
-                                                {(() => {
-                                                    const q = debouncedBusqueda.trim().toLowerCase()
-                                                    const paquetes = venta.paquetes || []
-                                                    // Si la búsqueda coincide con la guía de un paquete que NO es el primero,
-                                                    // se muestra esa — para no contradecir lo que la usuaria buscó.
-                                                    const guiaVisible = (q && paquetes.find(p => p.numeroGuia?.toLowerCase().includes(q))?.numeroGuia)
-                                                        || paquetes[0]?.numeroGuia
-                                                        || '—'
-                                                    const adicionales = Math.max(0, paquetes.length - 1)
-                                                    return (
-                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                                                            <Typography variant="body2" fontWeight={600} color={theme.palette.primary.main}>
-                                                                {guiaVisible}
-                                                            </Typography>
-                                                            {adicionales > 0 && (
-                                                                <Chip
-                                                                    label={`+${adicionales} ${adicionales === 1 ? 'paquete' : 'paquetes'}`}
-                                                                    size="small"
-                                                                    sx={{
-                                                                        fontWeight: 600,
-                                                                        backgroundColor: theme.palette.primary.light,
-                                                                        color: theme.palette.primary.darker,
-                                                                        fontSize: '0.65rem',
-                                                                        borderRadius: '2px',
-                                                                        height: 18,
-                                                                    }}
-                                                                />
-                                                            )}
-                                                        </Box>
-                                                    )
-                                                })()}
-                                                <Typography variant="caption" color={theme.palette.text.secondary}>
-                                                    {formatFecha(venta.fechaRegistro)}
-                                                </Typography>
-                                            </TableCell>
-
-                                            {/* Remitente / Destinatario */}
-                                            <TableCell sx={{ py: 1.5 }}>
-                                                <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary} noWrap>
-                                                    {venta.cliente?.nombre} {venta.cliente?.apellido}
-                                                </Typography>
-                                                <Typography variant="caption" color={theme.palette.text.secondary} noWrap>
-                                                    → {venta.destinatario?.nombreDestinatario || '—'}
-                                                </Typography>
-                                            </TableCell>
-
-                                            {/* Destino (via ruta → destino) */}
-                                            <TableCell sx={{ py: 1.5 }}>
-                                                <Typography variant="body2" color={theme.palette.text.primary}>
-                                                    {venta.ruta?.destino?.ciudad || '—'}
-                                                </Typography>
-                                                {venta.estado === 'Programada' && venta.ruta?.estado === 'Cancelada' && (
-                                                    <Chip
-                                                        label="Ruta cancelada · Reasignar"
-                                                        size="small"
-                                                        sx={{
-                                                            height: 18,
-                                                            fontSize: '0.65rem',
-                                                            fontWeight: 600,
-                                                            backgroundColor: alpha(theme.palette.warning.main, 0.12),
-                                                            color: theme.palette.warning.dark,
-                                                            border: `1px solid ${alpha(theme.palette.warning.main, 0.35)}`,
-                                                            mt: 0.5,
-                                                        }}
-                                                    />
-                                                )}
-                                                {venta.estado === 'Programada' && !venta.fechaEstimadaEntrega && (
-                                                    // Queda así cuando alguien mueve la fecha de la ruta y esta venta
-                                                    // deja de caber en el rango nuevo — ver rutaService.update() en el
-                                                    // backend, que vacía el campo en vez de bloquear el cambio de ruta.
-                                                    <Chip
-                                                        label="Falta fecha de entrega"
-                                                        size="small"
-                                                        sx={{
-                                                            height: 18,
-                                                            fontSize: '0.65rem',
-                                                            fontWeight: 600,
-                                                            backgroundColor: alpha(theme.palette.warning.main, 0.12),
-                                                            color: theme.palette.warning.dark,
-                                                            border: `1px solid ${alpha(theme.palette.warning.main, 0.35)}`,
-                                                            mt: 0.5,
-                                                        }}
-                                                    />
-                                                )}
-                                            </TableCell>
-
-                                            {/* Total + método de pago */}
-                                            <TableCell sx={{ py: 1.5 }}>
-                                                <Chip
-                                                    label={venta.total !== undefined
-                                                        ? `$${Number(venta.total).toLocaleString('es-CO')}`
-                                                        : '—'}
-                                                    size="small"
-                                                    sx={{
-                                                        fontWeight: 600,
-                                                        backgroundColor: theme.palette.primary.light,
-                                                        color: theme.palette.primary.darker,
-                                                        fontSize: '0.7rem',
-                                                        borderRadius: '2px',
-                                                        height: 24,
-                                                    }}
-                                                />
-                                                <Typography variant="caption" color={theme.palette.text.secondary} sx={{ display: 'block', mt: 0.5 }}>
-                                                    {venta.metodoPago || '—'}
-                                                </Typography>
-                                            </TableCell>
-
-                                            {/* Estado pago */}
-                                            <TableCell sx={{ py: 1.5, minWidth: 130 }}>
-                                                {(venta.estadoPago === 'Pagado' || venta.estado === 'Cancelada') ? (
-                                                    venta.estadoPago === 'Pagado' ? (
-                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, pl: 1 }}>
-                                                            <Box sx={{ width: 9, height: 9, borderRadius: '50%', backgroundColor: '#059669', flexShrink: 0 }} />
-                                                            <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: '#059669' }}>Pagado</Typography>
-                                                        </Box>
-                                                    ) : (
-                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, pl: 1 }}>
-                                                            <Box sx={{ width: 9, height: 9, borderRadius: '50%', border: '2px solid #D97706', backgroundColor: 'transparent', flexShrink: 0 }} />
-                                                            <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: '#D97706' }}>Pendiente</Typography>
-                                                        </Box>
-                                                    )
-                                                ) : (venta.metodoPago === 'Contraentrega' && venta.estado !== 'Entregada' && venta.estado !== 'Completada con novedades') ? (
-                                                    <Tooltip title="Es Contraentrega: el pago solo se puede confirmar cuando la venta sea entregada">
-                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, pl: 1, opacity: 0.55 }}>
-                                                            <Box sx={{ width: 9, height: 9, borderRadius: '50%', border: '2px solid #D97706', backgroundColor: 'transparent', flexShrink: 0 }} />
-                                                            <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: '#D97706' }}>Pendiente</Typography>
-                                                        </Box>
-                                                    </Tooltip>
-                                                ) : (
-                                                    <Box
-                                                        onClick={(e) => { e.stopPropagation(); setPagoMenuAnchor(e.currentTarget); setPagoMenuId(venta.idEncomiendaVenta) }}
-                                                        sx={{
-                                                            display: 'inline-flex', alignItems: 'center', gap: 0.75,
-                                                            border: `1px solid ${theme.palette.divider}`, borderRadius: 1.5,
-                                                            px: 1, py: 0.3, cursor: 'pointer',
-                                                            '&:hover': { backgroundColor: theme.palette.action.hover },
-                                                        }}
-                                                    >
-                                                        <Box sx={{ width: 9, height: 9, borderRadius: '50%', border: '2px solid #D97706', backgroundColor: 'transparent', flexShrink: 0 }} />
-                                                        <Typography variant="body2" sx={{ fontSize: '0.8rem', fontWeight: 500, color: '#D97706' }}>Pendiente</Typography>
-                                                        <KeyboardArrowDownOutlinedIcon sx={{ fontSize: 13, color: theme.palette.text.secondary, ml: 0.25 }} />
-                                                    </Box>
-                                                )}
-                                            </TableCell>
-
-                                            {/* Estado envío */}
-                                            <TableCell sx={{ py: 1.5, minWidth: 155 }}>
-                                                {venta.estado === 'Programada' ? (
-                                                    <Box
-                                                        onClick={(e) => { e.stopPropagation(); setEstadoMenuAnchor(e.currentTarget); setEstadoMenuId(venta.idEncomiendaVenta) }}
-                                                        sx={{
-                                                            display: 'inline-flex', alignItems: 'center', gap: 0.5,
-                                                            border: `1px solid ${theme.palette.divider}`, borderRadius: 1.5,
-                                                            px: 1, py: 0.3, cursor: 'pointer',
-                                                            '&:hover': { backgroundColor: theme.palette.action.hover },
-                                                        }}
-                                                    >
-                                                        <VentaEstadoDot estado="Programada" />
-                                                        <KeyboardArrowDownOutlinedIcon sx={{ fontSize: 13, color: theme.palette.text.secondary }} />
-                                                    </Box>
-                                                ) : venta.estado === 'En Ruta' ? (
-                                                    <Box sx={{ pl: 1 }}>
-                                                        {(() => {
-                                                            const paquetes = venta.paquetes || []
-                                                            const entregados = paquetes.filter(p => p.estado === 'Entregado').length
-                                                            const devueltos = paquetes.filter(p => p.estado === 'Devuelto').length
-                                                            const pendientes = paquetes.length - entregados - devueltos
-                                                            const info = getVentaEstadoDot('En Ruta')
-                                                            return (
-                                                                <Tooltip title={`${entregados} entregados · ${devueltos} devueltos · ${pendientes} pendientes`}>
-                                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                                                                        <Box sx={{ width: 9, height: 9, borderRadius: '50%', flexShrink: 0, backgroundColor: info.color }} />
-                                                                        <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: info.color }}>
-                                                                            {`${entregados} de ${paquetes.length} entregados`}
-                                                                        </Typography>
-                                                                    </Box>
-                                                                </Tooltip>
-                                                            )
-                                                        })()}
-                                                    </Box>
-                                                ) : (
-                                                    <Box sx={{ pl: 1 }}><VentaEstadoDot estado={venta.estado} /></Box>
-                                                )}
-                                            </TableCell>
-
-                                            <TableCell sx={{ py: 1.5 }}>
-                                                <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                                    <Tooltip title="Ver detalle">
-                                                        <IconButton size="small" onClick={() => setVentaConsulta(venta)}
-                                                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.action.hover } }}>
-                                                            <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
-                                                        </IconButton>
-                                                    </Tooltip>
-                                                    <Tooltip title="Descargar guía">
-                                                        <IconButton size="small" onClick={() => handleDescargarGuia(venta)}
-                                                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.action.hover } }}>
-                                                            <ReceiptLongOutlinedIcon sx={{ fontSize: 18 }} />
-                                                        </IconButton>
-                                                    </Tooltip>
-                                                    {venta.habilitado === false ? (
-                                                        <Tooltip title="Habilita el registro para poder editarlo">
-                                                            <span>
-                                                                <IconButton size="small" disabled>
-                                                                    <EditOutlinedIcon sx={{ fontSize: 18 }} />
-                                                                </IconButton>
-                                                            </span>
-                                                        </Tooltip>
-                                                    ) : venta.estado !== 'Programada' ? (
-                                                        <Tooltip title={
-                                                            venta.estado === 'En Ruta' ? 'Esta venta ya está en tránsito: no se puede editar'
-                                                                : venta.estado === 'Entregada' ? 'Esta venta ya fue entregada: no se puede editar'
-                                                                    : venta.estado === 'Completada con novedades' ? 'Esta venta ya se cerró con novedades: no se puede editar'
-                                                                        : 'Esta venta fue cancelada: no se puede editar'
-                                                        }>
-                                                            <span>
-                                                                <IconButton size="small" disabled>
-                                                                    <EditOutlinedIcon sx={{ fontSize: 18 }} />
-                                                                </IconButton>
-                                                            </span>
-                                                        </Tooltip>
-                                                    ) : (
-                                                        <Tooltip title="Editar">
-                                                            <IconButton size="small"
-                                                                onClick={() => { setVentaEditar(venta); setModalActualizarOpen(true) }}
-                                                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.action.hover } }}>
-                                                                <EditOutlinedIcon sx={{ fontSize: 18 }} />
-                                                            </IconButton>
-                                                        </Tooltip>
-                                                    )}
-                                                    {tienePermiso(PERMISOS.INHABILITAR_VENTA) && (
-                                                    <ToggleSwitch id={venta.idEncomiendaVenta} checked={venta.habilitado} onChange={() => handleToggleHabilitado(venta)} />
-                                                    )}
-                                                </Box>
-                                            </TableCell>
-                                        </TableRow>
-                                    )
-                                })
-                            )}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
-            </Paper>
+            <DataTable
+                columns={columns}
+                rows={ventas}
+                rowKey={(venta) => venta.idEncomiendaVenta}
+                loading={loading}
+                initialLoad={initialLoad}
+                error={error}
+                sortBy={sortBy}
+                onSort={handleSort}
+                highlightId={highlightId}
+                highlightRef={highlightRef}
+                rowSx={(venta) => ({ opacity: venta.habilitado ? 1 : 0.55 })}
+                emptyMessage={emptyMessage}
+                loadingMessage="Cargando ventas..."
+                errorMessage="No se pudieron cargar las ventas. Verifica la conexión con el servidor."
+            />
 
             <TablaPaginacionFooter
                 total={total}
@@ -1094,4 +883,3 @@ const ListarVenta = () => {
 }
 
 export default ListarVenta
-

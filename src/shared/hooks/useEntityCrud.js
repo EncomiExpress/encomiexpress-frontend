@@ -23,6 +23,7 @@ export default function useEntityCrud({
   fetchPageForHighlight,
   exportConfig,
   onExportError,
+  defaultRowsPerPage = 5,
 } = {}) {
   const theme = useTheme()
   const [searchParams] = useSearchParams()
@@ -40,7 +41,7 @@ export default function useEntityCrud({
   const [filtroEstado, setFiltroEstadoState] = useState('todo')
   const [sortBy, setSortBy] = useState({ field: '', dir: '' })
   const [page, setPage] = useState(1)
-  const [rowsPerPage, setRowsPerPageState] = useState(5)
+  const [rowsPerPage, setRowsPerPageState] = useState(defaultRowsPerPage)
   const [exportando, setExportando] = useState(false)
 
   const setBusqueda = (value) => { setBusquedaState(value); setPage(1) }
