@@ -25,6 +25,18 @@ const departamentos = ['Antioquia', 'Córdoba']
 const TARIFA_MAX = 999999999
 const MENSAJE_CIUDAD_DUPLICADA = 'Ya existe un destino registrado con esta ciudad.'
 
+// Ciudades donde la empresa ya opera hoy (Bajo Cauca antioqueño + sur de Córdoba) —
+// no es la lista oficial de municipios de cada departamento (esa tiene 123 y 30
+// entradas respectivamente), es la lista real de destinos de la empresa, para que el
+// caso común quede sin errores de tipeo. "Otra ciudad" cubre cualquier destino nuevo
+// que no esté en esta lista todavía.
+const CIUDADES_POR_DEPARTAMENTO = {
+    Antioquia: ['Cáceres', 'Caucasia', 'El Bagre', 'Nechí', 'Puerto Valdivia', 'Tarazá', 'Zaragoza'],
+    'Córdoba': ['Ayapel', 'Montelíbano', 'Montería', 'Puerto Libertador'],
+}
+const OTRA_CIUDAD = '__otra__'
+const OTRO_DEPARTAMENTO = '__otro__'
+
 // Valida un único campo del formulario (usado en onBlur y para re-validar en vivo
 // mientras se corrige un campo ya marcado con error).
 const validarCampo = (name, form) => {
@@ -61,6 +73,12 @@ const RegistrarDestino = ({ open, onClose, onSuccess }) => {
         direccion: '',
         tarifaBase: '',
     })
+    // true cuando el usuario eligió "Otra ciudad" en el select y está escribiendo el
+    // nombre a mano en vez de elegir una de la lista conocida.
+    const [ciudadOtra, setCiudadOtra] = useState(false)
+    // true cuando eligió "Otro departamento" -- fuerza también ciudadOtra, porque no
+    // hay ninguna lista de ciudades conocida para un departamento fuera de la lista.
+    const [departamentoOtro, setDepartamentoOtro] = useState(false)
 
     // Mismo criterio de comparación (sin mayúsculas/acentos) que ya usan Cliente/Conductor/
     // etc. para nombre y documento duplicado — acá no hace falta consultar al backend
@@ -71,7 +89,7 @@ const RegistrarDestino = ({ open, onClose, onSuccess }) => {
     const handleChange = (e) => {
         const { name } = e.target
         let { value } = e.target
-        if (name === 'ciudad') {
+        if (name === 'ciudad' || name === 'departamento') {
             value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
         }
         if (name === 'direccion') {
@@ -92,6 +110,42 @@ const RegistrarDestino = ({ open, onClose, onSuccess }) => {
             if (name === 'ciudad') return { ...prev, ciudad: validarCampo('ciudad', formActualizado) || validarCiudadDuplicada(value) }
             return { ...prev, [name]: validarCampo(name, formActualizado) }
         })
+        setApiError(null)
+    }
+
+    // Select de Ciudad: elegir un valor real de la lista fija la ciudad tal cual;
+    // elegir el sentinel OTRA_CIUDAD abre el campo de texto libre en su lugar.
+    const handleCiudadSelectChange = (e) => {
+        const { value } = e.target
+        if (value === OTRA_CIUDAD) {
+            setCiudadOtra(true)
+            setForm(prev => ({ ...prev, ciudad: '' }))
+        } else {
+            setCiudadOtra(false)
+            const formActualizado = { ...form, ciudad: value }
+            setForm(prev => ({ ...prev, ciudad: value }))
+            setErrores(prev => prev.ciudad ? { ...prev, ciudad: validarCampo('ciudad', formActualizado) || validarCiudadDuplicada(value) } : prev)
+        }
+        setApiError(null)
+    }
+
+    // Select de Departamento: elegir un valor real limpia la ciudad (depende del
+    // departamento); elegir el sentinel OTRO_DEPARTAMENTO abre el campo de texto libre
+    // para el departamento Y fuerza el de ciudad, porque no hay lista conocida para un
+    // departamento que no está en la lista.
+    const handleDepartamentoSelectChange = (e) => {
+        const { value } = e.target
+        if (value === OTRO_DEPARTAMENTO) {
+            setDepartamentoOtro(true)
+            setCiudadOtra(true)
+            setForm(prev => ({ ...prev, departamento: '', ciudad: '' }))
+        } else {
+            setDepartamentoOtro(false)
+            setCiudadOtra(false)
+            const formActualizado = { ...form, departamento: value, ciudad: '' }
+            setForm(prev => ({ ...prev, departamento: value, ciudad: '' }))
+            setErrores(prev => ({ ...prev, departamento: prev.departamento ? validarCampo('departamento', formActualizado) : prev.departamento, ciudad: undefined }))
+        }
         setApiError(null)
     }
 
@@ -145,6 +199,8 @@ const RegistrarDestino = ({ open, onClose, onSuccess }) => {
     const handleClose = () => {
         if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
         setForm({ departamento: '', ciudad: '', direccion: '', tarifaBase: '' })
+        setCiudadOtra(false)
+        setDepartamentoOtro(false)
         setErrores({})
         setApiError(null)
         setActiveStep(0)
@@ -162,21 +218,63 @@ const RegistrarDestino = ({ open, onClose, onSuccess }) => {
             case 0:
                 return (
                     <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
-                        <FormSelect
-                            label="Departamento" name="departamento" value={form.departamento}
-                            onChange={handleChange}
-                            onBlur={() => setErrores(prev => ({ ...prev, departamento: validarCampo('departamento', form) }))}
-                            required error={errores.departamento} helperText={errores.departamento}
-                        >
-                            {departamentos.map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
-                        </FormSelect>
-                        <FormField
-                            label="Ciudad" name="ciudad" value={form.ciudad} onChange={handleChange}
-                            onBlur={() => setErrores(prev => ({ ...prev, ciudad: validarCampo('ciudad', form) || validarCiudadDuplicada(form.ciudad) }))}
-                            required error={errores.ciudad} helperText={errores.ciudad}
-                            icon={LocationOnOutlinedIcon} inputProps={{ maxLength: 60 }}
-                            placeholder="Ej: Medellín"
-                        />
+                        {departamentoOtro ? (
+                            <Box>
+                                <FormField
+                                    label="Departamento" name="departamento" value={form.departamento} onChange={handleChange}
+                                    onBlur={() => setErrores(prev => ({ ...prev, departamento: validarCampo('departamento', form) }))}
+                                    required error={errores.departamento} helperText={errores.departamento || 'Departamento nuevo — no está en la lista todavía'}
+                                    inputProps={{ maxLength: 60 }}
+                                    placeholder="Escribe el departamento"
+                                />
+                                <Typography
+                                    onClick={() => { setDepartamentoOtro(false); setCiudadOtra(false); setForm(prev => ({ ...prev, departamento: '', ciudad: '' })) }}
+                                    sx={{ fontSize: '0.75rem', color: theme.palette.primary.main, cursor: 'pointer', mt: 0.5, '&:hover': { textDecoration: 'underline' } }}
+                                >
+                                    Elegir de la lista
+                                </Typography>
+                            </Box>
+                        ) : (
+                            <FormSelect
+                                label="Departamento" name="departamento" value={form.departamento}
+                                onChange={handleDepartamentoSelectChange}
+                                onBlur={() => setErrores(prev => ({ ...prev, departamento: validarCampo('departamento', form) }))}
+                                required error={errores.departamento} helperText={errores.departamento}
+                            >
+                                {departamentos.map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
+                                <MenuItem value={OTRO_DEPARTAMENTO}>Otro departamento…</MenuItem>
+                            </FormSelect>
+                        )}
+                        {(ciudadOtra || departamentoOtro) ? (
+                            <Box>
+                                <FormField
+                                    label="Ciudad" name="ciudad" value={form.ciudad} onChange={handleChange}
+                                    onBlur={() => setErrores(prev => ({ ...prev, ciudad: validarCampo('ciudad', form) || validarCiudadDuplicada(form.ciudad) }))}
+                                    required error={errores.ciudad} helperText={errores.ciudad || 'Ciudad nueva — no está en la lista todavía'}
+                                    icon={LocationOnOutlinedIcon} inputProps={{ maxLength: 60 }}
+                                    placeholder="Escribe la ciudad"
+                                />
+                                {!departamentoOtro && (
+                                    <Typography
+                                        onClick={() => { setCiudadOtra(false); setForm(prev => ({ ...prev, ciudad: '' })) }}
+                                        sx={{ fontSize: '0.75rem', color: theme.palette.primary.main, cursor: 'pointer', mt: 0.5, '&:hover': { textDecoration: 'underline' } }}
+                                    >
+                                        Elegir de la lista
+                                    </Typography>
+                                )}
+                            </Box>
+                        ) : (
+                            <FormSelect
+                                label="Ciudad" name="ciudad" value={form.ciudad}
+                                onChange={handleCiudadSelectChange}
+                                onBlur={() => setErrores(prev => ({ ...prev, ciudad: validarCampo('ciudad', form) || validarCiudadDuplicada(form.ciudad) }))}
+                                required error={errores.ciudad} helperText={errores.ciudad}
+                                disabled={!form.departamento}
+                            >
+                                {(CIUDADES_POR_DEPARTAMENTO[form.departamento] || []).map(c => <MenuItem key={c} value={c}>{c}</MenuItem>)}
+                                <MenuItem value={OTRA_CIUDAD}>Otra ciudad…</MenuItem>
+                            </FormSelect>
+                        )}
                         <Box sx={{ gridColumn: '1 / -1' }}>
                             <FormField
                                 label="Dirección de la oficina" name="direccion" value={form.direccion} onChange={handleChange}

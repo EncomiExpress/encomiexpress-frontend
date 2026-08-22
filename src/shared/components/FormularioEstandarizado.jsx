@@ -91,6 +91,7 @@ export const FormSelect = ({
   helperText,
   shrink = false,
   renderValue,
+  disabled = false,
   children
 }) => {
   const theme = useTheme()
@@ -107,7 +108,7 @@ export const FormSelect = ({
   }
 
   return (
-    <FormControl fullWidth required={required} error={!!error} sx={formSelectStyles}>
+    <FormControl fullWidth required={required} error={!!error} disabled={disabled} sx={formSelectStyles}>
       <InputLabel shrink={shrink || undefined} sx={{ '&.Mui-focused': { color: theme.palette.primary.main } }}>{label}</InputLabel>
       <Select
         name={name}
