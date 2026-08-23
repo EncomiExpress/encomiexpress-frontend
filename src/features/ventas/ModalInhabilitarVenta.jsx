@@ -1,14 +1,10 @@
-import { useState } from 'react'
 import { useTheme } from '@mui/material/styles'
-import {
-    Dialog, DialogContent, Box, Typography, Button, CircularProgress,
-    Paper, IconButton,
-} from '@mui/material'
+import { Box, Typography, Paper } from '@mui/material'
 import DoNotDisturbOutlinedIcon from '@mui/icons-material/DoNotDisturbOutlined'
 import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined'
-import CloseIcon from '@mui/icons-material/Close'
 import { getRutaEstadoDot } from '../../shared/utils/estadoColors'
 import { getGuiaPrincipal } from '../../shared/utils/formatters'
+import ConfirmToggleDialog from '../../shared/components/ConfirmToggleDialog.jsx'
 
 const renderDot = (dot) => {
     if (dot.type === 'circle') {
@@ -34,19 +30,6 @@ const getRutaLabel = (ruta, venta) => {
 
 const ModalInhabilitarVenta = ({ open, venta, onClose, onExited, onConfirm }) => {
     const theme = useTheme()
-    const [confirming, setConfirming] = useState(false)
-
-    const handleConfirm = async () => {
-        setConfirming(true)
-        try {
-            await onConfirm()
-            onClose()
-        } catch {
-            // error manejado por el padre
-        } finally {
-            setConfirming(false)
-        }
-    }
 
     const habilitadoActual = venta?.habilitado === true
     const bloqueado = habilitadoActual && venta?.estado !== 'Entregada' && venta?.estado !== 'Completada con novedades' && venta?.estado !== 'Cancelada'
@@ -81,135 +64,76 @@ const ModalInhabilitarVenta = ({ open, venta, onClose, onExited, onConfirm }) =>
     const tieneDevueltos = paquetesDevueltos.length > 0
 
     return (
-        <Dialog
+        <ConfirmToggleDialog
             open={open}
             onClose={onClose}
-            maxWidth="xs"
-            fullWidth
-            disableAutoFocus
-            TransitionProps={{ onExited: onExited }}
-            slotProps={{ paper: { sx: { borderRadius: 3, p: 0, maxHeight: '85vh', overflow: 'hidden' } } }}
+            onExited={onExited}
+            onConfirm={onConfirm}
+            icono={habilitadoActual
+                ? <DoNotDisturbOutlinedIcon sx={{ fontSize: 35, color: theme.palette.primary.darker }} />
+                : <CheckCircleOutlinedIcon sx={{ fontSize: 35, color: theme.palette.primary.darker }} />}
+            titulo={titulo}
+            subtitulo={subtexto}
+            soloCerrar={bloqueado}
+            textoConfirmar={habilitadoActual ? 'Inhabilitar' : 'Habilitar'}
         >
-            <DialogContent sx={{ p: 3, pb: bloqueado ? 1 : 2, textAlign: 'center', position: 'relative', overflowY: 'auto' }}>
-                <IconButton onClick={onClose} sx={{ position: 'absolute', top: 8, right: 8, color: theme.palette.text.secondary }}>
-                    <CloseIcon />
-                </IconButton>
-
-                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5, pt: 2 }}>
-                    <Box sx={{
-                        width: 67, height: 67, borderRadius: '50%',
-                        backgroundColor: theme.palette.primary.light,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    }}>
-                        {habilitadoActual
-                            ? <DoNotDisturbOutlinedIcon sx={{ fontSize: 35, color: theme.palette.primary.darker }} />
-                            : <CheckCircleOutlinedIcon sx={{ fontSize: 35, color: theme.palette.primary.darker }} />
-                        }
-                    </Box>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
-                        <Typography fontWeight={700} fontSize="1.4rem" color={theme.palette.text.primary}>
-                            {titulo}
-                        </Typography>
-                        <Typography fontSize="0.95rem" color={theme.palette.text.secondary} sx={{ textAlign: 'center' }}>
-                            {subtexto}
-                        </Typography>
-                    </Box>
+            {!bloqueado && tieneDevueltos && (
+                <Box sx={{ mt: 2, mx: 0.5, p: 1.5, borderRadius: 2, textAlign: 'left', backgroundColor: `${theme.palette.warning.main}14`, border: `1px solid ${theme.palette.warning.main}44` }}>
+                    <Typography variant="caption" sx={{ color: theme.palette.warning.dark, lineHeight: 1.5 }}>
+                        Esta venta tiene {paquetesDevueltos.length === 1 ? '1 paquete devuelto' : `${paquetesDevueltos.length} paquetes devueltos`}. Al inhabilitarla, también se mostrará{paquetesDevueltos.length === 1 ? '' : 'n'} como inhabilitado{paquetesDevueltos.length === 1 ? '' : 's'} en el listado de Paquetes devueltos.
+                    </Typography>
                 </Box>
+            )}
 
-                {!bloqueado && tieneDevueltos && (
-                    <Box sx={{ mt: 2, mx: 0.5, p: 1.5, borderRadius: 2, textAlign: 'left', backgroundColor: `${theme.palette.warning.main}14`, border: `1px solid ${theme.palette.warning.main}44` }}>
-                        <Typography variant="caption" sx={{ color: theme.palette.warning.dark, lineHeight: 1.5 }}>
-                            Esta venta tiene {paquetesDevueltos.length === 1 ? '1 paquete devuelto' : `${paquetesDevueltos.length} paquetes devueltos`}. Al inhabilitarla, también se mostrará{paquetesDevueltos.length === 1 ? '' : 'n'} como inhabilitado{paquetesDevueltos.length === 1 ? '' : 's'} en el listado de Paquetes devueltos.
-                        </Typography>
-                    </Box>
-                )}
-
-                {bloqueado && (
-                    <Box sx={{ mt: 2.5, textAlign: 'left' }}>
-                        {ruta ? (() => {
-                            const dot = getRutaEstadoDot(ruta.estado)
-                            return (
-                                <>
-                                    {rutaLabel && (
-                                        <Typography variant="body2" color={theme.palette.text.primary} sx={{ mb: 1 }}>
-                                            {rutaLabel}
-                                        </Typography>
-                                    )}
-                                    <Paper elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 2, overflow: 'hidden' }}>
-                                        <Box
-                                            onClick={() => window.open(`/transporte/rutas?highlight=${ruta.idRuta}`, '_blank')}
-                                            sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1.5, py: 1, cursor: 'pointer', '&:hover': { backgroundColor: theme.palette.action.hover } }}
-                                        >
-                                            <Typography variant="body2" fontWeight={500} sx={{ fontSize: '0.8rem' }}>
-                                                {getRutaLabel(ruta, venta)}
-                                            </Typography>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                                                {renderDot(dot)}
-                                                <Typography sx={{ fontSize: '0.8rem', fontWeight: 500, color: dot.color, whiteSpace: 'nowrap' }}>
-                                                    {dot.label}
-                                                </Typography>
-                                            </Box>
-                                        </Box>
-                                    </Paper>
-                                </>
-                            )
-                        })() : (() => {
-                            const dot = getRutaEstadoDot(venta?.estado)
-                            return (
+            {bloqueado && (
+                <Box sx={{ mt: 2.5, textAlign: 'left' }}>
+                    {ruta ? (() => {
+                        const dot = getRutaEstadoDot(ruta.estado)
+                        return (
+                            <>
+                                {rutaLabel && (
+                                    <Typography variant="body2" color={theme.palette.text.primary} sx={{ mb: 1 }}>
+                                        {rutaLabel}
+                                    </Typography>
+                                )}
                                 <Paper elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 2, overflow: 'hidden' }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1.5, py: 1 }}>
-                                        <Typography variant="body2" fontWeight={500} sx={{ fontSize: '0.8rem' }}>{guia}</Typography>
+                                    <Box
+                                        onClick={() => window.open(`/transporte/rutas?highlight=${ruta.idRuta}`, '_blank')}
+                                        sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1.5, py: 1, cursor: 'pointer', '&:hover': { backgroundColor: theme.palette.action.hover } }}
+                                    >
+                                        <Typography variant="body2" fontWeight={500} sx={{ fontSize: '0.8rem' }}>
+                                            {getRutaLabel(ruta, venta)}
+                                        </Typography>
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                                             {renderDot(dot)}
-                                            <Typography sx={{ fontSize: '0.8rem', fontWeight: 500, color: dot.color, whiteSpace: 'nowrap' }}>{dot.label}</Typography>
+                                            <Typography sx={{ fontSize: '0.8rem', fontWeight: 500, color: dot.color, whiteSpace: 'nowrap' }}>
+                                                {dot.label}
+                                            </Typography>
                                         </Box>
                                     </Box>
                                 </Paper>
-                            )
-                        })()}
-                        <Typography variant="caption" color={theme.palette.text.secondary} sx={{ mt: 1, display: 'block' }}>
-                            Solo se puede inhabilitar una venta cuando esté Entregada, Completada con novedades o Cancelada.
-                        </Typography>
-                    </Box>
-                )}
-            </DialogContent>
-
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 3, px: 3, pt: 1, pb: 3 }}>
-                {bloqueado ? (
-                    <Button onClick={onClose} variant="contained" disableRipple sx={{
-                        textTransform: 'none', borderRadius: 2, fontWeight: 600,
-                        px: 5, py: 0.76, fontSize: '0.875rem',
-                        backgroundColor: theme.palette.primary.main,
-                        '&:hover': { backgroundColor: theme.palette.primary.dark },
-                    }}>
-                        Entendido
-                    </Button>
-                ) : (
-                    <>
-                        <Button onClick={onClose} disableRipple sx={{
-                            textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500,
-                            borderRadius: 2, px: 3.5, py: 0.75, fontSize: '0.875rem',
-                            border: `1px solid ${theme.palette.divider}`,
-                            '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary },
-                        }}>
-                            Cancelar
-                        </Button>
-                        <Button onClick={handleConfirm} variant="contained" disableRipple
-                            disabled={confirming}
-                            sx={{
-                                textTransform: 'none', borderRadius: 2, fontWeight: 600, minWidth: 140,
-                                px: 5, py: 0.76, fontSize: '0.875rem',
-                                backgroundColor: theme.palette.primary.main,
-                                '&:hover': { backgroundColor: theme.palette.primary.dark },
-                            }}>
-                            {confirming
-                                ? <CircularProgress size={18} sx={{ color: 'white' }} />
-                                : habilitadoActual ? 'Inhabilitar' : 'Habilitar'}
-                        </Button>
-                    </>
-                )}
-            </Box>
-        </Dialog>
+                            </>
+                        )
+                    })() : (() => {
+                        const dot = getRutaEstadoDot(venta?.estado)
+                        return (
+                            <Paper elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 2, overflow: 'hidden' }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1.5, py: 1 }}>
+                                    <Typography variant="body2" fontWeight={500} sx={{ fontSize: '0.8rem' }}>{guia}</Typography>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                                        {renderDot(dot)}
+                                        <Typography sx={{ fontSize: '0.8rem', fontWeight: 500, color: dot.color, whiteSpace: 'nowrap' }}>{dot.label}</Typography>
+                                    </Box>
+                                </Box>
+                            </Paper>
+                        )
+                    })()}
+                    <Typography variant="caption" color={theme.palette.text.secondary} sx={{ mt: 1, display: 'block' }}>
+                        Solo se puede inhabilitar una venta cuando esté Entregada, Completada con novedades o Cancelada.
+                    </Typography>
+                </Box>
+            )}
+        </ConfirmToggleDialog>
     )
 }
 

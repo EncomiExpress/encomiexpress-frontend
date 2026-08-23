@@ -1,13 +1,9 @@
 import { fetchWithAuth } from '../../../shared/services/authService.js'
+import { getEncomiendas } from '../../../shared/services/encomiendaConsultaService.js'
 
 // ── Encomiendas / Ventas ──────────────────────────────────────────────────────
 
-export const getEncomiendas = (signal, params = {}) => {
-  const qs = new URLSearchParams()
-  Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '') qs.set(k, v) })
-  const suffix = qs.toString() ? `?${qs.toString()}` : ''
-  return fetchWithAuth(`/encomiendas${suffix}`, { method: 'GET', signal })
-}
+export { getEncomiendas }
 
 export const createEncomienda = (datos) =>
   fetchWithAuth('/encomiendas', { method: 'POST', body: JSON.stringify(datos) })

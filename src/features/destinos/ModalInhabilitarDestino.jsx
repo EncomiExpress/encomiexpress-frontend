@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useTheme } from '@mui/material/styles'
 import {
-    Box, Typography, Button, Dialog, DialogContent, IconButton, CircularProgress,
+    Box, Typography, CircularProgress,
     Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
 } from '@mui/material'
 import BlockOutlinedIcon from '@mui/icons-material/BlockOutlined'
 import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined'
-import CloseIcon from '@mui/icons-material/Close'
 import * as rutaService from '../rutas/services/rutaService.js'
 import { getEstadoColorRuta } from '../../shared/utils/estadoColors.js'
+import ConfirmToggleDialog from '../../shared/components/ConfirmToggleDialog.jsx'
 
 const RutasMiniTabla = ({ rutas, theme }) => (
     <Paper elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 2, overflow: 'hidden', mt: 1.5, width: '100%' }}>
@@ -52,7 +52,6 @@ const RutasMiniTabla = ({ rutas, theme }) => (
 
 const ModalInhabilitarDestino = ({ open, data, onClose, onExited, onConfirm }) => {
     const theme = useTheme()
-    const [confirming, setConfirming] = useState(false)
     const [rutasInhabilitar, setRutasInhabilitar] = useState({ data: [], loading: false })
 
     useEffect(() => {
@@ -71,81 +70,39 @@ const ModalInhabilitarDestino = ({ open, data, onClose, onExited, onConfirm }) =
         onExited?.()
     }
 
-    const handleConfirm = async () => {
-        setConfirming(true)
-        try {
-            await onConfirm()
-            onClose()
-        } catch {
-            // error handled by parent via snackbar
-        } finally {
-            setConfirming(false)
-        }
-    }
-
     const bloqueado = data.habilitadoActual && rutasInhabilitar.data.length > 0
 
     return (
-        <Dialog open={open} onClose={onClose} TransitionProps={{ onExited: handleExited }} maxWidth="xs" fullWidth
-            slotProps={{ paper: { sx: { borderRadius: 3, p: 0, maxHeight: '85vh', overflow: 'hidden' } } }}>
-            <DialogContent sx={{ p: 3, pb: bloqueado ? 1 : 2, textAlign: 'center', position: 'relative', overflowY: bloqueado ? 'auto' : 'unset' }}>
-                <IconButton onClick={onClose} sx={{ position: 'absolute', top: 8, right: 8, color: theme.palette.text.secondary }}>
-                    <CloseIcon />
-                </IconButton>
-                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5, pt: 2 }}>
-                    <Box sx={{ width: 67, height: 67, borderRadius: '50%', backgroundColor: theme.palette.primary.light, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        {data.habilitadoActual
-                            ? <BlockOutlinedIcon sx={{ fontSize: 35, color: theme.palette.primary.darker }} />
-                            : <CheckCircleOutlinedIcon sx={{ fontSize: 35, color: theme.palette.primary.darker }} />
-                        }
-                    </Box>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
-                        <Typography fontWeight={700} fontSize="1.4rem" color={theme.palette.text.primary}>
-                            {data.habilitadoActual
-                                ? bloqueado ? 'No se puede inhabilitar' : rutasInhabilitar.loading ? 'Inhabilitar destino' : '¿Inhabilitar destino?'
-                                : '¿Habilitar destino?'}
-                        </Typography>
-                        <Typography fontSize="0.95rem" color={theme.palette.text.secondary}>
-                            {data.habilitadoActual
-                                ? bloqueado
-                                    ? <>El destino <strong>{data.ciudad}</strong> tiene {rutasInhabilitar.data.length === 1 ? 'una ruta activa' : 'rutas activas'} que {rutasInhabilitar.data.length === 1 ? 'debe completarse o cancelarse' : 'deben completarse o cancelarse'} antes de inhabilitar el destino.</>
-                                    : <>El destino <strong>{data.ciudad}</strong> quedará inhabilitado en el sistema.</>
-                                : <>El destino <strong>{data.ciudad}</strong> volverá a estar activo en el sistema.</>
-                            }
-                        </Typography>
-                    </Box>
+        <ConfirmToggleDialog
+            open={open}
+            onClose={onClose}
+            onExited={handleExited}
+            onConfirm={onConfirm}
+            icono={data.habilitadoActual
+                ? <BlockOutlinedIcon sx={{ fontSize: 35, color: theme.palette.primary.darker }} />
+                : <CheckCircleOutlinedIcon sx={{ fontSize: 35, color: theme.palette.primary.darker }} />}
+            titulo={data.habilitadoActual
+                ? bloqueado ? 'No se puede inhabilitar' : rutasInhabilitar.loading ? 'Inhabilitar destino' : '¿Inhabilitar destino?'
+                : '¿Habilitar destino?'}
+            subtitulo={data.habilitadoActual
+                ? bloqueado
+                    ? <>El destino <strong>{data.ciudad}</strong> tiene {rutasInhabilitar.data.length === 1 ? 'una ruta activa' : 'rutas activas'} que {rutasInhabilitar.data.length === 1 ? 'debe completarse o cancelarse' : 'deben completarse o cancelarse'} antes de inhabilitar el destino.</>
+                    : <>El destino <strong>{data.ciudad}</strong> quedará inhabilitado en el sistema.</>
+                : <>El destino <strong>{data.ciudad}</strong> volverá a estar activo en el sistema.</>}
+            soloCerrar={bloqueado}
+            textoConfirmar={data.habilitadoActual ? 'Inhabilitar' : 'Habilitar'}
+            deshabilitarConfirmar={rutasInhabilitar.loading}
+        >
+            {rutasInhabilitar.loading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 2, mt: 2 }}>
+                    <CircularProgress size={22} sx={{ color: theme.palette.primary.main }} />
                 </Box>
-
-                {rutasInhabilitar.loading ? (
-                    <Box sx={{ display: 'flex', justifyContent: 'center', py: 2, mt: 2 }}>
-                        <CircularProgress size={22} sx={{ color: theme.palette.primary.main }} />
-                    </Box>
-                ) : bloqueado && (
-                    <Box sx={{ mt: 1, textAlign: 'left' }}>
-                        <RutasMiniTabla rutas={rutasInhabilitar.data} theme={theme} />
-                    </Box>
-                )}
-            </DialogContent>
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 3, px: 3, pt: 1, pb: 3 }}>
-                {bloqueado ? (
-                    <Button onClick={onClose} variant="contained" disableRipple
-                        sx={{ textTransform: 'none', borderRadius: 2, fontWeight: 600, px: 5, py: 0.76, fontSize: '0.875rem', backgroundColor: theme.palette.primary.main, '&:hover': { backgroundColor: theme.palette.primary.dark } }}>
-                        Entendido
-                    </Button>
-                ) : (
-                    <>
-                        <Button onClick={onClose} disableRipple
-                            sx={{ textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 2, px: 3.5, py: 0.75, fontSize: '0.875rem', border: `1px solid ${theme.palette.divider}`, '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary } }}>
-                            Cancelar
-                        </Button>
-                        <Button onClick={handleConfirm} disabled={confirming || rutasInhabilitar.loading} variant="contained" disableRipple
-                            sx={{ textTransform: 'none', borderRadius: 2, fontWeight: 600, minWidth: 140, px: 5, py: 0.76, fontSize: '0.875rem', backgroundColor: theme.palette.primary.main, '&:hover': { backgroundColor: theme.palette.primary.dark } }}>
-                            {confirming ? <CircularProgress size={18} sx={{ color: 'white' }} /> : data.habilitadoActual ? 'Inhabilitar' : 'Habilitar'}
-                        </Button>
-                    </>
-                )}
-            </Box>
-        </Dialog>
+            ) : bloqueado && (
+                <Box sx={{ mt: 1, textAlign: 'left' }}>
+                    <RutasMiniTabla rutas={rutasInhabilitar.data} theme={theme} />
+                </Box>
+            )}
+        </ConfirmToggleDialog>
     )
 }
 
