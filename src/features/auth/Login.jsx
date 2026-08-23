@@ -20,6 +20,11 @@ import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import logo from '../../assets/logo.png'
 import logoDark from '../../assets/logoDark.png'
 
+// Debe coincidir con PASSWORD_REGEX en shared/layouts/Header.jsx, features/auth/ResetearPassword.jsx
+// y el validador del backend
+const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s]).{8,64}$/
+const PASSWORD_HELP = 'El formato correcto es: debe tener mínimo una mayúscula, una minúscula, un número y un símbolo'
+
 const Login = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -52,6 +57,7 @@ const Login = () => {
     if (!email.trim()) errores.email = 'El correo es obligatorio'
     else if (!emailRegex.test(email.trim())) errores.email = 'Ingresa un correo válido (ejemplo@dominio.com)'
     if (!password) errores.password = 'La contraseña es obligatoria'
+    else if (!PASSWORD_REGEX.test(password)) errores.password = PASSWORD_HELP
     setCamposError(errores)
     return !errores.email && !errores.password
   }
