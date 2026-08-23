@@ -24,6 +24,19 @@ import logoDark from '../../assets/logoDark.png'
 // y el validador del backend
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s]).{8,64}$/
 const PASSWORD_HELP = 'El formato correcto es: debe tener mínimo una mayúscula, una minúscula, un número y un símbolo'
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+const validarEmailValor = (valor) => {
+  if (!valor.trim()) return 'El correo es obligatorio'
+  if (!EMAIL_REGEX.test(valor.trim())) return 'El correo debe tener un @ y un dominio válido (ejemplo@dominio.com)'
+  return ''
+}
+
+const validarPasswordValor = (valor) => {
+  if (!valor) return 'La contraseña es obligatoria'
+  if (!PASSWORD_REGEX.test(valor)) return PASSWORD_HELP
+  return ''
+}
 
 const Login = () => {
   const [email, setEmail] = useState('')
@@ -52,12 +65,7 @@ const Login = () => {
   }, [usuario, loading, cargando, apiCargando, navigate])
 
   const validarFormulario = () => {
-    const errores = { email: '', password: '' }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!email.trim()) errores.email = 'El correo es obligatorio'
-    else if (!emailRegex.test(email.trim())) errores.email = 'Ingresa un correo válido (ejemplo@dominio.com)'
-    if (!password) errores.password = 'La contraseña es obligatoria'
-    else if (!PASSWORD_REGEX.test(password)) errores.password = PASSWORD_HELP
+    const errores = { email: validarEmailValor(email), password: validarPasswordValor(password) }
     setCamposError(errores)
     return !errores.email && !errores.password
   }
@@ -192,6 +200,7 @@ const Login = () => {
             <TextField
               fullWidth label="Correo electrónico" type="email"
               value={email} onChange={(e) => { setEmail(e.target.value); setCamposError(prev => ({ ...prev, email: '' })); setError('') }}
+              onBlur={() => setCamposError(prev => ({ ...prev, email: validarEmailValor(email) }))}
               required placeholder="correo@ejemplo.com"
               error={!!camposError.email} helperText={camposError.email}
               InputProps={{ startAdornment: <InputAdornment position="start"><Email sx={{ color: '#8b8382' }} /></InputAdornment> }}
@@ -200,6 +209,7 @@ const Login = () => {
             <TextField
               fullWidth label="Contraseña" type={showPassword ? 'text' : 'password'}
               value={password} onChange={(e) => { setPassword(e.target.value); setCamposError(prev => ({ ...prev, password: '' })); setError('') }}
+              onBlur={() => setCamposError(prev => ({ ...prev, password: validarPasswordValor(password) }))}
               required
               error={!!camposError.password} helperText={camposError.password}
               InputProps={{
