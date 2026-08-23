@@ -9,14 +9,19 @@ import { formFieldStyles } from '../../../../shared/utils/formStyles.js'
 import { normalizarTexto } from '../../../../shared/utils/duplicados.js'
 import { validarCampo, OPCION_CLIENTE_NUEVO } from './validacion.js'
 
-/** Paso 1 del wizard: elegir el cliente remitente y capturar los datos del destinatario. */
+/**
+ * Paso 1 del wizard: elegir el cliente remitente y capturar los datos del destinatario.
+ * `onNuevoCliente` es opcional — solo lo pasa el modo registrar, y habilita la opción
+ * "Registrar nuevo cliente" al final de las sugerencias. `setSinCambios` y `ventaOriginal`
+ * son opcionales y solo los pasa el modo edición.
+ */
 export default function PasoParticipantes({
     theme, clientes, clienteSeleccionado, clienteInput, setClienteInput,
-    form, setForm, errores, setErrores, handleChange, onNuevoCliente,
+    form, setForm, errores, setErrores, handleChange, onNuevoCliente, setSinCambios, ventaOriginal,
 }) {
     return (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-            {/* Remitente — solo seleccionar cliente */}
+            {/* Remitente */}
             <Box>
                 <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1.5, color: theme.palette.text.primary }}>
                     Remitente
@@ -39,7 +44,7 @@ export default function PasoParticipantes({
                                     normalizarTexto(c.apellido || '').includes(q) ||
                                     normalizarTexto(c.numeroIdentificacion || '').includes(q)
                             })
-                        return [...base, OPCION_CLIENTE_NUEVO]
+                        return onNuevoCliente ? [...base, OPCION_CLIENTE_NUEVO] : base
                     }}
                     value={clienteSeleccionado || null}
                     inputValue={clienteInput}
@@ -60,9 +65,10 @@ export default function PasoParticipantes({
                         setForm(prev => ({ ...prev, idCliente: newValue ? newValue.idCliente : '' }))
                         setErrores(prev => newValue
                             ? { ...prev, idCliente: '' }
-                            : (prev.idCliente ? { ...prev, idCliente: validarCampo('idCliente', { idCliente: '' }) } : prev))
+                            : (prev.idCliente ? { ...prev, idCliente: validarCampo('idCliente', { idCliente: '' }, ventaOriginal) } : prev))
+                        setSinCambios?.(false)
                     }}
-                    onBlur={() => setErrores(prev => ({ ...prev, idCliente: validarCampo('idCliente', form) }))}
+                    onBlur={() => setErrores(prev => ({ ...prev, idCliente: validarCampo('idCliente', form, ventaOriginal) }))}
                     renderOption={(props, option) => {
                         const { key, ...rest } = props
                         if (option.esNuevo) {
@@ -102,6 +108,7 @@ export default function PasoParticipantes({
                             </Box>
                         )
                     }}
+                    noOptionsText="No se encontraron clientes"
                     renderInput={(params) => (
                         <TextField {...params} label="Cliente *"
                             error={!!errores.idCliente} helperText={errores.idCliente || 'Busca por nombre, apellido o documento'}
@@ -155,20 +162,20 @@ export default function PasoParticipantes({
                 <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                     <FormField label="Nombre completo" name="nombreDestinatario" value={form.nombreDestinatario}
                         onChange={handleChange}
-                        onBlur={() => setErrores(prev => ({ ...prev, nombreDestinatario: validarCampo('nombreDestinatario', form) }))}
+                        onBlur={() => setErrores(prev => ({ ...prev, nombreDestinatario: validarCampo('nombreDestinatario', form, ventaOriginal) }))}
                         required error={errores.nombreDestinatario}
                         helperText={errores.nombreDestinatario} icon={PersonOutlinedIcon}
                         placeholder="Ej: Juan Pérez" inputProps={{ maxLength: 50 }} />
                     <FormField label="Teléfono" name="telefonoDestinatario" value={form.telefonoDestinatario}
                         onChange={handleChange}
-                        onBlur={() => setErrores(prev => ({ ...prev, telefonoDestinatario: validarCampo('telefonoDestinatario', form) }))}
+                        onBlur={() => setErrores(prev => ({ ...prev, telefonoDestinatario: validarCampo('telefonoDestinatario', form, ventaOriginal) }))}
                         required error={errores.telefonoDestinatario}
                         helperText={errores.telefonoDestinatario || 'Número de 10 dígitos'} icon={PhoneOutlinedIcon}
                         inputProps={{ maxLength: 10 }} />
                     <Box sx={{ gridColumn: '1 / -1' }}>
                         <FormField label="Dirección de entrega" name="direccionDestinatario" value={form.direccionDestinatario}
                             onChange={handleChange}
-                            onBlur={() => setErrores(prev => ({ ...prev, direccionDestinatario: validarCampo('direccionDestinatario', form) }))}
+                            onBlur={() => setErrores(prev => ({ ...prev, direccionDestinatario: validarCampo('direccionDestinatario', form, ventaOriginal) }))}
                             required error={errores.direccionDestinatario}
                             placeholder="Ej: Cra 23 #80-5"
                             helperText={errores.direccionDestinatario || `${(form.direccionDestinatario || '').length}/300`}

@@ -8,13 +8,15 @@ import ConfirmRow from '../../../../shared/components/ConfirmRow.jsx'
 import { formatFecha } from '../../../../shared/utils/formatters.js'
 
 /**
- * Paso 5 del wizard de edición: resumen de todo lo capturado, comparado contra los
- * valores originales de la venta (cada ConfirmRow muestra el valor anterior tachado
- * cuando cambió) y un contador de cuántos campos se modificaron.
+ * Paso 5 del wizard: resumen de todo lo capturado, antes de enviar. `formOriginal`,
+ * `ventaOriginal`, `sinCambios`, `setSinCambios` y `clientes` son opcionales — solo los
+ * pasa el modo edición, y activan la comparación contra los valores originales (cada
+ * ConfirmRow muestra el valor anterior tachado cuando cambió, más un contador de cuántos
+ * campos se modificaron).
  */
 export default function PasoConfirmacion({
-    theme, apiError, setApiError, cardSx, clienteSeleccionado, form, formOriginal,
-    ventaOriginal, sinCambios, setSinCambios, clientes, rutasProgramadas,
+    theme, apiError, setApiError, cardSx, clienteSeleccionado, form, rutasProgramadas,
+    formOriginal, ventaOriginal, sinCambios, setSinCambios, clientes,
 }) {
     const clienteOriginal = formOriginal
         ? clientes.find(c => c.idCliente === parseInt(formOriginal.idCliente)) || ventaOriginal?.cliente
@@ -124,7 +126,7 @@ export default function PasoConfirmacion({
                         <PaymentOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
                         <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Envío y Pago</Typography>
                     </Box>
-                    <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Ruta y valores</Typography>
+                    <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Ruta, fechas y valores</Typography>
                     <ConfirmRow label="Ruta" value={form.destino} previousValue={formOriginal?.destino} />
                     <ConfirmRow label="Fecha entrega" value={formatFecha(form.fechaEstimadaEntrega)} previousValue={formOriginal?.fechaEstimadaEntrega ? formatFecha(formOriginal.fechaEstimadaEntrega) : undefined} />
                     <ConfirmRow label="Observaciones" value={form.observaciones} previousValue={formOriginal?.observaciones} />

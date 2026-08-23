@@ -17,12 +17,12 @@ import { sumarDias } from '../../shared/utils/horarioLaboral.js'
 import {
     steps, PAQUETE_VACIO, CAMPOS_PAQUETE,
     validarCampo, validarCampoPaquete,
-} from './components/actualizar-venta/validacion.js'
-import PasoParticipantes from './components/actualizar-venta/PasoParticipantes.jsx'
-import PasoPaquetes from './components/actualizar-venta/PasoPaquetes.jsx'
-import PasoEnvio from './components/actualizar-venta/PasoEnvio.jsx'
-import PasoPago from './components/actualizar-venta/PasoPago.jsx'
-import PasoConfirmacion from './components/actualizar-venta/PasoConfirmacion.jsx'
+} from './components/wizard/validacion.js'
+import PasoParticipantes from './components/wizard/PasoParticipantes.jsx'
+import PasoPaquetes from './components/wizard/PasoPaquetes.jsx'
+import PasoEnvio from './components/wizard/PasoEnvio.jsx'
+import PasoPago from './components/wizard/PasoPago.jsx'
+import PasoConfirmacion from './components/wizard/PasoConfirmacion.jsx'
 
 const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
     const { actualizarVenta } = useVentas()

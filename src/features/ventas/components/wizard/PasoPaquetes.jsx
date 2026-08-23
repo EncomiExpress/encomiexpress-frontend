@@ -5,7 +5,7 @@ import { FormField } from '../../../../shared/components/FormularioEstandarizado
 import { formatearMoneda } from '../../../../shared/utils/formatters.js'
 import { validarCampoPaquete, MAX_PAQUETES } from './validacion.js'
 
-/** Paso 2 del wizard de edición: uno o varios paquetes (contenido, dimensiones, peso, valor declarado). */
+/** Paso 2 del wizard: uno o varios paquetes (contenido, dimensiones, peso, valor declarado). */
 export default function PasoPaquetes({
     theme, form, errores, handlePaqueteChange, setErrorPaquete, handleAgregarPaquete, handleQuitarPaquete,
 }) {

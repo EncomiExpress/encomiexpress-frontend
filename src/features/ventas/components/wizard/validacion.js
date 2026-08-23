@@ -10,11 +10,14 @@ const SOLO_LETRAS_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/
 
 // Opción sentinel que se agrega al final de las sugerencias de Cliente — al elegirla
 // se abre RegistrarCliente en un modal encima, en vez de seleccionar un cliente real.
+// Solo aparece cuando PasoParticipantes recibe `onNuevoCliente` (modo registrar).
 export const OPCION_CLIENTE_NUEVO = { idCliente: '__nuevo__', esNuevo: true }
 
 // Valida un único campo del formulario principal (usado en onBlur y para re-validar
 // en vivo mientras se corrige un campo ya marcado con error). valorServicio/impuestos/
-// total no viven aquí: son editables sin ninguna regla de obligatoriedad.
+// total no viven aquí: son editables sin ninguna regla de obligatoriedad. Los call sites
+// del modo edición pasan un tercer argumento (la venta original) por consistencia con el
+// resto del wizard, pero esta función no lo necesita para validar.
 export const validarCampo = (name, form) => {
     switch (name) {
         case 'idCliente':
@@ -48,6 +51,7 @@ export const validarCampo = (name, form) => {
         case 'metodoPago':
             return form.metodoPago ? '' : 'Selecciona un método de pago'
         case 'observaciones':
+            if (form.observaciones && form.observaciones.length > 500) return 'Máximo 500 caracteres'
             if (form.observaciones && esSoloRelleno(form.observaciones)) return 'Las observaciones no pueden contener solo espacios o guiones'
             return ''
         default:

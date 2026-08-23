@@ -17,12 +17,12 @@ import { sumarDias } from '../../shared/utils/horarioLaboral.js'
 import {
     steps, PAQUETE_VACIO, CAMPOS_PAQUETE,
     validarCampo, validarCampoPaquete,
-} from './components/registrar-venta/validacion.js'
-import PasoParticipantes from './components/registrar-venta/PasoParticipantes.jsx'
-import PasoPaquetes from './components/registrar-venta/PasoPaquetes.jsx'
-import PasoEnvio from './components/registrar-venta/PasoEnvio.jsx'
-import PasoPago from './components/registrar-venta/PasoPago.jsx'
-import PasoConfirmacion from './components/registrar-venta/PasoConfirmacion.jsx'
+} from './components/wizard/validacion.js'
+import PasoParticipantes from './components/wizard/PasoParticipantes.jsx'
+import PasoPaquetes from './components/wizard/PasoPaquetes.jsx'
+import PasoEnvio from './components/wizard/PasoEnvio.jsx'
+import PasoPago from './components/wizard/PasoPago.jsx'
+import PasoConfirmacion from './components/wizard/PasoConfirmacion.jsx'
 
 const RegistrarVenta = ({ open, onClose, onSuccess }) => {
     const { agregarVenta } = useVentas()
@@ -430,12 +430,6 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
 
     const clienteSeleccionado = clientes.find(c => c.idCliente === parseInt(form.idCliente))
 
-    const getPlacaPaquete = (paquete) => {
-        const rutaSel = rutasProgramadas.find(r => r.idRuta === parseInt(form.idRuta))
-        const par = (rutaSel?.paresVehiculoConductor || []).find(p => p.idRutaVehiculoConductor === parseInt(paquete.idRutaVehiculoConductor))
-        return par?.vehiculo?.placa || '—'
-    }
-
     const cardSx = {
         flex: 1, minWidth: 0, borderRadius: 2, p: 2.5,
         border: `1px solid ${theme.palette.divider}`,
@@ -476,7 +470,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                 return (
                     <PasoConfirmacion
                         theme={theme} apiError={apiError} setApiError={setApiError} cardSx={cardSx}
-                        clienteSeleccionado={clienteSeleccionado} form={form} getPlacaPaquete={getPlacaPaquete}
+                        clienteSeleccionado={clienteSeleccionado} form={form} rutasProgramadas={rutasProgramadas}
                     />
                 )
             default:

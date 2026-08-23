@@ -3,7 +3,7 @@ import { FormField, FormSelect } from '../../../../shared/components/FormularioE
 import { formatearMoneda } from '../../../../shared/utils/formatters.js'
 import { validarCampo } from './validacion.js'
 
-/** Paso 4 del wizard de edición: método de pago y valores (tarifa auto-calculada pero editable). */
+/** Paso 4 del wizard: método de pago y valores (tarifa auto-calculada pero editable). */
 export default function PasoPago({ form, errores, setErrores, handleChange, ventaOriginal }) {
     return (
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
@@ -24,7 +24,7 @@ export default function PasoPago({ form, errores, setErrores, handleChange, vent
                 helperText="10% del valor del servicio (editable)"
                 inputProps={{ maxLength: 11 }} />
             <FormField label="Total a pagar ($)" name="total"
-                value={formatearMoneda(form.total)} onChange={handleChange} disabled={true} />
+                value={formatearMoneda(form.total)} onChange={handleChange} disabled />
         </Box>
     )
 }

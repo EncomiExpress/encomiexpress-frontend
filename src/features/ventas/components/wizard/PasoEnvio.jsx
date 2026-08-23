@@ -9,28 +9,38 @@ import { sumarDias } from '../../../../shared/utils/horarioLaboral.js'
 import PlacaDisplay from '../../../../shared/components/PlacaDisplay.jsx'
 import { validarCampo, validarCampoPaquete } from './validacion.js'
 
-/** Paso 3 del wizard: elegir la ruta, la fecha de entrega y asignar cada paquete a un vehículo del convoy. */
+/**
+ * Paso 3 del wizard: elegir la ruta, la fecha de entrega y asignar cada paquete a un
+ * vehículo del convoy. `getPesoOriginalPorPar`, `valorServicioManualRef`,
+ * `impuestosManualRef`, `setSinCambios` y `ventaOriginal` son opcionales — solo los pasa
+ * el modo edición. Cuando no hay `getPesoOriginalPorPar`, no se excluye ningún peso
+ * previo del cálculo de capacidad (no hay una venta anterior que restar).
+ */
 export default function PasoEnvio({
-    theme, form, setForm, errores, setErrores, setApiError,
+    theme, form, setForm, errores, setErrores, setApiError, setSinCambios,
     rutasProgramadas, rutaInput, setRutaInput, handleChange,
     calcularValorServicio, handlePaqueteChange, setErrorPaquete,
+    ventaOriginal, valorServicioManualRef, impuestosManualRef, getPesoOriginalPorPar,
 }) {
     const rutaElegida = rutasProgramadas.find(r => r.idRuta === parseInt(form.idRuta))
     const paresElegida = rutaElegida?.paresVehiculoConductor || []
+    const pesoOriginalPorPar = getPesoOriginalPorPar ? getPesoOriginalPorPar() : {}
     // Un Alert por cada vehículo del convoy que ya tiene paquetes asignados —
-    // la capacidad ahora es por vehículo, no por ruta completa.
+    // la capacidad ahora es por vehículo, no por ruta completa. En modo edición se
+    // excluye el peso que esta misma venta ya tenía en ese vehículo antes de editar.
     const paresConUso = paresElegida
         .map(par => {
             const pesoNuevo = form.paquetes
                 .filter(p => parseInt(p.idRutaVehiculoConductor) === par.idRutaVehiculoConductor)
                 .reduce((s, p) => s + (parseFloat(p.peso) || 0), 0)
             const capacidad = par.vehiculo?.capacidad ? Number(par.vehiculo.capacidad) : null
+            const pesoUsadoOtras = capacidad != null ? Math.max(0, Number(par.pesoUsado || 0) - (pesoOriginalPorPar[par.idRutaVehiculoConductor] || 0)) : null
             // "disponible" es el espacio que había ANTES de esta venta (contra el
             // que se compara si pesoNuevo se pasa o no). "disponibleFinal" es lo
             // que de verdad queda después de contar los paquetes que se están
             // registrando ahora mismo — como si la venta ya estuviera guardada —
             // para que el aviso muestre el sobrante real en vivo, no el de antes.
-            const disponible = capacidad != null ? Math.max(0, capacidad - Number(par.pesoUsado || 0)) : null
+            const disponible = capacidad != null ? Math.max(0, capacidad - pesoUsadoOtras) : null
             const disponibleFinal = disponible != null ? Math.max(0, disponible - pesoNuevo) : null
             return { par, pesoNuevo, disponible, disponibleFinal, excede: disponible != null && pesoNuevo > disponible }
         })
@@ -116,6 +126,8 @@ export default function PasoEnvio({
                             (maximaNueva && form.fechaEstimadaEntrega > maximaNueva)
                         ))
                         if (newValue) {
+                            if (valorServicioManualRef) valorServicioManualRef.current = false
+                            if (impuestosManualRef) impuestosManualRef.current = false
                             setForm(prev => {
                                 const pesoTotal = prev.paquetes.reduce((s, p) => s + (parseFloat(p.peso) || 0), 0)
                                 const valorServicio = calcularValorServicio(newValue.destino?.tarifaBase, pesoTotal)
@@ -144,9 +156,9 @@ export default function PasoEnvio({
                         }
                         setErrores(prev => ({
                             ...prev,
-                            idRuta: newValue ? '' : (prev.idRuta ? validarCampo('idRuta', { idRuta: '' }) : prev.idRuta),
+                            idRuta: newValue ? '' : (prev.idRuta ? validarCampo('idRuta', { idRuta: '' }, ventaOriginal) : prev.idRuta),
                             fechaEstimadaEntrega: fechaResetea && prev.fechaEstimadaEntrega
-                                ? validarCampo('fechaEstimadaEntrega', { fechaEstimadaEntrega: '' })
+                                ? validarCampo('fechaEstimadaEntrega', { fechaEstimadaEntrega: '' }, ventaOriginal)
                                 : (newValue ? prev.fechaEstimadaEntrega : ''),
                             // El cambio de ruta invalida el vehículo asignado, pero no otros
                             // errores del paquete (peso, dimensiones, etc.) que no dependen de la ruta.
@@ -156,8 +168,9 @@ export default function PasoEnvio({
                             }),
                         }))
                         setApiError(null)
+                        setSinCambios?.(false)
                     }}
-                    onBlur={() => setErrores(prev => ({ ...prev, idRuta: validarCampo('idRuta', form) }))}
+                    onBlur={() => setErrores(prev => ({ ...prev, idRuta: validarCampo('idRuta', form, ventaOriginal) }))}
                     noOptionsText="No se encontraron rutas"
                     renderInput={(params) => (
                         <TextField {...params} label="Ruta *"
@@ -168,7 +181,7 @@ export default function PasoEnvio({
                 />
                 <TextField fullWidth label="Fecha estimada de entrega" name="fechaEstimadaEntrega"
                     type="date" value={form.fechaEstimadaEntrega} onChange={handleChange}
-                    onBlur={() => setErrores(prev => ({ ...prev, fechaEstimadaEntrega: validarCampo('fechaEstimadaEntrega', form) }))} required
+                    onBlur={() => setErrores(prev => ({ ...prev, fechaEstimadaEntrega: validarCampo('fechaEstimadaEntrega', form, ventaOriginal) }))} required
                     error={!!errores.fechaEstimadaEntrega}
                     helperText={errores.fechaEstimadaEntrega || (form.fechaSalidaRuta
                         ? `Desde el ${formatFecha(sumarDias(form.fechaSalidaRuta, 1))}${form.fechaLlegadaEstimadaRuta ? ` hasta el ${formatFecha(sumarDias(form.fechaLlegadaEstimadaRuta, -1))}` : ''}`
@@ -266,7 +279,7 @@ export default function PasoEnvio({
             )}
             <FormField label="Observaciones" name="observaciones" value={form.observaciones}
                 onChange={handleChange}
-                onBlur={() => setErrores(prev => ({ ...prev, observaciones: validarCampo('observaciones', form) }))}
+                onBlur={() => setErrores(prev => ({ ...prev, observaciones: validarCampo('observaciones', form, ventaOriginal) }))}
                 multiline rows={2}
                 helperText={errores.observaciones || `Opcional · ${(form.observaciones || '').length}/500`}
                 error={errores.observaciones}
