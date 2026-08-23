@@ -196,7 +196,7 @@ const Login = () => {
             <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>{error}</Alert>
           )}
 
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} noValidate>
             <TextField
               fullWidth label="Correo electrónico" type="email"
               value={email} onChange={(e) => { setEmail(e.target.value); setCamposError(prev => ({ ...prev, email: '' })); setError('') }}
