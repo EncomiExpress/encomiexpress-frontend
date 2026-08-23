@@ -6,16 +6,18 @@ import { useVehiculo } from '../vehiculos/context/VehiculoContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import {
   Box, Typography, Paper, Button, TextField,
-  LinearProgress, Divider, CircularProgress, Skeleton
+  Divider, CircularProgress, Skeleton
 } from '@mui/material'
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell
 } from 'recharts'
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import CalendarTodayOutlinedIcon from '@mui/icons-material/CalendarTodayOutlined'
 import AttachMoneyOutlinedIcon from '@mui/icons-material/AttachMoneyOutlined'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
+import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined'
 import RouteOutlinedIcon from '@mui/icons-material/RouteOutlined'
 import BarChartOutlinedIcon from '@mui/icons-material/BarChartOutlined'
 import { formatRutaDestino } from '../../shared/utils/formatters.js'
@@ -70,48 +72,39 @@ const hoyISO = () => {
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
 }
 
-const KpiCard = ({ icon, label, main, sub, height = '100%', minHeight = 0 }) => {
-  const theme = useTheme()
-  return (
-    <Paper elevation={0} sx={{
-      p: 2.5,
-      borderRadius: 3,
-      border: `1px solid ${theme.palette.divider}`,
-      width: '100%',
-      height,
-      minHeight,
-      flex: 1,
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'flex-start',
-      justifyContent: 'flex-start',
-      gap: 0.5,
-      boxSizing: 'border-box',
+// Tarjeta KPI en bloque de color sólido (degradado de un solo tono, no arcoíris) —
+// solo usa el primary.main/dark/darker que ya expone el tema, alternando entre las dos
+// variantes tonales (gradient.primary / gradient.primaryHover) para diferenciar las 4
+// tarjetas sin salirse nunca del color activo (rojo o azul, según la paleta elegida).
+const VividKpiCard = ({ icon, label, main, bg, shadow }) => (
+  <Paper elevation={0} sx={{
+    p: { xs: 1.75, md: 2.5 },
+    borderRadius: 3,
+    background: bg,
+    color: '#ffffff',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: { xs: 1, md: 1.5 },
+    boxShadow: `0 10px 24px ${shadow}`,
+    minWidth: 0,
+  }}>
+    <Box sx={{
+      width: { xs: 28, md: 34 }, height: { xs: 28, md: 34 }, borderRadius: 2,
+      backgroundColor: 'rgba(255,255,255,0.2)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
     }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-        <Box sx={{ p: 0.8, borderRadius: 2, backgroundColor: theme.palette.primary.light, display: 'flex' }}>
-          {icon}
-        </Box>
-        <Typography variant="caption" sx={{
-          fontWeight: 600, color: theme.palette.text.secondary,
-          fontSize: '0.82rem', letterSpacing: 0.5,
-        }}>
-          {label}
-        </Typography>
-      </Box>
-      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center', flex: 1, width: '100%' }}>
-        <Typography variant="h4" sx={{ color: theme.palette.primary.dark, fontSize: '2rem', lineHeight: 1.1, fontWeight: 600 }}>
-          {main}
-        </Typography>
-        {sub && (
-          <Typography variant="caption" sx={{ color: theme.palette.text.secondary, fontSize: '0.72rem', mt: 0.5 }}>
-            {sub}
-          </Typography>
-        )}
-      </Box>
-    </Paper>
-  )
-}
+      {icon}
+    </Box>
+    <Box sx={{ minWidth: 0 }}>
+      <Typography sx={{ fontSize: { xs: '1.25rem', md: '1.7rem' }, fontWeight: 800, lineHeight: 1.15 }}>
+        {main}
+      </Typography>
+      <Typography sx={{ fontSize: { xs: '0.72rem', md: '0.78rem' }, opacity: 0.85, mt: 0.3 }}>
+        {label}
+      </Typography>
+    </Box>
+  </Paper>
+)
 
 const IngresosTooltip = ({ active, payload }) => {
   const theme = useTheme()
@@ -285,7 +278,14 @@ const Dashboard = () => {
   const vehiculosTotales = transportes.length
   const vehiculosDisponibles = transportes.filter(t => t.habilitado && t.estado === 'Disponible').length
 
-  const maxEnvios = enviosEstado.length > 0 ? Math.max(...enviosEstado.map(e => e.count)) : 1
+  // Total real de envíos del período — la suma de enviosEstado, no un conteo aparte de
+  // ventas, para que el KPI y las porciones de la dona siempre sumen lo mismo.
+  const totalEnvios = enviosEstado.reduce((s, e) => s + e.count, 0)
+  const totalIngresos = ingresosMes.reduce((s, m) => s + m.valor, 0)
+  const totalIngresosLabel = totalIngresos >= 1000000
+    ? `$${(totalIngresos / 1000000).toFixed(1)}M`
+    : formatCOP(totalIngresos)
+  const maxIngresoValor = ingresosMes.length ? Math.max(...ingresosMes.map(m => m.valor)) : 0
 
   // Exporta lo que el dashboard realmente muestra (no las ventas) — un libro
   // con una hoja por sección, usando los mismos datos ya calculados arriba
@@ -430,9 +430,44 @@ const Dashboard = () => {
         </Button>
       </Paper>
 
-      <Box sx={{ display: 'flex', gap: 2.5, alignItems: 'flex-start' }}>
+      <Box sx={{
+        display: 'grid',
+        gridTemplateColumns: { xs: 'repeat(2, minmax(0,1fr))', md: 'repeat(4, minmax(0,1fr))' },
+        gap: { xs: 1.5, md: 2.5 },
+      }}>
+        <VividKpiCard
+          icon={<AttachMoneyOutlinedIcon sx={{ fontSize: 18, color: '#ffffff' }} />}
+          label="Ingresos del Período"
+          main={totalIngresosLabel}
+          bg={theme.palette.gradient.primary}
+          shadow={`${theme.palette.primary.main}40`}
+        />
+        <VividKpiCard
+          icon={<PersonOutlinedIcon sx={{ fontSize: 18, color: '#ffffff' }} />}
+          label="Conductores Disponibles"
+          main={`${conductoresDisponibles} / ${conductoresTotales}`}
+          bg={theme.palette.gradient.primaryHover}
+          shadow={`${theme.palette.primary.dark}40`}
+        />
+        <VividKpiCard
+          icon={<DirectionsCarOutlinedIcon sx={{ fontSize: 18, color: '#ffffff' }} />}
+          label="Vehículos Disponibles"
+          main={`${vehiculosDisponibles} / ${vehiculosTotales}`}
+          bg={theme.palette.gradient.primaryHover}
+          shadow={`${theme.palette.primary.dark}40`}
+        />
+        <VividKpiCard
+          icon={<Inventory2OutlinedIcon sx={{ fontSize: 18, color: '#ffffff' }} />}
+          label="Envíos Totales"
+          main={`${totalEnvios}`}
+          bg={theme.palette.gradient.primary}
+          shadow={`${theme.palette.primary.main}40`}
+        />
+      </Box>
 
-        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2.5, alignItems: { xs: 'stretch', md: 'flex-start' } }}>
+
+        <Box sx={{ flex: { md: 1.35 }, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
 
           <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, border: `1px solid ${theme.palette.divider}` }}>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
@@ -464,7 +499,14 @@ const Dashboard = () => {
                     tickFormatter={(v) => v >= 1000000 ? `${(v / 1000000).toFixed(1)}M` : v >= 1000 ? `${(v / 1000).toFixed(0)}K` : v}
                   />
                   <Tooltip content={<IngresosTooltip />} cursor={{ fill: theme.palette.background.subtle }} />
-                  <Bar dataKey="valor" fill="url(#ingresosBarFill)" radius={[4, 4, 0, 0]} maxBarSize={48} />
+                  <Bar dataKey="valor" radius={[4, 4, 0, 0]} maxBarSize={48}>
+                    {ingresosMes.map((entry) => (
+                      <Cell
+                        key={entry.key}
+                        fill={entry.valor === maxIngresoValor ? 'url(#ingresosBarFill)' : theme.palette.primary.light}
+                      />
+                    ))}
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -476,89 +518,106 @@ const Dashboard = () => {
 
           <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, border: `1px solid ${theme.palette.divider}` }}>
             <SectionHeader
-              icon={<BarChartOutlinedIcon sx={{ fontSize: 16, color: theme.palette.primary.darker }} />}
-              title="Envíos por Estado"
+              icon={<RouteOutlinedIcon sx={{ fontSize: 16, color: theme.palette.primary.darker }} />}
+              title="Top 5 Destinos más Utilizados"
             />
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.6 }}>
-              {enviosEstado.map((e) => (
-                <Box key={e.label}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.4 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: e.color, flexShrink: 0 }} />
-                      <Typography variant="body2" sx={{ color: theme.palette.text.medium, fontWeight: 500, fontSize: '0.82rem' }}>
-                        {e.label}
+            {topDestinos.length > 0 ? (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.6 }}>
+                {topDestinos.map((d, i) => {
+                  const max = topDestinos[0]?.envios || 1
+                  const pct = (d.envios / max) * 100
+                  return (
+                    <Box key={d.destino} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                      <Typography sx={{
+                        width: { xs: 88, sm: 118 }, flexShrink: 0, fontSize: '0.8rem', fontWeight: 600,
+                        color: theme.palette.text.medium, lineHeight: 1.25,
+                      }}>
+                        {d.destino}
+                      </Typography>
+                      <Box sx={{ flex: 1, height: 8, borderRadius: 4, backgroundColor: theme.palette.background.subtle }}>
+                        <Box sx={{
+                          width: `${pct}%`, height: '100%', borderRadius: 4,
+                          backgroundColor: i === 0 ? theme.palette.primary.main : theme.palette.primary.light,
+                        }} />
+                      </Box>
+                      <Typography sx={{
+                        width: 34, flexShrink: 0, textAlign: 'right', fontSize: '0.8rem', fontWeight: 700,
+                        color: theme.palette.primary.main,
+                      }}>
+                        {d.envios}
                       </Typography>
                     </Box>
-                    <Typography variant="body2" fontWeight={700} sx={{ color: e.color, fontSize: '0.85rem' }}>
-                      {e.count.toLocaleString('es-CO')}
-                    </Typography>
-                  </Box>
-                  <LinearProgress
-                    variant="determinate"
-                    value={(e.count / maxEnvios) * 100}
-                    sx={{
-                      height: 6, borderRadius: 4, backgroundColor: theme.palette.background.subtle,
-                      '& .MuiLinearProgress-bar': { backgroundColor: e.color, borderRadius: 4 },
-                    }}
-                  />
-                </Box>
-              ))}
-            </Box>
+                  )
+                })}
+              </Box>
+            ) : (
+              <Typography variant="body2" sx={{ color: theme.palette.text.secondary, textAlign: 'center', py: 2 }}>
+                Sin destinos registrados en este período.
+              </Typography>
+            )}
           </Paper>
 
         </Box>
 
-        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
-
-          <Box sx={{ display: 'flex', gap: 2.5, alignItems: 'stretch', width: '100%' }}>
-            <KpiCard
-              icon={<PersonOutlinedIcon sx={{ fontSize: 18, color: theme.palette.primary.darker }} />}
-              label="Conductores Disponibles"
-              main={`${conductoresDisponibles} / ${conductoresTotales}`}
-              sub="disponibles / total"
-              height="165px"
-            />
-            <KpiCard
-              icon={<DirectionsCarOutlinedIcon sx={{ fontSize: 18, color: theme.palette.primary.darker }} />}
-              label="Vehículos Disponibles"
-              main={`${vehiculosDisponibles} / ${vehiculosTotales}`}
-              sub="disponibles / total"
-              height="165px"
-            />
-          </Box>
+        <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
 
           <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, border: `1px solid ${theme.palette.divider}` }}>
             <SectionHeader
-              icon={<RouteOutlinedIcon sx={{ fontSize: 16, color: theme.palette.primary.darker }} />}
-              title="Top 5 Destinos más Utilizados"
+              icon={<BarChartOutlinedIcon sx={{ fontSize: 16, color: theme.palette.primary.darker }} />}
+              title="Envíos por Estado"
             />
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.2 }}>
-              {topDestinos.map((d, i) => (
-                <Box key={d.destino} sx={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  p: 1.2, borderRadius: 2,
-                  backgroundColor: i === 0 ? theme.palette.primary.light : theme.palette.background.muted,
-                  border: `1px solid ${i === 0 ? theme.palette.primary.main + '30' : theme.palette.divider}`,
-                }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography sx={{
-                      width: 20, height: 20, borderRadius: '50%',
-                      backgroundColor: i === 0 ? theme.palette.primary.main : theme.palette.primary.light,
-                      color: i === 0 ? theme.palette.primary.contrastText : theme.palette.primary.darker, fontSize: '0.65rem', fontWeight: 700,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                    }}>
-                      {i + 1}
+            {enviosEstado.length > 0 ? (
+              <>
+                <Box sx={{ position: 'relative', width: 190, height: 190, maxWidth: '100%', mx: 'auto', mb: 2 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={enviosEstado}
+                        dataKey="count"
+                        nameKey="label"
+                        innerRadius={60}
+                        outerRadius={88}
+                        paddingAngle={2}
+                        stroke="none"
+                      >
+                        {enviosEstado.map((e) => <Cell key={e.label} fill={e.color} />)}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <Box sx={{
+                    position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
+                    alignItems: 'center', justifyContent: 'center', pointerEvents: 'none',
+                  }}>
+                    <Typography sx={{ fontSize: '1.85rem', fontWeight: 800, color: theme.palette.text.dark, lineHeight: 1 }}>
+                      {totalEnvios}
                     </Typography>
-                    <Typography variant="body2" sx={{ color: i === 0 ? theme.palette.primary.darker : theme.palette.text.medium, fontWeight: 500, fontSize: '0.82rem' }}>
-                      {d.destino}
+                    <Typography sx={{ fontSize: '0.7rem', color: theme.palette.text.secondary, fontWeight: 600 }}>
+                      envíos
                     </Typography>
                   </Box>
-                  <Typography variant="body2" fontWeight={700} sx={{ color: theme.palette.primary.main, fontSize: '0.82rem', whiteSpace: 'nowrap', ml: 1 }}>
-                    {d.envios} envíos
-                  </Typography>
                 </Box>
-              ))}
-            </Box>
+
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.1 }}>
+                  {enviosEstado.map((e) => (
+                    <Box key={e.label} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: e.color, flexShrink: 0 }} />
+                        <Typography variant="body2" sx={{ color: theme.palette.text.medium, fontWeight: 500, fontSize: '0.82rem' }}>
+                          {e.label}
+                        </Typography>
+                      </Box>
+                      <Typography variant="body2" fontWeight={700} sx={{ color: e.color, fontSize: '0.85rem' }}>
+                        {e.count.toLocaleString('es-CO')}
+                      </Typography>
+                    </Box>
+                  ))}
+                </Box>
+              </>
+            ) : (
+              <Typography variant="body2" sx={{ color: theme.palette.text.secondary, textAlign: 'center', py: 4 }}>
+                Sin envíos registrados en este período.
+              </Typography>
+            )}
           </Paper>
 
         </Box>
