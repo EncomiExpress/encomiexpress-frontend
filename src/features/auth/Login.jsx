@@ -50,6 +50,7 @@ const Login = () => {
   // Estados para recuperar contraseña
   const [openRecuperar, setOpenRecuperar]       = useState(false)
   const [recuperarEmail, setRecuperarEmail]     = useState('')
+  const [recuperarEmailError, setRecuperarEmailError] = useState('')
   const [recuperarLoading, setRecuperarLoading] = useState(false)
   const [recuperarMensaje, setRecuperarMensaje] = useState(null)
 
@@ -92,7 +93,11 @@ const Login = () => {
   }
 
   const handleRecuperar = async () => {
-    if (!recuperarEmail) return
+    const errorFormato = validarEmailValor(recuperarEmail)
+    if (errorFormato) {
+      setRecuperarEmailError(errorFormato)
+      return
+    }
     setRecuperarLoading(true)
     setRecuperarMensaje(null)
     try {
@@ -228,7 +233,7 @@ const Login = () => {
             {/* ── ¿Olvidaste tu contraseña? ── */}
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
               <Typography
-                onClick={() => { setRecuperarEmail(''); setRecuperarMensaje(null); setOpenRecuperar(true) }}
+                onClick={() => { setRecuperarEmail(''); setRecuperarEmailError(''); setRecuperarMensaje(null); setOpenRecuperar(true) }}
                 sx={{
                   fontSize: '0.8rem', color: theme.palette.primary.main,
                   fontWeight: 600, cursor: 'pointer',
@@ -299,10 +304,14 @@ const Login = () => {
               value={recuperarEmail}
               onChange={(e) => {
                 setRecuperarEmail(e.target.value)
+                setRecuperarEmailError('')
                 setRecuperarMensaje(null)
               }}
+              onBlur={() => setRecuperarEmailError(validarEmailValor(recuperarEmail))}
               disabled={recuperarLoading}
               placeholder="correo@ejemplo.com"
+              error={!!recuperarEmailError}
+              helperText={recuperarEmailError}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -332,7 +341,7 @@ const Login = () => {
             onClick={handleRecuperar}
             variant="contained"
             disableRipple
-            disabled={recuperarLoading || !recuperarEmail || recuperarMensaje?.tipo === 'success'}
+            disabled={recuperarLoading || !recuperarEmail || !!validarEmailValor(recuperarEmail) || recuperarMensaje?.tipo === 'success'}
             sx={{
               textTransform: 'none', borderRadius: 2, fontWeight: 600, minWidth: 110, px: 5, py: 0.76, fontSize: '0.875rem',
               backgroundColor: theme.palette.primary.main,
