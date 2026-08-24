@@ -187,36 +187,36 @@ const ModalConsultarConductor = ({ conductor, onClose }) => {
                     {tabRutas.loading
                         ? <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}><CircularProgress size={30} /></Box>
                         : tabRutas.data.length === 0
-                        ? <Typography color="text.secondary" variant="body2" sx={{ py: 4, textAlign: 'center' }}>Sin rutas registradas</Typography>
-                        : <TableContainer component={Paper} elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 2, maxHeight: 230, overflowY: 'auto' }}>
-                            <Table size="small">
-                                <TableHead>
-                                    <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
-                                        <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Ruta</TableCell>
-                                        <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Destino</TableCell>
-                                        <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Fecha salida</TableCell>
-                                        <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Estado</TableCell>
-                                    </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                    {tabRutas.data.map(r => (
-                                        <TableRow key={r.idRuta}
-                                            onClick={() => window.open(`/transporte/rutas?highlight=${r.idRuta}`, '_blank')}
-                                            sx={{ cursor: 'pointer', '&:hover': { backgroundColor: theme.palette.background.subtle } }}>
-                                            <TableCell sx={{ fontSize: '0.82rem' }}>{r.origen || '—'}</TableCell>
-                                            <TableCell sx={{ fontSize: '0.82rem' }}>{r.destino?.ciudad || '—'}</TableCell>
-                                            <TableCell sx={{ fontSize: '0.82rem' }}>{r.fechaSalida ? formatFecha(r.fechaSalida) : '—'}</TableCell>
-                                            <TableCell>
-                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                                                    {renderEstadoRuta(r.estado)}
-                                                    <Typography fontSize="0.82rem" color={theme.palette.text.primary}>{r.estado || '—'}</Typography>
-                                                </Box>
-                                            </TableCell>
+                            ? <Typography color="text.secondary" variant="body2" sx={{ py: 4, textAlign: 'center' }}>Sin rutas registradas</Typography>
+                            : <TableContainer component={Paper} elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 2, maxHeight: 230, overflowY: 'auto' }}>
+                                <Table size="small">
+                                    <TableHead>
+                                        <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
+                                            <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Ruta</TableCell>
+                                            <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Destino</TableCell>
+                                            <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Fecha salida</TableCell>
+                                            <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Estado</TableCell>
                                         </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </TableContainer>
+                                    </TableHead>
+                                    <TableBody>
+                                        {tabRutas.data.map(r => (
+                                            <TableRow key={r.idRuta}
+                                                onClick={() => window.open(`/transporte/rutas?highlight=${r.idRuta}`, '_blank')}
+                                                sx={{ cursor: 'pointer', '&:hover': { backgroundColor: theme.palette.background.subtle } }}>
+                                                <TableCell sx={{ fontSize: '0.82rem' }}>{r.origen || '—'}</TableCell>
+                                                <TableCell sx={{ fontSize: '0.82rem' }}>{r.destino?.ciudad || '—'}</TableCell>
+                                                <TableCell sx={{ fontSize: '0.82rem' }}>{r.fechaSalida ? formatFecha(r.fechaSalida) : '—'}</TableCell>
+                                                <TableCell>
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                                                        {renderEstadoRuta(r.estado)}
+                                                        <Typography fontSize="0.82rem" color={theme.palette.text.primary}>{r.estado || '—'}</Typography>
+                                                    </Box>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
                     }
                 </Box>
             )}
@@ -234,48 +234,50 @@ const ModalConsultarConductor = ({ conductor, onClose }) => {
                     {tabAnticipos.loading
                         ? <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}><CircularProgress size={30} /></Box>
                         : tabAnticipos.data.length === 0
-                        ? <Typography color="text.secondary" variant="body2" sx={{ py: 4, textAlign: 'center' }}>Sin anticipos registrados</Typography>
-                        : <TableContainer component={Paper} elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 2, maxHeight: 230, overflowY: 'auto' }}>
-                            <Table size="small">
-                                <TableHead>
-                                    <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
-                                        <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Valor</TableCell>
-                                        <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Gastado</TableCell>
-                                        <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Estado</TableCell>
-                                    </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                    {tabAnticipos.data.map(a => {
-                                        const info = getAnticipoEstadoDot(a.estado)
-                                        return (
-                                        <TableRow key={a.idAnticipoExcedente}
-                                            onClick={() => window.open(`/anticipos/listar?highlight=${a.idAnticipoExcedente}`, '_blank')}
-                                            sx={{ cursor: 'pointer', '&:hover': { backgroundColor: theme.palette.background.subtle } }}>
-                                            <TableCell sx={{ fontSize: '0.82rem' }}>${Number(a.valorAnticipo).toLocaleString('es-CO')}</TableCell>
-                                            <TableCell sx={{ fontSize: '0.82rem' }}>${Number(a.valorGastado || 0).toLocaleString('es-CO')}</TableCell>
-                                            <TableCell>
-                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                                                    {info.type === 'symbol'
-                                                        ? <Box component="span" sx={{ width: 10, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: info.char === '✓' ? '0.8rem' : '0.85rem', color: info.color, lineHeight: 1, flexShrink: 0 }}>{info.char}</Box>
-                                                        : <Box sx={{ width: 10, height: 10, borderRadius: '50%', flexShrink: 0, backgroundColor: info.fill ? info.color : 'transparent', border: `2px solid ${info.color}` }} />
-                                                    }
-                                                    <Typography fontSize="0.82rem" color={theme.palette.text.primary}>{info.label}</Typography>
-                                                </Box>
-                                            </TableCell>
+                            ? <Typography color="text.secondary" variant="body2" sx={{ py: 4, textAlign: 'center' }}>Sin anticipos registrados</Typography>
+                            : <TableContainer component={Paper} elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 2, maxHeight: 230, overflowY: 'auto' }}>
+                                <Table size="small">
+                                    <TableHead>
+                                        <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
+                                            <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Valor</TableCell>
+                                            <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Gastado</TableCell>
+                                            <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Estado</TableCell>
                                         </TableRow>
-                                        )
-                                    })}
-                                </TableBody>
-                            </Table>
-                        </TableContainer>
+                                    </TableHead>
+                                    <TableBody>
+                                        {tabAnticipos.data.map(a => {
+                                            const info = getAnticipoEstadoDot(a.estado)
+                                            return (
+                                                <TableRow key={a.idAnticipoExcedente}
+                                                    onClick={() => window.open(`/anticipos/listar?highlight=${a.idAnticipoExcedente}`, '_blank')}
+                                                    sx={{ cursor: 'pointer', '&:hover': { backgroundColor: theme.palette.background.subtle } }}>
+                                                    <TableCell sx={{ fontSize: '0.82rem' }}>${Number(a.valorAnticipo).toLocaleString('es-CO')}</TableCell>
+                                                    <TableCell sx={{ fontSize: '0.82rem' }}>${Number(a.valorGastado || 0).toLocaleString('es-CO')}</TableCell>
+                                                    <TableCell>
+                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                                                            {info.type === 'symbol'
+                                                                ? <Box component="span" sx={{ width: 10, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: info.char === '✓' ? '0.8rem' : '0.85rem', color: info.color, lineHeight: 1, flexShrink: 0 }}>{info.char}</Box>
+                                                                : <Box sx={{ width: 10, height: 10, borderRadius: '50%', flexShrink: 0, backgroundColor: info.fill ? info.color : 'transparent', border: `2px solid ${info.color}` }} />
+                                                            }
+                                                            <Typography fontSize="0.82rem" color={theme.palette.text.primary}>{info.label}</Typography>
+                                                        </Box>
+                                                    </TableCell>
+                                                </TableRow>
+                                            )
+                                        })}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
                     }
                 </Box>
             )}
 
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', px: 3, pb: 3 }}>
                 <Button onClick={handleClose} variant="contained"
-                    sx={{ backgroundColor: theme.palette.primary.main, borderRadius: 2, textTransform: 'none',
-                        boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`, '&:hover': { backgroundColor: theme.palette.primary.dark } }}>
+                    sx={{
+                        backgroundColor: theme.palette.primary.main, borderRadius: 2, textTransform: 'none',
+                        boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`, '&:hover': { backgroundColor: theme.palette.primary.dark }
+                    }}>
                     Cerrar
                 </Button>
             </Box>

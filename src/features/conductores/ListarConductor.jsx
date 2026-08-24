@@ -121,7 +121,7 @@ const ListarConductor = () => {
         if (!usuario) return
         rutaService.getRutas({ estado: 'En Ruta', habilitado: 'true', limit: 100 })
             .then(res => setConductoresEnRutaIds(new Set((res?.data || []).flatMap(r => (r.paresVehiculoConductor || []).map(p => p.idConductor)))))
-            .catch(() => {})
+            .catch(() => { })
     }, [usuario])
 
     const conductoresConEstado = conductores.map(c => ({

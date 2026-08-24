@@ -274,7 +274,7 @@ const ListarCliente = () => {
                         const habilitadoActual = data.habilitadoActual
                         toggleHabilitadoCliente(data.idCliente)
                             .then(() => showToast(`Cliente ${habilitadoActual ? 'inhabilitado' : 'habilitado'} correctamente`, 'success'))
-                            .catch(() => {})
+                            .catch(() => { })
                     }
                 }}
                 onConfirm={handleConfirmarToggle}

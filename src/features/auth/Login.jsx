@@ -48,8 +48,8 @@ const Login = () => {
   const [apiCargando, setApiCargando] = useState(false)
 
   // Estados para recuperar contraseña
-  const [openRecuperar, setOpenRecuperar]       = useState(false)
-  const [recuperarEmail, setRecuperarEmail]     = useState('')
+  const [openRecuperar, setOpenRecuperar] = useState(false)
+  const [recuperarEmail, setRecuperarEmail] = useState('')
   const [recuperarEmailError, setRecuperarEmailError] = useState('')
   const [recuperarLoading, setRecuperarLoading] = useState(false)
   const [recuperarMensaje, setRecuperarMensaje] = useState(null)

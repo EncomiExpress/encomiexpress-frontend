@@ -275,7 +275,7 @@ const ListarPaqueteDevuelto = () => {
                 initialLoad={initialLoad}
                 error={error}
                 sortBy={{ field: '', dir: '' }}
-                onSort={() => {}}
+                onSort={() => { }}
                 rowSx={(paquete) => ({ opacity: paquete.encomienda?.habilitado === false ? 0.55 : 1 })}
                 emptyMessage={
                     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>

@@ -26,11 +26,11 @@ import { getVentaEstadoDot } from '../../shared/utils/estadoColors.js'
 import { getRangoFechasVentas } from '../ventas/services/ventaService.js'
 
 const STATUS_LABEL = {
-  'Programada':  'Programada',
+  'Programada': 'Programada',
   'En Ruta': 'En Ruta',
-  'Entregada':   'Entregada',
+  'Entregada': 'Entregada',
   'Completada con novedades': 'Completada con novedades',
-  'Cancelada':   'Cancelada',
+  'Cancelada': 'Cancelada',
 }
 
 const formatCOP = (n) => '$' + n.toLocaleString('es-CO')

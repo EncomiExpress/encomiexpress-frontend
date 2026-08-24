@@ -98,11 +98,11 @@ const formatMoney = (val) => {
 }
 
 const MESES = [
-    { value: '1',  label: 'Enero' },   { value: '2',  label: 'Febrero' },
-    { value: '3',  label: 'Marzo' },   { value: '4',  label: 'Abril' },
-    { value: '5',  label: 'Mayo' },    { value: '6',  label: 'Junio' },
-    { value: '7',  label: 'Julio' },   { value: '8',  label: 'Agosto' },
-    { value: '9',  label: 'Septiembre' }, { value: '10', label: 'Octubre' },
+    { value: '1', label: 'Enero' }, { value: '2', label: 'Febrero' },
+    { value: '3', label: 'Marzo' }, { value: '4', label: 'Abril' },
+    { value: '5', label: 'Mayo' }, { value: '6', label: 'Junio' },
+    { value: '7', label: 'Julio' }, { value: '8', label: 'Agosto' },
+    { value: '9', label: 'Septiembre' }, { value: '10', label: 'Octubre' },
     { value: '11', label: 'Noviembre' }, { value: '12', label: 'Diciembre' },
 ]
 
@@ -166,8 +166,8 @@ const ListarAnticipoExcedente = () => {
         hasNavigated.current = true
         getPageOfAnticipo(highlightId, rowsPerPage)
             .then(res => { if (res?.data?.page) setPage(res.data.page) })
-            .catch(() => {})
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+            .catch(() => { })
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [highlightId])
 
     const handleSort = (field) => {
@@ -814,7 +814,7 @@ const ListarAnticipoExcedente = () => {
                         const habilitadoActual = anticipo.habilitado === true
                         toggleHabilitado(anticipo.idAnticipoExcedente)
                             .then(() => showToast(habilitadoActual ? 'Anticipo inhabilitado' : 'Anticipo habilitado', 'success'))
-                            .catch(() => {})
+                            .catch(() => { })
                     }
                 }}
                 onConfirm={handleConfirmarToggle}

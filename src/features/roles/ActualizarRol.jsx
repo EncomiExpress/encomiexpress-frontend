@@ -417,4 +417,3 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
 }
 
 export default ActualizarRol
-

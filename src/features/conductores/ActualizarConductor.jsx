@@ -152,30 +152,30 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
         if (!open) { cargado.current = false; return }
         if (!conductorProp || cargado.current) return
         cargado.current = true
-            setActiveStep(0)
-            setErrores({})
-            setSinCambios(false)
-            setApiError(null)
+        setActiveStep(0)
+        setErrores({})
+        setSinCambios(false)
+        setApiError(null)
 
-            // Buscar en el store local (datos ya aplanados por fetchConductores)
-            const conductor = getConductorById(conductorProp.idConductor) || conductorProp
+        // Buscar en el store local (datos ya aplanados por fetchConductores)
+        const conductor = getConductorById(conductorProp.idConductor) || conductorProp
 
-            const datosForm = {
-                tipoIdentificacion: conductor.tipoIdentificacion || '',
-                numeroIdentificacion: conductor.numeroIdentificacion || '',
-                nombre: conductor.nombre || '',
-                apellido: conductor.apellido || '',
-                telefono: conductor.telefono || '',
-                email: conductor.email || '',
-                password: '',
-                confirmarPassword: '',
-                categoriasLicencia: conductor.categoriasLicencia?.length
-                    ? conductor.categoriasLicencia
-                    : [{ categoria: '', vencimiento: '' }],
-                numeroLicencia: conductor.numeroLicencia || '',
-            }
-            setForm(datosForm)
-            setFormOriginal(datosForm)
+        const datosForm = {
+            tipoIdentificacion: conductor.tipoIdentificacion || '',
+            numeroIdentificacion: conductor.numeroIdentificacion || '',
+            nombre: conductor.nombre || '',
+            apellido: conductor.apellido || '',
+            telefono: conductor.telefono || '',
+            email: conductor.email || '',
+            password: '',
+            confirmarPassword: '',
+            categoriasLicencia: conductor.categoriasLicencia?.length
+                ? conductor.categoriasLicencia
+                : [{ categoria: '', vencimiento: '' }],
+            numeroLicencia: conductor.numeroLicencia || '',
+        }
+        setForm(datosForm)
+        setFormOriginal(datosForm)
     }, [open, conductorProp, getConductorById])
 
     const handleChange = (e) => {

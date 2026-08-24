@@ -223,47 +223,49 @@ const ModalConsultarDestino = ({ destino, onClose }) => {
                     {tabRutas.loading
                         ? <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}><CircularProgress size={30} /></Box>
                         : tabRutas.data.length === 0
-                        ? <Typography color="text.secondary" variant="body2" sx={{ py: 4, textAlign: 'center' }}>Sin rutas registradas</Typography>
-                        : <TableContainer component={Paper} elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 2, maxHeight: 230, overflowY: 'auto' }}>
-                            <Table size="small">
-                                <TableHead>
-                                    <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
-                                        <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Ruta</TableCell>
-                                        <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Vehículo</TableCell>
-                                        <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Fecha salida</TableCell>
-                                        <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Estado</TableCell>
-                                    </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                    {tabRutas.data.map(r => (
-                                        <TableRow key={r.idRuta}
-                                            onClick={() => window.open(`/transporte/rutas?highlight=${r.idRuta}`, '_blank')}
-                                            sx={{ cursor: 'pointer', '&:hover': { backgroundColor: theme.palette.background.subtle } }}>
-                                            <TableCell sx={{ fontSize: '0.82rem' }}>{r.origen || '—'}</TableCell>
-                                            <TableCell sx={{ fontSize: '0.82rem' }}>
-                                                {r.paresVehiculoConductor?.[0]?.vehiculo?.placa || '—'}
-                                                {r.paresVehiculoConductor?.length > 1 ? ` +${r.paresVehiculoConductor.length - 1}` : ''}
-                                            </TableCell>
-                                            <TableCell sx={{ fontSize: '0.82rem' }}>{r.fechaSalida ? formatFecha(r.fechaSalida) : '—'}</TableCell>
-                                            <TableCell>
-                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                                                    {renderEstadoRuta(r.estado)}
-                                                    <Typography fontSize="0.82rem" color={theme.palette.text.primary}>{r.estado || '—'}</Typography>
-                                                </Box>
-                                            </TableCell>
+                            ? <Typography color="text.secondary" variant="body2" sx={{ py: 4, textAlign: 'center' }}>Sin rutas registradas</Typography>
+                            : <TableContainer component={Paper} elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 2, maxHeight: 230, overflowY: 'auto' }}>
+                                <Table size="small">
+                                    <TableHead>
+                                        <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
+                                            <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Ruta</TableCell>
+                                            <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Vehículo</TableCell>
+                                            <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Fecha salida</TableCell>
+                                            <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Estado</TableCell>
                                         </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </TableContainer>
+                                    </TableHead>
+                                    <TableBody>
+                                        {tabRutas.data.map(r => (
+                                            <TableRow key={r.idRuta}
+                                                onClick={() => window.open(`/transporte/rutas?highlight=${r.idRuta}`, '_blank')}
+                                                sx={{ cursor: 'pointer', '&:hover': { backgroundColor: theme.palette.background.subtle } }}>
+                                                <TableCell sx={{ fontSize: '0.82rem' }}>{r.origen || '—'}</TableCell>
+                                                <TableCell sx={{ fontSize: '0.82rem' }}>
+                                                    {r.paresVehiculoConductor?.[0]?.vehiculo?.placa || '—'}
+                                                    {r.paresVehiculoConductor?.length > 1 ? ` +${r.paresVehiculoConductor.length - 1}` : ''}
+                                                </TableCell>
+                                                <TableCell sx={{ fontSize: '0.82rem' }}>{r.fechaSalida ? formatFecha(r.fechaSalida) : '—'}</TableCell>
+                                                <TableCell>
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                                                        {renderEstadoRuta(r.estado)}
+                                                        <Typography fontSize="0.82rem" color={theme.palette.text.primary}>{r.estado || '—'}</Typography>
+                                                    </Box>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
                     }
                 </Box>
             )}
 
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', px: 3, pb: 3 }}>
                 <Button onClick={handleClose} variant="contained"
-                    sx={{ backgroundColor: theme.palette.primary.main, borderRadius: 2, textTransform: 'none',
-                        boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`, '&:hover': { backgroundColor: theme.palette.primary.dark } }}>
+                    sx={{
+                        backgroundColor: theme.palette.primary.main, borderRadius: 2, textTransform: 'none',
+                        boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`, '&:hover': { backgroundColor: theme.palette.primary.dark }
+                    }}>
                     Cerrar
                 </Button>
             </Box>
