@@ -1,18 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import {
-    Box, Typography, Chip, IconButton,
-    Select, MenuItem, FormControl,
-    Tooltip, Button, Avatar, CircularProgress,
-} from '@mui/material'
-import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
-import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
+import { Box, Typography, Button, CircularProgress } from '@mui/material'
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
-import ToggleSwitch from '../../shared/components/ToggleSwitch.jsx'
 import TablaPaginacionFooter from '../../shared/components/TablaPaginacionFooter.jsx'
-import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
-import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import DataTable, { FiltroEstadoTabs, BuscadorField } from '../../shared/components/DataTable.jsx'
 import useEntityCrud from '../../shared/hooks/useEntityCrud.js'
 import { usePropietario } from './context/PropietarioContext.jsx'
@@ -21,24 +12,25 @@ import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import RegistrarPropietario from './RegistrarPropietario'
 import ActualizarPropietario from './ActualizarPropietario'
 import ModalBloqueoInhabilitacion from '../../shared/components/ModalBloqueoInhabilitacion'
-import ModalConsultarPropietario from './ModalConsultarPropietario'
-import ModalInhabilitarPropietario from './ModalInhabilitarPropietario'
+import ModalConsultarPropietario from './components/ModalConsultarPropietario'
+import ModalInhabilitarPropietario from './components/ModalInhabilitarPropietario'
+import FiltroTipoFlota from './components/FiltroTipoFlota.jsx'
 import { getPageOfPropietario, getPropietarios } from './services/propietarioService.js'
-
-const TIPOS_FLOTA = ['Carga Liviana', 'Carga Pesada', 'Pasajeros', 'Mixta']
+import usePropietarioColumns from './hooks/usePropietarioColumns.jsx'
+import usePropietarioAcciones from './hooks/usePropietarioAcciones.js'
 
 const ListarPropietario = () => {
     const navigate = useNavigate()
     const [propietarioVer, setPropietarioVer] = useState(null)
     const { showToast } = useToast()
-    const [modalBloqueo, setModalBloqueo] = useState({ open: false, dependencias: [], mensaje: '' })
-    const [confirmToggle, setConfirmToggle] = useState({ open: false, idPropietario: null, nombreCompleto: '', habilitadoActual: false })
     const [filtroTipoFlota, setFiltroTipoFlota] = useState('')
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [propietarioEditar, setPropietarioEditar] = useState(null)
-    const { propietarios, total, fetchPropietarios, toggleHabilitado } = usePropietario()
+    const { propietarios, total, fetchPropietarios } = usePropietario()
     const { usuario, tienePermiso, PERMISOS } = useAuth()
+
+    const { confirmToggle, setConfirmToggle, modalBloqueo, setModalBloqueo, solicitarToggle, onConfirmar } = usePropietarioAcciones()
 
     const {
         theme,
@@ -76,106 +68,18 @@ const ListarPropietario = () => {
         if (!usuario) navigate('/login')
     }, [usuario, navigate])
 
-    const solicitarToggle = (propietario) => {
-        setConfirmToggle({
-            open: true,
-            idPropietario: propietario.idPropietario,
-            nombreCompleto: `${propietario.nombre} ${propietario.apellido}`,
-            habilitadoActual: propietario.habilitado,
-        })
-    }
-
-    const onConfirmar = async () => {
-        const { idPropietario, habilitadoActual } = confirmToggle
-        try {
-            await toggleHabilitado(idPropietario)
-            showToast(`Propietario ${habilitadoActual ? 'inhabilitado' : 'habilitado'} correctamente.`, 'success')
-        } catch (err) {
-            if (err?.details?.length > 0) {
-                setModalBloqueo({ open: true, dependencias: err.details, mensaje: err.message })
-            } else {
-                showToast(err.message || 'Error al cambiar el estado', 'error')
-            }
-            throw err
-        }
-    }
-
     const emptyMessage = filtroHabilitado !== 'todo'
         ? 'No se encontraron propietarios que coincidan con los filtros aplicados.'
         : debouncedBusqueda.trim()
             ? 'No se encontraron propietarios que coincidan con la búsqueda.'
             : 'No hay propietarios registrados en el sistema.'
 
-    const columns = [
-        {
-            key: 'nombre', label: 'Nombre', sortField: 'nombre',
-            render: (propietario) => (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <Avatar sx={{
-                        width: 34, height: 34,
-                        backgroundColor: propietario.habilitado ? theme.palette.avatarDefault.bg : theme.palette.avatarDisabled.bg,
-                        fontSize: '0.73rem', fontWeight: 700,
-                        color: propietario.habilitado ? theme.palette.avatarDefault.color : theme.palette.avatarDisabled.color,
-                    }}>
-                        {(propietario.nombre?.[0] || '').toUpperCase()}{(propietario.apellido?.[0] || '').toUpperCase()}
-                    </Avatar>
-                    <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary} noWrap>
-                        {propietario.nombre} {propietario.apellido}
-                    </Typography>
-                </Box>
-            ),
-        },
-        {
-            key: 'identificacion', label: 'Identificación',
-            cellSx: { fontSize: '0.85rem', color: theme.palette.text.primary, py: 1.5 },
-            render: (propietario) => `${propietario.tipoIdentificacion} ${propietario.numeroIdentificacion}`,
-        },
-        { key: 'telefono', label: 'Teléfono', cellSx: { py: 1.5 }, render: (propietario) => propietario.telefono || '—' },
-        { key: 'email', label: 'Email', cellSx: { py: 1.5 }, render: (propietario) => propietario.email || '—' },
-        {
-            key: 'tipoFlota', label: 'Tipo Flota', cellSx: { py: 1.5 },
-            render: (propietario) => (
-                <Chip
-                    label={propietario.tipoFlota || '—'}
-                    size="small"
-                    sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem' }}
-                />
-            ),
-        },
-        {
-            key: 'acciones', label: 'Acciones', width: 130, cellSx: { py: 1.5 },
-            render: (propietario) => (
-                <Box sx={{ display: 'flex', gap: 0.5 }}>
-                    <Tooltip title="Ver detalle">
-                        <IconButton size="small" onClick={() => setPropietarioVer(propietario)}
-                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}>
-                            <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
-                        </IconButton>
-                    </Tooltip>
-                    {propietario.habilitado === false ? (
-                        <Tooltip title="Habilita el registro para poder editarlo">
-                            <span>
-                                <IconButton size="small" disabled>
-                                    <EditOutlinedIcon sx={{ fontSize: 18 }} />
-                                </IconButton>
-                            </span>
-                        </Tooltip>
-                    ) : (
-                        <Tooltip title="Editar">
-                            <IconButton size="small"
-                                onClick={() => { setPropietarioEditar(propietario); setModalActualizarOpen(true) }}
-                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}>
-                                <EditOutlinedIcon sx={{ fontSize: 18 }} />
-                            </IconButton>
-                        </Tooltip>
-                    )}
-                    {tienePermiso(PERMISOS.INHABILITAR_PROPIETARIO) && (
-                        <ToggleSwitch id={propietario.idPropietario} checked={propietario.habilitado} onChange={() => solicitarToggle(propietario)} />
-                    )}
-                </Box>
-            ),
-        },
-    ]
+    const columns = usePropietarioColumns({
+        theme, tienePermiso, PERMISOS,
+        onConsultar: setPropietarioVer,
+        onEditar: (propietario) => { setPropietarioEditar(propietario); setModalActualizarOpen(true) },
+        onToggleHabilitado: solicitarToggle,
+    })
 
     return (
         <Box sx={{ p: 3.5 }}>
@@ -239,51 +143,7 @@ const ListarPropietario = () => {
                         btnRefs={filtroBtnRefs}
                         pillStyle={filtroPillStyle}
                     />
-                    <FormControl size="small" sx={{ minWidth: 160 }}>
-                        <Select
-                            displayEmpty
-                            value={filtroTipoFlota}
-                            onChange={e => { setFiltroTipoFlota(e.target.value); setPage(1) }}
-                            renderValue={v => v || 'Tipo de flota'}
-                            IconComponent={KeyboardArrowDownOutlinedIcon}
-                            sx={{
-                                fontSize: '0.82rem',
-                                borderRadius: 4,
-                                color: filtroTipoFlota ? theme.palette.text.primary : theme.palette.text.secondary,
-                                '& .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
-                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.divider },
-                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: theme.palette.primary.main, borderWidth: '1px' },
-                                '&.Mui-focused': { boxShadow: `0 0 0 3px ${theme.palette.primary.activeBg}` },
-                                '& .MuiSelect-icon': { color: theme.palette.text.secondary, fontSize: 18 },
-                                '& .MuiTouchRipple-root': { display: 'none' },
-                            }}
-                            MenuProps={{
-                                slotProps: {
-                                    paper: {
-                                        sx: {
-                                            borderRadius: 2,
-                                            boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
-                                            mt: 0.5,
-                                            '& .MuiMenuItem-root': {
-                                                fontSize: '0.82rem', py: 0.9, px: 2,
-                                                display: 'flex', justifyContent: 'space-between', gap: 2,
-                                                '&:hover': { backgroundColor: theme.palette.primary.activeBg },
-                                                '&.Mui-selected': { backgroundColor: 'transparent', fontWeight: 600 },
-                                                '&.Mui-selected:hover': { backgroundColor: theme.palette.primary.activeBg },
-                                            },
-                                        },
-                                    },
-                                },
-                            }}>
-                            <MenuItem value="">Todos</MenuItem>
-                            {TIPOS_FLOTA.map(t => (
-                                <MenuItem key={t} value={t}>
-                                    {t}
-                                    {filtroTipoFlota === t && <CheckOutlinedIcon sx={{ fontSize: 14, color: theme.palette.text.secondary }} />}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
+                    <FiltroTipoFlota theme={theme} filtroTipoFlota={filtroTipoFlota} setFiltroTipoFlota={setFiltroTipoFlota} setPage={setPage} />
                 </Box>
 
                 <BuscadorField value={busqueda} onChange={setBusqueda} placeholder="Buscar propietarios..." />

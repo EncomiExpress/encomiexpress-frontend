@@ -1,32 +1,31 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { useClientes } from './context/ClienteContext.jsx'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
-import { Box, Typography, IconButton, Tooltip, Button, Avatar, CircularProgress } from '@mui/material'
-import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
-import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
+import { Box, Typography, Button, CircularProgress } from '@mui/material'
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
-import ToggleSwitch from '../../shared/components/ToggleSwitch.jsx'
 import TablaPaginacionFooter from '../../shared/components/TablaPaginacionFooter.jsx'
 import DataTable, { FiltroEstadoTabs, BuscadorField } from '../../shared/components/DataTable.jsx'
 import useEntityCrud from '../../shared/hooks/useEntityCrud.js'
 import RegistrarCliente from './RegistrarCliente'
 import ActualizarCliente from './ActualizarCliente'
-import ModalInhabilitarCliente from './ModalInhabilitarCliente'
-import ModalConsultarCliente from './ModalConsultarCliente'
+import ModalInhabilitarCliente from './components/ModalInhabilitarCliente'
+import ModalConsultarCliente from './components/ModalConsultarCliente'
 import { getPageOfCliente, getClientes } from './services/clienteService.js'
+import useClienteColumns from './hooks/useClienteColumns.jsx'
+import useClienteAcciones from './hooks/useClienteAcciones.js'
 
 const ListarCliente = () => {
-    const { clientes, total, fetchClientes, toggleHabilitadoCliente } = useClientes()
+    const { clientes, total, fetchClientes } = useClientes()
     const { tienePermiso, PERMISOS } = useAuth()
     const { showToast } = useToast()
-    const pendingConfirm = useRef(false)
     const [clienteConsulta, setClienteConsulta] = useState(null)
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [clienteEditar, setClienteEditar] = useState(null)
-    const [modalInhabilitar, setModalInhabilitar] = useState({ open: false, data: null })
+
+    const { modalInhabilitar, setModalInhabilitar, handleToggleHabilitado, handleConfirmarToggle, handleExited } = useClienteAcciones()
 
     const {
         theme,
@@ -58,110 +57,18 @@ const ListarCliente = () => {
         onExportError: (err) => showToast(err.message || 'Error al exportar.', 'error'),
     })
 
-    const handleToggleHabilitado = (cliente) => {
-        setModalInhabilitar({
-            open: true,
-            data: {
-                idCliente: cliente.idCliente,
-                nombre: cliente.nombre,
-                apellido: cliente.apellido,
-                habilitadoActual: cliente.habilitado,
-            }
-        })
-    }
-
-    const handleConfirmarToggle = () => {
-        pendingConfirm.current = true
-    }
-
     const emptyMessage = filtroEstado !== 'todo'
         ? 'No se encontraron clientes que coincidan con los filtros aplicados.'
         : debouncedBusqueda.trim()
             ? 'No se encontraron clientes que coincidan con la búsqueda.'
             : 'No hay clientes registrados en el sistema.'
 
-    const columns = [
-        {
-            key: 'nombre', label: 'Nombre', sortField: 'nombre',
-            render: (cliente) => (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <Avatar sx={{
-                        width: 34, height: 34,
-                        backgroundColor: cliente.habilitado ? theme.palette.avatarDefault.bg : theme.palette.avatarDisabled.bg,
-                        fontSize: '0.73rem',
-                        fontWeight: 700,
-                        color: cliente.habilitado ? theme.palette.avatarDefault.color : theme.palette.avatarDisabled.color,
-                    }}>
-                        {cliente.iniciales && cliente.iniciales !== 'U' ? cliente.iniciales : (cliente.nombre?.[0] || '') + (cliente.apellido?.[0] || '') || 'C'}
-                    </Avatar>
-                    <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary} noWrap>
-                        {cliente.nombre} {cliente.apellido}
-                    </Typography>
-                </Box>
-            ),
-        },
-        {
-            key: 'identificacion', label: 'Identificación',
-            cellSx: { fontSize: '0.85rem', color: theme.palette.text.primary, py: 1.5 },
-            render: (cliente) => `${cliente.tipoIdentificacion} ${cliente.numeroIdentificacion}`,
-        },
-        {
-            key: 'telefono', label: 'Teléfono',
-            cellSx: { fontSize: '0.85rem', color: theme.palette.text.primary, py: 1.5 },
-            render: (cliente) => cliente.telefono,
-        },
-        {
-            key: 'email', label: 'Email',
-            cellSx: { fontSize: '0.85rem', color: theme.palette.text.primary, py: 1.5, maxWidth: 200 },
-            render: (cliente) => (
-                <Typography variant="body2" color={theme.palette.text.primary} noWrap>
-                    {cliente.email}
-                </Typography>
-            ),
-        },
-        {
-            key: 'acciones', label: 'Acciones', width: 130, cellSx: { py: 1.5 },
-            render: (cliente) => (
-                <Box sx={{ display: 'flex', gap: 0.5 }}>
-                    {tienePermiso(PERMISOS.CONSULTAR_CLIENTE) && (
-                        <Tooltip title="Ver detalle">
-                            <IconButton
-                                size="small"
-                                onClick={() => setClienteConsulta(cliente)}
-                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}
-                            >
-                                <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
-                            </IconButton>
-                        </Tooltip>
-                    )}
-                    {tienePermiso(PERMISOS.ACTUALIZAR_CLIENTE) && (
-                        cliente.habilitado === false ? (
-                            <Tooltip title="Habilita el registro para poder editarlo">
-                                <span>
-                                    <IconButton size="small" disabled>
-                                        <EditOutlinedIcon sx={{ fontSize: 18 }} />
-                                    </IconButton>
-                                </span>
-                            </Tooltip>
-                        ) : (
-                            <Tooltip title="Editar">
-                                <IconButton
-                                    size="small"
-                                    onClick={() => { setClienteEditar(cliente); setModalActualizarOpen(true) }}
-                                    sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}
-                                >
-                                    <EditOutlinedIcon sx={{ fontSize: 18 }} />
-                                </IconButton>
-                            </Tooltip>
-                        )
-                    )}
-                    {tienePermiso(PERMISOS.INHABILITAR_CLIENTE) && (
-                        <ToggleSwitch id={cliente.idCliente} checked={cliente.habilitado} onChange={() => handleToggleHabilitado(cliente)} />
-                    )}
-                </Box>
-            ),
-        },
-    ]
+    const columns = useClienteColumns({
+        theme, tienePermiso, PERMISOS,
+        onConsultar: setClienteConsulta,
+        onEditar: (cliente) => { setClienteEditar(cliente); setModalActualizarOpen(true) },
+        onToggleHabilitado: handleToggleHabilitado,
+    })
 
     return (
         <Box sx={{ p: 3.5 }}>
@@ -265,18 +172,7 @@ const ListarCliente = () => {
                 open={modalInhabilitar.open}
                 data={modalInhabilitar.data}
                 onClose={() => setModalInhabilitar(s => ({ ...s, open: false }))}
-                onExited={() => {
-                    const data = modalInhabilitar.data
-                    const wasPending = pendingConfirm.current
-                    pendingConfirm.current = false
-                    setModalInhabilitar({ open: false, data: null })
-                    if (wasPending && data) {
-                        const habilitadoActual = data.habilitadoActual
-                        toggleHabilitadoCliente(data.idCliente)
-                            .then(() => showToast(`Cliente ${habilitadoActual ? 'inhabilitado' : 'habilitado'} correctamente`, 'success'))
-                            .catch(() => { })
-                    }
-                }}
+                onExited={handleExited}
                 onConfirm={handleConfirmarToggle}
             />
 

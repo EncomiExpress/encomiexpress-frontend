@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useTheme } from '@mui/material/styles'
-import { Box, TextField, Button, Typography, Paper, Alert, InputAdornment, IconButton, Dialog, DialogContent, CircularProgress, Snackbar } from '@mui/material'
+import { Box, TextField, Button, Typography, Paper, Alert, InputAdornment, IconButton, CircularProgress, Snackbar } from '@mui/material'
 import {
   EmailOutlined as Email,
   LockOutlined as Lock,
@@ -9,34 +9,19 @@ import {
   VisibilityOffOutlined as VisibilityOff,
   Login as LoginIcon,
   ArrowBack,
-  LockResetOutlined as LockResetIcon,
-  Close,
 } from '@mui/icons-material'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
-import { recuperarPassword } from '../../shared/services/authService.js'
 import LoadingScreen from '../../shared/components/LoadingScreen.jsx'
 import useSlowRequest from '../../shared/hooks/useSlowRequest.js'
 import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import logo from '../../assets/logo.png'
 import logoDark from '../../assets/logoDark.png'
+import { validarEmailValor, validarPasswordValor } from './utils/authValidation.js'
+import ModalRecuperarPassword from './components/ModalRecuperarPassword.jsx'
 
 // Debe coincidir con PASSWORD_REGEX en shared/layouts/Header.jsx, features/auth/ResetearPassword.jsx
 // y el validador del backend
-const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s]).{8,64}$/
 const PASSWORD_HELP = 'El formato correcto es: debe tener mínimo una mayúscula, una minúscula, un número y un símbolo'
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
-const validarEmailValor = (valor) => {
-  if (!valor.trim()) return 'El correo es obligatorio'
-  if (!EMAIL_REGEX.test(valor.trim())) return 'El correo debe tener un @ y un dominio válido (ejemplo@dominio.com)'
-  return ''
-}
-
-const validarPasswordValor = (valor) => {
-  if (!valor) return 'La contraseña es obligatoria'
-  if (!PASSWORD_REGEX.test(valor)) return PASSWORD_HELP
-  return ''
-}
 
 const Login = () => {
   const [email, setEmail] = useState('')
@@ -47,12 +32,7 @@ const Login = () => {
   const [cargando, setCargando] = useState(false)
   const [apiCargando, setApiCargando] = useState(false)
 
-  // Estados para recuperar contraseña
   const [openRecuperar, setOpenRecuperar] = useState(false)
-  const [recuperarEmail, setRecuperarEmail] = useState('')
-  const [recuperarEmailError, setRecuperarEmailError] = useState('')
-  const [recuperarLoading, setRecuperarLoading] = useState(false)
-  const [recuperarMensaje, setRecuperarMensaje] = useState(null)
 
   const { login, usuario, loading, sessionExpired } = useAuth()
   const navigate = useNavigate()
@@ -66,7 +46,7 @@ const Login = () => {
   }, [usuario, loading, cargando, apiCargando, navigate])
 
   const validarFormulario = () => {
-    const errores = { email: validarEmailValor(email), password: validarPasswordValor(password) }
+    const errores = { email: validarEmailValor(email), password: validarPasswordValor(password, PASSWORD_HELP) }
     setCamposError(errores)
     return !errores.email && !errores.password
   }
@@ -89,24 +69,6 @@ const Login = () => {
     } catch {
       setApiCargando(false)
       setError('Error al iniciar sesión')
-    }
-  }
-
-  const handleRecuperar = async () => {
-    const errorFormato = validarEmailValor(recuperarEmail)
-    if (errorFormato) {
-      setRecuperarEmailError(errorFormato)
-      return
-    }
-    setRecuperarLoading(true)
-    setRecuperarMensaje(null)
-    try {
-      const resultado = await recuperarPassword(recuperarEmail)
-      setRecuperarMensaje({ tipo: 'success', texto: resultado.message })
-    } catch (err) {
-      setRecuperarMensaje({ tipo: 'error', texto: err.message || 'No se pudo enviar el correo.' })
-    } finally {
-      setRecuperarLoading(false)
     }
   }
 
@@ -214,7 +176,7 @@ const Login = () => {
             <TextField
               fullWidth label="Contraseña" type={showPassword ? 'text' : 'password'}
               value={password} onChange={(e) => { setPassword(e.target.value); setCamposError(prev => ({ ...prev, password: '' })); setError('') }}
-              onBlur={() => setCamposError(prev => ({ ...prev, password: validarPasswordValor(password) }))}
+              onBlur={() => setCamposError(prev => ({ ...prev, password: validarPasswordValor(password, PASSWORD_HELP) }))}
               required
               error={!!camposError.password} helperText={camposError.password}
               InputProps={{
@@ -233,7 +195,7 @@ const Login = () => {
             {/* ── ¿Olvidaste tu contraseña? ── */}
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
               <Typography
-                onClick={() => { setRecuperarEmail(''); setRecuperarEmailError(''); setRecuperarMensaje(null); setOpenRecuperar(true) }}
+                onClick={() => setOpenRecuperar(true)}
                 sx={{
                   fontSize: '0.8rem', color: theme.palette.primary.main,
                   fontWeight: 600, cursor: 'pointer',
@@ -262,101 +224,7 @@ const Login = () => {
         </Box>
       </Paper>
 
-      {/* ── Dialog recuperar contraseña ── */}
-      <Dialog
-        open={openRecuperar}
-        onClose={() => !recuperarLoading && setOpenRecuperar(false)}
-        maxWidth="xs" fullWidth
-        slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}
-      >
-        <DialogContent sx={{ p: 3, pb: 1, textAlign: 'center', position: 'relative' }}>
-          <IconButton
-            onClick={() => !recuperarLoading && setOpenRecuperar(false)}
-            sx={{ position: 'absolute', top: 8, right: 8, color: theme.palette.text.secondary }}
-          >
-            <Close />
-          </IconButton>
-
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5, pt: 2 }}>
-            <Box sx={{ width: 67, height: 67, borderRadius: 2, backgroundColor: theme.palette.primary.main + '22', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <LockResetIcon sx={{ fontSize: 35, color: theme.palette.primary.main }} />
-            </Box>
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
-              <Typography fontWeight={700} fontSize="1.4rem" color={theme.palette.text.primary}>
-                Recuperar contraseña
-              </Typography>
-              <Typography fontSize="1rem" color={theme.palette.text.secondary} sx={{ textAlign: 'center' }}>
-                Ingresa tu correo registrado
-              </Typography>
-            </Box>
-          </Box>
-
-          <Box sx={{ mt: 3, textAlign: 'left' }}>
-            {recuperarMensaje && (
-              <Alert severity={recuperarMensaje.tipo} sx={{ mb: 2, fontSize: '0.82rem', borderRadius: 2 }}>
-                {recuperarMensaje.texto}
-              </Alert>
-            )}
-            <TextField
-              label="Correo electrónico"
-              type="email"
-              fullWidth
-              value={recuperarEmail}
-              onChange={(e) => {
-                setRecuperarEmail(e.target.value)
-                setRecuperarEmailError('')
-                setRecuperarMensaje(null)
-              }}
-              onBlur={() => setRecuperarEmailError(validarEmailValor(recuperarEmail))}
-              disabled={recuperarLoading}
-              placeholder="correo@ejemplo.com"
-              error={!!recuperarEmailError}
-              helperText={recuperarEmailError}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Email sx={{ color: theme.palette.text.secondary }} />
-                  </InputAdornment>
-                ),
-              }}
-              sx={formFieldStyles}
-            />
-          </Box>
-        </DialogContent>
-
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 3, px: 3, pt: 1, pb: 3 }}>
-          <Button
-            onClick={() => setOpenRecuperar(false)}
-            disabled={recuperarLoading}
-            disableRipple
-            sx={{
-              textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 2,
-              px: 3.5, py: 0.75, fontSize: '0.875rem', border: `1px solid ${theme.palette.divider}`,
-              '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary },
-            }}
-          >
-            Cancelar
-          </Button>
-          <Button
-            onClick={handleRecuperar}
-            variant="contained"
-            disableRipple
-            disabled={recuperarLoading || !recuperarEmail || !!validarEmailValor(recuperarEmail) || recuperarMensaje?.tipo === 'success'}
-            sx={{
-              textTransform: 'none', borderRadius: 2, fontWeight: 600, minWidth: 110, px: 5, py: 0.76, fontSize: '0.875rem',
-              backgroundColor: theme.palette.primary.main,
-              '&:hover': { backgroundColor: theme.palette.primary.dark },
-            }}
-          >
-            {recuperarLoading
-              ? <><CircularProgress size={14} sx={{ color: '#fff', mr: 1 }} /> Enviando...</>
-              : recuperarMensaje?.tipo === 'success'
-                ? 'Correo enviado'
-                : 'Enviar enlace'
-            }
-          </Button>
-        </Box>
-      </Dialog>
+      <ModalRecuperarPassword open={openRecuperar} onClose={() => setOpenRecuperar(false)} />
 
       <Snackbar
         open={apiCargando && tardando}

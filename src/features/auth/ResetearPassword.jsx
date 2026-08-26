@@ -14,9 +14,8 @@ import { resetearPassword } from '../../shared/services/authService.js'
 import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import logo from '../../assets/logo.png'
 import logoDark from '../../assets/logoDark.png'
+import { validarPasswordValor } from './utils/authValidation.js'
 
-// Debe coincidir con PASSWORD_REGEX en Header.jsx, RegistrarUsuario.jsx y el validador del backend
-const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s]).{8,64}$/
 const PASSWORD_HELP = '8-64 caracteres, con mayúsculas, minúsculas, números y un carácter especial'
 
 // Sin enlace en ningún menú — se llega solo vía el correo de "¿Olvidaste tu contraseña?"
@@ -38,8 +37,8 @@ const ResetearPassword = () => {
 
   const validar = () => {
     const e = {}
-    if (!passwordNueva) e.passwordNueva = 'La contraseña es obligatoria'
-    else if (!PASSWORD_REGEX.test(passwordNueva)) e.passwordNueva = PASSWORD_HELP
+    const errorPassword = validarPasswordValor(passwordNueva, PASSWORD_HELP)
+    if (errorPassword) e.passwordNueva = errorPassword
     if (!confirmarPassword) e.confirmarPassword = 'Confirma la contraseña'
     else if (passwordNueva !== confirmarPassword) e.confirmarPassword = 'Las contraseñas no coinciden'
     setErrores(e)
@@ -185,7 +184,7 @@ const ResetearPassword = () => {
                       setPasswordNueva(valor)
                       setErrores(prev => {
                         const next = { ...prev }
-                        if (prev.passwordNueva) next.passwordNueva = !valor ? 'La contraseña es obligatoria' : (!PASSWORD_REGEX.test(valor) ? PASSWORD_HELP : '')
+                        if (prev.passwordNueva) next.passwordNueva = validarPasswordValor(valor, PASSWORD_HELP)
                         if (prev.confirmarPassword) next.confirmarPassword = !confirmarPassword ? 'Confirma la contraseña' : (valor !== confirmarPassword ? 'Las contraseñas no coinciden' : '')
                         return next
                       })

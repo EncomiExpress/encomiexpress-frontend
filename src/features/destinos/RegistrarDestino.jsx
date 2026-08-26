@@ -1,62 +1,22 @@
 import { useTheme } from '@mui/material/styles'
 import { useState } from 'react'
-import {
-    Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel,
-    Button, Alert, Dialog, DialogTitle, DialogContent, IconButton, CircularProgress
-} from '@mui/material'
+import { Box, Typography, Stepper, Step, StepLabel, Button, Dialog, DialogTitle, DialogContent, IconButton, CircularProgress } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
-import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined'
-import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined'
 import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined'
 import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
-import AttachMoneyOutlinedIcon from '@mui/icons-material/AttachMoneyOutlined'
 import { useDestino } from './context/DestinoContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
-import { FormField, FormSelect } from '../../shared/components/FormularioEstandarizado.jsx'
 import { getErrorMessage } from '../../shared/utils/errorMessage.js'
-import { hayDocumentoDuplicado } from '../../shared/utils/duplicados.js'
-import { formatearMoneda, limpiarMonedaInput, esSoloRelleno } from '../../shared/utils/formatters.js'
-import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
-
-const steps = ['Ubicación', 'Tarifa', 'Confirmación']
-
-const departamentos = ['Antioquia', 'Córdoba']
-const TARIFA_MAX = 999999999
-const MENSAJE_CIUDAD_DUPLICADA = 'Ya existe un destino registrado con esta ciudad.'
-
-// Ciudades donde la empresa ya opera hoy (Bajo Cauca antioqueño + sur de Córdoba) —
-// no es la lista oficial de municipios de cada departamento (esa tiene 123 y 30
-// entradas respectivamente), es la lista real de destinos de la empresa, para que el
-// caso común quede sin errores de tipeo. "Otra ciudad" cubre cualquier destino nuevo
-// que no esté en esta lista todavía.
-const CIUDADES_POR_DEPARTAMENTO = {
-    Antioquia: ['Cáceres', 'Caucasia', 'El Bagre', 'Nechí', 'Puerto Valdivia', 'Tarazá', 'Zaragoza'],
-    'Córdoba': ['Ayapel', 'Montelíbano', 'Montería', 'Puerto Libertador'],
-}
-const OTRA_CIUDAD = '__otra__'
-const OTRO_DEPARTAMENTO = '__otro__'
-
-// Valida un único campo del formulario (usado en onBlur y para re-validar en vivo
-// mientras se corrige un campo ya marcado con error).
-const validarCampo = (name, form) => {
-    switch (name) {
-        case 'departamento':
-            return form.departamento ? '' : 'Selecciona un departamento'
-        case 'ciudad':
-            return form.ciudad?.trim() ? '' : 'La ciudad es obligatoria'
-        case 'direccion':
-            if (form.direccion && esSoloRelleno(form.direccion)) return 'La dirección no puede contener solo espacios o guiones'
-            return ''
-        case 'tarifaBase':
-            if (form.tarifaBase === '' || form.tarifaBase === undefined) return 'La tarifa base es obligatoria'
-            if (isNaN(Number(form.tarifaBase)) || Number(form.tarifaBase) < 0) return 'La tarifa base debe ser un número positivo'
-            if (Number(form.tarifaBase) > TARIFA_MAX) return `La tarifa base no puede ser mayor a $${TARIFA_MAX.toLocaleString('es-CO')}`
-            return ''
-        default:
-            return ''
-    }
-}
+import { limpiarMonedaInput } from '../../shared/utils/formatters.js'
+import {
+    steps, OTRA_CIUDAD, OTRO_DEPARTAMENTO, TARIFA_MAX,
+    validarCampo, validarCiudadDuplicada, validarPaso,
+} from './utils/destinoValidation.js'
+import { stepperSx, backButtonSx, cancelButtonSx, primaryButtonSx } from './style/wizardStyles.js'
+import PasoUbicacion from './components/wizard/PasoUbicacion.jsx'
+import PasoTarifa from './components/wizard/PasoTarifa.jsx'
+import PasoConfirmacion from './components/wizard/PasoConfirmacion.jsx'
 
 const RegistrarDestino = ({ open, onClose, onSuccess }) => {
     const { registrarDestino, destinos } = useDestino()
@@ -80,11 +40,7 @@ const RegistrarDestino = ({ open, onClose, onSuccess }) => {
     // hay ninguna lista de ciudades conocida para un departamento fuera de la lista.
     const [departamentoOtro, setDepartamentoOtro] = useState(false)
 
-    // Mismo criterio de comparación (sin mayúsculas/acentos) que ya usan Cliente/Conductor/
-    // etc. para nombre y documento duplicado — acá no hace falta consultar al backend
-    // porque el contexto ya trae todos los destinos cargados en memoria.
-    const validarCiudadDuplicada = (ciudad) =>
-        hayDocumentoDuplicado(destinos, ciudad, { getDoc: d => d.ciudad }) ? MENSAJE_CIUDAD_DUPLICADA : ''
+    const validarCiudadDup = (ciudad) => validarCiudadDuplicada(destinos, ciudad)
 
     const handleChange = (e) => {
         const { name } = e.target
@@ -107,7 +63,7 @@ const RegistrarDestino = ({ open, onClose, onSuccess }) => {
         setForm(prev => ({ ...prev, [name]: value }))
         setErrores(prev => {
             if (!prev[name]) return prev
-            if (name === 'ciudad') return { ...prev, ciudad: validarCampo('ciudad', formActualizado) || validarCiudadDuplicada(value) }
+            if (name === 'ciudad') return { ...prev, ciudad: validarCampo('ciudad', formActualizado) || validarCiudadDup(value) }
             return { ...prev, [name]: validarCampo(name, formActualizado) }
         })
         setApiError(null)
@@ -124,7 +80,7 @@ const RegistrarDestino = ({ open, onClose, onSuccess }) => {
             setCiudadOtra(false)
             const formActualizado = { ...form, ciudad: value }
             setForm(prev => ({ ...prev, ciudad: value }))
-            setErrores(prev => prev.ciudad ? { ...prev, ciudad: validarCampo('ciudad', formActualizado) || validarCiudadDuplicada(value) } : prev)
+            setErrores(prev => prev.ciudad ? { ...prev, ciudad: validarCampo('ciudad', formActualizado) || validarCiudadDup(value) } : prev)
         }
         setApiError(null)
     }
@@ -149,22 +105,8 @@ const RegistrarDestino = ({ open, onClose, onSuccess }) => {
         setApiError(null)
     }
 
-    const validarPaso = (step) => {
-        const e = {}
-        if (step === 0) {
-            e.departamento = validarCampo('departamento', form)
-            e.ciudad = validarCampo('ciudad', form) || validarCiudadDuplicada(form.ciudad)
-            e.direccion = validarCampo('direccion', form)
-        }
-        if (step === 1) {
-            e.tarifaBase = validarCampo('tarifaBase', form)
-        }
-        Object.keys(e).forEach(k => { if (!e[k]) delete e[k] })
-        return e
-    }
-
     const handleNext = () => {
-        const erroresEncontrados = validarPaso(activeStep)
+        const erroresEncontrados = validarPaso(activeStep, form, destinos)
         if (Object.keys(erroresEncontrados).length > 0) {
             setErrores(erroresEncontrados)
             return
@@ -207,120 +149,29 @@ const RegistrarDestino = ({ open, onClose, onSuccess }) => {
         onClose()
     }
 
-    const cardSx = {
-        flex: 1, minWidth: 0, borderRadius: 2, p: 2.5,
-        border: `1px solid ${theme.palette.divider}`,
-        backgroundColor: theme.palette.background.paper, elevation: 0,
-    }
-
     const renderStepContent = () => {
         switch (activeStep) {
             case 0:
                 return (
-                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
-                        {departamentoOtro ? (
-                            <Box>
-                                <FormField
-                                    label="Departamento" name="departamento" value={form.departamento} onChange={handleChange}
-                                    onBlur={() => setErrores(prev => ({ ...prev, departamento: validarCampo('departamento', form) }))}
-                                    required error={errores.departamento} helperText={errores.departamento || 'Departamento nuevo — no está en la lista todavía'}
-                                    inputProps={{ maxLength: 60 }}
-                                    placeholder="Escribe el departamento"
-                                />
-                                <Typography
-                                    onClick={() => { setDepartamentoOtro(false); setCiudadOtra(false); setForm(prev => ({ ...prev, departamento: '', ciudad: '' })) }}
-                                    sx={{ fontSize: '0.75rem', color: theme.palette.primary.main, cursor: 'pointer', mt: 0.5, '&:hover': { textDecoration: 'underline' } }}
-                                >
-                                    Elegir de la lista
-                                </Typography>
-                            </Box>
-                        ) : (
-                            <FormSelect
-                                label="Departamento" name="departamento" value={form.departamento}
-                                onChange={handleDepartamentoSelectChange}
-                                onBlur={() => setErrores(prev => ({ ...prev, departamento: validarCampo('departamento', form) }))}
-                                required error={errores.departamento} helperText={errores.departamento}
-                            >
-                                {departamentos.map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
-                                <MenuItem value={OTRO_DEPARTAMENTO}>Otro departamento…</MenuItem>
-                            </FormSelect>
-                        )}
-                        {(ciudadOtra || departamentoOtro) ? (
-                            <Box>
-                                <FormField
-                                    label="Ciudad" name="ciudad" value={form.ciudad} onChange={handleChange}
-                                    onBlur={() => setErrores(prev => ({ ...prev, ciudad: validarCampo('ciudad', form) || validarCiudadDuplicada(form.ciudad) }))}
-                                    required error={errores.ciudad} helperText={errores.ciudad || 'Ciudad nueva — no está en la lista todavía'}
-                                    icon={LocationOnOutlinedIcon} inputProps={{ maxLength: 60 }}
-                                    placeholder="Escribe la ciudad"
-                                />
-                                {!departamentoOtro && (
-                                    <Typography
-                                        onClick={() => { setCiudadOtra(false); setForm(prev => ({ ...prev, ciudad: '' })) }}
-                                        sx={{ fontSize: '0.75rem', color: theme.palette.primary.main, cursor: 'pointer', mt: 0.5, '&:hover': { textDecoration: 'underline' } }}
-                                    >
-                                        Elegir de la lista
-                                    </Typography>
-                                )}
-                            </Box>
-                        ) : (
-                            <FormSelect
-                                label="Ciudad" name="ciudad" value={form.ciudad}
-                                onChange={handleCiudadSelectChange}
-                                onBlur={() => setErrores(prev => ({ ...prev, ciudad: validarCampo('ciudad', form) || validarCiudadDuplicada(form.ciudad) }))}
-                                required error={errores.ciudad} helperText={errores.ciudad}
-                                disabled={!form.departamento}
-                            >
-                                {(CIUDADES_POR_DEPARTAMENTO[form.departamento] || []).map(c => <MenuItem key={c} value={c}>{c}</MenuItem>)}
-                                <MenuItem value={OTRA_CIUDAD}>Otra ciudad…</MenuItem>
-                            </FormSelect>
-                        )}
-                        <Box sx={{ gridColumn: '1 / -1' }}>
-                            <FormField
-                                label="Dirección de la oficina" name="direccion" value={form.direccion} onChange={handleChange}
-                                onBlur={() => setErrores(prev => ({ ...prev, direccion: validarCampo('direccion', form) }))}
-                                error={errores.direccion}
-                                helperText={errores.direccion || `Opcional · ${(form.direccion || '').length}/200`}
-                                icon={HomeOutlinedIcon} inputProps={{ maxLength: 200 }}
-                                placeholder="Ej: Calle 30 #12-45, local 2"
-                            />
-                        </Box>
-                    </Box>
+                    <PasoUbicacion
+                        theme={theme} form={form} setForm={setForm} errores={errores} setErrores={setErrores} handleChange={handleChange}
+                        handleDepartamentoSelectChange={handleDepartamentoSelectChange} handleCiudadSelectChange={handleCiudadSelectChange}
+                        validarCiudadDup={validarCiudadDup}
+                        ciudadOtra={ciudadOtra} setCiudadOtra={setCiudadOtra}
+                        departamentoOtro={departamentoOtro} setDepartamentoOtro={setDepartamentoOtro}
+                    />
                 )
             case 1:
                 return (
-                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 2.5 }}>
-                        <FormField
-                            label="Tarifa Base (COP)" name="tarifaBase" value={formatearMoneda(form.tarifaBase)} onChange={handleChange}
-                            onBlur={() => setErrores(prev => ({ ...prev, tarifaBase: validarCampo('tarifaBase', form) }))}
-                            required error={errores.tarifaBase} helperText={errores.tarifaBase || 'Valor en pesos colombianos'}
-                            icon={AttachMoneyOutlinedIcon} inputProps={{ maxLength: 11 }}
-                            placeholder="Ej: 25.000"
-                        />
-                    </Box>
+                    <PasoTarifa form={form} errores={errores} setErrores={setErrores} handleChange={handleChange} />
                 )
             case 2:
                 return (
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        {apiError && (
-                            <Alert severity="error" sx={{ borderRadius: 2 }} onClose={() => setApiError(null)}>
-                                {apiError}
-                            </Alert>
-                        )}
-                        <Paper elevation={0} sx={cardSx}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                                <LocationOnOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
-                                <Typography fontWeight={700} fontSize="0.95rem">Resumen del Destino</Typography>
-                            </Box>
-                            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
-                                Verifica los datos antes de registrar
-                            </Typography>
-                            <ConfirmRow label="Departamento" value={form.departamento} />
-                            <ConfirmRow label="Ciudad" value={form.ciudad} />
-                            <ConfirmRow label="Dirección" value={form.direccion || '—'} />
-                            <ConfirmRow label="Tarifa Base" value={form.tarifaBase ? `$${Number(form.tarifaBase).toLocaleString('es-CO')}` : '—'} />
-                        </Paper>
-                    </Box>
+                    <PasoConfirmacion
+                        theme={theme} form={form} formOriginal={null}
+                        apiError={apiError} setApiError={setApiError}
+                        sinCambios={false} setSinCambios={() => {}}
+                    />
                 )
             default:
                 return null
@@ -344,19 +195,7 @@ const RegistrarDestino = ({ open, onClose, onSuccess }) => {
 
             <DialogContent sx={{ p: 3, pt: 1.5 }}>
                 <Stepper activeStep={activeStep} alternativeLabel
-                    sx={{
-                        mb: 3, mt: 2,
-                        '& .MuiStepIcon-root': { color: theme.palette.divider },
-                        '& .MuiStepIcon-root.Mui-active': { color: theme.palette.primary.main },
-                        '& .MuiStepIcon-root.Mui-completed': { color: theme.palette.primary.main },
-                        '& .MuiStepIcon-text': { fill: 'white', fontSize: '0.7rem', fontWeight: 700 },
-                        '& .MuiStepConnector-line': { borderColor: theme.palette.divider },
-                        '& .MuiStepConnector-root.Mui-active .MuiStepConnector-line': { borderColor: theme.palette.primary.main },
-                        '& .MuiStepConnector-root.Mui-completed .MuiStepConnector-line': { borderColor: theme.palette.primary.main },
-                        '& .MuiStepLabel-label': { fontSize: '0.8rem', color: theme.palette.text.secondary, mt: 0.5 },
-                        '& .MuiStepLabel-label.Mui-active': { color: theme.palette.text.primary, fontWeight: 600 },
-                        '& .MuiStepLabel-label.Mui-completed': { color: theme.palette.primary.main, fontWeight: 500 },
-                    }}
+                    sx={stepperSx(theme)}
                 >
                     {steps.map(label => <Step key={label}><StepLabel>{label}</StepLabel></Step>)}
                 </Stepper>
@@ -371,17 +210,12 @@ const RegistrarDestino = ({ open, onClose, onSuccess }) => {
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 4, py: 2.5, borderTop: `1px solid ${theme.palette.divider}` }}>
                 <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined"
                     startIcon={<ArrowBackOutlinedIcon />} disableRipple
-                    sx={{
-                        textTransform: 'none', borderRadius: 2, borderColor: theme.palette.divider,
-                        color: theme.palette.text.primary, fontWeight: 500,
-                        '&:hover': { borderColor: theme.palette.divider, backgroundColor: theme.palette.background.subtle },
-                        '&.Mui-disabled': { borderColor: theme.palette.divider, color: theme.palette.text.secondary },
-                    }}>
+                    sx={backButtonSx(theme)}>
                     Anterior
                 </Button>
                 <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
                     <Button onClick={handleClose} disableRipple
-                        sx={{ textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 2 }}>
+                        sx={cancelButtonSx(theme)}>
                         Cancelar
                     </Button>
                     <Button
@@ -390,13 +224,7 @@ const RegistrarDestino = ({ open, onClose, onSuccess }) => {
                         disabled={submitting}
                         endIcon={submitting ? undefined : (activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <CheckOutlinedIcon />)}
                         disableRipple
-                        sx={{
-                            textTransform: 'none', borderRadius: 2, fontWeight: 600, minWidth: 160,
-                            backgroundColor: theme.palette.primary.main,
-                            boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
-                            '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}` },
-                            '&.Mui-disabled': { backgroundColor: theme.palette.divider, color: theme.palette.text.disabled },
-                        }}>
+                        sx={primaryButtonSx(theme, { minWidth: 160 })}>
                         {submitting
                             ? <CircularProgress size={18} color="inherit" />
                             : (activeStep < steps.length - 1 ? 'Siguiente' : 'Registrar')}
@@ -408,4 +236,3 @@ const RegistrarDestino = ({ open, onClose, onSuccess }) => {
 }
 
 export default RegistrarDestino
-

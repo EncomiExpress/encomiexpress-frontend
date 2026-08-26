@@ -1,6 +1,6 @@
 import { Route } from 'react-router-dom'
 import PrivateRoute from '../../shared/layouts/PrivateRoute.jsx'
-import { PERMISOS } from '../../shared/contexts/AuthContext.jsx'
+import { PERMISOS } from '../../shared/config/permisos.js'
 import ListarRutaProgramacion from './ListarRutaProgramacion.jsx'
 import RegistrarRutaProgramacion from './RegistrarRutaProgramacion.jsx'
 import ActualizarRutaProgramacion from './ActualizarRutaProgramacion.jsx'

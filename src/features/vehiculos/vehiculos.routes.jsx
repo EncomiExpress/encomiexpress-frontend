@@ -1,6 +1,6 @@
 import { Route } from 'react-router-dom'
 import PrivateRoute from '../../shared/layouts/PrivateRoute.jsx'
-import { PERMISOS } from '../../shared/contexts/AuthContext.jsx'
+import { PERMISOS } from '../../shared/config/permisos.js'
 import ListarVehiculo from './ListarVehiculo.jsx'
 import RegistrarVehiculo from './RegistrarVehiculo.jsx'
 import ActualizarVehiculo from './ActualizarVehiculo.jsx'

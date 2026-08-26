@@ -1,77 +1,22 @@
-﻿import { useTheme } from '@mui/material/styles'
+import { useTheme } from '@mui/material/styles'
 import { useState, useEffect, useRef } from 'react'
-import { Box, Typography, Paper, MenuItem, Stepper, Step, StepLabel, Button, Alert, TextField, InputAdornment, Dialog, DialogTitle, DialogContent, IconButton, CircularProgress } from '@mui/material'
-import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
-import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined'
-import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
-import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined'
-import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
-import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined'
+import { Box, Typography, Stepper, Step, StepLabel, Button, Dialog, DialogTitle, DialogContent, IconButton, CircularProgress } from '@mui/material'
 import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined'
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined'
 import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined'
-import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined'
-import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined'
 import CloseIcon from '@mui/icons-material/Close'
-import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import { useClientes } from './context/ClienteContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
-import { FormField } from '../../shared/components/FormularioEstandarizado.jsx'
 import { getErrorMessage } from '../../shared/utils/errorMessage.js'
-import { formFieldStyles } from '../../shared/utils/formStyles.js'
-import ConfirmRow from '../../shared/components/ConfirmRow.jsx'
-import * as clienteService from './services/clienteService.js'
-import { hayNombreDuplicado, MENSAJE_NOMBRE_DUPLICADO, hayDocumentoDuplicado, MENSAJE_DOC_DUPLICADO } from '../../shared/utils/duplicados.js'
-import { esDocAlfanumerico, maxLengthDocumento, docHelperText as docHelperTextBase, validarNumeroDocumento } from '../../shared/utils/documento.js'
-import { esSoloRelleno, capitalizarPalabras } from '../../shared/utils/formatters.js'
-
-const steps = ['Datos Personales', 'Contacto', 'Confirmación']
-
-// Correo en un solo campo libre (sin selector de dominio) — el usuario escribe el
-// dominio a mano, se valida que tenga @ y un punto en el dominio.
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const validarEmail = (email) => {
-    const valor = (email || '').trim()
-    if (!valor) return 'El correo es obligatorio'
-    if (!valor.includes('@')) return 'El correo debe contener un @ (ej: usuario@dominio.com)'
-    if (!valor.split('@')[1]?.includes('.')) return 'El dominio del correo debe contener un punto (ej: usuario@dominio.com)'
-    if (!EMAIL_REGEX.test(valor)) return 'El correo no es válido'
-    return ''
-}
-
-// Valida un único campo del formulario (usado en onBlur y para re-validar en vivo
-// mientras se corrige un campo ya marcado con error). numeroIdentificacion no vive
-// aquí porque ya tiene su propia validación (validarDocumentoCompleto, más abajo).
-const SOLO_LETRAS_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/
-const validarCampo = (name, form) => {
-    const esNIT = form.tipoIdentificacion === 'NIT'
-    switch (name) {
-        case 'tipoIdentificacion':
-            return form.tipoIdentificacion ? '' : 'Selecciona un tipo de documento'
-        case 'nombre':
-            if (!form.nombre.trim()) return esNIT ? 'La razón social es obligatoria' : 'El nombre es obligatorio'
-            if (esNIT && esSoloRelleno(form.nombre)) return 'La razón social no puede contener solo espacios o guiones'
-            if (!esNIT && !SOLO_LETRAS_REGEX.test(form.nombre)) return 'El nombre solo puede contener letras'
-            return ''
-        case 'apellido':
-            if (esNIT) return ''
-            if (!form.apellido.trim()) return 'El apellido es obligatorio'
-            if (!SOLO_LETRAS_REGEX.test(form.apellido)) return 'El apellido solo puede contener letras'
-            return ''
-        case 'telefono':
-            if (!form.telefono.trim()) return 'El teléfono es obligatorio'
-            if (!/^\d{10}$/.test(form.telefono)) return 'El teléfono debe tener exactamente 10 dígitos'
-            return ''
-        case 'email':
-            return validarEmail(form.email)
-        case 'direccion':
-            if (!form.direccion.trim()) return 'La dirección es obligatoria'
-            if (esSoloRelleno(form.direccion)) return 'La dirección no puede contener solo espacios o guiones'
-            return ''
-        default:
-            return ''
-    }
-}
+import { MENSAJE_NOMBRE_DUPLICADO } from '../../shared/utils/duplicados.js'
+import { esDocAlfanumerico } from '../../shared/utils/documento.js'
+import { capitalizarPalabras } from '../../shared/utils/formatters.js'
+import { steps, validarCampo, validarDocumentoCompleto, validarPaso } from './utils/clienteValidation.js'
+import { useDuplicadoCliente } from './hooks/useDuplicadoCliente.js'
+import { stepperSx, backButtonSx, cancelButtonSx, primaryButtonSx } from './style/wizardStyles.js'
+import PasoDocumento from './components/wizard/PasoDocumento.jsx'
+import PasoContacto from './components/wizard/PasoContacto.jsx'
+import PasoConfirmacion from './components/wizard/PasoConfirmacion.jsx'
 
 const ActualizarCliente = ({ open, onClose, cliente: clienteProp, onSuccess }) => {
     const { clientes, loading, actualizarCliente } = useClientes()
@@ -83,8 +28,6 @@ const ActualizarCliente = ({ open, onClose, cliente: clienteProp, onSuccess }) =
     const [submitting, setSubmitting] = useState(false)
     const [formOriginal, setFormOriginal] = useState(null)
     const [sinCambios, setSinCambios] = useState(false)
-    const [avisoNombreDuplicado, setAvisoNombreDuplicado] = useState('')
-    const [avisoDocDuplicado, setAvisoDocDuplicado] = useState('')
     const cargado = useRef(false)
 
     const [form, setForm] = useState({
@@ -97,6 +40,12 @@ const ActualizarCliente = ({ open, onClose, cliente: clienteProp, onSuccess }) =
         direccion: '',
         habilitado: true
     })
+
+    const {
+        avisoNombreDuplicado, avisoDocDuplicado,
+        setAvisoNombreDuplicado, setAvisoDocDuplicado,
+        verificarDocumentoDuplicado, verificarNombreDuplicado,
+    } = useDuplicadoCliente({ form, setErrores, excludeId: form.idCliente })
 
     useEffect(() => {
         if (!open) { cargado.current = false; return }
@@ -112,29 +61,6 @@ const ActualizarCliente = ({ open, onClose, cliente: clienteProp, onSuccess }) =
             setFormOriginal(datosForm)
         }
     }, [open, clienteProp, clientes, loading])
-
-    const getMaxLengthDoc = () => {
-        if (form.tipoIdentificacion === 'NIT') return 15
-        return maxLengthDocumento(form.tipoIdentificacion)
-    }
-    const docHelperText = () => {
-        if (form.tipoIdentificacion === 'NIT') return 'Números con guión, hasta 15 caracteres'
-        return docHelperTextBase(form.tipoIdentificacion) || ''
-    }
-
-    // NIT tiene su propio formato (dígitos + guión, hasta 15) — no encaja en las
-    // reglas genéricas de documento.js, así que se valida aparte aquí.
-    const validarDocumentoCompleto = (tipo, valor) => {
-        const limpio = (valor || '').trim()
-        if (!limpio) return 'El número de documento es obligatorio'
-        if (tipo === 'NIT') {
-            if (!/^[0-9-]+$/.test(limpio)) return 'Solo se permiten números y guión'
-            if (!/\d/.test(limpio)) return 'Debe contener al menos un número'
-            if (limpio.length > 15) return 'Máximo 15 caracteres'
-            return null
-        }
-        return validarNumeroDocumento(tipo, limpio)
-    }
 
     const handleChange = (e) => {
         const { name } = e.target
@@ -201,67 +127,8 @@ const ActualizarCliente = ({ open, onClose, cliente: clienteProp, onSuccess }) =
         setSinCambios(false)
     }
 
-    const verificarDocumentoDuplicado = async () => {
-        if (!form.numeroIdentificacion.trim() || form.numeroIdentificacion.length < 3) {
-            setAvisoDocDuplicado('')
-            return
-        }
-        try {
-            const res = await clienteService.getClientes(undefined, { q: form.numeroIdentificacion.trim(), limit: 10 })
-            if (!res?.success) return
-            const duplicado = hayDocumentoDuplicado(res.data, form.numeroIdentificacion, {
-                excludeId: form.idCliente,
-                getId: (r) => r.idCliente,
-            })
-            setAvisoDocDuplicado(duplicado ? MENSAJE_DOC_DUPLICADO : '')
-            if (duplicado) setErrores(prev => ({ ...prev, numeroIdentificacion: MENSAJE_DOC_DUPLICADO }))
-        } catch {
-            // Si falla la verificación no bloqueamos el flujo
-        }
-    }
-
-    const verificarNombreDuplicado = async () => {
-        if (form.tipoIdentificacion === 'NIT' || !form.nombre.trim() || !form.apellido.trim()) {
-            setAvisoNombreDuplicado('')
-            return
-        }
-        try {
-            const res = await clienteService.getClientes(undefined, { q: form.apellido.trim(), limit: 20 })
-            if (!res?.success) return
-            const duplicado = hayNombreDuplicado(res.data, form.nombre, form.apellido, {
-                excludeId: form.idCliente,
-                getId: (r) => r.idCliente,
-            })
-            setAvisoNombreDuplicado(duplicado ? MENSAJE_NOMBRE_DUPLICADO : '')
-            if (duplicado) setErrores(prev => ({ ...prev, nombre: MENSAJE_NOMBRE_DUPLICADO, apellido: MENSAJE_NOMBRE_DUPLICADO }))
-        } catch {
-            // Si falla la verificación no bloqueamos el flujo de edición
-        }
-    }
-
-    const validarPaso = (step) => {
-        const e = {}
-
-        if (step === 0) {
-            e.tipoIdentificacion = validarCampo('tipoIdentificacion', form)
-            const errorDocumento = validarDocumentoCompleto(form.tipoIdentificacion, form.numeroIdentificacion)
-            e.numeroIdentificacion = errorDocumento || avisoDocDuplicado
-            e.nombre = validarCampo('nombre', form) || avisoNombreDuplicado
-            e.apellido = validarCampo('apellido', form) || avisoNombreDuplicado
-        }
-
-        if (step === 1) {
-            e.telefono = validarCampo('telefono', form)
-            e.email = validarCampo('email', form)
-            e.direccion = validarCampo('direccion', form)
-        }
-
-        Object.keys(e).forEach(k => { if (!e[k]) delete e[k] })
-        return e
-    }
-
     const handleNext = () => {
-        const erroresEncontrados = validarPaso(activeStep)
+        const erroresEncontrados = validarPaso(activeStep, form, { avisoDocDuplicado, avisoNombreDuplicado })
         if (Object.keys(erroresEncontrados).length > 0) {
             setErrores(erroresEncontrados)
             return
@@ -272,7 +139,7 @@ const ActualizarCliente = ({ open, onClose, cliente: clienteProp, onSuccess }) =
     const handleBack = () => setActiveStep((prev) => prev - 1)
 
     const handleSubmit = async () => {
-        const erroresEncontrados = validarPaso(activeStep)
+        const erroresEncontrados = validarPaso(activeStep, form, { avisoDocDuplicado, avisoNombreDuplicado })
         if (Object.keys(erroresEncontrados).length > 0) {
             setErrores(erroresEncontrados)
             return
@@ -315,142 +182,27 @@ const ActualizarCliente = ({ open, onClose, cliente: clienteProp, onSuccess }) =
 
     const handleCancelar = () => cerrar()
 
-    const cardSx = {
-        flex: 1, minWidth: 0, borderRadius: 2, p: 2.5,
-        border: `1px solid ${theme.palette.divider}`,
-        backgroundColor: theme.palette.background.paper, elevation: 0,
-        overflow: 'hidden',
-    }
-
     const renderStepContent = () => {
         switch (activeStep) {
             case 0:
                 return (
-                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
-                        <TextField fullWidth select label="Tipo de documento *" name="tipoIdentificacion"
-                            value={form.tipoIdentificacion} onChange={handleChange}
-                            onBlur={() => setErrores(prev => ({ ...prev, tipoIdentificacion: validarCampo('tipoIdentificacion', form) }))}
-                            error={!!errores.tipoIdentificacion} helperText={errores.tipoIdentificacion}
-                            slotProps={{
-                                input: { startAdornment: <InputAdornment position="start"><BadgeOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment> },
-                                select: { IconComponent: KeyboardArrowDownOutlinedIcon },
-                            }}
-                            sx={formFieldStyles}>
-                            <MenuItem value="CC">Cédula de Ciudadanía (CC)</MenuItem>
-                            <MenuItem value="NIT">NIT (Persona Jurídica)</MenuItem>
-                            <MenuItem value="TI">Tarjeta de Identidad (TI)</MenuItem>
-                            <MenuItem value="CE">Cédula de Extranjería (CE)</MenuItem>
-                            <MenuItem value="PAS">Pasaporte</MenuItem>
-                            <MenuItem value="RC">Registro Civil (RC)</MenuItem>
-                        </TextField>
-                        <FormField label="Número de documento" name="numeroIdentificacion" value={form.numeroIdentificacion}
-                            onChange={handleChange}
-                            onBlur={() => {
-                                verificarDocumentoDuplicado()
-                                setErrores(prev => ({ ...prev, numeroIdentificacion: validarDocumentoCompleto(form.tipoIdentificacion, form.numeroIdentificacion) || '' }))
-                            }}
-                            required error={errores.numeroIdentificacion}
-                            helperText={errores.numeroIdentificacion || docHelperText()} icon={BadgeOutlinedIcon}
-                            inputProps={{ maxLength: getMaxLengthDoc() }} />
-                        <FormField
-                            label={form.tipoIdentificacion === 'NIT' ? 'Razón Social' : 'Nombres'}
-                            name="nombre" value={form.nombre} onChange={handleChange}
-                            onBlur={() => { verificarNombreDuplicado(); setErrores(prev => ({ ...prev, nombre: validarCampo('nombre', form) })) }}
-                            required error={errores.nombre} helperText={errores.nombre}
-                            icon={form.tipoIdentificacion === 'NIT' ? BusinessOutlinedIcon : PersonOutlinedIcon}
-                            inputProps={{ maxLength: 50 }}
-                            placeholder={form.tipoIdentificacion === 'NIT' ? 'Ej: Transportes XYZ S.A.S' : 'Ej: Juan'} />
-                        {form.tipoIdentificacion !== 'NIT' && (
-                            <FormField label="Apellidos" name="apellido" value={form.apellido} onChange={handleChange}
-                                onBlur={() => { verificarNombreDuplicado(); setErrores(prev => ({ ...prev, apellido: validarCampo('apellido', form) })) }}
-                                required error={errores.apellido} helperText={errores.apellido} icon={PersonOutlinedIcon}
-                                inputProps={{ maxLength: 50 }} placeholder="Ej: Gómez López" />
-                        )}
-                    </Box>
+                    <PasoDocumento
+                        form={form} errores={errores} setErrores={setErrores} handleChange={handleChange}
+                        verificarDocumentoDuplicado={verificarDocumentoDuplicado} verificarNombreDuplicado={verificarNombreDuplicado}
+                    />
                 )
             case 1:
                 return (
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
-                            <FormField label="Teléfono" name="telefono" value={form.telefono} onChange={handleChange}
-                                onBlur={() => setErrores(prev => ({ ...prev, telefono: validarCampo('telefono', form) }))}
-                                required error={errores.telefono} helperText={errores.telefono || 'Número de 10 dígitos'}
-                                icon={PhoneOutlinedIcon} inputProps={{ maxLength: 10 }} />
-                            <FormField label="Correo electrónico" name="email" value={form.email}
-                                onChange={handleChange}
-                                onBlur={() => setErrores(prev => ({ ...prev, email: validarCampo('email', form) }))}
-                                required error={errores.email} helperText={errores.email}
-                                icon={EmailOutlinedIcon} placeholder="correo@dominio.com"
-                                inputProps={{ maxLength: 100 }} />
-                            <Box sx={{ gridColumn: '1 / -1' }}>
-                                <FormField label="Dirección" name="direccion" value={form.direccion}
-                                    onChange={handleChange}
-                                    onBlur={() => setErrores(prev => ({ ...prev, direccion: validarCampo('direccion', form) }))} required error={errores.direccion}
-                                    placeholder="Ej: Calle 45 #20-10"
-                                    helperText={errores.direccion || `${form.direccion.length}/200`} icon={HomeOutlinedIcon}
-                                    inputProps={{ maxLength: 200 }} />
-                            </Box>
-                        </Box>
-                    </Box>
+                    <PasoContacto form={form} errores={errores} setErrores={setErrores} handleChange={handleChange} />
                 )
-            case 2: {
-                const emailActual = form.email
-                const emailOriginal = formOriginal?.email
-                const sonDistintos = (a, b) => String(a ?? '') !== String(b ?? '')
-                const camposComparados = [
-                    [form.nombre, formOriginal?.nombre],
-                    ...(form.tipoIdentificacion !== 'NIT' ? [[form.apellido, formOriginal?.apellido]] : []),
-                    [form.tipoIdentificacion, formOriginal?.tipoIdentificacion],
-                    [form.numeroIdentificacion, formOriginal?.numeroIdentificacion],
-                    [form.telefono, formOriginal?.telefono],
-                    [emailActual, emailOriginal],
-                    [form.direccion, formOriginal?.direccion],
-                ]
-                const totalModificados = formOriginal ? camposComparados.filter(([a, b]) => sonDistintos(a, b)).length : 0
-
+            case 2:
                 return (
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        {totalModificados > 0 && (
-                            <Alert severity="info" icon={<EditOutlinedIcon fontSize="inherit" />} sx={{ borderRadius: 2 }}>
-                                Se {totalModificados === 1 ? 'modificó' : 'modificaron'} {totalModificados} {totalModificados === 1 ? 'campo' : 'campos'}: revísalo{totalModificados === 1 ? '' : 's'} antes de guardar.
-                            </Alert>
-                        )}
-                        {sinCambios && (
-                            <Alert severity="warning" sx={{ borderRadius: 2 }} onClose={() => setSinCambios(false)}>
-                                No has realizado ningún cambio. Los datos ya están actualizados.
-                            </Alert>
-                        )}
-                        {apiError && (
-                            <Alert severity="error" sx={{ borderRadius: 2 }} onClose={() => setApiError(null)}>
-                                {apiError}
-                            </Alert>
-                        )}
-                        <Box sx={{ display: 'flex', gap: 2 }}>
-                            <Paper elevation={0} sx={cardSx}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                                    <AssignmentIndOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
-                                    <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Datos Personales</Typography>
-                                </Box>
-                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la información personal</Typography>
-                                <ConfirmRow label="Tipo de documento" value={form.tipoIdentificacion} previousValue={formOriginal?.tipoIdentificacion} />
-                                <ConfirmRow label="N° de documento" value={form.numeroIdentificacion} previousValue={formOriginal?.numeroIdentificacion} />
-                                <ConfirmRow label={form.tipoIdentificacion === 'NIT' ? 'Razón Social' : 'Nombre'} value={form.nombre} previousValue={formOriginal?.nombre} />
-                                {form.tipoIdentificacion !== 'NIT' && <ConfirmRow label="Apellido" value={form.apellido} previousValue={formOriginal?.apellido} />}
-                            </Paper>
-                            <Paper elevation={0} sx={cardSx}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                                    <PersonOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
-                                    <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Información de Contacto</Typography>
-                                </Box>
-                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica los datos de contacto</Typography>
-                                <ConfirmRow label="Teléfono" value={form.telefono} previousValue={formOriginal?.telefono} />
-                                <ConfirmRow label="Correo" value={emailActual} previousValue={emailOriginal} />
-                                <ConfirmRow label="Dirección" value={form.direccion} previousValue={formOriginal?.direccion} />
-                            </Paper>
-                        </Box>
-                    </Box>
+                    <PasoConfirmacion
+                        theme={theme} form={form} formOriginal={formOriginal}
+                        apiError={apiError} setApiError={setApiError}
+                        sinCambios={sinCambios} setSinCambios={setSinCambios}
+                    />
                 )
-            }
             default:
                 return null
         }
@@ -459,7 +211,7 @@ const ActualizarCliente = ({ open, onClose, cliente: clienteProp, onSuccess }) =
     return (
         <Dialog open={open} onClose={cerrar} maxWidth="md" fullWidth
             slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}>
-            <DialogTitle sx={{ m: 0, p: 2, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0' }}>
+            <DialogTitle sx={{ m: 0, p: 2, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${theme.palette.divider}` }}>
                 <Box>
                     <Typography variant="h6" fontWeight={700}>
                         Editar Cliente
@@ -477,19 +229,7 @@ const ActualizarCliente = ({ open, onClose, cliente: clienteProp, onSuccess }) =
             </DialogTitle>
             <DialogContent sx={{ p: 3, pt: 1.5 }}>
 
-                <Stepper activeStep={activeStep} alternativeLabel sx={{
-                    mb: 3, mt: 2,
-                    '& .MuiStepIcon-root': { color: theme.palette.divider },
-                    '& .MuiStepIcon-root.Mui-active': { color: theme.palette.primary.main },
-                    '& .MuiStepIcon-root.Mui-completed': { color: theme.palette.primary.main },
-                    '& .MuiStepIcon-text': { fill: 'white', fontSize: '0.7rem', fontWeight: 700 },
-                    '& .MuiStepConnector-line': { borderColor: theme.palette.divider },
-                    '& .MuiStepConnector-root.Mui-active .MuiStepConnector-line': { borderColor: theme.palette.primary.main },
-                    '& .MuiStepConnector-root.Mui-completed .MuiStepConnector-line': { borderColor: theme.palette.primary.main },
-                    '& .MuiStepLabel-label': { fontSize: '0.8rem', color: theme.palette.text.secondary, mt: 0.5 },
-                    '& .MuiStepLabel-label.Mui-active': { color: theme.palette.text.primary, fontWeight: 600 },
-                    '& .MuiStepLabel-label.Mui-completed': { color: theme.palette.primary.main, fontWeight: 500 },
-                }}>
+                <Stepper activeStep={activeStep} alternativeLabel sx={stepperSx(theme)}>
                     {steps.map(label => <Step key={label}><StepLabel>{label}</StepLabel></Step>)}
                 </Stepper>
 
@@ -506,20 +246,12 @@ const ActualizarCliente = ({ open, onClose, cliente: clienteProp, onSuccess }) =
             }}>
                 <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined"
                     startIcon={<ArrowBackOutlinedIcon />} disableRipple
-                    sx={{
-                        textTransform: 'none', borderRadius: 2, borderColor: theme.palette.divider,
-                        color: theme.palette.text.primary, fontWeight: 500,
-                        '&:hover': { borderColor: theme.palette.divider, backgroundColor: theme.palette.background.subtle },
-                        '&.Mui-disabled': { borderColor: theme.palette.divider, color: theme.palette.text.secondary },
-                    }}>
+                    sx={backButtonSx(theme)}>
                     Anterior
                 </Button>
                 <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
                     <Button onClick={handleCancelar} disableRipple
-                        sx={{
-                            textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 2,
-                            '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary },
-                        }}>
+                        sx={cancelButtonSx(theme)}>
                         Cancelar
                     </Button>
                     <Button
@@ -528,13 +260,7 @@ const ActualizarCliente = ({ open, onClose, cliente: clienteProp, onSuccess }) =
                         disabled={submitting || (activeStep === steps.length - 1 && sinCambios)}
                         endIcon={submitting ? undefined : (activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <SaveOutlinedIcon />)}
                         disableRipple
-                        sx={{
-                            textTransform: 'none', borderRadius: 2, fontWeight: 600, minWidth: 170,
-                            backgroundColor: theme.palette.primary.main,
-                            boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
-                            '&:hover': { backgroundColor: theme.palette.primary.dark, boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}` },
-                            '&.Mui-disabled': { backgroundColor: theme.palette.divider, color: theme.palette.text.disabled },
-                        }}>
+                        sx={primaryButtonSx(theme, { minWidth: 170, disabledStyle: true })}>
                         {submitting
                             ? <CircularProgress size={18} color="inherit" />
                             : (activeStep < steps.length - 1 ? 'Siguiente' : sinCambios ? 'Sin cambios' : 'Guardar cambios')}
@@ -546,4 +272,3 @@ const ActualizarCliente = ({ open, onClose, cliente: clienteProp, onSuccess }) =
 }
 
 export default ActualizarCliente
-

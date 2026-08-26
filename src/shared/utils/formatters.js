@@ -118,3 +118,12 @@ export const esSoloRelleno = (value) => /^[\s\-_]*$/.test(value ?? '')
 // dashboard). Para la vista detallada de una venta con varios paquetes, usar el
 // selector de paquete en vez de este helper.
 export const getGuiaPrincipal = (venta) => venta?.paquetes?.[0]?.numeroGuia || venta?.paquete?.numeroGuia || null
+
+// Las horas de ruta se guardan en 24h ("14:30") pero se muestran en 12h con AM/PM.
+export const formatHora12 = (hora) => {
+    if (!hora) return null
+    const [h, m] = hora.split(':').map(Number)
+    const periodo = h >= 12 ? 'PM' : 'AM'
+    const h12 = h % 12 || 12
+    return `${h12}:${String(m).padStart(2, '0')} ${periodo}`
+}

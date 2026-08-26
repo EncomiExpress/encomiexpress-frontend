@@ -5,13 +5,13 @@ import { Login as LoginIcon } from '@mui/icons-material'
 import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined'
 import LocalPhoneOutlinedIcon from '@mui/icons-material/LocalPhoneOutlined'
 import PlaceOutlinedIcon from '@mui/icons-material/PlaceOutlined'
-import { useState, useEffect } from 'react'
 import slide1 from '../../assets/box.png'
 import slide2 from '../../assets/camion.png'
 import slide3 from '../../assets/customers.png'
 import slide4 from '../../assets/cashbag.png'
 import logo from '../../assets/logo.png'
 import logoDark from '../../assets/logoDark.png'
+import ImageCarousel from './components/ImageCarousel.jsx'
 
 const slides = [slide1, slide2, slide3, slide4]
 
@@ -36,18 +36,10 @@ const logoStyle = {
 }
 
 const Home = () => {
-  const [current, setCurrent] = useState(0)
   const theme = useTheme()
   const gridColor = theme.palette.background.default === '#121212' ? '255,255,255' : '26,46,110'
   const gridOpacity = theme.palette.background.default === '#121212' ? '0.06' : '0.05'
   const isDark = theme.palette.background.default === '#121212'
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrent(prev => (prev + 1) % slides.length)
-    }, 3500)
-    return () => clearInterval(timer)
-  }, [])
 
   return (
     <Box sx={{
@@ -163,19 +155,13 @@ const Home = () => {
               </Grid>
 
               <Grid size={{ xs: 12, md: 1 }} sx={{ position: { xs: 'static', md: 'relative' } }}>
-                <Box sx={{
-                  position: { xs: 'relative', md: 'absolute' }, top: { md: '-275px' }, right: { md: '-520px' },
-                  width: { xs: '100%', md: '580px' }, height: { xs: 300, md: 530 }, overflow: 'hidden',
-                }}>
-                  {slides.map((src, i) => (
-                    <Box key={i} sx={{
-                      position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
-                      opacity: current === i ? 1 : 0, transition: 'opacity 0.9s ease-in-out', zIndex: current === i ? 2 : 1,
-                    }}>
-                      <img src={src} alt={`slide-${i}`} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                    </Box>
-                  ))}
-                </Box>
+                <ImageCarousel
+                  slides={slides}
+                  sx={{
+                    position: { xs: 'relative', md: 'absolute' }, top: { md: '-275px' }, right: { md: '-520px' },
+                    width: { xs: '100%', md: '580px' }, height: { xs: 300, md: 530 },
+                  }}
+                />
               </Grid>
 
               <Grid size={{ xs: 12, md: 12 }} mt={10}>
