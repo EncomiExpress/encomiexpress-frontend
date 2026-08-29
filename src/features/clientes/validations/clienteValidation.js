@@ -1,11 +1,9 @@
 import { maxLengthDocumento, docHelperText as docHelperTextBase, validarNumeroDocumento } from '../../../shared/utils/documento.js'
 import { esSoloRelleno } from '../../../shared/utils/formatters.js'
+import { EMAIL_REGEX } from '../../../shared/validations/emailValidation.js'
 
 export const steps = ['Datos Personales', 'Contacto', 'Confirmación']
 
-// Correo en un solo campo libre (sin selector de dominio) — el usuario escribe el
-// dominio a mano, se valida que tenga @ y un punto en el dominio.
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const EMAIL_MAX_LENGTH = 100
 export const validarEmail = (email) => {
     const valor = (email || '').trim()

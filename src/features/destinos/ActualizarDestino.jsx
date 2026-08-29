@@ -8,7 +8,7 @@ import { limpiarMonedaInput } from '../../shared/utils/formatters.js'
 import {
     steps, departamentos, CIUDADES_POR_DEPARTAMENTO, OTRA_CIUDAD, OTRO_DEPARTAMENTO, TARIFA_MAX,
     validarCampo, validarCiudadDuplicada, validarPaso,
-} from './utils/destinoValidation.js'
+} from './validations/destinoValidation.js'
 import WizardDialog from '../../shared/components/WizardDialog.jsx'
 import PasoUbicacion from './components/wizard/PasoUbicacion.jsx'
 import PasoTarifa from './components/wizard/PasoTarifa.jsx'

@@ -2,7 +2,7 @@ import { Box, Typography, Paper, Alert } from '@mui/material'
 import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import ConfirmRow from '../../../../shared/components/ConfirmRow.jsx'
-import { formatMoney } from '../../utils/anticipoValidation.js'
+import { formatMoney } from '../../validations/anticipoValidation.js'
 import { cardSx } from '../../style/wizardStyles.js'
 
 const PasoConfirmacion = ({

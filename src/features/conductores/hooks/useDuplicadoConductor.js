@@ -2,7 +2,7 @@ import { useState } from 'react'
 import * as conductorService from '../services/conductorService.js'
 import * as usuarioService from '../../usuarios/services/usuarioService.js'
 import { hayNombreDuplicado, MENSAJE_NOMBRE_DUPLICADO, hayDocumentoDuplicado, MENSAJE_DOC_DUPLICADO, MENSAJE_EMAIL_DUPLICADO, MENSAJE_LICENCIA_DUPLICADA } from '../../../shared/utils/duplicados.js'
-import { validarCampo, validarEmail } from '../utils/conductorValidation.js'
+import { validarCampo, validarEmail } from '../validations/conductorValidation.js'
 
 // excludeConductorId/excludeUsuarioId: solo Actualizar los pasa (para no marcar el
 // propio registro como duplicado de sí mismo); Registrar los deja undefined.

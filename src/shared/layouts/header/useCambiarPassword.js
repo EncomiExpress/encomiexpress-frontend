@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react'
 import { API_URL } from '../../config/api.js'
+import { PASSWORD_REGEX } from '../../validations/passwordValidation.js'
 
-// Debe coincidir con PASSWORD_REGEX en features/auth/ResetearPassword.jsx, RegistrarUsuario.jsx y con el validador del backend
-export const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s]).{8,64}$/
 export const PASSWORD_HELP = '8-64 caracteres, con mayúsculas, minúsculas, números y un carácter especial'
 
 const useCambiarPassword = (token, open) => {

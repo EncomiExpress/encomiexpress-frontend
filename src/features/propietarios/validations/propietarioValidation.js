@@ -1,8 +1,8 @@
 import { maxLengthDocumento, docHelperText as docHelperTextBase, validarNumeroDocumento } from '../../../shared/utils/documento.js'
+import { EMAIL_REGEX } from '../../../shared/validations/emailValidation.js'
 
 export const steps = ['Datos Personales', 'Contacto y Flota', 'Confirmación']
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 export const validarEmail = (email) => {
     const valor = (email || '').trim()
     if (!valor) return 'El correo es obligatorio'

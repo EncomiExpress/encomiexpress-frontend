@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { limpiarMonedaInput, limpiarDecimalInput, capitalizarPalabras } from '../../../shared/utils/formatters.js'
 import { sumarDias } from '../../../shared/utils/horarioLaboral.js'
-import { PAQUETE_VACIO, validarCampo, validarCampoPaquete } from '../components/wizard/validacion.js'
+import { PAQUETE_VACIO, validarCampo, validarCampoPaquete } from '../validations/validacion.js'
 import {
     NUMERIC_LIMITS, PAQUETE_NUMERIC_LIMITS,
     calcularValorServicio as calcularValorServicioBase, calcularValoresPaquetes, validarPaso,
-} from '../utils/ventaValidation.js'
+} from '../validations/ventaValidation.js'
 
 // Orquestación del wizard de Ventas compartida entre RegistrarVenta.jsx y
 // ActualizarVenta.jsx: los 4 useEffect de refresco/auto-asignación y los handlers de

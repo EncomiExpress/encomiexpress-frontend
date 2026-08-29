@@ -3,7 +3,7 @@ import { EventOutlined, DescriptionOutlined, KeyboardArrowDownOutlined } from '@
 import { FormField, FormSelect } from '../../../../shared/components/FormularioEstandarizado.jsx'
 import { formFieldStyles } from '../../../../shared/utils/formStyles.js'
 import { normalizarTexto } from '../../../../shared/utils/duplicados.js'
-import { validarCampo } from '../../utils/vehiculoValidation.js'
+import { validarCampo } from '../../validations/vehiculoValidation.js'
 
 const PasoPropietarioDocumentacion = ({ theme, formData, errores, setErrores, handleChange, propietarios, validationOpts, minFecha }) => (
     <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>

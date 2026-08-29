@@ -6,7 +6,7 @@ import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
 import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined'
 import { FormField } from '../../../../shared/components/FormularioEstandarizado.jsx'
 import { formFieldStyles } from '../../../../shared/utils/formStyles.js'
-import { validarCampo } from '../../utils/conductorValidation.js'
+import { validarCampo } from '../../validations/conductorValidation.js'
 
 const PasoContacto = ({
     form, errores, setErrores, handleChange, verificarEmailDuplicado, validationOpts,

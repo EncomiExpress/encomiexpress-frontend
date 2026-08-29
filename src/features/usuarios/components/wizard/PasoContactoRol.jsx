@@ -7,7 +7,7 @@ import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined
 import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import { formFieldStyles } from '../../../../shared/utils/formStyles.js'
-import { validarCampo } from '../../utils/usuarioValidation.js'
+import { validarCampo } from '../../validations/usuarioValidation.js'
 
 const PasoContactoRol = ({
     theme, navigate, form, errores, setErrores, handleChange, verificarEmailDuplicado, validationOpts,

@@ -9,7 +9,7 @@ import { esDocAlfanumerico, validarNumeroDocumento } from '../../shared/utils/do
 import { capitalizarPalabras } from '../../shared/utils/formatters.js'
 import {
     steps, validarCampo, validarCategorias, validarPaso, PASSWORD_HELP, formInicialConductor,
-} from './utils/conductorValidation.js'
+} from './validations/conductorValidation.js'
 import { useDuplicadoConductor } from './hooks/useDuplicadoConductor.js'
 import WizardDialog from '../../shared/components/WizardDialog.jsx'
 import PasoDocumento from './components/wizard/PasoDocumento.jsx'

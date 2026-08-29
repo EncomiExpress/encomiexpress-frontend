@@ -16,7 +16,7 @@ import useSlowRequest from '../../shared/hooks/useSlowRequest.js'
 import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import logo from '../../assets/logo.png'
 import logoDark from '../../assets/logoDark.png'
-import { validarEmailValor, validarPasswordValor } from './utils/authValidation.js'
+import { validarEmailValor, validarPasswordValor } from './validations/authValidation.js'
 import ModalRecuperarPassword from './components/ModalRecuperarPassword.jsx'
 
 // Debe coincidir con PASSWORD_REGEX en shared/layouts/Header.jsx, features/auth/ResetearPassword.jsx

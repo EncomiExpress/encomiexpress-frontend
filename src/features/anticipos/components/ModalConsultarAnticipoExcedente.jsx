@@ -9,7 +9,7 @@ import AccountBalanceWalletOutlinedIcon from '@mui/icons-material/AccountBalance
 import CloseIcon from '@mui/icons-material/Close'
 import { getAnticipoEstadoDot } from '../../../shared/utils/estadoColors.js'
 import { formatFecha } from '../../../shared/utils/formatters.js'
-import { formatMoney } from '../utils/anticipoValidation.js'
+import { formatMoney } from '../validations/anticipoValidation.js'
 import CampoFila from '../../../shared/components/CampoFila.jsx'
 import FichaCard from '../../../shared/components/FichaCard.jsx'
 

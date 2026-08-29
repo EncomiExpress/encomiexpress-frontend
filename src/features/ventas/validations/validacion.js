@@ -1,5 +1,5 @@
-import { esSoloRelleno } from '../../../../shared/utils/formatters.js'
-import { sumarDias } from '../../../../shared/utils/horarioLaboral.js'
+import { esSoloRelleno } from '../../../shared/utils/formatters.js'
+import { sumarDias } from '../../../shared/utils/horarioLaboral.js'
 
 export const steps = ['Participantes', 'Paquete', 'Envío', 'Pago', 'Confirmación']
 

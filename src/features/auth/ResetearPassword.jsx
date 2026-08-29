@@ -14,7 +14,7 @@ import { resetearPassword } from '../../shared/services/authService.js'
 import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import logo from '../../assets/logo.png'
 import logoDark from '../../assets/logoDark.png'
-import { validarPasswordValor, validarConfirmarPasswordValor } from './utils/authValidation.js'
+import { validarPasswordValor, validarConfirmarPasswordValor } from './validations/authValidation.js'
 
 const PASSWORD_HELP = '8-64 caracteres, con mayúsculas, minúsculas, números y un carácter especial'
 

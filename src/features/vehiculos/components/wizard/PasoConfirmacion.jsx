@@ -1,7 +1,7 @@
 import { Box, Typography, Paper, Alert } from '@mui/material'
 import { DirectionsCarOutlined, EventOutlined, EditOutlined } from '@mui/icons-material'
 import ConfirmRow from '../../../../shared/components/ConfirmRow.jsx'
-import { formatearPlaca } from '../../utils/vehiculoValidation.js'
+import { formatearPlaca } from '../../validations/vehiculoValidation.js'
 import { cardSx } from '../../style/wizardStyles.js'
 
 const sonDistintos = (a, b) => String(a ?? '') !== String(b ?? '')

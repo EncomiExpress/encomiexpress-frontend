@@ -2,7 +2,7 @@ import { Box, MenuItem } from '@mui/material'
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
 import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined'
 import { FormField, FormSelect } from '../../../../shared/components/FormularioEstandarizado.jsx'
-import { validarCampo } from '../../utils/propietarioValidation.js'
+import { validarCampo } from '../../validations/propietarioValidation.js'
 
 const PasoContactoFlota = ({ form, errores, setErrores, handleChange }) => (
     <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>

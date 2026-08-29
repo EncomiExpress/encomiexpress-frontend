@@ -3,7 +3,7 @@ import CloseIcon from '@mui/icons-material/Close'
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
 import { FormField } from '../../../../shared/components/FormularioEstandarizado.jsx'
 import { formatearMoneda } from '../../../../shared/utils/formatters.js'
-import { validarCampoPaquete, MAX_PAQUETES } from './validacion.js'
+import { validarCampoPaquete, MAX_PAQUETES } from '../../validations/validacion.js'
 
 /** Paso 2 del wizard: uno o varios paquetes (contenido, dimensiones, peso, valor declarado). */
 export default function PasoPaquetes({

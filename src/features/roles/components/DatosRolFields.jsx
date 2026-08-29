@@ -1,7 +1,7 @@
 import { Box } from '@mui/material'
 import { FormField } from '../../../shared/components/FormularioEstandarizado.jsx'
 import { esSoloRelleno } from '../../../shared/utils/formatters.js'
-import { validarNombreRol } from '../utils/rolValidation.js'
+import { validarNombreRol } from '../validations/rolValidation.js'
 
 const DatosRolFields = ({ formData, setFormData, errores, setErrores, setAvisoNombreDuplicado, verificarNombreRolDuplicado }) => (
     <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2.5, mb: 2 }}>

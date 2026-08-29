@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import * as usuarioService from '../services/usuarioService.js'
 import { hayNombreDuplicado, MENSAJE_NOMBRE_DUPLICADO, hayDocumentoDuplicado, MENSAJE_DOC_DUPLICADO, MENSAJE_EMAIL_DUPLICADO } from '../../../shared/utils/duplicados.js'
-import { validarEmail } from '../utils/usuarioValidation.js'
+import { validarEmail } from '../validations/usuarioValidation.js'
 
 // excludeId: solo Actualizar lo pasa (para no marcar el propio usuario como
 // duplicado de sí mismo); Registrar lo deja undefined.

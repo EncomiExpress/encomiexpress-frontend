@@ -7,7 +7,7 @@ import { FormField } from '../../../../shared/components/FormularioEstandarizado
 import { formFieldStyles } from '../../../../shared/utils/formStyles.js'
 import { normalizarTexto } from '../../../../shared/utils/duplicados.js'
 import { formatearMoneda } from '../../../../shared/utils/formatters.js'
-import { validarCampo } from '../../utils/anticipoValidation.js'
+import { validarCampo } from '../../validations/anticipoValidation.js'
 
 const PasoRutaVehiculo = ({
     theme, form, errores, setErrores, setForm, handleChange,

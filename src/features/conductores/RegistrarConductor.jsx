@@ -10,7 +10,7 @@ import { capitalizarPalabras } from '../../shared/utils/formatters.js'
 import { hoyISO } from '../../shared/utils/horarioLaboral.js'
 import {
     steps, validarCampo, validarCategorias, validarPaso, PASSWORD_HELP, formInicialConductor,
-} from './utils/conductorValidation.js'
+} from './validations/conductorValidation.js'
 import { useDuplicadoConductor } from './hooks/useDuplicadoConductor.js'
 import WizardDialog from '../../shared/components/WizardDialog.jsx'
 import PasoDocumento from './components/wizard/PasoDocumento.jsx'

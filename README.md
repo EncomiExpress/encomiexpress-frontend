@@ -66,21 +66,24 @@ src/
 │   │                           # autocontenido con su propio context/, services/ y
 │   │                           # <entidad>.routes.jsx
 │   ├── home/                  # Página pública de inicio
-│   ├── auth/                  # Autenticación (login, resetear contraseña)
+│   ├── auth/                  # Autenticación (login, resetear contraseña, validations/)
 │   ├── dashboard/             # Panel principal con indicadores
-│   ├── clientes/              # Gestión de clientes (context/, services/)
+│   ├── clientes/              # Gestión de clientes (context/, services/, validations/)
 │   ├── ventas/                # Gestión de ventas/encomiendas (context/, services/,
-│   │   │                       # components/registrar-venta/, components/actualizar-venta/)
-│   │   └── components/        # Subcomponentes de los wizards Registrar/ActualizarVenta,
-│   │                           # uno por paso del Stepper (Participantes, Paquetes, Envío...)
-│   ├── conductores/           # Administración de conductores (context/, services/, utils/)
-│   ├── destinos/              # Catálogo de ubicaciones (context/, services/)
-│   ├── propietarios/          # Gestión de propietarios de vehículos (context/, services/)
-│   ├── rutas/                 # Programación de rutas (context/, services/)
-│   ├── vehiculos/             # Gestión de vehículos (context/, services/)
-│   ├── usuarios/              # Gestión de usuarios (services/)
-│   ├── roles/                 # Gestión de roles y permisos (vía AuthContext, ver nota abajo)
-│   ├── anticipos/             # Control de anticipos y excedentes (context/, services/)
+│   │   │                       # validations/, components/registrar-venta/, components/actualizar-venta/)
+│   │   ├── components/        # Subcomponentes de los wizards Registrar/ActualizarVenta,
+│   │   │                       # uno por paso del Stepper (Participantes, Paquetes, Envío...)
+│   │   └── validations/       # ventaValidation.js (orquestación por paso) +
+│   │                           # validacion.js (reglas de campo y de paquete)
+│   ├── conductores/           # Administración de conductores (context/, services/, validations/, utils/)
+│   ├── destinos/              # Catálogo de ubicaciones (context/, services/, validations/)
+│   ├── propietarios/          # Gestión de propietarios de vehículos (context/, services/, validations/)
+│   ├── rutas/                 # Programación de rutas (context/, services/, validations/)
+│   ├── vehiculos/             # Gestión de vehículos (context/, services/, validations/)
+│   ├── usuarios/              # Gestión de usuarios (services/, validations/)
+│   ├── roles/                 # Gestión de roles y permisos (validations/, vía AuthContext
+│   │                           # para permisos — ver nota abajo)
+│   ├── anticipos/             # Control de anticipos y excedentes (context/, services/, validations/)
 │   └── paquetesDevueltos/     # Consulta de paquetes devueltos — solo lectura (services/)
 │
 ├── shared/                    # Recursos verdaderamente transversales (usados por 3+ features
@@ -96,6 +99,10 @@ src/
 │   ├── services/               # authService (cliente HTTP base), configuracionService,
 │   │                           # rolService — infraestructura o sin dueño de una sola feature
 │   ├── utils/                  # Formatters, colores por estado, export a Excel/PDF
+│   ├── validations/            # Reglas reutilizadas por 2+ features: EMAIL_REGEX
+│   │                           # (5 módulos) y PASSWORD_REGEX (4 módulos + el diálogo
+│   │                           # de cambiar contraseña del Header), antes copiadas
+│   │                           # de forma idéntica en cada uno
 │   └── config/                 # Configuración (API URL, constantes, secciones de nav)
 │
 ├── assets/                    # Imágenes estáticas (logos, ilustraciones)
@@ -207,6 +214,7 @@ Todos los colores se definen de forma centralizada en `src/shared/styles/theme.j
 | **fetch nativo vs Axios** | fetch API es nativo del browser; evita dependencia adicional para el scope actual |
 | **Preferencias en localStorage** | El modo de navegación y la paleta de colores persisten entre sesiones sin necesidad de backend |
 | **WizardDialog compartido** | Los 9 wizards de Registrar/Actualizar (ventas, rutas, clientes, conductores, vehículos, propietarios, destinos, usuarios, anticipos) repetían el mismo Dialog+Stepper+botonera casi al byte; extraerlo a un único componente unificó también el estilo de botón deshabilitado, antes inconsistente entre módulos |
+| **`validations/` por módulo + `shared/validations/`** | Las reglas de validación de cada feature viven en su propia carpeta `validations/` (antes en `utils/`, junto con helpers no relacionados). `EMAIL_REGEX` y `PASSWORD_REGEX` — copiados de forma idéntica en 5 y 4 archivos respectivamente — se centralizaron en `shared/validations/`; los mensajes de error de cada módulo se mantuvieron sin cambios, solo se centralizó el patrón compartido |
 
 ---
 ## Requisitos del Sistema

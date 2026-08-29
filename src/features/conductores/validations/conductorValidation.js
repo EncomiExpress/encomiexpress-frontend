@@ -1,10 +1,11 @@
 import { esSoloRelleno } from '../../../shared/utils/formatters.js'
 import { hoyISO } from '../../../shared/utils/horarioLaboral.js'
 import { validarNumeroDocumento } from '../../../shared/utils/documento.js'
+import { EMAIL_REGEX } from '../../../shared/validations/emailValidation.js'
+import { PASSWORD_REGEX } from '../../../shared/validations/passwordValidation.js'
 
 export const steps = ['Datos Personales', 'Contacto y Credenciales', 'Licencia', 'Confirmación']
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 export const validarEmail = (email) => {
     const valor = (email || '').trim()
     if (!valor) return 'El correo es obligatorio'
@@ -14,7 +15,6 @@ export const validarEmail = (email) => {
     return ''
 }
 
-export const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s]).{8,64}$/
 export const PASSWORD_HELP = '8-64 caracteres, con mayúsculas, minúsculas, números y un carácter especial'
 const SOLO_LETRAS_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/
 

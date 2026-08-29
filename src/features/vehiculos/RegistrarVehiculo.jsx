@@ -10,7 +10,7 @@ import { hoyISO } from '../../shared/utils/horarioLaboral.js'
 import {
     stepsRegistrar as steps, limpiarPlacaInput, CAPACIDAD_MAX,
     validarCampo, validarPaso,
-} from './utils/vehiculoValidation.js'
+} from './validations/vehiculoValidation.js'
 import { useDuplicadoVehiculo } from './hooks/useDuplicadoVehiculo.js'
 import WizardDialog from '../../shared/components/WizardDialog.jsx'
 import PasoDatosVehiculo from './components/wizard/PasoDatosVehiculo.jsx'

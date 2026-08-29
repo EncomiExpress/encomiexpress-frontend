@@ -5,7 +5,7 @@ import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDown
 import { FormField } from '../../../../shared/components/FormularioEstandarizado.jsx'
 import { formFieldStyles } from '../../../../shared/utils/formStyles.js'
 import { maxLengthDocumento, docHelperText, validarNumeroDocumento } from '../../../../shared/utils/documento.js'
-import { validarCampo } from '../../utils/conductorValidation.js'
+import { validarCampo } from '../../validations/conductorValidation.js'
 
 const PasoDocumento = ({ form, errores, setErrores, handleChange, verificarDocumentoDuplicado, verificarNombreDuplicado, validationOpts }) => (
     <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>

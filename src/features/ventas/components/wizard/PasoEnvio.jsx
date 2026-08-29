@@ -7,7 +7,7 @@ import { normalizarTexto } from '../../../../shared/utils/duplicados.js'
 import { formatFecha } from '../../../../shared/utils/formatters.js'
 import { sumarDias } from '../../../../shared/utils/horarioLaboral.js'
 import PlacaDisplay from '../../../../shared/components/PlacaDisplay.jsx'
-import { validarCampo, validarCampoPaquete } from './validacion.js'
+import { validarCampo, validarCampoPaquete } from '../../validations/validacion.js'
 
 /**
  * Paso 3 del wizard: elegir la ruta, la fecha de entrega y asignar cada paquete a un

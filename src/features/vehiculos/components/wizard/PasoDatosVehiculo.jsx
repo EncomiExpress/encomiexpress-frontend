@@ -5,7 +5,7 @@ import {
 } from '@mui/icons-material'
 import { FormField, FormSelect } from '../../../../shared/components/FormularioEstandarizado.jsx'
 import { formFieldStyles } from '../../../../shared/utils/formStyles.js'
-import { TIPOS_VEHICULO, formatearPlaca, validarCampo } from '../../utils/vehiculoValidation.js'
+import { TIPOS_VEHICULO, formatearPlaca, validarCampo } from '../../validations/vehiculoValidation.js'
 
 const PasoDatosVehiculo = ({ formData, setFormData, errores, setErrores, handleChange, verificarPlacaDuplicada, validationOpts }) => (
     <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>

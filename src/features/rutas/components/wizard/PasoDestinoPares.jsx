@@ -9,7 +9,7 @@ import NacionSVG from '../../../../shared/components/NacionSVG.jsx'
 import PlacaDisplay from '../../../../shared/components/PlacaDisplay.jsx'
 import { formFieldStyles } from '../../../../shared/utils/formStyles.js'
 import { normalizarTexto } from '../../../../shared/utils/duplicados.js'
-import { MAX_PARES, validarCampo, validarPares } from '../../utils/rutaValidation.js'
+import { MAX_PARES, validarCampo, validarPares } from '../../validations/rutaValidation.js'
 
 const PasoDestinoPares = ({
     theme, form, errores, setErrores, handleChange, handleParChange, handleAgregarPar, handleQuitarPar,

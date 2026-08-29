@@ -4,7 +4,7 @@ import { Box, TextField, Button, Typography, Alert, InputAdornment, IconButton, 
 import { EmailOutlined as Email, LockResetOutlined as LockResetIcon, Close } from '@mui/icons-material'
 import { recuperarPassword } from '../../../shared/services/authService.js'
 import { formFieldStyles } from '../../../shared/utils/formStyles.js'
-import { validarEmailValor } from '../utils/authValidation.js'
+import { validarEmailValor } from '../validations/authValidation.js'
 
 const ModalRecuperarPassword = ({ open, onClose }) => {
     const theme = useTheme()

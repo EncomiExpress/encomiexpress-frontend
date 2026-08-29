@@ -2,7 +2,7 @@ import { Box } from '@mui/material'
 import AttachMoneyOutlinedIcon from '@mui/icons-material/AttachMoneyOutlined'
 import { FormField } from '../../../../shared/components/FormularioEstandarizado.jsx'
 import { formatearMoneda } from '../../../../shared/utils/formatters.js'
-import { validarCampo } from '../../utils/destinoValidation.js'
+import { validarCampo } from '../../validations/destinoValidation.js'
 
 const PasoTarifa = ({ form, errores, setErrores, handleChange }) => (
     <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 2.5 }}>

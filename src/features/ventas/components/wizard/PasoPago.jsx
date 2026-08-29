@@ -1,7 +1,7 @@
 import { Box, MenuItem } from '@mui/material'
 import { FormField, FormSelect } from '../../../../shared/components/FormularioEstandarizado.jsx'
 import { formatearMoneda } from '../../../../shared/utils/formatters.js'
-import { validarCampo } from './validacion.js'
+import { validarCampo } from '../../validations/validacion.js'
 
 /** Paso 4 del wizard: método de pago y valores (tarifa auto-calculada pero editable). */
 export default function PasoPago({ form, errores, setErrores, handleChange, ventaOriginal }) {

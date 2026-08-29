@@ -1,4 +1,4 @@
-import { CAMPOS_PAQUETE, validarCampo, validarCampoPaquete } from '../components/wizard/validacion.js'
+import { CAMPOS_PAQUETE, validarCampo, validarCampoPaquete } from './validacion.js'
 
 export const NUMERIC_LIMITS = { valorServicio: 999999999, impuestos: 999999999 }
 export const PAQUETE_NUMERIC_LIMITS = { peso: 9999, alto: 9999, ancho: 9999, profundidad: 9999, valorDeclarado: 999999999 }

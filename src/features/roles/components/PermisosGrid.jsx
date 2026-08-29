@@ -1,6 +1,6 @@
 import { Box, Typography, Paper, FormControlLabel, Checkbox } from '@mui/material'
 import { Security } from '@mui/icons-material'
-import { getPermisoLabel } from '../utils/rolValidation.js'
+import { getPermisoLabel } from '../validations/rolValidation.js'
 
 const PermisosGrid = ({ theme, modulos, permisos, errorPermisos, toggleModulo, togglePermiso }) => (
     <>

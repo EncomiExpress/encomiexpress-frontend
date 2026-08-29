@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { hayDocumentoDuplicado } from '../../../shared/utils/duplicados.js'
-import { MENSAJE_ROL_DUPLICADO } from '../utils/rolValidation.js'
+import { MENSAJE_ROL_DUPLICADO } from '../validations/rolValidation.js'
 
 // getRolesBackend viene de useAuth() (AuthContext) — roles no tiene un servicio propio,
 // la consulta de roles pasa por el contexto de autenticación.

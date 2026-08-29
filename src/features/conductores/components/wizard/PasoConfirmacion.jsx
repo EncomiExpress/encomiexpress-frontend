@@ -5,7 +5,7 @@ import LockOutlinedIcon from '@mui/icons-material/LockOutlined'
 import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import ConfirmRow from '../../../../shared/components/ConfirmRow.jsx'
-import { getTipoLabel, getLicenciaLabel } from '../../utils/conductorValidation.js'
+import { getTipoLabel, getLicenciaLabel } from '../../validations/conductorValidation.js'
 import { cardSx } from '../../style/wizardStyles.js'
 
 const sonDistintos = (a, b) => String(a ?? '') !== String(b ?? '')

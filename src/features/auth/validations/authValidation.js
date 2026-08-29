@@ -1,9 +1,5 @@
-// Debe coincidir con el validador del backend y con las copias independientes de esta
-// misma regla en shared/layouts/Header.jsx, usuarios/utils/usuarioValidation.js y
-// conductores/utils/conductorValidation.js (cada una valida su propio formulario de
-// contraseña; no importan este archivo entre sí).
-export const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s]).{8,64}$/
-export const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+import { EMAIL_REGEX } from '../../../shared/validations/emailValidation.js'
+import { PASSWORD_REGEX } from '../../../shared/validations/passwordValidation.js'
 
 export const validarEmailValor = (valor) => {
     if (!valor.trim()) return 'El correo es obligatorio'

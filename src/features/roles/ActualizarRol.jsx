@@ -4,7 +4,7 @@ import { Box, Typography, Alert, Dialog, DialogTitle, DialogContent, IconButton,
 import { Close, SaveOutlined } from '@mui/icons-material'
 import { MODULOS, useAuth } from '../../shared/contexts/AuthContext.jsx'
 import { getErrorMessage } from '../../shared/utils/errorMessage.js'
-import { validarFormRol, toggleModuloPermisos, togglePermisoEnLista } from './utils/rolValidation.js'
+import { validarFormRol, toggleModuloPermisos, togglePermisoEnLista } from './validations/rolValidation.js'
 import { useDuplicadoRol } from './hooks/useDuplicadoRol.js'
 import { cancelButtonSx, primaryButtonSx } from './style/formStyles.js'
 import DatosRolFields from './components/DatosRolFields.jsx'

@@ -9,7 +9,7 @@ import { MENSAJE_NOMBRE_DUPLICADO } from '../../shared/utils/duplicados.js'
 import { esDocAlfanumerico } from '../../shared/utils/documento.js'
 import {
     steps, validarCampo, validarDocumentoCompleto, validarPaso, EMPTY_FORM,
-} from './utils/propietarioValidation.js'
+} from './validations/propietarioValidation.js'
 import { useDuplicadoPropietario } from './hooks/useDuplicadoPropietario.js'
 import WizardDialog from '../../shared/components/WizardDialog.jsx'
 import PasoDocumento from './components/wizard/PasoDocumento.jsx'

@@ -5,7 +5,7 @@ import { FormField, FormSelect } from '../../../../shared/components/FormularioE
 import {
     departamentos, CIUDADES_POR_DEPARTAMENTO, OTRA_CIUDAD, OTRO_DEPARTAMENTO,
     validarCampo,
-} from '../../utils/destinoValidation.js'
+} from '../../validations/destinoValidation.js'
 
 const PasoUbicacion = ({
     theme, form, setForm, errores, setErrores, handleChange,

@@ -7,7 +7,7 @@ import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined'
 import { FormField } from '../../../../shared/components/FormularioEstandarizado.jsx'
 import { formFieldStyles } from '../../../../shared/utils/formStyles.js'
 import { normalizarTexto } from '../../../../shared/utils/duplicados.js'
-import { validarCampo, OPCION_CLIENTE_NUEVO } from './validacion.js'
+import { validarCampo, OPCION_CLIENTE_NUEVO } from '../../validations/validacion.js'
 
 /**
  * Paso 1 del wizard: elegir el cliente remitente y capturar los datos del destinatario.

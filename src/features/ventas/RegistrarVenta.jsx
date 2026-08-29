@@ -9,7 +9,7 @@ import { useConfiguracion } from '../../shared/contexts/ConfiguracionContext.jsx
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import WizardDialog from '../../shared/components/WizardDialog.jsx'
-import { steps, PAQUETE_VACIO } from './components/wizard/validacion.js'
+import { steps, PAQUETE_VACIO } from './validations/validacion.js'
 import { cardSx } from './style/wizardStyles.js'
 import useVentaWizardForm from './hooks/useVentaWizardForm.js'
 import PasoParticipantes from './components/wizard/PasoParticipantes.jsx'

@@ -4,7 +4,7 @@ import EventOutlinedIcon from '@mui/icons-material/EventOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
 import { FormField, FormSelect } from '../../../../shared/components/FormularioEstandarizado.jsx'
-import { CATEGORIAS_LICENCIA, validarCategorias } from '../../utils/conductorValidation.js'
+import { CATEGORIAS_LICENCIA, validarCategorias } from '../../validations/conductorValidation.js'
 
 const PasoLicencia = ({
     theme, form, errores, setErrores, handleChange,

@@ -4,7 +4,7 @@ import { FormField } from '../../../../shared/components/FormularioEstandarizado
 import CalendarioDisponibilidad from '../../../../shared/components/CalendarioDisponibilidad.jsx'
 import SelectorHora from '../../../../shared/components/SelectorHora.jsx'
 import { getRangoHorario, sumarDias, MIN_DIAS_SALIDA_LLEGADA } from '../../../../shared/utils/horarioLaboral.js'
-import { mananaISO, maxISO, validarCampo } from '../../utils/rutaValidation.js'
+import { mananaISO, maxISO, validarCampo } from '../../validations/rutaValidation.js'
 
 const PasoHorario = ({
     form, setForm, errores, setErrores, setApiError, handleChange,

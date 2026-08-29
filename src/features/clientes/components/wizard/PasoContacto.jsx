@@ -3,7 +3,7 @@ import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
 import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined'
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined'
 import { FormField } from '../../../../shared/components/FormularioEstandarizado.jsx'
-import { validarCampo } from '../../utils/clienteValidation.js'
+import { validarCampo } from '../../validations/clienteValidation.js'
 
 const PasoContacto = ({ form, errores, setErrores, handleChange }) => (
     <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>

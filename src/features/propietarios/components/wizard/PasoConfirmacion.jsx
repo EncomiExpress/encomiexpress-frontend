@@ -3,7 +3,7 @@ import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined'
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import ConfirmRow from '../../../../shared/components/ConfirmRow.jsx'
-import { getTipoLabel } from '../../utils/propietarioValidation.js'
+import { getTipoLabel } from '../../validations/propietarioValidation.js'
 import { cardSx } from '../../style/wizardStyles.js'
 
 const sonDistintos = (a, b) => String(a ?? '') !== String(b ?? '')

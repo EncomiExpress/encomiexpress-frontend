@@ -4,7 +4,7 @@ import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import ToggleSwitch from '../../../shared/components/ToggleSwitch.jsx'
 import { formatFecha } from '../../../shared/utils/formatters.js'
-import { formatMoney } from '../utils/anticipoValidation.js'
+import { formatMoney } from '../validations/anticipoValidation.js'
 import AnticipoEstadoDot from '../components/AnticipoEstadoDot.jsx'
 
 const useAnticipoColumns = ({
