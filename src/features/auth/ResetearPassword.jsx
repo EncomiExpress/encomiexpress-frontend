@@ -14,7 +14,7 @@ import { resetearPassword } from '../../shared/services/authService.js'
 import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import logo from '../../assets/logo.png'
 import logoDark from '../../assets/logoDark.png'
-import { validarPasswordValor } from './utils/authValidation.js'
+import { validarPasswordValor, validarConfirmarPasswordValor } from './utils/authValidation.js'
 
 const PASSWORD_HELP = '8-64 caracteres, con mayúsculas, minúsculas, números y un carácter especial'
 
@@ -39,8 +39,8 @@ const ResetearPassword = () => {
     const e = {}
     const errorPassword = validarPasswordValor(passwordNueva, PASSWORD_HELP)
     if (errorPassword) e.passwordNueva = errorPassword
-    if (!confirmarPassword) e.confirmarPassword = 'Confirma la contraseña'
-    else if (passwordNueva !== confirmarPassword) e.confirmarPassword = 'Las contraseñas no coinciden'
+    const errorConfirmar = validarConfirmarPasswordValor(passwordNueva, confirmarPassword)
+    if (errorConfirmar) e.confirmarPassword = errorConfirmar
     setErrores(e)
     return Object.keys(e).length === 0
   }
@@ -185,7 +185,7 @@ const ResetearPassword = () => {
                       setErrores(prev => {
                         const next = { ...prev }
                         if (prev.passwordNueva) next.passwordNueva = validarPasswordValor(valor, PASSWORD_HELP)
-                        if (prev.confirmarPassword) next.confirmarPassword = !confirmarPassword ? 'Confirma la contraseña' : (valor !== confirmarPassword ? 'Las contraseñas no coinciden' : '')
+                        if (prev.confirmarPassword) next.confirmarPassword = validarConfirmarPasswordValor(valor, confirmarPassword)
                         return next
                       })
                       setError('')
@@ -213,7 +213,7 @@ const ResetearPassword = () => {
                       const valor = e.target.value
                       setConfirmarPassword(valor)
                       setErrores(prev => prev.confirmarPassword
-                        ? { ...prev, confirmarPassword: !valor ? 'Confirma la contraseña' : (passwordNueva !== valor ? 'Las contraseñas no coinciden' : '') }
+                        ? { ...prev, confirmarPassword: validarConfirmarPasswordValor(passwordNueva, valor) }
                         : prev)
                       setError('')
                     }}

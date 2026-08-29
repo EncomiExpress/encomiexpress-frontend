@@ -6,12 +6,14 @@ export const steps = ['Datos Personales', 'Contacto', 'Confirmación']
 // Correo en un solo campo libre (sin selector de dominio) — el usuario escribe el
 // dominio a mano, se valida que tenga @ y un punto en el dominio.
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const EMAIL_MAX_LENGTH = 100
 export const validarEmail = (email) => {
     const valor = (email || '').trim()
     if (!valor) return 'El correo es obligatorio'
     if (!valor.includes('@')) return 'El correo debe contener un @ (ej: usuario@dominio.com)'
     if (!valor.split('@')[1]?.includes('.')) return 'El dominio del correo debe contener un punto (ej: usuario@dominio.com)'
     if (!EMAIL_REGEX.test(valor)) return 'El correo no es válido'
+    if (valor.length > EMAIL_MAX_LENGTH) return `El correo no puede superar los ${EMAIL_MAX_LENGTH} caracteres`
     return ''
 }
 
@@ -19,6 +21,7 @@ export const validarEmail = (email) => {
 // mientras se corrige un campo ya marcado con error). numeroIdentificacion no vive
 // aquí porque ya tiene su propia validación (validarDocumentoCompleto, más abajo).
 const SOLO_LETRAS_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/
+const DIRECCION_MAX_LENGTH = 200
 export const validarCampo = (name, form) => {
     const esNIT = form.tipoIdentificacion === 'NIT'
     switch (name) {
@@ -43,6 +46,7 @@ export const validarCampo = (name, form) => {
         case 'direccion':
             if (!form.direccion.trim()) return 'La dirección es obligatoria'
             if (esSoloRelleno(form.direccion)) return 'La dirección no puede contener solo espacios o guiones'
+            if (form.direccion.length > DIRECCION_MAX_LENGTH) return `La dirección no puede superar los ${DIRECCION_MAX_LENGTH} caracteres`
             return ''
         default:
             return ''

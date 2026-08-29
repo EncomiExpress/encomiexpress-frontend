@@ -20,9 +20,7 @@ const SOLO_LETRAS_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/
 
 // requerirPassword: Registrar exige contraseña y confirmación; Actualizar las deja
 // opcionales (password vacío = "no cambiar la actual").
-// validarFormatoApellido: Actualizar valida que el apellido solo tenga letras;
-// Registrar solo exige que no esté vacío (así era el comportamiento original de cada archivo).
-export const validarCampo = (name, form, { requerirPassword = false, validarFormatoApellido = false } = {}) => {
+export const validarCampo = (name, form, { requerirPassword = false } = {}) => {
     switch (name) {
         case 'tipoIdentificacion':
             return form.tipoIdentificacion ? '' : 'Selecciona un tipo de documento'
@@ -32,7 +30,7 @@ export const validarCampo = (name, form, { requerirPassword = false, validarForm
             return ''
         case 'apellido':
             if (!form.apellido?.trim()) return 'El apellido es obligatorio'
-            if (validarFormatoApellido && !SOLO_LETRAS_REGEX.test(form.apellido)) return 'El apellido solo puede contener letras'
+            if (!SOLO_LETRAS_REGEX.test(form.apellido)) return 'El apellido solo puede contener letras'
             return ''
         case 'telefono':
             if (!form.telefono.trim()) return 'El teléfono es obligatorio'
@@ -57,7 +55,8 @@ export const validarCampo = (name, form, { requerirPassword = false, validarForm
             if (form.password && form.password !== form.confirmarPassword) return 'Las contraseñas no coinciden'
             return ''
         case 'numeroLicencia':
-            if (form.numeroLicencia && esSoloRelleno(form.numeroLicencia)) return 'El número de licencia no puede contener solo espacios o guiones'
+            if (!form.numeroLicencia?.trim()) return 'El número de licencia es obligatorio'
+            if (esSoloRelleno(form.numeroLicencia)) return 'El número de licencia no puede contener solo espacios o guiones'
             return ''
         default:
             return ''
@@ -106,7 +105,7 @@ export const formInicialConductor = () => ({
     numeroLicencia: '',
 })
 
-export const validarPaso = (step, form, avisos, { requerirPassword = false, validarFormatoApellido = false, checkVencidas = false } = {}) => {
+export const validarPaso = (step, form, avisos, { requerirPassword = false, checkVencidas = false } = {}) => {
     const { avisoDocDuplicado, avisoNombreDuplicado, avisoEmailDuplicado, avisoLicenciaDuplicada } = avisos
     const e = {}
 
@@ -115,7 +114,7 @@ export const validarPaso = (step, form, avisos, { requerirPassword = false, vali
         const errorDocumento = validarNumeroDocumento(form.tipoIdentificacion, form.numeroIdentificacion)
         e.numeroIdentificacion = errorDocumento || avisoDocDuplicado
         e.nombre = validarCampo('nombre', form) || avisoNombreDuplicado
-        e.apellido = validarCampo('apellido', form, { validarFormatoApellido }) || avisoNombreDuplicado
+        e.apellido = validarCampo('apellido', form) || avisoNombreDuplicado
     }
 
     if (step === 1) {

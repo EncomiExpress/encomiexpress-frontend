@@ -18,6 +18,10 @@ export const CIUDADES_POR_DEPARTAMENTO = {
 }
 export const OTRA_CIUDAD = '__otra__'
 export const OTRO_DEPARTAMENTO = '__otro__'
+// Mismo alfabeto que ya filtra RegistrarDestino.jsx/ActualizarDestino.jsx en vivo para
+// ciudad/departamento (incluye ü/Ü, ej: "Güicán") — el validador replica esa misma regla.
+const SOLO_LETRAS_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/
+const DIRECCION_MAX_LENGTH = 200
 
 // Valida un único campo del formulario (usado en onBlur y para re-validar en vivo
 // mientras se corrige un campo ya marcado con error).
@@ -26,9 +30,12 @@ export const validarCampo = (name, form) => {
         case 'departamento':
             return form.departamento ? '' : 'Selecciona un departamento'
         case 'ciudad':
-            return form.ciudad?.trim() ? '' : 'La ciudad es obligatoria'
+            if (!form.ciudad?.trim()) return 'La ciudad es obligatoria'
+            if (!SOLO_LETRAS_REGEX.test(form.ciudad)) return 'La ciudad solo puede contener letras'
+            return ''
         case 'direccion':
             if (form.direccion && esSoloRelleno(form.direccion)) return 'La dirección no puede contener solo espacios o guiones'
+            if (form.direccion && form.direccion.length > DIRECCION_MAX_LENGTH) return `La dirección no puede superar los ${DIRECCION_MAX_LENGTH} caracteres`
             return ''
         case 'tarifaBase':
             if (form.tarifaBase === '' || form.tarifaBase === undefined) return 'La tarifa base es obligatoria'

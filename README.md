@@ -85,7 +85,9 @@ src/
 │
 ├── shared/                    # Recursos verdaderamente transversales (usados por 3+ features
 │   │                           # o sin dueño de dominio único — no datos de una sola entidad)
-│   ├── styles/                # Tema centralizado (theme.js con createTheme)
+│   ├── styles/                # Tema centralizado: theme.js compone theme/tokens.js
+│   │                           # (colores por paleta/modo), theme/palette.js (paletas
+│   │                           # MUI) y theme/componentOverrides.js (overrides)
 │   ├── contexts/              # Auth, Toast, Theme, Configuración — estado realmente global
 │   ├── layouts/                # Sidebar, TopNav, Header, LayoutAdmin, PrivateRoute
 │   ├── components/            # Átomos reutilizables (DataTable, ToggleSwitch, etc.)
@@ -190,7 +192,8 @@ Todos los colores se definen de forma centralizada en `src/shared/styles/theme.j
 | **TopNav** | Barra horizontal superior con logo, saludo, secciones de navegación y fecha/hora en tiempo real |
 | **LayoutAdmin** | Layout principal que renderiza Sidebar o TopNav según la preferencia del usuario |
 | **LoadingScreen** | Pantalla de carga con animación de camión y logo de marca |
-| **FormularioEstandarizado** | Librería interna de componentes de formulario (FormField, FormSelect, PasswordField, etc.) |
+| **FormularioEstandarizado** | Librería interna de componentes de formulario (FormField, FormSelect, PasswordField, botones, layout), organizada en subcarpetas por rol (`FormFields`, `FormButtons`, `FormLayout`, `FormAlert`) detrás de un único punto de importación |
+| **WizardDialog** | Molde compartido de Dialog + Stepper + botonera para los 9 wizards de Registrar/Actualizar del panel, con el estilo de botón deshabilitado unificado entre módulos |
 | **SessionExpiredDialog** | Aviso modal cuando el token expira en medio de una sesión activa |
 
 ---
@@ -203,6 +206,7 @@ Todos los colores se definen de forma centralizada en `src/shared/styles/theme.j
 | **Context API vs Redux** | React Context es suficiente para este tamaño de aplicación; evita complejidad adicional |
 | **fetch nativo vs Axios** | fetch API es nativo del browser; evita dependencia adicional para el scope actual |
 | **Preferencias en localStorage** | El modo de navegación y la paleta de colores persisten entre sesiones sin necesidad de backend |
+| **WizardDialog compartido** | Los 9 wizards de Registrar/Actualizar (ventas, rutas, clientes, conductores, vehículos, propietarios, destinos, usuarios, anticipos) repetían el mismo Dialog+Stepper+botonera casi al byte; extraerlo a un único componente unificó también el estilo de botón deshabilitado, antes inconsistente entre módulos |
 
 ---
 ## Requisitos del Sistema

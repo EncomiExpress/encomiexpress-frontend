@@ -22,6 +22,11 @@ export const steps = ['Datos de la Ruta', 'Horario', 'Confirmación']
 // en rutaService.js), mismo criterio que MAX_PAQUETES en Ventas.
 export const MAX_PARES = 10
 
+// Mismo alfabeto que ya filtra RegistrarRutaProgramacion.jsx en vivo para origen
+// (letras + guion + guion bajo) — el validador replica esa misma regla.
+const ORIGEN_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s\-_]+$/
+const ORIGEN_MAX_LENGTH = 100
+
 // Valida un único campo del formulario (usado en onBlur y para re-validar en vivo
 // mientras se corrige un campo ya marcado con error). "horaLlegadaEstimada" no vive
 // aquí: es opcional y no tiene ninguna regla que validar. Se mantiene "fecha posterior a
@@ -32,6 +37,8 @@ export const validarCampo = (name, form) => {
         case 'origen':
             if (!form.origen?.trim()) return 'El origen de la ruta es obligatorio'
             if (esSoloRelleno(form.origen)) return 'El origen de la ruta no puede contener solo espacios o guiones'
+            if (!ORIGEN_REGEX.test(form.origen)) return 'El origen contiene caracteres no permitidos'
+            if (form.origen.length > ORIGEN_MAX_LENGTH) return `El origen no puede superar los ${ORIGEN_MAX_LENGTH} caracteres`
             return ''
         case 'idDestino':
             return form.idDestino ? '' : 'Selecciona un destino'

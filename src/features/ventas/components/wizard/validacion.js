@@ -7,6 +7,7 @@ export const MAX_PAQUETES = 10
 export const PAQUETE_VACIO = { descripcionContenido: '', peso: '', alto: '', ancho: '', profundidad: '', valorDeclarado: '', idRutaVehiculoConductor: '' }
 export const CAMPOS_PAQUETE = ['descripcionContenido', 'peso', 'alto', 'ancho', 'profundidad', 'valorDeclarado']
 const SOLO_LETRAS_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/
+const NOMBRE_DESTINATARIO_MAX_LENGTH = 50
 
 // Opción sentinel que se agrega al final de las sugerencias de Cliente — al elegirla
 // se abre RegistrarCliente en un modal encima, en vez de seleccionar un cliente real.
@@ -25,6 +26,7 @@ export const validarCampo = (name, form) => {
         case 'nombreDestinatario':
             if (!form.nombreDestinatario.trim()) return 'El nombre es obligatorio'
             if (!SOLO_LETRAS_REGEX.test(form.nombreDestinatario)) return 'Solo se permiten letras'
+            if (form.nombreDestinatario.length > NOMBRE_DESTINATARIO_MAX_LENGTH) return `El nombre no puede superar los ${NOMBRE_DESTINATARIO_MAX_LENGTH} caracteres`
             return ''
         case 'telefonoDestinatario':
             if (!form.telefonoDestinatario.trim()) return 'El teléfono es obligatorio'

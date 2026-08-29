@@ -21,13 +21,8 @@ export const calcularValoresPaquetes = (idRuta, paquetes, rutasProgramadas, tari
     return { valorServicio: vs, impuestos: imp, total: vs + imp }
 }
 
-// validarObservacionesEnPaso1: en ActualizarVenta la validación de "observaciones" al
-// presionar "Siguiente" ocurre en el paso de Paquetes (1) en vez del paso de Envío (2),
-// que es donde realmente vive el campo -- diferencia real y preexistente entre ambos
-// wizards (el campo también se valida en su propio onBlur dentro de PasoEnvio, así que en
-// la práctica casi nunca se nota). Se preserva tal cual, no se corrige acá.
 export const validarPaso = (step, form, rutasProgramadas, opts = {}) => {
-    const { ventaOriginal = null, validarObservacionesEnPaso1 = false, getPesoOriginalPorPar } = opts
+    const { ventaOriginal = null, getPesoOriginalPorPar } = opts
     const e = {}
 
     if (step === 0) {
@@ -47,13 +42,12 @@ export const validarPaso = (step, form, rutasProgramadas, opts = {}) => {
             return pe
         })
         if (erroresPaquetes.some(pe => Object.keys(pe).length > 0)) e.paquetes = erroresPaquetes
-        if (validarObservacionesEnPaso1) e.observaciones = validarCampo('observaciones', form, ventaOriginal)
     }
 
     if (step === 2) {
         e.idRuta = validarCampo('idRuta', form, ventaOriginal)
         e.fechaEstimadaEntrega = validarCampo('fechaEstimadaEntrega', form, ventaOriginal)
-        if (!validarObservacionesEnPaso1) e.observaciones = validarCampo('observaciones', form, ventaOriginal)
+        e.observaciones = validarCampo('observaciones', form, ventaOriginal)
 
         const rutaSel = rutasProgramadas.find(r => r.idRuta === parseInt(form.idRuta))
         if (rutaSel) {

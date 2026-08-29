@@ -21,7 +21,6 @@ export const useVentaWizardForm = ({
     tarifaPorKg, fetchConfiguracion,
     ventaOriginal = null,
     afterChange = () => {},
-    validarObservacionesEnPaso1 = false,
     getPesoOriginalPorPar,
 }) => {
     // true en cuanto el admin edita "Valor del servicio"/"Impuestos" a mano — a partir de
@@ -256,7 +255,7 @@ export const useVentaWizardForm = ({
 
     const handleNext = () => {
         const erroresEncontrados = validarPaso(activeStep, form, rutasProgramadas, {
-            ventaOriginal, validarObservacionesEnPaso1, getPesoOriginalPorPar,
+            ventaOriginal, getPesoOriginalPorPar,
         })
         if (Object.keys(erroresEncontrados).length > 0) {
             setErrores(erroresEncontrados)

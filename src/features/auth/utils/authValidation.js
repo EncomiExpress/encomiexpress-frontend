@@ -18,3 +18,12 @@ export const validarPasswordValor = (valor, passwordHelp) => {
     if (!PASSWORD_REGEX.test(valor)) return passwordHelp
     return ''
 }
+
+// Regla de confirmación de contraseña reutilizada por ResetearPassword.jsx -- mismo
+// criterio que ya usan conductorValidation.js/usuarioValidation.js para su propio campo
+// confirmarPassword.
+export const validarConfirmarPasswordValor = (password, confirmarPassword) => {
+    if (!confirmarPassword) return 'Confirma la contraseña'
+    if (password !== confirmarPassword) return 'Las contraseñas no coinciden'
+    return ''
+}

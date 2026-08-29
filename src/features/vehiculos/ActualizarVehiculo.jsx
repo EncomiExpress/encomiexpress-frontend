@@ -1,7 +1,6 @@
 import { useTheme } from '@mui/material/styles'
 import { useState, useEffect, useRef } from 'react'
-import { Box, Typography, Stepper, Step, StepLabel, Button, Dialog, DialogTitle, DialogContent, IconButton, CircularProgress } from '@mui/material'
-import { SaveOutlined, ArrowBackOutlined, ArrowForwardOutlined, Close } from '@mui/icons-material'
+import { SaveOutlined } from '@mui/icons-material'
 import { useVehiculo } from './context/VehiculoContext.jsx'
 import { usePropietario } from '../propietarios/context/PropietarioContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
@@ -12,7 +11,7 @@ import {
     validarCampo, validarPaso,
 } from './utils/vehiculoValidation.js'
 import { useDuplicadoVehiculo } from './hooks/useDuplicadoVehiculo.js'
-import { stepperSx, backButtonSx, cancelButtonSx, primaryButtonSx } from './style/wizardStyles.js'
+import WizardDialog from '../../shared/components/WizardDialog.jsx'
 import PasoDatosVehiculo from './components/wizard/PasoDatosVehiculo.jsx'
 import PasoPropietarioDocumentacion from './components/wizard/PasoPropietarioDocumentacion.jsx'
 import PasoConfirmacion from './components/wizard/PasoConfirmacion.jsx'
@@ -172,59 +171,19 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
   }
 
   return (
-    <Dialog open={open} onClose={cerrar} maxWidth="md" fullWidth
-      slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}>
-      <DialogTitle sx={{ m: 0, p: 2, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${theme.palette.divider}` }}>
-        <Box>
-          <Typography variant="h6" fontWeight={700}>Editar Vehículo</Typography>
-          <Typography variant="body2" color={theme.palette.text.secondary}>
-            {formOriginal?.marca && formOriginal?.modelo
-              ? `Modificando datos de ${formOriginal.marca} ${formOriginal.modelo}`
-              : 'Modifica los campos que necesites.'
-            }
-          </Typography>
-        </Box>
-        <IconButton onClick={cerrar} sx={{ color: theme.palette.text.secondary }}>
-          <Close />
-        </IconButton>
-      </DialogTitle>
-      <DialogContent sx={{ p: 3, pt: 1.5 }}>
-        <Stepper activeStep={activeStep} alternativeLabel
-          sx={stepperSx(theme)}>
-          {steps.map(label => <Step key={label}><StepLabel>{label}</StepLabel></Step>)}
-        </Stepper>
-        <Box sx={{ px: 4, py: 2 }}>
-          <Box sx={{ maxWidth: 700, mx: 'auto' }}>
-            {renderStepContent()}
-          </Box>
-        </Box>
-      </DialogContent>
-
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 4, py: 2.5, borderTop: `1px solid ${theme.palette.divider}` }}>
-        <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined"
-          startIcon={<ArrowBackOutlined />} disableRipple
-          sx={backButtonSx(theme)}>
-          Anterior
-        </Button>
-        <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
-          <Button onClick={cerrar} disableRipple
-            sx={cancelButtonSx(theme)}>
-            Cancelar
-          </Button>
-          <Button
-            onClick={activeStep < steps.length - 1 ? handleNext : handleSubmit}
-            variant="contained"
-            disabled={submitting || (activeStep === steps.length - 1 && sinCambios)}
-            endIcon={submitting ? undefined : (activeStep < steps.length - 1 ? <ArrowForwardOutlined /> : <SaveOutlined />)}
-            disableRipple
-            sx={primaryButtonSx(theme, { minWidth: 170 })}>
-            {submitting
-              ? <CircularProgress size={18} color="inherit" />
-              : (activeStep < steps.length - 1 ? 'Siguiente' : sinCambios ? 'Sin cambios' : 'Guardar cambios')}
-          </Button>
-        </Box>
-      </Box>
-    </Dialog>
+    <WizardDialog
+      open={open} onClose={cerrar}
+      title="Editar Vehículo"
+      subtitle={formOriginal?.marca && formOriginal?.modelo
+        ? `Modificando datos de ${formOriginal.marca} ${formOriginal.modelo}`
+        : 'Modifica los campos que necesites.'}
+      steps={steps} activeStep={activeStep}
+      onBack={handleBack} onNext={handleNext} onSubmit={handleSubmit}
+      submitting={submitting} submitDisabled={sinCambios}
+      submitLabel={sinCambios ? 'Sin cambios' : 'Guardar cambios'} submitIcon={<SaveOutlined />}
+    >
+      {renderStepContent()}
+    </WizardDialog>
   )
 }
 

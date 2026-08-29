@@ -2,15 +2,22 @@ import { esSoloRelleno } from '../../../shared/utils/formatters.js'
 
 export const MENSAJE_ROL_DUPLICADO = 'Ya existe un rol con este nombre.'
 const SOLO_LETRAS_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/
+const NOMBRE_MAX_LENGTH = 50
+const DESCRIPCION_MAX_LENGTH = 200
 
 export const validarNombreRol = (nombre) => {
     if (!nombre.trim()) return 'El nombre del rol es obligatorio'
     if (!SOLO_LETRAS_REGEX.test(nombre)) return 'El nombre solo puede contener letras'
+    if (nombre.length > NOMBRE_MAX_LENGTH) return `El nombre no puede superar los ${NOMBRE_MAX_LENGTH} caracteres`
     return ''
 }
 
-export const validarDescripcionRol = (descripcion) =>
-    (descripcion && esSoloRelleno(descripcion)) ? 'La descripción no puede contener solo espacios' : ''
+export const validarDescripcionRol = (descripcion) => {
+    if (!descripcion) return ''
+    if (esSoloRelleno(descripcion)) return 'La descripción no puede contener solo espacios'
+    if (descripcion.length > DESCRIPCION_MAX_LENGTH) return `La descripción no puede superar los ${DESCRIPCION_MAX_LENGTH} caracteres`
+    return ''
+}
 
 export const validarFormRol = (formData, avisoNombreDuplicado) => {
     const e = {}

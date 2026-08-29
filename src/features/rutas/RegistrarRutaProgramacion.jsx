@@ -1,9 +1,5 @@
 import { useTheme } from '@mui/material/styles'
 import { useState, useEffect } from 'react'
-import { Box, Typography, Stepper, Step, StepLabel, Button, Dialog, DialogTitle, DialogContent, IconButton, CircularProgress } from '@mui/material'
-import CloseIcon from '@mui/icons-material/Close'
-import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined'
-import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import { useRutaProgramacion } from './context/RutaProgramacionContext.jsx'
 import { useVehiculo } from '../vehiculos/context/VehiculoContext.jsx'
@@ -12,8 +8,8 @@ import { useDestino } from '../destinos/context/DestinoContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { vehiculoDocumentosVigentes, conductorLicenciaVigente } from '../../shared/utils/vigenciaDocumentos.js'
+import WizardDialog from '../../shared/components/WizardDialog.jsx'
 import { steps, validarCampo, validarPares, validarPaso } from './utils/rutaValidation.js'
-import { stepperSx, backButtonSx, cancelButtonSx, primaryButtonSx } from './style/wizardStyles.js'
 import PasoDestinoPares from './components/wizard/PasoDestinoPares.jsx'
 import PasoHorario from './components/wizard/PasoHorario.jsx'
 import PasoConfirmacion from './components/wizard/PasoConfirmacion.jsx'
@@ -194,58 +190,15 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess }) => {
     }
 
     return (
-        <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth
-            slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}>
-            <DialogTitle sx={{ m: 0, p: 2, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${theme.palette.divider}` }}>
-                <Box>
-                    <Typography variant="h6" fontWeight={700}>Registrar Ruta</Typography>
-                    <Typography variant="body2" color={theme.palette.text.secondary} sx={{ mt: 0.5, ml: 0.5 }}>
-                        Ingresa los datos de la nueva ruta paso a paso.
-                    </Typography>
-                </Box>
-                <IconButton onClick={handleClose} sx={{ color: theme.palette.text.secondary }}>
-                    <CloseIcon />
-                </IconButton>
-            </DialogTitle>
-            <DialogContent sx={{ p: 3, pt: 1.5 }}>
-                <Stepper activeStep={activeStep} alternativeLabel
-                    sx={stepperSx(theme)}
-                >
-                    {steps.map(label => <Step key={label}><StepLabel>{label}</StepLabel></Step>)}
-                </Stepper>
-
-                <Box sx={{ px: 4, py: 2 }}>
-                    <Box sx={{ maxWidth: 700, mx: 'auto' }}>
-                        {renderStepContent()}
-                    </Box>
-                </Box>
-            </DialogContent>
-
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 4, py: 2.5, borderTop: `1px solid ${theme.palette.divider}` }}>
-                <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined"
-                    startIcon={<ArrowBackOutlinedIcon />} disableRipple
-                    sx={backButtonSx(theme)}>
-                    Anterior
-                </Button>
-                <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
-                    <Button onClick={handleClose} disableRipple
-                        sx={cancelButtonSx(theme)}>
-                        Cancelar
-                    </Button>
-                    <Button
-                        onClick={activeStep < steps.length - 1 ? handleNext : handleSubmit}
-                        variant="contained"
-                        disabled={submitting}
-                        endIcon={submitting ? undefined : (activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <CheckOutlinedIcon />)}
-                        disableRipple
-                        sx={primaryButtonSx(theme, { minWidth: 160 })}>
-                        {submitting
-                            ? <CircularProgress size={18} color="inherit" />
-                            : (activeStep < steps.length - 1 ? 'Siguiente' : 'Registrar')}
-                    </Button>
-                </Box>
-            </Box>
-        </Dialog>
+        <WizardDialog
+            open={open} onClose={handleClose}
+            title="Registrar Ruta" subtitle="Ingresa los datos de la nueva ruta paso a paso."
+            steps={steps} activeStep={activeStep}
+            onBack={handleBack} onNext={handleNext} onSubmit={handleSubmit}
+            submitting={submitting} submitLabel="Registrar" submitIcon={<CheckOutlinedIcon />}
+        >
+            {renderStepContent()}
+        </WizardDialog>
     )
 }
 

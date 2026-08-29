@@ -1,10 +1,6 @@
 import { useTheme } from '@mui/material/styles'
 import { useState, useEffect } from 'react'
-import { Box, Typography, Stepper, Step, StepLabel, Button, Dialog, DialogTitle, DialogContent, IconButton, CircularProgress } from '@mui/material'
-import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined'
-import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
-import CloseIcon from '@mui/icons-material/Close'
 import { useConductor } from './context/ConductorContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { getErrorMessage } from '../../shared/utils/errorMessage.js'
@@ -16,7 +12,7 @@ import {
     steps, validarCampo, validarCategorias, validarPaso, PASSWORD_HELP, formInicialConductor,
 } from './utils/conductorValidation.js'
 import { useDuplicadoConductor } from './hooks/useDuplicadoConductor.js'
-import { stepperSx, backButtonSx, cancelButtonSx, primaryButtonSx } from './style/wizardStyles.js'
+import WizardDialog from '../../shared/components/WizardDialog.jsx'
 import PasoDocumento from './components/wizard/PasoDocumento.jsx'
 import PasoContacto from './components/wizard/PasoContacto.jsx'
 import PasoLicencia from './components/wizard/PasoLicencia.jsx'
@@ -218,64 +214,15 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
     }
 
     return (
-        <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth
-            slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}>
-            <DialogTitle sx={{ m: 0, p: 2, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${theme.palette.divider}` }}>
-                <Box>
-                    <Typography variant="h6" fontWeight={700}>
-                        Registrar Conductor
-                    </Typography>
-                    <Typography variant="body2" color={theme.palette.text.secondary}>
-                        Complete los datos del nuevo conductor paso a paso.
-                    </Typography>
-                </Box>
-                <IconButton onClick={handleClose} sx={{ color: theme.palette.text.secondary }}>
-                    <CloseIcon />
-                </IconButton>
-            </DialogTitle>
-            <DialogContent sx={{ p: 3, pt: 1.5 }}>
-
-                <Stepper activeStep={activeStep} alternativeLabel
-                    sx={stepperSx(theme)}
-                >
-                    {steps.map(label => <Step key={label}><StepLabel>{label}</StepLabel></Step>)}
-                </Stepper>
-
-                <Box sx={{ px: 4, py: 2 }}>
-                    <Box sx={{ maxWidth: 700, mx: 'auto' }}>
-                        {renderStepContent()}
-                    </Box>
-                </Box>
-            </DialogContent>
-
-            <Box sx={{
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                px: 4, py: 2.5, borderTop: `1px solid ${theme.palette.divider}`,
-            }}>
-                <Button onClick={handleBack} disabled={activeStep === 0} variant="outlined"
-                    startIcon={<ArrowBackOutlinedIcon />} disableRipple
-                    sx={backButtonSx(theme)}>
-                    Anterior
-                </Button>
-                <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
-                    <Button onClick={handleCancelar} disableRipple
-                        sx={cancelButtonSx(theme)}>
-                        Cancelar
-                    </Button>
-                    <Button
-                        onClick={activeStep < steps.length - 1 ? handleNext : handleSubmit}
-                        variant="contained"
-                        disabled={submitting}
-                        endIcon={submitting ? undefined : (activeStep < steps.length - 1 ? <ArrowForwardOutlinedIcon /> : <CheckOutlinedIcon />)}
-                        disableRipple
-                        sx={primaryButtonSx(theme, { minWidth: 160 })}>
-                        {submitting
-                            ? <CircularProgress size={18} color="inherit" />
-                            : (activeStep < steps.length - 1 ? 'Siguiente' : 'Registrar')}
-                    </Button>
-                </Box>
-            </Box>
-        </Dialog>
+        <WizardDialog
+            open={open} onClose={handleCancelar}
+            title="Registrar Conductor" subtitle="Complete los datos del nuevo conductor paso a paso."
+            steps={steps} activeStep={activeStep}
+            onBack={handleBack} onNext={handleNext} onSubmit={handleSubmit}
+            submitting={submitting} submitLabel="Registrar" submitIcon={<CheckOutlinedIcon />}
+        >
+            {renderStepContent()}
+        </WizardDialog>
     )
 }
 

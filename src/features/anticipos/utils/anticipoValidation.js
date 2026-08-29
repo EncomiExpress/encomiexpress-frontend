@@ -17,6 +17,7 @@ export const validarCampo = (name, form) => {
         case 'valorAnticipo':
             if (!form.valorAnticipo) return 'El valor del anticipo es obligatorio'
             if (isNaN(form.valorAnticipo) || parseFloat(form.valorAnticipo) <= 0) return 'Ingresa un valor válido mayor a 0'
+            if (parseFloat(form.valorAnticipo) > NUMERIC_LIMITS.valorAnticipo) return `El valor no puede ser mayor a ${NUMERIC_LIMITS.valorAnticipo.toLocaleString('es-CO')}`
             return ''
         case 'fechaEntrega':
             return form.fechaEntrega ? '' : 'La fecha de entrega es obligatoria'

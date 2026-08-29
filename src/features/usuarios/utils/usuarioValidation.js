@@ -15,6 +15,7 @@ export const validarEmail = (email) => {
 export const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s]).{8,64}$/
 export const PASSWORD_HELP = '8-64 caracteres, con mayúsculas, minúsculas, números y un carácter especial'
 const SOLO_LETRAS_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/
+const NOMBRE_MAX_LENGTH = 50
 
 // requerirPassword: Registrar exige contraseña y confirmación; Actualizar las deja
 // opcionales (password vacío = "no cambiar la actual").
@@ -23,10 +24,12 @@ export const validarCampo = (name, form, { requerirPassword = false } = {}) => {
         case 'nombre':
             if (!form.nombre.trim()) return 'El nombre es obligatorio'
             if (!SOLO_LETRAS_REGEX.test(form.nombre)) return 'El nombre solo puede contener letras'
+            if (form.nombre.length > NOMBRE_MAX_LENGTH) return `El nombre no puede superar los ${NOMBRE_MAX_LENGTH} caracteres`
             return ''
         case 'apellido':
             if (!form.apellido.trim()) return 'El apellido es obligatorio'
             if (!SOLO_LETRAS_REGEX.test(form.apellido)) return 'El apellido solo puede contener letras'
+            if (form.apellido.length > NOMBRE_MAX_LENGTH) return `El apellido no puede superar los ${NOMBRE_MAX_LENGTH} caracteres`
             return ''
         case 'tipoIdentificacion':
             return form.tipoIdentificacion ? '' : 'Selecciona un tipo de documento'

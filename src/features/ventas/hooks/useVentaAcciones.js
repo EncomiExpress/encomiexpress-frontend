@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
 import { useVentas } from '../context/VentaContext.jsx'
 import { useToast } from '../../../shared/contexts/ToastContext.jsx'
-import { descargarGuiaPdf } from '../../../shared/utils/exportGuiaPdf.js'
+import { descargarGuiaPdf } from '../../../shared/utils/exportGuia/exportGuiaPdf.js'
 
 const useVentaAcciones = () => {
     const { cambiarEstadoVenta, cambiarEstadoPagoVenta, toggleHabilitadoVenta } = useVentas()

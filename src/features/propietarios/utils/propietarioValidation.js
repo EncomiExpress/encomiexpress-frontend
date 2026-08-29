@@ -25,7 +25,9 @@ export const validarCampo = (name, form) => {
             return ''
         case 'apellido':
             if (esNIT) return ''
-            return form.apellido?.trim() ? '' : 'El apellido es obligatorio'
+            if (!form.apellido?.trim()) return 'El apellido es obligatorio'
+            if (!SOLO_LETRAS_REGEX.test(form.apellido)) return 'El apellido solo puede contener letras'
+            return ''
         case 'telefono':
             if (!form.telefono.trim()) return 'El teléfono es obligatorio'
             if (!/^\d{10}$/.test(form.telefono)) return 'El teléfono debe tener 10 dígitos'

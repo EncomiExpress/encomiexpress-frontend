@@ -32,6 +32,14 @@ export const limpiarPlacaInput = (value) => {
 
 export const CAPACIDAD_MAX = 999999
 
+// Mismo alfabeto que ya filtra RegistrarVehiculo.jsx/ActualizarVehiculo.jsx letra por
+// letra en su handleChange (solo letras) — se replica aquí para que el validador sea
+// la fuente de verdad, no solo el filtrado en vivo del input.
+const MARCA_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/
+const COLOR_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/
+const MARCA_MAX_LENGTH = 30
+const COLOR_MAX_LENGTH = 20
+
 // checkFechaFutura: solo RegistrarVehiculo.jsx exige que los vencimientos no sean una
 // fecha pasada; ActualizarVehiculo.jsx no lo hace (no tiene sentido bloquear la edición
 // de un vehículo cuyo documento ya venció).
@@ -46,13 +54,19 @@ export const validarCampo = (name, formData, {
             if (!PLACA_REGEX.test(formData.placa)) return 'La placa debe tener 3 letras seguidas de 3 números'
             return ''
         case 'marca':
-            return formData.marca?.trim() ? '' : 'La marca es obligatoria'
+            if (!formData.marca?.trim()) return 'La marca es obligatoria'
+            if (!MARCA_REGEX.test(formData.marca)) return 'La marca solo puede contener letras'
+            if (formData.marca.length > MARCA_MAX_LENGTH) return `La marca no puede superar los ${MARCA_MAX_LENGTH} caracteres`
+            return ''
         case 'modelo':
             if (!formData.modelo?.trim()) return 'El modelo es obligatorio'
             if (esSoloRelleno(formData.modelo)) return 'El modelo no puede contener solo espacios o guiones'
             return ''
         case 'color':
-            return formData.color?.trim() ? '' : 'El color es obligatorio'
+            if (!formData.color?.trim()) return 'El color es obligatorio'
+            if (!COLOR_REGEX.test(formData.color)) return 'El color solo puede contener letras'
+            if (formData.color.length > COLOR_MAX_LENGTH) return `El color no puede superar los ${COLOR_MAX_LENGTH} caracteres`
+            return ''
         case 'tarjetaPropiedad':
             if (formData.tarjetaPropiedad && (formData.tarjetaPropiedad.length < 6 || formData.tarjetaPropiedad.length > 11)) return 'Debe tener entre 6 y 11 dígitos'
             return ''
