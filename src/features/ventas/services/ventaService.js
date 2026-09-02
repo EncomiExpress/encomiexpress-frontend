@@ -27,8 +27,3 @@ export const getPageOfEncomienda = (id, limit = 10) =>
 // de período del Dashboard, calculados en la BD (MIN/MAX), no sobre datos ya cargados.
 export const getRangoFechasVentas = () =>
   fetchWithAuth('/encomiendas/rango-fechas')
-
-// ── Rutas (para el selector de ruta en Registrar/Actualizar) ─────────────────
-
-export const getRutas = () =>
-  fetchWithAuth('/rutas')

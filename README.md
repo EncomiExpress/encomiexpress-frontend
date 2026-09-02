@@ -63,28 +63,28 @@ El proyecto sigue un patrón **feature-based** que separa las funcionalidades po
 src/
 │
 ├── features/                  # Módulos funcionales de la aplicación — cada uno
-│   │                           # autocontenido con su propio context/, services/ y
-│   │                           # <entidad>.routes.jsx
+│   │                           # autocontenido con context/, services/, hooks/, style/,
+│   │                           # validations/ y <entidad>.routes.jsx.
 │   ├── home/                  # Página pública de inicio
 │   ├── auth/                  # Autenticación (login, resetear contraseña, validations/)
 │   ├── dashboard/             # Panel principal con indicadores
-│   ├── clientes/              # Gestión de clientes (context/, services/, validations/)
-│   ├── ventas/                # Gestión de ventas/encomiendas (context/, services/,
-│   │   │                       # validations/, components/registrar-venta/, components/actualizar-venta/)
+│   ├── clientes/              # Gestión de clientes (context/, services/, hooks/, validations/)
+│   ├── ventas/                # Gestión de ventas/encomiendas (context/, services/, hooks/,
+│   │   │                       # validations/, components/ con los pasos del wizard)
 │   │   ├── components/        # Subcomponentes de los wizards Registrar/ActualizarVenta,
 │   │   │                       # uno por paso del Stepper (Participantes, Paquetes, Envío...)
 │   │   └── validations/       # ventaValidation.js (orquestación por paso) +
 │   │                           # validacion.js (reglas de campo y de paquete)
-│   ├── conductores/           # Administración de conductores (context/, services/, validations/, utils/)
-│   ├── destinos/              # Catálogo de ubicaciones (context/, services/, validations/)
-│   ├── propietarios/          # Gestión de propietarios de vehículos (context/, services/, validations/)
-│   ├── rutas/                 # Programación de rutas (context/, services/, validations/)
-│   ├── vehiculos/             # Gestión de vehículos (context/, services/, validations/)
-│   ├── usuarios/              # Gestión de usuarios (services/, validations/)
-│   ├── roles/                 # Gestión de roles y permisos (validations/, vía AuthContext
+│   ├── conductores/           # Administración de conductores (context/, services/, hooks/, validations/)
+│   ├── destinos/              # Catálogo de ubicaciones (context/, services/, hooks/, validations/)
+│   ├── propietarios/          # Gestión de propietarios de vehículos (context/, services/, hooks/, validations/)
+│   ├── rutas/                 # Programación de rutas (context/, services/, hooks/, validations/)
+│   ├── vehiculos/             # Gestión de vehículos (context/, services/, hooks/, validations/)
+│   ├── usuarios/              # Gestión de usuarios (services/, hooks/, validations/ — sin context propio)
+│   ├── roles/                 # Gestión de roles y permisos (hooks/, validations/, vía AuthContext
 │   │                           # para permisos — ver nota abajo)
-│   ├── anticipos/             # Control de anticipos y excedentes (context/, services/, validations/)
-│   └── paquetesDevueltos/     # Consulta de paquetes devueltos — solo lectura (services/)
+│   ├── anticipos/             # Control de anticipos y excedentes (context/, services/, hooks/, validations/)
+│   └── paquetesDevueltos/     # Consulta de paquetes devueltos — solo lectura (services/, hooks/)
 │
 ├── shared/                    # Recursos verdaderamente transversales (usados por 3+ features
 │   │                           # o sin dueño de dominio único — no datos de una sola entidad)
@@ -119,6 +119,7 @@ src/
 - **Control de permisos**: Sistema basado en permisos granulares (`PERMISOS.*`).
 - **Navegación protegida**: `PrivateRoute` (en `shared/layouts/`) con verificación de permisos automática, reutilizado por el archivo de rutas de cada feature.
 - **Tabla reutilizable**: `shared/components/DataTable.jsx` + `shared/hooks/useEntityCrud.js` centralizan el patrón de búsqueda/filtro/orden/paginación/exportación que usan las 10 pantallas `Listar*`.
+- **Hooks por módulo**: cada feature expone su lógica reutilizable en `hooks/`, con nombres consistentes en todo el proyecto — `use<Entidad>Acciones` (handlers de alta/edición/toggle), `use<Entidad>Columns` (definición de columnas del `DataTable`) y, donde aplica, `useDuplicado<Entidad>` (verificación de nombre duplicado contra la API antes de guardar).
 
 > **Nota:** `rolService.js` y `configuracionService.js` viven en `shared/services/` en vez de en `features/roles/` o `features/destinos/` porque su único consumidor es un context compartido (`AuthContext`/`ConfiguracionContext`); moverlos habría invertido la dependencia (shared importando de features/).
 

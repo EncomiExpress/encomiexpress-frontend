@@ -44,7 +44,7 @@ const ModalConsultarConductor = ({ conductor, onClose }) => {
 
     const handleClose = () => { setTabIndex(0); onClose() }
 
-    const dotEstado = conductor.estadoEfectivo === 'en_ruta'
+    const dotEstado = conductor.estado === 'En Ruta'
         ? { backgroundColor: '#3B82F6', border: '2px solid #3B82F6' }
         : { backgroundColor: 'transparent', border: '2px solid #10b981' }
 
@@ -114,7 +114,7 @@ const ModalConsultarConductor = ({ conductor, onClose }) => {
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                                     <Box sx={{ width: 9, height: 9, borderRadius: '50%', flexShrink: 0, ...dotEstado }} />
                                     <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary}>
-                                        {conductor.estadoEfectivo === 'en_ruta' ? 'En Ruta' : 'Disponible'}
+                                        {conductor.estado === 'En Ruta' ? 'En Ruta' : 'Disponible'}
                                     </Typography>
                                 </Box>
                             </Box>

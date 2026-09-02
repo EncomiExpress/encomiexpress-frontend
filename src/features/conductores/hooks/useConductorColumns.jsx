@@ -58,15 +58,15 @@ const useConductorColumns = ({ theme, tienePermiso, PERMISOS, onConsultar, onEdi
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Box sx={{
                     width: 10, height: 10, borderRadius: '50%', flexShrink: 0,
-                    ...(conductor.estadoEfectivo === 'en_ruta'
+                    ...(conductor.estado === 'En Ruta'
                         ? { backgroundColor: '#3B82F6', border: '2px solid #3B82F6' }
                         : { backgroundColor: 'transparent', border: '2px solid #10b981' })
                 }} />
                 <Typography variant="body2" sx={{
                     fontSize: '0.82rem', fontWeight: 500,
-                    color: conductor.estadoEfectivo === 'en_ruta' ? '#3B82F6' : '#10b981',
+                    color: conductor.estado === 'En Ruta' ? '#3B82F6' : '#10b981',
                 }}>
-                    {conductor.estadoEfectivo === 'en_ruta' ? 'En Ruta' : 'Disponible'}
+                    {conductor.estado === 'En Ruta' ? 'En Ruta' : 'Disponible'}
                 </Typography>
             </Box>
         ),

@@ -20,7 +20,6 @@ import ModalInhabilitarConductor from './components/ModalInhabilitarConductor'
 import FiltroEstadoConductor from './components/FiltroEstadoConductor.jsx'
 import useConductorColumns from './hooks/useConductorColumns.jsx'
 import useConductorAcciones from './hooks/useConductorAcciones.js'
-import useConductoresEnRuta from './hooks/useConductoresEnRuta.js'
 
 const ListarConductor = () => {
     const { tienePermiso, PERMISOS, usuario } = useAuth()
@@ -66,7 +65,7 @@ const ListarConductor = () => {
                     'Categorías de licencia': (conductor.categoriasLicencia || [])
                         .map(c => `${c.categoria} (${c.vencimiento})`)
                         .join(', '),
-                    'Estado': conductoresEnRutaIds.has(conductor.idConductor) ? 'En Ruta' : 'Disponible',
+                    'Estado': conductor.estado,
                     'Habilitado': conductor.habilitado === false ? 'No' : 'Sí',
                 }
             },
@@ -84,8 +83,6 @@ const ListarConductor = () => {
         if (!usuario) return
         if (rutasProgramadas.length === 0) fetchRutasProgramadas()
     }, [usuario, rutasProgramadas.length, fetchRutasProgramadas])
-
-    const { conductoresEnRutaIds, conductoresConEstado } = useConductoresEnRuta(conductores, usuario)
 
     const emptyMessage = filtroHabilitado !== 'todo'
         ? 'No se encontraron conductores que coincidan con los filtros aplicados.'
@@ -176,7 +173,7 @@ const ListarConductor = () => {
 
             <DataTable
                 columns={columns}
-                rows={conductoresConEstado}
+                rows={conductores}
                 rowKey={(conductor) => conductor.idConductor}
                 loading={loading}
                 initialLoad={initialLoad}

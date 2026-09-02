@@ -17,6 +17,3 @@ export const updateRol = (id, nombre, descripcion, permisos, habilitado) =>
 
 export const toggleHabilitadoRol = (id) =>
   fetchWithAuth(`/roles/${id}/toggle-habilitado`, { method: 'PATCH' })
-
-export const deleteRol = (id) =>
-  fetchWithAuth(`/roles/${id}`, { method: 'DELETE' })

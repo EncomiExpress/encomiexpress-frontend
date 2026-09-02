@@ -22,9 +22,13 @@ const useVehiculoAcciones = () => {
     }, [confirmMantenimiento.open, confirmMantenimiento.id])
 
     const handleEstadoChange = async (id, nuevoEstado) => {
-        const success = await updateEstado(id, nuevoEstado)
-        if (success) {
-            showToast(`Estado actualizado a ${nuevoEstado}.`, 'success')
+        try {
+            const success = await updateEstado(id, nuevoEstado)
+            if (success) {
+                showToast(`Estado actualizado a ${nuevoEstado}.`, 'success')
+            }
+        } catch (err) {
+            showToast(err.message || 'Error al cambiar el estado del vehículo', 'error')
         }
     }
 

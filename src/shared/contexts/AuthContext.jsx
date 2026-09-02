@@ -237,15 +237,6 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
-  const eliminarRolBackend = async (id) => {
-    try {
-      const data = await rolService.deleteRol(id)
-      return { success: true, message: data.message }
-    } catch (err) {
-      return { success: false, message: err.message || 'Error de conexión' }
-    }
-  }
-
   const actualizarUsuario = async (id, usuarioData) => {
     try {
       const data = await usuarioService.updateUsuario(id, usuarioData)
@@ -283,7 +274,6 @@ export const AuthProvider = ({ children }) => {
       registrarRol,
       actualizarRolBackend,
       toggleHabilitadoRol,
-      eliminarRolBackend,
       actualizarUsuario,
       habilitarInhabilitarUsuario,
       ROLES,

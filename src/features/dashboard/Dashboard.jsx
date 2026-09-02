@@ -162,7 +162,7 @@ const Dashboard = () => {
   }, [ventas, filtroActivo])
 
   const conductoresTotales = conductores.length
-  const conductoresDisponibles = conductores.filter(c => c.habilitado).length
+  const conductoresDisponibles = conductores.filter(c => c.habilitado && c.estado === 'Disponible').length
   const vehiculosTotales = transportes.length
   const vehiculosDisponibles = transportes.filter(t => t.habilitado && t.estado === 'Disponible').length
 
