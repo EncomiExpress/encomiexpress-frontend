@@ -15,9 +15,14 @@ import { formatFecha } from '../../../../shared/utils/formatters.js'
  * campos se modificaron).
  */
 export default function PasoConfirmacion({
-    theme, apiError, setApiError, cardSx, clienteSeleccionado, form, rutasProgramadas,
+    theme, apiError, setApiError, cardSx, clienteSeleccionado, form, rutasProgramadas, destinos,
     formOriginal, ventaOriginal, sinCambios, setSinCambios, clientes,
 }) {
+    const formatDestino = (d) => d ? `${d.ciudad} - ${d.departamento}` : null
+    const destinoDestinatarioTexto = formatDestino(destinos?.find(d => d.idDestino === parseInt(form.idDestinoDestinatario)))
+    const destinoDestinatarioOriginal = formOriginal
+        ? formatDestino(destinos?.find(d => d.idDestino === parseInt(formOriginal.idDestinoDestinatario)))
+        : undefined
     const clienteOriginal = formOriginal
         ? clientes.find(c => c.idCliente === parseInt(formOriginal.idCliente)) || ventaOriginal?.cliente
         : null
@@ -25,14 +30,14 @@ export default function PasoConfirmacion({
     const totalOriginal = formOriginal ? (formOriginal.total ? `$${parseFloat(formOriginal.total).toLocaleString()}` : null) : undefined
     const valorServicioActual = form.valorServicio ? `$${parseFloat(form.valorServicio).toLocaleString()}` : null
     const valorServicioOriginal = formOriginal ? (formOriginal.valorServicio ? `$${parseFloat(formOriginal.valorServicio).toLocaleString()}` : null) : undefined
-    const impuestosActual = form.impuestos ? `$${parseFloat(form.impuestos).toLocaleString()}` : null
-    const impuestosOriginal = formOriginal ? (formOriginal.impuestos ? `$${parseFloat(formOriginal.impuestos).toLocaleString()}` : null) : undefined
 
     const sonDistintos = (a, b) => String(a ?? '') !== String(b ?? '')
     const camposComparados = formOriginal ? [
         [form.idCliente, formOriginal.idCliente],
         [form.nombreDestinatario, formOriginal.nombreDestinatario],
         [form.telefonoDestinatario, formOriginal.telefonoDestinatario],
+        [form.correoDestinatario, formOriginal.correoDestinatario],
+        [form.idDestinoDestinatario, formOriginal.idDestinoDestinatario],
         [form.direccionDestinatario, formOriginal.direccionDestinatario],
         [JSON.stringify(form.paquetes), JSON.stringify(formOriginal.paquetes)],
         [form.idRuta, formOriginal.idRuta],
@@ -40,7 +45,6 @@ export default function PasoConfirmacion({
         [form.observaciones, formOriginal.observaciones],
         [form.metodoPago, formOriginal.metodoPago],
         [form.valorServicio, formOriginal.valorServicio],
-        [form.impuestos, formOriginal.impuestos],
     ] : []
     const totalModificados = camposComparados.filter(([a, b]) => sonDistintos(a, b)).length
 
@@ -82,6 +86,8 @@ export default function PasoConfirmacion({
                     <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la información del destinatario</Typography>
                     <ConfirmRow label="Nombre" value={form.nombreDestinatario} previousValue={formOriginal?.nombreDestinatario} />
                     <ConfirmRow label="Teléfono" value={form.telefonoDestinatario} previousValue={formOriginal?.telefonoDestinatario} />
+                    <ConfirmRow label="Correo" value={form.correoDestinatario || null} previousValue={formOriginal ? (formOriginal.correoDestinatario || null) : undefined} />
+                    <ConfirmRow label="Destino" value={destinoDestinatarioTexto} previousValue={destinoDestinatarioOriginal} />
                     <ConfirmRow label="Dirección" value={form.direccionDestinatario} previousValue={formOriginal?.direccionDestinatario} />
                 </Paper>
             </Box>
@@ -112,6 +118,7 @@ export default function PasoConfirmacion({
                                     </Typography>
                                 )}
                                 <ConfirmRow label="Contenido" value={p.descripcionContenido} previousValue={pOriginal?.descripcionContenido} />
+                                <ConfirmRow label="Tipo de carga" value={p.tipoCarga === 'hierro' ? 'Hierro' : 'Paquete normal'} previousValue={pOriginal ? (pOriginal.tipoCarga === 'hierro' ? 'Hierro' : 'Paquete normal') : undefined} />
                                 <ConfirmRow label="Peso" value={p.peso ? `${p.peso} kg` : null} previousValue={pOriginal ? (pOriginal.peso ? `${pOriginal.peso} kg` : null) : undefined} />
                                 <ConfirmRow label="Dimensiones" value={dimensionesActual} previousValue={dimensionesOriginal} />
                                 <ConfirmRow label="Valor declarado" value={valorDeclaradoActual} previousValue={valorDeclaradoOriginal} />
@@ -132,7 +139,6 @@ export default function PasoConfirmacion({
                     <ConfirmRow label="Observaciones" value={form.observaciones} previousValue={formOriginal?.observaciones} />
                     <ConfirmRow label="Método de pago" value={form.metodoPago} previousValue={formOriginal?.metodoPago} />
                     <ConfirmRow label="Valor del servicio" value={valorServicioActual} previousValue={valorServicioOriginal} />
-                    <ConfirmRow label="Impuestos" value={impuestosActual} previousValue={impuestosOriginal} />
                     <ConfirmRow label="Total" value={totalActual} previousValue={totalOriginal} />
                 </Paper>
             </Box>

@@ -4,7 +4,9 @@ import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined'
+import MailOutlinedIcon from '@mui/icons-material/MailOutlined'
 import { FormField } from '../../../../shared/components/FormularioEstandarizado.jsx'
+import NacionSVG from '../../../../shared/components/NacionSVG.jsx'
 import { formFieldStyles } from '../../../../shared/utils/formStyles.js'
 import { normalizarTexto } from '../../../../shared/utils/duplicados.js'
 import { validarCampo, OPCION_CLIENTE_NUEVO } from '../../validations/validacion.js'
@@ -13,12 +15,23 @@ import { validarCampo, OPCION_CLIENTE_NUEVO } from '../../validations/validacion
  * Paso 1 del wizard: elegir el cliente remitente y capturar los datos del destinatario.
  * `onNuevoCliente` es opcional — solo lo pasa el modo registrar, y habilita la opción
  * "Registrar nuevo cliente" al final de las sugerencias. `setSinCambios` y `ventaOriginal`
- * son opcionales y solo los pasa el modo edición.
+ * son opcionales y solo los pasa el modo edición. `destinos` es el catálogo de municipios
+ * (mismo que usa Rutas) para elegir a dónde se envía el paquete — una decisión comercial,
+ * independiente de qué Ruta administrativa se le termine asignando en el paso "Envío".
  */
 export default function PasoParticipantes({
     theme, clientes, clienteSeleccionado, clienteInput, setClienteInput,
     form, setForm, errores, setErrores, handleChange, onNuevoCliente, setSinCambios, ventaOriginal,
+    destinos, destinoDestinatarioInput, setDestinoDestinatarioInput,
 }) {
+    // Si el destino de este destinatario ya fue inhabilitado desde que se registró la
+    // venta, no aparece en `destinos` (solo trae habilitados) — se usa el dato que ya
+    // trae la propia venta como respaldo sintético, para que el campo nunca se vea vacío.
+    const destinoDestinatarioSeleccionado = destinos.find(d => d.idDestino === parseInt(form.idDestinoDestinatario)) || (
+        ventaOriginal?.destinatario?.destino && parseInt(form.idDestinoDestinatario) === ventaOriginal.destinatario.idDestino
+            ? ventaOriginal.destinatario.destino
+            : null
+    )
     return (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
             {/* Remitente */}
@@ -172,6 +185,62 @@ export default function PasoParticipantes({
                         required error={errores.telefonoDestinatario}
                         helperText={errores.telefonoDestinatario || 'Número de 10 dígitos'} icon={PhoneOutlinedIcon}
                         inputProps={{ maxLength: 10 }} />
+                    <FormField label="Correo" name="correoDestinatario" value={form.correoDestinatario}
+                        onChange={handleChange}
+                        onBlur={() => setErrores(prev => ({ ...prev, correoDestinatario: validarCampo('correoDestinatario', form, ventaOriginal) }))}
+                        error={errores.correoDestinatario}
+                        placeholder="correo@dominio.com"
+                        helperText={errores.correoDestinatario || 'Opcional'} icon={MailOutlinedIcon}
+                        inputProps={{ maxLength: 150 }} />
+                    <Autocomplete
+                        popupIcon={<KeyboardArrowDownOutlinedIcon />}
+                        options={destinos}
+                        getOptionLabel={(d) => `${d.ciudad} - ${d.departamento}`}
+                        isOptionEqualToValue={(opt, val) => opt.idDestino === val.idDestino}
+                        value={destinoDestinatarioSeleccionado}
+                        inputValue={destinoDestinatarioInput}
+                        onInputChange={(_, newVal, reason) => {
+                            if (reason === 'input') setDestinoDestinatarioInput(newVal.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, ''))
+                            else setDestinoDestinatarioInput(newVal)
+                        }}
+                        onChange={(_, val) => {
+                            handleChange({ target: { name: 'idDestinoDestinatario', value: val ? val.idDestino : '' } })
+                            setSinCambios?.(false)
+                        }}
+                        onBlur={() => setErrores(prev => ({ ...prev, idDestinoDestinatario: validarCampo('idDestinoDestinatario', form, ventaOriginal) }))}
+                        renderOption={(props, d) => {
+                            const { key, ...rest } = props
+                            return (
+                                <Box component="li" key={key} {...rest} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                    <Box sx={{ width: 28, height: 30, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <NacionSVG color={theme.palette.primary.main} />
+                                    </Box>
+                                    <Typography variant="body2" fontWeight={500} noWrap sx={{ flex: 1, minWidth: 0 }}>
+                                        {d.ciudad}
+                                    </Typography>
+                                    <Typography variant="caption" color={theme.palette.text.secondary} sx={{ flexShrink: 0 }}>
+                                        {d.departamento}
+                                    </Typography>
+                                </Box>
+                            )
+                        }}
+                        filterOptions={(opts, { inputValue }) => {
+                            if (!inputValue.trim()) return [...opts].sort((a, b) => b.idDestino - a.idDestino).slice(0, 5)
+                            const q = normalizarTexto(inputValue)
+                            return opts.filter(d =>
+                                normalizarTexto(d.ciudad || '').includes(q) ||
+                                normalizarTexto(d.departamento || '').includes(q)
+                            )
+                        }}
+                        noOptionsText="No se encontraron destinos"
+                        renderInput={(params) => (
+                            <TextField {...params} label="Destino *"
+                                error={!!errores.idDestinoDestinatario}
+                                helperText={errores.idDestinoDestinatario || '¿A qué municipio se envía el paquete?'}
+                                slotProps={{ inputLabel: { shrink: true }, htmlInput: { ...params.inputProps, maxLength: 50 } }}
+                                sx={formFieldStyles} />
+                        )}
+                    />
                     <Box sx={{ gridColumn: '1 / -1' }}>
                         <FormField label="Dirección de entrega" name="direccionDestinatario" value={form.direccionDestinatario}
                             onChange={handleChange}

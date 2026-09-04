@@ -14,11 +14,9 @@ import RegistrarDestino from './RegistrarDestino'
 import ActualizarDestino from './ActualizarDestino'
 import ModalConsultarDestino from './components/ModalConsultarDestino'
 import ModalInhabilitarDestino from './components/ModalInhabilitarDestino'
-import TarifaPorKgControl from './components/TarifaPorKgControl.jsx'
 import FiltroDepartamento from './components/FiltroDepartamento.jsx'
 import useDestinoColumns from './hooks/useDestinoColumns.jsx'
 import useDestinoAcciones from './hooks/useDestinoAcciones.js'
-import useTarifaPorKgEditor from './hooks/useTarifaPorKgEditor.js'
 
 const ListarDestino = () => {
     const { showToast } = useToast()
@@ -32,7 +30,6 @@ const ListarDestino = () => {
     const navigate = useNavigate()
 
     const { confirmInhabilitar, setConfirmInhabilitar, handleToggleHabilitado, onConfirmar } = useDestinoAcciones()
-    const tarifaEditor = useTarifaPorKgEditor()
 
     const {
         theme,
@@ -96,7 +93,6 @@ const ListarDestino = () => {
                     </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <TarifaPorKgControl theme={theme} tienePermiso={tienePermiso} PERMISOS={PERMISOS} editor={tarifaEditor} />
                     <Button
                         onClick={handleExportar}
                         disabled={exportando}

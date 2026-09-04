@@ -12,15 +12,15 @@ import { validarCampo, validarCampoPaquete } from '../../validations/validacion.
 /**
  * Paso 3 del wizard: elegir la ruta, la fecha de entrega y asignar cada paquete a un
  * vehículo del convoy. `getPesoOriginalPorPar`, `valorServicioManualRef`,
- * `impuestosManualRef`, `setSinCambios` y `ventaOriginal` son opcionales — solo los pasa
- * el modo edición. Cuando no hay `getPesoOriginalPorPar`, no se excluye ningún peso
- * previo del cálculo de capacidad (no hay una venta anterior que restar).
+ * `setSinCambios` y `ventaOriginal` son opcionales — solo los pasa el modo edición.
+ * Cuando no hay `getPesoOriginalPorPar`, no se excluye ningún peso previo del cálculo
+ * de capacidad (no hay una venta anterior que restar).
  */
 export default function PasoEnvio({
     theme, form, setForm, errores, setErrores, setApiError, setSinCambios,
     rutasProgramadas, rutaInput, setRutaInput, handleChange,
     calcularValorServicio, handlePaqueteChange, setErrorPaquete,
-    ventaOriginal, valorServicioManualRef, impuestosManualRef, getPesoOriginalPorPar,
+    ventaOriginal, valorServicioManualRef, getPesoOriginalPorPar,
 }) {
     const rutaElegida = rutasProgramadas.find(r => r.idRuta === parseInt(form.idRuta))
     const paresElegida = rutaElegida?.paresVehiculoConductor || []
@@ -127,11 +127,8 @@ export default function PasoEnvio({
                         ))
                         if (newValue) {
                             if (valorServicioManualRef) valorServicioManualRef.current = false
-                            if (impuestosManualRef) impuestosManualRef.current = false
                             setForm(prev => {
-                                const pesoTotal = prev.paquetes.reduce((s, p) => s + (parseFloat(p.peso) || 0), 0)
-                                const valorServicio = calcularValorServicio(newValue.destino?.tarifaBase, pesoTotal)
-                                const impuestos = Math.round(valorServicio * 0.10)
+                                const valorServicio = calcularValorServicio(newValue.destino?.tarifaBase, prev.paquetes)
                                 return {
                                     ...prev,
                                     idRuta: newValue.idRuta,
@@ -143,8 +140,7 @@ export default function PasoEnvio({
                                         (maximaNueva && prev.fechaEstimadaEntrega > maximaNueva)
                                     ) ? '' : prev.fechaEstimadaEntrega,
                                     valorServicio,
-                                    impuestos,
-                                    total: valorServicio + impuestos,
+                                    total: valorServicio,
                                     paquetes: prev.paquetes.map(p => ({ ...p, idRutaVehiculoConductor: '' })),
                                 }
                             })

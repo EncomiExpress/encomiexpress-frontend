@@ -23,7 +23,6 @@ export const drawDetallesPaquete = (doc, y, venta, pkg) => {
   y = ensureSpace(doc, y, 14)
   const gridColsVenta = [
     ['Valor servicio', formatCurrency(venta.valorServicio)],
-    ['Impuestos', formatCurrency(venta.impuestos)],
     [venta.metodoPago === 'Contraentrega' ? 'Valor a cobrar' : 'Total', formatCurrency(venta.total)],
   ]
   const cellWVenta = CONTENT_W / gridColsVenta.length

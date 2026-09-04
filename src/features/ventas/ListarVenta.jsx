@@ -3,10 +3,15 @@ import { useVentas, ESTADOS_ENCOMIENDA, METODOS_PAGO, ESTADOS_PAGO } from './con
 import { Box, Typography, Button, CircularProgress } from '@mui/material'
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
+import ScaleOutlinedIcon from '@mui/icons-material/ScaleOutlined'
+import ConstructionOutlinedIcon from '@mui/icons-material/ConstructionOutlined'
+import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined'
+import ViewInArOutlinedIcon from '@mui/icons-material/ViewInArOutlined'
 import TablaPaginacionFooter from '../../shared/components/TablaPaginacionFooter.jsx'
 import DataTable, { FiltroEstadoTabs, BuscadorField } from '../../shared/components/DataTable.jsx'
 import useEntityCrud from '../../shared/hooks/useEntityCrud.js'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
+import { useConfiguracion } from '../../shared/contexts/ConfiguracionContext.jsx'
 import { PERMISOS } from '../../shared/config/permisos.js'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { getPageOfEncomienda } from './services/ventaService.js'
@@ -17,14 +22,17 @@ import ModalConsultarVenta from './components/ModalConsultarVenta'
 import FiltroVenta from './components/FiltroVenta.jsx'
 import ModalCambioEstadoVenta from './components/ModalCambioEstadoVenta.jsx'
 import ModalCambioPagoVenta from './components/ModalCambioPagoVenta.jsx'
+import TarifaControl from './components/TarifaControl.jsx'
 import useVentaColumns from './hooks/useVentaColumns.jsx'
 import useVentaAcciones from './hooks/useVentaAcciones.js'
 import useVentaExport from './hooks/useVentaExport.js'
+import useTarifaEditor from './hooks/useTarifaEditor.js'
 
 const ListarVenta = () => {
     const { ventas, total, fetchVentas } = useVentas()
     const { tienePermiso } = useAuth()
     const { showToast } = useToast()
+    const { tarifaPorKgHierro, tarifaPorKgNormal, tarifaPorPaquete, actualizarTarifaPorKgHierro, actualizarTarifaPorKgNormal, actualizarTarifaPorPaquete } = useConfiguracion()
 
     const [filtroEstadoEncomienda, setFiltroEstadoEncomienda] = useState('')
     const [filtroPago, setFiltroPago] = useState('')
@@ -42,6 +50,10 @@ const ListarVenta = () => {
         handleDescargarGuia, handleToggleHabilitado, handleConfirmarToggle, handleExitedInhabilitar,
         handlePagoConfirm, handleCancelarConfirm,
     } = useVentaAcciones()
+
+    const tarifaKgHierroEditor = useTarifaEditor(tarifaPorKgHierro, actualizarTarifaPorKgHierro, { mensajeExito: 'Tarifa por kg (hierro) actualizada correctamente' })
+    const tarifaKgNormalEditor = useTarifaEditor(tarifaPorKgNormal, actualizarTarifaPorKgNormal, { mensajeExito: 'Tarifa por kg (normal) actualizada correctamente' })
+    const tarifaPaqueteEditor = useTarifaEditor(tarifaPorPaquete, actualizarTarifaPorPaquete, { mensajeExito: 'Tarifa por paquete actualizada correctamente' })
 
     const {
         theme,
@@ -94,7 +106,16 @@ const ListarVenta = () => {
                         Gestiona las ventas y encomiendas registradas en el sistema.
                     </Typography>
                 </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                    <TarifaControl theme={theme} tienePermiso={tienePermiso} PERMISOS={PERMISOS} editor={tarifaKgHierroEditor}
+                        icono={ConstructionOutlinedIcon} etiqueta="Tarifa por kg (hierro)"
+                        tooltip="Valor global usado en Ventas: tarifa por kg para paquetes de tipo Hierro" />
+                    <TarifaControl theme={theme} tienePermiso={tienePermiso} PERMISOS={PERMISOS} editor={tarifaKgNormalEditor}
+                        icono={ScaleOutlinedIcon} etiqueta="Tarifa por kg (normal)"
+                        tooltip="Valor global usado en Ventas: tarifa por kg para paquetes de tipo Normal" />
+                    <TarifaControl theme={theme} tienePermiso={tienePermiso} PERMISOS={PERMISOS} editor={tarifaPaqueteEditor}
+                        icono={Inventory2OutlinedIcon} etiqueta="Tarifa por paquete" suffixIcon={ViewInArOutlinedIcon}
+                        tooltip="Valor global usado en Ventas: tarifa fija por cada paquete de la venta" />
                     <Button
                         onClick={handleExportar}
                         disabled={exportando}

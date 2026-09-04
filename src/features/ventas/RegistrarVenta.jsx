@@ -4,6 +4,7 @@ import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import RegistrarCliente from '../clientes/RegistrarCliente.jsx'
 import { useVentas } from './context/VentaContext.jsx'
 import { useClientes } from '../clientes/context/ClienteContext.jsx'
+import { useDestino } from '../destinos/context/DestinoContext.jsx'
 import { useRutaProgramacion } from '../rutas/context/RutaProgramacionContext.jsx'
 import { useConfiguracion } from '../../shared/contexts/ConfiguracionContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
@@ -22,6 +23,8 @@ const getInitialForm = () => ({
     idCliente: '',
     nombreDestinatario: '',
     telefonoDestinatario: '',
+    correoDestinatario: '',
+    idDestinoDestinatario: '',
     direccionDestinatario: '',
     paquetes: [{ ...PAQUETE_VACIO }],
     idRuta: '',
@@ -33,7 +36,6 @@ const getInitialForm = () => ({
     metodoPago: '',
     estadoPago: 'Pendiente',
     valorServicio: '',
-    impuestos: '',
     total: '',
 })
 
@@ -42,10 +44,13 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
     const { showToast } = useToast()
     const theme = useTheme()
     const { clientes } = useClientes()
+    const { getDestinosHabilitados } = useDestino()
     const { rutasProgramadas, fetchRutasProgramadas } = useRutaProgramacion()
-    const { tarifaPorKg, fetchConfiguracion } = useConfiguracion()
+    const { tarifaPorKgHierro, tarifaPorKgNormal, tarifaPorPaquete, fetchConfiguracion } = useConfiguracion()
     const [submitting, setSubmitting] = useState(false)
     const [modalNuevoCliente, setModalNuevoCliente] = useState(false)
+    const [destinoDestinatarioInput, setDestinoDestinatarioInput] = useState('')
+    const destinos = getDestinosHabilitados()
 
     const {
         errores, setErrores, apiError, setApiError, activeStep, setActiveStep,
@@ -55,7 +60,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
         handleAgregarPaquete, handleQuitarPaquete, handleNext, handleBack,
     } = useVentaWizardForm({
         initialForm: getInitialForm(),
-        rutasProgramadas, fetchRutasProgramadas, tarifaPorKg, fetchConfiguracion,
+        rutasProgramadas, fetchRutasProgramadas, tarifaPorKgHierro, tarifaPorKgNormal, tarifaPorPaquete, fetchConfiguracion,
     })
 
     const handleClose = () => {
@@ -66,6 +71,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
         setActiveStep(0)
         setClienteInput('')
         setRutaInput('')
+        setDestinoDestinatarioInput('')
         onClose()
     }
 
@@ -79,6 +85,8 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                 destinatario: {
                     nombreDestinatario: form.nombreDestinatario,
                     telefonoDestinatario: form.telefonoDestinatario,
+                    correoDestinatario: form.correoDestinatario || null,
+                    idDestino: parseInt(form.idDestinoDestinatario),
                     direccionDestinatario: form.direccionDestinatario,
                 },
                 paquetes: form.paquetes.map(p => ({
@@ -90,13 +98,13 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                     // null y no 0 -- el validador del backend acepta el campo vacío
                     // (optional nullable), pero 0 sí choca contra isFloat({min:1}).
                     valorDeclarado: p.valorDeclarado ? parseFloat(p.valorDeclarado) : null,
+                    tipoCarga: p.tipoCarga,
                     idRutaVehiculoConductor: parseInt(p.idRutaVehiculoConductor),
                 })),
                 fechaEstimadaEntrega: form.fechaEstimadaEntrega || null,
                 observaciones: form.observaciones || null,
                 metodoPago: form.metodoPago,
                 valorServicio: parseFloat(form.valorServicio) || 0,
-                impuestos: parseFloat(form.impuestos) || 0,
                 estadoPago: form.estadoPago,
             })
             showToast('¡Venta registrada exitosamente!', 'success')
@@ -119,6 +127,8 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                         clienteInput={clienteInput} setClienteInput={setClienteInput}
                         form={form} setForm={setForm} errores={errores} setErrores={setErrores}
                         handleChange={handleChange} onNuevoCliente={() => setModalNuevoCliente(true)}
+                        destinos={destinos} destinoDestinatarioInput={destinoDestinatarioInput}
+                        setDestinoDestinatarioInput={setDestinoDestinatarioInput}
                     />
                 )
             case 1:
@@ -127,6 +137,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                         theme={theme} form={form} errores={errores}
                         handlePaqueteChange={handlePaqueteChange} setErrorPaquete={setErrorPaquete}
                         handleAgregarPaquete={handleAgregarPaquete} handleQuitarPaquete={handleQuitarPaquete}
+                        tarifaPorKgHierro={tarifaPorKgHierro} tarifaPorKgNormal={tarifaPorKgNormal}
                     />
                 )
             case 2:
@@ -145,6 +156,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                     <PasoConfirmacion
                         theme={theme} apiError={apiError} setApiError={setApiError} cardSx={cardSx(theme)}
                         clienteSeleccionado={clienteSeleccionado} form={form} rutasProgramadas={rutasProgramadas}
+                        destinos={destinos}
                     />
                 )
             default:

@@ -33,7 +33,6 @@ const useVentaExport = ({ theme, debouncedBusqueda, filtroHabilitado, filtroEsta
                 'Estado de pago': venta.estadoPago,
                 'Método de pago': venta.metodoPago,
                 'Valor servicio': Math.round(Number(venta.valorServicio)) || 0,
-                'Impuestos': Math.round(Number(venta.impuestos)) || 0,
                 'Total': Math.round(Number(venta.total)) || 0,
                 'Habilitado': venta.habilitado === false ? 'No' : 'Sí',
             }))

@@ -1,13 +1,15 @@
 import { esSoloRelleno } from '../../../shared/utils/formatters.js'
 import { sumarDias } from '../../../shared/utils/horarioLaboral.js'
+import { EMAIL_REGEX } from '../../../shared/validations/emailValidation.js'
 
 export const steps = ['Participantes', 'Paquete', 'Envío', 'Pago', 'Confirmación']
 
 export const MAX_PAQUETES = 10
-export const PAQUETE_VACIO = { descripcionContenido: '', peso: '', alto: '', ancho: '', profundidad: '', valorDeclarado: '', idRutaVehiculoConductor: '' }
-export const CAMPOS_PAQUETE = ['descripcionContenido', 'peso', 'alto', 'ancho', 'profundidad', 'valorDeclarado']
+export const PAQUETE_VACIO = { descripcionContenido: '', peso: '', alto: '', ancho: '', profundidad: '', valorDeclarado: '', tipoCarga: 'normal', idRutaVehiculoConductor: '' }
+export const CAMPOS_PAQUETE = ['descripcionContenido', 'peso', 'alto', 'ancho', 'profundidad', 'valorDeclarado', 'tipoCarga']
 const SOLO_LETRAS_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/
 const NOMBRE_DESTINATARIO_MAX_LENGTH = 50
+const CORREO_DESTINATARIO_MAX_LENGTH = 150
 
 // Opción sentinel que se agrega al final de las sugerencias de Cliente — al elegirla
 // se abre RegistrarCliente en un modal encima, en vez de seleccionar un cliente real.
@@ -15,8 +17,8 @@ const NOMBRE_DESTINATARIO_MAX_LENGTH = 50
 export const OPCION_CLIENTE_NUEVO = { idCliente: '__nuevo__', esNuevo: true }
 
 // Valida un único campo del formulario principal (usado en onBlur y para re-validar
-// en vivo mientras se corrige un campo ya marcado con error). valorServicio/impuestos/
-// total no viven aquí: son editables sin ninguna regla de obligatoriedad. Los call sites
+// en vivo mientras se corrige un campo ya marcado con error). valorServicio/total no
+// viven aquí: son editables sin ninguna regla de obligatoriedad. Los call sites
 // del modo edición pasan un tercer argumento (la venta original) por consistencia con el
 // resto del wizard, pero esta función no lo necesita para validar.
 export const validarCampo = (name, form) => {
@@ -36,6 +38,16 @@ export const validarCampo = (name, form) => {
             if (!form.direccionDestinatario.trim()) return 'La dirección es obligatoria'
             if (esSoloRelleno(form.direccionDestinatario)) return 'La dirección no puede contener solo espacios o guiones'
             return ''
+        case 'correoDestinatario': {
+            // Opcional -- igual que el correo del Cliente, no todos los destinatarios lo tienen.
+            const valor = (form.correoDestinatario || '').trim()
+            if (!valor) return ''
+            if (!EMAIL_REGEX.test(valor)) return 'El correo no es válido'
+            if (valor.length > CORREO_DESTINATARIO_MAX_LENGTH) return `El correo no puede superar los ${CORREO_DESTINATARIO_MAX_LENGTH} caracteres`
+            return ''
+        }
+        case 'idDestinoDestinatario':
+            return form.idDestinoDestinatario ? '' : 'Selecciona el municipio de destino'
         case 'idRuta':
             return form.idRuta ? '' : 'Selecciona una ruta'
         case 'fechaEstimadaEntrega': {
@@ -104,6 +116,8 @@ export const validarCampoPaquete = (campo, paquete) => {
                 if (n > 999999999) return 'Valor demasiado alto'
             }
             return ''
+        case 'tipoCarga':
+            return ['hierro', 'normal'].includes(paquete.tipoCarga) ? '' : 'Selecciona el tipo de carga'
         case 'idRutaVehiculoConductor':
             return paquete.idRutaVehiculoConductor ? '' : 'Asigna un vehículo'
         default:

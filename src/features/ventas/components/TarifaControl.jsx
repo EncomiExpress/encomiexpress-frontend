@@ -1,13 +1,17 @@
 import { Box, Typography, Chip, TextField, InputAdornment, IconButton, Tooltip, CircularProgress } from '@mui/material'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined'
-import ScaleOutlinedIcon from '@mui/icons-material/ScaleOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import { formatearMoneda, limpiarMonedaInput } from '../../../shared/utils/formatters.js'
 
-const TarifaPorKgControl = ({ theme, tienePermiso, PERMISOS, editor }) => {
+// Control genérico (candado + edición inline) para un valor global de
+// Configuracion -- reemplaza los antiguos TarifaPorKgControl.jsx (Destinos) y
+// TarifaPorPaqueteControl.jsx (Ventas), casi idénticos entre sí. Cada tarifa
+// (kg-hierro, kg-normal, por-paquete) instancia este mismo componente con su
+// propio icono/etiqueta/tooltip y su propio useTarifaEditor().
+const TarifaControl = ({ theme, tienePermiso, PERMISOS, editor, icono: Icono, etiqueta, tooltip, suffixIcon: SuffixIcon }) => {
     const {
-        tarifaPorKg,
+        valor,
         editandoTarifa, tarifaInput, setTarifaInput, guardandoTarifa,
         handleAbrirEdicionTarifa, handleCancelarEdicionTarifa, handleGuardarTarifa,
     } = editor
@@ -19,17 +23,17 @@ const TarifaPorKgControl = ({ theme, tienePermiso, PERMISOS, editor }) => {
             backgroundColor: theme.palette.background.paper,
             pl: 0.75, pr: 1.25, height: 40,
         }}>
-            <Tooltip title="Valor global usado en Ventas: tarifa del destino + peso × esta tarifa">
+            <Tooltip title={tooltip}>
                 <Box sx={{
                     width: 26, height: 26, borderRadius: 1.5, flexShrink: 0,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     backgroundColor: theme.palette.primary.light,
                 }}>
-                    <ScaleOutlinedIcon sx={{ fontSize: 15, color: theme.palette.primary.darker }} />
+                    {Icono && <Icono sx={{ fontSize: 15, color: theme.palette.primary.darker }} />}
                 </Box>
             </Tooltip>
             <Typography variant="body2" color={theme.palette.text.secondary} sx={{ fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
-                Tarifa por kg
+                {etiqueta}
             </Typography>
             {editandoTarifa ? (
                 <>
@@ -56,17 +60,25 @@ const TarifaPorKgControl = ({ theme, tienePermiso, PERMISOS, editor }) => {
                 </>
             ) : (
                 <>
-                    <Tooltip title="Valor global usado en Ventas: tarifa del destino + peso × esta tarifa">
+                    <Tooltip title={tooltip}>
                         <Chip
-                            label={`$${Number(tarifaPorKg).toLocaleString('es-CO')} / kg`}
+                            label={
+                                SuffixIcon ? (
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4 }}>
+                                        {`$${Number(valor).toLocaleString('es-CO')}`}
+                                        <SuffixIcon sx={{ fontSize: 13 }} />
+                                    </Box>
+                                ) : `$${Number(valor).toLocaleString('es-CO')} / kg`
+                            }
                             size="small"
                             sx={{
                                 fontWeight: 600, backgroundColor: theme.palette.primary.light,
                                 color: theme.palette.primary.darker, fontSize: '0.75rem', height: 24,
+                                '& .MuiChip-label': { display: 'flex', alignItems: 'center', px: 0.9 },
                             }}
                         />
                     </Tooltip>
-                    {tienePermiso(PERMISOS.ACTUALIZAR_DESTINO) ? (
+                    {tienePermiso(PERMISOS.ACTUALIZAR_VENTA) ? (
                         <Tooltip title="Desbloquear para editar">
                             <IconButton size="small" onClick={handleAbrirEdicionTarifa}
                                 sx={{ color: theme.palette.text.secondary, p: 0.5, '&:hover': { backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker } }}>
@@ -82,4 +94,4 @@ const TarifaPorKgControl = ({ theme, tienePermiso, PERMISOS, editor }) => {
     )
 }
 
-export default TarifaPorKgControl
+export default TarifaControl

@@ -17,11 +17,7 @@ export default function PasoPago({ form, errores, setErrores, handleChange, vent
             </FormSelect>
             <FormField label="Valor del servicio ($)" name="valorServicio"
                 value={formatearMoneda(form.valorServicio)} onChange={handleChange}
-                helperText="Tarifa del destino + peso × tarifa por kg (editable)"
-                inputProps={{ maxLength: 11 }} />
-            <FormField label="Impuestos ($)" name="impuestos"
-                value={formatearMoneda(form.impuestos)} onChange={handleChange}
-                helperText="10% del valor del servicio (editable)"
+                helperText="Tarifa del destino + costo por peso de cada paquete + cantidad × tarifa por paquete (editable)"
                 inputProps={{ maxLength: 11 }} />
             <FormField label="Total a pagar ($)" name="total"
                 value={formatearMoneda(form.total)} onChange={handleChange} disabled />

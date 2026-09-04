@@ -1,13 +1,16 @@
-import { Box, Typography, IconButton, Button } from '@mui/material'
+import { Box, Typography, IconButton, Button, MenuItem, Alert } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
-import { FormField } from '../../../../shared/components/FormularioEstandarizado.jsx'
+import ScaleOutlinedIcon from '@mui/icons-material/ScaleOutlined'
+import { FormField, FormSelect } from '../../../../shared/components/FormularioEstandarizado.jsx'
 import { formatearMoneda } from '../../../../shared/utils/formatters.js'
 import { validarCampoPaquete, MAX_PAQUETES } from '../../validations/validacion.js'
+import { calcularPesoEfectivo, calcularCostoPeso } from '../../validations/ventaValidation.js'
 
-/** Paso 2 del wizard: uno o varios paquetes (contenido, dimensiones, peso, valor declarado). */
+/** Paso 2 del wizard: uno o varios paquetes (contenido, dimensiones, peso, tipo de carga, valor declarado). */
 export default function PasoPaquetes({
     theme, form, errores, handlePaqueteChange, setErrorPaquete, handleAgregarPaquete, handleQuitarPaquete,
+    tarifaPorKgHierro, tarifaPorKgNormal,
 }) {
     return (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
@@ -56,7 +59,7 @@ export default function PasoPaquetes({
                                 placeholder="Ej: 20" helperText={errPaquete.ancho || 'Ej: 20'}
                                 inputProps={{ maxLength: 4 }} />
                         </Box>
-                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
+                        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2.5 }}>
                             <FormField label="Profundidad (cm)" name="profundidad" value={paquete.profundidad}
                                 onChange={(e) => handlePaqueteChange(index, 'profundidad', e.target.value)}
                                 onBlur={() => setErrorPaquete(index, 'profundidad', validarCampoPaquete('profundidad', paquete))}
@@ -69,7 +72,27 @@ export default function PasoPaquetes({
                                 helperText={errPaquete.valorDeclarado || 'Opcional'}
                                 placeholder="Ej: 50.000" error={errPaquete.valorDeclarado}
                                 inputProps={{ maxLength: 11 }} />
+                            <FormSelect label="Tipo de carga" name="tipoCarga" value={paquete.tipoCarga}
+                                onChange={(e) => handlePaqueteChange(index, 'tipoCarga', e.target.value)}
+                                onBlur={() => setErrorPaquete(index, 'tipoCarga', validarCampoPaquete('tipoCarga', paquete))}
+                                required error={errPaquete.tipoCarga}
+                                helperText={errPaquete.tipoCarga || 'Define la tarifa por kg aplicable'}>
+                                <MenuItem value="hierro">Hierro (metal pesado)</MenuItem>
+                                <MenuItem value="normal">Paquete normal</MenuItem>
+                            </FormSelect>
                         </Box>
+                        {paquete.peso && paquete.alto && paquete.ancho && paquete.profundidad && (() => {
+                            const { pesoReal, pesoVolumetrico, pesoEfectivo, gana } = calcularPesoEfectivo(paquete)
+                            const costoPeso = calcularCostoPeso(paquete, tarifaPorKgHierro, tarifaPorKgNormal)
+                            return (
+                                <Alert severity={gana === 'volumetrico' ? 'warning' : 'info'}
+                                    icon={<ScaleOutlinedIcon fontSize="small" />} sx={{ borderRadius: 2 }}>
+                                    Peso real: <strong>{pesoReal} kg</strong> · Peso volumétrico: <strong>{pesoVolumetrico.toFixed(2)} kg</strong>
+                                    {' — se factura por '}<strong>{gana === 'volumetrico' ? 'peso volumétrico' : 'peso real'}</strong>
+                                    {` (${pesoEfectivo.toFixed(2)} kg) → costo por peso: `}<strong>${Math.round(costoPeso).toLocaleString('es-CO')}</strong>
+                                </Alert>
+                            )
+                        })()}
                     </Box>
                 )
             })}

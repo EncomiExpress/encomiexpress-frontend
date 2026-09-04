@@ -122,12 +122,17 @@ const ModalConsultarVenta = ({ venta, onClose }) => {
                                 </Box>
                                 <CampoFila label="Nombre" value={venta.destinatario?.nombreDestinatario} />
                                 <CampoFila label="Teléfono" value={venta.destinatario?.telefonoDestinatario} />
+                                <CampoFila label="Correo" value={venta.destinatario?.correoDestinatario} />
+                                <CampoFila label="Destino" value={venta.destinatario?.destino
+                                    ? `${venta.destinatario.destino.ciudad} - ${venta.destinatario.destino.departamento}`
+                                    : null} />
                                 <CampoFila label="Dirección" value={venta.destinatario?.direccionDestinatario} />
                             </Box>
                         </FichaCard>
 
                         <FichaCard icon={Inventory2OutlinedIcon} title="Paquete" sx={{ flex: 'none' }}>
                             <CampoFila label="Contenido" value={paquete?.descripcionContenido} />
+                            <CampoFila label="Tipo de carga" value={paquete?.tipoCarga === 'hierro' ? 'Hierro' : paquete?.tipoCarga === 'normal' ? 'Paquete normal' : null} />
                             <CampoFila label="Peso" value={paquete?.peso != null ? `${paquete.peso} kg` : null} />
                             <CampoFila label="Dimensiones" value={dim} />
                             <CampoFila label="Valor declarado" value={paquete?.valorDeclarado != null ? `$${Number(paquete.valorDeclarado).toLocaleString('es-CO')}` : null} />
@@ -180,7 +185,6 @@ const ModalConsultarVenta = ({ venta, onClose }) => {
                         <CampoFila label="Conductor" value={paquete?.asignacion?.conductor?.usuario ? `${paquete.asignacion.conductor.usuario.nombre} ${paquete.asignacion.conductor.usuario.apellido}` : null} />
                         <CampoFila label="Método de pago" value={venta.metodoPago} />
                         <CampoFila label="Valor servicio" value={venta.valorServicio != null ? `$${Number(venta.valorServicio).toLocaleString('es-CO')}` : null} />
-                        <CampoFila label="Impuestos" value={venta.impuestos != null ? `$${Number(venta.impuestos).toLocaleString('es-CO')}` : null} />
                         <CampoFila label="Total" value={venta.total != null ? `$${Number(venta.total).toLocaleString('es-CO')}` : null} />
                         <CampoFila label="Fecha registro" value={formatFecha(venta.fechaRegistro)} />
                         <CampoFila label="Fecha est. entrega" value={formatFecha(venta.fechaEstimadaEntrega)} />

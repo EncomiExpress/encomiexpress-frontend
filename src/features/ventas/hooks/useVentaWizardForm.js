@@ -18,17 +18,15 @@ import {
 export const useVentaWizardForm = ({
     initialForm,
     rutasProgramadas, fetchRutasProgramadas,
-    tarifaPorKg, fetchConfiguracion,
+    tarifaPorKgHierro, tarifaPorKgNormal, tarifaPorPaquete, fetchConfiguracion,
     ventaOriginal = null,
     afterChange = () => {},
     getPesoOriginalPorPar,
 }) => {
-    // true en cuanto el admin edita "Valor del servicio"/"Impuestos" a mano — a partir de
-    // ahí el refresco de tarifas del paso "Pago" (más abajo) deja de recalcularlos por
-    // encima. Editar valorServicio SÍ resetea impuestosManualRef (vuelve a ser el 10%
-    // automático), pero editar impuestos NO resetea valorServicioManualRef.
+    // true en cuanto el admin edita "Valor del servicio" a mano — a partir de ahí el
+    // refresco de tarifas de los pasos "Paquete"/"Pago" (más abajo) deja de recalcularlo
+    // por encima, hasta que vuelva a cambiar la ruta o el peso/cantidad de paquetes.
     const valorServicioManualRef = useRef(false)
-    const impuestosManualRef = useRef(false)
     const [errores, setErrores] = useState({})
     const [apiError, setApiError] = useState(null)
     const [activeStep, setActiveStep] = useState(0)
@@ -39,6 +37,33 @@ export const useVentaWizardForm = ({
     useEffect(() => {
         fetchRutasProgramadas({ limit: 1000 }).catch(() => null)
     }, [fetchRutasProgramadas])
+
+    // Las tarifas por kg (hierro/normal) y por paquete pueden cambiar mientras el
+    // formulario sigue abierto -- igual que el refresco del paso "Pago" más abajo, se
+    // refrescan al ENTRAR al paso "Paquete" (índice 1) para que el preview de peso
+    // volumétrico/costo por paquete (calculado en vivo en el render de PasoPaquetes.jsx
+    // a partir de tarifaPorKgHierro/tarifaPorKgNormal) nunca quede con tarifas obsoletas.
+    // Si ya hay una ruta elegida (se volvió con "Anterior" desde un paso posterior),
+    // además recalcula valorServicio/total con los datos frescos, respetando
+    // valorServicioManualRef.
+    useEffect(() => {
+        if (activeStep !== 1) return
+        let cancelado = false
+        fetchConfiguracion().then((tarifasFrescas) => {
+            if (cancelado || valorServicioManualRef.current) return
+            setForm(prev => {
+                const resultado = calcularValoresPaquetes(
+                    prev.idRuta, prev.paquetes, rutasProgramadas,
+                    tarifasFrescas?.tarifaPorKgHierro ?? tarifaPorKgHierro,
+                    tarifasFrescas?.tarifaPorKgNormal ?? tarifaPorKgNormal,
+                    tarifasFrescas?.tarifaPorPaquete ?? tarifaPorPaquete,
+                )
+                return Object.keys(resultado).length > 0 ? { ...prev, ...resultado } : prev
+            })
+        }).catch(() => {})
+        return () => { cancelado = true }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeStep])
 
     // No hay tiempo real (WebSockets) en este proyecto — el peso ya usado de cada
     // vehículo (pesoUsado) se trae una sola vez al montar y puede quedar desactualizado
@@ -78,28 +103,29 @@ export const useVentaWizardForm = ({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeStep, fetchRutasProgramadas])
 
-    // La tarifa del destino y la tarifa por kg (fija en Configuración) pueden cambiar
-    // mientras el formulario sigue abierto — igual que arriba con la capacidad, se
-    // refrescan al ENTRAR al paso "Pago" y se recalcula valorServicio con los datos
-    // frescos, pero solo si el admin no lo editó a mano (valorServicioManualRef):
-    // si ya lo tocó, se respeta ese ajuste manual y no se pisa.
+    // La tarifa del destino, las tarifas por kg y la tarifa por paquete (fijas en
+    // Configuración) pueden cambiar mientras el formulario sigue abierto — igual que
+    // arriba con la capacidad, se refrescan al ENTRAR al paso "Pago" y se recalcula
+    // valorServicio con los datos frescos, pero solo si el admin no lo editó a mano
+    // (valorServicioManualRef): si ya lo tocó, se respeta ese ajuste manual y no se pisa.
     useEffect(() => {
         if (activeStep !== 3) return
         let cancelado = false
         Promise.all([
             fetchConfiguracion(),
             fetchRutasProgramadas({ limit: 1000 }),
-        ]).then(([tarifaFresca, rutasFrescas]) => {
+        ]).then(([tarifasFrescas, rutasFrescas]) => {
             if (cancelado || valorServicioManualRef.current) return
             setForm(prev => {
                 const ruta = (rutasFrescas || []).find(r => r.idRuta === parseInt(prev.idRuta))
                 if (!ruta || !prev.idRuta) return prev
-                const pesoTotal = prev.paquetes.reduce((s, p) => s + (parseFloat(p.peso) || 0), 0)
-                const vs = Number(ruta.destino?.tarifaBase || 0) + (pesoTotal * (tarifaFresca ?? tarifaPorKg))
-                // impuestos respeta su propio "manual" — si el admin ya lo editó a mano,
-                // no se pisa aunque valorServicio sí se haya recalculado.
-                const imp = impuestosManualRef.current ? (Number(prev.impuestos) || 0) : Math.round(vs * 0.10)
-                return { ...prev, valorServicio: vs, impuestos: imp, total: vs + imp }
+                const vs = calcularValorServicioBase(
+                    ruta.destino?.tarifaBase, prev.paquetes,
+                    tarifasFrescas?.tarifaPorKgHierro ?? tarifaPorKgHierro,
+                    tarifasFrescas?.tarifaPorKgNormal ?? tarifaPorKgNormal,
+                    tarifasFrescas?.tarifaPorPaquete ?? tarifaPorPaquete,
+                )
+                return { ...prev, valorServicio: vs, total: vs }
             })
         }).catch(() => {})
         return () => { cancelado = true }
@@ -119,7 +145,8 @@ export const useVentaWizardForm = ({
         })
     }, [form.idRuta, form.paquetes.length, rutasProgramadas])
 
-    const calcularValorServicio = (tarifaBase, peso) => calcularValorServicioBase(tarifaBase, peso, tarifaPorKg)
+    const calcularValorServicio = (tarifaBase, paquetes = form.paquetes) =>
+        calcularValorServicioBase(tarifaBase, paquetes, tarifaPorKgHierro, tarifaPorKgNormal, tarifaPorPaquete)
 
     const handleChange = (e) => {
         const { name } = e.target
@@ -138,6 +165,9 @@ export const useVentaWizardForm = ({
         if (name === 'telefonoDestinatario') {
             value = value.replace(/[^0-9]/g, '')
         }
+        if (name === 'correoDestinatario') {
+            value = value.replace(/[^a-zA-Z0-9@._%+-]/g, '')
+        }
         if (name === 'direccionDestinatario') {
             value = value.replace(/[^a-zA-Z0-9\s,.\-#/']/g, '')
         }
@@ -147,22 +177,14 @@ export const useVentaWizardForm = ({
 
         if (name === 'valorServicio') {
             valorServicioManualRef.current = true
-            impuestosManualRef.current = false
         }
-        if (name === 'impuestos') impuestosManualRef.current = true
 
         const formActualizado = { ...form, [name]: value }
         setForm(prev => {
             const updated = { ...prev, [name]: value }
             if (name === 'valorServicio') {
                 const vs = parseFloat(value) || 0
-                const imp = Math.round(vs * 0.10)
-                updated.impuestos = imp
-                updated.total = vs + imp
-            } else if (name === 'impuestos') {
-                const vs = parseFloat(prev.valorServicio) || 0
-                const imp = parseFloat(value) || 0
-                updated.total = vs + imp
+                updated.total = vs
             }
             return updated
         })
@@ -182,10 +204,9 @@ export const useVentaWizardForm = ({
     }
 
     const recalcularValorServicio = (prev, paquetes) => {
-        const resultado = calcularValoresPaquetes(prev.idRuta, paquetes, rutasProgramadas, tarifaPorKg)
+        const resultado = calcularValoresPaquetes(prev.idRuta, paquetes, rutasProgramadas, tarifaPorKgHierro, tarifaPorKgNormal, tarifaPorPaquete)
         if (Object.keys(resultado).length > 0) {
             valorServicioManualRef.current = false
-            impuestosManualRef.current = false
         }
         return resultado
     }
@@ -203,7 +224,12 @@ export const useVentaWizardForm = ({
         const paquetes = form.paquetes.map((p, i) => i === index ? { ...p, [campo]: value } : p)
         setForm(prev => {
             const updated = { ...prev, paquetes }
-            if (campo === 'peso') Object.assign(updated, recalcularValorServicio(prev, paquetes))
+            // peso/alto/ancho/profundidad alimentan el peso efectivo (real vs. volumétrico)
+            // y tipoCarga decide qué tarifa por kg aplica -- los cuatro afectan el costo por
+            // peso de este paquete y por lo tanto el valorServicio de toda la venta.
+            if (['peso', 'alto', 'ancho', 'profundidad', 'tipoCarga'].includes(campo)) {
+                Object.assign(updated, recalcularValorServicio(prev, paquetes))
+            }
             return updated
         })
         const yaMarcado = errores.paquetes?.[index]?.[campo]
@@ -228,7 +254,13 @@ export const useVentaWizardForm = ({
     }
 
     const handleAgregarPaquete = () => {
-        setForm(prev => ({ ...prev, paquetes: [...prev.paquetes, { ...PAQUETE_VACIO }] }))
+        // A diferencia de antes de que existiera tarifaPorPaquete, agregar un paquete
+        // (aunque llegue con peso vacío) ya cambia el total -- la cantidad de paquetes
+        // es en sí misma parte de la fórmula, no solo el peso acumulado.
+        setForm(prev => {
+            const paquetes = [...prev.paquetes, { ...PAQUETE_VACIO }]
+            return { ...prev, paquetes, ...recalcularValorServicio(prev, paquetes) }
+        })
         afterChange()
     }
 
@@ -273,7 +305,7 @@ export const useVentaWizardForm = ({
         clienteInput, setClienteInput,
         rutaInput, setRutaInput,
         form, setForm,
-        valorServicioManualRef, impuestosManualRef,
+        valorServicioManualRef,
         calcularValorServicio,
         handleChange,
         setErrorPaquete,

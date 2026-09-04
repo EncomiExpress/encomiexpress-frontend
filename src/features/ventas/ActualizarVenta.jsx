@@ -6,6 +6,7 @@ import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined
 import CloseIcon from '@mui/icons-material/Close'
 import { useVentas } from './context/VentaContext.jsx'
 import { useClientes } from '../clientes/context/ClienteContext.jsx'
+import { useDestino } from '../destinos/context/DestinoContext.jsx'
 import { useRutaProgramacion } from '../rutas/context/RutaProgramacionContext.jsx'
 import { useConfiguracion } from '../../shared/contexts/ConfiguracionContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
@@ -25,6 +26,8 @@ const getInitialForm = () => ({
     idCliente: '',
     nombreDestinatario: '',
     telefonoDestinatario: '',
+    correoDestinatario: '',
+    idDestinoDestinatario: '',
     direccionDestinatario: '',
     paquetes: [{ ...PAQUETE_VACIO }],
     idRuta: '',
@@ -35,7 +38,6 @@ const getInitialForm = () => ({
     observaciones: '',
     metodoPago: '',
     valorServicio: '',
-    impuestos: '',
     total: '',
 })
 
@@ -44,12 +46,15 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
     const { showToast } = useToast()
     const theme = useTheme()
     const { clientes } = useClientes()
+    const { getDestinosHabilitados } = useDestino()
     const { rutasProgramadas, fetchRutasProgramadas } = useRutaProgramacion()
-    const { tarifaPorKg, fetchConfiguracion } = useConfiguracion()
+    const { tarifaPorKgHierro, tarifaPorKgNormal, tarifaPorPaquete, fetchConfiguracion } = useConfiguracion()
     const [submitting, setSubmitting] = useState(false)
     const [ventaOriginal, setVentaOriginal] = useState(null)
     const [formOriginal, setFormOriginal] = useState(null)
     const [sinCambios, setSinCambios] = useState(false)
+    const [destinoDestinatarioInput, setDestinoDestinatarioInput] = useState('')
+    const destinos = getDestinosHabilitados()
 
     // Peso que esta misma venta ya tenía en cada vehículo del convoy, agrupado por par —
     // se resta del "pesoUsado" de cada par para no contar dos veces el peso que ya era de
@@ -68,12 +73,12 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
     const {
         errores, setErrores, apiError, setApiError, activeStep, setActiveStep,
         clienteInput, setClienteInput, rutaInput, setRutaInput,
-        form, setForm, valorServicioManualRef, impuestosManualRef, calcularValorServicio,
+        form, setForm, valorServicioManualRef, calcularValorServicio,
         handleChange, setErrorPaquete, handlePaqueteChange,
         handleAgregarPaquete, handleQuitarPaquete, handleNext, handleBack,
     } = useVentaWizardForm({
         initialForm: getInitialForm(),
-        rutasProgramadas, fetchRutasProgramadas, tarifaPorKg, fetchConfiguracion,
+        rutasProgramadas, fetchRutasProgramadas, tarifaPorKgHierro, tarifaPorKgNormal, tarifaPorPaquete, fetchConfiguracion,
         ventaOriginal,
         afterChange: () => setSinCambios(false),
         getPesoOriginalPorPar,
@@ -101,6 +106,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                 descripcionContenido: p.descripcionContenido || '',
                 peso: limpiarNumero(p.peso), alto: limpiarNumero(p.alto), ancho: limpiarNumero(p.ancho),
                 profundidad: limpiarNumero(p.profundidad), valorDeclarado: limpiarNumero(p.valorDeclarado),
+                tipoCarga: p.tipoCarga || 'normal',
                 idRutaVehiculoConductor: p.idRutaVehiculoConductor || '',
             }))
             : [{ ...PAQUETE_VACIO }]
@@ -108,6 +114,8 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
             idCliente: ventaData.cliente?.idCliente || ventaData.idCliente || '',
             nombreDestinatario: destinatario?.nombreDestinatario || '',
             telefonoDestinatario: destinatario?.telefonoDestinatario || '',
+            correoDestinatario: destinatario?.correoDestinatario || '',
+            idDestinoDestinatario: destinatario?.idDestino || '',
             direccionDestinatario: destinatario?.direccionDestinatario || '',
             paquetes: paquetesArr,
             idRuta: ventaData.idRuta || ventaData.ruta?.idRuta || '',
@@ -122,7 +130,6 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
             observaciones: ventaData.observaciones || '',
             metodoPago: ventaData.metodoPago || '',
             valorServicio: limpiarNumero(ventaData.valorServicio),
-            impuestos: limpiarNumero(ventaData.impuestos),
             total: limpiarNumero(ventaData.total),
         }
         setForm(datosForm)
@@ -140,6 +147,8 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
         } else {
             setRutaInput('')
         }
+        const dDestinatario = destinatario?.destino
+        setDestinoDestinatarioInput(dDestinatario ? `${dDestinatario.ciudad} - ${dDestinatario.departamento}` : '')
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [venta])
 
@@ -178,10 +187,11 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                 observaciones: form.observaciones || null,
                 metodoPago: form.metodoPago,
                 valorServicio: parseFloat(form.valorServicio) || 0,
-                impuestos: parseFloat(form.impuestos) || 0,
                 destinatario: {
                     nombreDestinatario: form.nombreDestinatario,
                     telefonoDestinatario: form.telefonoDestinatario || null,
+                    correoDestinatario: form.correoDestinatario || null,
+                    idDestino: parseInt(form.idDestinoDestinatario),
                     direccionDestinatario: form.direccionDestinatario || null,
                 },
                 paquetes: form.paquetes.map(p => ({
@@ -192,6 +202,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                     ancho: p.ancho ? parseFloat(p.ancho) : null,
                     profundidad: p.profundidad ? parseFloat(p.profundidad) : null,
                     valorDeclarado: p.valorDeclarado ? parseFloat(p.valorDeclarado) : null,
+                    tipoCarga: p.tipoCarga,
                     idRutaVehiculoConductor: parseInt(p.idRutaVehiculoConductor),
                 })),
             }
@@ -225,6 +236,8 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                         clienteInput={clienteInput} setClienteInput={setClienteInput}
                         form={form} setForm={setForm} errores={errores} setErrores={setErrores}
                         handleChange={handleChange} setSinCambios={setSinCambios} ventaOriginal={ventaOriginal}
+                        destinos={destinos} destinoDestinatarioInput={destinoDestinatarioInput}
+                        setDestinoDestinatarioInput={setDestinoDestinatarioInput}
                     />
                 )
             case 1:
@@ -233,6 +246,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                         theme={theme} form={form} errores={errores}
                         handlePaqueteChange={handlePaqueteChange} setErrorPaquete={setErrorPaquete}
                         handleAgregarPaquete={handleAgregarPaquete} handleQuitarPaquete={handleQuitarPaquete}
+                        tarifaPorKgHierro={tarifaPorKgHierro} tarifaPorKgNormal={tarifaPorKgNormal}
                     />
                 )
             case 2:
@@ -244,7 +258,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                         handleChange={handleChange} calcularValorServicio={calcularValorServicio}
                         handlePaqueteChange={handlePaqueteChange} setErrorPaquete={setErrorPaquete}
                         ventaOriginal={ventaOriginal} valorServicioManualRef={valorServicioManualRef}
-                        impuestosManualRef={impuestosManualRef} getPesoOriginalPorPar={getPesoOriginalPorPar}
+                        getPesoOriginalPorPar={getPesoOriginalPorPar}
                     />
                 )
             case 3:
@@ -255,7 +269,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                         theme={theme} apiError={apiError} setApiError={setApiError} cardSx={cardSx(theme)}
                         clienteSeleccionado={clienteSeleccionado} form={form} formOriginal={formOriginal}
                         ventaOriginal={ventaOriginal} sinCambios={sinCambios} setSinCambios={setSinCambios}
-                        clientes={clientes} rutasProgramadas={rutasProgramadas}
+                        clientes={clientes} rutasProgramadas={rutasProgramadas} destinos={destinos}
                     />
                 )
             default:
