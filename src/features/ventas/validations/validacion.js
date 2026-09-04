@@ -85,28 +85,28 @@ export const validarCampoPaquete = (campo, paquete) => {
             const n = parseFloat(paquete.peso)
             if (!paquete.peso) return 'El peso es obligatorio'
             if (isNaN(n) || n < 1) return 'El peso debe ser de al menos 1 kg'
-            if (n > 9999) return 'Máximo 9999 kg'
+            if (n > 999) return 'Máximo 999 kg'
             return ''
         }
         case 'alto': {
             const n = parseFloat(paquete.alto)
             if (!paquete.alto) return 'El alto es obligatorio'
             if (isNaN(n) || n < 1) return 'Debe ser de al menos 1 cm'
-            if (n > 9999) return 'Máximo 9999 cm'
+            if (n > 999) return 'Máximo 999 cm'
             return ''
         }
         case 'ancho': {
             const n = parseFloat(paquete.ancho)
             if (!paquete.ancho) return 'El ancho es obligatorio'
             if (isNaN(n) || n < 1) return 'Debe ser de al menos 1 cm'
-            if (n > 9999) return 'Máximo 9999 cm'
+            if (n > 999) return 'Máximo 999 cm'
             return ''
         }
         case 'profundidad': {
             const n = parseFloat(paquete.profundidad)
             if (!paquete.profundidad) return 'La profundidad es obligatoria'
             if (isNaN(n) || n < 1) return 'Debe ser de al menos 1 cm'
-            if (n > 9999) return 'Máximo 9999 cm'
+            if (n > 999) return 'Máximo 999 cm'
             return ''
         }
         case 'tipoCarga':

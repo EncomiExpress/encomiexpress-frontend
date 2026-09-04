@@ -44,19 +44,19 @@ export default function PasoPaquetes({
                                 onBlur={() => setErrorPaquete(index, 'peso', validarCampoPaquete('peso', paquete))}
                                 required error={errPaquete.peso}
                                 placeholder="Ej: 1.5" helperText={errPaquete.peso || 'Ej: 1.5'}
-                                inputProps={{ maxLength: 7 }} />
+                                inputProps={{ maxLength: 6 }} />
                             <FormField label="Alto (cm)" name="alto" value={paquete.alto}
                                 onChange={(e) => handlePaqueteChange(index, 'alto', e.target.value)}
                                 onBlur={() => setErrorPaquete(index, 'alto', validarCampoPaquete('alto', paquete))}
                                 required error={errPaquete.alto}
                                 placeholder="Ej: 30" helperText={errPaquete.alto || 'Ej: 30'}
-                                inputProps={{ maxLength: 4 }} />
+                                inputProps={{ maxLength: 6 }} />
                             <FormField label="Ancho (cm)" name="ancho" value={paquete.ancho}
                                 onChange={(e) => handlePaqueteChange(index, 'ancho', e.target.value)}
                                 onBlur={() => setErrorPaquete(index, 'ancho', validarCampoPaquete('ancho', paquete))}
                                 required error={errPaquete.ancho}
                                 placeholder="Ej: 20" helperText={errPaquete.ancho || 'Ej: 20'}
-                                inputProps={{ maxLength: 4 }} />
+                                inputProps={{ maxLength: 6 }} />
                         </Box>
                         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                             <FormField label="Profundidad (cm)" name="profundidad" value={paquete.profundidad}
@@ -64,7 +64,7 @@ export default function PasoPaquetes({
                                 onBlur={() => setErrorPaquete(index, 'profundidad', validarCampoPaquete('profundidad', paquete))}
                                 required error={errPaquete.profundidad}
                                 placeholder="Ej: 15" helperText={errPaquete.profundidad || 'Ej: 15'}
-                                inputProps={{ maxLength: 4 }} />
+                                inputProps={{ maxLength: 6 }} />
                             <FormSelect label="Tipo de carga" name="tipoCarga" value={paquete.tipoCarga}
                                 onChange={(e) => handlePaqueteChange(index, 'tipoCarga', e.target.value)}
                                 onBlur={() => setErrorPaquete(index, 'tipoCarga', validarCampoPaquete('tipoCarga', paquete))}
@@ -77,12 +77,22 @@ export default function PasoPaquetes({
                         {paquete.peso && paquete.alto && paquete.ancho && paquete.profundidad && (() => {
                             const { pesoReal, pesoVolumetrico, pesoEfectivo, gana } = calcularPesoEfectivo(paquete)
                             const costoPeso = calcularCostoPeso(paquete, tarifaPorKgHierro, tarifaPorKgNormal)
+                            const tarifaKg = paquete.tipoCarga === 'hierro' ? tarifaPorKgHierro : tarifaPorKgNormal
+                            const tipoCargaLabel = paquete.tipoCarga === 'hierro' ? 'hierro' : 'paquete normal'
                             return (
-                                <Alert severity={gana === 'volumetrico' ? 'warning' : 'info'}
+                                <Alert severity="info"
                                     icon={<ScaleOutlinedIcon fontSize="small" />} sx={{ borderRadius: 2 }}>
-                                    Peso real: <strong>{pesoReal} kg</strong> · Peso volumétrico: <strong>{pesoVolumetrico.toFixed(2)} kg</strong>
-                                    {' — se factura por '}<strong>{gana === 'volumetrico' ? 'peso volumétrico' : 'peso real'}</strong>
-                                    {` (${pesoEfectivo.toFixed(2)} kg) → costo por peso: `}<strong>${Math.round(costoPeso).toLocaleString('es-CO')}</strong>
+                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                                        <Box>
+                                            Peso real: <strong>{pesoReal} kg</strong> · Peso volumétrico: <strong>{pesoVolumetrico.toFixed(2)} kg</strong>
+                                        </Box>
+                                        <Box sx={{ fontSize: '0.8125rem' }}>
+                                            Siempre se cobra por el <strong>mayor</strong> de los dos pesos → en este caso aplica el <strong>{gana === 'volumetrico' ? 'peso volumétrico' : 'peso real'}</strong> ({pesoEfectivo.toFixed(2)} kg)
+                                        </Box>
+                                        <Box>
+                                            {pesoEfectivo.toFixed(2)} kg × ${Number(tarifaKg).toLocaleString('es-CO')}/kg (tarifa {tipoCargaLabel}) = <strong>${Math.round(costoPeso).toLocaleString('es-CO')}</strong>
+                                        </Box>
+                                    </Box>
                                 </Alert>
                             )
                         })()}
