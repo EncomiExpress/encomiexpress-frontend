@@ -97,7 +97,7 @@ const ListarVenta = () => {
 
     return (
         <Box sx={{ p: 3.5 }}>
-            <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
+            <Box sx={{ mb: 3 }}>
                 <Box>
                     <Typography variant="h5" fontWeight={700} color={theme.palette.text.primary}>
                         Ventas
@@ -106,60 +106,64 @@ const ListarVenta = () => {
                         Gestiona las ventas y encomiendas registradas en el sistema.
                     </Typography>
                 </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                    <TarifaControl theme={theme} tienePermiso={tienePermiso} PERMISOS={PERMISOS} editor={tarifaKgHierroEditor}
-                        icono={ConstructionOutlinedIcon} etiqueta="Tarifa por kg (hierro)"
-                        tooltip="Valor global usado en Ventas: tarifa por kg para paquetes de tipo Hierro" />
-                    <TarifaControl theme={theme} tienePermiso={tienePermiso} PERMISOS={PERMISOS} editor={tarifaKgNormalEditor}
-                        icono={ScaleOutlinedIcon} etiqueta="Tarifa por kg (normal)"
-                        tooltip="Valor global usado en Ventas: tarifa por kg para paquetes de tipo Normal" />
-                    <TarifaControl theme={theme} tienePermiso={tienePermiso} PERMISOS={PERMISOS} editor={tarifaPaqueteEditor}
-                        icono={Inventory2OutlinedIcon} etiqueta="Tarifa por paquete" suffixIcon={ViewInArOutlinedIcon}
-                        tooltip="Valor global usado en Ventas: tarifa fija por cada paquete de la venta" />
-                    <Button
-                        onClick={handleExportar}
-                        disabled={exportando}
-                        variant="contained"
-                        startIcon={exportando ? <CircularProgress size={16} sx={{ color: 'inherit' }} /> : <FileDownloadOutlinedIcon sx={{ fontSize: 18 }} />}
-                        sx={{
-                            backgroundColor: theme.palette.background.paper,
-                            color: theme.palette.text.primary,
-                            borderRadius: 2,
-                            textTransform: 'none',
-                            fontSize: '0.875rem',
-                            fontWeight: 700,
-                            border: `1px solid ${theme.palette.divider}`,
-                            boxShadow: 'none',
-                            '&:hover': {
-                                backgroundColor: theme.palette.primary.activeBg,
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap', mt: 1.5 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                        <TarifaControl theme={theme} tienePermiso={tienePermiso} PERMISOS={PERMISOS} editor={tarifaKgHierroEditor}
+                            icono={ConstructionOutlinedIcon} etiqueta="Tarifa hierro"
+                            tooltip="Valor global usado en Ventas: tarifa por kg para paquetes de tipo Hierro" />
+                        <TarifaControl theme={theme} tienePermiso={tienePermiso} PERMISOS={PERMISOS} editor={tarifaKgNormalEditor}
+                            icono={ScaleOutlinedIcon} etiqueta="Tarifa normal"
+                            tooltip="Valor global usado en Ventas: tarifa por kg para paquetes de tipo Normal" />
+                        <TarifaControl theme={theme} tienePermiso={tienePermiso} PERMISOS={PERMISOS} editor={tarifaPaqueteEditor}
+                            icono={Inventory2OutlinedIcon} etiqueta="Tarifa paquete" suffixIcon={ViewInArOutlinedIcon}
+                            tooltip="Valor global usado en Ventas: tarifa fija por cada paquete de la venta" />
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
+                        <Button
+                            onClick={handleExportar}
+                            disabled={exportando}
+                            variant="contained"
+                            startIcon={exportando ? <CircularProgress size={16} sx={{ color: 'inherit' }} /> : <FileDownloadOutlinedIcon sx={{ fontSize: 18 }} />}
+                            sx={{
+                                backgroundColor: theme.palette.background.paper,
                                 color: theme.palette.text.primary,
+                                borderRadius: 2,
+                                textTransform: 'none',
+                                fontSize: '0.875rem',
+                                fontWeight: 700,
                                 border: `1px solid ${theme.palette.divider}`,
                                 boxShadow: 'none',
-                            },
-                        }}
-                    >
-                        {exportando ? 'Exportando...' : 'Exportar'}
-                    </Button>
+                                '&:hover': {
+                                    backgroundColor: theme.palette.primary.activeBg,
+                                    color: theme.palette.text.primary,
+                                    border: `1px solid ${theme.palette.divider}`,
+                                    boxShadow: 'none',
+                                },
+                            }}
+                        >
+                            {exportando ? 'Exportando...' : 'Exportar'}
+                        </Button>
 
-                    <Button
-                        onClick={() => setModalRegistrarOpen(true)}
-                        variant="contained"
-                        startIcon={<AddOutlinedIcon sx={{ fontSize: 20 }} />}
-                        sx={{
-                            backgroundColor: theme.palette.primary.main,
-                            borderRadius: 2,
-                            textTransform: 'none',
-                            fontSize: '0.875rem',
-                            fontWeight: 600,
-                            boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
-                            '&:hover': {
-                                backgroundColor: theme.palette.primary.dark,
-                                boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}`,
-                            },
-                        }}
-                    >
-                        Nuevo
-                    </Button>
+                        <Button
+                            onClick={() => setModalRegistrarOpen(true)}
+                            variant="contained"
+                            startIcon={<AddOutlinedIcon sx={{ fontSize: 20 }} />}
+                            sx={{
+                                backgroundColor: theme.palette.primary.main,
+                                borderRadius: 2,
+                                textTransform: 'none',
+                                fontSize: '0.875rem',
+                                fontWeight: 600,
+                                boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
+                                '&:hover': {
+                                    backgroundColor: theme.palette.primary.dark,
+                                    boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}`,
+                                },
+                            }}
+                        >
+                            Nuevo
+                        </Button>
+                    </Box>
                 </Box>
             </Box>
 

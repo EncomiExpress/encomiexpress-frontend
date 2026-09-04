@@ -3,11 +3,10 @@ import CloseIcon from '@mui/icons-material/Close'
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
 import ScaleOutlinedIcon from '@mui/icons-material/ScaleOutlined'
 import { FormField, FormSelect } from '../../../../shared/components/FormularioEstandarizado.jsx'
-import { formatearMoneda } from '../../../../shared/utils/formatters.js'
 import { validarCampoPaquete, MAX_PAQUETES } from '../../validations/validacion.js'
 import { calcularPesoEfectivo, calcularCostoPeso } from '../../validations/ventaValidation.js'
 
-/** Paso 2 del wizard: uno o varios paquetes (contenido, dimensiones, peso, tipo de carga, valor declarado). */
+/** Paso 2 del wizard: uno o varios paquetes (contenido, dimensiones, peso, tipo de carga). */
 export default function PasoPaquetes({
     theme, form, errores, handlePaqueteChange, setErrorPaquete, handleAgregarPaquete, handleQuitarPaquete,
     tarifaPorKgHierro, tarifaPorKgNormal,
@@ -59,19 +58,13 @@ export default function PasoPaquetes({
                                 placeholder="Ej: 20" helperText={errPaquete.ancho || 'Ej: 20'}
                                 inputProps={{ maxLength: 4 }} />
                         </Box>
-                        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2.5 }}>
+                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                             <FormField label="Profundidad (cm)" name="profundidad" value={paquete.profundidad}
                                 onChange={(e) => handlePaqueteChange(index, 'profundidad', e.target.value)}
                                 onBlur={() => setErrorPaquete(index, 'profundidad', validarCampoPaquete('profundidad', paquete))}
                                 required error={errPaquete.profundidad}
                                 placeholder="Ej: 15" helperText={errPaquete.profundidad || 'Ej: 15'}
                                 inputProps={{ maxLength: 4 }} />
-                            <FormField label="Valor declarado ($)" name="valorDeclarado" value={formatearMoneda(paquete.valorDeclarado)}
-                                onChange={(e) => handlePaqueteChange(index, 'valorDeclarado', e.target.value)}
-                                onBlur={() => setErrorPaquete(index, 'valorDeclarado', validarCampoPaquete('valorDeclarado', paquete))}
-                                helperText={errPaquete.valorDeclarado || 'Opcional'}
-                                placeholder="Ej: 50.000" error={errPaquete.valorDeclarado}
-                                inputProps={{ maxLength: 11 }} />
                             <FormSelect label="Tipo de carga" name="tipoCarga" value={paquete.tipoCarga}
                                 onChange={(e) => handlePaqueteChange(index, 'tipoCarga', e.target.value)}
                                 onBlur={() => setErrorPaquete(index, 'tipoCarga', validarCampoPaquete('tipoCarga', paquete))}

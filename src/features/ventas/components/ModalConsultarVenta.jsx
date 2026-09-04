@@ -135,7 +135,6 @@ const ModalConsultarVenta = ({ venta, onClose }) => {
                             <CampoFila label="Tipo de carga" value={paquete?.tipoCarga === 'hierro' ? 'Hierro' : paquete?.tipoCarga === 'normal' ? 'Paquete normal' : null} />
                             <CampoFila label="Peso" value={paquete?.peso != null ? `${paquete.peso} kg` : null} />
                             <CampoFila label="Dimensiones" value={dim} />
-                            <CampoFila label="Valor declarado" value={paquete?.valorDeclarado != null ? `$${Number(paquete.valorDeclarado).toLocaleString('es-CO')}` : null} />
 
                             <Box sx={{ borderTop: `1px solid ${theme.palette.divider}`, mt: 1, pt: 1.5 }}>
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>

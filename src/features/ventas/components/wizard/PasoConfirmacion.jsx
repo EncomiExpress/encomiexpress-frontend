@@ -104,8 +104,6 @@ export default function PasoConfirmacion({
                         const pOriginal = formOriginal?.paquetes?.[i]
                         const dimensionesActual = p.alto ? `${p.alto}×${p.ancho}×${p.profundidad} cm` : null
                         const dimensionesOriginal = pOriginal?.alto ? `${pOriginal.alto}×${pOriginal.ancho}×${pOriginal.profundidad} cm` : undefined
-                        const valorDeclaradoActual = p.valorDeclarado ? `$${parseFloat(p.valorDeclarado).toLocaleString()}` : null
-                        const valorDeclaradoOriginal = pOriginal ? (pOriginal.valorDeclarado ? `$${parseFloat(pOriginal.valorDeclarado).toLocaleString()}` : null) : undefined
                         const rutaSelActual = rutasProgramadas.find(r => r.idRuta === parseInt(form.idRuta))
                         const placaActual = (rutaSelActual?.paresVehiculoConductor || []).find(par => par.idRutaVehiculoConductor === parseInt(p.idRutaVehiculoConductor))?.vehiculo?.placa || '—'
                         const placaOriginal = pOriginal ? (ventaOriginal?.paquetes?.[i]?.asignacion?.vehiculo?.placa || '—') : undefined
@@ -121,7 +119,6 @@ export default function PasoConfirmacion({
                                 <ConfirmRow label="Tipo de carga" value={p.tipoCarga === 'hierro' ? 'Hierro' : 'Paquete normal'} previousValue={pOriginal ? (pOriginal.tipoCarga === 'hierro' ? 'Hierro' : 'Paquete normal') : undefined} />
                                 <ConfirmRow label="Peso" value={p.peso ? `${p.peso} kg` : null} previousValue={pOriginal ? (pOriginal.peso ? `${pOriginal.peso} kg` : null) : undefined} />
                                 <ConfirmRow label="Dimensiones" value={dimensionesActual} previousValue={dimensionesOriginal} />
-                                <ConfirmRow label="Valor declarado" value={valorDeclaradoActual} previousValue={valorDeclaradoOriginal} />
                                 <ConfirmRow label="Vehículo" value={placaActual} previousValue={placaOriginal} />
                                 {i < form.paquetes.length - 1 && <Divider sx={{ my: 1 }} />}
                             </Box>

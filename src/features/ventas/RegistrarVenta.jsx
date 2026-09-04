@@ -97,7 +97,6 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                     profundidad: parseFloat(p.profundidad),
                     // null y no 0 -- el validador del backend acepta el campo vacío
                     // (optional nullable), pero 0 sí choca contra isFloat({min:1}).
-                    valorDeclarado: p.valorDeclarado ? parseFloat(p.valorDeclarado) : null,
                     tipoCarga: p.tipoCarga,
                     idRutaVehiculoConductor: parseInt(p.idRutaVehiculoConductor),
                 })),

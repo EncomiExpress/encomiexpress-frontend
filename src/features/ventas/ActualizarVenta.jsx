@@ -105,7 +105,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                 idPaquete: p.idPaquete,
                 descripcionContenido: p.descripcionContenido || '',
                 peso: limpiarNumero(p.peso), alto: limpiarNumero(p.alto), ancho: limpiarNumero(p.ancho),
-                profundidad: limpiarNumero(p.profundidad), valorDeclarado: limpiarNumero(p.valorDeclarado),
+                profundidad: limpiarNumero(p.profundidad),
                 tipoCarga: p.tipoCarga || 'normal',
                 idRutaVehiculoConductor: p.idRutaVehiculoConductor || '',
             }))
@@ -201,7 +201,6 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                     alto: p.alto ? parseFloat(p.alto) : null,
                     ancho: p.ancho ? parseFloat(p.ancho) : null,
                     profundidad: p.profundidad ? parseFloat(p.profundidad) : null,
-                    valorDeclarado: p.valorDeclarado ? parseFloat(p.valorDeclarado) : null,
                     tipoCarga: p.tipoCarga,
                     idRutaVehiculoConductor: parseInt(p.idRutaVehiculoConductor),
                 })),

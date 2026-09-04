@@ -13,7 +13,6 @@ export const drawDetallesPaquete = (doc, y, venta, pkg) => {
   const gridColsPaquete = [
     ['Peso', pkg?.peso != null ? `${pkg.peso} kg` : '—'],
     ['Dimensiones', dim],
-    ['Valor declarado', formatCurrency(pkg?.valorDeclarado)],
   ]
   const cellWPaquete = CONTENT_W / gridColsPaquete.length
   gridColsPaquete.forEach(([label, value], j) => drawGridCell(doc, MARGIN + cellWPaquete * j, y, cellWPaquete, 14, label, value))

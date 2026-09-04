@@ -213,9 +213,8 @@ export const useVentaWizardForm = ({
 
     const handlePaqueteChange = (index, campo, value) => {
         if (campo in PAQUETE_NUMERIC_LIMITS) {
-            // valorDeclarado es dinero (sin decimales, puntos de miles automáticos);
-            // peso/alto/ancho/profundidad son medidas físicas y sí aceptan decimales.
-            value = campo === 'valorDeclarado' ? limpiarMonedaInput(value) : limpiarDecimalInput(value)
+            // peso/alto/ancho/profundidad son medidas físicas y aceptan decimales.
+            value = limpiarDecimalInput(value)
             if (value !== '') {
                 const num = parseFloat(value)
                 if (!isNaN(num) && (num > PAQUETE_NUMERIC_LIMITS[campo] || num < 0)) return

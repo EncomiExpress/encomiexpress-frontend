@@ -5,8 +5,8 @@ import { EMAIL_REGEX } from '../../../shared/validations/emailValidation.js'
 export const steps = ['Participantes', 'Paquete', 'Envío', 'Pago', 'Confirmación']
 
 export const MAX_PAQUETES = 10
-export const PAQUETE_VACIO = { descripcionContenido: '', peso: '', alto: '', ancho: '', profundidad: '', valorDeclarado: '', tipoCarga: 'normal', idRutaVehiculoConductor: '' }
-export const CAMPOS_PAQUETE = ['descripcionContenido', 'peso', 'alto', 'ancho', 'profundidad', 'valorDeclarado', 'tipoCarga']
+export const PAQUETE_VACIO = { descripcionContenido: '', peso: '', alto: '', ancho: '', profundidad: '', tipoCarga: 'normal', idRutaVehiculoConductor: '' }
+export const CAMPOS_PAQUETE = ['descripcionContenido', 'peso', 'alto', 'ancho', 'profundidad', 'tipoCarga']
 const SOLO_LETRAS_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/
 const NOMBRE_DESTINATARIO_MAX_LENGTH = 50
 const CORREO_DESTINATARIO_MAX_LENGTH = 150
@@ -109,13 +109,6 @@ export const validarCampoPaquete = (campo, paquete) => {
             if (n > 9999) return 'Máximo 9999 cm'
             return ''
         }
-        case 'valorDeclarado':
-            if (paquete.valorDeclarado) {
-                const n = parseFloat(paquete.valorDeclarado)
-                if (isNaN(n) || n < 1) return 'Debe ser de al menos $1'
-                if (n > 999999999) return 'Valor demasiado alto'
-            }
-            return ''
         case 'tipoCarga':
             return ['hierro', 'normal'].includes(paquete.tipoCarga) ? '' : 'Selecciona el tipo de carga'
         case 'idRutaVehiculoConductor':
