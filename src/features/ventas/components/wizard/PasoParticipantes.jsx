@@ -1,15 +1,19 @@
-import { Box, Typography, Paper, Divider, Avatar, TextField, Autocomplete } from '@mui/material'
+import { Box, Typography, Paper, Divider, Avatar, TextField, MenuItem, InputAdornment, Autocomplete } from '@mui/material'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined'
 import MailOutlinedIcon from '@mui/icons-material/MailOutlined'
+import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined'
 import { FormField } from '../../../../shared/components/FormularioEstandarizado.jsx'
 import NacionSVG from '../../../../shared/components/NacionSVG.jsx'
 import { formFieldStyles } from '../../../../shared/utils/formStyles.js'
 import { normalizarTexto } from '../../../../shared/utils/duplicados.js'
-import { validarCampo, OPCION_CLIENTE_NUEVO } from '../../validations/validacion.js'
+import {
+    validarCampo, OPCION_CLIENTE_NUEVO,
+    getMaxLengthDocDestinatario, docHelperTextDestinatario, validarDocumentoDestinatarioCompleto,
+} from '../../validations/validacion.js'
 
 /**
  * Paso 1 del wizard: elegir el cliente remitente y capturar los datos del destinatario.
@@ -152,6 +156,12 @@ export default function PasoParticipantes({
                                 <Box component="span" sx={{ fontWeight: 600, color: theme.palette.text.secondary, mr: 0.5 }}>Correo:</Box>
                                 {clienteSeleccionado.email}
                             </Typography>
+                            {clienteSeleccionado.destino && (
+                                <Typography variant="body2">
+                                    <Box component="span" sx={{ fontWeight: 600, color: theme.palette.text.secondary, mr: 0.5 }}>Municipio:</Box>
+                                    {clienteSeleccionado.destino.ciudad}, {clienteSeleccionado.destino.departamento}
+                                </Typography>
+                            )}
                             {clienteSeleccionado.direccion && (
                                 <Box sx={{ gridColumn: '1 / -1' }}>
                                     <Typography variant="body2">
@@ -173,6 +183,28 @@ export default function PasoParticipantes({
                     Destinatario
                 </Typography>
                 <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
+                    <TextField fullWidth select label="Tipo de documento *" name="tipoIdentificacionDestinatario"
+                        value={form.tipoIdentificacionDestinatario} onChange={handleChange}
+                        onBlur={() => setErrores(prev => ({ ...prev, tipoIdentificacionDestinatario: validarCampo('tipoIdentificacionDestinatario', form, ventaOriginal) }))}
+                        error={!!errores.tipoIdentificacionDestinatario} helperText={errores.tipoIdentificacionDestinatario}
+                        slotProps={{
+                            input: { startAdornment: <InputAdornment position="start"><BadgeOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment> },
+                            select: { IconComponent: KeyboardArrowDownOutlinedIcon },
+                        }}
+                        sx={formFieldStyles}>
+                        <MenuItem value="CC">Cédula de Ciudadanía (CC)</MenuItem>
+                        <MenuItem value="NIT">NIT (Persona Jurídica)</MenuItem>
+                        <MenuItem value="TI">Tarjeta de Identidad (TI)</MenuItem>
+                        <MenuItem value="CE">Cédula de Extranjería (CE)</MenuItem>
+                        <MenuItem value="PAS">Pasaporte</MenuItem>
+                        <MenuItem value="RC">Registro Civil (RC)</MenuItem>
+                    </TextField>
+                    <FormField label="Número de documento" name="numeroIdentificacionDestinatario" value={form.numeroIdentificacionDestinatario}
+                        onChange={handleChange}
+                        onBlur={() => setErrores(prev => ({ ...prev, numeroIdentificacionDestinatario: validarDocumentoDestinatarioCompleto(form.tipoIdentificacionDestinatario, form.numeroIdentificacionDestinatario) }))}
+                        required error={errores.numeroIdentificacionDestinatario}
+                        helperText={errores.numeroIdentificacionDestinatario || docHelperTextDestinatario(form.tipoIdentificacionDestinatario)}
+                        icon={BadgeOutlinedIcon} inputProps={{ maxLength: getMaxLengthDocDestinatario(form.tipoIdentificacionDestinatario) }} />
                     <FormField label="Nombre completo" name="nombreDestinatario" value={form.nombreDestinatario}
                         onChange={handleChange}
                         onBlur={() => setErrores(prev => ({ ...prev, nombreDestinatario: validarCampo('nombreDestinatario', form, ventaOriginal) }))}

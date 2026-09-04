@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useTheme, alpha } from '@mui/material/styles'
 import {
-    Box, Typography, Chip, Button, Dialog, IconButton, Menu, MenuItem
+    Box, Typography, Chip, Button, Dialog, IconButton, Menu, MenuItem, Autocomplete, TextField, Alert
 } from '@mui/material'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined'
@@ -13,8 +13,13 @@ import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDown
 import { getVentaEstadoDot, getPaqueteEstadoDot } from '../../../shared/utils/estadoColors.js'
 import { descargarGuiaPaquete } from '../../../shared/utils/exportGuia/exportGuiaPdf.js'
 import { formatFecha } from '../../../shared/utils/formatters.js'
+import { getErrorMessage } from '../../../shared/utils/errorMessage.js'
+import { useConductor } from '../../conductores/context/ConductorContext.jsx'
+import { useToast } from '../../../shared/contexts/ToastContext.jsx'
+import { asignarRepartidorLocal } from '../services/ventaService.js'
 import CampoFila from '../../../shared/components/CampoFila.jsx'
 import FichaCard from '../../../shared/components/FichaCard.jsx'
+import { formFieldStyles } from '../../../shared/utils/formStyles.js'
 
 const EstadoDot = ({ info, label }) => {
     const theme = useTheme()
@@ -31,16 +36,55 @@ const EstadoDot = ({ info, label }) => {
 
 const ModalConsultarVenta = ({ venta, onClose }) => {
     const theme = useTheme()
+    const { showToast } = useToast()
+    const { getConductoresHabilitados } = useConductor()
     const [paqueteIndex, setPaqueteIndex] = useState(0)
     const [menuAnchor, setMenuAnchor] = useState(null)
     const [imagenAmpliada, setImagenAmpliada] = useState(null)
+    // Overrides locales por idPaquete tras asignar un repartidor local — el modal
+    // recibe `venta` ya cargada del listado, sin forma de refrescarla desde acá, así
+    // que la asignación se refleja de una vez en pantalla sin esperar a que se
+    // vuelva a abrir el modal.
+    const [overrides, setOverrides] = useState({})
+    const [repartidorSeleccionado, setRepartidorSeleccionado] = useState(null)
+    const [asignando, setAsignando] = useState(false)
+    const [errorAsignacion, setErrorAsignacion] = useState(null)
+
+    useEffect(() => {
+        setOverrides({})
+        setRepartidorSeleccionado(null)
+        setErrorAsignacion(null)
+    }, [venta?.idEncomiendaVenta])
 
     if (!venta) return null
 
     const estadoInfo = getVentaEstadoDot(venta.estado)
     const esPagado = venta.estadoPago === 'Pagado'
-    const paquetes = venta.paquetes?.length > 0 ? venta.paquetes : [venta.paquete].filter(Boolean)
+    const paquetesBase = venta.paquetes?.length > 0 ? venta.paquetes : [venta.paquete].filter(Boolean)
+    const paquetes = paquetesBase.map(p => ({ ...p, ...(overrides[p.idPaquete] || {}) }))
     const paquete = paquetes[paqueteIndex] || paquetes[0] || null
+
+    const handleAsignarRepartidor = async () => {
+        if (!repartidorSeleccionado || !paquete) return
+        setAsignando(true)
+        setErrorAsignacion(null)
+        try {
+            await asignarRepartidorLocal(paquete.idPaquete, repartidorSeleccionado.idConductor)
+            setOverrides(prev => ({
+                ...prev,
+                [paquete.idPaquete]: {
+                    idConductorEntrega: repartidorSeleccionado.idConductor,
+                    conductorEntrega: { idConductor: repartidorSeleccionado.idConductor, usuario: { nombre: repartidorSeleccionado.nombre, apellido: repartidorSeleccionado.apellido } },
+                },
+            }))
+            setRepartidorSeleccionado(null)
+            showToast('Repartidor local asignado', 'success')
+        } catch (err) {
+            setErrorAsignacion(getErrorMessage(err, 'No se pudo asignar el repartidor local'))
+        } finally {
+            setAsignando(false)
+        }
+    }
     const dim = paquete && [paquete.alto, paquete.ancho, paquete.profundidad].every(v => v != null)
         ? `${paquete.alto}×${paquete.ancho}×${paquete.profundidad} cm`
         : '—'
@@ -121,6 +165,9 @@ const ModalConsultarVenta = ({ venta, onClose }) => {
                                     <Typography fontWeight={700} fontSize="0.95rem">Destinatario</Typography>
                                 </Box>
                                 <CampoFila label="Nombre" value={venta.destinatario?.nombreDestinatario} />
+                                <CampoFila label="Documento" value={venta.destinatario?.tipoIdentificacionDestinatario && venta.destinatario?.numeroIdentificacionDestinatario
+                                    ? `${venta.destinatario.tipoIdentificacionDestinatario} ${venta.destinatario.numeroIdentificacionDestinatario}`
+                                    : null} />
                                 <CampoFila label="Teléfono" value={venta.destinatario?.telefonoDestinatario} />
                                 <CampoFila label="Correo" value={venta.destinatario?.correoDestinatario} />
                                 <CampoFila label="Destino" value={venta.destinatario?.destino
@@ -154,6 +201,46 @@ const ModalConsultarVenta = ({ venta, onClose }) => {
                                         <Typography variant="body2" fontWeight={500} color={theme.palette.text.medium}>—</Typography>
                                     )}
                                 </Box>
+                                {paquete?.estado === 'En sede de destino' && (
+                                    <Box sx={{ mt: 1 }}>
+                                        {paquete?.conductorEntrega ? (
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
+                                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Repartidor local</Typography>
+                                                <Typography variant="body2" fontWeight={500}>
+                                                    {paquete.conductorEntrega.usuario ? `${paquete.conductorEntrega.usuario.nombre} ${paquete.conductorEntrega.usuario.apellido}` : '—'}
+                                                </Typography>
+                                            </Box>
+                                        ) : (
+                                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>
+                                                    Asignar repartidor local
+                                                </Typography>
+                                                {errorAsignacion && (
+                                                    <Alert severity="error" sx={{ borderRadius: 2 }} onClose={() => setErrorAsignacion(null)}>{errorAsignacion}</Alert>
+                                                )}
+                                                <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
+                                                    <Autocomplete
+                                                        sx={{ flex: 1 }} size="small"
+                                                        options={getConductoresHabilitados()}
+                                                        getOptionLabel={(c) => `${c.nombre} ${c.apellido}`}
+                                                        isOptionEqualToValue={(opt, val) => opt.idConductor === val.idConductor}
+                                                        value={repartidorSeleccionado}
+                                                        onChange={(_, val) => setRepartidorSeleccionado(val)}
+                                                        renderInput={(params) => (
+                                                            <TextField {...params} label="Conductor" placeholder="Busca por nombre"
+                                                                slotProps={{ inputLabel: { shrink: true } }} sx={formFieldStyles} />
+                                                        )}
+                                                    />
+                                                    <Button onClick={handleAsignarRepartidor} disabled={!repartidorSeleccionado || asignando}
+                                                        variant="contained" size="small"
+                                                        sx={{ backgroundColor: theme.palette.primary.main, borderRadius: 2, textTransform: 'none', mt: 0.25 }}>
+                                                        {asignando ? 'Asignando...' : 'Asignar'}
+                                                    </Button>
+                                                </Box>
+                                            </Box>
+                                        )}
+                                    </Box>
+                                )}
                             </Box>
                         </FichaCard>
                     </Box>
@@ -186,7 +273,7 @@ const ModalConsultarVenta = ({ venta, onClose }) => {
                         <CampoFila label="Valor servicio" value={venta.valorServicio != null ? `$${Number(venta.valorServicio).toLocaleString('es-CO')}` : null} />
                         <CampoFila label="Total" value={venta.total != null ? `$${Number(venta.total).toLocaleString('es-CO')}` : null} />
                         <CampoFila label="Fecha registro" value={formatFecha(venta.fechaRegistro)} />
-                        <CampoFila label="Fecha est. entrega" value={formatFecha(venta.fechaEstimadaEntrega)} />
+                        <CampoFila label="Fecha est. entrega en sede" value={formatFecha(venta.fechaEstimadaEntrega)} />
                         <CampoFila label="Observaciones" value={venta.observaciones} />
                     </FichaCard>
                 </Box>

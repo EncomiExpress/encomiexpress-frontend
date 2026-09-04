@@ -2,7 +2,7 @@ import { maxLengthDocumento, docHelperText as docHelperTextBase, validarNumeroDo
 import { esSoloRelleno } from '../../../shared/utils/formatters.js'
 import { EMAIL_REGEX } from '../../../shared/validations/emailValidation.js'
 
-export const steps = ['Datos Personales', 'Contacto', 'Confirmación']
+export const steps = ['Datos Personales', 'Contacto y Ubicación', 'Confirmación']
 
 const EMAIL_MAX_LENGTH = 100
 export const validarEmail = (email) => {
@@ -46,6 +46,8 @@ export const validarCampo = (name, form) => {
             if (esSoloRelleno(form.direccion)) return 'La dirección no puede contener solo espacios o guiones'
             if (form.direccion.length > DIRECCION_MAX_LENGTH) return `La dirección no puede superar los ${DIRECCION_MAX_LENGTH} caracteres`
             return ''
+        case 'idDestino':
+            return form.idDestino ? '' : 'Selecciona el municipio del cliente'
         default:
             return ''
     }
@@ -90,6 +92,7 @@ export const validarPaso = (step, form, { avisoDocDuplicado, avisoNombreDuplicad
         e.telefono = validarCampo('telefono', form)
         e.email = validarCampo('email', form)
         e.direccion = validarCampo('direccion', form)
+        e.idDestino = validarCampo('idDestino', form)
     }
 
     Object.keys(e).forEach(k => { if (!e[k]) delete e[k] })

@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Box, Typography, Paper, Divider, Avatar, TextField, Autocomplete, MenuItem, Alert } from '@mui/material'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import RouteOutlinedIcon from '@mui/icons-material/RouteOutlined'
@@ -10,7 +11,10 @@ import PlacaDisplay from '../../../../shared/components/PlacaDisplay.jsx'
 import { validarCampo, validarCampoPaquete } from '../../validations/validacion.js'
 
 /**
- * Paso 3 del wizard: elegir la ruta, la fecha de entrega y asignar cada paquete a un
+ * Paso 3 del wizard: elegir la ruta, la fecha estimada de entrega EN SEDE (cuándo
+ * llega el paquete al punto/sede de su municipio — no la entrega final puerta a
+ * puerta, que pasa después: en sede se hace inventario y se asigna un repartidor
+ * local, ver LOGICA.md "Paquetes — entrega en sede y reasignación local") y asignar cada paquete a un
  * vehículo del convoy. `getPesoOriginalPorPar`, `valorServicioManualRef`,
  * `setSinCambios` y `ventaOriginal` son opcionales — solo los pasa el modo edición.
  * Cuando no hay `getPesoOriginalPorPar`, no se excluye ningún peso previo del cálculo
@@ -21,9 +25,62 @@ export default function PasoEnvio({
     rutasProgramadas, rutaInput, setRutaInput, handleChange,
     calcularValorServicio, handlePaqueteChange, setErrorPaquete,
     ventaOriginal, valorServicioManualRef, getPesoOriginalPorPar,
+    destinos,
 }) {
     const rutaElegida = rutasProgramadas.find(r => r.idRuta === parseInt(form.idRuta))
     const paresElegida = rutaElegida?.paresVehiculoConductor || []
+    // El destino de la venta (elegido en el paso "Participantes", uno por venta —
+    // no por paquete, ver LOGICA.md "Aprovechar el destino que ya existe por
+    // venta") debería caer en algún punto del corredor de la ruta elegida: su
+    // destino final, o alguna de sus paradas intermedias (Fase 1). Si no calza con
+    // ninguno, es un aviso — no se bloquea, porque la mayoría de rutas todavía no
+    // tienen paradas cargadas y el destino final por sí solo sigue siendo válido.
+    const idDestinoVenta = parseInt(form.idDestinoDestinatario) || null
+    const paradasRuta = rutaElegida?.paradas || []
+    const destinoCalzaConRuta = !rutaElegida || !idDestinoVenta
+        || idDestinoVenta === rutaElegida.idDestino
+        || paradasRuta.some(p => p.idDestino === idDestinoVenta)
+    const nombreDestinoVenta = destinos?.find(d => d.idDestino === idDestinoVenta)
+
+    // La ventana de fechaEstimadaEntrega (llegada al punto/sede, no la entrega
+    // final al destinatario) depende de DÓNDE dentro del corredor está esa sede,
+    // no siempre del destino final de toda la ruta (ver LOGICA.md, "Ventas —
+    // fecha estimada de entrega en sede por parada"):
+    //   - Destino final (caso de siempre): ventana entre salida+1 y llegada-1.
+    //   - Parada intermedia CON fecha estimada de paso cargada (Rutas, Fase 1):
+    //     un solo día posible, el de esa parada — se autocompleta.
+    //   - Parada intermedia SIN esa fecha cargada todavía: no se puede prometer
+    //     ninguna fecha — el campo queda deshabilitado en vez de mostrar (o
+    //     dejar guardar) una que podría no corresponder.
+    const esDestinoFinal = !rutaElegida || !idDestinoVenta || idDestinoVenta === rutaElegida.idDestino
+    const paradaDestinatario = !esDestinoFinal ? paradasRuta.find(p => p.idDestino === idDestinoVenta) : null
+    const entregaFechaFija = paradaDestinatario?.fechaLlegadaEstimada || null
+    const entregaSinFechaDisponible = !!paradaDestinatario && !entregaFechaFija
+    const entregaMin = entregaFechaFija || (form.fechaSalidaRuta ? sumarDias(form.fechaSalidaRuta, 1) : undefined)
+    const entregaMax = entregaFechaFija || (form.fechaLlegadaEstimadaRuta ? sumarDias(form.fechaLlegadaEstimadaRuta, -1) : undefined)
+    const entregaHelper = !rutaElegida
+        ? 'Selecciona primero una ruta'
+        : entregaSinFechaDisponible
+            ? 'Esta venta va a una parada intermedia sin fecha estimada de paso cargada todavía — pídele a quien gestiona Rutas que la agregue antes de prometer una fecha'
+            : entregaFechaFija
+                ? `Esta venta va a una parada intermedia — la entrega en sede queda fijada al ${formatFecha(entregaFechaFija)}, el día en que la ruta pasa por ahí`
+                : (form.fechaSalidaRuta ? `Desde el ${formatFecha(entregaMin)}${entregaMax ? ` hasta el ${formatFecha(entregaMax)}` : ''}` : 'Selecciona primero una ruta')
+
+    // Autocompleta/limpia fechaEstimadaEntrega cuando cambia a cuál parada le
+    // corresponde el destinatario (por cambio de ruta o de destino) — mismo
+    // patrón de auto-cálculo que ya usa este wizard para valorServicio.
+    useEffect(() => {
+        if (form.entregaSinFecha !== entregaSinFechaDisponible) {
+            setForm(prev => ({ ...prev, entregaSinFecha: entregaSinFechaDisponible }))
+        }
+        if (entregaFechaFija && form.fechaEstimadaEntrega !== entregaFechaFija) {
+            setForm(prev => ({ ...prev, fechaEstimadaEntrega: entregaFechaFija }))
+            setErrores(prev => ({ ...prev, fechaEstimadaEntrega: '' }))
+        } else if (entregaSinFechaDisponible && form.fechaEstimadaEntrega) {
+            setForm(prev => ({ ...prev, fechaEstimadaEntrega: '' }))
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [entregaFechaFija, entregaSinFechaDisponible])
     const pesoOriginalPorPar = getPesoOriginalPorPar ? getPesoOriginalPorPar() : {}
     // Un Alert por cada vehículo del convoy que ya tiene paquetes asignados —
     // la capacidad ahora es por vehículo, no por ruta completa. En modo edición se
@@ -175,17 +232,13 @@ export default function PasoEnvio({
                             sx={formFieldStyles} />
                     )}
                 />
-                <TextField fullWidth label="Fecha estimada de entrega" name="fechaEstimadaEntrega"
+                <TextField fullWidth label="Fecha estimada de entrega en sede" name="fechaEstimadaEntrega"
                     type="date" value={form.fechaEstimadaEntrega} onChange={handleChange}
                     onBlur={() => setErrores(prev => ({ ...prev, fechaEstimadaEntrega: validarCampo('fechaEstimadaEntrega', form, ventaOriginal) }))} required
                     error={!!errores.fechaEstimadaEntrega}
-                    helperText={errores.fechaEstimadaEntrega || (form.fechaSalidaRuta
-                        ? `Desde el ${formatFecha(sumarDias(form.fechaSalidaRuta, 1))}${form.fechaLlegadaEstimadaRuta ? ` hasta el ${formatFecha(sumarDias(form.fechaLlegadaEstimadaRuta, -1))}` : ''}`
-                        : 'Selecciona primero una ruta')}
-                    slotProps={{ inputLabel: { shrink: true }, htmlInput: {
-                        min: form.fechaSalidaRuta ? sumarDias(form.fechaSalidaRuta, 1) : undefined,
-                        max: form.fechaLlegadaEstimadaRuta ? sumarDias(form.fechaLlegadaEstimadaRuta, -1) : undefined,
-                    } }}
+                    disabled={entregaSinFechaDisponible}
+                    helperText={errores.fechaEstimadaEntrega || entregaHelper}
+                    slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: entregaMin, max: entregaMax } }}
                     sx={formFieldStyles} />
             </Box>
             {rutaElegida && (
@@ -209,6 +262,12 @@ export default function PasoEnvio({
                         </Typography>
                     </Box>
                 </Paper>
+            )}
+            {rutaElegida && !destinoCalzaConRuta && (
+                <Alert severity="warning" sx={{ borderRadius: 2 }}>
+                    Esta venta va para <strong>{nombreDestinoVenta ? `${nombreDestinoVenta.ciudad}, ${nombreDestinoVenta.departamento}` : 'un municipio'}</strong>, pero
+                    esa ruta no pasa por ahí (ni es su destino final, ni una de sus paradas). Revisa que sea la ruta correcta, o agrégale esa parada desde Rutas.
+                </Alert>
             )}
             {rutaElegida && (
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>

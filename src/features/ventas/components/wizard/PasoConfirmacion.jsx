@@ -34,6 +34,8 @@ export default function PasoConfirmacion({
     const sonDistintos = (a, b) => String(a ?? '') !== String(b ?? '')
     const camposComparados = formOriginal ? [
         [form.idCliente, formOriginal.idCliente],
+        [form.tipoIdentificacionDestinatario, formOriginal.tipoIdentificacionDestinatario],
+        [form.numeroIdentificacionDestinatario, formOriginal.numeroIdentificacionDestinatario],
         [form.nombreDestinatario, formOriginal.nombreDestinatario],
         [form.telefonoDestinatario, formOriginal.telefonoDestinatario],
         [form.correoDestinatario, formOriginal.correoDestinatario],
@@ -76,6 +78,8 @@ export default function PasoConfirmacion({
                         <ConfirmRow label="Nombre" value={`${clienteSeleccionado.nombre} ${clienteSeleccionado.apellido || ''}`.trim()} previousValue={clienteOriginal ? `${clienteOriginal.nombre} ${clienteOriginal.apellido || ''}`.trim() : undefined} />
                         <ConfirmRow label="Identificación" value={clienteSeleccionado.numeroIdentificacion} previousValue={clienteOriginal?.numeroIdentificacion} />
                         <ConfirmRow label="Teléfono" value={clienteSeleccionado.telefono} previousValue={clienteOriginal?.telefono} />
+                        <ConfirmRow label="Municipio" value={clienteSeleccionado.destino ? `${clienteSeleccionado.destino.ciudad}, ${clienteSeleccionado.destino.departamento}` : null}
+                            previousValue={clienteOriginal ? (clienteOriginal.destino ? `${clienteOriginal.destino.ciudad}, ${clienteOriginal.destino.departamento}` : null) : undefined} />
                     </>}
                 </Paper>
                 <Paper elevation={0} sx={cardSx}>
@@ -84,6 +88,8 @@ export default function PasoConfirmacion({
                         <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Destinatario</Typography>
                     </Box>
                     <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la información del destinatario</Typography>
+                    <ConfirmRow label="Documento" value={form.tipoIdentificacionDestinatario && form.numeroIdentificacionDestinatario ? `${form.tipoIdentificacionDestinatario} ${form.numeroIdentificacionDestinatario}` : null}
+                        previousValue={formOriginal ? (formOriginal.tipoIdentificacionDestinatario && formOriginal.numeroIdentificacionDestinatario ? `${formOriginal.tipoIdentificacionDestinatario} ${formOriginal.numeroIdentificacionDestinatario}` : null) : undefined} />
                     <ConfirmRow label="Nombre" value={form.nombreDestinatario} previousValue={formOriginal?.nombreDestinatario} />
                     <ConfirmRow label="Teléfono" value={form.telefonoDestinatario} previousValue={formOriginal?.telefonoDestinatario} />
                     <ConfirmRow label="Correo" value={form.correoDestinatario || null} previousValue={formOriginal ? (formOriginal.correoDestinatario || null) : undefined} />
@@ -132,7 +138,7 @@ export default function PasoConfirmacion({
                     </Box>
                     <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Ruta, fechas y valores</Typography>
                     <ConfirmRow label="Ruta" value={form.destino} previousValue={formOriginal?.destino} />
-                    <ConfirmRow label="Fecha entrega" value={formatFecha(form.fechaEstimadaEntrega)} previousValue={formOriginal?.fechaEstimadaEntrega ? formatFecha(formOriginal.fechaEstimadaEntrega) : undefined} />
+                    <ConfirmRow label="Fecha entrega en sede" value={formatFecha(form.fechaEstimadaEntrega)} previousValue={formOriginal?.fechaEstimadaEntrega ? formatFecha(formOriginal.fechaEstimadaEntrega) : undefined} />
                     <ConfirmRow label="Observaciones" value={form.observaciones} previousValue={formOriginal?.observaciones} />
                     <ConfirmRow label="Método de pago" value={form.metodoPago} previousValue={formOriginal?.metodoPago} />
                     <ConfirmRow label="Valor del servicio" value={valorServicioActual} previousValue={valorServicioOriginal} />

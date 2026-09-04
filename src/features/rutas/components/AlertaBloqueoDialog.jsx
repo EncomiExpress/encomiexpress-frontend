@@ -30,7 +30,7 @@ const AlertaBloqueoDialog = ({ theme, alertaBloqueo, onClose }) => (
                     {alertaBloqueo.tipo === 'ventas' ? (
                         <Box sx={{ width: '100%', mt: 0.5 }}>
                             <Typography fontSize="0.95rem" color={theme.palette.text.secondary} sx={{ mb: 1.5, textAlign: 'center' }}>
-                                {alertaBloqueo.entidades.length === 1 ? 'Esta venta no tiene' : 'Estas ventas no tienen'} fecha estimada de entrega asignada. Asígnales una fecha antes de continuar.
+                                {alertaBloqueo.entidades.length === 1 ? 'Esta venta no tiene' : 'Estas ventas no tienen'} fecha estimada de entrega en sede asignada. Asígnales una fecha antes de continuar.
                             </Typography>
                             <RegistrosLinkTable
                                 theme={theme}

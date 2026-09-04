@@ -66,3 +66,21 @@ export const getDestinoLabel = (id, destinos, rutaOriginal = null) => {
     if (rutaOriginal?.destino && parseInt(id) === rutaOriginal.idDestino) return `${rutaOriginal.destino.departamento} - ${rutaOriginal.destino.ciudad}`
     return '—'
 }
+
+// Paradas intermedias del corredor, ya ordenadas por el backend (ruta.paradas viene
+// ordenado por "orden" — ver INCLUDE_PARADAS en rutaService.js). No es un campo
+// guardado aparte: solo se lee lo que ya trae la ruta.
+export const resolveParadas = (ruta) => (ruta?.paradas || [])
+    .filter(p => p.destino)
+    .map(p => ({ idDestino: p.idDestino, ciudad: p.destino.ciudad, departamento: p.destino.departamento }))
+
+// Departamentos que cruza la ruta — se deriva en el momento a partir del destino
+// final y de las paradas intermedias, no es un campo propio (ver LOGICA.md, "Rutas
+// con paradas"). Devuelve un array sin duplicados, en el orden en que aparecen.
+export const resolveDepartamentos = (ruta) => {
+    const departamentos = [
+        ruta?.destino?.departamento,
+        ...resolveParadas(ruta).map(p => p.departamento),
+    ].filter(Boolean)
+    return [...new Set(departamentos)]
+}

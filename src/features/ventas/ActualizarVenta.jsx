@@ -24,6 +24,8 @@ import PasoConfirmacion from './components/wizard/PasoConfirmacion.jsx'
 
 const getInitialForm = () => ({
     idCliente: '',
+    tipoIdentificacionDestinatario: '',
+    numeroIdentificacionDestinatario: '',
     nombreDestinatario: '',
     telefonoDestinatario: '',
     correoDestinatario: '',
@@ -35,6 +37,7 @@ const getInitialForm = () => ({
     fechaSalidaRuta: '',
     fechaLlegadaEstimadaRuta: '',
     fechaEstimadaEntrega: '',
+    entregaSinFecha: false,
     observaciones: '',
     metodoPago: '',
     valorServicio: '',
@@ -112,6 +115,8 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
             : [{ ...PAQUETE_VACIO }]
         const datosForm = {
             idCliente: ventaData.cliente?.idCliente || ventaData.idCliente || '',
+            tipoIdentificacionDestinatario: destinatario?.tipoIdentificacionDestinatario || '',
+            numeroIdentificacionDestinatario: destinatario?.numeroIdentificacionDestinatario || '',
             nombreDestinatario: destinatario?.nombreDestinatario || '',
             telefonoDestinatario: destinatario?.telefonoDestinatario || '',
             correoDestinatario: destinatario?.correoDestinatario || '',
@@ -127,6 +132,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
             fechaEstimadaEntrega: ventaData.fechaEstimadaEntrega
                 ? ventaData.fechaEstimadaEntrega.split('T')[0]
                 : '',
+            entregaSinFecha: false,
             observaciones: ventaData.observaciones || '',
             metodoPago: ventaData.metodoPago || '',
             valorServicio: limpiarNumero(ventaData.valorServicio),
@@ -189,6 +195,8 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                 valorServicio: parseFloat(form.valorServicio) || 0,
                 destinatario: {
                     nombreDestinatario: form.nombreDestinatario,
+                    tipoIdentificacionDestinatario: form.tipoIdentificacionDestinatario,
+                    numeroIdentificacionDestinatario: form.numeroIdentificacionDestinatario,
                     telefonoDestinatario: form.telefonoDestinatario || null,
                     correoDestinatario: form.correoDestinatario || null,
                     idDestino: parseInt(form.idDestinoDestinatario),
@@ -258,6 +266,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                         handlePaqueteChange={handlePaqueteChange} setErrorPaquete={setErrorPaquete}
                         ventaOriginal={ventaOriginal} valorServicioManualRef={valorServicioManualRef}
                         getPesoOriginalPorPar={getPesoOriginalPorPar}
+                        destinos={destinos}
                     />
                 )
             case 3:

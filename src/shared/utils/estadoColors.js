@@ -56,7 +56,8 @@ export const getConductorEstadoDot = (estado) => {
 
 export const getPaqueteEstadoDot = (estado) => {
     switch (estado) {
-        case 'Por entregar': return { type: 'circle', fill: true,  color: '#3B82F6', label: 'Por entregar' }
+        case 'Por entregar':      return { type: 'circle', fill: true,  color: '#3B82F6', label: 'Por entregar' }
+        case 'En sede de destino': return { type: 'circle', fill: true,  color: '#D97706', label: 'En sede de destino' }
         case 'Entregado':    return { type: 'symbol', char: '✓',   color: '#059669', label: 'Entregado' }
         case 'Devuelto':     return { type: 'circle', fill: true,  color: '#DC2626', label: 'Devuelto' }
         default:              return { type: 'circle', fill: false, color: '#9CA3AF', label: estado || '—' }

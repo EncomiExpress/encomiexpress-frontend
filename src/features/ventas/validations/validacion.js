@@ -1,6 +1,7 @@
 import { esSoloRelleno } from '../../../shared/utils/formatters.js'
 import { sumarDias } from '../../../shared/utils/horarioLaboral.js'
 import { EMAIL_REGEX } from '../../../shared/validations/emailValidation.js'
+import { maxLengthDocumento, docHelperText as docHelperTextBase, validarNumeroDocumento, esDocAlfanumerico } from '../../../shared/utils/documento.js'
 
 export const steps = ['Participantes', 'Paquete', 'Envío', 'Pago', 'Confirmación']
 
@@ -10,6 +11,38 @@ export const CAMPOS_PAQUETE = ['descripcionContenido', 'peso', 'alto', 'ancho', 
 const SOLO_LETRAS_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/
 const NOMBRE_DESTINATARIO_MAX_LENGTH = 50
 const CORREO_DESTINATARIO_MAX_LENGTH = 150
+
+// Tipo/número de documento del destinatario — mismo mecanismo que Cliente
+// (PasoDocumento.jsx / clienteValidation.js): el tipo elegido cambia el límite de
+// caracteres y la validación del número. NIT tiene su propio formato especial
+// (dígitos + guión, hasta 15) que no encaja en shared/utils/documento.js, así que
+// se replica acá igual que allá — no se puede importar esa función desde
+// features/clientes (un feature nunca importa del interior de otro, solo de shared/).
+export const getMaxLengthDocDestinatario = (tipo) => {
+    if (tipo === 'NIT') return 15
+    return maxLengthDocumento(tipo)
+}
+
+export const docHelperTextDestinatario = (tipo) => {
+    if (tipo === 'NIT') return 'Números con guión, hasta 15 caracteres'
+    return docHelperTextBase(tipo) || ''
+}
+
+export const validarDocumentoDestinatarioCompleto = (tipo, valor) => {
+    const limpio = (valor || '').trim()
+    if (!limpio) return 'El número de documento es obligatorio'
+    if (tipo === 'NIT') {
+        if (!/^[0-9-]+$/.test(limpio)) return 'Solo se permiten números y guión'
+        if (!/\d/.test(limpio)) return 'Debe contener al menos un número'
+        if (limpio.length > 15) return 'Máximo 15 caracteres'
+        return ''
+    }
+    return validarNumeroDocumento(tipo, limpio) || ''
+}
+
+// Reexportado para que useVentaWizardForm.js filtre lo que se escribe en
+// numeroIdentificacionDestinatario según el tipo, igual que RegistrarCliente.jsx.
+export { esDocAlfanumerico }
 
 // Opción sentinel que se agrega al final de las sugerencias de Cliente — al elegirla
 // se abre RegistrarCliente en un modal encima, en vez de seleccionar un cliente real.
@@ -25,6 +58,8 @@ export const validarCampo = (name, form) => {
     switch (name) {
         case 'idCliente':
             return form.idCliente ? '' : 'Selecciona un cliente remitente'
+        case 'tipoIdentificacionDestinatario':
+            return form.tipoIdentificacionDestinatario ? '' : 'Selecciona el tipo de documento'
         case 'nombreDestinatario':
             if (!form.nombreDestinatario.trim()) return 'El nombre es obligatorio'
             if (!SOLO_LETRAS_REGEX.test(form.nombreDestinatario)) return 'Solo se permiten letras'
@@ -51,6 +86,10 @@ export const validarCampo = (name, form) => {
         case 'idRuta':
             return form.idRuta ? '' : 'Selecciona una ruta'
         case 'fechaEstimadaEntrega': {
+            // Destinatario en una parada intermedia sin fecha estimada de paso
+            // cargada todavía (ver PasoEnvio.jsx) — no hay ninguna fecha válida
+            // que se le pueda pedir al usuario.
+            if (form.entregaSinFecha) return 'Esta ruta todavía no tiene una fecha estimada de paso por el municipio del destinatario'
             if (!form.fechaEstimadaEntrega) return 'La fecha es obligatoria'
             if (form.fechaSalidaRuta) {
                 const minima = sumarDias(form.fechaSalidaRuta, 1)

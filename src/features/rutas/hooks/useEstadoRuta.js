@@ -7,7 +7,7 @@ import { getRutaId } from '../utils/rutaResolvers.js'
 // Extracción tal cual (sin refactorizar la lógica) del flujo de cambio de estado de
 // ListarRutaProgramacion.jsx -- es la pieza de mayor riesgo de todo el módulo: detecta
 // conflictos de disponibilidad de vehículo/conductor contra TODAS las rutas En Ruta
-// (no solo la página cargada) y bloquea ventas sin fecha de entrega antes de permitir
+// (no solo la página cargada) y bloquea ventas sin fecha de entrega en sede antes de permitir
 // pasar una ruta a "En Ruta".
 export function useEstadoRuta({ rutasProgramadas, getVehiculos, getConductores, fetchVehiculos, fetchConductores, updateEstado, refetch, showToast }) {
     const [confirmEstado, setConfirmEstado] = useState({ open: false, id: null, nuevoEstado: null, info: '', ruta: null, pares: [] })
@@ -140,7 +140,7 @@ export function useEstadoRuta({ rutasProgramadas, getVehiculos, getConductores, 
             } catch (err) {
                 // Si el chequeo previo falla, no se bloquea el flujo — el backend
                 // igual revalida MISSING_DELIVERY_DATE al confirmar.
-                showToast(err.message || 'No se pudo verificar las fechas de entrega, se validará al confirmar.', 'warning')
+                showToast(err.message || 'No se pudo verificar las fechas de entrega en sede, se validará al confirmar.', 'warning')
             }
         }
 

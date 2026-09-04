@@ -40,6 +40,7 @@ const ListarRutaProgramacion = () => {
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [rutaEditar, setRutaEditar] = useState(null)
+    const [prefillRegreso, setPrefillRegreso] = useState(null)
 
     const { rutasProgramadas, total, fetchRutasProgramadas, updateEstado } = useRutaProgramacion()
     const { getVehiculos, fetchVehiculos } = useVehiculo()
@@ -100,7 +101,20 @@ const ListarRutaProgramacion = () => {
 
     const handleRegistrarSuccess = () => {
         refetch()
-        showToast('Ruta registrada correctamente', 'success')
+        showToast(prefillRegreso ? 'Viaje de regreso programado correctamente' : 'Ruta registrada correctamente', 'success')
+    }
+
+    // Precarga el formulario de Registrar con el corredor invertido de una ruta ya
+    // Completada — mismo convoy, paradas en orden inverso. El destino final queda
+    // vacío a propósito (ver comentario en RegistrarRutaProgramacion.jsx).
+    const handleProgramarRegreso = (ruta) => {
+        setPrefillRegreso({
+            idRutaIda: ruta.idRuta,
+            origen: ruta.destino?.ciudad || '',
+            pares: (ruta.paresVehiculoConductor || []).map(p => ({ idVehiculo: p.idVehiculo, idConductor: p.idConductor })),
+            paradas: [...(ruta.paradas || [])].sort((a, b) => b.orden - a.orden).map(p => ({ idDestino: p.idDestino })),
+        })
+        setModalRegistrarOpen(true)
     }
 
     const handleActualizarSuccess = () => {
@@ -121,6 +135,7 @@ const ListarRutaProgramacion = () => {
         onToggleHabilitado: handleToggleHabilitado,
         onAbrirMenuEstado: (anchor, id, estadoActual) => setEstadoMenu({ anchor, id, estadoActual }),
         onCancelarEnRuta: (id) => handleEstadoChange(id, 'Cancelada'),
+        onProgramarRegreso: handleProgramarRegreso,
     })
 
     return (
@@ -162,7 +177,7 @@ const ListarRutaProgramacion = () => {
 
                     {tienePermiso(PERMISOS.REGISTRAR_RUTA) && (
                         <Button
-                            onClick={() => setModalRegistrarOpen(true)}
+                            onClick={() => { setPrefillRegreso(null); setModalRegistrarOpen(true) }}
                             variant="contained"
                             startIcon={<AddOutlinedIcon sx={{ fontSize: 20 }} />}
                             sx={{
@@ -244,8 +259,9 @@ const ListarRutaProgramacion = () => {
 
             <RegistrarRutaProgramacion
                 open={modalRegistrarOpen}
-                onClose={() => setModalRegistrarOpen(false)}
+                onClose={() => { setModalRegistrarOpen(false); setPrefillRegreso(null) }}
                 onSuccess={handleRegistrarSuccess}
+                prefill={prefillRegreso}
             />
 
             <ActualizarRutaProgramacion

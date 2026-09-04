@@ -19,6 +19,7 @@ const PasoConfirmacion = ({
         [form.origen, formOriginal.origen],
         [JSON.stringify(form.pares), JSON.stringify(formOriginal.pares)],
         [form.idDestino, formOriginal.idDestino],
+        [JSON.stringify(form.paradas), JSON.stringify(formOriginal.paradas)],
         [form.fechaSalida, formOriginal.fechaSalida],
         [form.horaSalida, formOriginal.horaSalida],
         [form.fechaLlegadaEstimada, formOriginal.fechaLlegadaEstimada],
@@ -55,6 +56,11 @@ const PasoConfirmacion = ({
                     <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la información y el horario de la ruta</Typography>
                     <ConfirmRow label="Origen" value={form.origen} previousValue={formOriginal?.origen} />
                     <ConfirmRow label="Destino" value={getDestinoLabel(form.idDestino, destinos, ruta)} previousValue={formOriginal ? getDestinoLabel(formOriginal.idDestino, destinos, ruta) : undefined} />
+                    {(form.paradas || []).filter(p => p.idDestino).length > 0 && (
+                        <ConfirmRow label="Paradas"
+                            value={form.paradas.filter(p => p.idDestino).map((p, i) => `${i + 1}. ${getDestinoLabel(p.idDestino, destinos, ruta)}`).join(' · ')}
+                            previousValue={formOriginal ? (formOriginal.paradas || []).filter(p => p.idDestino).map((p, i) => `${i + 1}. ${getDestinoLabel(p.idDestino, destinos, ruta)}`).join(' · ') || 'Ninguna' : undefined} />
+                    )}
                     <ConfirmRow label="Fecha Salida" value={formatFecha(form.fechaSalida)} previousValue={formOriginal?.fechaSalida ? formatFecha(formOriginal.fechaSalida) : undefined} />
                     <ConfirmRow label="Hora Salida" value={form.horaSalida} previousValue={formOriginal?.horaSalida} />
                     <ConfirmRow label="Fecha Estimada de Llegada" value={formatFecha(form.fechaLlegadaEstimada)} previousValue={formOriginal?.fechaLlegadaEstimada ? formatFecha(formOriginal.fechaLlegadaEstimada) : undefined} />

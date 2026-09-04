@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { limpiarMonedaInput, limpiarDecimalInput, capitalizarPalabras } from '../../../shared/utils/formatters.js'
 import { sumarDias } from '../../../shared/utils/horarioLaboral.js'
-import { PAQUETE_VACIO, validarCampo, validarCampoPaquete } from '../validations/validacion.js'
+import { PAQUETE_VACIO, validarCampo, validarCampoPaquete, esDocAlfanumerico } from '../validations/validacion.js'
 import {
     NUMERIC_LIMITS, PAQUETE_NUMERIC_LIMITS,
     calcularValorServicio as calcularValorServicioBase, calcularValoresPaquetes, validarPaso,
@@ -157,6 +157,25 @@ export const useVentaWizardForm = ({
             if (value !== '') {
                 const num = parseFloat(value)
                 if (!isNaN(num) && (num > NUMERIC_LIMITS[name] || num < 0)) return
+            }
+        }
+        // Cambiar el tipo de documento invalida el número ya escrito (el límite de
+        // caracteres y el formato dependen del tipo) — mismo patrón que
+        // RegistrarCliente.jsx al cambiar tipoIdentificacion.
+        if (name === 'tipoIdentificacionDestinatario') {
+            setForm(prev => ({ ...prev, tipoIdentificacionDestinatario: value, numeroIdentificacionDestinatario: '' }))
+            setErrores(prev => ({ ...prev, tipoIdentificacionDestinatario: '', numeroIdentificacionDestinatario: '' }))
+            setApiError(null)
+            afterChange()
+            return
+        }
+        if (name === 'numeroIdentificacionDestinatario') {
+            if (form.tipoIdentificacionDestinatario === 'NIT') {
+                value = value.replace(/[^0-9-]/g, '')
+            } else if (esDocAlfanumerico(form.tipoIdentificacionDestinatario)) {
+                value = value.replace(/[^a-zA-Z0-9]/g, '')
+            } else {
+                value = value.replace(/[^0-9]/g, '')
             }
         }
         if (name === 'nombreDestinatario') {

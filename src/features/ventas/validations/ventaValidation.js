@@ -1,4 +1,4 @@
-import { CAMPOS_PAQUETE, validarCampo, validarCampoPaquete } from './validacion.js'
+import { CAMPOS_PAQUETE, validarCampo, validarCampoPaquete, validarDocumentoDestinatarioCompleto } from './validacion.js'
 
 export const NUMERIC_LIMITS = { valorServicio: 999999999 }
 export const PAQUETE_NUMERIC_LIMITS = { peso: 999, alto: 999, ancho: 999, profundidad: 999 }
@@ -61,6 +61,8 @@ export const validarPaso = (step, form, rutasProgramadas, opts = {}) => {
 
     if (step === 0) {
         e.idCliente = validarCampo('idCliente', form, ventaOriginal)
+        e.tipoIdentificacionDestinatario = validarCampo('tipoIdentificacionDestinatario', form, ventaOriginal)
+        e.numeroIdentificacionDestinatario = validarDocumentoDestinatarioCompleto(form.tipoIdentificacionDestinatario, form.numeroIdentificacionDestinatario)
         e.nombreDestinatario = validarCampo('nombreDestinatario', form, ventaOriginal)
         e.telefonoDestinatario = validarCampo('telefonoDestinatario', form, ventaOriginal)
         e.correoDestinatario = validarCampo('correoDestinatario', form, ventaOriginal)

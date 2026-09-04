@@ -19,7 +19,7 @@ import { formatFecha, formatHora12, getGuiaPrincipal } from '../../../shared/uti
 import CampoFila from '../../../shared/components/CampoFila.jsx'
 import FichaCard from '../../../shared/components/FichaCard.jsx'
 import EstadoDot, { RutaEstadoDot } from './EstadoDot.jsx'
-import { resolvePares, resolveDestino } from '../utils/rutaResolvers.js'
+import { resolvePares, resolveDestino, resolveParadas, resolveDepartamentos } from '../utils/rutaResolvers.js'
 import { errorChipSx } from '../style/chips.js'
 
 const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
@@ -98,6 +98,20 @@ const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
                                     onClick={() => window.open(`/transporte/destinos?highlight=${ruta.idDestino}`, '_blank')}
                                     sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem', cursor: 'pointer', '&:hover': { filter: 'brightness(0.92)' } }} />
                             </Box>
+                            {resolveParadas(ruta).length > 0 && (
+                                <CampoFila label="Paradas" value={resolveParadas(ruta).map((p, i) => `${i + 1}. ${p.ciudad}`).join(' · ')} />
+                            )}
+                            {resolveDepartamentos(ruta).length > 1 && (
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9, gap: 1 }}>
+                                    <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Departamentos</Typography>
+                                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                                        {resolveDepartamentos(ruta).map((dep) => (
+                                            <Chip key={dep} label={dep} size="small"
+                                                sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem' }} />
+                                        ))}
+                                    </Box>
+                                </Box>
+                            )}
                             <CampoFila label="Fecha salida" value={formatFecha(ruta.fechaSalida)} />
                             <CampoFila label="Hora salida" value={formatHora12(ruta.horaSalida) || '—'} />
                             <CampoFila label="Fecha llegada est." value={formatFecha(ruta.fechaLlegadaEstimada)} />
@@ -112,6 +126,22 @@ const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
                                 </Box>
                             </Box>
                             <CampoFila label="Observaciones" value={ruta.observaciones} />
+                            {ruta.rutaIda && (
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
+                                    <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Es el regreso de</Typography>
+                                    <Chip label={`${ruta.rutaIda.origen || '—'} → ${ruta.rutaIda.destino?.ciudad || '—'}`} size="small"
+                                        onClick={() => window.open(`/transporte/rutas?highlight=${ruta.rutaIda.idRuta}`, '_blank')}
+                                        sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem', cursor: 'pointer', '&:hover': { filter: 'brightness(0.92)' } }} />
+                                </Box>
+                            )}
+                            {ruta.rutaRegreso && (
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
+                                    <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Viaje de regreso</Typography>
+                                    <Chip label={`${ruta.rutaRegreso.estado || '—'}`} size="small"
+                                        onClick={() => window.open(`/transporte/rutas?highlight=${ruta.rutaRegreso.idRuta}`, '_blank')}
+                                        sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem', cursor: 'pointer', '&:hover': { filter: 'brightness(0.92)' } }} />
+                                </Box>
+                            )}
                         </FichaCard>
 
                         <FichaCard icon={DirectionsCarOutlinedIcon}

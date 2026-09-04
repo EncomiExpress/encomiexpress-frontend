@@ -28,7 +28,7 @@ const useVentaExport = ({ theme, debouncedBusqueda, filtroHabilitado, filtroEsta
                 'Ruta': venta.ruta?.origen || '-',
                 'Destino': venta.ruta?.destino?.ciudad || '-',
                 'Fecha registro': venta.fechaRegistro,
-                'Fecha est. entrega': venta.fechaEstimadaEntrega,
+                'Fecha est. entrega en sede': venta.fechaEstimadaEntrega,
                 'Estado': venta.estado,
                 'Estado de pago': venta.estadoPago,
                 'Método de pago': venta.metodoPago,

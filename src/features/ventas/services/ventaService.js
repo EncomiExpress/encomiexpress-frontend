@@ -27,3 +27,10 @@ export const getPageOfEncomienda = (id, limit = 10) =>
 // de período del Dashboard, calculados en la BD (MIN/MAX), no sobre datos ya cargados.
 export const getRangoFechasVentas = () =>
   fetchWithAuth('/encomiendas/rango-fechas')
+
+// ── Paquetes — reparto local ──────────────────────────────────────────────────
+// Solo admin. El paquete debe estar "En sede de destino" (ver LOGICA.md, "Paquetes
+// — entrega en sede y reasignación local"). No hay un paqueteService.js aparte en
+// el backend tampoco — esta acción vive junto al resto de Ventas.
+export const asignarRepartidorLocal = (idPaquete, idConductor) =>
+  fetchWithAuth(`/paquetes/${idPaquete}/repartidor-local`, { method: 'PATCH', body: JSON.stringify({ idConductor }) })

@@ -9,7 +9,7 @@ import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { vehiculoDocumentosVigentes, conductorLicenciaVigente } from '../../shared/utils/vigenciaDocumentos.js'
 import WizardDialog from '../../shared/components/WizardDialog.jsx'
-import { steps, validarCampo, validarPares, validarPaso } from './validations/rutaValidation.js'
+import { steps, validarCampo, validarPares, validarParadas, validarPaso } from './validations/rutaValidation.js'
 import PasoDestinoPares from './components/wizard/PasoDestinoPares.jsx'
 import PasoHorario from './components/wizard/PasoHorario.jsx'
 import PasoConfirmacion from './components/wizard/PasoConfirmacion.jsx'
@@ -31,6 +31,7 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
     const [destinoInput, setDestinoInput]     = useState('')
     const [vehiculoInputs, setVehiculoInputs]     = useState([''])
     const [conductorInputs, setConductorInputs]   = useState([''])
+    const [paradaInputs, setParadaInputs]         = useState([])
     const [refrescarDisponibilidad, setRefrescarDisponibilidad] = useState(0)
 
     // Sin tiempo real (WebSockets) en este proyecto, el calendario de disponibilidad
@@ -60,7 +61,7 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
     const conductoresExcluidos = conductores.length - conductoresSeleccionables.length
 
     const [form, setForm] = useState({
-        origen: '', pares: [{ idRutaVehiculoConductor: '', idVehiculo: '', idConductor: '' }], idDestino: '',
+        origen: '', pares: [{ idRutaVehiculoConductor: '', idVehiculo: '', idConductor: '' }], idDestino: '', paradas: [],
         fechaSalida: '', horaSalida: '', fechaLlegadaEstimada: '', horaLlegadaEstimada: '', observaciones: ''
     })
 
@@ -78,10 +79,17 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
                     idConductor: p.idConductor || '',
                 }))
                 : [{ idRutaVehiculoConductor: '', idVehiculo: '', idConductor: '' }]
+            const paradasRuta = [...(ruta.paradas || [])].sort((a, b) => a.orden - b.orden)
+            const paradas = paradasRuta.map(p => ({
+                idDestino: p.idDestino || '',
+                fechaLlegadaEstimada: p.fechaLlegadaEstimada || '',
+                horaLlegadaEstimada: p.horaLlegadaEstimada ? p.horaLlegadaEstimada.slice(0, 5) : '',
+            }))
             const datos = {
                 origen:          ruta.origen          || '',
                 pares,
                 idDestino:           ruta.idDestino           || '',
+                paradas,
                 fechaSalida:         ruta.fechaSalida         || '',
                 horaSalida:          ruta.horaSalida          || '',
                 fechaLlegadaEstimada:        ruta.fechaLlegadaEstimada        || '',
@@ -109,6 +117,7 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
                 return original ? `${original.nombre} ${original.apellido}` : ''
             }))
             setDestinoInput(d ? (d.nombre ? `${d.nombre} - ${d.ciudad}` : `${d.departamento} - ${d.ciudad}`) : (ruta.destino ? `${ruta.destino.departamento} - ${ruta.destino.ciudad}` : ''))
+            setParadaInputs(paradasRuta.map(p => p.destino ? `${p.destino.ciudad} - ${p.destino.departamento}` : ''))
         }
     }, [ruta, open, getVehiculosHabilitados, getConductoresHabilitados, getDestinosHabilitados])
 
@@ -147,6 +156,51 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
         setErrores(prev => ({ ...prev, pares: prev.pares ? validarPares(pares) : '' }))
         setVehiculoInputs(prev => prev.filter((_, i) => i !== index))
         setConductorInputs(prev => prev.filter((_, i) => i !== index))
+        setSinCambios(false)
+    }
+
+    const handleParadaChange = (index, idDestino) => {
+        const paradas = form.paradas.map((p, i) => i === index ? { ...p, idDestino } : p)
+        setForm(prev => ({ ...prev, paradas }))
+        setErrores(prev => ({ ...prev, paradas: prev.paradas ? validarParadas(paradas) : '' }))
+        setApiError(null)
+        setSinCambios(false)
+    }
+
+    const handleAgregarParada = () => {
+        setForm(prev => ({ ...prev, paradas: [...prev.paradas, { idDestino: '', fechaLlegadaEstimada: '', horaLlegadaEstimada: '' }] }))
+        setParadaInputs(prev => [...prev, ''])
+        setSinCambios(false)
+    }
+
+    const handleParadaFechaChange = (index, campo, value) => {
+        const paradas = form.paradas.map((p, i) => i === index
+            ? { ...p, [campo]: value, ...(campo === 'fechaLlegadaEstimada' && !value ? { horaLlegadaEstimada: '' } : {}) }
+            : p)
+        setForm(prev => ({ ...prev, paradas }))
+        setApiError(null)
+        setSinCambios(false)
+    }
+
+    const handleQuitarParada = (index) => {
+        const paradas = form.paradas.filter((_, i) => i !== index)
+        setForm(prev => ({ ...prev, paradas }))
+        setErrores(prev => ({ ...prev, paradas: prev.paradas ? validarParadas(paradas) : '' }))
+        setParadaInputs(prev => prev.filter((_, i) => i !== index))
+        setSinCambios(false)
+    }
+
+    const handleMoverParada = (index, direccion) => {
+        const destinoIdx = index + direccion
+        if (destinoIdx < 0 || destinoIdx >= form.paradas.length) return
+        const paradas = [...form.paradas]
+        ;[paradas[index], paradas[destinoIdx]] = [paradas[destinoIdx], paradas[index]]
+        setForm(prev => ({ ...prev, paradas }))
+        setParadaInputs(prev => {
+            const copia = [...prev]
+            ;[copia[index], copia[destinoIdx]] = [copia[destinoIdx], copia[index]]
+            return copia
+        })
         setSinCambios(false)
     }
 
@@ -197,7 +251,8 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
             // objetos y String() de eso siempre da "[object Object]" sin importar el
             // contenido — se compara aparte con JSON.stringify, igual que en Ventas.
             const hayCambiosPares = JSON.stringify(form.pares) !== JSON.stringify(originalData.pares)
-            const hayCambios = hayCambiosPares || Object.keys(form).filter(k => k !== 'pares').some(key => {
+            const hayCambiosParadas = JSON.stringify(form.paradas) !== JSON.stringify(originalData.paradas)
+            const hayCambios = hayCambiosPares || hayCambiosParadas || Object.keys(form).filter(k => k !== 'pares' && k !== 'paradas').some(key => {
                 const orig = originalData[key] !== undefined ? String(originalData[key]) : ''
                 const act  = form[key]         !== undefined ? String(form[key])         : ''
                 return orig !== act
@@ -222,6 +277,11 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
                         idConductor: parseInt(p.idConductor),
                     })),
                 idDestino:   parseInt(form.idDestino),
+                paradas: form.paradas.filter(p => p.idDestino).map(p => ({
+                    idDestino: parseInt(p.idDestino),
+                    fechaLlegadaEstimada: p.fechaLlegadaEstimada || null,
+                    horaLlegadaEstimada: p.fechaLlegadaEstimada ? (p.horaLlegadaEstimada || null) : null,
+                })),
                 observaciones: form.observaciones || ''
             })
             showToast('¡Ruta actualizada exitosamente!', 'success')
@@ -235,7 +295,7 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
 
     const handleClose = () => {
         if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
-        setForm({ origen: '', pares: [{ idRutaVehiculoConductor: '', idVehiculo: '', idConductor: '' }], idDestino: '', fechaSalida: '', horaSalida: '', fechaLlegadaEstimada: '', horaLlegadaEstimada: '', observaciones: '' })
+        setForm({ origen: '', pares: [{ idRutaVehiculoConductor: '', idVehiculo: '', idConductor: '' }], idDestino: '', paradas: [], fechaSalida: '', horaSalida: '', fechaLlegadaEstimada: '', horaLlegadaEstimada: '', observaciones: '' })
         setErrores({})
         setApiError(null)
         setActiveStep(0)
@@ -244,6 +304,7 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
         setDestinoInput('')
         setVehiculoInputs([''])
         setConductorInputs([''])
+        setParadaInputs([])
         onClose?.()
     }
 
@@ -266,6 +327,10 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
                         vehiculos={vehiculos} conductores={conductores} vehiculosExcluidos={vehiculosExcluidos} conductoresExcluidos={conductoresExcluidos}
                         vehiculoInputs={vehiculoInputs} setVehiculoInputs={setVehiculoInputs} conductorInputs={conductorInputs} setConductorInputs={setConductorInputs}
                         getVehiculoOpciones={getVehiculoOpciones} getConductorOpciones={getConductorOpciones}
+                        handleParadaChange={handleParadaChange} handleAgregarParada={handleAgregarParada}
+                        handleQuitarParada={handleQuitarParada} handleMoverParada={handleMoverParada}
+                        handleParadaFechaChange={handleParadaFechaChange}
+                        paradaInputs={paradaInputs} setParadaInputs={setParadaInputs}
                     />
                 )
             case 1:

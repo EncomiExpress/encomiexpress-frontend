@@ -63,7 +63,7 @@ export const drawEncabezado = (doc, venta, pkg, index, totalPaginas, assets) => 
   doc.setTextColor(90, 90, 90)
   const infoColW = CONTENT_W / 3
   doc.text(`Fecha emisión: ${sanitizeForPdf(venta.fechaRegistro) || '—'}`, MARGIN, y)
-  doc.text(`Fecha est. entrega: ${sanitizeForPdf(venta.fechaEstimadaEntrega) || '—'}`, MARGIN + infoColW, y)
+  doc.text(`Fecha est. entrega en sede: ${sanitizeForPdf(venta.fechaEstimadaEntrega) || '—'}`, MARGIN + infoColW, y)
   doc.text(`Estado envío: ${sanitizeForPdf(venta.estado) || '—'}`, MARGIN + infoColW * 2, y)
   y += 4
   doc.setLineWidth(0.2)

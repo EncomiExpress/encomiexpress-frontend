@@ -2,20 +2,36 @@ import { Box, Typography, Chip, IconButton, Tooltip } from '@mui/material'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
+import SyncAltOutlinedIcon from '@mui/icons-material/SyncAltOutlined'
 import ToggleSwitch from '../../../shared/components/ToggleSwitch.jsx'
 import PlacaDisplay from '../../../shared/components/PlacaDisplay.jsx'
 import { formatFecha, formatHora12 } from '../../../shared/utils/formatters.js'
 import { getEstadoColorRuta as getEstadoColor } from '../../../shared/utils/estadoColors.js'
 import { RutaEstadoDot } from '../components/EstadoDot.jsx'
-import { resolvePares, resolveDestino, getRutaId } from '../utils/rutaResolvers.js'
+import { resolvePares, resolveDestino, resolveDepartamentos, getRutaId } from '../utils/rutaResolvers.js'
 import { warningChipSx, errorChipSx } from '../style/chips.js'
 
 const useRutaColumns = ({
     theme, tienePermiso, PERMISOS, destinos, getVehiculos, getConductores,
-    onConsultar, onEditar, onToggleHabilitado, onAbrirMenuEstado, onCancelarEnRuta,
+    onConsultar, onEditar, onToggleHabilitado, onAbrirMenuEstado, onCancelarEnRuta, onProgramarRegreso,
 }) => [
     { key: 'origen', label: 'Origen', sortField: 'origen', cellSx: { py: 1.5, fontSize: '0.85rem' }, render: (ruta) => ruta.origen || '—' },
-    { key: 'destino', label: 'Destino', cellSx: { py: 1.5, fontSize: '0.85rem' }, render: (ruta) => resolveDestino(ruta, destinos, { preferNombre: true }) },
+    {
+        key: 'destino', label: 'Destino', cellSx: { py: 1.5, fontSize: '0.85rem' },
+        render: (ruta) => {
+            const departamentos = resolveDepartamentos(ruta)
+            return (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.3 }}>
+                    <Typography sx={{ fontSize: '0.85rem' }}>{resolveDestino(ruta, destinos, { preferNombre: true })}</Typography>
+                    {departamentos.length > 1 && (
+                        <Typography sx={{ fontSize: '0.7rem', color: theme.palette.text.secondary }}>
+                            Cruza {departamentos.join(', ')}
+                        </Typography>
+                    )}
+                </Box>
+            )
+        },
+    },
     {
         key: 'fechaHora', label: 'Fecha y hora salida', cellSx: { py: 1.5 },
         render: (ruta) => (
@@ -158,6 +174,14 @@ const useRutaColumns = ({
             const id = getRutaId(ruta)
             return (
                 <Box sx={{ display: 'flex', gap: 0.5 }}>
+                    {tienePermiso(PERMISOS.REGISTRAR_RUTA) && ruta.estado === 'Completada' && !ruta.rutaRegreso && (
+                        <Tooltip title="Programar viaje de regreso">
+                            <IconButton size="small" onClick={() => onProgramarRegreso(ruta)}
+                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}>
+                                <SyncAltOutlinedIcon sx={{ fontSize: 18 }} />
+                            </IconButton>
+                        </Tooltip>
+                    )}
                     {tienePermiso(PERMISOS.CONSULTAR_RUTA) && (
                         <Tooltip title="Ver detalle">
                             <IconButton size="small" onClick={() => onConsultar(ruta)}

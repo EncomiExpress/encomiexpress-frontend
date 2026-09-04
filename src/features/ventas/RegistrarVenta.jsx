@@ -21,6 +21,8 @@ import PasoConfirmacion from './components/wizard/PasoConfirmacion.jsx'
 
 const getInitialForm = () => ({
     idCliente: '',
+    tipoIdentificacionDestinatario: '',
+    numeroIdentificacionDestinatario: '',
     nombreDestinatario: '',
     telefonoDestinatario: '',
     correoDestinatario: '',
@@ -32,6 +34,7 @@ const getInitialForm = () => ({
     fechaSalidaRuta: '',
     fechaLlegadaEstimadaRuta: '',
     fechaEstimadaEntrega: '',
+    entregaSinFecha: false,
     observaciones: '',
     metodoPago: '',
     estadoPago: 'Pendiente',
@@ -84,6 +87,8 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                 idRuta: parseInt(form.idRuta),
                 destinatario: {
                     nombreDestinatario: form.nombreDestinatario,
+                    tipoIdentificacionDestinatario: form.tipoIdentificacionDestinatario,
+                    numeroIdentificacionDestinatario: form.numeroIdentificacionDestinatario,
                     telefonoDestinatario: form.telefonoDestinatario,
                     correoDestinatario: form.correoDestinatario || null,
                     idDestino: parseInt(form.idDestinoDestinatario),
@@ -146,6 +151,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                         rutasProgramadas={rutasProgramadas} rutaInput={rutaInput} setRutaInput={setRutaInput}
                         handleChange={handleChange} calcularValorServicio={calcularValorServicio}
                         handlePaqueteChange={handlePaqueteChange} setErrorPaquete={setErrorPaquete}
+                        destinos={destinos}
                     />
                 )
             case 3:

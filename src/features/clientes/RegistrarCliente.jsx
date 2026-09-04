@@ -2,6 +2,7 @@ import { useTheme } from '@mui/material/styles'
 import { useState } from 'react'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import { useClientes } from './context/ClienteContext.jsx'
+import { useDestino } from '../destinos/context/DestinoContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { MENSAJE_NOMBRE_DUPLICADO } from '../../shared/utils/duplicados.js'
@@ -16,12 +17,16 @@ import PasoConfirmacion from './components/wizard/PasoConfirmacion.jsx'
 
 const RegistrarCliente = ({ open, onClose, onSuccess }) => {
     const { agregarCliente } = useClientes()
+    const { getDestinosHabilitados } = useDestino()
     const { showToast } = useToast()
     const theme = useTheme()
     const [errores, setErrores] = useState({})
     const [apiError, setApiError] = useState(null)
     const [activeStep, setActiveStep] = useState(0)
     const [submitting, setSubmitting] = useState(false)
+    const [destinoInput, setDestinoInput] = useState('')
+
+    const destinos = getDestinosHabilitados()
 
     const [form, setForm] = useState({
         nombre: '',
@@ -31,6 +36,7 @@ const RegistrarCliente = ({ open, onClose, onSuccess }) => {
         telefono: '',
         email: '',
         direccion: '',
+        idDestino: '',
         habilitado: true
     })
 
@@ -50,11 +56,13 @@ const RegistrarCliente = ({ open, onClose, onSuccess }) => {
             telefono: '',
             email: '',
             direccion: '',
+            idDestino: '',
             habilitado: true
         })
         setErrores({})
         setApiError(null)
         setActiveStep(0)
+        setDestinoInput('')
         onClose()
     }
 
@@ -137,7 +145,7 @@ const RegistrarCliente = ({ open, onClose, onSuccess }) => {
         setSubmitting(true)
         setApiError(null)
         try {
-            const creado = await agregarCliente({ ...form, apellido: form.tipoIdentificacion === 'NIT' ? '' : form.apellido })
+            const creado = await agregarCliente({ ...form, apellido: form.tipoIdentificacion === 'NIT' ? '' : form.apellido, idDestino: parseInt(form.idDestino) })
             showToast('¡Cliente registrado exitosamente!', 'success')
             setTimeout(() => {
                 handleClose()
@@ -163,7 +171,8 @@ const RegistrarCliente = ({ open, onClose, onSuccess }) => {
                 )
             case 1:
                 return (
-                    <PasoContacto form={form} errores={errores} setErrores={setErrores} handleChange={handleChange} />
+                    <PasoContacto theme={theme} form={form} errores={errores} setErrores={setErrores} handleChange={handleChange}
+                        destinos={destinos} destinoInput={destinoInput} setDestinoInput={setDestinoInput} />
                 )
             case 2:
                 return (
@@ -171,6 +180,7 @@ const RegistrarCliente = ({ open, onClose, onSuccess }) => {
                         theme={theme} form={form} formOriginal={null}
                         apiError={apiError} setApiError={setApiError}
                         sinCambios={false} setSinCambios={() => {}}
+                        destinos={destinos}
                     />
                 )
             default:

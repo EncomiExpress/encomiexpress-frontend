@@ -22,6 +22,10 @@ export const steps = ['Datos de la Ruta', 'Horario', 'Confirmación']
 // en rutaService.js), mismo criterio que MAX_PAQUETES en Ventas.
 export const MAX_PARES = 10
 
+// Máximo de paradas intermedias por ruta — igual al tope del backend (validarParadas
+// en rutaService.js).
+export const MAX_PARADAS = 20
+
 // Mismo alfabeto que ya filtra RegistrarRutaProgramacion.jsx en vivo para origen
 // (letras + guion + guion bajo) — el validador replica esa misma regla.
 const ORIGEN_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s\-_]+$/
@@ -91,12 +95,23 @@ export const validarPares = (pares) => {
     return ''
 }
 
+// Paradas intermedias del corredor — opcionales, ni siquiera hace falta agregar
+// ninguna. Si se agregan, no se puede repetir el mismo municipio dos veces (mismo
+// criterio que valida el backend, ver rutaService.validarParadas).
+export const validarParadas = (paradas) => {
+    const completas = (paradas || []).filter(p => p.idDestino)
+    const idsDestino = completas.map(p => p.idDestino)
+    if (new Set(idsDestino).size !== idsDestino.length) return 'No repitas el mismo municipio en dos paradas'
+    return ''
+}
+
 export const validarPaso = (step, form) => {
     const e = {}
     if (step === 0) {
         e.origen = validarCampo('origen', form)
         e.pares = validarPares(form.pares)
         e.idDestino = validarCampo('idDestino', form)
+        e.paradas = validarParadas(form.paradas)
     }
     if (step === 1) {
         e.fechaSalida = validarCampo('fechaSalida', form)

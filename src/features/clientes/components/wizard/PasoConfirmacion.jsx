@@ -7,8 +7,17 @@ import { cardSx } from '../../style/wizardStyles.js'
 
 const sonDistintos = (a, b) => String(a ?? '') !== String(b ?? '')
 
-const PasoConfirmacion = ({ theme, form, formOriginal, apiError, setApiError, sinCambios, setSinCambios }) => {
+const PasoConfirmacion = ({ theme, form, formOriginal, apiError, setApiError, sinCambios, setSinCambios, destinos }) => {
     const esNit = form.tipoIdentificacion === 'NIT'
+
+    // Respaldo si el municipio ya elegido fue inhabilitado desde que se registró
+    // el cliente (mismo patrón que Rutas) — se usa el que ya trae `formOriginal`.
+    const getDestinoLabel = (id) => {
+        const d = destinos?.find(x => x.idDestino === parseInt(id))
+        if (d) return `${d.ciudad}, ${d.departamento}`
+        if (formOriginal?.destino && parseInt(id) === formOriginal.idDestino) return `${formOriginal.destino.ciudad}, ${formOriginal.destino.departamento}`
+        return '—'
+    }
 
     const camposComparados = formOriginal ? [
         [form.nombre, formOriginal.nombre],
@@ -18,6 +27,7 @@ const PasoConfirmacion = ({ theme, form, formOriginal, apiError, setApiError, si
         [form.telefono, formOriginal.telefono],
         [form.email, formOriginal.email],
         [form.direccion, formOriginal.direccion],
+        [form.idDestino, formOriginal.idDestino],
     ] : []
     const totalModificados = camposComparados.filter(([a, b]) => sonDistintos(a, b)).length
 
@@ -59,6 +69,7 @@ const PasoConfirmacion = ({ theme, form, formOriginal, apiError, setApiError, si
                     <ConfirmRow label="Teléfono" value={form.telefono} previousValue={formOriginal?.telefono} />
                     <ConfirmRow label="Correo" value={form.email} previousValue={formOriginal?.email} />
                     <ConfirmRow label="Dirección" value={form.direccion} previousValue={formOriginal?.direccion} />
+                    <ConfirmRow label="Municipio" value={getDestinoLabel(form.idDestino)} previousValue={formOriginal ? getDestinoLabel(formOriginal.idDestino) : undefined} />
                 </Paper>
             </Box>
         </Box>

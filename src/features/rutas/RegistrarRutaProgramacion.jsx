@@ -9,12 +9,18 @@ import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { vehiculoDocumentosVigentes, conductorLicenciaVigente } from '../../shared/utils/vigenciaDocumentos.js'
 import WizardDialog from '../../shared/components/WizardDialog.jsx'
-import { steps, validarCampo, validarPares, validarPaso } from './validations/rutaValidation.js'
+import { steps, validarCampo, validarPares, validarParadas, validarPaso } from './validations/rutaValidation.js'
 import PasoDestinoPares from './components/wizard/PasoDestinoPares.jsx'
 import PasoHorario from './components/wizard/PasoHorario.jsx'
 import PasoConfirmacion from './components/wizard/PasoConfirmacion.jsx'
 
-const RegistrarRutaProgramacion = ({ open, onClose, onSuccess }) => {
+// `prefill` (opcional): datos con los que arranca el formulario — hoy solo lo usa
+// "Programar regreso" (ListarRutaProgramacion.jsx), para precargar origen/pares/
+// paradas invertidos de la ruta que ya se completó. `{ idRutaIda, origen, pares,
+// paradas }` — el destino final del regreso queda vacío a propósito: el origen de
+// la ruta original es texto libre, no un Destino real, así que no se puede inferir
+// con certeza a cuál Destino corresponde.
+const RegistrarRutaProgramacion = ({ open, onClose, onSuccess, prefill }) => {
     const { registrarRutaProgramada } = useRutaProgramacion()
     const { showToast } = useToast()
     const theme = useTheme()
@@ -29,6 +35,7 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess }) => {
     const [destinoInput, setDestinoInput]     = useState('')
     const [vehiculoInputs, setVehiculoInputs]     = useState([''])
     const [conductorInputs, setConductorInputs]   = useState([''])
+    const [paradaInputs, setParadaInputs]         = useState([])
     const [refrescarDisponibilidad, setRefrescarDisponibilidad] = useState(0)
 
     // Sin tiempo real (WebSockets) en este proyecto, el calendario de disponibilidad
@@ -59,12 +66,43 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess }) => {
         origen: 'Medellín',
         pares: [{ idVehiculo: '', idConductor: '' }],
         idDestino: '',
+        paradas: [],
         fechaSalida: '',
         horaSalida: '',
         fechaLlegadaEstimada: '',
         horaLlegadaEstimada: '',
         observaciones: ''
     })
+
+    // Aplica el prefill (si viene) cada vez que se abre el diálogo — después de
+    // declarar `form`/los *Inputs de arriba, para no depender del orden de hooks.
+    useEffect(() => {
+        if (!open || !prefill) return
+        setForm(prev => ({
+            ...prev,
+            origen: prefill.origen || prev.origen,
+            pares: prefill.pares?.length > 0 ? prefill.pares.map(p => ({ idVehiculo: p.idVehiculo || '', idConductor: p.idConductor || '' })) : prev.pares,
+            paradas: prefill.paradas || [],
+            idRutaIda: prefill.idRutaIda || undefined,
+        }))
+        if (prefill.pares?.length > 0) {
+            setVehiculoInputs(prefill.pares.map(p => {
+                const v = vehiculos.find(x => x.idVehiculo === p.idVehiculo)
+                return v ? `${v.placa} — ${v.marca} ${v.modelo}` : ''
+            }))
+            setConductorInputs(prefill.pares.map(p => {
+                const c = conductores.find(x => x.idConductor === p.idConductor)
+                return c ? `${c.nombre} ${c.apellido}` : ''
+            }))
+        }
+        if (prefill.paradas?.length > 0) {
+            setParadaInputs(prefill.paradas.map(p => {
+                const d = destinos.find(x => x.idDestino === parseInt(p.idDestino))
+                return d ? `${d.ciudad} - ${d.departamento}` : ''
+            }))
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- solo debe correr al abrir con un prefill nuevo, no en cada cambio de vehiculos/conductores/destinos
+    }, [open, prefill])
 
     const handleChange = (e) => {
         let { name, value } = e.target
@@ -100,6 +138,49 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess }) => {
         setConductorInputs(prev => prev.filter((_, i) => i !== index))
     }
 
+    const handleParadaChange = (index, idDestino) => {
+        const paradas = form.paradas.map((p, i) => i === index ? { ...p, idDestino } : p)
+        setForm(prev => ({ ...prev, paradas }))
+        setErrores(prev => ({ ...prev, paradas: prev.paradas ? validarParadas(paradas) : '' }))
+        setApiError(null)
+    }
+
+    const handleAgregarParada = () => {
+        setForm(prev => ({ ...prev, paradas: [...prev.paradas, { idDestino: '', fechaLlegadaEstimada: '', horaLlegadaEstimada: '' }] }))
+        setParadaInputs(prev => [...prev, ''])
+    }
+
+    const handleParadaFechaChange = (index, campo, value) => {
+        const paradas = form.paradas.map((p, i) => i === index
+            ? { ...p, [campo]: value, ...(campo === 'fechaLlegadaEstimada' && !value ? { horaLlegadaEstimada: '' } : {}) }
+            : p)
+        setForm(prev => ({ ...prev, paradas }))
+        setApiError(null)
+    }
+
+    const handleQuitarParada = (index) => {
+        const paradas = form.paradas.filter((_, i) => i !== index)
+        setForm(prev => ({ ...prev, paradas }))
+        setErrores(prev => ({ ...prev, paradas: prev.paradas ? validarParadas(paradas) : '' }))
+        setParadaInputs(prev => prev.filter((_, i) => i !== index))
+    }
+
+    // Reordena una parada moviéndola una posición arriba (-1) o abajo (+1) — el
+    // "orden" que se manda al backend es la posición en el array, así que reordenar
+    // acá es lo único que hace falta (ver rutaService.validarParadas del backend).
+    const handleMoverParada = (index, direccion) => {
+        const destino = index + direccion
+        if (destino < 0 || destino >= form.paradas.length) return
+        const paradas = [...form.paradas]
+        ;[paradas[index], paradas[destino]] = [paradas[destino], paradas[index]]
+        setForm(prev => ({ ...prev, paradas }))
+        setParadaInputs(prev => {
+            const copia = [...prev]
+            ;[copia[index], copia[destino]] = [copia[destino], copia[index]]
+            return copia
+        })
+    }
+
     const handleNext = () => {
         const erroresEncontrados = validarPaso(activeStep, form)
         if (Object.keys(erroresEncontrados).length > 0) { setErrores(erroresEncontrados); return }
@@ -121,6 +202,12 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess }) => {
                     .filter(p => p.idVehiculo && p.idConductor)
                     .map(p => ({ idVehiculo: parseInt(p.idVehiculo), idConductor: parseInt(p.idConductor) })),
                 idDestino:   parseInt(form.idDestino),
+                paradas: form.paradas.filter(p => p.idDestino).map(p => ({
+                    idDestino: parseInt(p.idDestino),
+                    fechaLlegadaEstimada: p.fechaLlegadaEstimada || null,
+                    horaLlegadaEstimada: p.fechaLlegadaEstimada ? (p.horaLlegadaEstimada || null) : null,
+                })),
+                ...(form.idRutaIda ? { idRutaIda: form.idRutaIda } : {}),
                 observaciones: form.observaciones || '',
                 estado: 'Programada'
             })
@@ -135,13 +222,14 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess }) => {
 
     const handleClose = () => {
         if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
-        setForm({ origen: 'Medellín', pares: [{ idVehiculo: '', idConductor: '' }], idDestino: '', fechaSalida: '', horaSalida: '', fechaLlegadaEstimada: '', horaLlegadaEstimada: '', observaciones: '' })
+        setForm({ origen: 'Medellín', pares: [{ idVehiculo: '', idConductor: '' }], idDestino: '', paradas: [], fechaSalida: '', horaSalida: '', fechaLlegadaEstimada: '', horaLlegadaEstimada: '', observaciones: '' })
         setErrores({})
         setApiError(null)
         setActiveStep(0)
         setDestinoInput('')
         setVehiculoInputs([''])
         setConductorInputs([''])
+        setParadaInputs([])
         onClose?.()
     }
 
@@ -167,6 +255,10 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess }) => {
                         vehiculos={vehiculos} conductores={conductores} vehiculosExcluidos={vehiculosExcluidos} conductoresExcluidos={conductoresExcluidos}
                         vehiculoInputs={vehiculoInputs} setVehiculoInputs={setVehiculoInputs} conductorInputs={conductorInputs} setConductorInputs={setConductorInputs}
                         getVehiculoOpciones={getVehiculoOpciones} getConductorOpciones={getConductorOpciones}
+                        handleParadaChange={handleParadaChange} handleAgregarParada={handleAgregarParada}
+                        handleQuitarParada={handleQuitarParada} handleMoverParada={handleMoverParada}
+                        handleParadaFechaChange={handleParadaFechaChange}
+                        paradaInputs={paradaInputs} setParadaInputs={setParadaInputs}
                     />
                 )
             case 1:
@@ -192,7 +284,8 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess }) => {
     return (
         <WizardDialog
             open={open} onClose={handleClose}
-            title="Registrar Ruta" subtitle="Ingresa los datos de la nueva ruta paso a paso."
+            title={prefill ? 'Programar Regreso' : 'Registrar Ruta'}
+            subtitle={prefill ? 'Revisa los datos precargados del viaje de vuelta y complétalos.' : 'Ingresa los datos de la nueva ruta paso a paso.'}
             steps={steps} activeStep={activeStep}
             onBack={handleBack} onNext={handleNext} onSubmit={handleSubmit}
             submitting={submitting} submitLabel="Registrar" submitIcon={<CheckOutlinedIcon />}
