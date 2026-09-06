@@ -1,7 +1,6 @@
-import { esSoloRelleno } from '../../../shared/utils/formatters.js'
 import { hoyISO } from '../../../shared/utils/horarioLaboral.js'
 import { validarNumeroDocumento } from '../../../shared/utils/documento.js'
-import { EMAIL_REGEX } from '../../../shared/validations/emailValidation.js'
+import { EMAIL_REGEX, validarUsuarioCorreo } from '../../../shared/validations/emailValidation.js'
 import { PASSWORD_REGEX } from '../../../shared/validations/passwordValidation.js'
 
 export const steps = ['Datos Personales', 'Contacto y Credenciales', 'Licencia', 'Confirmación']
@@ -10,20 +9,29 @@ export const validarEmail = (email) => {
     const valor = (email || '').trim()
     if (!valor) return 'El correo es obligatorio'
     if (!valor.includes('@')) return 'El correo debe contener un @ (ej: usuario@dominio.com)'
+    const errorUsuario = validarUsuarioCorreo(valor)
+    if (errorUsuario) return errorUsuario
     if (!valor.split('@')[1]?.includes('.')) return 'El dominio del correo debe contener un punto (ej: usuario@dominio.com)'
     if (!EMAIL_REGEX.test(valor)) return 'El correo no es válido'
     return ''
 }
 
 export const PASSWORD_HELP = '8-64 caracteres, con mayúsculas, minúsculas, números y un carácter especial'
-const SOLO_LETRAS_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/
+const SOLO_LETRAS_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/
+// Manejar carga de servicio público exige mayoría de edad y licencia pública
+// colombiana vigente (RUNT) -- TI/RC quedan fuera. PPT sí: desde 2023 el Ministerio
+// de Transporte permite a un venezolano con PPT tramitar/convalidar licencia de
+// servicio público (C2/C3) en el RUNT. Ver LOGICA.md.
+const TIPOS_DOC_PERMITIDOS = ['CC', 'CE', 'PPT']
 
 // requerirPassword: Registrar exige contraseña y confirmación; Actualizar las deja
 // opcionales (password vacío = "no cambiar la actual").
 export const validarCampo = (name, form, { requerirPassword = false } = {}) => {
     switch (name) {
         case 'tipoIdentificacion':
-            return form.tipoIdentificacion ? '' : 'Selecciona un tipo de documento'
+            if (!form.tipoIdentificacion) return 'Selecciona un tipo de documento'
+            if (!TIPOS_DOC_PERMITIDOS.includes(form.tipoIdentificacion)) return 'Tipo de documento no permitido para este módulo'
+            return ''
         case 'nombre':
             if (!form.nombre.trim()) return 'El nombre es obligatorio'
             if (!SOLO_LETRAS_REGEX.test(form.nombre)) return 'El nombre solo puede contener letras'
@@ -34,7 +42,7 @@ export const validarCampo = (name, form, { requerirPassword = false } = {}) => {
             return ''
         case 'telefono':
             if (!form.telefono.trim()) return 'El teléfono es obligatorio'
-            if (!/^\d{10}$/.test(form.telefono)) return 'El teléfono debe tener 10 dígitos'
+            if (!/^3\d{9}$/.test(form.telefono)) return 'El teléfono debe tener 10 dígitos y empezar por 3'
             return ''
         case 'email':
             return validarEmail(form.email)
@@ -54,10 +62,8 @@ export const validarCampo = (name, form, { requerirPassword = false } = {}) => {
             }
             if (form.password && form.password !== form.confirmarPassword) return 'Las contraseñas no coinciden'
             return ''
-        case 'numeroLicencia':
-            if (!form.numeroLicencia?.trim()) return 'El número de licencia es obligatorio'
-            if (esSoloRelleno(form.numeroLicencia)) return 'El número de licencia no puede contener solo espacios o guiones'
-            return ''
+        // numeroLicencia no se valida: es de solo lectura y siempre igual al número de
+        // documento (Ley 769 de 2002 — ver CLAUDE.md de este repo).
         default:
             return ''
     }
@@ -86,7 +92,7 @@ export const CATEGORIAS_LICENCIA = [
 ]
 
 export const getTipoLabel = (tipo) => {
-    const tipos = { 'CC': 'Cédula', 'CE': 'Cédula Extranjería', 'TI': 'Tarjeta Identidad', 'PAS': 'Pasaporte', 'RC': 'Registro Civil' }
+    const tipos = { 'CC': 'Cédula', 'CE': 'Cédula Extranjería', 'PPT': 'PPT' }
     return tipos[tipo] || tipo
 }
 
@@ -106,7 +112,7 @@ export const formInicialConductor = () => ({
 })
 
 export const validarPaso = (step, form, avisos, { requerirPassword = false, checkVencidas = false } = {}) => {
-    const { avisoDocDuplicado, avisoNombreDuplicado, avisoEmailDuplicado, avisoLicenciaDuplicada } = avisos
+    const { avisoDocDuplicado, avisoNombreDuplicado, avisoEmailDuplicado } = avisos
     const e = {}
 
     if (step === 0) {
@@ -127,7 +133,6 @@ export const validarPaso = (step, form, avisos, { requerirPassword = false, chec
     if (step === 2) {
         const errorCategorias = validarCategorias(form.categoriasLicencia, { checkVencidas })
         if (errorCategorias) e.categoriasLicencia = errorCategorias
-        e.numeroLicencia = validarCampo('numeroLicencia', form) || avisoLicenciaDuplicada
     }
 
     Object.keys(e).forEach(k => { if (!e[k]) delete e[k] })

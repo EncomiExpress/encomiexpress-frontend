@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import * as conductorService from '../services/conductorService.js'
 import * as usuarioService from '../../usuarios/services/usuarioService.js'
-import { hayNombreDuplicado, MENSAJE_NOMBRE_DUPLICADO, hayDocumentoDuplicado, MENSAJE_DOC_DUPLICADO, MENSAJE_EMAIL_DUPLICADO, MENSAJE_LICENCIA_DUPLICADA } from '../../../shared/utils/duplicados.js'
-import { validarCampo, validarEmail } from '../validations/conductorValidation.js'
+import { hayNombreDuplicado, MENSAJE_NOMBRE_DUPLICADO, hayDocumentoDuplicado, MENSAJE_DOC_DUPLICADO, MENSAJE_EMAIL_DUPLICADO } from '../../../shared/utils/duplicados.js'
+import { validarEmail } from '../validations/conductorValidation.js'
 
 // excludeConductorId/excludeUsuarioId: solo Actualizar los pasa (para no marcar el
 // propio registro como duplicado de sí mismo); Registrar los deja undefined.
@@ -10,7 +10,6 @@ export function useDuplicadoConductor({ form, setErrores, excludeConductorId, ex
     const [avisoNombreDuplicado, setAvisoNombreDuplicado] = useState('')
     const [avisoDocDuplicado, setAvisoDocDuplicado] = useState('')
     const [avisoEmailDuplicado, setAvisoEmailDuplicado] = useState('')
-    const [avisoLicenciaDuplicada, setAvisoLicenciaDuplicada] = useState('')
 
     const conductorIdOptions = excludeConductorId !== undefined
         ? { excludeId: excludeConductorId, getId: (r) => r.idConductor }
@@ -58,30 +57,6 @@ export function useDuplicadoConductor({ form, setErrores, excludeConductorId, ex
         }
     }
 
-    const verificarLicenciaDuplicada = async () => {
-        if (!form.numeroLicencia.trim()) {
-            setAvisoLicenciaDuplicada('')
-            return
-        }
-        const errorRelleno = validarCampo('numeroLicencia', form)
-        if (errorRelleno) {
-            setErrores(prev => ({ ...prev, numeroLicencia: errorRelleno }))
-            return
-        }
-        try {
-            const res = await conductorService.getConductores(undefined, { q: form.numeroLicencia.trim(), limit: 10 })
-            if (!res?.success) return
-            const duplicado = hayDocumentoDuplicado(res.data, form.numeroLicencia, {
-                getDoc: (r) => r.numeroLicencia,
-                ...conductorIdOptions,
-            })
-            setAvisoLicenciaDuplicada(duplicado ? MENSAJE_LICENCIA_DUPLICADA : '')
-            if (duplicado) setErrores(prev => ({ ...prev, numeroLicencia: MENSAJE_LICENCIA_DUPLICADA }))
-        } catch {
-            // Si falla la verificación no bloqueamos el flujo
-        }
-    }
-
     const verificarNombreDuplicado = async () => {
         if (!form.nombre.trim() || !form.apellido.trim()) {
             setAvisoNombreDuplicado('')
@@ -103,8 +78,8 @@ export function useDuplicadoConductor({ form, setErrores, excludeConductorId, ex
     }
 
     return {
-        avisoNombreDuplicado, avisoDocDuplicado, avisoEmailDuplicado, avisoLicenciaDuplicada,
-        setAvisoNombreDuplicado, setAvisoDocDuplicado, setAvisoEmailDuplicado, setAvisoLicenciaDuplicada,
-        verificarDocumentoDuplicado, verificarEmailDuplicado, verificarLicenciaDuplicada, verificarNombreDuplicado,
+        avisoNombreDuplicado, avisoDocDuplicado, avisoEmailDuplicado,
+        setAvisoNombreDuplicado, setAvisoDocDuplicado, setAvisoEmailDuplicado,
+        verificarDocumentoDuplicado, verificarEmailDuplicado, verificarNombreDuplicado,
     }
 }

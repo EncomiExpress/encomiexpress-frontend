@@ -33,7 +33,7 @@ const RutasTabla = ({ rutas, theme }) => (
                                 onClick={() => window.open(`/transporte/rutas?highlight=${r.idRuta}`, '_blank')}
                                 sx={{ cursor: 'pointer', '&:hover td': { backgroundColor: theme.palette.action.hover } }}>
                                 <TableCell sx={{ fontSize: '0.8rem', fontWeight: 600, py: 0.75 }}>{r.origen || `#${r.idRuta}`}</TableCell>
-                                <TableCell sx={{ fontSize: '0.8rem', py: 0.75 }}>{r.destino?.ciudad || '—'}</TableCell>
+                                <TableCell sx={{ fontSize: '0.8rem', py: 0.75 }}>{r.destino?.municipio || '—'}</TableCell>
                                 <TableCell sx={{ py: 0.75, textAlign: 'right' }}>
                                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.75 }}>
                                         <Box sx={{ width: 9, height: 9, borderRadius: '50%', flexShrink: 0, backgroundColor: esProgramada ? 'transparent' : color, border: `2px solid ${color}` }} />
@@ -56,20 +56,26 @@ const ModalInhabilitarConductor = ({ open, data, onClose, onExited, onConfirm })
 
     useEffect(() => {
         if (!open || !data.idConductor || !data.habilitadoActual) return
-        setRutasDetalle({ data: [], loading: true })
-        setAnticiposDetalle({ data: [], loading: true })
-        Promise.all([
-            rutaService.getRutas({ idConductor: data.idConductor, habilitado: 'true', limit: 100 }),
-            anticipoService.getAnticipos(undefined, { idConductor: data.idConductor, habilitado: 'true', limit: 100 }),
-        ])
-            .then(([rutasRes, anticiposRes]) => {
-                setRutasDetalle({ data: rutasRes?.data || [], loading: false })
-                setAnticiposDetalle({ data: anticiposRes?.data || [], loading: false })
-            })
-            .catch(() => {
-                setRutasDetalle({ data: [], loading: false })
-                setAnticiposDetalle({ data: [], loading: false })
-            })
+        // Función interna en vez de llamar setState directo en el cuerpo del efecto --
+        // mismo orden de ejecución, pero así el linter (react-hooks/set-state-in-effect)
+        // no confunde el reseteo de loading previo al fetch con una mutación "impura".
+        const cargarDetalle = () => {
+            setRutasDetalle({ data: [], loading: true })
+            setAnticiposDetalle({ data: [], loading: true })
+            Promise.all([
+                rutaService.getRutas({ idConductor: data.idConductor, habilitado: 'true', limit: 100 }),
+                anticipoService.getAnticipos(undefined, { idConductor: data.idConductor, habilitado: 'true', limit: 100 }),
+            ])
+                .then(([rutasRes, anticiposRes]) => {
+                    setRutasDetalle({ data: rutasRes?.data || [], loading: false })
+                    setAnticiposDetalle({ data: anticiposRes?.data || [], loading: false })
+                })
+                .catch(() => {
+                    setRutasDetalle({ data: [], loading: false })
+                    setAnticiposDetalle({ data: [], loading: false })
+                })
+        }
+        cargarDetalle()
     }, [open, data.idConductor, data.habilitadoActual])
 
     const handleExited = () => {

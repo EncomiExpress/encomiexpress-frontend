@@ -18,12 +18,13 @@ const PasoDocumento = ({ form, errores, setErrores, handleChange, verificarDocum
                 select: { IconComponent: KeyboardArrowDownOutlinedIcon },
             }}
             sx={formFieldStyles}>
+            {/* Sin TI/RC: heredar un vehículo siendo menor es un caso extremo, se opta
+            por mantener el formulario limpio -- ver LOGICA.md ("Tipos de documento por
+            módulo"). */}
             <MenuItem value="CC">Cédula de Ciudadanía (CC)</MenuItem>
             <MenuItem value="NIT">NIT (Persona Jurídica)</MenuItem>
-            <MenuItem value="TI">Tarjeta de Identidad (TI)</MenuItem>
             <MenuItem value="CE">Cédula de Extranjería (CE)</MenuItem>
             <MenuItem value="PAS">Pasaporte</MenuItem>
-            <MenuItem value="RC">Registro Civil (RC)</MenuItem>
         </TextField>
         <FormField label="Número de documento" name="numeroIdentificacion" value={form.numeroIdentificacion}
             onChange={handleChange}

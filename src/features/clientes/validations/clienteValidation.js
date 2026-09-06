@@ -1,6 +1,8 @@
-import { maxLengthDocumento, docHelperText as docHelperTextBase, validarNumeroDocumento } from '../../../shared/utils/documento.js'
+import { maxLengthDocumento, docHelperText as docHelperTextBase, validarNumeroDocumento, formatearNit, NIT_MAX_LENGTH, validarNitConDv } from '../../../shared/utils/documento.js'
 import { esSoloRelleno } from '../../../shared/utils/formatters.js'
-import { EMAIL_REGEX } from '../../../shared/validations/emailValidation.js'
+import { EMAIL_REGEX, validarUsuarioCorreo } from '../../../shared/validations/emailValidation.js'
+import { validarDireccion } from '../../../shared/validations/direccionValidation.js'
+import { validarTelefono } from '../../../shared/validations/telefonoValidation.js'
 
 export const steps = ['Datos Personales', 'Contacto y Ubicación', 'Confirmación']
 
@@ -9,6 +11,8 @@ export const validarEmail = (email) => {
     const valor = (email || '').trim()
     if (!valor) return 'El correo es obligatorio'
     if (!valor.includes('@')) return 'El correo debe contener un @ (ej: usuario@dominio.com)'
+    const errorUsuario = validarUsuarioCorreo(valor)
+    if (errorUsuario) return errorUsuario
     if (!valor.split('@')[1]?.includes('.')) return 'El dominio del correo debe contener un punto (ej: usuario@dominio.com)'
     if (!EMAIL_REGEX.test(valor)) return 'El correo no es válido'
     if (valor.length > EMAIL_MAX_LENGTH) return `El correo no puede superar los ${EMAIL_MAX_LENGTH} caracteres`
@@ -18,13 +22,17 @@ export const validarEmail = (email) => {
 // Valida un único campo del formulario (usado en onBlur y para re-validar en vivo
 // mientras se corrige un campo ya marcado con error). numeroIdentificacion no vive
 // aquí porque ya tiene su propia validación (validarDocumentoCompleto, más abajo).
-const SOLO_LETRAS_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/
+const SOLO_LETRAS_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/
 const DIRECCION_MAX_LENGTH = 200
+// Sin TI/RC (menores de edad) -- ver LOGICA.md ("Tipos de documento por módulo").
+const TIPOS_DOC_PERMITIDOS = ['CC', 'NIT', 'CE', 'PAS', 'PPT']
 export const validarCampo = (name, form) => {
     const esNIT = form.tipoIdentificacion === 'NIT'
     switch (name) {
         case 'tipoIdentificacion':
-            return form.tipoIdentificacion ? '' : 'Selecciona un tipo de documento'
+            if (!form.tipoIdentificacion) return 'Selecciona un tipo de documento'
+            if (!TIPOS_DOC_PERMITIDOS.includes(form.tipoIdentificacion)) return 'Tipo de documento no permitido para este módulo'
+            return ''
         case 'nombre':
             if (!form.nombre.trim()) return esNIT ? 'La razón social es obligatoria' : 'El nombre es obligatorio'
             if (esNIT && esSoloRelleno(form.nombre)) return 'La razón social no puede contener solo espacios o guiones'
@@ -36,16 +44,13 @@ export const validarCampo = (name, form) => {
             if (!SOLO_LETRAS_REGEX.test(form.apellido)) return 'El apellido solo puede contener letras'
             return ''
         case 'telefono':
-            if (!form.telefono.trim()) return 'El teléfono es obligatorio'
-            if (!/^\d{10}$/.test(form.telefono)) return 'El teléfono debe tener exactamente 10 dígitos'
-            return ''
+            return validarTelefono(form.telefono, form.tipoIdentificacion)
         case 'email':
             return validarEmail(form.email)
         case 'direccion':
             if (!form.direccion.trim()) return 'La dirección es obligatoria'
-            if (esSoloRelleno(form.direccion)) return 'La dirección no puede contener solo espacios o guiones'
             if (form.direccion.length > DIRECCION_MAX_LENGTH) return `La dirección no puede superar los ${DIRECCION_MAX_LENGTH} caracteres`
-            return ''
+            return validarDireccion(form.direccion)
         case 'idDestino':
             return form.idDestino ? '' : 'Selecciona el municipio del cliente'
         default:
@@ -53,27 +58,25 @@ export const validarCampo = (name, form) => {
     }
 }
 
+// NIT: máscara (formatearNit) y validación estricta (validarNitConDv) viven en
+// shared/utils/documento.js — mismo comportamiento que Propietario. Se re-exporta
+// formatearNit porque RegistrarCliente.jsx/ActualizarCliente.jsx lo importan de aquí.
+export { formatearNit }
+
 export const getMaxLengthDoc = (tipoIdentificacion) => {
-    if (tipoIdentificacion === 'NIT') return 15
+    if (tipoIdentificacion === 'NIT') return NIT_MAX_LENGTH
     return maxLengthDocumento(tipoIdentificacion)
 }
 
 export const docHelperText = (tipoIdentificacion) => {
-    if (tipoIdentificacion === 'NIT') return 'Números con guión, hasta 15 caracteres'
+    if (tipoIdentificacion === 'NIT') return 'Escribe solo números: los 9 dígitos y luego el de verificación. El guion se pone solo.'
     return docHelperTextBase(tipoIdentificacion) || ''
 }
 
-// NIT tiene su propio formato (dígitos + guión, hasta 15) — no encaja en las
-// reglas genéricas de documento.js, así que se valida aparte aquí.
 export const validarDocumentoCompleto = (tipo, valor) => {
+    if (tipo === 'NIT') return validarNitConDv(valor)
     const limpio = (valor || '').trim()
     if (!limpio) return 'El número de documento es obligatorio'
-    if (tipo === 'NIT') {
-        if (!/^[0-9-]+$/.test(limpio)) return 'Solo se permiten números y guión'
-        if (!/\d/.test(limpio)) return 'Debe contener al menos un número'
-        if (limpio.length > 15) return 'Máximo 15 caracteres'
-        return null
-    }
     return validarNumeroDocumento(tipo, limpio)
 }
 

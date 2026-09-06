@@ -6,7 +6,6 @@ import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import TablaPaginacionFooter from '../../shared/components/TablaPaginacionFooter.jsx'
 import DataTable, { FiltroEstadoTabs, BuscadorField } from '../../shared/components/DataTable.jsx'
 import useEntityCrud from '../../shared/hooks/useEntityCrud.js'
-import { usePropietario } from './context/PropietarioContext.jsx'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import RegistrarPropietario from './RegistrarPropietario'
@@ -27,10 +26,17 @@ const ListarPropietario = () => {
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [propietarioEditar, setPropietarioEditar] = useState(null)
-    const { propietarios, total, fetchPropietarios } = usePropietario()
     const { usuario, tienePermiso, PERMISOS } = useAuth()
 
-    const { confirmToggle, setConfirmToggle, modalBloqueo, setModalBloqueo, solicitarToggle, onConfirmar } = usePropietarioAcciones()
+    // Estado propio de esta tabla paginada (NO el arreglo compartido de
+    // PropietarioContext, que otras pantallas piden completo con limit:1000 para su
+    // propio uso, y que además se refresca solo con un evento global
+    // "vehiculo:toggled" — ver ../../../LOGICA.md, "Bug transversal — listas
+    // paginadas corrompidas por prefetch compartido"). Si se lee de ahí, cualquier
+    // otra pantalla (o ese evento) que refresque ese arreglo compartido pisa la
+    // página actual.
+    const [propietarios, setPropietarios] = useState([])
+    const [total, setTotal] = useState(0)
 
     const {
         theme,
@@ -44,7 +50,13 @@ const ListarPropietario = () => {
         filtroContainerRef, filtroBtnRefs, filtroPillStyle,
         refetch,
     } = useEntityCrud({
-        fetchPage: (signal, params) => fetchPropietarios(signal, { ...params, tipoFlota: filtroTipoFlota || undefined }),
+        fetchPage: async (signal, params) => {
+            const res = await getPropietarios(signal, { ...params, tipoFlota: filtroTipoFlota || undefined })
+            if (res?.success) {
+                setPropietarios(res.data)
+                setTotal(res.total ?? res.data.length)
+            }
+        },
         extraDeps: [filtroTipoFlota],
         fetchPageForHighlight: (id, limit) => getPageOfPropietario(id, limit),
         exportConfig: {
@@ -63,6 +75,8 @@ const ListarPropietario = () => {
         },
         onExportError: (err) => showToast(err.message || 'Error al exportar.', 'error'),
     })
+
+    const { confirmToggle, setConfirmToggle, modalBloqueo, setModalBloqueo, solicitarToggle, onConfirmar } = usePropietarioAcciones(refetch)
 
     useEffect(() => {
         if (!usuario) navigate('/login')

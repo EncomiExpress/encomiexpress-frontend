@@ -17,10 +17,13 @@ const PasoDocumento = ({ form, errores, setErrores, handleChange, verificarDocum
                 select: { IconComponent: KeyboardArrowDownOutlinedIcon }
             }}
             sx={formFieldStyles}>
+            {/* Solo CC/CE/PPT: por ley laboral un menor de edad (TI/RC) no puede ser
+            contratado, y ni TE/pasaporte son un permiso de trabajo válido para operar
+            el sistema -- ver LOGICA.md ("Tipos de documento por módulo"). PPT sí
+            habilita a un migrante venezolano regularizado a trabajar formalmente. */}
             <MenuItem value="CC">Cédula de Ciudadanía (CC)</MenuItem>
-            <MenuItem value="TI">Tarjeta de Identidad (TI)</MenuItem>
             <MenuItem value="CE">Cédula Extranjería (CE)</MenuItem>
-            <MenuItem value="PAS">Pasaporte</MenuItem>
+            <MenuItem value="PPT">Permiso por Protección Temporal (PPT)</MenuItem>
         </TextField>
         <TextField fullWidth label="Número de documento" name="numeroIdentificacion"
             value={form.numeroIdentificacion} onChange={handleChange}

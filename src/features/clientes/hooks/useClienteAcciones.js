@@ -2,7 +2,10 @@ import { useState, useRef } from 'react'
 import { useClientes } from '../context/ClienteContext.jsx'
 import { useToast } from '../../../shared/contexts/ToastContext.jsx'
 
-const useClienteAcciones = () => {
+// refetch (opcional): recarga la página actual de ListarCliente.jsx tras un toggle
+// exitoso — su tabla ya no lee del arreglo compartido de ClienteContext (ver
+// ListarCliente.jsx), así que sin esto el toggle no se reflejaría ahí.
+const useClienteAcciones = (refetch) => {
     const { toggleHabilitadoCliente } = useClientes()
     const { showToast } = useToast()
     const pendingConfirm = useRef(false)
@@ -32,7 +35,7 @@ const useClienteAcciones = () => {
         if (wasPending && data) {
             const habilitadoActual = data.habilitadoActual
             toggleHabilitadoCliente(data.idCliente)
-                .then(() => showToast(`Cliente ${habilitadoActual ? 'inhabilitado' : 'habilitado'} correctamente`, 'success'))
+                .then(() => { showToast(`Cliente ${habilitadoActual ? 'inhabilitado' : 'habilitado'} correctamente`, 'success'); refetch?.() })
                 .catch(() => { })
         }
     }

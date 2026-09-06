@@ -7,16 +7,17 @@ import { FormField, FormSelect } from '../../../../shared/components/FormularioE
 import { CATEGORIAS_LICENCIA, validarCategorias } from '../../validations/conductorValidation.js'
 
 const PasoLicencia = ({
-    theme, form, errores, setErrores, handleChange,
-    handleCategoriaChange, handleAgregarCategoria, handleQuitarCategoria, verificarLicenciaDuplicada,
+    theme, form, errores, setErrores,
+    handleCategoriaChange, handleAgregarCategoria, handleQuitarCategoria,
     validationOpts, numeroLicenciaHelperText, minVencimiento,
 }) => (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-        <FormField label="N° de Licencia" name="numeroLicencia" value={form.numeroLicencia}
-            onChange={handleChange} onBlur={verificarLicenciaDuplicada} icon={BadgeOutlinedIcon}
-            error={errores.numeroLicencia}
+        {/* En Colombia el número de licencia de conducción es siempre el número de
+            documento del titular — no se captura ni se edita, solo se muestra. */}
+        <FormField label="Número de Licencia" name="numeroLicencia" value={form.numeroLicencia}
+            icon={BadgeOutlinedIcon} disabled
             inputProps={{ maxLength: 20 }} placeholder="Ej: 123456789"
-            helperText={errores.numeroLicencia || numeroLicenciaHelperText} />
+            helperText={numeroLicenciaHelperText} />
 
         <Typography variant="body2" fontWeight={600} color={theme.palette.text.primary}>
             Categorías de licencia

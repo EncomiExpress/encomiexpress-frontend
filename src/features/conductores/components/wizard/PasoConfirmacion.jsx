@@ -19,7 +19,7 @@ const PasoConfirmacion = ({ theme, form, formOriginal, apiError, setApiError, si
         [form.telefono, formOriginal.telefono],
         [form.email, formOriginal.email],
         [form.password, ''],
-        [form.numeroLicencia, formOriginal.numeroLicencia],
+        // numeroLicencia no se cuenta aparte: es espejo de numeroIdentificacion (arriba).
         [JSON.stringify(form.categoriasLicencia), JSON.stringify(formOriginal.categoriasLicencia)],
     ].filter(([a, b]) => sonDistintos(a, b)).length : 0
 
@@ -72,7 +72,7 @@ const PasoConfirmacion = ({ theme, form, formOriginal, apiError, setApiError, si
                         <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Licencia de Conducción</Typography>
                     </Box>
                     <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica los datos de licencia</Typography>
-                    <ConfirmRow label="N° de licencia" value={form.numeroLicencia || '—'} previousValue={formOriginal ? (formOriginal.numeroLicencia || '—') : undefined} />
+                    <ConfirmRow label="Número de Licencia" value={form.numeroLicencia || '—'} previousValue={formOriginal ? (formOriginal.numeroLicencia || '—') : undefined} />
                     {form.categoriasLicencia.filter(c => c.categoria && c.vencimiento).map((cat, i) => {
                         const original = formOriginal?.categoriasLicencia?.find(c => c.categoria === cat.categoria)
                         return (

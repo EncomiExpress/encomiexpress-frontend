@@ -2,14 +2,15 @@ import { Box, MenuItem } from '@mui/material'
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
 import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined'
 import { FormField, FormSelect } from '../../../../shared/components/FormularioEstandarizado.jsx'
+import { maxLengthTelefono, telefonoHelperText } from '../../../../shared/validations/telefonoValidation.js'
 import { validarCampo } from '../../validations/propietarioValidation.js'
 
 const PasoContactoFlota = ({ form, errores, setErrores, handleChange }) => (
     <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
         <FormField label="Teléfono" name="telefono" value={form.telefono} onChange={handleChange}
             onBlur={() => setErrores(prev => ({ ...prev, telefono: validarCampo('telefono', form) }))}
-            required error={errores.telefono} helperText={errores.telefono || 'Número de 10 dígitos'}
-            icon={PhoneOutlinedIcon} inputProps={{ maxLength: 10 }} />
+            required error={errores.telefono} helperText={errores.telefono || telefonoHelperText(form.tipoIdentificacion)}
+            icon={PhoneOutlinedIcon} inputProps={{ maxLength: maxLengthTelefono(form.tipoIdentificacion) }} />
         <FormField label="Correo electrónico" name="email" value={form.email}
             onChange={handleChange}
             onBlur={() => setErrores(prev => ({ ...prev, email: validarCampo('email', form) }))}

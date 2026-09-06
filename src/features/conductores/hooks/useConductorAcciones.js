@@ -2,7 +2,10 @@ import { useState } from 'react'
 import { useConductor } from '../context/ConductorContext.jsx'
 import { useToast } from '../../../shared/contexts/ToastContext.jsx'
 
-const useConductorAcciones = () => {
+// refetch (opcional): recarga la página actual de ListarConductor.jsx tras un toggle
+// exitoso — su tabla ya no lee del arreglo compartido de ConductorContext (ver
+// ListarConductor.jsx), así que sin esto el toggle no se reflejaría ahí.
+const useConductorAcciones = (refetch) => {
     const { toggleHabilitado } = useConductor()
     const { showToast } = useToast()
 
@@ -23,6 +26,7 @@ const useConductorAcciones = () => {
         try {
             await toggleHabilitado(idConductor)
             showToast(`Conductor ${habilitadoActual ? 'inhabilitado' : 'habilitado'} correctamente.`, 'success')
+            refetch?.()
         } catch (err) {
             if (err?.details?.length > 0) {
                 setModalBloqueo({ open: true, dependencias: err.details, mensaje: err.message })

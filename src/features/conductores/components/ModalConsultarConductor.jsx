@@ -92,7 +92,7 @@ const ModalConsultarConductor = ({ conductor, onClose }) => {
                         </FichaCard>
 
                         <FichaCard icon={BadgeOutlinedIcon} title="Licencia y Estado" subtitle="Datos de licencia y estado operativo">
-                            <CampoFila label="N° Licencia" value={conductor.numeroLicencia} />
+                            <CampoFila label="Número de Licencia" value={conductor.numeroLicencia} />
                             {(conductor.categoriasLicencia || []).length === 0 ? (
                                 <CampoFila label="Categorías" value="—" />
                             ) : conductor.categoriasLicencia.map((cat, i) => (
@@ -161,7 +161,7 @@ const ModalConsultarConductor = ({ conductor, onClose }) => {
                                                 onClick={() => window.open(`/transporte/rutas?highlight=${r.idRuta}`, '_blank')}
                                                 sx={{ cursor: 'pointer', '&:hover': { backgroundColor: theme.palette.background.subtle } }}>
                                                 <TableCell sx={{ fontSize: '0.82rem' }}>{r.origen || '—'}</TableCell>
-                                                <TableCell sx={{ fontSize: '0.82rem' }}>{r.destino?.ciudad || '—'}</TableCell>
+                                                <TableCell sx={{ fontSize: '0.82rem' }}>{r.destino?.municipio || '—'}</TableCell>
                                                 <TableCell sx={{ fontSize: '0.82rem' }}>{r.fechaSalida ? formatFecha(r.fechaSalida) : '—'}</TableCell>
                                                 <TableCell>
                                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>

@@ -11,6 +11,7 @@ import { hoyISO } from '../../shared/utils/horarioLaboral.js'
 import {
     steps, validarCampo, validarCategorias, validarPaso, PASSWORD_HELP, formInicialConductor,
 } from './validations/conductorValidation.js'
+import { filtrarCorreo } from '../../shared/validations/emailValidation.js'
 import { useDuplicadoConductor } from './hooks/useDuplicadoConductor.js'
 import WizardDialog from '../../shared/components/WizardDialog.jsx'
 import PasoDocumento from './components/wizard/PasoDocumento.jsx'
@@ -34,9 +35,9 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
     const [form, setForm] = useState(formInicialConductor())
 
     const {
-        avisoNombreDuplicado, avisoDocDuplicado, avisoEmailDuplicado, avisoLicenciaDuplicada,
-        setAvisoNombreDuplicado, setAvisoDocDuplicado, setAvisoEmailDuplicado, setAvisoLicenciaDuplicada,
-        verificarDocumentoDuplicado, verificarEmailDuplicado, verificarLicenciaDuplicada, verificarNombreDuplicado,
+        avisoNombreDuplicado, avisoDocDuplicado, avisoEmailDuplicado,
+        setAvisoNombreDuplicado, setAvisoDocDuplicado, setAvisoEmailDuplicado,
+        verificarDocumentoDuplicado, verificarEmailDuplicado, verificarNombreDuplicado,
     } = useDuplicadoConductor({ form, setErrores })
 
     const handleChange = (e) => {
@@ -80,11 +81,8 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
             value = value.replace(/[^0-9]/g, '')
         }
         if (name === 'email') {
-            value = value.replace(/[^a-zA-Z0-9@._%+-]/g, '')
+            value = filtrarCorreo(value)
             setAvisoEmailDuplicado('')
-        }
-        if (name === 'numeroLicencia') {
-            setAvisoLicenciaDuplicada('')
         }
         const formActualizado = { ...form, [name]: value }
         setForm(prev => ({ ...prev, [name]: value }))
@@ -99,14 +97,13 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
         setApiError(null)
     }
 
-    // El número de licencia casi siempre coincide con el documento en Colombia —
-    // se sugiere al llegar al paso de licencia, pero se puede cambiar.
+    // En Colombia el número de licencia de conducción es siempre el número de documento
+    // del titular — no se ingresa ni se edita, solo se muestra. Se mantiene espejado.
     useEffect(() => {
-        if (activeStep === 2 && !form.numeroLicencia && form.numeroIdentificacion) {
-            setForm(prev => ({ ...prev, numeroLicencia: prev.numeroIdentificacion }))
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [activeStep])
+        setForm(prev => prev.numeroLicencia === prev.numeroIdentificacion
+            ? prev
+            : { ...prev, numeroLicencia: prev.numeroIdentificacion })
+    }, [form.numeroIdentificacion])
 
     const handleCategoriaChange = (index, campo, value) => {
         const categoriasLicencia = form.categoriasLicencia.map((c, i) => i === index ? { ...c, [campo]: value } : c)
@@ -126,7 +123,7 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
     }
 
     const handleNext = () => {
-        const erroresEncontrados = validarPaso(activeStep, form, { avisoDocDuplicado, avisoNombreDuplicado, avisoEmailDuplicado, avisoLicenciaDuplicada }, VALIDATION_OPTS)
+        const erroresEncontrados = validarPaso(activeStep, form, { avisoDocDuplicado, avisoNombreDuplicado, avisoEmailDuplicado }, VALIDATION_OPTS)
         if (Object.keys(erroresEncontrados).length > 0) {
             setErrores(erroresEncontrados)
             return
@@ -193,10 +190,10 @@ const RegistrarConductor = ({ open, onClose, onSuccess }) => {
             case 2:
                 return (
                     <PasoLicencia
-                        theme={theme} form={form} errores={errores} setErrores={setErrores} handleChange={handleChange}
+                        theme={theme} form={form} errores={errores} setErrores={setErrores}
                         handleCategoriaChange={handleCategoriaChange} handleAgregarCategoria={handleAgregarCategoria} handleQuitarCategoria={handleQuitarCategoria}
-                        verificarLicenciaDuplicada={verificarLicenciaDuplicada} validationOpts={VALIDATION_OPTS}
-                        numeroLicenciaHelperText="Se autocompleta con el documento — puedes cambiarlo"
+                        validationOpts={VALIDATION_OPTS}
+                        numeroLicenciaHelperText="Siempre igual al número de documento (Ley 769 de 2002)"
                         minVencimiento={hoyISO()}
                     />
                 )

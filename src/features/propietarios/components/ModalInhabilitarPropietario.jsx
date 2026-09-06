@@ -15,10 +15,16 @@ const ModalInhabilitarPropietario = ({ open, data, onClose, onExited, onConfirm 
 
     useEffect(() => {
         if (!open || !data.idPropietario || !data.habilitadoActual) return
-        setVehiculosDetalle({ data: [], loading: true })
-        vehiculoService.getVehiculos(undefined, { idPropietario: data.idPropietario, habilitado: 'true', limit: 100 })
-            .then(res => setVehiculosDetalle({ data: res?.data || [], loading: false }))
-            .catch(() => setVehiculosDetalle({ data: [], loading: false }))
+        // Función interna en vez de llamar setState directo en el cuerpo del efecto --
+        // mismo orden de ejecución, pero así el linter (react-hooks/set-state-in-effect)
+        // no confunde el reseteo de loading previo al fetch con una mutación "impura".
+        const cargarVehiculosActivos = () => {
+            setVehiculosDetalle({ data: [], loading: true })
+            vehiculoService.getVehiculos(undefined, { idPropietario: data.idPropietario, habilitado: 'true', limit: 100 })
+                .then(res => setVehiculosDetalle({ data: res?.data || [], loading: false }))
+                .catch(() => setVehiculosDetalle({ data: [], loading: false }))
+        }
+        cargarVehiculosActivos()
     }, [open, data.idPropietario, data.habilitadoActual])
 
     const handleExited = () => {

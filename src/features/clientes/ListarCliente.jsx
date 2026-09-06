@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useClientes } from './context/ClienteContext.jsx'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { Box, Typography, Button, CircularProgress } from '@mui/material'
@@ -17,15 +16,20 @@ import useClienteColumns from './hooks/useClienteColumns.jsx'
 import useClienteAcciones from './hooks/useClienteAcciones.js'
 
 const ListarCliente = () => {
-    const { clientes, total, fetchClientes } = useClientes()
     const { tienePermiso, PERMISOS } = useAuth()
     const { showToast } = useToast()
+    // Estado propio de esta tabla paginada (NO el arreglo compartido de ClienteContext,
+    // que otras pantallas — ej. el selector de Cliente del wizard de Ventas — piden
+    // completo con limit:1000 para su propio uso — ver ../../../LOGICA.md, "Bug
+    // transversal — listas paginadas corrompidas por prefetch compartido"). Si se lee
+    // de ahí, cualquier otra pantalla que refresque ese arreglo compartido pisa la
+    // página actual.
+    const [clientes, setClientes] = useState([])
+    const [total, setTotal] = useState(0)
     const [clienteConsulta, setClienteConsulta] = useState(null)
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [clienteEditar, setClienteEditar] = useState(null)
-
-    const { modalInhabilitar, setModalInhabilitar, handleToggleHabilitado, handleConfirmarToggle, handleExited } = useClienteAcciones()
 
     const {
         theme,
@@ -37,8 +41,15 @@ const ListarCliente = () => {
         page, setPage, rowsPerPage, setRowsPerPage,
         exportando, handleExportar,
         filtroContainerRef, filtroBtnRefs, filtroPillStyle,
+        refetch,
     } = useEntityCrud({
-        fetchPage: (signal, params) => fetchClientes(signal, params),
+        fetchPage: async (signal, params) => {
+            const res = await getClientes(signal, params)
+            if (res?.success) {
+                setClientes(res.data || [])
+                setTotal(res.total ?? (res.data || []).length)
+            }
+        },
         fetchPageForHighlight: (id, limit) => getPageOfCliente(id, limit),
         exportConfig: {
             fetchAll: (params) => getClientes(undefined, { ...params, limit: 100000 }),
@@ -56,6 +67,8 @@ const ListarCliente = () => {
         },
         onExportError: (err) => showToast(err.message || 'Error al exportar.', 'error'),
     })
+
+    const { modalInhabilitar, setModalInhabilitar, handleToggleHabilitado, handleConfirmarToggle, handleExited } = useClienteAcciones(refetch)
 
     const emptyMessage = filtroEstado !== 'todo'
         ? 'No se encontraron clientes que coincidan con los filtros aplicados.'
@@ -181,6 +194,7 @@ const ListarCliente = () => {
                 onClose={() => setModalRegistrarOpen(false)}
                 onSuccess={() => {
                     showToast('Cliente registrado correctamente', 'success')
+                    refetch()
                 }}
             />
 
@@ -190,6 +204,7 @@ const ListarCliente = () => {
                 cliente={clienteEditar}
                 onSuccess={() => {
                     showToast('Cliente actualizado correctamente', 'success')
+                    refetch()
                 }}
             />
         </Box>

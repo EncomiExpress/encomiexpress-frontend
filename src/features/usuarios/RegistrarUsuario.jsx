@@ -9,6 +9,7 @@ import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { MENSAJE_NOMBRE_DUPLICADO } from '../../shared/utils/duplicados.js'
 import { esDocAlfanumerico, validarNumeroDocumento } from '../../shared/utils/documento.js'
 import { steps, validarCampo, validarPaso, PASSWORD_HELP } from './validations/usuarioValidation.js'
+import { filtrarCorreo } from '../../shared/validations/emailValidation.js'
 import { useDuplicadoUsuario } from './hooks/useDuplicadoUsuario.js'
 import WizardDialog from '../../shared/components/WizardDialog.jsx'
 import PasoDocumento from './components/wizard/PasoDocumento.jsx'
@@ -104,7 +105,7 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
             return
         }
         if (name === 'email') {
-            value = value.replace(/[^a-zA-Z0-9@._%+-]/g, '')
+            value = filtrarCorreo(value)
             setAvisoEmailDuplicado('')
         }
 

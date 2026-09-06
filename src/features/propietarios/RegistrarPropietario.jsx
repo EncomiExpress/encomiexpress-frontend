@@ -8,8 +8,10 @@ import { capitalizarPalabras } from '../../shared/utils/formatters.js'
 import { MENSAJE_NOMBRE_DUPLICADO } from '../../shared/utils/duplicados.js'
 import { esDocAlfanumerico } from '../../shared/utils/documento.js'
 import {
-    steps, validarCampo, validarDocumentoCompleto, validarPaso, EMPTY_FORM,
+    steps, validarCampo, validarDocumentoCompleto, validarPaso, formatearNit, EMPTY_FORM,
 } from './validations/propietarioValidation.js'
+import { filtrarCorreo } from '../../shared/validations/emailValidation.js'
+import { filtrarTelefono } from '../../shared/validations/telefonoValidation.js'
 import { useDuplicadoPropietario } from './hooks/useDuplicadoPropietario.js'
 import WizardDialog from '../../shared/components/WizardDialog.jsx'
 import PasoDocumento from './components/wizard/PasoDocumento.jsx'
@@ -57,7 +59,9 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
             return
         }
         if (name === 'nombre' || name === 'apellido') {
-            value = capitalizarPalabras(value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, ''))
+            // Razón social (NIT) es texto libre — no se filtra a solo-letras ni se
+            // capitaliza, igual que en Cliente y en el destinatario de una Venta.
+            if (!(name === 'nombre' && form.tipoIdentificacion === 'NIT')) value = capitalizarPalabras(value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, ''))
             const formActualizado = { ...form, [name]: value }
             setForm(prev => ({ ...prev, [name]: value }))
             setAvisoNombreDuplicado('')
@@ -73,7 +77,7 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
         if (name === 'numeroIdentificacion') {
             setAvisoDocDuplicado('')
             if (form.tipoIdentificacion === 'NIT') {
-                value = value.replace(/[^0-9-]/g, '')
+                value = formatearNit(value)
             } else if (esDocAlfanumerico(form.tipoIdentificacion)) {
                 value = value.replace(/[^a-zA-Z0-9]/g, '')
             } else {
@@ -87,10 +91,10 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
             return
         }
         if (name === 'telefono') {
-            value = value.replace(/[^0-9]/g, '')
+            value = filtrarTelefono(value, form.tipoIdentificacion)
         }
         if (name === 'email') {
-            value = value.replace(/[^a-zA-Z0-9@._%+-]/g, '')
+            value = filtrarCorreo(value)
         }
 
         const formActualizado = { ...form, [name]: value }

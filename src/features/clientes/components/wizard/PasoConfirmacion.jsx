@@ -14,8 +14,8 @@ const PasoConfirmacion = ({ theme, form, formOriginal, apiError, setApiError, si
     // el cliente (mismo patrón que Rutas) — se usa el que ya trae `formOriginal`.
     const getDestinoLabel = (id) => {
         const d = destinos?.find(x => x.idDestino === parseInt(id))
-        if (d) return `${d.ciudad}, ${d.departamento}`
-        if (formOriginal?.destino && parseInt(id) === formOriginal.idDestino) return `${formOriginal.destino.ciudad}, ${formOriginal.destino.departamento}`
+        if (d) return `${d.municipio}, ${d.departamento}`
+        if (formOriginal?.destino && parseInt(id) === formOriginal.idDestino) return `${formOriginal.destino.municipio}, ${formOriginal.destino.departamento}`
         return '—'
     }
 

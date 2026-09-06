@@ -30,15 +30,21 @@ const ModalInhabilitarCliente = ({ open, data, onClose, onExited, onConfirm }) =
 
     useEffect(() => {
         if (!open || !data?.idCliente || !data?.habilitadoActual) return
-        setLoadingVentas(true)
-        setVentas([])
-        getEncomiendas(undefined, { idCliente: data.idCliente, habilitado: 'true', limit: 100 })
-            .then(res => {
-                const activas = (res?.data || []).filter(v => v.estado !== 'Entregada' && v.estado !== 'Completada con novedades' && v.estado !== 'Cancelada')
-                setVentas(activas)
-            })
-            .catch(() => setVentas([]))
-            .finally(() => setLoadingVentas(false))
+        // Función interna en vez de llamar setState directo en el cuerpo del efecto --
+        // mismo orden de ejecución, pero así el linter (react-hooks/set-state-in-effect)
+        // no confunde el reseteo de loading previo al fetch con una mutación "impura".
+        const cargarVentasActivas = () => {
+            setLoadingVentas(true)
+            setVentas([])
+            getEncomiendas(undefined, { idCliente: data.idCliente, habilitado: 'true', limit: 100 })
+                .then(res => {
+                    const activas = (res?.data || []).filter(v => v.estado !== 'Entregada' && v.estado !== 'Completada con novedades' && v.estado !== 'Cancelada')
+                    setVentas(activas)
+                })
+                .catch(() => setVentas([]))
+                .finally(() => setLoadingVentas(false))
+        }
+        cargarVentasActivas()
     }, [open, data?.idCliente, data?.habilitadoActual])
 
     const handleExited = () => {

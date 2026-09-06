@@ -41,7 +41,12 @@ const ListarUsuario = () => {
         refetch: cargarUsuarios,
     } = useEntityCrud({
         fetchPage: async (signal, params) => {
-            const respuesta = await getUsuarios({ ...params, idRol: filtroRol || undefined })
+            const respuesta = await getUsuarios({ ...params, idRol: filtroRol || undefined }, signal)
+            // Antes se pisaba la tabla con [] en CUALQUIER falla (incluida una petición
+            // vieja que llega tarde) sin avisar nada — "No hay usuarios registrados" era
+            // en realidad un error silencioso, no la verdad. Ahora una falla real se
+            // relanza para que useEntityCrud la muestre como error de carga.
+            if (!respuesta.success) throw new Error(respuesta.message || 'Error al cargar usuarios')
             setUsuarios(Array.isArray(respuesta.data) ? respuesta.data : [])
             setTotal(typeof respuesta.total === 'number' ? respuesta.total : (Array.isArray(respuesta.data) ? respuesta.data.length : 0))
         },

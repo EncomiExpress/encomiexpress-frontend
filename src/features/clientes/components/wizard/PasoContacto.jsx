@@ -7,6 +7,7 @@ import { FormField } from '../../../../shared/components/FormularioEstandarizado
 import NacionSVG from '../../../../shared/components/NacionSVG.jsx'
 import { formFieldStyles } from '../../../../shared/utils/formStyles.js'
 import { normalizarTexto } from '../../../../shared/utils/duplicados.js'
+import { maxLengthTelefono, telefonoHelperText } from '../../../../shared/validations/telefonoValidation.js'
 import { validarCampo } from '../../validations/clienteValidation.js'
 
 const PasoContacto = ({ theme, form, errores, setErrores, handleChange, destinos, destinoInput, setDestinoInput, clienteOriginal }) => {
@@ -22,24 +23,18 @@ const PasoContacto = ({ theme, form, errores, setErrores, handleChange, destinos
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
             <FormField label="Teléfono" name="telefono" value={form.telefono} onChange={handleChange}
                 onBlur={() => setErrores(prev => ({ ...prev, telefono: validarCampo('telefono', form) }))}
-                required error={errores.telefono} helperText={errores.telefono || 'Número de 10 dígitos'}
-                icon={PhoneOutlinedIcon} inputProps={{ maxLength: 10 }} />
+                required error={errores.telefono} helperText={errores.telefono || telefonoHelperText(form.tipoIdentificacion)}
+                icon={PhoneOutlinedIcon} inputProps={{ maxLength: maxLengthTelefono(form.tipoIdentificacion) }} />
             <FormField label="Correo electrónico" name="email" value={form.email}
                 onChange={handleChange}
                 onBlur={() => setErrores(prev => ({ ...prev, email: validarCampo('email', form) }))}
                 required error={errores.email} helperText={errores.email}
                 icon={EmailOutlinedIcon} placeholder="correo@dominio.com"
                 inputProps={{ maxLength: 100 }} />
-            <FormField label="Dirección" name="direccion" value={form.direccion}
-                onChange={handleChange}
-                onBlur={() => setErrores(prev => ({ ...prev, direccion: validarCampo('direccion', form) }))} required error={errores.direccion}
-                placeholder="Ej: Calle 45 #20-10"
-                helperText={errores.direccion || `${form.direccion.length}/200`} icon={HomeOutlinedIcon}
-                inputProps={{ maxLength: 200 }} />
             <Autocomplete
                 options={destinos || []}
                 popupIcon={<KeyboardArrowDownOutlinedIcon />}
-                getOptionLabel={(d) => `${d.ciudad} - ${d.departamento}`}
+                getOptionLabel={(d) => `${d.municipio} - ${d.departamento}`}
                 isOptionEqualToValue={(opt, val) => opt.idDestino === val.idDestino}
                 value={destinoSeleccionado}
                 inputValue={destinoInput}
@@ -56,7 +51,7 @@ const PasoContacto = ({ theme, form, errores, setErrores, handleChange, destinos
                             <Box sx={{ width: 28, height: 30, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 <NacionSVG color={theme.palette.primary.main} />
                             </Box>
-                            <Typography variant="body2" fontWeight={500} noWrap sx={{ flex: 1, minWidth: 0 }}>{d.ciudad}</Typography>
+                            <Typography variant="body2" fontWeight={500} noWrap sx={{ flex: 1, minWidth: 0 }}>{d.municipio}</Typography>
                             <Typography variant="caption" color={theme.palette.text.secondary} sx={{ flexShrink: 0 }}>{d.departamento}</Typography>
                         </Box>
                     )
@@ -64,7 +59,7 @@ const PasoContacto = ({ theme, form, errores, setErrores, handleChange, destinos
                 filterOptions={(opts, { inputValue }) => {
                     if (!inputValue.trim()) return [...opts].sort((a, b) => b.idDestino - a.idDestino).slice(0, 5)
                     const q = normalizarTexto(inputValue)
-                    return opts.filter(d => normalizarTexto(d.ciudad || '').includes(q) || normalizarTexto(d.departamento || '').includes(q))
+                    return opts.filter(d => normalizarTexto(d.municipio || '').includes(q) || normalizarTexto(d.departamento || '').includes(q))
                 }}
                 noOptionsText="No se encontraron destinos"
                 renderInput={(params) => (
@@ -74,6 +69,12 @@ const PasoContacto = ({ theme, form, errores, setErrores, handleChange, destinos
                         slotProps={{ inputLabel: { shrink: true }, htmlInput: { ...params.inputProps, maxLength: 50 } }} sx={formFieldStyles} />
                 )}
             />
+            <FormField label="Dirección" name="direccion" value={form.direccion}
+                onChange={handleChange}
+                onBlur={() => setErrores(prev => ({ ...prev, direccion: validarCampo('direccion', form) }))} required error={errores.direccion}
+                placeholder="Ej: Calle 45 #20-10"
+                helperText={errores.direccion || `${form.direccion.length}/200`} icon={HomeOutlinedIcon}
+                inputProps={{ maxLength: 200 }} />
         </Box>
     )
 }

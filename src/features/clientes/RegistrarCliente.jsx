@@ -8,7 +8,10 @@ import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { MENSAJE_NOMBRE_DUPLICADO } from '../../shared/utils/duplicados.js'
 import { esDocAlfanumerico } from '../../shared/utils/documento.js'
 import { capitalizarPalabras } from '../../shared/utils/formatters.js'
-import { steps, validarCampo, validarDocumentoCompleto, validarPaso } from './validations/clienteValidation.js'
+import { steps, validarCampo, validarDocumentoCompleto, validarPaso, formatearNit } from './validations/clienteValidation.js'
+import { filtrarDireccion } from '../../shared/validations/direccionValidation.js'
+import { filtrarCorreo } from '../../shared/validations/emailValidation.js'
+import { filtrarTelefono } from '../../shared/validations/telefonoValidation.js'
 import { useDuplicadoCliente } from './hooks/useDuplicadoCliente.js'
 import WizardDialog from '../../shared/components/WizardDialog.jsx'
 import PasoDocumento from './components/wizard/PasoDocumento.jsx'
@@ -101,7 +104,7 @@ const RegistrarCliente = ({ open, onClose, onSuccess }) => {
         if (name === 'numeroIdentificacion') {
             setAvisoDocDuplicado('')
             if (form.tipoIdentificacion === 'NIT') {
-                value = value.replace(/[^0-9-]/g, '')
+                value = formatearNit(value)
             } else if (esDocAlfanumerico(form.tipoIdentificacion)) {
                 value = value.replace(/[^a-zA-Z0-9]/g, '')
             } else {
@@ -115,13 +118,13 @@ const RegistrarCliente = ({ open, onClose, onSuccess }) => {
             return
         }
         if (name === 'telefono') {
-            value = value.replace(/[^0-9]/g, '')
+            value = filtrarTelefono(value, form.tipoIdentificacion)
         }
         if (name === 'email') {
-            value = value.replace(/[^a-zA-Z0-9@._%+-]/g, '')
+            value = filtrarCorreo(value)
         }
         if (name === 'direccion') {
-            value = value.replace(/[^a-zA-Z0-9\s,.\-#/' ]/g, '')
+            value = filtrarDireccion(value)
         }
 
         const formActualizado = { ...form, [name]: value }

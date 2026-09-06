@@ -10,6 +10,7 @@ import { capitalizarPalabras } from '../../shared/utils/formatters.js'
 import {
     steps, validarCampo, validarCategorias, validarPaso, PASSWORD_HELP, formInicialConductor,
 } from './validations/conductorValidation.js'
+import { filtrarCorreo } from '../../shared/validations/emailValidation.js'
 import { useDuplicadoConductor } from './hooks/useDuplicadoConductor.js'
 import WizardDialog from '../../shared/components/WizardDialog.jsx'
 import PasoDocumento from './components/wizard/PasoDocumento.jsx'
@@ -37,9 +38,9 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
     const cargado = useRef(false)
 
     const {
-        avisoNombreDuplicado, avisoDocDuplicado, avisoEmailDuplicado, avisoLicenciaDuplicada,
-        setAvisoNombreDuplicado, setAvisoDocDuplicado, setAvisoEmailDuplicado, setAvisoLicenciaDuplicada,
-        verificarDocumentoDuplicado, verificarEmailDuplicado, verificarLicenciaDuplicada, verificarNombreDuplicado,
+        avisoNombreDuplicado, avisoDocDuplicado, avisoEmailDuplicado,
+        setAvisoNombreDuplicado, setAvisoDocDuplicado, setAvisoEmailDuplicado,
+        verificarDocumentoDuplicado, verificarEmailDuplicado, verificarNombreDuplicado,
     } = useDuplicadoConductor({
         form, setErrores,
         excludeConductorId: conductorProp?.idConductor,
@@ -70,11 +71,21 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
             categoriasLicencia: conductor.categoriasLicencia?.length
                 ? conductor.categoriasLicencia
                 : [{ categoria: '', vencimiento: '' }],
-            numeroLicencia: conductor.numeroLicencia || '',
+            // En Colombia el número de licencia es siempre el número de documento —
+            // se muestra ese valor, no el guardado (que puede diferir en datos viejos).
+            numeroLicencia: conductor.numeroIdentificacion || '',
         }
         setForm(datosForm)
         setFormOriginal(datosForm)
     }, [open, conductorProp, getConductorById])
+
+    // El número de licencia queda espejado al documento aunque se edite el documento
+    // en el paso 1 — el campo de licencia es de solo lectura (ver PasoLicencia.jsx).
+    useEffect(() => {
+        setForm(prev => prev.numeroLicencia === prev.numeroIdentificacion
+            ? prev
+            : { ...prev, numeroLicencia: prev.numeroIdentificacion })
+    }, [form.numeroIdentificacion])
 
     const handleChange = (e) => {
         const { name } = e.target
@@ -118,10 +129,9 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
         }
         if (name === 'telefono') value = value.replace(/[^0-9]/g, '')
         if (name === 'email') {
-            value = value.replace(/[^a-zA-Z0-9@._%+-]/g, '')
+            value = filtrarCorreo(value)
             setAvisoEmailDuplicado('')
         }
-        if (name === 'numeroLicencia') setAvisoLicenciaDuplicada('')
         const formActualizado = { ...form, [name]: value }
         setForm(prev => ({ ...prev, [name]: value }))
         setErrores(prev => {
@@ -157,7 +167,7 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
     }
 
     const handleNext = () => {
-        const erroresEncontrados = validarPaso(activeStep, form, { avisoDocDuplicado, avisoNombreDuplicado, avisoEmailDuplicado, avisoLicenciaDuplicada }, VALIDATION_OPTS)
+        const erroresEncontrados = validarPaso(activeStep, form, { avisoDocDuplicado, avisoNombreDuplicado, avisoEmailDuplicado }, VALIDATION_OPTS)
         if (Object.keys(erroresEncontrados).length > 0) { setErrores(erroresEncontrados); return }
         setActiveStep(prev => prev + 1)
     }
@@ -172,7 +182,7 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
     const handleCancelar = () => cerrar()
 
     const handleSubmit = async () => {
-        const erroresEncontrados = validarPaso(activeStep, form, { avisoDocDuplicado, avisoNombreDuplicado, avisoEmailDuplicado, avisoLicenciaDuplicada }, VALIDATION_OPTS)
+        const erroresEncontrados = validarPaso(activeStep, form, { avisoDocDuplicado, avisoNombreDuplicado, avisoEmailDuplicado }, VALIDATION_OPTS)
         if (Object.keys(erroresEncontrados).length > 0) { setErrores(erroresEncontrados); return }
 
         // Detectar si realmente hubo cambios
@@ -238,10 +248,10 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
             case 2:
                 return (
                     <PasoLicencia
-                        theme={theme} form={form} errores={errores} setErrores={setErrores} handleChange={handleChange}
+                        theme={theme} form={form} errores={errores} setErrores={setErrores}
                         handleCategoriaChange={handleCategoriaChange} handleAgregarCategoria={handleAgregarCategoria} handleQuitarCategoria={handleQuitarCategoria}
-                        verificarLicenciaDuplicada={verificarLicenciaDuplicada} validationOpts={VALIDATION_OPTS}
-                        numeroLicenciaHelperText="Opcional"
+                        validationOpts={VALIDATION_OPTS}
+                        numeroLicenciaHelperText="Siempre igual al número de documento (Ley 769 de 2002)"
                         minVencimiento={undefined}
                     />
                 )

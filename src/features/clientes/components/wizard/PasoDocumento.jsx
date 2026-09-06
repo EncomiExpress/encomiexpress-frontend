@@ -18,12 +18,14 @@ const PasoDocumento = ({ form, errores, setErrores, handleChange, verificarDocum
                 select: { IconComponent: KeyboardArrowDownOutlinedIcon },
             }}
             sx={formFieldStyles}>
+            {/* Sin TI/RC: ningún menor de edad envía/recibe encomiendas en este
+            sistema -- ver LOGICA.md ("Tipos de documento por módulo"). PPT cubre a
+            migrantes venezolanos regularizados con negocio o envíos propios. */}
             <MenuItem value="CC">Cédula de Ciudadanía (CC)</MenuItem>
             <MenuItem value="NIT">NIT (Persona Jurídica)</MenuItem>
-            <MenuItem value="TI">Tarjeta de Identidad (TI)</MenuItem>
             <MenuItem value="CE">Cédula de Extranjería (CE)</MenuItem>
             <MenuItem value="PAS">Pasaporte</MenuItem>
-            <MenuItem value="RC">Registro Civil (RC)</MenuItem>
+            <MenuItem value="PPT">Permiso por Protección Temporal (PPT)</MenuItem>
         </TextField>
         <FormField label="Número de documento" name="numeroIdentificacion" value={form.numeroIdentificacion}
             onChange={handleChange}

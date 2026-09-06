@@ -18,7 +18,7 @@ const PasoContactoRol = ({
     <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
         <TextField fullWidth label="Teléfono" name="telefono" value={form.telefono} onChange={handleChange}
             onBlur={() => setErrores(prev => ({ ...prev, telefono: validarCampo('telefono', form, validationOpts) }))} required
-            error={!!errores.telefono} helperText={errores.telefono || 'Número de 10 dígitos'}
+            error={!!errores.telefono} helperText={errores.telefono || 'Empieza por 3, 10 dígitos'}
             slotProps={{
                 input: { startAdornment: <InputAdornment position="start"><PhoneOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment>, sx: { pl: 1.5 } },
                 htmlInput: { maxLength: 10 }

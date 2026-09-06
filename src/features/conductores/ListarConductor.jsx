@@ -6,8 +6,6 @@ import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import TablaPaginacionFooter from '../../shared/components/TablaPaginacionFooter.jsx'
 import DataTable, { FiltroEstadoTabs, BuscadorField } from '../../shared/components/DataTable.jsx'
 import useEntityCrud from '../../shared/hooks/useEntityCrud.js'
-import { useConductor } from './context/ConductorContext.jsx'
-import { useRutaProgramacion } from '../rutas/context/RutaProgramacionContext.jsx'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { getPageOfConductor, getConductores } from './services/conductorService.js'
@@ -25,16 +23,19 @@ const ListarConductor = () => {
     const { tienePermiso, PERMISOS, usuario } = useAuth()
     const { showToast } = useToast()
     const navigate = useNavigate()
-    const { conductores, total, fetchConductores } = useConductor()
-    const { rutasProgramadas, fetchRutasProgramadas } = useRutaProgramacion()
+    // Estado propio de esta tabla paginada (NO el arreglo compartido de
+    // ConductorContext, que otras pantallas piden completo con limit:1000 para su
+    // propio uso — ver ../../../LOGICA.md, "Bug transversal — listas paginadas
+    // corrompidas por prefetch compartido"). Si se lee de ahí, cualquier otra
+    // pantalla que refresque ese arreglo compartido pisa la página actual.
+    const [conductores, setConductores] = useState([])
+    const [total, setTotal] = useState(0)
 
     const [conductorVer, setConductorVer] = useState(null)
     const [filtroEstado, setFiltroEstado] = useState('')
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [conductorEditar, setConductorEditar] = useState(null)
-
-    const { confirmToggle, setConfirmToggle, modalBloqueo, setModalBloqueo, solicitarToggle, onConfirmar } = useConductorAcciones()
 
     const {
         theme,
@@ -48,7 +49,13 @@ const ListarConductor = () => {
         filtroContainerRef, filtroBtnRefs, filtroPillStyle,
         refetch,
     } = useEntityCrud({
-        fetchPage: (signal, params) => fetchConductores(signal, { ...params, estado: filtroEstado || undefined }),
+        fetchPage: async (signal, params) => {
+            const res = await getConductores(signal, { ...params, estado: filtroEstado || undefined })
+            if (res?.success) {
+                setConductores(res.data.map(normalizarConductor))
+                setTotal(res.total ?? res.data.length)
+            }
+        },
         extraDeps: [filtroEstado],
         fetchPageForHighlight: (id, limit) => getPageOfConductor(id, limit),
         exportConfig: {
@@ -61,7 +68,7 @@ const ListarConductor = () => {
                     'Identificación': conductor.numeroIdentificacion,
                     'Email': conductor.email,
                     'Teléfono': conductor.telefono,
-                    'N° Licencia': conductor.numeroLicencia,
+                    'Número de Licencia': conductor.numeroLicencia,
                     'Categorías de licencia': (conductor.categoriasLicencia || [])
                         .map(c => `${c.categoria} (${c.vencimiento})`)
                         .join(', '),
@@ -75,14 +82,11 @@ const ListarConductor = () => {
         onExportError: (err) => showToast(err.message || 'Error al exportar.', 'error'),
     })
 
+    const { confirmToggle, setConfirmToggle, modalBloqueo, setModalBloqueo, solicitarToggle, onConfirmar } = useConductorAcciones(refetch)
+
     useEffect(() => {
         if (!usuario) navigate('/login')
     }, [usuario, navigate])
-
-    useEffect(() => {
-        if (!usuario) return
-        if (rutasProgramadas.length === 0) fetchRutasProgramadas()
-    }, [usuario, rutasProgramadas.length, fetchRutasProgramadas])
 
     const emptyMessage = filtroHabilitado !== 'todo'
         ? 'No se encontraron conductores que coincidan con los filtros aplicados.'

@@ -1,5 +1,5 @@
 import { validarNumeroDocumento } from '../../../shared/utils/documento.js'
-import { EMAIL_REGEX } from '../../../shared/validations/emailValidation.js'
+import { EMAIL_REGEX, validarUsuarioCorreo } from '../../../shared/validations/emailValidation.js'
 import { PASSWORD_REGEX } from '../../../shared/validations/passwordValidation.js'
 
 export const steps = ['Datos Personales', 'Contacto y Credenciales', 'Confirmación']
@@ -8,14 +8,20 @@ export const validarEmail = (email) => {
     const valor = (email || '').trim()
     if (!valor) return 'El correo es obligatorio'
     if (!valor.includes('@')) return 'El correo debe contener un @ (ej: usuario@dominio.com)'
+    const errorUsuario = validarUsuarioCorreo(valor)
+    if (errorUsuario) return errorUsuario
     if (!valor.split('@')[1]?.includes('.')) return 'El dominio del correo debe contener un punto (ej: usuario@dominio.com)'
     if (!EMAIL_REGEX.test(valor)) return 'El correo no es válido'
     return ''
 }
 
 export const PASSWORD_HELP = '8-64 caracteres, con mayúsculas, minúsculas, números y un carácter especial'
-const SOLO_LETRAS_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/
+const SOLO_LETRAS_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/
 const NOMBRE_MAX_LENGTH = 50
+// Un usuario del sistema es un empleado (cajero, administrador, operario) -- por ley
+// laboral debe ser mayor de edad, así que TI/RC quedan fuera. PPT sí habilita a un
+// migrante venezolano regularizado a trabajar formalmente. Ver LOGICA.md.
+const TIPOS_DOC_PERMITIDOS = ['CC', 'CE', 'PPT']
 
 // requerirPassword: Registrar exige contraseña y confirmación; Actualizar las deja
 // opcionales (password vacío = "no cambiar la actual").
@@ -32,10 +38,12 @@ export const validarCampo = (name, form, { requerirPassword = false } = {}) => {
             if (form.apellido.length > NOMBRE_MAX_LENGTH) return `El apellido no puede superar los ${NOMBRE_MAX_LENGTH} caracteres`
             return ''
         case 'tipoIdentificacion':
-            return form.tipoIdentificacion ? '' : 'Selecciona un tipo de documento'
+            if (!form.tipoIdentificacion) return 'Selecciona un tipo de documento'
+            if (!TIPOS_DOC_PERMITIDOS.includes(form.tipoIdentificacion)) return 'Tipo de documento no permitido para este módulo'
+            return ''
         case 'telefono':
             if (!form.telefono.trim()) return 'El teléfono es obligatorio'
-            if (!/^\d{10}$/.test(form.telefono)) return 'El teléfono debe tener exactamente 10 dígitos'
+            if (!/^3\d{9}$/.test(form.telefono)) return 'El teléfono debe tener 10 dígitos y empezar por 3'
             return ''
         case 'email':
             return validarEmail(form.email)

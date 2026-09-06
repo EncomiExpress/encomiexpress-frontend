@@ -83,7 +83,7 @@ const ModalConsultarCliente = ({ cliente, onClose }) => {
                                 <CampoFila label="Teléfono" value={cliente.telefono} />
                                 <CampoFila label="Email" value={cliente.email} />
                                 <CampoFila label="Dirección" value={cliente.direccion} />
-                                <CampoFila label="Municipio" value={cliente.destino ? `${cliente.destino.ciudad}, ${cliente.destino.departamento}` : null} />
+                                <CampoFila label="Municipio" value={cliente.destino ? `${cliente.destino.municipio}, ${cliente.destino.departamento}` : null} />
                                 <CampoFila label="Estado" value={cliente.habilitado ? 'Habilitado' : 'Inhabilitado'} />
                             </Box>
                         </FichaCard>
@@ -129,8 +129,8 @@ const ModalConsultarCliente = ({ cliente, onClose }) => {
                                                 onClick={() => window.open(`/ventas/listar?highlight=${v.idEncomiendaVenta}`, '_blank')}
                                                 sx={{ cursor: 'pointer', '&:hover': { backgroundColor: theme.palette.background.subtle } }}>
                                                 <TableCell sx={{ fontSize: '0.82rem', fontWeight: 600 }}>{getGuiaPrincipal(v) || `#${v.idEncomiendaVenta}`}</TableCell>
-                                                <TableCell sx={{ fontSize: '0.82rem' }}>{v.ruta?.destino?.ciudad || '—'}</TableCell>
-                                                <TableCell sx={{ fontSize: '0.82rem' }}>${Number(v.valorServicio || 0).toLocaleString('es-CO')}</TableCell>
+                                                <TableCell sx={{ fontSize: '0.82rem' }}>{v.destinatario?.destino?.municipio || '—'}</TableCell>
+                                                <TableCell sx={{ fontSize: '0.82rem' }}>${Math.round(Number(v.total || 0)).toLocaleString('es-CO')}</TableCell>
                                                 <TableCell>
                                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                                                         {info.type === 'symbol'

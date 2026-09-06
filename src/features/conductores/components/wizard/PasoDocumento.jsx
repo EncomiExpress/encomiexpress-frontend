@@ -18,11 +18,14 @@ const PasoDocumento = ({ form, errores, setErrores, handleChange, verificarDocum
                 select: { IconComponent: KeyboardArrowDownOutlinedIcon },
             }}
             sx={formFieldStyles}>
+            {/* Solo CC/CE/PPT: el RUNT exige mayoría de edad y licencia pública
+            colombiana vigente para manejar carga -- TI/RC (menores) y pasaporte
+            (documento de viaje) no permiten registrar ni renovar esa licencia. Desde
+            2023 el Ministerio de Transporte sí habilita al venezolano con PPT a
+            tramitar/convalidar licencia de servicio público. Ver LOGICA.md. */}
             <MenuItem value="CC">Cédula de Ciudadanía (CC)</MenuItem>
-            <MenuItem value="TI">Tarjeta de Identidad (TI)</MenuItem>
             <MenuItem value="CE">Cédula de Extranjería (CE)</MenuItem>
-            <MenuItem value="PAS">Pasaporte</MenuItem>
-            <MenuItem value="RC">Registro Civil (RC)</MenuItem>
+            <MenuItem value="PPT">Permiso por Protección Temporal (PPT)</MenuItem>
         </TextField>
         <FormField label="Número de documento" name="numeroIdentificacion" value={form.numeroIdentificacion}
             onChange={handleChange}

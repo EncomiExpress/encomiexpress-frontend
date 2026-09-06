@@ -16,7 +16,7 @@ const PasoContacto = ({
     <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
         <FormField label="Teléfono" name="telefono" value={form.telefono} onChange={handleChange}
             onBlur={() => setErrores(prev => ({ ...prev, telefono: validarCampo('telefono', form, validationOpts) }))}
-            required error={errores.telefono} helperText={errores.telefono || 'Número de 10 dígitos'}
+            required error={errores.telefono} helperText={errores.telefono || 'Empieza por 3, 10 dígitos'}
             icon={PhoneOutlinedIcon} inputProps={{ maxLength: 10 }} />
         <FormField label="Correo electrónico" name="email" value={form.email}
             onChange={handleChange}
