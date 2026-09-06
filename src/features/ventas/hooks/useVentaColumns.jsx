@@ -64,7 +64,7 @@ const useVentaColumns = ({
         render: (venta) => (
             <>
                 <Typography variant="body2" color={theme.palette.text.primary}>
-                    {venta.ruta?.destino?.ciudad || '—'}
+                    {venta.destinatario?.destino?.municipio || '—'}
                 </Typography>
                 {venta.estado === 'Programada' && venta.ruta?.estado === 'Cancelada' && (
                     <Chip
@@ -78,7 +78,7 @@ const useVentaColumns = ({
                     // deja de caber en el rango nuevo — ver rutaService.update() en el
                     // backend, que vacía el campo en vez de bloquear el cambio de ruta.
                     <Chip
-                        label="Falta fecha de entrega en sede"
+                        label="Falta fecha de entrega"
                         size="small"
                         sx={{ height: 18, fontSize: '0.65rem', fontWeight: 600, backgroundColor: alpha(theme.palette.warning.main, 0.12), color: theme.palette.warning.dark, border: `1px solid ${alpha(theme.palette.warning.main, 0.35)}`, mt: 0.5 }}
                     />
@@ -91,7 +91,7 @@ const useVentaColumns = ({
         render: (venta) => (
             <>
                 <Chip
-                    label={venta.total !== undefined ? `$${Number(venta.total).toLocaleString('es-CO')}` : '—'}
+                    label={venta.total !== undefined ? `$${Math.round(Number(venta.total)).toLocaleString('es-CO')}` : '—'}
                     size="small"
                     sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem', borderRadius: '2px', height: 24 }}
                 />

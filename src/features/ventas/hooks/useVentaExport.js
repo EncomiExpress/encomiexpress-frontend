@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useToast } from '../../../shared/contexts/ToastContext.jsx'
 import { getEncomiendas } from '../services/ventaService.js'
 import { exportToExcel } from '../../../shared/utils/exportExcel.js'
-import { getGuiaPrincipal } from '../../../shared/utils/formatters.js'
+import { getGuiaPrincipal, formatFecha } from '../../../shared/utils/formatters.js'
 
 // El export propio de ventas necesita filtros de estado/pago/método además de
 // habilitado/búsqueda -- el handleExportar genérico de useEntityCrud no los conoce.
@@ -26,14 +26,13 @@ const useVentaExport = ({ theme, debouncedBusqueda, filtroHabilitado, filtroEsta
                 'Guía': (venta.paquetes || []).map(p => p.numeroGuia).filter(Boolean).join(', ') || getGuiaPrincipal(venta) || '—',
                 'Cliente': `${venta.cliente?.nombre || ''} ${venta.cliente?.apellido || ''}`.trim() || venta.idCliente || '-',
                 'Ruta': venta.ruta?.origen || '-',
-                'Destino': venta.ruta?.destino?.ciudad || '-',
-                'Fecha registro': venta.fechaRegistro,
-                'Fecha est. entrega en sede': venta.fechaEstimadaEntrega,
+                'Destino': venta.destinatario?.destino?.municipio || '-',
+                'Fecha registro': formatFecha(venta.fechaRegistro),
+                'Fecha est. entrega': formatFecha(venta.fechaEstimadaEntrega),
                 'Estado': venta.estado,
                 'Estado de pago': venta.estadoPago,
                 'Método de pago': venta.metodoPago,
-                'Valor servicio': Math.round(Number(venta.valorServicio)) || 0,
-                'Total': Math.round(Number(venta.total)) || 0,
+                'Total a pagar': Math.round(Number(venta.total)) || 0,
                 'Habilitado': venta.habilitado === false ? 'No' : 'Sí',
             }))
             await exportToExcel({ data: rows, fileName: 'Ventas', sheetName: 'Ventas', themeColor: theme.palette.primary.main })

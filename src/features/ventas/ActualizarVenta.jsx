@@ -13,7 +13,7 @@ import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { getGuiaPrincipal } from '../../shared/utils/formatters.js'
 import WizardDialog from '../../shared/components/WizardDialog.jsx'
-import { steps, PAQUETE_VACIO } from './validations/validacion.js'
+import { steps, PAQUETE_VACIO, formatearNit } from './validations/validacion.js'
 import { cardSx } from './style/wizardStyles.js'
 import useVentaWizardForm from './hooks/useVentaWizardForm.js'
 import PasoParticipantes from './components/wizard/PasoParticipantes.jsx'
@@ -37,10 +37,8 @@ const getInitialForm = () => ({
     fechaSalidaRuta: '',
     fechaLlegadaEstimadaRuta: '',
     fechaEstimadaEntrega: '',
-    entregaSinFecha: false,
     observaciones: '',
     metodoPago: '',
-    valorServicio: '',
     total: '',
 })
 
@@ -76,7 +74,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
     const {
         errores, setErrores, apiError, setApiError, activeStep, setActiveStep,
         clienteInput, setClienteInput, rutaInput, setRutaInput,
-        form, setForm, valorServicioManualRef, calcularValorServicio,
+        form, setForm, valorServicioManualRef, calcularValorServicio, paqueteRefs, setParticipanteRef, handleResetearTotal, totalEditadoManualmente,
         handleChange, setErrorPaquete, handlePaqueteChange,
         handleAgregarPaquete, handleQuitarPaquete, handleNext, handleBack,
     } = useVentaWizardForm({
@@ -116,7 +114,12 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
         const datosForm = {
             idCliente: ventaData.cliente?.idCliente || ventaData.idCliente || '',
             tipoIdentificacionDestinatario: destinatario?.tipoIdentificacionDestinatario || '',
-            numeroIdentificacionDestinatario: destinatario?.numeroIdentificacionDestinatario || '',
+            // NIT: normaliza el valor guardado a "NNNNNNNNN-D" (mismo criterio que
+            // Propietario/Cliente); si en BD está sin dígito de verificación, queda con
+            // 9 dígitos y el usuario lo completa.
+            numeroIdentificacionDestinatario: destinatario?.tipoIdentificacionDestinatario === 'NIT'
+                ? formatearNit(destinatario?.numeroIdentificacionDestinatario)
+                : (destinatario?.numeroIdentificacionDestinatario || ''),
             nombreDestinatario: destinatario?.nombreDestinatario || '',
             telefonoDestinatario: destinatario?.telefonoDestinatario || '',
             correoDestinatario: destinatario?.correoDestinatario || '',
@@ -125,17 +128,15 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
             paquetes: paquetesArr,
             idRuta: ventaData.idRuta || ventaData.ruta?.idRuta || '',
             destino: ventaData.ruta
-                ? `${ventaData.ruta.origen || 'Sin nombre'} → ${ventaData.ruta.destino?.ciudad || 'Sin destino'} — $${Number(ventaData.ruta.destino?.tarifaBase || 0).toLocaleString('es-CO')}`
+                ? `${ventaData.ruta.origen || 'Sin nombre'} → ${ventaData.ruta.destino?.municipio || 'Sin destino'} — $${Number(ventaData.ruta.destino?.tarifaBase || 0).toLocaleString('es-CO')}`
                 : '',
             fechaSalidaRuta: ventaData.ruta?.fechaSalida || '',
             fechaLlegadaEstimadaRuta: ventaData.ruta?.fechaLlegadaEstimada || '',
             fechaEstimadaEntrega: ventaData.fechaEstimadaEntrega
                 ? ventaData.fechaEstimadaEntrega.split('T')[0]
                 : '',
-            entregaSinFecha: false,
             observaciones: ventaData.observaciones || '',
             metodoPago: ventaData.metodoPago || '',
-            valorServicio: limpiarNumero(ventaData.valorServicio),
             total: limpiarNumero(ventaData.total),
         }
         setForm(datosForm)
@@ -149,12 +150,12 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
         }
         const r = ventaData.ruta
         if (r) {
-            setRutaInput(`${r.origen || 'Sin nombre'} → ${r.destino?.ciudad || 'Sin destino'} — $${Number(r.destino?.tarifaBase || 0).toLocaleString()}`)
+            setRutaInput(`${r.origen || 'Sin nombre'} → ${r.destino?.municipio || 'Sin destino'} — $${Number(r.destino?.tarifaBase || 0).toLocaleString()}`)
         } else {
             setRutaInput('')
         }
         const dDestinatario = destinatario?.destino
-        setDestinoDestinatarioInput(dDestinatario ? `${dDestinatario.ciudad} - ${dDestinatario.departamento}` : '')
+        setDestinoDestinatarioInput(dDestinatario ? `${dDestinatario.municipio} - ${dDestinatario.departamento}` : '')
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [venta])
 
@@ -192,7 +193,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                 fechaEstimadaEntrega: form.fechaEstimadaEntrega || null,
                 observaciones: form.observaciones || null,
                 metodoPago: form.metodoPago,
-                valorServicio: parseFloat(form.valorServicio) || 0,
+                total: parseFloat(form.total) || 0,
                 destinatario: {
                     nombreDestinatario: form.nombreDestinatario,
                     tipoIdentificacionDestinatario: form.tipoIdentificacionDestinatario,
@@ -245,6 +246,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                         handleChange={handleChange} setSinCambios={setSinCambios} ventaOriginal={ventaOriginal}
                         destinos={destinos} destinoDestinatarioInput={destinoDestinatarioInput}
                         setDestinoDestinatarioInput={setDestinoDestinatarioInput}
+                        setParticipanteRef={setParticipanteRef}
                     />
                 )
             case 1:
@@ -254,6 +256,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                         handlePaqueteChange={handlePaqueteChange} setErrorPaquete={setErrorPaquete}
                         handleAgregarPaquete={handleAgregarPaquete} handleQuitarPaquete={handleQuitarPaquete}
                         tarifaPorKgHierro={tarifaPorKgHierro} tarifaPorKgNormal={tarifaPorKgNormal}
+                        paqueteRefs={paqueteRefs}
                     />
                 )
             case 2:
@@ -270,7 +273,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                     />
                 )
             case 3:
-                return <PasoPago form={form} errores={errores} setErrores={setErrores} handleChange={handleChange} ventaOriginal={ventaOriginal} />
+                return <PasoPago form={form} errores={errores} setErrores={setErrores} handleChange={handleChange} ventaOriginal={ventaOriginal} handleResetearTotal={handleResetearTotal} totalEditadoManualmente={totalEditadoManualmente} />
             case 4:
                 return (
                     <PasoConfirmacion

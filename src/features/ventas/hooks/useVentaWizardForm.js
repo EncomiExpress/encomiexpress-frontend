@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { limpiarMonedaInput, limpiarDecimalInput, capitalizarPalabras } from '../../../shared/utils/formatters.js'
 import { sumarDias } from '../../../shared/utils/horarioLaboral.js'
-import { PAQUETE_VACIO, validarCampo, validarCampoPaquete, esDocAlfanumerico } from '../validations/validacion.js'
+import { filtrarDireccion } from '../../../shared/validations/direccionValidation.js'
+import { filtrarCorreo } from '../../../shared/validations/emailValidation.js'
+import { filtrarTelefono } from '../../../shared/validations/telefonoValidation.js'
+import { PAQUETE_VACIO, validarCampo, validarCampoPaquete, esDocAlfanumerico, formatearNit } from '../validations/validacion.js'
 import {
     NUMERIC_LIMITS, PAQUETE_NUMERIC_LIMITS,
     calcularValorServicio as calcularValorServicioBase, calcularValoresPaquetes, validarPaso,
@@ -23,10 +26,21 @@ export const useVentaWizardForm = ({
     afterChange = () => {},
     getPesoOriginalPorPar,
 }) => {
-    // true en cuanto el admin edita "Valor del servicio" a mano — a partir de ahí el
+    // true en cuanto el admin edita "Total a pagar" a mano — a partir de ahí el
     // refresco de tarifas de los pasos "Paquete"/"Pago" (más abajo) deja de recalcularlo
     // por encima, hasta que vuelva a cambiar la ruta o el peso/cantidad de paquetes.
     const valorServicioManualRef = useRef(false)
+    // Un elemento DOM por paquete (índice), para poder hacer scroll hasta el primero
+    // que quede con error al intentar avanzar de paso — ver handleNext.
+    const paqueteRefs = useRef([])
+    // Un elemento DOM por campo del paso "Participantes" (índice = nombre del campo),
+    // mismo propósito que paqueteRefs pero para campos sueltos en vez de una lista.
+    // setParticipanteRef (no participantesRefs directo) es lo que se pasa a
+    // PasoParticipantes.jsx -- mutar un ref recibido por props dentro de un callback
+    // de ref choca con la regla react-hooks/immutability del linter; pasar una función
+    // que hace la mutación del lado de quien es dueño del ref (acá) sí es válido.
+    const participantesRefs = useRef({})
+    const setParticipanteRef = (campo, el) => { participantesRefs.current[campo] = el }
     const [errores, setErrores] = useState({})
     const [apiError, setApiError] = useState(null)
     const [activeStep, setActiveStep] = useState(0)
@@ -44,7 +58,7 @@ export const useVentaWizardForm = ({
     // volumétrico/costo por paquete (calculado en vivo en el render de PasoPaquetes.jsx
     // a partir de tarifaPorKgHierro/tarifaPorKgNormal) nunca quede con tarifas obsoletas.
     // Si ya hay una ruta elegida (se volvió con "Anterior" desde un paso posterior),
-    // además recalcula valorServicio/total con los datos frescos, respetando
+    // además recalcula total con los datos frescos, respetando
     // valorServicioManualRef.
     useEffect(() => {
         if (activeStep !== 1) return
@@ -84,12 +98,8 @@ export const useVentaWizardForm = ({
                 const fechaSalida = ruta.fechaSalida || ''
                 const fechaLlegadaEstimada = ruta.fechaLlegadaEstimada || ''
                 if (fechaSalida === prev.fechaSalidaRuta && fechaLlegadaEstimada === prev.fechaLlegadaEstimadaRuta) return prev
-                const minimaNueva = fechaSalida ? sumarDias(fechaSalida, 1) : ''
-                const maximaNueva = fechaLlegadaEstimada ? sumarDias(fechaLlegadaEstimada, -1) : ''
-                const fechaFueraDeRango = !!(prev.fechaEstimadaEntrega && (
-                    (minimaNueva && prev.fechaEstimadaEntrega < minimaNueva) ||
-                    (maximaNueva && prev.fechaEstimadaEntrega > maximaNueva)
-                ))
+                const minimaNueva = fechaLlegadaEstimada || (fechaSalida ? sumarDias(fechaSalida, 1) : '')
+                const fechaFueraDeRango = !!(prev.fechaEstimadaEntrega && minimaNueva && prev.fechaEstimadaEntrega < minimaNueva)
                 if (fechaFueraDeRango) setErrores(e => ({ ...e, fechaEstimadaEntrega: validarCampo('fechaEstimadaEntrega', { fechaEstimadaEntrega: '' }, ventaOriginal) }))
                 return {
                     ...prev,
@@ -104,33 +114,57 @@ export const useVentaWizardForm = ({
     }, [activeStep, fetchRutasProgramadas])
 
     // La tarifa del destino, las tarifas por kg y la tarifa por paquete (fijas en
-    // Configuración) pueden cambiar mientras el formulario sigue abierto — igual que
-    // arriba con la capacidad, se refrescan al ENTRAR al paso "Pago" y se recalcula
-    // valorServicio con los datos frescos, pero solo si el admin no lo editó a mano
-    // (valorServicioManualRef): si ya lo tocó, se respeta ese ajuste manual y no se pisa.
+    // Configuración) pueden cambiar mientras el formulario sigue abierto — se refrescan
+    // y se recalcula `total` con los datos frescos en dos momentos: automáticamente al
+    // ENTRAR al paso "Pago" (si el admin no lo editó a mano, ver valorServicioManualRef),
+    // y a demanda con el botón "Recalcular" de PasoPago.jsx, que sí fuerza el recálculo
+    // aunque ya estuviera editado a mano (ver handleResetearTotal más abajo). Ambos
+    // casos comparten el cálculo en sí (calcularTotalConTarifasFrescas); cada uno decide
+    // por separado cuándo pedir los datos frescos y qué hacer con la promesa.
+    const calcularTotalConTarifasFrescas = (paquetes, idRuta, tarifasFrescas, rutasFrescas) => {
+        const ruta = (rutasFrescas || []).find(r => r.idRuta === parseInt(idRuta))
+        if (!ruta || !idRuta) return null
+        return calcularValorServicioBase(
+            ruta.destino?.tarifaBase, paquetes,
+            tarifasFrescas?.tarifaPorKgHierro ?? tarifaPorKgHierro,
+            tarifasFrescas?.tarifaPorKgNormal ?? tarifaPorKgNormal,
+            tarifasFrescas?.tarifaPorPaquete ?? tarifaPorPaquete,
+        )
+    }
+
     useEffect(() => {
-        if (activeStep !== 3) return
+        if (activeStep !== 3 || valorServicioManualRef.current) return
         let cancelado = false
         Promise.all([
             fetchConfiguracion(),
             fetchRutasProgramadas({ limit: 1000 }),
         ]).then(([tarifasFrescas, rutasFrescas]) => {
-            if (cancelado || valorServicioManualRef.current) return
+            if (cancelado) return
             setForm(prev => {
-                const ruta = (rutasFrescas || []).find(r => r.idRuta === parseInt(prev.idRuta))
-                if (!ruta || !prev.idRuta) return prev
-                const vs = calcularValorServicioBase(
-                    ruta.destino?.tarifaBase, prev.paquetes,
-                    tarifasFrescas?.tarifaPorKgHierro ?? tarifaPorKgHierro,
-                    tarifasFrescas?.tarifaPorKgNormal ?? tarifaPorKgNormal,
-                    tarifasFrescas?.tarifaPorPaquete ?? tarifaPorPaquete,
-                )
-                return { ...prev, valorServicio: vs, total: vs }
+                const vs = calcularTotalConTarifasFrescas(prev.paquetes, prev.idRuta, tarifasFrescas, rutasFrescas)
+                return vs == null ? prev : { ...prev, total: vs }
             })
         }).catch(() => {})
         return () => { cancelado = true }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeStep])
+
+    // Botón "Recalcular" junto al campo "Total a pagar" (PasoPago.jsx): vuelve a poner
+    // el valor de fórmula aunque el admin ya lo hubiera editado a mano — sin esto, la
+    // única forma de deshacer una edición manual por error era salir del registro
+    // completo y volver a llenar todo desde cero.
+    const handleResetearTotal = () => {
+        valorServicioManualRef.current = false
+        Promise.all([
+            fetchConfiguracion(),
+            fetchRutasProgramadas({ limit: 1000 }),
+        ]).then(([tarifasFrescas, rutasFrescas]) => {
+            setForm(prev => {
+                const vs = calcularTotalConTarifasFrescas(prev.paquetes, prev.idRuta, tarifasFrescas, rutasFrescas)
+                return vs == null ? prev : { ...prev, total: vs }
+            })
+        }).catch(() => {})
+    }
 
     // Si la ruta elegida tiene un solo vehículo, no tiene caso elegir — todos los
     // paquetes (incluidos los que se agreguen después) van directo a ese único vehículo.
@@ -148,6 +182,16 @@ export const useVentaWizardForm = ({
     const calcularValorServicio = (tarifaBase, paquetes = form.paquetes) =>
         calcularValorServicioBase(tarifaBase, paquetes, tarifaPorKgHierro, tarifaPorKgNormal, tarifaPorPaquete)
 
+    // Le dice a PasoPago.jsx si debe mostrar el botón "Recalcular" — solo cuando el
+    // campo ya NO coincide con lo que la fórmula daría ahora mismo (con las tarifas y
+    // paquetes actuales), no cuando ya está en el valor de siempre. Es independiente de
+    // valorServicioManualRef (ese decide si un refresco automático puede pisarlo o no;
+    // esto decide si mostrar el botón). Se compara redondeado a entero porque el campo
+    // en pantalla nunca muestra decimales (formatearMoneda los descarta al formatear).
+    const rutaParaTotal = rutasProgramadas.find(r => r.idRuta === parseInt(form.idRuta))
+    const totalEditadoManualmente = !!rutaParaTotal && Math.round(Number(form.total) || 0) !==
+        Math.round(calcularValorServicio(rutaParaTotal.destino?.tarifaBase, form.paquetes))
+
     const handleChange = (e) => {
         const { name } = e.target
         let { value } = e.target
@@ -164,49 +208,47 @@ export const useVentaWizardForm = ({
         // RegistrarCliente.jsx al cambiar tipoIdentificacion.
         if (name === 'tipoIdentificacionDestinatario') {
             setForm(prev => ({ ...prev, tipoIdentificacionDestinatario: value, numeroIdentificacionDestinatario: '' }))
-            setErrores(prev => ({ ...prev, tipoIdentificacionDestinatario: '', numeroIdentificacionDestinatario: '' }))
+            // "nombreDestinatario" pasa a validarse distinto entre NIT (razón social,
+            // texto libre) y persona natural (solo letras) — cualquier error previo
+            // queda obsoleto.
+            setErrores(prev => ({ ...prev, tipoIdentificacionDestinatario: '', numeroIdentificacionDestinatario: '', nombreDestinatario: '' }))
             setApiError(null)
             afterChange()
             return
         }
         if (name === 'numeroIdentificacionDestinatario') {
             if (form.tipoIdentificacionDestinatario === 'NIT') {
-                value = value.replace(/[^0-9-]/g, '')
+                value = formatearNit(value)
             } else if (esDocAlfanumerico(form.tipoIdentificacionDestinatario)) {
                 value = value.replace(/[^a-zA-Z0-9]/g, '')
             } else {
                 value = value.replace(/[^0-9]/g, '')
             }
         }
-        if (name === 'nombreDestinatario') {
+        if (name === 'nombreDestinatario' && form.tipoIdentificacionDestinatario !== 'NIT') {
+            // Razón social (NIT) es texto libre — no se filtra ni se capitaliza, igual
+            // que el "nombre" de un cliente NIT en RegistrarCliente.jsx.
             value = capitalizarPalabras(value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, ''))
         }
         if (name === 'telefonoDestinatario') {
-            value = value.replace(/[^0-9]/g, '')
+            value = filtrarTelefono(value, form.tipoIdentificacionDestinatario)
         }
         if (name === 'correoDestinatario') {
-            value = value.replace(/[^a-zA-Z0-9@._%+-]/g, '')
+            value = filtrarCorreo(value)
         }
         if (name === 'direccionDestinatario') {
-            value = value.replace(/[^a-zA-Z0-9\s,.\-#/']/g, '')
+            value = filtrarDireccion(value)
         }
         if (name === 'observaciones') {
             value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ0-9\s,.-]/g, '')
         }
 
-        if (name === 'valorServicio') {
+        if (name === 'total') {
             valorServicioManualRef.current = true
         }
 
         const formActualizado = { ...form, [name]: value }
-        setForm(prev => {
-            const updated = { ...prev, [name]: value }
-            if (name === 'valorServicio') {
-                const vs = parseFloat(value) || 0
-                updated.total = vs
-            }
-            return updated
-        })
+        setForm(prev => ({ ...prev, [name]: value }))
         setErrores(prev => ({ ...prev, [name]: prev[name] ? validarCampo(name, formActualizado, ventaOriginal) : '' }))
         setApiError(null)
         afterChange()
@@ -244,7 +286,7 @@ export const useVentaWizardForm = ({
             const updated = { ...prev, paquetes }
             // peso/alto/ancho/profundidad alimentan el peso efectivo (real vs. volumétrico)
             // y tipoCarga decide qué tarifa por kg aplica -- los cuatro afectan el costo por
-            // peso de este paquete y por lo tanto el valorServicio de toda la venta.
+            // peso de este paquete y por lo tanto el total de toda la venta.
             if (['peso', 'alto', 'ancho', 'profundidad', 'tipoCarga'].includes(campo)) {
                 Object.assign(updated, recalcularValorServicio(prev, paquetes))
             }
@@ -309,6 +351,24 @@ export const useVentaWizardForm = ({
         })
         if (Object.keys(erroresEncontrados).length > 0) {
             setErrores(erroresEncontrados)
+            // Si el paso es "Participantes", se hace scroll hasta el primer campo con
+            // error (en el mismo orden en que validarPaso los revisa, que coincide con
+            // el orden visual del formulario) para que no pase inadvertido.
+            if (activeStep === 0) {
+                const primerCampoConError = Object.keys(erroresEncontrados).find(campo => erroresEncontrados[campo])
+                if (primerCampoConError) {
+                    participantesRefs.current[primerCampoConError]?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                }
+            }
+            // Si el paso es "Paquete" y quedó algún paquete con error fuera de vista
+            // (ej. varios paquetes cargados y el error está en uno de los primeros),
+            // se hace scroll hasta el primero con error para que no pase inadvertido.
+            if (activeStep === 1 && erroresEncontrados.paquetes) {
+                const idxConError = erroresEncontrados.paquetes.findIndex(pe => pe && Object.keys(pe).length > 0)
+                if (idxConError !== -1) {
+                    paqueteRefs.current[idxConError]?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                }
+            }
             return
         }
         setActiveStep(prev => prev + 1)
@@ -324,7 +384,11 @@ export const useVentaWizardForm = ({
         rutaInput, setRutaInput,
         form, setForm,
         valorServicioManualRef,
+        paqueteRefs,
+        setParticipanteRef,
         calcularValorServicio,
+        totalEditadoManualmente,
+        handleResetearTotal,
         handleChange,
         setErrorPaquete,
         handlePaqueteChange,

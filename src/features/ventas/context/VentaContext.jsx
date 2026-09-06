@@ -20,7 +20,9 @@ export const ESTADOS_PAGO = ['Pendiente', 'Pagado']
 
 // El backend devuelve destinatario como objeto singular (1:1) y paquetes[] (1:N) —
 // paquete queda como atajo al primero para las vistas que aún no muestran la lista completa.
-const normalize = (e) => ({
+// Exportada porque ListarVenta.jsx también la necesita para su propio fetch paginado
+// (ver comentario en ese archivo sobre por qué ya no comparte fetchVentas/ventas de acá).
+export const normalize = (e) => ({
   ...e,
   destinatario: e.destinatario || null,
   paquete: e.paquetes?.[0] || null,

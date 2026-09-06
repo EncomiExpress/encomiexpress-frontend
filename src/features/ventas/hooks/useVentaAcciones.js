@@ -3,7 +3,10 @@ import { useVentas } from '../context/VentaContext.jsx'
 import { useToast } from '../../../shared/contexts/ToastContext.jsx'
 import { descargarGuiaPdf } from '../../../shared/utils/exportGuia/exportGuiaPdf.js'
 
-const useVentaAcciones = () => {
+// onChanged (opcional): se llama tras cada cambio exitoso — ListarVenta.jsx pasa su
+// `refetch` de useEntityCrud para recargar la página actual desde el servidor, ya que
+// su tabla ya no lee del arreglo compartido de VentaContext (ver ListarVenta.jsx).
+const useVentaAcciones = ({ onChanged } = {}) => {
     const { cambiarEstadoVenta, cambiarEstadoPagoVenta, toggleHabilitadoVenta } = useVentas()
     const { showToast } = useToast()
     const pendingConfirm = useRef(false)
@@ -29,6 +32,7 @@ const useVentaAcciones = () => {
         try {
             await cambiarEstadoVenta(id, nuevoEstado)
             showToast(`Estado actualizado a ${nuevoEstado.charAt(0).toUpperCase() + nuevoEstado.slice(1)}.`, 'success')
+            onChanged?.()
         } catch (err) {
             showToast(err.message || 'Error al cambiar el estado de la encomienda.', 'error')
         }
@@ -38,6 +42,7 @@ const useVentaAcciones = () => {
         try {
             await cambiarEstadoPagoVenta(id, nuevoPago)
             showToast(`Estado de pago actualizado a ${nuevoPago}.`, 'success')
+            onChanged?.()
         } catch (err) {
             showToast(err.message || 'Error al cambiar el estado de pago.', 'error')
         }
@@ -79,7 +84,7 @@ const useVentaAcciones = () => {
         if (wasPending && venta) {
             const habilitadoActual = venta.habilitado
             toggleHabilitadoVenta(venta.idEncomiendaVenta)
-                .then(() => showToast(`Venta ${habilitadoActual ? 'inhabilitada' : 'habilitada'} correctamente.`, 'success'))
+                .then(() => { showToast(`Venta ${habilitadoActual ? 'inhabilitada' : 'habilitada'} correctamente.`, 'success'); onChanged?.() })
                 .catch(() => { })
         }
     }

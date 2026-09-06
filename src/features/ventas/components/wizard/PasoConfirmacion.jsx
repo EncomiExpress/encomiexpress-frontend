@@ -18,7 +18,7 @@ export default function PasoConfirmacion({
     theme, apiError, setApiError, cardSx, clienteSeleccionado, form, rutasProgramadas, destinos,
     formOriginal, ventaOriginal, sinCambios, setSinCambios, clientes,
 }) {
-    const formatDestino = (d) => d ? `${d.ciudad} - ${d.departamento}` : null
+    const formatDestino = (d) => d ? `${d.municipio} - ${d.departamento}` : null
     const destinoDestinatarioTexto = formatDestino(destinos?.find(d => d.idDestino === parseInt(form.idDestinoDestinatario)))
     const destinoDestinatarioOriginal = formOriginal
         ? formatDestino(destinos?.find(d => d.idDestino === parseInt(formOriginal.idDestinoDestinatario)))
@@ -26,10 +26,13 @@ export default function PasoConfirmacion({
     const clienteOriginal = formOriginal
         ? clientes.find(c => c.idCliente === parseInt(formOriginal.idCliente)) || ventaOriginal?.cliente
         : null
-    const totalActual = form.total ? `$${parseFloat(form.total).toLocaleString()}` : null
-    const totalOriginal = formOriginal ? (formOriginal.total ? `$${parseFloat(formOriginal.total).toLocaleString()}` : null) : undefined
-    const valorServicioActual = form.valorServicio ? `$${parseFloat(form.valorServicio).toLocaleString()}` : null
-    const valorServicioOriginal = formOriginal ? (formOriginal.valorServicio ? `$${parseFloat(formOriginal.valorServicio).toLocaleString()}` : null) : undefined
+    // Redondeado + locale 'es-CO' fijo -- calcularValorServicio ya devuelve el total
+    // redondeado (sin centavos, ver ventaValidation.js), pero se vuelve a redondear acá
+    // por si form.total quedó con decimales por una edición manual; toLocaleString() sin
+    // locale explícito dependía del navegador de quien lo viera, mismo patrón que ya usan
+    // ListarVenta/ModalConsultarVenta/el PDF de guía.
+    const totalActual = form.total ? `$${Math.round(Number(form.total)).toLocaleString('es-CO')}` : null
+    const totalOriginal = formOriginal ? (formOriginal.total ? `$${Math.round(Number(formOriginal.total)).toLocaleString('es-CO')}` : null) : undefined
 
     const sonDistintos = (a, b) => String(a ?? '') !== String(b ?? '')
     const camposComparados = formOriginal ? [
@@ -46,7 +49,7 @@ export default function PasoConfirmacion({
         [form.fechaEstimadaEntrega, formOriginal.fechaEstimadaEntrega],
         [form.observaciones, formOriginal.observaciones],
         [form.metodoPago, formOriginal.metodoPago],
-        [form.valorServicio, formOriginal.valorServicio],
+        [form.total, formOriginal.total],
     ] : []
     const totalModificados = camposComparados.filter(([a, b]) => sonDistintos(a, b)).length
 
@@ -78,8 +81,8 @@ export default function PasoConfirmacion({
                         <ConfirmRow label="Nombre" value={`${clienteSeleccionado.nombre} ${clienteSeleccionado.apellido || ''}`.trim()} previousValue={clienteOriginal ? `${clienteOriginal.nombre} ${clienteOriginal.apellido || ''}`.trim() : undefined} />
                         <ConfirmRow label="Identificación" value={clienteSeleccionado.numeroIdentificacion} previousValue={clienteOriginal?.numeroIdentificacion} />
                         <ConfirmRow label="Teléfono" value={clienteSeleccionado.telefono} previousValue={clienteOriginal?.telefono} />
-                        <ConfirmRow label="Municipio" value={clienteSeleccionado.destino ? `${clienteSeleccionado.destino.ciudad}, ${clienteSeleccionado.destino.departamento}` : null}
-                            previousValue={clienteOriginal ? (clienteOriginal.destino ? `${clienteOriginal.destino.ciudad}, ${clienteOriginal.destino.departamento}` : null) : undefined} />
+                        <ConfirmRow label="Municipio" value={clienteSeleccionado.destino ? `${clienteSeleccionado.destino.municipio}, ${clienteSeleccionado.destino.departamento}` : null}
+                            previousValue={clienteOriginal ? (clienteOriginal.destino ? `${clienteOriginal.destino.municipio}, ${clienteOriginal.destino.departamento}` : null) : undefined} />
                     </>}
                 </Paper>
                 <Paper elevation={0} sx={cardSx}>
@@ -90,7 +93,7 @@ export default function PasoConfirmacion({
                     <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la información del destinatario</Typography>
                     <ConfirmRow label="Documento" value={form.tipoIdentificacionDestinatario && form.numeroIdentificacionDestinatario ? `${form.tipoIdentificacionDestinatario} ${form.numeroIdentificacionDestinatario}` : null}
                         previousValue={formOriginal ? (formOriginal.tipoIdentificacionDestinatario && formOriginal.numeroIdentificacionDestinatario ? `${formOriginal.tipoIdentificacionDestinatario} ${formOriginal.numeroIdentificacionDestinatario}` : null) : undefined} />
-                    <ConfirmRow label="Nombre" value={form.nombreDestinatario} previousValue={formOriginal?.nombreDestinatario} />
+                    <ConfirmRow label={form.tipoIdentificacionDestinatario === 'NIT' ? 'Razón Social' : 'Nombre'} value={form.nombreDestinatario} previousValue={formOriginal?.nombreDestinatario} />
                     <ConfirmRow label="Teléfono" value={form.telefonoDestinatario} previousValue={formOriginal?.telefonoDestinatario} />
                     <ConfirmRow label="Correo" value={form.correoDestinatario || null} previousValue={formOriginal ? (formOriginal.correoDestinatario || null) : undefined} />
                     <ConfirmRow label="Destino" value={destinoDestinatarioTexto} previousValue={destinoDestinatarioOriginal} />
@@ -138,11 +141,10 @@ export default function PasoConfirmacion({
                     </Box>
                     <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Ruta, fechas y valores</Typography>
                     <ConfirmRow label="Ruta" value={form.destino} previousValue={formOriginal?.destino} />
-                    <ConfirmRow label="Fecha entrega en sede" value={formatFecha(form.fechaEstimadaEntrega)} previousValue={formOriginal?.fechaEstimadaEntrega ? formatFecha(formOriginal.fechaEstimadaEntrega) : undefined} />
+                    <ConfirmRow label="Fecha entrega" value={formatFecha(form.fechaEstimadaEntrega)} previousValue={formOriginal?.fechaEstimadaEntrega ? formatFecha(formOriginal.fechaEstimadaEntrega) : undefined} />
                     <ConfirmRow label="Observaciones" value={form.observaciones} previousValue={formOriginal?.observaciones} />
                     <ConfirmRow label="Método de pago" value={form.metodoPago} previousValue={formOriginal?.metodoPago} />
-                    <ConfirmRow label="Valor del servicio" value={valorServicioActual} previousValue={valorServicioOriginal} />
-                    <ConfirmRow label="Total" value={totalActual} previousValue={totalOriginal} />
+                    <ConfirmRow label="Total a pagar" value={totalActual} previousValue={totalOriginal} />
                 </Paper>
             </Box>
         </Box>

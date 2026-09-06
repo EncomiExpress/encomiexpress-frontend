@@ -1,7 +1,10 @@
 import { esSoloRelleno } from '../../../shared/utils/formatters.js'
 import { sumarDias } from '../../../shared/utils/horarioLaboral.js'
-import { EMAIL_REGEX } from '../../../shared/validations/emailValidation.js'
-import { maxLengthDocumento, docHelperText as docHelperTextBase, validarNumeroDocumento, esDocAlfanumerico } from '../../../shared/utils/documento.js'
+import { EMAIL_REGEX, validarUsuarioCorreo } from '../../../shared/validations/emailValidation.js'
+import { validarDireccion } from '../../../shared/validations/direccionValidation.js'
+import { validarDescripcionContenido } from '../../../shared/validations/descripcionContenidoValidation.js'
+import { validarTelefono } from '../../../shared/validations/telefonoValidation.js'
+import { maxLengthDocumento, docHelperText as docHelperTextBase, validarNumeroDocumento, esDocAlfanumerico, formatearNit, NIT_MAX_LENGTH, validarNitConDv } from '../../../shared/utils/documento.js'
 
 export const steps = ['Participantes', 'Paquete', 'Envío', 'Pago', 'Confirmación']
 
@@ -11,37 +14,33 @@ export const CAMPOS_PAQUETE = ['descripcionContenido', 'peso', 'alto', 'ancho', 
 const SOLO_LETRAS_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/
 const NOMBRE_DESTINATARIO_MAX_LENGTH = 50
 const CORREO_DESTINATARIO_MAX_LENGTH = 150
+// Sin TI/RC (menores de edad) -- mismo criterio que Cliente, ver LOGICA.md
+// ("Tipos de documento por módulo").
+const TIPOS_DOC_PERMITIDOS = ['CC', 'NIT', 'CE', 'PAS', 'PPT']
 
-// Tipo/número de documento del destinatario — mismo mecanismo que Cliente
-// (PasoDocumento.jsx / clienteValidation.js): el tipo elegido cambia el límite de
-// caracteres y la validación del número. NIT tiene su propio formato especial
-// (dígitos + guión, hasta 15) que no encaja en shared/utils/documento.js, así que
-// se replica acá igual que allá — no se puede importar esa función desde
-// features/clientes (un feature nunca importa del interior de otro, solo de shared/).
+// Tipo/número de documento del destinatario — mismo mecanismo y mismo comportamiento
+// de NIT que Propietario y Cliente (máscara de 9 dígitos + dígito de verificación,
+// `formatearNit`/`validarNitConDv`/`NIT_MAX_LENGTH` de shared/utils/documento.js).
 export const getMaxLengthDocDestinatario = (tipo) => {
-    if (tipo === 'NIT') return 15
+    if (tipo === 'NIT') return NIT_MAX_LENGTH
     return maxLengthDocumento(tipo)
 }
 
 export const docHelperTextDestinatario = (tipo) => {
-    if (tipo === 'NIT') return 'Números con guión, hasta 15 caracteres'
+    if (tipo === 'NIT') return 'Escribe solo números: los 9 dígitos y luego el de verificación. El guion se pone solo.'
     return docHelperTextBase(tipo) || ''
 }
 
 export const validarDocumentoDestinatarioCompleto = (tipo, valor) => {
+    if (tipo === 'NIT') return validarNitConDv(valor) || ''
     const limpio = (valor || '').trim()
     if (!limpio) return 'El número de documento es obligatorio'
-    if (tipo === 'NIT') {
-        if (!/^[0-9-]+$/.test(limpio)) return 'Solo se permiten números y guión'
-        if (!/\d/.test(limpio)) return 'Debe contener al menos un número'
-        if (limpio.length > 15) return 'Máximo 15 caracteres'
-        return ''
-    }
     return validarNumeroDocumento(tipo, limpio) || ''
 }
 
-// Reexportado para que useVentaWizardForm.js filtre lo que se escribe en
+// Reexportados para que useVentaWizardForm.js filtre/enmascare lo que se escribe en
 // numeroIdentificacionDestinatario según el tipo, igual que RegistrarCliente.jsx.
+export { formatearNit }
 export { esDocAlfanumerico }
 
 // Opción sentinel que se agrega al final de las sugerencias de Cliente — al elegirla
@@ -50,8 +49,8 @@ export { esDocAlfanumerico }
 export const OPCION_CLIENTE_NUEVO = { idCliente: '__nuevo__', esNuevo: true }
 
 // Valida un único campo del formulario principal (usado en onBlur y para re-validar
-// en vivo mientras se corrige un campo ya marcado con error). valorServicio/total no
-// viven aquí: son editables sin ninguna regla de obligatoriedad. Los call sites
+// en vivo mientras se corrige un campo ya marcado con error). total no
+// vive aquí: es editable sin ninguna regla de obligatoriedad. Los call sites
 // del modo edición pasan un tercer argumento (la venta original) por consistencia con el
 // resto del wizard, pero esta función no lo necesita para validar.
 export const validarCampo = (name, form) => {
@@ -59,24 +58,29 @@ export const validarCampo = (name, form) => {
         case 'idCliente':
             return form.idCliente ? '' : 'Selecciona un cliente remitente'
         case 'tipoIdentificacionDestinatario':
-            return form.tipoIdentificacionDestinatario ? '' : 'Selecciona el tipo de documento'
-        case 'nombreDestinatario':
-            if (!form.nombreDestinatario.trim()) return 'El nombre es obligatorio'
-            if (!SOLO_LETRAS_REGEX.test(form.nombreDestinatario)) return 'Solo se permiten letras'
-            if (form.nombreDestinatario.length > NOMBRE_DESTINATARIO_MAX_LENGTH) return `El nombre no puede superar los ${NOMBRE_DESTINATARIO_MAX_LENGTH} caracteres`
+            if (!form.tipoIdentificacionDestinatario) return 'Selecciona el tipo de documento'
+            if (!TIPOS_DOC_PERMITIDOS.includes(form.tipoIdentificacionDestinatario)) return 'Tipo de documento no permitido'
             return ''
+        case 'nombreDestinatario': {
+            const esNitDest = form.tipoIdentificacionDestinatario === 'NIT'
+            if (!form.nombreDestinatario.trim()) return esNitDest ? 'La razón social es obligatoria' : 'El nombre es obligatorio'
+            if (esNitDest && esSoloRelleno(form.nombreDestinatario)) return 'La razón social no puede contener solo espacios o guiones'
+            if (!esNitDest && !SOLO_LETRAS_REGEX.test(form.nombreDestinatario)) return 'Solo se permiten letras'
+            if (form.nombreDestinatario.length > NOMBRE_DESTINATARIO_MAX_LENGTH) return `${esNitDest ? 'La razón social' : 'El nombre'} no puede superar los ${NOMBRE_DESTINATARIO_MAX_LENGTH} caracteres`
+            return ''
+        }
         case 'telefonoDestinatario':
-            if (!form.telefonoDestinatario.trim()) return 'El teléfono es obligatorio'
-            if (!/^\d{10}$/.test(form.telefonoDestinatario)) return 'Debe tener 10 dígitos'
-            return ''
+            return validarTelefono(form.telefonoDestinatario, form.tipoIdentificacionDestinatario)
         case 'direccionDestinatario':
             if (!form.direccionDestinatario.trim()) return 'La dirección es obligatoria'
-            if (esSoloRelleno(form.direccionDestinatario)) return 'La dirección no puede contener solo espacios o guiones'
-            return ''
+            if (form.direccionDestinatario.length > 300) return 'La dirección no puede superar los 300 caracteres'
+            return validarDireccion(form.direccionDestinatario)
         case 'correoDestinatario': {
             // Opcional -- igual que el correo del Cliente, no todos los destinatarios lo tienen.
             const valor = (form.correoDestinatario || '').trim()
             if (!valor) return ''
+            const errorUsuario = validarUsuarioCorreo(valor)
+            if (errorUsuario) return errorUsuario
             if (!EMAIL_REGEX.test(valor)) return 'El correo no es válido'
             if (valor.length > CORREO_DESTINATARIO_MAX_LENGTH) return `El correo no puede superar los ${CORREO_DESTINATARIO_MAX_LENGTH} caracteres`
             return ''
@@ -86,18 +90,12 @@ export const validarCampo = (name, form) => {
         case 'idRuta':
             return form.idRuta ? '' : 'Selecciona una ruta'
         case 'fechaEstimadaEntrega': {
-            // Destinatario en una parada intermedia sin fecha estimada de paso
-            // cargada todavía (ver PasoEnvio.jsx) — no hay ninguna fecha válida
-            // que se le pueda pedir al usuario.
-            if (form.entregaSinFecha) return 'Esta ruta todavía no tiene una fecha estimada de paso por el municipio del destinatario'
             if (!form.fechaEstimadaEntrega) return 'La fecha es obligatoria'
-            if (form.fechaSalidaRuta) {
+            if (form.fechaLlegadaEstimadaRuta) {
+                if (form.fechaEstimadaEntrega < form.fechaLlegadaEstimadaRuta) return 'Debe ser igual o posterior a la llegada de la ruta'
+            } else if (form.fechaSalidaRuta) {
                 const minima = sumarDias(form.fechaSalidaRuta, 1)
                 if (form.fechaEstimadaEntrega < minima) return 'Debe ser al menos un día después de la salida de la ruta'
-            }
-            if (form.fechaLlegadaEstimadaRuta) {
-                const maxima = sumarDias(form.fechaLlegadaEstimadaRuta, -1)
-                if (form.fechaEstimadaEntrega > maxima) return 'Debe ser al menos un día antes de la llegada de la ruta'
             }
             return ''
         }
@@ -113,13 +111,15 @@ export const validarCampo = (name, form) => {
 }
 
 // Valida un único campo de un paquete (usado en onBlur y para re-validar en vivo).
+// peso/alto/ancho/profundidad aceptan decimales (ej. 9.96). Ni empiezan ni terminan con
+// punto: el inicial lo previene limpiarDecimalInput (".5" → "0.5"); el final se quita al
+// salir del campo (blurMedida en PasoPaquetes.jsx), no se puede en vivo sin romper "5.5".
 export const validarCampoPaquete = (campo, paquete) => {
     switch (campo) {
         case 'descripcionContenido':
             if (!paquete.descripcionContenido.trim()) return 'La descripción es obligatoria'
             if (paquete.descripcionContenido.length > 300) return 'Máximo 300 caracteres'
-            if (esSoloRelleno(paquete.descripcionContenido)) return 'La descripción no puede contener solo espacios o guiones'
-            return ''
+            return validarDescripcionContenido(paquete.descripcionContenido)
         case 'peso': {
             const n = parseFloat(paquete.peso)
             if (!paquete.peso) return 'El peso es obligatorio'

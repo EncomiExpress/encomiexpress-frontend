@@ -1,8 +1,9 @@
+import { useState } from 'react'
 import { Box, Typography, Chip, TextField, InputAdornment, IconButton, Tooltip, CircularProgress } from '@mui/material'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined'
 import CloseIcon from '@mui/icons-material/Close'
-import { formatearMoneda, limpiarMonedaInput } from '../../../shared/utils/formatters.js'
+import { formatearMoneda } from '../../../shared/utils/formatters.js'
 
 // Control genérico (candado + edición inline) para un valor global de
 // Configuracion -- reemplaza los antiguos TarifaPorKgControl.jsx (Destinos) y
@@ -15,6 +16,27 @@ const TarifaControl = ({ theme, tienePermiso, PERMISOS, editor, icono: Icono, et
         editandoTarifa, tarifaInput, setTarifaInput, guardandoTarifa,
         handleAbrirEdicionTarifa, handleCancelarEdicionTarifa, handleGuardarTarifa,
     } = editor
+
+    // El tooltip del candado se controla a mano: al hacer clic, el IconButton que lo
+    // ancla se desmonta (cambia al modo edición) antes de que MUI reciba el mouseleave,
+    // y el tooltip se quedaba "pegado" en pantalla. Se fuerza cerrado al abrir la edición.
+    const [candadoTooltipOpen, setCandadoTooltipOpen] = useState(false)
+    const [guardarTooltipOpen, setGuardarTooltipOpen] = useState(false)
+    const [cancelarTooltipOpen, setCancelarTooltipOpen] = useState(false)
+    const abrirEdicion = () => {
+        setCandadoTooltipOpen(false)
+        handleAbrirEdicionTarifa()
+    }
+    const guardar = () => {
+        setGuardarTooltipOpen(false)
+        setCancelarTooltipOpen(false)
+        handleGuardarTarifa()
+    }
+    const cancelar = () => {
+        setGuardarTooltipOpen(false)
+        setCancelarTooltipOpen(false)
+        handleCancelarEdicionTarifa()
+    }
 
     return (
         <Box sx={{
@@ -39,20 +61,26 @@ const TarifaControl = ({ theme, tienePermiso, PERMISOS, editor, icono: Icono, et
                 <>
                     <TextField
                         size="small" autoFocus value={formatearMoneda(tarifaInput)} variant="standard"
-                        onChange={e => setTarifaInput(limpiarMonedaInput(e.target.value))}
+                        onChange={e => setTarifaInput(e.target.value)}
                         slotProps={{ input: { disableUnderline: false, startAdornment: <InputAdornment position="start">$</InputAdornment> } }}
                         sx={{ width: 100 }}
                     />
-                    <Tooltip title="Guardar">
+                    <Tooltip title="Guardar"
+                        open={guardarTooltipOpen && editandoTarifa}
+                        onOpen={() => setGuardarTooltipOpen(true)}
+                        onClose={() => setGuardarTooltipOpen(false)}>
                         <span>
-                            <IconButton size="small" onClick={handleGuardarTarifa} disabled={guardandoTarifa}
+                            <IconButton size="small" onClick={guardar} disabled={guardandoTarifa}
                                 sx={{ color: theme.palette.primary.main, p: 0.5 }}>
                                 {guardandoTarifa ? <CircularProgress size={14} /> : <CheckOutlinedIcon sx={{ fontSize: 16 }} />}
                             </IconButton>
                         </span>
                     </Tooltip>
-                    <Tooltip title="Cancelar">
-                        <IconButton size="small" onClick={handleCancelarEdicionTarifa} disabled={guardandoTarifa}
+                    <Tooltip title="Cancelar"
+                        open={cancelarTooltipOpen && editandoTarifa}
+                        onOpen={() => setCancelarTooltipOpen(true)}
+                        onClose={() => setCancelarTooltipOpen(false)}>
+                        <IconButton size="small" onClick={cancelar} disabled={guardandoTarifa}
                             sx={{ color: theme.palette.text.secondary, p: 0.5 }}>
                             <CloseIcon sx={{ fontSize: 16 }} />
                         </IconButton>
@@ -79,8 +107,11 @@ const TarifaControl = ({ theme, tienePermiso, PERMISOS, editor, icono: Icono, et
                         />
                     </Tooltip>
                     {tienePermiso(PERMISOS.ACTUALIZAR_VENTA) ? (
-                        <Tooltip title="Desbloquear para editar">
-                            <IconButton size="small" onClick={handleAbrirEdicionTarifa}
+                        <Tooltip title="Desbloquear para editar"
+                            open={candadoTooltipOpen && !editandoTarifa}
+                            onOpen={() => setCandadoTooltipOpen(true)}
+                            onClose={() => setCandadoTooltipOpen(false)}>
+                            <IconButton size="small" onClick={abrirEdicion}
                                 sx={{ color: theme.palette.text.secondary, p: 0.5, '&:hover': { backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker } }}>
                                 <LockOutlinedIcon sx={{ fontSize: 14 }} />
                             </IconButton>

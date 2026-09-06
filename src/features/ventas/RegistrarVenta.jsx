@@ -34,11 +34,9 @@ const getInitialForm = () => ({
     fechaSalidaRuta: '',
     fechaLlegadaEstimadaRuta: '',
     fechaEstimadaEntrega: '',
-    entregaSinFecha: false,
     observaciones: '',
     metodoPago: '',
     estadoPago: 'Pendiente',
-    valorServicio: '',
     total: '',
 })
 
@@ -58,7 +56,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
     const {
         errores, setErrores, apiError, setApiError, activeStep, setActiveStep,
         clienteInput, setClienteInput, rutaInput, setRutaInput,
-        form, setForm, calcularValorServicio,
+        form, setForm, calcularValorServicio, paqueteRefs, setParticipanteRef, handleResetearTotal, totalEditadoManualmente,
         handleChange, setErrorPaquete, handlePaqueteChange,
         handleAgregarPaquete, handleQuitarPaquete, handleNext, handleBack,
     } = useVentaWizardForm({
@@ -108,7 +106,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                 fechaEstimadaEntrega: form.fechaEstimadaEntrega || null,
                 observaciones: form.observaciones || null,
                 metodoPago: form.metodoPago,
-                valorServicio: parseFloat(form.valorServicio) || 0,
+                total: parseFloat(form.total) || 0,
                 estadoPago: form.estadoPago,
             })
             showToast('¡Venta registrada exitosamente!', 'success')
@@ -133,6 +131,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                         handleChange={handleChange} onNuevoCliente={() => setModalNuevoCliente(true)}
                         destinos={destinos} destinoDestinatarioInput={destinoDestinatarioInput}
                         setDestinoDestinatarioInput={setDestinoDestinatarioInput}
+                        setParticipanteRef={setParticipanteRef}
                     />
                 )
             case 1:
@@ -142,6 +141,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                         handlePaqueteChange={handlePaqueteChange} setErrorPaquete={setErrorPaquete}
                         handleAgregarPaquete={handleAgregarPaquete} handleQuitarPaquete={handleQuitarPaquete}
                         tarifaPorKgHierro={tarifaPorKgHierro} tarifaPorKgNormal={tarifaPorKgNormal}
+                        paqueteRefs={paqueteRefs}
                     />
                 )
             case 2:
@@ -155,7 +155,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                     />
                 )
             case 3:
-                return <PasoPago form={form} errores={errores} setErrores={setErrores} handleChange={handleChange} />
+                return <PasoPago form={form} errores={errores} setErrores={setErrores} handleChange={handleChange} handleResetearTotal={handleResetearTotal} totalEditadoManualmente={totalEditadoManualmente} />
             case 4:
                 return (
                     <PasoConfirmacion

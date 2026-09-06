@@ -1,10 +1,11 @@
-import { Box, MenuItem } from '@mui/material'
+import { Box, MenuItem, Tooltip, IconButton } from '@mui/material'
+import RestartAltOutlinedIcon from '@mui/icons-material/RestartAltOutlined'
 import { FormField, FormSelect } from '../../../../shared/components/FormularioEstandarizado.jsx'
 import { formatearMoneda } from '../../../../shared/utils/formatters.js'
 import { validarCampo } from '../../validations/validacion.js'
 
 /** Paso 4 del wizard: método de pago y valores (tarifa auto-calculada pero editable). */
-export default function PasoPago({ form, errores, setErrores, handleChange, ventaOriginal }) {
+export default function PasoPago({ form, errores, setErrores, handleChange, ventaOriginal, handleResetearTotal, totalEditadoManualmente }) {
     return (
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
             <FormSelect label="Método de pago" name="metodoPago" value={form.metodoPago}
@@ -15,12 +16,17 @@ export default function PasoPago({ form, errores, setErrores, handleChange, vent
                 <MenuItem value="Efectivo">Efectivo</MenuItem>
                 <MenuItem value="Transferencia">Transferencia</MenuItem>
             </FormSelect>
-            <FormField label="Valor del servicio ($)" name="valorServicio"
-                value={formatearMoneda(form.valorServicio)} onChange={handleChange}
-                helperText="Tarifa del destino + costo por peso de cada paquete + cantidad × tarifa por paquete (editable)"
-                inputProps={{ maxLength: 11 }} />
             <FormField label="Total a pagar ($)" name="total"
-                value={formatearMoneda(form.total)} onChange={handleChange} disabled />
+                value={formatearMoneda(form.total)} onChange={handleChange}
+                helperText="Tarifa del destino + costo por peso de cada paquete + cantidad × tarifa por paquete (editable)"
+                inputProps={{ maxLength: 9 }}
+                endAdornment={totalEditadoManualmente && (
+                    <Tooltip title="Volver a poner el valor calculado por el sistema">
+                        <IconButton onClick={handleResetearTotal} edge="end" size="small">
+                            <RestartAltOutlinedIcon fontSize="small" />
+                        </IconButton>
+                    </Tooltip>
+                )} />
         </Box>
     )
 }

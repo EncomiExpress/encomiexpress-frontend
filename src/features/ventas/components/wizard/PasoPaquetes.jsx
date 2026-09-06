@@ -4,19 +4,29 @@ import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
 import ScaleOutlinedIcon from '@mui/icons-material/ScaleOutlined'
 import { FormField, FormSelect } from '../../../../shared/components/FormularioEstandarizado.jsx'
 import { validarCampoPaquete, MAX_PAQUETES } from '../../validations/validacion.js'
+import { filtrarDescripcionContenido } from '../../../../shared/validations/descripcionContenidoValidation.js'
 import { calcularPesoEfectivo, calcularCostoPeso } from '../../validations/ventaValidation.js'
 
 /** Paso 2 del wizard: uno o varios paquetes (contenido, dimensiones, peso, tipo de carga). */
 export default function PasoPaquetes({
     theme, form, errores, handlePaqueteChange, setErrorPaquete, handleAgregarPaquete, handleQuitarPaquete,
-    tarifaPorKgHierro, tarifaPorKgNormal,
+    tarifaPorKgHierro, tarifaPorKgNormal, paqueteRefs,
 }) {
     return (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
             {form.paquetes.map((paquete, index) => {
                 const errPaquete = errores.paquetes?.[index] || {}
+                // Al salir de una medida (peso/alto/ancho/profundidad) se quita un punto
+                // final ("5." → "5") antes de validar — en vivo no se puede sin romper "5.5".
+                const blurMedida = (campo) => {
+                    const limpio = String(paquete[campo] ?? '').replace(/\.$/, '')
+                    if (limpio !== (paquete[campo] ?? '')) handlePaqueteChange(index, campo, limpio)
+                    setErrorPaquete(index, campo, validarCampoPaquete(campo, { ...paquete, [campo]: limpio }))
+                }
                 return (
-                    <Box key={index} sx={{
+                    <Box key={index}
+                        ref={(el) => { if (paqueteRefs) paqueteRefs.current[index] = el }}
+                        sx={{
                         display: 'flex', flexDirection: 'column', gap: 2.5,
                         ...(form.paquetes.length > 1 ? { p: 2, border: `1px solid ${theme.palette.divider}`, borderRadius: 2 } : {}),
                     }}>
@@ -33,7 +43,7 @@ export default function PasoPaquetes({
                             </Box>
                         )}
                         <FormField label="Descripción del contenido" name="descripcionContenido" value={paquete.descripcionContenido}
-                            onChange={(e) => handlePaqueteChange(index, 'descripcionContenido', e.target.value)}
+                            onChange={(e) => handlePaqueteChange(index, 'descripcionContenido', filtrarDescripcionContenido(e.target.value))}
                             onBlur={() => setErrorPaquete(index, 'descripcionContenido', validarCampoPaquete('descripcionContenido', paquete))}
                             required error={errPaquete.descripcionContenido}
                             helperText={errPaquete.descripcionContenido || `${(paquete.descripcionContenido || '').length}/300`}
@@ -41,19 +51,19 @@ export default function PasoPaquetes({
                         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2.5 }}>
                             <FormField label="Peso (kg)" name="peso" value={paquete.peso}
                                 onChange={(e) => handlePaqueteChange(index, 'peso', e.target.value)}
-                                onBlur={() => setErrorPaquete(index, 'peso', validarCampoPaquete('peso', paquete))}
+                                onBlur={() => blurMedida('peso')}
                                 required error={errPaquete.peso}
                                 placeholder="Ej: 1.5" helperText={errPaquete.peso || 'Ej: 1.5'}
                                 inputProps={{ maxLength: 6 }} />
                             <FormField label="Alto (cm)" name="alto" value={paquete.alto}
                                 onChange={(e) => handlePaqueteChange(index, 'alto', e.target.value)}
-                                onBlur={() => setErrorPaquete(index, 'alto', validarCampoPaquete('alto', paquete))}
+                                onBlur={() => blurMedida('alto')}
                                 required error={errPaquete.alto}
                                 placeholder="Ej: 30" helperText={errPaquete.alto || 'Ej: 30'}
                                 inputProps={{ maxLength: 6 }} />
                             <FormField label="Ancho (cm)" name="ancho" value={paquete.ancho}
                                 onChange={(e) => handlePaqueteChange(index, 'ancho', e.target.value)}
-                                onBlur={() => setErrorPaquete(index, 'ancho', validarCampoPaquete('ancho', paquete))}
+                                onBlur={() => blurMedida('ancho')}
                                 required error={errPaquete.ancho}
                                 placeholder="Ej: 20" helperText={errPaquete.ancho || 'Ej: 20'}
                                 inputProps={{ maxLength: 6 }} />
@@ -61,7 +71,7 @@ export default function PasoPaquetes({
                         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                             <FormField label="Profundidad (cm)" name="profundidad" value={paquete.profundidad}
                                 onChange={(e) => handlePaqueteChange(index, 'profundidad', e.target.value)}
-                                onBlur={() => setErrorPaquete(index, 'profundidad', validarCampoPaquete('profundidad', paquete))}
+                                onBlur={() => blurMedida('profundidad')}
                                 required error={errPaquete.profundidad}
                                 placeholder="Ej: 15" helperText={errPaquete.profundidad || 'Ej: 15'}
                                 inputProps={{ maxLength: 6 }} />
@@ -107,6 +117,11 @@ export default function PasoPaquetes({
             >
                 Agregar paquete
             </Button>
+            {form.paquetes.length >= MAX_PAQUETES && (
+                <Typography variant="caption" color={theme.palette.text.secondary} sx={{ mt: -1.5 }}>
+                    Llegaste al límite de paquetes ({MAX_PAQUETES})
+                </Typography>
+            )}
         </Box>
     )
 }

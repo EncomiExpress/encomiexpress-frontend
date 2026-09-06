@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useVentas, ESTADOS_ENCOMIENDA, METODOS_PAGO, ESTADOS_PAGO } from './context/VentaContext.jsx'
+import { ESTADOS_ENCOMIENDA, METODOS_PAGO, ESTADOS_PAGO, normalize } from './context/VentaContext.jsx'
 import { Box, Typography, Button, CircularProgress } from '@mui/material'
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
@@ -14,7 +14,7 @@ import { useAuth } from '../../shared/contexts/AuthContext.jsx'
 import { useConfiguracion } from '../../shared/contexts/ConfiguracionContext.jsx'
 import { PERMISOS } from '../../shared/config/permisos.js'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
-import { getPageOfEncomienda } from './services/ventaService.js'
+import { getPageOfEncomienda, getEncomiendas } from './services/ventaService.js'
 import RegistrarVenta from './RegistrarVenta'
 import ActualizarVenta from './ActualizarVenta'
 import ModalInhabilitarVenta from './components/ModalInhabilitarVenta'
@@ -26,13 +26,20 @@ import TarifaControl from './components/TarifaControl.jsx'
 import useVentaColumns from './hooks/useVentaColumns.jsx'
 import useVentaAcciones from './hooks/useVentaAcciones.js'
 import useVentaExport from './hooks/useVentaExport.js'
-import useTarifaEditor from './hooks/useTarifaEditor.js'
+import useTarifaEditor, { MAX_TARIFA_KG, MAX_TARIFA_PAQUETE } from './hooks/useTarifaEditor.js'
 
 const ListarVenta = () => {
-    const { ventas, total, fetchVentas } = useVentas()
     const { tienePermiso } = useAuth()
     const { showToast } = useToast()
     const { tarifaPorKgHierro, tarifaPorKgNormal, tarifaPorPaquete, actualizarTarifaPorKgHierro, actualizarTarifaPorKgNormal, actualizarTarifaPorPaquete } = useConfiguracion()
+
+    // Estado propio de esta tabla paginada (NO el arreglo compartido de VentaContext,
+    // que otras pantallas usan como "lista completa" con su propio limit:1000/sin
+    // límite — ver ../../../LOGICA.md, "Bug transversal — listas paginadas
+    // corrompidas por prefetch compartido"). Si se lee de ahí, cualquier otra
+    // pantalla que refresque ese mismo arreglo compartido pisa la página actual.
+    const [ventas, setVentas] = useState([])
+    const [total, setTotal] = useState(0)
 
     const [filtroEstadoEncomienda, setFiltroEstadoEncomienda] = useState('')
     const [filtroPago, setFiltroPago] = useState('')
@@ -42,18 +49,9 @@ const ListarVenta = () => {
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [ventaEditar, setVentaEditar] = useState(null)
 
-    const {
-        modalInhabilitar, setModalInhabilitar,
-        pagoMenuAnchor, setPagoMenuAnchor, pagoMenuId, setPagoMenuId, confirmPago, setConfirmPago,
-        estadoMenuAnchor, setEstadoMenuAnchor, estadoMenuId, setEstadoMenuId, confirmCancelar, setConfirmCancelar,
-        confirmandoEstado,
-        handleDescargarGuia, handleToggleHabilitado, handleConfirmarToggle, handleExitedInhabilitar,
-        handlePagoConfirm, handleCancelarConfirm,
-    } = useVentaAcciones()
-
-    const tarifaKgHierroEditor = useTarifaEditor(tarifaPorKgHierro, actualizarTarifaPorKgHierro, { mensajeExito: 'Tarifa por kg (hierro) actualizada correctamente' })
-    const tarifaKgNormalEditor = useTarifaEditor(tarifaPorKgNormal, actualizarTarifaPorKgNormal, { mensajeExito: 'Tarifa por kg (normal) actualizada correctamente' })
-    const tarifaPaqueteEditor = useTarifaEditor(tarifaPorPaquete, actualizarTarifaPorPaquete, { mensajeExito: 'Tarifa por paquete actualizada correctamente' })
+    const tarifaKgHierroEditor = useTarifaEditor(tarifaPorKgHierro, actualizarTarifaPorKgHierro, { mensajeExito: 'Tarifa por kg (hierro) actualizada correctamente', max: MAX_TARIFA_KG })
+    const tarifaKgNormalEditor = useTarifaEditor(tarifaPorKgNormal, actualizarTarifaPorKgNormal, { mensajeExito: 'Tarifa por kg (normal) actualizada correctamente', max: MAX_TARIFA_KG })
+    const tarifaPaqueteEditor = useTarifaEditor(tarifaPorPaquete, actualizarTarifaPorPaquete, { mensajeExito: 'Tarifa por paquete actualizada correctamente', max: MAX_TARIFA_PAQUETE })
 
     const {
         theme,
@@ -63,17 +61,33 @@ const ListarVenta = () => {
         filtroEstado: filtroHabilitado, setFiltroEstado: setFiltroHabilitado,
         sortBy, handleSort,
         page, setPage, rowsPerPage, setRowsPerPage,
+        refetch,
         filtroContainerRef, filtroBtnRefs, filtroPillStyle,
     } = useEntityCrud({
-        fetchPage: (signal, params) => fetchVentas(signal, {
-            ...params,
-            estado: filtroEstadoEncomienda || undefined,
-            estadoPago: filtroPago || undefined,
-            metodoPago: filtroMetodoPago || undefined,
-        }),
+        fetchPage: async (signal, params) => {
+            const res = await getEncomiendas(signal, {
+                ...params,
+                estado: filtroEstadoEncomienda || undefined,
+                estadoPago: filtroPago || undefined,
+                metodoPago: filtroMetodoPago || undefined,
+            })
+            if (res?.success) {
+                setVentas((res.data || []).map(normalize))
+                setTotal(res.total ?? (res.data || []).length)
+            }
+        },
         extraDeps: [filtroEstadoEncomienda, filtroPago, filtroMetodoPago],
         fetchPageForHighlight: (id, limit) => getPageOfEncomienda(id, limit),
     })
+
+    const {
+        modalInhabilitar, setModalInhabilitar,
+        pagoMenuAnchor, setPagoMenuAnchor, pagoMenuId, setPagoMenuId, confirmPago, setConfirmPago,
+        estadoMenuAnchor, setEstadoMenuAnchor, estadoMenuId, setEstadoMenuId, confirmCancelar, setConfirmCancelar,
+        confirmandoEstado,
+        handleDescargarGuia, handleToggleHabilitado, handleConfirmarToggle, handleExitedInhabilitar,
+        handlePagoConfirm, handleCancelarConfirm,
+    } = useVentaAcciones({ onChanged: refetch })
 
     const { exportando, handleExportar } = useVentaExport({
         theme, debouncedBusqueda, filtroHabilitado, filtroEstadoEncomienda, filtroPago, filtroMetodoPago,
@@ -222,6 +236,7 @@ const ListarVenta = () => {
                 onSuccess={() => {
                     setModalRegistrarOpen(false)
                     showToast('Venta registrada correctamente.', 'success')
+                    refetch()
                 }}
             />
 
@@ -233,6 +248,7 @@ const ListarVenta = () => {
                     setModalActualizarOpen(false)
                     setVentaEditar(null)
                     showToast('Venta actualizada correctamente.', 'success')
+                    refetch()
                 }}
             />
 

@@ -1,7 +1,17 @@
 import { CAMPOS_PAQUETE, validarCampo, validarCampoPaquete, validarDocumentoDestinatarioCompleto } from './validacion.js'
 
-export const NUMERIC_LIMITS = { valorServicio: 999999999 }
+export const NUMERIC_LIMITS = { total: 9999999 }
 export const PAQUETE_NUMERIC_LIMITS = { peso: 999, alto: 999, ancho: 999, profundidad: 999 }
+
+// El municipio de destino de la venta (elegido en "Participantes") tiene que ser el
+// destino final de la ruta elegida o una de sus paradas intermedias. Si no, esa ruta no
+// sirve para esta venta — se BLOQUEA el paso (antes era solo un aviso).
+export const rutaLlegaAlDestino = (ruta, idDestinoVenta) => {
+    if (!ruta || !idDestinoVenta) return true
+    if (idDestinoVenta === ruta.idDestino) return true
+    return (ruta.paradas || []).some(p => p.idDestino === idDestinoVenta)
+}
+export const MENSAJE_RUTA_NO_LLEGA = 'Esta ruta no llega al municipio de destino de la venta'
 
 // "Factor 400": constante de negocio del peso volumétrico (alto×ancho×profundidad, en
 // METROS, × 400). Las dimensiones se capturan en cm (ver PasoPaquetes.jsx), por eso se
@@ -36,23 +46,35 @@ export const calcularCostoPeso = (paquete, tarifaPorKgHierro, tarifaPorKgNormal)
     return pesoEfectivo * (Number(tarifaKg) || 0)
 }
 
-// valorServicio = tarifa base del destino + (suma del costo por peso de cada paquete,
+// total = tarifa base del destino + (suma del costo por peso de cada paquete,
 // según su tipo de carga y el mayor entre su peso real y volumétrico) + (cantidad de
 // paquetes × tarifa por paquete). El resultado sigue siendo editable a mano después
 // de este auto-cálculo.
+//
+// Se redondea SIEMPRE al peso colombiano más cercano (sin centavos, ver LOGICA.md) antes
+// de devolverlo — el peso volumétrico (alto×ancho×profundidad/100³×400) puede dar un
+// kilaje con decimales (ej. 3.75 kg), y ese decimal se arrastraba hasta el total final
+// (ej. $35.437,5). Ese total con .5 pesos después pasaba por formatearMoneda()/
+// limpiarMonedaInput() (que solo entienden dígitos, sin punto decimal) en el campo
+// "Total a pagar" de PasoPago.jsx, y al quitarle el punto "35437.5" se convertía en
+// "354375" — un cobro 10 veces mayor al real, mostrado como si fuera correcto. Redondear
+// acá, en el único lugar que calcula el total, evita que un total fraccionario llegue a
+// tocar esas dos funciones.
 export const calcularValorServicio = (tarifaBase, paquetes, tarifaPorKgHierro, tarifaPorKgNormal, tarifaPorPaquete = 0) => {
     const costoPesoTotal = paquetes.reduce((s, p) => s + calcularCostoPeso(p, tarifaPorKgHierro, tarifaPorKgNormal), 0)
-    return Number(tarifaBase || 0) + costoPesoTotal + (paquetes.length * (Number(tarifaPorPaquete) || 0))
+    const total = Number(tarifaBase || 0) + costoPesoTotal + (paquetes.length * (Number(tarifaPorPaquete) || 0))
+    // Se topa en NUMERIC_LIMITS.total para no dejar un valor auto-calculado por encima de
+    // lo que el campo editable (y el backend) aceptan.
+    return Math.min(Math.round(total), NUMERIC_LIMITS.total)
 }
 
 // Devuelve {} (sin recalcular nada) si todavía no hay ruta seleccionada -- el call site
-// usa eso para decidir si también debe resetear el ref de "editado a mano". Ya no hay
-// impuestos: total queda siempre igual a valorServicio.
+// usa eso para decidir si también debe resetear el ref de "editado a mano".
 export const calcularValoresPaquetes = (idRuta, paquetes, rutasProgramadas, tarifaPorKgHierro, tarifaPorKgNormal, tarifaPorPaquete) => {
     if (!idRuta) return {}
     const ruta = rutasProgramadas.find(r => r.idRuta === parseInt(idRuta))
-    const vs = calcularValorServicio(ruta?.destino?.tarifaBase, paquetes, tarifaPorKgHierro, tarifaPorKgNormal, tarifaPorPaquete)
-    return { valorServicio: vs, total: vs }
+    const total = calcularValorServicio(ruta?.destino?.tarifaBase, paquetes, tarifaPorKgHierro, tarifaPorKgNormal, tarifaPorPaquete)
+    return { total }
 }
 
 export const validarPaso = (step, form, rutasProgramadas, opts = {}) => {
@@ -88,6 +110,9 @@ export const validarPaso = (step, form, rutasProgramadas, opts = {}) => {
         e.observaciones = validarCampo('observaciones', form, ventaOriginal)
 
         const rutaSel = rutasProgramadas.find(r => r.idRuta === parseInt(form.idRuta))
+        if (rutaSel && !e.idRuta && !rutaLlegaAlDestino(rutaSel, parseInt(form.idDestinoDestinatario) || null)) {
+            e.idRuta = MENSAJE_RUTA_NO_LLEGA
+        }
         if (rutaSel) {
             const erroresAsignacion = form.paquetes.map(p => {
                 const err = validarCampoPaquete('idRutaVehiculoConductor', p)

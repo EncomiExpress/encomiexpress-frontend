@@ -171,7 +171,7 @@ const ModalConsultarVenta = ({ venta, onClose }) => {
                                 <CampoFila label="Teléfono" value={venta.destinatario?.telefonoDestinatario} />
                                 <CampoFila label="Correo" value={venta.destinatario?.correoDestinatario} />
                                 <CampoFila label="Destino" value={venta.destinatario?.destino
-                                    ? `${venta.destinatario.destino.ciudad} - ${venta.destinatario.destino.departamento}`
+                                    ? `${venta.destinatario.destino.municipio} - ${venta.destinatario.destino.departamento}`
                                     : null} />
                                 <CampoFila label="Dirección" value={venta.destinatario?.direccionDestinatario} />
                             </Box>
@@ -260,7 +260,7 @@ const ModalConsultarVenta = ({ venta, onClose }) => {
                         </Box>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
                             <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Ruta</Typography>
-                            <Chip label={venta.ruta ? `${venta.ruta.origen || '—'} → ${venta.ruta.destino?.ciudad || '—'}` : '—'} size="small"
+                            <Chip label={venta.ruta ? `${venta.ruta.origen || '—'} → ${venta.ruta.destino?.municipio || '—'}` : '—'} size="small"
                                 onClick={() => window.open(`/transporte/rutas?highlight=${venta.idRuta}`, '_blank')}
                                 sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem', cursor: 'pointer', '&:hover': { filter: 'brightness(0.92)' } }} />
                         </Box>
@@ -270,10 +270,9 @@ const ModalConsultarVenta = ({ venta, onClose }) => {
                         <CampoFila label="Vehículo" value={paquete?.asignacion?.vehiculo ? `${paquete.asignacion.vehiculo.placa} — ${paquete.asignacion.vehiculo.marca} ${paquete.asignacion.vehiculo.modelo}` : null} />
                         <CampoFila label="Conductor" value={paquete?.asignacion?.conductor?.usuario ? `${paquete.asignacion.conductor.usuario.nombre} ${paquete.asignacion.conductor.usuario.apellido}` : null} />
                         <CampoFila label="Método de pago" value={venta.metodoPago} />
-                        <CampoFila label="Valor servicio" value={venta.valorServicio != null ? `$${Number(venta.valorServicio).toLocaleString('es-CO')}` : null} />
-                        <CampoFila label="Total" value={venta.total != null ? `$${Number(venta.total).toLocaleString('es-CO')}` : null} />
+                        <CampoFila label="Total a pagar" value={venta.total != null ? `$${Math.round(Number(venta.total)).toLocaleString('es-CO')}` : null} />
                         <CampoFila label="Fecha registro" value={formatFecha(venta.fechaRegistro)} />
-                        <CampoFila label="Fecha est. entrega en sede" value={formatFecha(venta.fechaEstimadaEntrega)} />
+                        <CampoFila label="Fecha est. entrega" value={formatFecha(venta.fechaEstimadaEntrega)} />
                         <CampoFila label="Observaciones" value={venta.observaciones} />
                     </FichaCard>
                 </Box>

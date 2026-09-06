@@ -1,20 +1,17 @@
-import { useEffect } from 'react'
 import { Box, Typography, Paper, Divider, Avatar, TextField, Autocomplete, MenuItem, Alert } from '@mui/material'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import RouteOutlinedIcon from '@mui/icons-material/RouteOutlined'
 import { FormField, FormSelect } from '../../../../shared/components/FormularioEstandarizado.jsx'
 import { formFieldStyles } from '../../../../shared/utils/formStyles.js'
 import { normalizarTexto } from '../../../../shared/utils/duplicados.js'
-import { formatFecha } from '../../../../shared/utils/formatters.js'
+import { formatFecha, formatHora12 } from '../../../../shared/utils/formatters.js'
 import { sumarDias } from '../../../../shared/utils/horarioLaboral.js'
 import PlacaDisplay from '../../../../shared/components/PlacaDisplay.jsx'
 import { validarCampo, validarCampoPaquete } from '../../validations/validacion.js'
+import { rutaLlegaAlDestino, MENSAJE_RUTA_NO_LLEGA } from '../../validations/ventaValidation.js'
 
 /**
- * Paso 3 del wizard: elegir la ruta, la fecha estimada de entrega EN SEDE (cuándo
- * llega el paquete al punto/sede de su municipio — no la entrega final puerta a
- * puerta, que pasa después: en sede se hace inventario y se asigna un repartidor
- * local, ver LOGICA.md "Paquetes — entrega en sede y reasignación local") y asignar cada paquete a un
+ * Paso 3 del wizard: elegir la ruta, la fecha estimada de entrega y asignar cada paquete a un
  * vehículo del convoy. `getPesoOriginalPorPar`, `valorServicioManualRef`,
  * `setSinCambios` y `ventaOriginal` son opcionales — solo los pasa el modo edición.
  * Cuando no hay `getPesoOriginalPorPar`, no se excluye ningún peso previo del cálculo
@@ -31,56 +28,13 @@ export default function PasoEnvio({
     const paresElegida = rutaElegida?.paresVehiculoConductor || []
     // El destino de la venta (elegido en el paso "Participantes", uno por venta —
     // no por paquete, ver LOGICA.md "Aprovechar el destino que ya existe por
-    // venta") debería caer en algún punto del corredor de la ruta elegida: su
-    // destino final, o alguna de sus paradas intermedias (Fase 1). Si no calza con
-    // ninguno, es un aviso — no se bloquea, porque la mayoría de rutas todavía no
-    // tienen paradas cargadas y el destino final por sí solo sigue siendo válido.
+    // venta") tiene que ser el destino final de la ruta elegida o una de sus paradas
+    // intermedias. Si no calza, se marca el campo Ruta en rojo y se BLOQUEA el paso
+    // (ver rutaLlegaAlDestino en ventaValidation.js).
     const idDestinoVenta = parseInt(form.idDestinoDestinatario) || null
-    const paradasRuta = rutaElegida?.paradas || []
-    const destinoCalzaConRuta = !rutaElegida || !idDestinoVenta
-        || idDestinoVenta === rutaElegida.idDestino
-        || paradasRuta.some(p => p.idDestino === idDestinoVenta)
+    const destinoCalzaConRuta = rutaLlegaAlDestino(rutaElegida, idDestinoVenta)
     const nombreDestinoVenta = destinos?.find(d => d.idDestino === idDestinoVenta)
 
-    // La ventana de fechaEstimadaEntrega (llegada al punto/sede, no la entrega
-    // final al destinatario) depende de DÓNDE dentro del corredor está esa sede,
-    // no siempre del destino final de toda la ruta (ver LOGICA.md, "Ventas —
-    // fecha estimada de entrega en sede por parada"):
-    //   - Destino final (caso de siempre): ventana entre salida+1 y llegada-1.
-    //   - Parada intermedia CON fecha estimada de paso cargada (Rutas, Fase 1):
-    //     un solo día posible, el de esa parada — se autocompleta.
-    //   - Parada intermedia SIN esa fecha cargada todavía: no se puede prometer
-    //     ninguna fecha — el campo queda deshabilitado en vez de mostrar (o
-    //     dejar guardar) una que podría no corresponder.
-    const esDestinoFinal = !rutaElegida || !idDestinoVenta || idDestinoVenta === rutaElegida.idDestino
-    const paradaDestinatario = !esDestinoFinal ? paradasRuta.find(p => p.idDestino === idDestinoVenta) : null
-    const entregaFechaFija = paradaDestinatario?.fechaLlegadaEstimada || null
-    const entregaSinFechaDisponible = !!paradaDestinatario && !entregaFechaFija
-    const entregaMin = entregaFechaFija || (form.fechaSalidaRuta ? sumarDias(form.fechaSalidaRuta, 1) : undefined)
-    const entregaMax = entregaFechaFija || (form.fechaLlegadaEstimadaRuta ? sumarDias(form.fechaLlegadaEstimadaRuta, -1) : undefined)
-    const entregaHelper = !rutaElegida
-        ? 'Selecciona primero una ruta'
-        : entregaSinFechaDisponible
-            ? 'Esta venta va a una parada intermedia sin fecha estimada de paso cargada todavía — pídele a quien gestiona Rutas que la agregue antes de prometer una fecha'
-            : entregaFechaFija
-                ? `Esta venta va a una parada intermedia — la entrega en sede queda fijada al ${formatFecha(entregaFechaFija)}, el día en que la ruta pasa por ahí`
-                : (form.fechaSalidaRuta ? `Desde el ${formatFecha(entregaMin)}${entregaMax ? ` hasta el ${formatFecha(entregaMax)}` : ''}` : 'Selecciona primero una ruta')
-
-    // Autocompleta/limpia fechaEstimadaEntrega cuando cambia a cuál parada le
-    // corresponde el destinatario (por cambio de ruta o de destino) — mismo
-    // patrón de auto-cálculo que ya usa este wizard para valorServicio.
-    useEffect(() => {
-        if (form.entregaSinFecha !== entregaSinFechaDisponible) {
-            setForm(prev => ({ ...prev, entregaSinFecha: entregaSinFechaDisponible }))
-        }
-        if (entregaFechaFija && form.fechaEstimadaEntrega !== entregaFechaFija) {
-            setForm(prev => ({ ...prev, fechaEstimadaEntrega: entregaFechaFija }))
-            setErrores(prev => ({ ...prev, fechaEstimadaEntrega: '' }))
-        } else if (entregaSinFechaDisponible && form.fechaEstimadaEntrega) {
-            setForm(prev => ({ ...prev, fechaEstimadaEntrega: '' }))
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [entregaFechaFija, entregaSinFechaDisponible])
     const pesoOriginalPorPar = getPesoOriginalPorPar ? getPesoOriginalPorPar() : {}
     // Un Alert por cada vehículo del convoy que ya tiene paquetes asignados —
     // la capacidad ahora es por vehículo, no por ruta completa. En modo edición se
@@ -126,7 +80,7 @@ export default function PasoEnvio({
                         // dos rutas con el mismo nombre (ej. mismo conductor, distinto vehículo),
                         // así se distinguen directo en la lista, sin tener que elegir una para verlo.
                         const placas = (option.paresVehiculoConductor || []).map(p => p.vehiculo?.placa).filter(Boolean).join(', ')
-                        const destinoTxt = option.destino?.ciudad || 'Sin destino'
+                        const destinoTxt = option.destino?.municipio || 'Sin destino'
                         return `${option.origen || 'Sin nombre'} → ${destinoTxt}${placas ? ` (${placas})` : ''} — $${Number(option.destino?.tarifaBase || 0).toLocaleString()}`
                     }}
                     isOptionEqualToValue={(opt, val) => opt.idRuta === val.idRuta}
@@ -142,7 +96,7 @@ export default function PasoEnvio({
                                     <RouteOutlinedIcon sx={{ fontSize: 18 }} />
                                 </Avatar>
                                 <Typography variant="body2" fontWeight={500} noWrap sx={{ flex: 1, minWidth: 0 }}>
-                                    {option.origen || 'Sin nombre'} → {option.destino?.ciudad || 'Sin destino'}
+                                    {option.origen || 'Sin nombre'} → {option.destino?.municipio || 'Sin destino'}
                                 </Typography>
                                 <Typography variant="caption" color={theme.palette.text.secondary} sx={{ flexShrink: 0 }}>
                                     ${Number(option.destino?.tarifaBase || 0).toLocaleString('es-CO')}
@@ -155,7 +109,7 @@ export default function PasoEnvio({
                         const q = normalizarTexto(inputValue)
                         return opts.filter(r =>
                             normalizarTexto(r.origen || '').includes(q) ||
-                            normalizarTexto(r.destino?.ciudad || '').includes(q) ||
+                            normalizarTexto(r.destino?.municipio || '').includes(q) ||
                             normalizarTexto(r.destino?.departamento || '').includes(q)
                         )
                     }}
@@ -163,7 +117,7 @@ export default function PasoEnvio({
                     inputValue={rutaInput}
                     onInputChange={(_, val, reason) => {
                         if (reason === 'input') {
-                            setRutaInput(val.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ0-9\s-]/g, ''))
+                            setRutaInput(val.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ0-9\s]/g, ''))
                         } else if (reason === 'reset') {
                             setRutaInput(val)
                         } else if (reason === 'clear') {
@@ -176,28 +130,21 @@ export default function PasoEnvio({
                         // de la ruta anterior, no a la nueva).
                         const fechaSalida = newValue?.fechaSalida || ''
                         const fechaLlegadaEstimada = newValue?.fechaLlegadaEstimada || ''
-                        const minimaNueva = fechaSalida ? sumarDias(fechaSalida, 1) : ''
-                        const maximaNueva = fechaLlegadaEstimada ? sumarDias(fechaLlegadaEstimada, -1) : ''
-                        const fechaResetea = !!(newValue && form.fechaEstimadaEntrega && (
-                            (minimaNueva && form.fechaEstimadaEntrega < minimaNueva) ||
-                            (maximaNueva && form.fechaEstimadaEntrega > maximaNueva)
-                        ))
+                        const minimaNueva = fechaLlegadaEstimada || (fechaSalida ? sumarDias(fechaSalida, 1) : '')
+                        const fechaResetea = !!(newValue && form.fechaEstimadaEntrega && minimaNueva && form.fechaEstimadaEntrega < minimaNueva)
                         if (newValue) {
                             if (valorServicioManualRef) valorServicioManualRef.current = false
                             setForm(prev => {
-                                const valorServicio = calcularValorServicio(newValue.destino?.tarifaBase, prev.paquetes)
+                                const total = calcularValorServicio(newValue.destino?.tarifaBase, prev.paquetes)
                                 return {
                                     ...prev,
                                     idRuta: newValue.idRuta,
-                                    destino: `${newValue.origen || 'Sin nombre'} → ${newValue.destino?.ciudad || 'Sin destino'} — $${Number(newValue.destino?.tarifaBase || 0).toLocaleString('es-CO')}`,
+                                    destino: `${newValue.origen || 'Sin nombre'} → ${newValue.destino?.municipio || 'Sin destino'} — $${Number(newValue.destino?.tarifaBase || 0).toLocaleString('es-CO')}`,
                                     fechaSalidaRuta: fechaSalida,
                                     fechaLlegadaEstimadaRuta: fechaLlegadaEstimada,
-                                    fechaEstimadaEntrega: prev.fechaEstimadaEntrega && (
-                                        (minimaNueva && prev.fechaEstimadaEntrega < minimaNueva) ||
-                                        (maximaNueva && prev.fechaEstimadaEntrega > maximaNueva)
-                                    ) ? '' : prev.fechaEstimadaEntrega,
-                                    valorServicio,
-                                    total: valorServicio,
+                                    fechaEstimadaEntrega: prev.fechaEstimadaEntrega && minimaNueva && prev.fechaEstimadaEntrega < minimaNueva
+                                        ? '' : prev.fechaEstimadaEntrega,
+                                    total,
                                     paquetes: prev.paquetes.map(p => ({ ...p, idRutaVehiculoConductor: '' })),
                                 }
                             })
@@ -209,7 +156,9 @@ export default function PasoEnvio({
                         }
                         setErrores(prev => ({
                             ...prev,
-                            idRuta: newValue ? '' : (prev.idRuta ? validarCampo('idRuta', { idRuta: '' }, ventaOriginal) : prev.idRuta),
+                            idRuta: newValue
+                                ? (rutaLlegaAlDestino(newValue, parseInt(form.idDestinoDestinatario) || null) ? '' : MENSAJE_RUTA_NO_LLEGA)
+                                : (prev.idRuta ? validarCampo('idRuta', { idRuta: '' }, ventaOriginal) : prev.idRuta),
                             fechaEstimadaEntrega: fechaResetea && prev.fechaEstimadaEntrega
                                 ? validarCampo('fechaEstimadaEntrega', { fechaEstimadaEntrega: '' }, ventaOriginal)
                                 : (newValue ? prev.fechaEstimadaEntrega : ''),
@@ -223,7 +172,11 @@ export default function PasoEnvio({
                         setApiError(null)
                         setSinCambios?.(false)
                     }}
-                    onBlur={() => setErrores(prev => ({ ...prev, idRuta: validarCampo('idRuta', form, ventaOriginal) }))}
+                    onBlur={() => setErrores(prev => ({
+                        ...prev,
+                        idRuta: validarCampo('idRuta', form, ventaOriginal)
+                            || (rutaElegida && !destinoCalzaConRuta ? MENSAJE_RUTA_NO_LLEGA : ''),
+                    }))}
                     noOptionsText="No se encontraron rutas"
                     renderInput={(params) => (
                         <TextField {...params} label="Ruta *"
@@ -232,13 +185,18 @@ export default function PasoEnvio({
                             sx={formFieldStyles} />
                     )}
                 />
-                <TextField fullWidth label="Fecha estimada de entrega en sede" name="fechaEstimadaEntrega"
+                <TextField fullWidth label="Fecha estimada de entrega" name="fechaEstimadaEntrega"
                     type="date" value={form.fechaEstimadaEntrega} onChange={handleChange}
                     onBlur={() => setErrores(prev => ({ ...prev, fechaEstimadaEntrega: validarCampo('fechaEstimadaEntrega', form, ventaOriginal) }))} required
                     error={!!errores.fechaEstimadaEntrega}
-                    disabled={entregaSinFechaDisponible}
-                    helperText={errores.fechaEstimadaEntrega || entregaHelper}
-                    slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: entregaMin, max: entregaMax } }}
+                    helperText={errores.fechaEstimadaEntrega || (form.fechaLlegadaEstimadaRuta
+                        ? `Desde el ${formatFecha(form.fechaLlegadaEstimadaRuta)} (llegada de la ruta) en adelante`
+                        : form.fechaSalidaRuta
+                            ? `Desde el ${formatFecha(sumarDias(form.fechaSalidaRuta, 1))}`
+                            : 'Selecciona primero una ruta')}
+                    slotProps={{ inputLabel: { shrink: true }, htmlInput: {
+                        min: form.fechaLlegadaEstimadaRuta || (form.fechaSalidaRuta ? sumarDias(form.fechaSalidaRuta, 1) : undefined),
+                    } }}
                     sx={formFieldStyles} />
             </Box>
             {rutaElegida && (
@@ -250,23 +208,23 @@ export default function PasoEnvio({
                     <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 0.75 }}>
                         <Typography variant="body2">
                             <Box component="span" sx={{ fontWeight: 600, color: theme.palette.text.secondary, mr: 0.5 }}>Destino:</Box>
-                            {rutaElegida.destino ? `${rutaElegida.destino.ciudad}, ${rutaElegida.destino.departamento}` : '—'}
+                            {rutaElegida.destino ? `${rutaElegida.destino.municipio}, ${rutaElegida.destino.departamento}` : '—'}
                         </Typography>
                         <Typography variant="body2">
                             <Box component="span" sx={{ fontWeight: 600, color: theme.palette.text.secondary, mr: 0.5 }}>Salida:</Box>
-                            {rutaElegida.fechaSalida ? `${formatFecha(rutaElegida.fechaSalida)}${rutaElegida.horaSalida ? ' · ' + rutaElegida.horaSalida.slice(0, 5) : ''}` : '—'}
+                            {rutaElegida.fechaSalida ? `${formatFecha(rutaElegida.fechaSalida)}${rutaElegida.horaSalida ? ' · ' + formatHora12(rutaElegida.horaSalida) : ''}` : '—'}
                         </Typography>
                         <Typography variant="body2">
                             <Box component="span" sx={{ fontWeight: 600, color: theme.palette.text.secondary, mr: 0.5 }}>Llegada:</Box>
-                            {rutaElegida.fechaLlegadaEstimada ? `${formatFecha(rutaElegida.fechaLlegadaEstimada)}${rutaElegida.horaLlegadaEstimada ? ' · ' + rutaElegida.horaLlegadaEstimada.slice(0, 5) : ''}` : '—'}
+                            {rutaElegida.fechaLlegadaEstimada ? `${formatFecha(rutaElegida.fechaLlegadaEstimada)}${rutaElegida.horaLlegadaEstimada ? ' · ' + formatHora12(rutaElegida.horaLlegadaEstimada) : ''}` : '—'}
                         </Typography>
                     </Box>
                 </Paper>
             )}
             {rutaElegida && !destinoCalzaConRuta && (
-                <Alert severity="warning" sx={{ borderRadius: 2 }}>
-                    Esta venta va para <strong>{nombreDestinoVenta ? `${nombreDestinoVenta.ciudad}, ${nombreDestinoVenta.departamento}` : 'un municipio'}</strong>, pero
-                    esa ruta no pasa por ahí (ni es su destino final, ni una de sus paradas). Revisa que sea la ruta correcta, o agrégale esa parada desde Rutas.
+                <Alert severity="error" sx={{ borderRadius: 2 }}>
+                    Esta venta va para <strong>{nombreDestinoVenta ? `${nombreDestinoVenta.municipio}, ${nombreDestinoVenta.departamento}` : 'un municipio'}</strong>, pero
+                    esa ruta no pasa por ahí (ni es su destino final, ni una de sus paradas). Elige otra ruta, o agrégale esa parada desde Rutas.
                 </Alert>
             )}
             {rutaElegida && (

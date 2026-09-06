@@ -6,10 +6,12 @@ import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined'
 import MailOutlinedIcon from '@mui/icons-material/MailOutlined'
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined'
+import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined'
 import { FormField } from '../../../../shared/components/FormularioEstandarizado.jsx'
 import NacionSVG from '../../../../shared/components/NacionSVG.jsx'
 import { formFieldStyles } from '../../../../shared/utils/formStyles.js'
 import { normalizarTexto } from '../../../../shared/utils/duplicados.js'
+import { maxLengthTelefono, telefonoHelperText } from '../../../../shared/validations/telefonoValidation.js'
 import {
     validarCampo, OPCION_CLIENTE_NUEVO,
     getMaxLengthDocDestinatario, docHelperTextDestinatario, validarDocumentoDestinatarioCompleto,
@@ -26,7 +28,7 @@ import {
 export default function PasoParticipantes({
     theme, clientes, clienteSeleccionado, clienteInput, setClienteInput,
     form, setForm, errores, setErrores, handleChange, onNuevoCliente, setSinCambios, ventaOriginal,
-    destinos, destinoDestinatarioInput, setDestinoDestinatarioInput,
+    destinos, destinoDestinatarioInput, setDestinoDestinatarioInput, setParticipanteRef,
 }) {
     // Si el destino de este destinatario ya fue inhabilitado desde que se registró la
     // venta, no aparece en `destinos` (solo trae habilitados) — se usa el dato que ya
@@ -39,7 +41,7 @@ export default function PasoParticipantes({
     return (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
             {/* Remitente */}
-            <Box>
+            <Box ref={(el) => setParticipanteRef?.('idCliente', el)}>
                 <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1.5, color: theme.palette.text.primary }}>
                     Remitente
                 </Typography>
@@ -159,16 +161,14 @@ export default function PasoParticipantes({
                             {clienteSeleccionado.destino && (
                                 <Typography variant="body2">
                                     <Box component="span" sx={{ fontWeight: 600, color: theme.palette.text.secondary, mr: 0.5 }}>Municipio:</Box>
-                                    {clienteSeleccionado.destino.ciudad}, {clienteSeleccionado.destino.departamento}
+                                    {clienteSeleccionado.destino.municipio}, {clienteSeleccionado.destino.departamento}
                                 </Typography>
                             )}
                             {clienteSeleccionado.direccion && (
-                                <Box sx={{ gridColumn: '1 / -1' }}>
-                                    <Typography variant="body2">
-                                        <Box component="span" sx={{ fontWeight: 600, color: theme.palette.text.secondary, mr: 0.5 }}>Dirección:</Box>
-                                        {clienteSeleccionado.direccion}
-                                    </Typography>
-                                </Box>
+                                <Typography variant="body2">
+                                    <Box component="span" sx={{ fontWeight: 600, color: theme.palette.text.secondary, mr: 0.5 }}>Dirección:</Box>
+                                    {clienteSeleccionado.direccion}
+                                </Typography>
                             )}
                         </Box>
                     </Paper>
@@ -182,7 +182,8 @@ export default function PasoParticipantes({
                 <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1.5, color: theme.palette.text.primary }}>
                     Destinatario
                 </Typography>
-                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
+                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5, '& > *': { minWidth: 0 } }}>
+                    <Box ref={(el) => setParticipanteRef?.('tipoIdentificacionDestinatario', el)}>
                     <TextField fullWidth select label="Tipo de documento *" name="tipoIdentificacionDestinatario"
                         value={form.tipoIdentificacionDestinatario} onChange={handleChange}
                         onBlur={() => setErrores(prev => ({ ...prev, tipoIdentificacionDestinatario: validarCampo('tipoIdentificacionDestinatario', form, ventaOriginal) }))}
@@ -192,31 +193,45 @@ export default function PasoParticipantes({
                             select: { IconComponent: KeyboardArrowDownOutlinedIcon },
                         }}
                         sx={formFieldStyles}>
+                        {/* Sin TI/RC: ningún menor de edad envía/recibe encomiendas en
+                        este sistema -- ver LOGICA.md ("Tipos de documento por módulo").
+                        PPT cubre a migrantes venezolanos regularizados. */}
                         <MenuItem value="CC">Cédula de Ciudadanía (CC)</MenuItem>
                         <MenuItem value="NIT">NIT (Persona Jurídica)</MenuItem>
-                        <MenuItem value="TI">Tarjeta de Identidad (TI)</MenuItem>
                         <MenuItem value="CE">Cédula de Extranjería (CE)</MenuItem>
                         <MenuItem value="PAS">Pasaporte</MenuItem>
-                        <MenuItem value="RC">Registro Civil (RC)</MenuItem>
+                        <MenuItem value="PPT">Permiso por Protección Temporal (PPT)</MenuItem>
                     </TextField>
+                    </Box>
+                    <Box ref={(el) => setParticipanteRef?.('numeroIdentificacionDestinatario', el)}>
                     <FormField label="Número de documento" name="numeroIdentificacionDestinatario" value={form.numeroIdentificacionDestinatario}
                         onChange={handleChange}
                         onBlur={() => setErrores(prev => ({ ...prev, numeroIdentificacionDestinatario: validarDocumentoDestinatarioCompleto(form.tipoIdentificacionDestinatario, form.numeroIdentificacionDestinatario) }))}
                         required error={errores.numeroIdentificacionDestinatario}
                         helperText={errores.numeroIdentificacionDestinatario || docHelperTextDestinatario(form.tipoIdentificacionDestinatario)}
                         icon={BadgeOutlinedIcon} inputProps={{ maxLength: getMaxLengthDocDestinatario(form.tipoIdentificacionDestinatario) }} />
-                    <FormField label="Nombre completo" name="nombreDestinatario" value={form.nombreDestinatario}
+                    </Box>
+                    <Box ref={(el) => setParticipanteRef?.('nombreDestinatario', el)}>
+                    <FormField
+                        label={form.tipoIdentificacionDestinatario === 'NIT' ? 'Razón Social' : 'Nombre completo'}
+                        name="nombreDestinatario" value={form.nombreDestinatario}
                         onChange={handleChange}
                         onBlur={() => setErrores(prev => ({ ...prev, nombreDestinatario: validarCampo('nombreDestinatario', form, ventaOriginal) }))}
                         required error={errores.nombreDestinatario}
-                        helperText={errores.nombreDestinatario} icon={PersonOutlinedIcon}
-                        placeholder="Ej: Juan Pérez" inputProps={{ maxLength: 50 }} />
+                        helperText={errores.nombreDestinatario}
+                        icon={form.tipoIdentificacionDestinatario === 'NIT' ? BusinessOutlinedIcon : PersonOutlinedIcon}
+                        placeholder={form.tipoIdentificacionDestinatario === 'NIT' ? 'Ej: Transportes XYZ S.A.S' : 'Ej: Juan Pérez'}
+                        inputProps={{ maxLength: 50 }} />
+                    </Box>
+                    <Box ref={(el) => setParticipanteRef?.('telefonoDestinatario', el)}>
                     <FormField label="Teléfono" name="telefonoDestinatario" value={form.telefonoDestinatario}
                         onChange={handleChange}
                         onBlur={() => setErrores(prev => ({ ...prev, telefonoDestinatario: validarCampo('telefonoDestinatario', form, ventaOriginal) }))}
                         required error={errores.telefonoDestinatario}
-                        helperText={errores.telefonoDestinatario || 'Número de 10 dígitos'} icon={PhoneOutlinedIcon}
-                        inputProps={{ maxLength: 10 }} />
+                        helperText={errores.telefonoDestinatario || telefonoHelperText(form.tipoIdentificacionDestinatario)} icon={PhoneOutlinedIcon}
+                        inputProps={{ maxLength: maxLengthTelefono(form.tipoIdentificacionDestinatario) }} />
+                    </Box>
+                    <Box ref={(el) => setParticipanteRef?.('correoDestinatario', el)}>
                     <FormField label="Correo" name="correoDestinatario" value={form.correoDestinatario}
                         onChange={handleChange}
                         onBlur={() => setErrores(prev => ({ ...prev, correoDestinatario: validarCampo('correoDestinatario', form, ventaOriginal) }))}
@@ -224,10 +239,12 @@ export default function PasoParticipantes({
                         placeholder="correo@dominio.com"
                         helperText={errores.correoDestinatario || 'Opcional'} icon={MailOutlinedIcon}
                         inputProps={{ maxLength: 150 }} />
+                    </Box>
+                    <Box ref={(el) => setParticipanteRef?.('idDestinoDestinatario', el)}>
                     <Autocomplete
                         popupIcon={<KeyboardArrowDownOutlinedIcon />}
                         options={destinos}
-                        getOptionLabel={(d) => `${d.ciudad} - ${d.departamento}`}
+                        getOptionLabel={(d) => `${d.municipio} - ${d.departamento}`}
                         isOptionEqualToValue={(opt, val) => opt.idDestino === val.idDestino}
                         value={destinoDestinatarioSeleccionado}
                         inputValue={destinoDestinatarioInput}
@@ -248,7 +265,7 @@ export default function PasoParticipantes({
                                         <NacionSVG color={theme.palette.primary.main} />
                                     </Box>
                                     <Typography variant="body2" fontWeight={500} noWrap sx={{ flex: 1, minWidth: 0 }}>
-                                        {d.ciudad}
+                                        {d.municipio}
                                     </Typography>
                                     <Typography variant="caption" color={theme.palette.text.secondary} sx={{ flexShrink: 0 }}>
                                         {d.departamento}
@@ -260,7 +277,7 @@ export default function PasoParticipantes({
                             if (!inputValue.trim()) return [...opts].sort((a, b) => b.idDestino - a.idDestino).slice(0, 5)
                             const q = normalizarTexto(inputValue)
                             return opts.filter(d =>
-                                normalizarTexto(d.ciudad || '').includes(q) ||
+                                normalizarTexto(d.municipio || '').includes(q) ||
                                 normalizarTexto(d.departamento || '').includes(q)
                             )
                         }}
@@ -268,12 +285,14 @@ export default function PasoParticipantes({
                         renderInput={(params) => (
                             <TextField {...params} label="Destino *"
                                 error={!!errores.idDestinoDestinatario}
-                                helperText={errores.idDestinoDestinatario || '¿A qué municipio se envía el paquete?'}
+                                helperText={errores.idDestinoDestinatario || '¿A qué municipio se envía el/los paquete(s)?'}
                                 slotProps={{ inputLabel: { shrink: true }, htmlInput: { ...params.inputProps, maxLength: 50 } }}
                                 sx={formFieldStyles} />
                         )}
                     />
-                    <Box sx={{ gridColumn: '1 / -1' }}>
+                    </Box>
+                    <Box sx={{ gridColumn: '1 / -1' }}
+                        ref={(el) => setParticipanteRef?.('direccionDestinatario', el)}>
                         <FormField label="Dirección de entrega" name="direccionDestinatario" value={form.direccionDestinatario}
                             onChange={handleChange}
                             onBlur={() => setErrores(prev => ({ ...prev, direccionDestinatario: validarCampo('direccionDestinatario', form, ventaOriginal) }))}
