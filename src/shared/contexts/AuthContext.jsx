@@ -178,26 +178,35 @@ export const AuthProvider = ({ children }) => {
 
   const recuperarPassword = async () => ({ success: true })
 
-  const getUsuarios = useCallback(async (params = {}) => {
+  const getUsuarios = useCallback(async (params = {}, signal) => {
     try {
-      const data = await usuarioService.getUsuarios(params)
+      const data = await usuarioService.getUsuarios(params, signal)
       return { success: true, data: data.data || [], total: data.total ?? (data.data || []).length }
-    } catch {
-      return { success: false, data: [], total: 0 }
+    } catch (err) {
+      // AbortError es una cancelación deliberada (ver ListarUsuario.jsx) — no es un
+      // error real, se relanza tal cual para que el catch de useEntityCrud la ignore
+      // en vez de tratarla como un fallo silencioso que vaciara la tabla sin avisar.
+      if (err?.name === 'AbortError') throw err
+      return { success: false, data: [], total: 0, message: err.message || 'Error al cargar usuarios' }
     }
   }, [])
 
-  const getRolesBackend = useCallback(async (params = {}) => {
+  const getRolesBackend = useCallback(async (params = {}, signal) => {
     try {
-      const data = await rolService.getRoles(params)
+      const data = await rolService.getRoles(params, signal)
       const roles = (data.data || []).map(rol => ({
         ...rol,
         id: rol.id ?? rol.idRol,
         permisosIds: (rol.permisosIds || rol.permisos || []).map(id => Number(id))
       }))
       return { success: true, data: roles, total: data.total ?? roles.length }
-    } catch {
-      return { success: false, data: [], total: 0 }
+    } catch (err) {
+      // Mismo criterio que getUsuarios: un AbortError es una cancelación deliberada
+      // (ver ListarRol.jsx), no un error real — se relanza para que el catch de
+      // useEntityCrud la ignore en vez de tratarla como un fallo silencioso que
+      // vaciara la tabla sin avisar.
+      if (err?.name === 'AbortError') throw err
+      return { success: false, data: [], total: 0, message: err.message || 'Error al cargar roles' }
     }
   }, [])
 

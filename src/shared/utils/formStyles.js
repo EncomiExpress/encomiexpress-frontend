@@ -1,4 +1,10 @@
 export const formFieldStyles = (theme) => ({
+  // Deja que el campo se encoja bajo el ancho de su contenido cuando vive en un grid
+  // o flex (columnas 1fr): sin esto, el valor seleccionado de un <Select> con etiqueta
+  // larga (ej. "Permiso por Protección Temporal (PPT)") ensancha su columna y aplasta
+  // las demás. Con minWidth 0, MUI recorta ese texto con "…".
+  minWidth: 0,
+  '& .MuiSelect-select': { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
   '& .MuiOutlinedInput-root': {
     borderRadius: 2,
     '& fieldset': { borderColor: theme.palette.divider },

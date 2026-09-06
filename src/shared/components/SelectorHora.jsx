@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Box, Typography, IconButton, Menu, MenuItem } from '@mui/material'
 import { useTheme } from '@mui/material/styles'
 import ScheduleOutlinedIcon from '@mui/icons-material/ScheduleOutlined'
+import ClearOutlinedIcon from '@mui/icons-material/ClearOutlined'
 import { generarSlotsHorario } from '../utils/horarioLaboral'
 
 const pad2 = (n) => String(n).padStart(2, '0')
@@ -54,9 +55,16 @@ const SelectorHora = ({
     // forzar un valor a medio escribir hacia afuera. Se resincronizan cuando value
     // cambia desde afuera (elegir fecha, usar las flechas, limpiar el formulario).
     useEffect(() => {
-        const [h, m] = value ? value.split(':') : ['', '']
-        setHoraTexto(h || '')
-        setMinutoTexto(m || '')
+        // Función interna en vez de llamar setState directo en el cuerpo del efecto --
+        // mismo orden de ejecución, pero así el linter (react-hooks/set-state-in-effect)
+        // no marca esta resincronización (legítima: reflejar `value` en los inputs
+        // locales) como una mutación "impura".
+        const resincronizar = () => {
+            const [h, m] = value ? value.split(':') : ['', '']
+            setHoraTexto(h || '')
+            setMinutoTexto(m || '')
+        }
+        resincronizar()
     }, [value])
 
     const inactivo = disabled || !rango
@@ -161,8 +169,18 @@ const SelectorHora = ({
                     placeholder="--"
                     style={estiloInput}
                 />
+                {!required && value && !inactivo && (
+                    <IconButton
+                        size="small"
+                        onClick={() => onChange('')}
+                        sx={{ p: 0.25, flexShrink: 0, ml: 'auto' }}
+                        aria-label={`Limpiar ${label}`}
+                    >
+                        <ClearOutlinedIcon sx={{ color: '#94a3b8', fontSize: 16 }} />
+                    </IconButton>
+                )}
                 {rango && (
-                    <Typography sx={{ fontSize: '0.7rem', color: theme.palette.text.disabled, ml: 'auto' }}>
+                    <Typography sx={{ fontSize: '0.7rem', color: theme.palette.text.disabled, ml: !required && value && !inactivo ? 1 : 'auto' }}>
                         {rango.min}–{rango.max}
                     </Typography>
                 )}

@@ -75,7 +75,7 @@ export const useDisponibilidadRuta = ({ pares = [], idRutaExcluir, refrescarKey,
             const rango = o.fechaLlegadaEstimada
                 ? `del ${formatFecha(o.fechaSalida)} al ${formatFecha(o.fechaLlegadaEstimada)}`
                 : `sale el ${formatFecha(o.fechaSalida)}`
-            const rutaTexto = o.origen ? `${o.origen} → ${o.destino?.ciudad || 'Sin destino'}` : 'otra ruta'
+            const rutaTexto = o.origen ? `${o.origen} → ${o.destino?.municipio || 'Sin destino'}` : 'otra ruta'
             const texto = `${motivos.join(' y ')} ocupado — ${rutaTexto}, ${rango}`
 
             let desde, hasta

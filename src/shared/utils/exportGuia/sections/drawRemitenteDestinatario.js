@@ -14,8 +14,8 @@ export const drawRemitenteDestinatario = (doc, y, venta) => {
 
   const nombreDestinatario = venta.destinatario?.nombreDestinatario
   const telDestinatario = venta.destinatario?.telefonoDestinatario
-  const ciudadDestino = venta.ruta?.destino?.ciudad
-    ? `${venta.ruta.destino.ciudad}${venta.ruta.destino.departamento ? ' / ' + venta.ruta.destino.departamento : ''}`
+  const ciudadDestino = venta.destinatario?.destino?.municipio
+    ? `${venta.destinatario.destino.municipio}${venta.destinatario.destino.departamento ? ' / ' + venta.destinatario.destino.departamento : ''}`
     : '—'
   const dirDestinatario = venta.destinatario?.direccionDestinatario
 
@@ -55,7 +55,7 @@ export const drawRemitenteDestinatario = (doc, y, venta) => {
   rightY += 5
   rightY = drawField(doc, rightX, rightY, boxW - 6, 'Nombre', nombreDestinatario)
   rightY = drawFieldPair(doc, rightX, rightY, (boxW - 6) / 2,
-    'Teléfono', telDestinatario, 'Ciudad / Depto. destino', ciudadDestino)
+    'Teléfono', telDestinatario, 'Municipio / Depto. destino', ciudadDestino)
   drawField(doc, rightX, rightY, boxW - 6, 'Dirección', dirDestinatario)
 
   return boxY + boxH + 6

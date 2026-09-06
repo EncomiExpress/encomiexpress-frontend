@@ -21,8 +21,7 @@ export const drawDetallesPaquete = (doc, y, venta, pkg) => {
   // ── Grid de valores de la venta (igual en todas las páginas: es el mismo envío) ──
   y = ensureSpace(doc, y, 14)
   const gridColsVenta = [
-    ['Valor servicio', formatCurrency(venta.valorServicio)],
-    [venta.metodoPago === 'Contraentrega' ? 'Valor a cobrar' : 'Total', formatCurrency(venta.total)],
+    [venta.metodoPago === 'Contraentrega' ? 'Valor a cobrar' : 'Total a pagar', formatCurrency(venta.total)],
   ]
   const cellWVenta = CONTENT_W / gridColsVenta.length
   gridColsVenta.forEach(([label, value], i) => drawGridCell(doc, MARGIN + cellWVenta * i, y, cellWVenta, 14, label, value))

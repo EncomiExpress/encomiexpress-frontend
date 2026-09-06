@@ -1,10 +1,12 @@
 import { fetchWithAuth } from './authService'
 
-export const getRoles = (params = {}) => {
+// signal opcional (segundo parámetro, no primero) para no romper a otros llamadores
+// que ya llamaban esto solo con params.
+export const getRoles = (params = {}, signal) => {
   const qs = new URLSearchParams()
   Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '') qs.set(k, v) })
   const suffix = qs.toString() ? `?${qs.toString()}` : ''
-  return fetchWithAuth(`/roles${suffix}`)
+  return fetchWithAuth(`/roles${suffix}`, { signal })
 }
 
 export const getPermisos = () => fetchWithAuth('/roles/permisos')

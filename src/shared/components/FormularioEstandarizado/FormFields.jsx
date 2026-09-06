@@ -17,6 +17,7 @@ export const FormField = ({
   error,
   helperText,
   icon: Icon,
+  endAdornment,
   multiline = false,
   rows = 1,
   inputProps = {},
@@ -61,6 +62,11 @@ export const FormField = ({
               <Icon sx={{ color: '#94a3b8' }} />
             </InputAdornment>
           ) : undefined,
+          // `children` de TextField solo se renderiza cuando select=true (MUI arma el
+          // <Select> con esos hijos como <MenuItem>) — en un TextField normal como este,
+          // cualquier children se descarta en silencio. endAdornment es la vía real para
+          // poner algo al final del campo (ver PasoPago.jsx, botón "Recalcular").
+          endAdornment: endAdornment || undefined,
         },
         htmlInput: {
           ...inputProps
@@ -75,7 +81,7 @@ export const FormField = ({
         formFieldStyles,
       ]}
     >
-      {children}
+      {select ? children : null}
     </TextField>
   )
 }

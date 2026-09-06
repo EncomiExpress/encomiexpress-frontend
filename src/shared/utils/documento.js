@@ -1,20 +1,43 @@
-// Reglas de número de documento por tipo, según la cédula colombiana:
-// - CC (Cédula de Ciudadanía): mínimo 6 dígitos (cédulas antiguas), máximo 10 (NUIP actual).
-// - TI (Tarjeta de Identidad): siempre 10 dígitos (NUIP).
-// - CE / Pasaporte: alfanumérico, sin un mínimo estricto, hasta 12 caracteres.
+// Reglas de número de documento por tipo, según la cédula colombiana. TI y RC (Tarjeta
+// de Identidad / Registro Civil, documentos de menores de edad) no se incluyen: ningún
+// módulo del sistema los deja elegir -- ver LOGICA.md ("Tipos de documento por
+// módulo") -- así que mantenerlos acá sería código muerto sin ninguna función.
+// - CC (Cédula de Ciudadanía): mínimo 7 dígitos (cédulas antiguas de hombres mayores),
+//   máximo 10 (NUIP actual).
+// - CE: alfanumérico, sin un mínimo estricto, hasta 12 caracteres.
+// - Pasaporte: alfanumérico, hasta 20 caracteres — los pasaportes extranjeros mezclan
+//   letras y números con formatos que varían mucho según el país emisor.
+// - PPT (Permiso por Protección Temporal, migrantes venezolanos): estrictamente
+//   numérico, de 6 a 10 dígitos (correlativo asignado por Migración Colombia).
 export const REGLAS_DOCUMENTO = {
-    CC: { min: 6, max: 10 },
-    TI: { min: 10, max: 10 },
+    CC: { min: 7, max: 10 },
     CE: { min: 1, max: 12, alfanumerico: true },
-    PAS: { min: 1, max: 12, alfanumerico: true },
-    // Registro Civil: sin un rango oficial documentado aparte, se deja igual que CC.
-    RC: { min: 6, max: 10 },
+    PAS: { min: 1, max: 20, alfanumerico: true },
+    PPT: { min: 6, max: 10 },
 }
 
-// NIT (persona jurídica, solo Clientes) tiene su propio manejo especial en
-// RegistrarCliente.jsx/ActualizarCliente.jsx (acepta dígitos y guión, hasta 15
-// caracteres) porque su formato no encaja en "numérico" ni "alfanumérico" — no
-// se valida con esta función.
+// NIT (persona jurídica) no entra en REGLAS_DOCUMENTO: su formato no es "numérico" ni
+// "alfanumérico" simple. En Colombia es 9 dígitos de raíz + 1 dígito de verificación
+// (DV) separados por guion (ej. 123456789-0). El usuario solo teclea números y el
+// formulario inserta el guion tras el 9º dígito. Lo usan Propietario y Cliente; el
+// backend lo replica con commonRules.validarNitEstricto.
+export const NIT_MAX_LENGTH = 11 // 9 dígitos + guion + dígito de verificación
+
+// Normaliza a "NNNNNNNNN-D". Idempotente: acepta un valor que ya trae guion, puntos o
+// espacios (los quita y reubica el guion). Corta a 10 dígitos.
+export const formatearNit = (valor) => {
+    const digitos = String(valor || '').replace(/\D/g, '').slice(0, 10)
+    return digitos.length > 9 ? `${digitos.slice(0, 9)}-${digitos.slice(9)}` : digitos
+}
+
+// Mensaje de error (string) o null. Exige exactamente 9 dígitos + guion + 1 dígito.
+// No verifica el DV con módulo 11 (evita rechazar NITs viejos mal cargados en BD).
+export const validarNitConDv = (valor) => {
+    const limpio = (valor || '').trim()
+    if (!limpio) return 'El número de documento es obligatorio'
+    if (!/^\d{9}-\d$/.test(limpio)) return 'El NIT debe tener 9 dígitos y el dígito de verificación (ej: 123456789-0)'
+    return null
+}
 
 export const esDocAlfanumerico = (tipo) => !!REGLAS_DOCUMENTO[tipo]?.alfanumerico
 
@@ -23,7 +46,7 @@ export const maxLengthDocumento = (tipo) => REGLAS_DOCUMENTO[tipo]?.max ?? 12
 export const docHelperText = (tipo) => {
     const regla = REGLAS_DOCUMENTO[tipo]
     if (!regla) return 'Sin puntos ni comas'
-    if (regla.alfanumerico) return `Alfanumérico, hasta ${regla.max} caracteres`
+    if (regla.alfanumerico) return `Letras y números, hasta ${regla.max} caracteres`
     if (regla.min === regla.max) return `Solo dígitos, debe tener ${regla.min} dígitos`
     return `Solo dígitos, entre ${regla.min} y ${regla.max}`
 }

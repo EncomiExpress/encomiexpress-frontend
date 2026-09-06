@@ -2,8 +2,8 @@ export const formatRutaDestino = (destino) => {
     if (!destino) return '—'
     if (typeof destino === 'string') return destino
     if (typeof destino === 'object') {
-        if (destino.ciudad || destino.departamento) {
-            return `${destino.ciudad || ''}${destino.ciudad && destino.departamento ? ' — ' : ''}${destino.departamento || ''}`.trim() || '—'
+        if (destino.municipio || destino.departamento) {
+            return `${destino.municipio || ''}${destino.municipio && destino.departamento ? ' — ' : ''}${destino.departamento || ''}`.trim() || '—'
         }
         return destino.nombre || String(destino.idDestino ?? destino.id ?? '—')
     }
@@ -75,15 +75,32 @@ export const isVencido = (fecha) => {
 // (ej. "25.000") — el valor real que se guarda/envía nunca lleva puntos ni decimales,
 // es solo dígitos. Mismo patrón que la raya automática de la placa de vehículo: se ve
 // formateado en el campo, pero por dentro es un string limpio.
+//
+// A propósito parsea con Number() (no con un replace que quite todo lo que no sea
+// dígito) — si a esta función le llega un valor que SÍ trae un punto decimal real (un
+// total calculado con centavos, o un string "450.00" de una columna DECIMAL del
+// backend sin redondear antes), un replace(/[^0-9]/g,'') le borra el punto y "450.00"
+// se lee como 45000 -- $45.000 en vez de $450, un error de 100x. Cada punto donde nace
+// el valor (calcularValorServicio en Ventas, la carga de una tarifa/anticipo/tarifaBase
+// existente) ya redondea antes de llegar acá, pero esto queda como último filtro: nunca
+// debe mostrarse un valor inflado aunque algún llamador nuevo se le olvide redondear.
 export const formatearMoneda = (raw) => {
-    const limpio = String(raw ?? '').replace(/[^0-9]/g, '')
-    if (!limpio) return ''
-    return Number(limpio).toLocaleString('es-CO')
+    if (raw === '' || raw === null || raw === undefined) return ''
+    const num = Math.round(Number(raw))
+    if (isNaN(num)) return ''
+    return num.toLocaleString('es-CO')
 }
 
 // Filtra el input en vivo de un campo de dinero: solo dígitos, nada de puntos ni
-// decimales — los puntos que se ven en pantalla los pone formatearMoneda(), nunca se
-// escriben a mano.
+// decimales. IMPORTANTE: esta función recibe el valor CRUDO del DOM mientras se
+// escribe (onChange), y ese valor puede traer de forma legítima el punto de miles que
+// ya se ve en pantalla (ej. value muestra "45.000" y al teclear un dígito al final el
+// DOM entrega momentáneamente "45.0001") -- ese punto NO es un separador decimal real,
+// así que acá SIEMPRE se descarta sin intentar interpretarlo como número (a diferencia
+// de formatearMoneda(), que solo recibe estado ya limpio o valores recién calculados,
+// nunca texto a medio teclear, y por eso sí puede parsear con Number() con seguridad).
+// Quien cargue un valor con decimales reales desde el backend (columna DECIMAL) o desde
+// una fórmula debe redondearlo ANTES de guardarlo en el estado, no acá.
 export const limpiarMonedaInput = (value) => String(value ?? '').replace(/[^0-9]/g, '')
 
 // Filtra el input en vivo de un campo decimal físico (peso, capacidad, dimensiones):
@@ -93,7 +110,7 @@ export const limpiarMonedaInput = (value) => String(value ?? '').replace(/[^0-9]
 // carácter por carácter, en vez de rechazar todo el input.
 export const limpiarDecimalInput = (value) => {
     let yaHuboPunto = false
-    return String(value ?? '')
+    const limpio = String(value ?? '')
         .replace(/[^0-9.]/g, '')
         .split('')
         .filter((ch) => {
@@ -103,6 +120,9 @@ export const limpiarDecimalInput = (value) => {
             return true
         })
         .join('')
+    // No dejar que empiece con punto: ".5" → "0.5" (se conserva el número, no se puede
+    // "escribir un punto al inicio"). El punto al final se valida aparte, al enviar.
+    return limpio.replace(/^\./, '0.')
 }
 
 // Detecta texto "de relleno": vacío, o compuesto solo por espacios/guiones/guiones bajos

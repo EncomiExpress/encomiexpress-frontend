@@ -8,7 +8,10 @@ export const EMPRESA = {
   actividad: 'Actividades de mensajería (CIIU 5320)',
 }
 
+// Math.round defensivo: el total ya se guarda redondeado (ver calcularValorServicio en
+// ventaValidation.js), pero una guía puede imprimirse de una venta vieja registrada
+// antes de esa corrección, con decimales todavía en la BD.
 export const formatCurrency = (value) =>
   value !== null && value !== undefined && value !== ''
-    ? `$${Number(value).toLocaleString('es-CO')}`
+    ? `$${Math.round(Number(value)).toLocaleString('es-CO')}`
     : '—'

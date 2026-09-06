@@ -10,7 +10,7 @@ export const HORARIO_LABORAL = {
     6: { min: '08:00', max: '15:00' },
 }
 
-export const MIN_DIAS_SALIDA_LLEGADA = 2
+export const MIN_DIAS_SALIDA_LLEGADA = 0
 
 // Margen mínimo entre el final de una ruta y el inicio de la siguiente, para el mismo
 // vehículo/conductor — cubre descargar, revisar el vehículo y que el conductor
