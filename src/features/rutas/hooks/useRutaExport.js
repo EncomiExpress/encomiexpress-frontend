@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useToast } from '../../../shared/contexts/ToastContext.jsx'
 import { getRutas } from '../services/rutaService.js'
 import { exportToExcel } from '../../../shared/utils/exportExcel.js'
-import { formatHora12 } from '../../../shared/utils/formatters.js'
+import { formatHora12, formatFecha } from '../../../shared/utils/formatters.js'
 import { resolvePares, resolveDestino, getRutaId } from '../utils/rutaResolvers.js'
 
 const useRutaExport = ({
@@ -32,7 +32,7 @@ const useRutaExport = ({
                     'Destino': resolveDestino(ruta, destinos, { preferNombre: true }),
                     'Vehículo': pares.map(p => p.placa).filter(Boolean).join(', ') || 'N/A',
                     'Conductor': pares.map(p => p.conductorNombre).filter(Boolean).join(', ') || 'N/A',
-                    'Fecha salida': ruta.fechaSalida,
+                    'Fecha salida': formatFecha(ruta.fechaSalida),
                     'Hora salida': formatHora12(ruta.horaSalida),
                     'Estado': ruta.estado,
                     'Habilitado': ruta.habilitado === false ? 'No' : 'Sí',

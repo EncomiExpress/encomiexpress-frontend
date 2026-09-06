@@ -7,7 +7,7 @@ import { getRutaId } from '../utils/rutaResolvers.js'
 // Extracción tal cual (sin refactorizar la lógica) del flujo de cambio de estado de
 // ListarRutaProgramacion.jsx -- es la pieza de mayor riesgo de todo el módulo: detecta
 // conflictos de disponibilidad de vehículo/conductor contra TODAS las rutas En Ruta
-// (no solo la página cargada) y bloquea ventas sin fecha de entrega en sede antes de permitir
+// (no solo la página cargada) y bloquea ventas sin fecha de entrega antes de permitir
 // pasar una ruta a "En Ruta".
 export function useEstadoRuta({ rutasProgramadas, getVehiculos, getConductores, fetchVehiculos, fetchConductores, updateEstado, refetch, showToast }) {
     const [confirmEstado, setConfirmEstado] = useState({ open: false, id: null, nuevoEstado: null, info: '', ruta: null, pares: [] })
@@ -92,7 +92,7 @@ export function useEstadoRuta({ rutasProgramadas, getVehiculos, getConductores, 
                     entidades.push({
                         tipo: 'vehiculo', etiqueta: par.vehiculo?.placa || '', estado: par.vehiculo?.estado, id: par.vehiculo?.idVehiculo,
                         mensaje: 'ya está asignado a la ruta', mensajeFin: 'que se encuentra En Ruta.',
-                        rutaConflicto: { idRuta: conflictoVehiculo.idRuta, label: conflictoVehiculo.origen ? `${conflictoVehiculo.origen} → ${conflictoVehiculo.destino?.ciudad || 'Sin destino'}` : `#${conflictoVehiculo.idRuta}` },
+                        rutaConflicto: { idRuta: conflictoVehiculo.idRuta, label: conflictoVehiculo.origen ? `${conflictoVehiculo.origen} → ${conflictoVehiculo.destino?.municipio || 'Sin destino'}` : `#${conflictoVehiculo.idRuta}` },
                     })
                 }
 
@@ -102,7 +102,7 @@ export function useEstadoRuta({ rutasProgramadas, getVehiculos, getConductores, 
                     entidades.push({
                         tipo: 'conductor', etiqueta: nombre, estado: par.conductor?.estado || 'en_ruta', id: par.conductor?.idConductor,
                         mensaje: 'ya está asignado a la ruta', mensajeFin: 'que se encuentra En Ruta.',
-                        rutaConflicto: { idRuta: conflictoConductor.idRuta, label: conflictoConductor.origen ? `${conflictoConductor.origen} → ${conflictoConductor.destino?.ciudad || 'Sin destino'}` : `#${conflictoConductor.idRuta}` },
+                        rutaConflicto: { idRuta: conflictoConductor.idRuta, label: conflictoConductor.origen ? `${conflictoConductor.origen} → ${conflictoConductor.destino?.municipio || 'Sin destino'}` : `#${conflictoConductor.idRuta}` },
                     })
                 }
             }
@@ -140,7 +140,7 @@ export function useEstadoRuta({ rutasProgramadas, getVehiculos, getConductores, 
             } catch (err) {
                 // Si el chequeo previo falla, no se bloquea el flujo — el backend
                 // igual revalida MISSING_DELIVERY_DATE al confirmar.
-                showToast(err.message || 'No se pudo verificar las fechas de entrega en sede, se validará al confirmar.', 'warning')
+                showToast(err.message || 'No se pudo verificar las fechas de entrega, se validará al confirmar.', 'warning')
             }
         }
 

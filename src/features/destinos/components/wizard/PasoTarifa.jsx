@@ -10,7 +10,7 @@ const PasoTarifa = ({ form, errores, setErrores, handleChange }) => (
             label="Tarifa Base (COP)" name="tarifaBase" value={formatearMoneda(form.tarifaBase)} onChange={handleChange}
             onBlur={() => setErrores(prev => ({ ...prev, tarifaBase: validarCampo('tarifaBase', form) }))}
             required error={errores.tarifaBase} helperText={errores.tarifaBase || 'Valor en pesos colombianos'}
-            icon={AttachMoneyOutlinedIcon} inputProps={{ maxLength: 11 }}
+            icon={AttachMoneyOutlinedIcon} inputProps={{ maxLength: 9 }}
             placeholder="Ej: 25.000"
         />
     </Box>

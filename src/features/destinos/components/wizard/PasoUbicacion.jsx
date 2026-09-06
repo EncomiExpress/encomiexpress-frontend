@@ -1,75 +1,47 @@
-import { Box, Typography, MenuItem } from '@mui/material'
+import { Box, Autocomplete, TextField } from '@mui/material'
+import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined'
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined'
-import { FormField, FormSelect } from '../../../../shared/components/FormularioEstandarizado.jsx'
+import { FormField } from '../../../../shared/components/FormularioEstandarizado.jsx'
+import { formFieldStyles } from '../../../../shared/utils/formStyles.js'
 import {
-    departamentos, CIUDADES_POR_DEPARTAMENTO, OTRA_CIUDAD, OTRO_DEPARTAMENTO,
+    getOpcionesDepartamento,
     validarCampo,
 } from '../../validations/destinoValidation.js'
 
 const PasoUbicacion = ({
-    theme, form, setForm, errores, setErrores, handleChange,
-    handleDepartamentoSelectChange, handleCiudadSelectChange, validarCiudadDup,
-    ciudadOtra, setCiudadOtra, departamentoOtro, setDepartamentoOtro,
+    form, setForm, errores, setErrores, handleChange,
+    validarMunicipioDup, destinos,
 }) => (
     <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
-        {departamentoOtro ? (
-            <Box>
-                <FormField
-                    label="Departamento" name="departamento" value={form.departamento} onChange={handleChange}
-                    onBlur={() => setErrores(prev => ({ ...prev, departamento: validarCampo('departamento', form) }))}
-                    required error={errores.departamento} helperText={errores.departamento || 'Departamento nuevo — no está en la lista todavía'}
-                    inputProps={{ maxLength: 60 }}
-                    placeholder="Escribe el departamento"
-                />
-                <Typography
-                    onClick={() => { setDepartamentoOtro(false); setCiudadOtra(false); setForm(prev => ({ ...prev, departamento: '', ciudad: '' })) }}
-                    sx={{ fontSize: '0.75rem', color: theme.palette.primary.main, cursor: 'pointer', mt: 0.5, '&:hover': { textDecoration: 'underline' } }}
-                >
-                    Elegir de la lista
-                </Typography>
-            </Box>
-        ) : (
-            <FormSelect
-                label="Departamento" name="departamento" value={form.departamento}
-                onChange={handleDepartamentoSelectChange}
-                onBlur={() => setErrores(prev => ({ ...prev, departamento: validarCampo('departamento', form) }))}
-                required error={errores.departamento} helperText={errores.departamento}
-            >
-                {departamentos.map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
-                <MenuItem value={OTRO_DEPARTAMENTO}>Otro departamento…</MenuItem>
-            </FormSelect>
-        )}
-        {(ciudadOtra || departamentoOtro) ? (
-            <Box>
-                <FormField
-                    label="Ciudad" name="ciudad" value={form.ciudad} onChange={handleChange}
-                    onBlur={() => setErrores(prev => ({ ...prev, ciudad: validarCampo('ciudad', form) || validarCiudadDup(form.ciudad) }))}
-                    required error={errores.ciudad} helperText={errores.ciudad || 'Ciudad nueva — no está en la lista todavía'}
-                    icon={LocationOnOutlinedIcon} inputProps={{ maxLength: 60 }}
-                    placeholder="Escribe la ciudad"
-                />
-                {!departamentoOtro && (
-                    <Typography
-                        onClick={() => { setCiudadOtra(false); setForm(prev => ({ ...prev, ciudad: '' })) }}
-                        sx={{ fontSize: '0.75rem', color: theme.palette.primary.main, cursor: 'pointer', mt: 0.5, '&:hover': { textDecoration: 'underline' } }}
-                    >
-                        Elegir de la lista
-                    </Typography>
-                )}
-            </Box>
-        ) : (
-            <FormSelect
-                label="Ciudad" name="ciudad" value={form.ciudad}
-                onChange={handleCiudadSelectChange}
-                onBlur={() => setErrores(prev => ({ ...prev, ciudad: validarCampo('ciudad', form) || validarCiudadDup(form.ciudad) }))}
-                required error={errores.ciudad} helperText={errores.ciudad}
-                disabled={!form.departamento}
-            >
-                {(CIUDADES_POR_DEPARTAMENTO[form.departamento] || []).map(c => <MenuItem key={c} value={c}>{c}</MenuItem>)}
-                <MenuItem value={OTRA_CIUDAD}>Otra ciudad…</MenuItem>
-            </FormSelect>
-        )}
+        <Autocomplete
+            freeSolo
+            options={getOpcionesDepartamento(destinos)}
+            popupIcon={<KeyboardArrowDownOutlinedIcon />}
+            inputValue={form.departamento}
+            onInputChange={(_, newVal, reason) => {
+                if (reason !== 'input') { setForm(prev => ({ ...prev, departamento: newVal })); return }
+                const limpio = newVal.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '').slice(0, 60)
+                setForm(prev => ({ ...prev, departamento: limpio }))
+                setErrores(prev => prev.departamento ? { ...prev, departamento: validarCampo('departamento', { ...form, departamento: limpio }) } : prev)
+            }}
+            onBlur={() => setErrores(prev => ({ ...prev, departamento: validarCampo('departamento', form) }))}
+            renderInput={(params) => (
+                <TextField {...params} label="Departamento *"
+                    error={!!errores.departamento}
+                    helperText={errores.departamento}
+                    slotProps={{ htmlInput: { ...params.inputProps, maxLength: 60 } }}
+                    sx={formFieldStyles} />
+            )}
+        />
+        <FormField
+            label="Municipio" name="municipio" value={form.municipio} onChange={handleChange}
+            onBlur={() => setErrores(prev => ({ ...prev, municipio: validarCampo('municipio', form) || validarMunicipioDup(form.municipio) }))}
+            required disabled={!form.departamento}
+            error={errores.municipio} helperText={errores.municipio || (form.departamento ? 'Escribe el nombre del municipio de destino' : 'Completa primero el departamento')}
+            icon={LocationOnOutlinedIcon} inputProps={{ maxLength: 60 }}
+            placeholder="Ej: Caucasia"
+        />
         <Box sx={{ gridColumn: '1 / -1' }}>
             <FormField
                 label="Dirección de la oficina" name="direccion" value={form.direccion} onChange={handleChange}

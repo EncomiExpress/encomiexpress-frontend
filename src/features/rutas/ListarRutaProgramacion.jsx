@@ -20,7 +20,7 @@ import ModalInhabilitarRuta from './components/ModalInhabilitarRuta'
 import FiltroRuta from './components/FiltroRuta.jsx'
 import AlertaBloqueoDialog from './components/AlertaBloqueoDialog.jsx'
 import MenuCambioEstadoRuta from './components/MenuCambioEstadoRuta.jsx'
-import { getPageOfRuta, getAniosDisponiblesRuta } from './services/rutaService.js'
+import { getPageOfRuta, getAniosDisponiblesRuta, getRutas } from './services/rutaService.js'
 import { getRutaId } from './utils/rutaResolvers.js'
 import { useEstadoRuta } from './hooks/useEstadoRuta.js'
 import useRutaColumns from './hooks/useRutaColumns.jsx'
@@ -42,7 +42,15 @@ const ListarRutaProgramacion = () => {
     const [rutaEditar, setRutaEditar] = useState(null)
     const [prefillRegreso, setPrefillRegreso] = useState(null)
 
-    const { rutasProgramadas, total, fetchRutasProgramadas, updateEstado } = useRutaProgramacion()
+    // Estado propio de esta tabla paginada (NO el arreglo compartido de
+    // RutaProgramacionContext, que otras pantallas/hooks piden completo o con un
+    // limit alto para sus propios usos — Autocompletes, "Programar regreso", el
+    // wizard de Ventas — ver ../../../LOGICA.md, "Bug transversal — listas
+    // paginadas corrompidas por prefetch compartido"). Si se lee de ahí, cualquier
+    // otra pantalla que refresque ese arreglo compartido pisa la página actual.
+    const [rutasProgramadas, setRutasProgramadas] = useState([])
+    const [total, setTotal] = useState(0)
+    const { updateEstado } = useRutaProgramacion()
     const { getVehiculos, fetchVehiculos } = useVehiculo()
     const { getConductores, fetchConductores } = useConductor()
     const { destinos } = useDestino()
@@ -60,14 +68,16 @@ const ListarRutaProgramacion = () => {
     } = useEntityCrud({
         // Antes de que "usuario" esté listo (justo antes del redirect a /login de abajo)
         // no se debe llamar al backend -- mismo guard que tenía el efecto original.
-        fetchPage: (signal, params) => {
-            if (!usuario) return Promise.resolve()
-            return fetchRutasProgramadas({
+        fetchPage: async (signal, params) => {
+            if (!usuario) return
+            const res = await getRutas({
                 ...params,
                 estado: filtroEstadoRuta || undefined,
                 anio: filtroAnio || undefined,
                 mes: filtroMes || undefined,
             }, signal)
+            setRutasProgramadas(res?.data ?? [])
+            setTotal(res?.total ?? (res?.data ?? []).length)
         },
         extraDeps: [filtroEstadoRuta, filtroAnio, filtroMes, usuario],
         fetchPageForHighlight: (id, limit) => getPageOfRuta(id, limit),
@@ -77,7 +87,7 @@ const ListarRutaProgramacion = () => {
         rutasProgramadas, getVehiculos, getConductores, fetchVehiculos, fetchConductores, updateEstado, refetch, showToast,
     })
 
-    const { confirmInhabilitar, setConfirmInhabilitar, handleToggleHabilitado, onConfirmarInhabilitar } = useRutaAcciones(rutasProgramadas)
+    const { confirmInhabilitar, setConfirmInhabilitar, handleToggleHabilitado, onConfirmarInhabilitar } = useRutaAcciones(rutasProgramadas, refetch)
 
     const { exportando, handleExportar } = useRutaExport({
         theme, sortBy, filtroHabilitado, filtroEstadoRuta, filtroAnio, filtroMes, debouncedSearch,
@@ -110,7 +120,7 @@ const ListarRutaProgramacion = () => {
     const handleProgramarRegreso = (ruta) => {
         setPrefillRegreso({
             idRutaIda: ruta.idRuta,
-            origen: ruta.destino?.ciudad || '',
+            origen: ruta.destino?.municipio || '',
             pares: (ruta.paresVehiculoConductor || []).map(p => ({ idVehiculo: p.idVehiculo, idConductor: p.idConductor })),
             paradas: [...(ruta.paradas || [])].sort((a, b) => b.orden - a.orden).map(p => ({ idDestino: p.idDestino })),
         })

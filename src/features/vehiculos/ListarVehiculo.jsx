@@ -6,7 +6,6 @@ import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import TablaPaginacionFooter from '../../shared/components/TablaPaginacionFooter.jsx'
 import DataTable, { FiltroEstadoTabs, BuscadorField } from '../../shared/components/DataTable.jsx'
 import useEntityCrud from '../../shared/hooks/useEntityCrud.js'
-import { useVehiculo } from './context/VehiculoContext.jsx'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import RegistrarVehiculo from './RegistrarVehiculo'
@@ -15,7 +14,7 @@ import ModalConsultarVehiculo from './components/ModalConsultarVehiculo'
 import ModalInhabilitarVehiculo from './components/ModalInhabilitarVehiculo'
 import ModalCambioEstadoVehiculo from './components/ModalCambioEstadoVehiculo.jsx'
 import FiltroEstadoTipoVehiculo from './components/FiltroEstadoTipoVehiculo.jsx'
-import { getPageOfVehiculo, getVehiculos as getVehiculosApi } from './services/vehiculoService.js'
+import { getPageOfVehiculo, getVehiculos } from './services/vehiculoService.js'
 import { capitalizarPrimeraLetra } from '../../shared/utils/formatters.js'
 import useVehiculoColumns from './hooks/useVehiculoColumns.jsx'
 import useVehiculoAcciones from './hooks/useVehiculoAcciones.js'
@@ -29,22 +28,16 @@ const ListarTransporte = () => {
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [vehiculoEditar, setVehiculoEditar] = useState(null)
-    const { getVehiculos, getTotal, fetchVehiculos } = useVehiculo()
     const { usuario, tienePermiso, PERMISOS } = useAuth()
     const navigate = useNavigate()
 
-    const transportes = getVehiculos()
-    const totalBackend = getTotal()
-
-    const {
-        estadoMenu, setEstadoMenu,
-        confirmMantenimiento, setConfirmMantenimiento,
-        confirmandoEstado,
-        confirmInhabilitar, setConfirmInhabilitar,
-        rutasMantenimiento, setRutasMantenimiento,
-        handleToggleHabilitado, onConfirmar,
-        handleSeleccionarEstado, handleConfirmarMantenimiento,
-    } = useVehiculoAcciones()
+    // Estado propio de esta tabla paginada (NO el arreglo compartido de
+    // VehiculoContext, que otras pantallas piden completo con limit:1000 para su
+    // propio uso — ver ../../../LOGICA.md, "Bug transversal — listas paginadas
+    // corrompidas por prefetch compartido"). Si se lee de ahí, cualquier otra
+    // pantalla que refresque ese arreglo compartido pisa la página actual.
+    const [transportes, setTransportes] = useState([])
+    const [totalBackend, setTotalBackend] = useState(0)
 
     const {
         theme,
@@ -56,16 +49,23 @@ const ListarTransporte = () => {
         page, setPage, rowsPerPage, setRowsPerPage,
         exportando, handleExportar,
         filtroContainerRef, filtroBtnRefs, filtroPillStyle,
+        refetch,
     } = useEntityCrud({
-        fetchPage: (signal, params) => fetchVehiculos(signal, {
-            ...params,
-            estado: filtroEstadoVehiculo === '' || filtroEstadoVehiculo === 'En Ruta' ? undefined : filtroEstadoVehiculo,
-            tipo: filtroTipo || undefined,
-        }),
+        fetchPage: async (signal, params) => {
+            const res = await getVehiculos(signal, {
+                ...params,
+                estado: filtroEstadoVehiculo === '' || filtroEstadoVehiculo === 'En Ruta' ? undefined : filtroEstadoVehiculo,
+                tipo: filtroTipo || undefined,
+            })
+            if (res?.success) {
+                setTransportes(res.data)
+                setTotalBackend(res.total ?? res.data.length)
+            }
+        },
         extraDeps: [filtroEstadoVehiculo, filtroTipo],
         fetchPageForHighlight: (id, limit) => getPageOfVehiculo(id, limit),
         exportConfig: {
-            fetchAll: (params) => getVehiculosApi(undefined, {
+            fetchAll: (params) => getVehiculos(undefined, {
                 ...params,
                 estado: filtroEstadoVehiculo === '' || filtroEstadoVehiculo === 'En Ruta' ? undefined : filtroEstadoVehiculo,
                 tipo: filtroTipo || undefined,
@@ -77,7 +77,7 @@ const ListarTransporte = () => {
                 'Marca': capitalizarPrimeraLetra(vehiculo.marca),
                 'Modelo': vehiculo.modelo,
                 'Tipo': vehiculo.tipo,
-                'Capacidad (kg)': vehiculo.capacidad,
+                'Capacidad (kg)': vehiculo.capacidad ? Math.round(Number(vehiculo.capacidad)) : '—',
                 'Propietario': vehiculo.propietario ? `${vehiculo.propietario.nombre} ${vehiculo.propietario.apellido}`.trim() : '-',
                 'Vencimiento SOAT': vehiculo.vencimientoSOAT,
                 'Vencimiento Rev. Técnica': vehiculo.vencimientoRevisionTecnica,
@@ -90,6 +90,16 @@ const ListarTransporte = () => {
         },
         onExportError: (err) => showToast(err.message || 'Error al exportar.', 'error'),
     })
+
+    const {
+        estadoMenu, setEstadoMenu,
+        confirmMantenimiento, setConfirmMantenimiento,
+        confirmandoEstado,
+        confirmInhabilitar, setConfirmInhabilitar,
+        rutasMantenimiento, setRutasMantenimiento,
+        handleToggleHabilitado, onConfirmar,
+        handleSeleccionarEstado, handleConfirmarMantenimiento,
+    } = useVehiculoAcciones(refetch)
 
     useEffect(() => {
         if (!usuario) navigate('/login')
@@ -247,7 +257,7 @@ const ListarTransporte = () => {
                 open={modalRegistrarOpen}
                 onClose={() => setModalRegistrarOpen(false)}
                 onSuccess={() => {
-                    fetchVehiculos()
+                    refetch()
                     showToast('Vehículo registrado correctamente', 'success')
                 }}
             />
@@ -257,7 +267,7 @@ const ListarTransporte = () => {
                 onClose={() => { setModalActualizarOpen(false); setVehiculoEditar(null) }}
                 transporte={vehiculoEditar}
                 onSuccess={() => {
-                    fetchVehiculos()
+                    refetch()
                     showToast('Vehículo actualizado correctamente', 'success')
                 }}
             />

@@ -77,7 +77,7 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
     // asignación sigue siendo editable (anticipo en estado "Entregado").
     useAutoSeleccionParUnico(form?.idRuta, rutas, setForm, setParInput, anticipoOriginal?.estado === 'Entregado')
 
-    const paquetesPorPar = usePaquetesPorPar(form?.idRuta)
+    const { paquetesPorPar, loading: cargandoPaquetesPorPar } = usePaquetesPorPar(form?.idRuta)
 
     const handleChange = (e) => handleChangeAnticipo(e, form, setForm, setErrores, { onCambio: () => setSinCambios(false) })
 
@@ -177,7 +177,7 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
         if (!ruta) return null
         const origen = ruta.nombre || ruta.origen || 'Sin nombre'
         const destino = ruta.destino
-        const destinoTxt = destino ? destino.ciudad : 'Sin destino'
+        const destinoTxt = destino ? destino.municipio : 'Sin destino'
         const tarifa = destino?.tarifaBase != null ? ` — $${Number(destino.tarifaBase).toLocaleString('es-CO')}` : ''
         return `${origen} → ${destinoTxt}${tarifa}`
     }
@@ -212,7 +212,7 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
                         parHelperTextDisabled="La ruta ya arrancó: no se puede reasignar"
                         valorHelperTextDisabled="La ruta ya arrancó: no se puede modificar"
                         fechaHelperTextDisabled="La ruta ya arrancó: no se puede modificar"
-                        mostrarAdvertencia={!!(puedeEditarAsignacion && parSeleccionado && !(paquetesPorPar[parSeleccionado.idRutaVehiculoConductor] > 0))}
+                        mostrarAdvertencia={!!(!cargandoPaquetesPorPar && puedeEditarAsignacion && parSeleccionado && !(paquetesPorPar[parSeleccionado.idRutaVehiculoConductor] > 0))}
                     />
                 )
 

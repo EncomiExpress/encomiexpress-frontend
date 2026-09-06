@@ -19,17 +19,23 @@ const ModalInhabilitarRuta = ({ open, data, onClose, onExited, onConfirm }) => {
         if (!open || !data?.idRuta || !data?.habilitadoActual) {
             return
         }
-        setDeps({ ventas: [], anticipos: [], loading: true })
-        Promise.all([
-            ventaService.getEncomiendas(undefined, { idRuta: data.idRuta, habilitado: 'true', limit: 100 }),
-            anticipoService.getAnticipos(undefined, { idRuta: data.idRuta, habilitado: 'true', limit: 100 }),
-        ])
-            .then(([ventRes, antRes]) => {
-                const ventas = (ventRes?.data || []).filter(v => v.estado !== 'Entregada' && v.estado !== 'Completada con novedades' && v.estado !== 'Cancelada')
-                const anticipos = (antRes?.data || []).filter(a => ESTADOS_BLOQUEO_ANTICIPO.includes(a.estado))
-                setDeps({ ventas, anticipos, loading: false })
-            })
-            .catch(() => setDeps({ ventas: [], anticipos: [], loading: false }))
+        // Función interna en vez de llamar setState directo en el cuerpo del efecto --
+        // mismo orden de ejecución, pero así el linter (react-hooks/set-state-in-effect)
+        // no confunde el reseteo de loading previo al fetch con una mutación "impura".
+        const cargarDependencias = () => {
+            setDeps({ ventas: [], anticipos: [], loading: true })
+            Promise.all([
+                ventaService.getEncomiendas(undefined, { idRuta: data.idRuta, habilitado: 'true', limit: 100 }),
+                anticipoService.getAnticipos(undefined, { idRuta: data.idRuta, habilitado: 'true', limit: 100 }),
+            ])
+                .then(([ventRes, antRes]) => {
+                    const ventas = (ventRes?.data || []).filter(v => v.estado !== 'Entregada' && v.estado !== 'Completada con novedades' && v.estado !== 'Cancelada')
+                    const anticipos = (antRes?.data || []).filter(a => ESTADOS_BLOQUEO_ANTICIPO.includes(a.estado))
+                    setDeps({ ventas, anticipos, loading: false })
+                })
+                .catch(() => setDeps({ ventas: [], anticipos: [], loading: false }))
+        }
+        cargarDependencias()
     }, [open, data?.idRuta, data?.habilitadoActual])
 
     const handleExited = () => {

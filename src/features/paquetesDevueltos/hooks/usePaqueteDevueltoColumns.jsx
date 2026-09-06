@@ -34,7 +34,7 @@ const usePaqueteDevueltoColumns = ({ theme, onVerVenta, onVerImagen }) => [
             const ruta = paquete.asignacion?.ruta
             return (
                 <Typography variant="body2" color={theme.palette.text.primary}>
-                    {ruta ? `${ruta.origen || '—'} → ${ruta.destino?.ciudad || '—'}` : '—'}
+                    {ruta ? `${ruta.origen || '—'} → ${ruta.destino?.municipio || '—'}` : '—'}
                 </Typography>
             )
         },

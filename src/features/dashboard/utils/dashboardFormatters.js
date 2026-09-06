@@ -6,7 +6,10 @@ export const STATUS_LABEL = {
     'Cancelada': 'Cancelada',
 }
 
-export const formatCOP = (n) => '$' + n.toLocaleString('es-CO')
+// Math.round defensivo: n suele venir de sumar venta.total de varias ventas (KPI de
+// ingresos, tooltip del gráfico) -- una sola venta vieja con total fraccionario ya
+// corre el acumulado entero a decimales.
+export const formatCOP = (n) => '$' + Math.round(Number(n) || 0).toLocaleString('es-CO')
 
 export const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1)
 

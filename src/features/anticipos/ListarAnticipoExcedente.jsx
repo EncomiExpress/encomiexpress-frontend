@@ -14,16 +14,27 @@ import ModalInhabilitarAnticipo from './components/ModalInhabilitarAnticipo'
 import ModalConsultarAnticipoExcedente from './components/ModalConsultarAnticipoExcedente'
 import ModalConfirmarExcedente from './components/ModalConfirmarExcedente.jsx'
 import FiltroAnticipo from './components/FiltroAnticipo.jsx'
-import { getPageOfAnticipo, getAniosDisponiblesAnticipo } from './services/anticipoService.js'
+import { getPageOfAnticipo, getAniosDisponiblesAnticipo, getAnticipos } from './services/anticipoService.js'
 import useAnticipoAcciones from './hooks/useAnticipoAcciones.js'
 import useAnticipoExport from './hooks/useAnticipoExport.js'
 import useAnticipoColumns from './hooks/useAnticipoColumns.jsx'
 
 // ── Componente principal ─────────────────────────────────────────────────────
 const ListarAnticipoExcedente = () => {
-    const { anticipos, total, conductores, rutas, fetchAnticipos } = useAnticipos()
+    // conductores/rutas normalizados del contexto siguen siendo útiles para los
+    // selectores de los wizards — solo la tabla paginada de acá deja de compartir
+    // arreglo con ese contexto (ver comentario más abajo).
+    const { conductores, rutas } = useAnticipos()
     const { tienePermiso, PERMISOS } = useAuth()
     const { showToast } = useToast()
+
+    // Estado propio de esta tabla paginada (NO el arreglo compartido de
+    // AnticipoExcedenteContext, que se refresca solo con su propio limit:5 al
+    // montar la app — ver ../../../LOGICA.md, "Bug transversal — listas paginadas
+    // corrompidas por prefetch compartido"). Si se lee de ahí, ese refresco inicial
+    // puede pisar la página/filtro que el usuario ya tenía elegidos acá.
+    const [anticipos, setAnticipos] = useState([])
+    const [total, setTotal] = useState(0)
 
     const [filtroEstadoAnticipo, setFiltroEstadoAnticipo] = useState('')
     const [filtroAnio, setFiltroAnio] = useState('')
@@ -35,13 +46,6 @@ const ListarAnticipoExcedente = () => {
     const [anticipoEditar, setAnticipoEditar] = useState(null)
 
     const {
-        modalInhabilitar, setModalInhabilitar,
-        confirmDev, setConfirmDev,
-        confirmandoEstado,
-        handleToggleHabilitado, handleConfirmarToggle, handleExitedInhabilitar, handleConfirmarDevolucion,
-    } = useAnticipoAcciones()
-
-    const {
         theme,
         highlightId, highlightRef,
         loading, error, initialLoad,
@@ -49,17 +53,31 @@ const ListarAnticipoExcedente = () => {
         filtroEstado: filtroHabilitado, setFiltroEstado: setFiltroHabilitado,
         sortBy, handleSort,
         page, setPage, rowsPerPage, setRowsPerPage,
+        refetch,
         filtroContainerRef, filtroBtnRefs, filtroPillStyle,
     } = useEntityCrud({
-        fetchPage: (signal, params) => fetchAnticipos(signal, {
-            ...params,
-            estado: filtroEstadoAnticipo || undefined,
-            anio: filtroAnio || undefined,
-            mes: filtroMes || undefined,
-        }),
+        fetchPage: async (signal, params) => {
+            const res = await getAnticipos(signal, {
+                ...params,
+                estado: filtroEstadoAnticipo || undefined,
+                anio: filtroAnio || undefined,
+                mes: filtroMes || undefined,
+            })
+            if (res?.success) {
+                setAnticipos(res.data)
+                setTotal(res.total ?? res.data.length)
+            }
+        },
         extraDeps: [filtroEstadoAnticipo, filtroAnio, filtroMes],
         fetchPageForHighlight: (id, limit) => getPageOfAnticipo(id, limit),
     })
+
+    const {
+        modalInhabilitar, setModalInhabilitar,
+        confirmDev, setConfirmDev,
+        confirmandoEstado,
+        handleToggleHabilitado, handleConfirmarToggle, handleExitedInhabilitar, handleConfirmarDevolucion,
+    } = useAnticipoAcciones(refetch)
 
     // Helpers para resolver nombres desde los arrays del contexto
     const getNombreConductor = (anticipo) => {
@@ -216,14 +234,14 @@ const ListarAnticipoExcedente = () => {
             <RegistrarAnticipoExcedente
                 open={modalRegistrarOpen}
                 onClose={() => setModalRegistrarOpen(false)}
-                onSuccess={() => showToast('Anticipo registrado correctamente', 'success')}
+                onSuccess={() => { refetch(); showToast('Anticipo registrado correctamente', 'success') }}
             />
 
             <ActualizarAnticipoExcedente
                 open={modalActualizarOpen}
                 onClose={() => { setModalActualizarOpen(false); setAnticipoEditar(null) }}
                 anticipo={anticipoEditar}
-                onSuccess={() => showToast('Anticipo actualizado correctamente', 'success')}
+                onSuccess={() => { refetch(); showToast('Anticipo actualizado correctamente', 'success') }}
             />
 
             <ModalInhabilitarAnticipo

@@ -9,7 +9,7 @@ import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined
 import EventOutlinedIcon from '@mui/icons-material/EventOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import AdsClickOutlinedIcon from '@mui/icons-material/AdsClickOutlined'
-import { isVencido, formatFecha, capitalizarPrimeraLetra } from '../../../shared/utils/formatters.js'
+import { isVencido, formatFecha, capitalizarPrimeraLetra, formatearMoneda } from '../../../shared/utils/formatters.js'
 import PlacaDisplay from '../../../shared/components/PlacaDisplay.jsx'
 import CampoFila from '../../../shared/components/CampoFila.jsx'
 import FichaCard from '../../../shared/components/FichaCard.jsx'
@@ -79,7 +79,7 @@ const ModalConsultarVehiculo = ({ vehiculo, onClose }) => {
                             <CampoFila label="Marca" value={capitalizarPrimeraLetra(vehiculo.marca)} />
                             <CampoFila label="Modelo" value={vehiculo.modelo} />
                             <CampoFila label="Color" value={capitalizarPrimeraLetra(vehiculo.color)} />
-                            <CampoFila label="Capacidad" value={vehiculo.capacidad ? `${vehiculo.capacidad} kg` : '—'} />
+                            <CampoFila label="Capacidad" value={vehiculo.capacidad ? `${formatearMoneda(vehiculo.capacidad)} kg` : '—'} />
                         </FichaCard>
 
                         <FichaCard icon={EventOutlinedIcon} title="Propietario y Documentos" subtitle="Titular y vencimientos de documentos">
@@ -169,7 +169,7 @@ const ModalConsultarVehiculo = ({ vehiculo, onClose }) => {
                                             onClick={() => window.open(`/transporte/rutas?highlight=${r.idRuta}`, '_blank')}
                                             sx={{ cursor: 'pointer', '&:hover': { backgroundColor: theme.palette.background.subtle } }}>
                                             <TableCell sx={{ fontSize: '0.82rem' }}>{r.origen || '—'}</TableCell>
-                                            <TableCell sx={{ fontSize: '0.82rem' }}>{r.destino?.ciudad || '—'}</TableCell>
+                                            <TableCell sx={{ fontSize: '0.82rem' }}>{r.destino?.municipio || '—'}</TableCell>
                                             <TableCell sx={{ fontSize: '0.82rem' }}>{r.fechaSalida ? formatFecha(r.fechaSalida) : '—'}</TableCell>
                                             <TableCell>
                                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>

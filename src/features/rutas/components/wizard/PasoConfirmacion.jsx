@@ -3,7 +3,7 @@ import RouteOutlinedIcon from '@mui/icons-material/RouteOutlined'
 import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import ConfirmRow from '../../../../shared/components/ConfirmRow.jsx'
-import { formatFecha } from '../../../../shared/utils/formatters.js'
+import { formatFecha, formatHora12 } from '../../../../shared/utils/formatters.js'
 import { getVehiculoLabel, getConductorLabel, getDestinoLabel } from '../../utils/rutaResolvers.js'
 import { cardSx } from '../../style/wizardStyles.js'
 
@@ -55,16 +55,20 @@ const PasoConfirmacion = ({
                     </Box>
                     <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la información y el horario de la ruta</Typography>
                     <ConfirmRow label="Origen" value={form.origen} previousValue={formOriginal?.origen} />
+                    {(() => {
+                        const paradasActuales = form.paradas.filter(p => p.idDestino)
+                        const paradasOriginales = (formOriginal?.paradas || []).filter(p => p.idDestino)
+                        return paradasActuales.map((p, i) => (
+                            <ConfirmRow key={i} label={`Parada ${i + 1}`}
+                                value={getDestinoLabel(p.idDestino, destinos, ruta)}
+                                previousValue={formOriginal ? (paradasOriginales[i] ? getDestinoLabel(paradasOriginales[i].idDestino, destinos, ruta) : 'Ninguna') : undefined} />
+                        ))
+                    })()}
                     <ConfirmRow label="Destino" value={getDestinoLabel(form.idDestino, destinos, ruta)} previousValue={formOriginal ? getDestinoLabel(formOriginal.idDestino, destinos, ruta) : undefined} />
-                    {(form.paradas || []).filter(p => p.idDestino).length > 0 && (
-                        <ConfirmRow label="Paradas"
-                            value={form.paradas.filter(p => p.idDestino).map((p, i) => `${i + 1}. ${getDestinoLabel(p.idDestino, destinos, ruta)}`).join(' · ')}
-                            previousValue={formOriginal ? (formOriginal.paradas || []).filter(p => p.idDestino).map((p, i) => `${i + 1}. ${getDestinoLabel(p.idDestino, destinos, ruta)}`).join(' · ') || 'Ninguna' : undefined} />
-                    )}
                     <ConfirmRow label="Fecha Salida" value={formatFecha(form.fechaSalida)} previousValue={formOriginal?.fechaSalida ? formatFecha(formOriginal.fechaSalida) : undefined} />
-                    <ConfirmRow label="Hora Salida" value={form.horaSalida} previousValue={formOriginal?.horaSalida} />
+                    <ConfirmRow label="Hora Salida" value={formatHora12(form.horaSalida)} previousValue={formOriginal?.horaSalida ? formatHora12(formOriginal.horaSalida) : undefined} />
                     <ConfirmRow label="Fecha Estimada de Llegada" value={formatFecha(form.fechaLlegadaEstimada)} previousValue={formOriginal?.fechaLlegadaEstimada ? formatFecha(formOriginal.fechaLlegadaEstimada) : undefined} />
-                    <ConfirmRow label="Hora Llegada" value={form.horaLlegadaEstimada || 'N/A'} previousValue={formOriginal ? (formOriginal.horaLlegadaEstimada || 'N/A') : undefined} />
+                    <ConfirmRow label="Hora Llegada" value={formatHora12(form.horaLlegadaEstimada) || 'N/A'} previousValue={formOriginal ? (formatHora12(formOriginal.horaLlegadaEstimada) || 'N/A') : undefined} />
                     <ConfirmRow label="Observaciones" value={form.observaciones} previousValue={formOriginal?.observaciones} />
                 </Paper>
                 <Paper elevation={0} sx={cardSx(theme)}>

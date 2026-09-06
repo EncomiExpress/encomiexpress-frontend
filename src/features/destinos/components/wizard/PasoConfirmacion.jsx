@@ -12,7 +12,7 @@ const PasoConfirmacion = ({ theme, form, formOriginal, apiError, setApiError, si
 
     const camposComparados = formOriginal ? [
         [form.departamento, formOriginal.departamento],
-        [form.ciudad, formOriginal.ciudad],
+        [form.municipio, formOriginal.municipio],
         [form.direccion, formOriginal.direccion],
         [form.tarifaBase, formOriginal.tarifaBase],
     ] : []
@@ -44,7 +44,7 @@ const PasoConfirmacion = ({ theme, form, formOriginal, apiError, setApiError, si
                     {formOriginal ? 'Verifica los cambios antes de guardar' : 'Verifica los datos antes de registrar'}
                 </Typography>
                 <ConfirmRow label="Departamento" value={form.departamento} previousValue={formOriginal?.departamento} />
-                <ConfirmRow label="Ciudad" value={form.ciudad} previousValue={formOriginal?.ciudad} />
+                <ConfirmRow label="Municipio" value={form.municipio} previousValue={formOriginal?.municipio} />
                 <ConfirmRow label="Dirección" value={form.direccion || '—'} previousValue={formOriginal ? (formOriginal.direccion || '—') : undefined} />
                 <ConfirmRow label="Tarifa Base" value={tarifaActual} previousValue={tarifaOriginal} />
             </Paper>

@@ -1,5 +1,6 @@
 import { formatFecha, esSoloRelleno } from '../../../shared/utils/formatters.js'
 import { getRangoHorario, esDomingo, sumarDias, hoyISO, MIN_DIAS_SALIDA_LLEGADA, MAX_DIAS_ANTICIPACION } from '../../../shared/utils/horarioLaboral.js'
+import { validarObservacionesRuta } from '../../../shared/validations/observacionesRutaValidation.js'
 
 export const mananaISO = () => {
     const d = new Date()
@@ -64,7 +65,11 @@ export const validarCampo = (name, form) => {
             if (esDomingo(form.fechaLlegadaEstimada)) return 'No se puede llegar en domingo (la empresa permanece cerrada)'
             if (form.fechaLlegadaEstimada > maxISO()) return `No se puede programar con más de ${MAX_DIAS_ANTICIPACION} días de anticipación (máximo el ${formatFecha(maxISO())})`
             const minima = sumarDias(form.fechaSalida, MIN_DIAS_SALIDA_LLEGADA)
-            if (form.fechaLlegadaEstimada < minima) return `Debe ser al menos ${MIN_DIAS_SALIDA_LLEGADA} días después de la salida (mínimo el ${formatFecha(minima)})`
+            if (form.fechaLlegadaEstimada < minima) {
+                return MIN_DIAS_SALIDA_LLEGADA > 0
+                    ? `Debe ser al menos ${MIN_DIAS_SALIDA_LLEGADA} día(s) después de la salida (mínimo el ${formatFecha(minima)})`
+                    : `No puede ser anterior a la fecha de salida (mínimo el ${formatFecha(minima)})`
+            }
             return ''
         }
         case 'horaLlegadaEstimada': {
@@ -75,7 +80,8 @@ export const validarCampo = (name, form) => {
         }
         case 'observaciones':
             if (form.observaciones && esSoloRelleno(form.observaciones)) return 'Las observaciones no pueden contener solo espacios o guiones'
-            return ''
+            if (form.observaciones && form.observaciones.length > 500) return 'Las observaciones no pueden superar los 500 caracteres'
+            return validarObservacionesRuta(form.observaciones)
         default:
             return ''
     }

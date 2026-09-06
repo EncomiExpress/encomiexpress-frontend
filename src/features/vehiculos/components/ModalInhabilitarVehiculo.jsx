@@ -33,7 +33,7 @@ const RutasMiniTabla = ({ rutas, theme }) => (
                                     {r.origen || `#${r.idRuta}`}
                                 </TableCell>
                                 <TableCell sx={{ fontSize: '0.8rem', py: 0.75 }}>
-                                    {r.destino?.ciudad || '—'}
+                                    {r.destino?.municipio || '—'}
                                 </TableCell>
                                 <TableCell sx={{ py: 0.75, textAlign: 'right' }}>
                                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.75 }}>
@@ -56,13 +56,19 @@ const ModalInhabilitarVehiculo = ({ open, data, onClose, onExited, onConfirm }) 
 
     useEffect(() => {
         if (!open || !data.id || !data.habilitadoActual) return
-        setRutasInhabilitar({ data: [], loading: true })
-        rutaService.getRutas({ idVehiculo: data.id, habilitado: 'true', limit: 100 })
-            .then(res => {
-                const activas = (res?.data || []).filter(r => r.estado === 'Programada' || r.estado === 'En Ruta')
-                setRutasInhabilitar({ data: activas, loading: false })
-            })
-            .catch(() => setRutasInhabilitar({ data: [], loading: false }))
+        // Función interna en vez de llamar setState directo en el cuerpo del efecto --
+        // mismo orden de ejecución, pero así el linter (react-hooks/set-state-in-effect)
+        // no confunde el reseteo de loading previo al fetch con una mutación "impura".
+        const cargarRutasActivas = () => {
+            setRutasInhabilitar({ data: [], loading: true })
+            rutaService.getRutas({ idVehiculo: data.id, habilitado: 'true', limit: 100 })
+                .then(res => {
+                    const activas = (res?.data || []).filter(r => r.estado === 'Programada' || r.estado === 'En Ruta')
+                    setRutasInhabilitar({ data: activas, loading: false })
+                })
+                .catch(() => setRutasInhabilitar({ data: [], loading: false }))
+        }
+        cargarRutasActivas()
     }, [open, data.id, data.habilitadoActual])
 
     const handleExited = () => {

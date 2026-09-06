@@ -115,7 +115,7 @@ const ModalConsultarDestino = ({ destino, onClose }) => {
                     </Box>
                     <Box>
                         <Typography fontWeight={700} fontSize="1rem" color={theme.palette.text.primary}>
-                            {destino.ciudad}
+                            {destino.municipio}
                         </Typography>
                         <Typography variant="caption" color={theme.palette.text.secondary}>{destino.departamento}</Typography>
                     </Box>
@@ -129,8 +129,8 @@ const ModalConsultarDestino = ({ destino, onClose }) => {
             {tabIndex === 0 && (
                 <Box sx={{ p: 3 }}>
                     <Box sx={{ display: 'flex', gap: 2 }}>
-                        <FichaCard icon={BusinessOutlinedIcon} title="Ubicación" subtitle="Ciudad y departamento de destino">
-                            <CampoFila label="Ciudad" value={destino.ciudad} />
+                        <FichaCard icon={BusinessOutlinedIcon} title="Ubicación" subtitle="Municipio y departamento de destino">
+                            <CampoFila label="Municipio" value={destino.municipio} />
                             <CampoFila label="Departamento" value={destino.departamento} />
                             <CampoFila label="Dirección" value={destino.direccion || 'Sin registrar'} />
                         </FichaCard>

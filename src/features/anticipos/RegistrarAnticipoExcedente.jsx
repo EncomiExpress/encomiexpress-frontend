@@ -30,7 +30,7 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
 
     const [form, setForm] = useState(formInicial)
 
-    const paquetesPorPar = usePaquetesPorPar(form.idRuta)
+    const { paquetesPorPar, loading: cargandoPaquetesPorPar } = usePaquetesPorPar(form.idRuta)
     useAutoSeleccionParUnico(form.idRuta, rutas, setForm, setParInput)
 
     const handleClose = () => {
@@ -80,7 +80,7 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
 
     const getEtiquetaRuta = (r) => {
         if (!r) return '—'
-        const destinoTxt = r.destino ? `${r.destino.ciudad}` : 'Sin destino'
+        const destinoTxt = r.destino ? `${r.destino.municipio}` : 'Sin destino'
         const tarifa = r.destino?.tarifaBase != null ? ` — $${Number(r.destino.tarifaBase).toLocaleString('es-CO')}` : ''
         return `${r.nombre} → ${destinoTxt}${tarifa}`
     }
@@ -98,7 +98,8 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
                         getEtiquetaRuta={getEtiquetaRuta}
                         parDisabled={!form.idRuta}
                         rutaHelperTextOk="Busca por origen o destino"
-                        mostrarAdvertencia={!!(parSeleccionado && !(paquetesPorPar[parSeleccionado.idRutaVehiculoConductor] > 0))}
+                        parHelperTextDisabled="Selecciona primero una ruta"
+                        mostrarAdvertencia={!!(!cargandoPaquetesPorPar && parSeleccionado && !(paquetesPorPar[parSeleccionado.idRutaVehiculoConductor] > 0))}
                     />
                 )
 

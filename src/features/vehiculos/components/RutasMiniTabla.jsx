@@ -24,7 +24,7 @@ const RutasMiniTabla = ({ rutas, theme }) => (
                                     {r.origen || `#${r.idRuta}`}
                                 </TableCell>
                                 <TableCell sx={{ fontSize: '0.8rem', py: 0.75 }}>
-                                    {r.destino?.ciudad || '—'}
+                                    {r.destino?.municipio || '—'}
                                 </TableCell>
                                 <TableCell sx={{ py: 0.75, textAlign: 'right' }}>
                                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.75 }}>

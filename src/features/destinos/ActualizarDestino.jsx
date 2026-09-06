@@ -5,9 +5,10 @@ import { useDestino } from './context/DestinoContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { limpiarMonedaInput } from '../../shared/utils/formatters.js'
+import { filtrarDireccion } from '../../shared/validations/direccionValidation.js'
 import {
-    steps, departamentos, CIUDADES_POR_DEPARTAMENTO, OTRA_CIUDAD, OTRO_DEPARTAMENTO, TARIFA_MAX,
-    validarCampo, validarCiudadDuplicada, validarPaso,
+    steps, TARIFA_MAX,
+    validarCampo, validarMunicipioDuplicado, validarPaso,
 } from './validations/destinoValidation.js'
 import WizardDialog from '../../shared/components/WizardDialog.jsx'
 import PasoUbicacion from './components/wizard/PasoUbicacion.jsx'
@@ -27,18 +28,10 @@ const ActualizarDestino = ({ open, onClose, destino, onSuccess }) => {
 
     const [form, setForm] = useState({
         departamento: '',
-        ciudad: '',
+        municipio: '',
         direccion: '',
         tarifaBase: '',
     })
-    // true cuando la ciudad del destino no está en la lista conocida para su
-    // departamento (o el usuario eligió "Otra ciudad" a mano) -- se detecta también al
-    // cargar un destino ya existente, por si su ciudad no está en CIUDADES_POR_DEPARTAMENTO.
-    const [ciudadOtra, setCiudadOtra] = useState(false)
-    // true cuando el departamento del destino no está en la lista fija (Antioquia/
-    // Córdoba) -- fuerza también ciudadOtra, igual que al elegirlo a mano.
-    const [departamentoOtro, setDepartamentoOtro] = useState(false)
-
     useEffect(() => {
         if (destino && open) {
             setActiveStep(0)
@@ -47,7 +40,7 @@ const ActualizarDestino = ({ open, onClose, destino, onSuccess }) => {
             setSinCambios(false)
             const initial = {
                 departamento: destino.departamento || '',
-                ciudad: destino.ciudad || '',
+                municipio: destino.municipio || '',
                 direccion: destino.direccion || '',
                 // destino.tarifaBase llega como string desde el backend por ser una columna
                 // DECIMAL (ej. "10000.00") — se limpia a un entero plano ("10000") para que
@@ -58,23 +51,19 @@ const ActualizarDestino = ({ open, onClose, destino, onSuccess }) => {
             }
             setForm(initial)
             setOriginalData(initial)
-            const esDeptoConocido = departamentos.includes(initial.departamento)
-            setDepartamentoOtro(!!initial.departamento && !esDeptoConocido)
-            const ciudadesConocidas = CIUDADES_POR_DEPARTAMENTO[initial.departamento] || []
-            setCiudadOtra(!esDeptoConocido || (!!initial.ciudad && !ciudadesConocidas.includes(initial.ciudad)))
         }
     }, [destino, open])
 
-    const validarCiudadDup = (ciudad) => validarCiudadDuplicada(destinos, ciudad, destino?.idDestino)
+    const validarMunicipioDup = (municipio) => validarMunicipioDuplicado(destinos, municipio, destino?.idDestino)
 
     const handleChange = (e) => {
         const { name } = e.target
         let { value } = e.target
-        if (name === 'ciudad' || name === 'departamento') {
+        if (name === 'municipio') {
             value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
         }
         if (name === 'direccion') {
-            value = value.replace(/[^a-zA-Z0-9\s,.\-#/' ]/g, '')
+            value = filtrarDireccion(value)
         }
         if (name === 'tarifaBase') {
             value = limpiarMonedaInput(value)
@@ -85,41 +74,9 @@ const ActualizarDestino = ({ open, onClose, destino, onSuccess }) => {
         setForm(prev => ({ ...prev, [name]: value }))
         setErrores(prev => {
             if (!prev[name]) return prev
-            if (name === 'ciudad') return { ...prev, ciudad: validarCampo('ciudad', formActualizado) || validarCiudadDup(value) }
+            if (name === 'municipio') return { ...prev, municipio: validarCampo('municipio', formActualizado) || validarMunicipioDup(value) }
             return { ...prev, [name]: validarCampo(name, formActualizado) }
         })
-        setApiError(null)
-        setSinCambios(false)
-    }
-
-    const handleCiudadSelectChange = (e) => {
-        const { value } = e.target
-        if (value === OTRA_CIUDAD) {
-            setCiudadOtra(true)
-            setForm(prev => ({ ...prev, ciudad: '' }))
-        } else {
-            setCiudadOtra(false)
-            const formActualizado = { ...form, ciudad: value }
-            setForm(prev => ({ ...prev, ciudad: value }))
-            setErrores(prev => prev.ciudad ? { ...prev, ciudad: validarCampo('ciudad', formActualizado) || validarCiudadDup(value) } : prev)
-        }
-        setApiError(null)
-        setSinCambios(false)
-    }
-
-    const handleDepartamentoSelectChange = (e) => {
-        const { value } = e.target
-        if (value === OTRO_DEPARTAMENTO) {
-            setDepartamentoOtro(true)
-            setCiudadOtra(true)
-            setForm(prev => ({ ...prev, departamento: '', ciudad: '' }))
-        } else {
-            setDepartamentoOtro(false)
-            setCiudadOtra(false)
-            const formActualizado = { ...form, departamento: value, ciudad: '' }
-            setForm(prev => ({ ...prev, departamento: value, ciudad: '' }))
-            setErrores(prev => ({ ...prev, departamento: prev.departamento ? validarCampo('departamento', formActualizado) : prev.departamento, ciudad: undefined }))
-        }
         setApiError(null)
         setSinCambios(false)
     }
@@ -151,7 +108,7 @@ const ActualizarDestino = ({ open, onClose, destino, onSuccess }) => {
             await actualizarDestino({
                 idDestino: destino.idDestino,
                 departamento: form.departamento,
-                ciudad: form.ciudad,
+                municipio: form.municipio,
                 direccion: form.direccion?.trim() || null,
                 tarifaBase: Number(form.tarifaBase) || 0,
             })
@@ -169,9 +126,7 @@ const ActualizarDestino = ({ open, onClose, destino, onSuccess }) => {
 
     const handleClose = () => {
         if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
-        setForm({ departamento: '', ciudad: '', direccion: '', tarifaBase: '' })
-        setCiudadOtra(false)
-        setDepartamentoOtro(false)
+        setForm({ departamento: '', municipio: '', direccion: '', tarifaBase: '' })
         setErrores({})
         setApiError(null)
         setActiveStep(0)
@@ -184,11 +139,8 @@ const ActualizarDestino = ({ open, onClose, destino, onSuccess }) => {
             case 0:
                 return (
                     <PasoUbicacion
-                        theme={theme} form={form} setForm={setForm} errores={errores} setErrores={setErrores} handleChange={handleChange}
-                        handleDepartamentoSelectChange={handleDepartamentoSelectChange} handleCiudadSelectChange={handleCiudadSelectChange}
-                        validarCiudadDup={validarCiudadDup}
-                        ciudadOtra={ciudadOtra} setCiudadOtra={setCiudadOtra}
-                        departamentoOtro={departamentoOtro} setDepartamentoOtro={setDepartamentoOtro}
+                        form={form} setForm={setForm} errores={errores} setErrores={setErrores} handleChange={handleChange}
+                        validarMunicipioDup={validarMunicipioDup} destinos={destinos}
                     />
                 )
             case 1:
@@ -212,7 +164,7 @@ const ActualizarDestino = ({ open, onClose, destino, onSuccess }) => {
         <WizardDialog
             open={open} onClose={handleClose}
             title="Editar Destino"
-            subtitle={originalData?.ciudad ? `Modificando: ${originalData.ciudad}, ${originalData.departamento}` : 'Modifica los campos que necesites.'}
+            subtitle={originalData?.municipio ? `Modificando: ${originalData.municipio}, ${originalData.departamento}` : 'Modifica los campos que necesites.'}
             steps={steps} activeStep={activeStep}
             onBack={handleBack} onNext={handleNext} onSubmit={handleSubmit}
             submitting={submitting} submitDisabled={sinCambios}

@@ -1,5 +1,5 @@
 import { useTheme } from '@mui/material/styles'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined'
 import { useRutaProgramacion } from './context/RutaProgramacionContext.jsx'
 import { useVehiculo } from '../vehiculos/context/VehiculoContext.jsx'
@@ -10,6 +10,7 @@ import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { vehiculoDocumentosVigentes, conductorLicenciaVigente } from '../../shared/utils/vigenciaDocumentos.js'
 import WizardDialog from '../../shared/components/WizardDialog.jsx'
 import { steps, validarCampo, validarPares, validarParadas, validarPaso } from './validations/rutaValidation.js'
+import { filtrarObservacionesRuta } from '../../shared/validations/observacionesRutaValidation.js'
 import PasoDestinoPares from './components/wizard/PasoDestinoPares.jsx'
 import PasoHorario from './components/wizard/PasoHorario.jsx'
 import PasoConfirmacion from './components/wizard/PasoConfirmacion.jsx'
@@ -33,6 +34,15 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
     const [conductorInputs, setConductorInputs]   = useState([''])
     const [paradaInputs, setParadaInputs]         = useState([])
     const [refrescarDisponibilidad, setRefrescarDisponibilidad] = useState(0)
+    // Un elemento DOM por campo/sección del paso "Datos de la Ruta", para poder hacer
+    // scroll hasta el primero con error al intentar avanzar — mismo patrón que
+    // paqueteRefs en Ventas (useVentaWizardForm.js). setPaso1Ref (no paso1Refs directo)
+    // es lo que se pasa a PasoDestinoPares.jsx -- mutar un ref recibido por props
+    // dentro de un callback de ref choca con la regla react-hooks/immutability del
+    // linter; pasar una función que hace la mutación del lado de quien es dueño del
+    // ref (acá) sí es válido.
+    const paso1Refs = useRef({})
+    const setPaso1Ref = (campo, el) => { paso1Refs.current[campo] = el }
 
     // Sin tiempo real (WebSockets) en este proyecto, el calendario de disponibilidad
     // trae los datos una sola vez y podría quedar desactualizado si alguien más
@@ -82,8 +92,6 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
             const paradasRuta = [...(ruta.paradas || [])].sort((a, b) => a.orden - b.orden)
             const paradas = paradasRuta.map(p => ({
                 idDestino: p.idDestino || '',
-                fechaLlegadaEstimada: p.fechaLlegadaEstimada || '',
-                horaLlegadaEstimada: p.horaLlegadaEstimada ? p.horaLlegadaEstimada.slice(0, 5) : '',
             }))
             const datos = {
                 origen:          ruta.origen          || '',
@@ -116,14 +124,15 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
                 const original = paresRuta.find(x => x.idConductor === parseInt(p.idConductor))?.conductor?.usuario
                 return original ? `${original.nombre} ${original.apellido}` : ''
             }))
-            setDestinoInput(d ? (d.nombre ? `${d.nombre} - ${d.ciudad}` : `${d.departamento} - ${d.ciudad}`) : (ruta.destino ? `${ruta.destino.departamento} - ${ruta.destino.ciudad}` : ''))
-            setParadaInputs(paradasRuta.map(p => p.destino ? `${p.destino.ciudad} - ${p.destino.departamento}` : ''))
+            setDestinoInput(d ? `${d.municipio} - ${d.departamento}` : (ruta.destino ? `${ruta.destino.municipio} - ${ruta.destino.departamento}` : ''))
+            setParadaInputs(paradasRuta.map(p => p.destino ? `${p.destino.municipio} - ${p.destino.departamento}` : ''))
         }
     }, [ruta, open, getVehiculosHabilitados, getConductoresHabilitados, getDestinosHabilitados])
 
     const handleChange = (e) => {
         let { name, value } = e.target
         if (name === 'origen') value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s\-_]/g, '')
+        if (name === 'observaciones') value = filtrarObservacionesRuta(value)
         const formActualizado = { ...form, [name]: value }
         setForm(prev => ({ ...prev, [name]: value }))
         setErrores(prev => ({ ...prev, [name]: prev[name] ? validarCampo(name, formActualizado) : '' }))
@@ -168,17 +177,8 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
     }
 
     const handleAgregarParada = () => {
-        setForm(prev => ({ ...prev, paradas: [...prev.paradas, { idDestino: '', fechaLlegadaEstimada: '', horaLlegadaEstimada: '' }] }))
+        setForm(prev => ({ ...prev, paradas: [...prev.paradas, { idDestino: '' }] }))
         setParadaInputs(prev => [...prev, ''])
-        setSinCambios(false)
-    }
-
-    const handleParadaFechaChange = (index, campo, value) => {
-        const paradas = form.paradas.map((p, i) => i === index
-            ? { ...p, [campo]: value, ...(campo === 'fechaLlegadaEstimada' && !value ? { horaLlegadaEstimada: '' } : {}) }
-            : p)
-        setForm(prev => ({ ...prev, paradas }))
-        setApiError(null)
         setSinCambios(false)
     }
 
@@ -233,10 +233,37 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
         }
         return base
     }
+    // No dejar elegir en una parada el mismo municipio que ya quedó en otra --
+    // mismo criterio que getVehiculoOpciones/getConductorOpciones arriba (backend
+    // igual lo rechaza, ver uq_parada_ruta_destino en init.sql).
+    const getParadaOpciones = (index) => {
+        const usados = form.paradas.filter((_, i) => i !== index).map(p => parseInt(p.idDestino))
+        return destinos.filter(d => !usados.includes(d.idDestino))
+    }
 
     const handleNext = () => {
         const erroresEncontrados = validarPaso(activeStep, form)
-        if (Object.keys(erroresEncontrados).length > 0) { setErrores(erroresEncontrados); return }
+        if (Object.keys(erroresEncontrados).length > 0) {
+            setErrores(erroresEncontrados)
+            // Scroll hasta el primer campo/sección con error, en el orden visual del
+            // formulario (mismo patrón que el paso "Participantes" de Ventas).
+            if (activeStep === 0) {
+                const orden = ['origen', 'idDestino', 'pares', 'paradas']
+                const primerCampoConError = orden.find(campo => erroresEncontrados[campo])
+                if (primerCampoConError) {
+                    paso1Refs.current[primerCampoConError]?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                }
+            }
+            return
+        }
+        // Una parada agregada con "+ Agregar parada" pero nunca elegida (idDestino
+        // vacío) es válida para avanzar -- paradas son opcionales -- pero no debe
+        // quedar como una fila fantasma al volver con "Anterior": se descarta acá,
+        // así el paso 1 solo vuelve a mostrar las paradas realmente elegidas.
+        if (activeStep === 0 && form.paradas.some(p => !p.idDestino)) {
+            setParadaInputs(prev => prev.filter((_, i) => form.paradas[i]?.idDestino))
+            setForm(prev => ({ ...prev, paradas: prev.paradas.filter(p => p.idDestino) }))
+        }
         setActiveStep(prev => prev + 1)
     }
 
@@ -279,8 +306,6 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
                 idDestino:   parseInt(form.idDestino),
                 paradas: form.paradas.filter(p => p.idDestino).map(p => ({
                     idDestino: parseInt(p.idDestino),
-                    fechaLlegadaEstimada: p.fechaLlegadaEstimada || null,
-                    horaLlegadaEstimada: p.fechaLlegadaEstimada ? (p.horaLlegadaEstimada || null) : null,
                 })),
                 observaciones: form.observaciones || ''
             })
@@ -312,7 +337,7 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
     // tenga un value consistente (si no, algunos re-renders de MUI vacían el campo).
     const destinoSeleccionado = destinos.find(d => d.idDestino === parseInt(form.idDestino)) || (
         ruta?.destino && parseInt(form.idDestino) === ruta.idDestino
-            ? { idDestino: ruta.idDestino, nombre: ruta.destino.nombre, ciudad: ruta.destino.ciudad, departamento: ruta.destino.departamento }
+            ? { idDestino: ruta.idDestino, nombre: ruta.destino.nombre, municipio: ruta.destino.municipio, departamento: ruta.destino.departamento }
             : null
     )
 
@@ -329,8 +354,8 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
                         getVehiculoOpciones={getVehiculoOpciones} getConductorOpciones={getConductorOpciones}
                         handleParadaChange={handleParadaChange} handleAgregarParada={handleAgregarParada}
                         handleQuitarParada={handleQuitarParada} handleMoverParada={handleMoverParada}
-                        handleParadaFechaChange={handleParadaFechaChange}
-                        paradaInputs={paradaInputs} setParadaInputs={setParadaInputs}
+                        paradaInputs={paradaInputs} setParadaInputs={setParadaInputs} getParadaOpciones={getParadaOpciones}
+                        setPaso1Ref={setPaso1Ref}
                     />
                 )
             case 1:

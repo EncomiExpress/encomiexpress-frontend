@@ -3,8 +3,8 @@ import { FormField } from '../../../shared/components/FormularioEstandarizado.js
 import { esSoloRelleno } from '../../../shared/utils/formatters.js'
 import { validarNombreRol } from '../validations/rolValidation.js'
 
-const DatosRolFields = ({ formData, setFormData, errores, setErrores, setAvisoNombreDuplicado, verificarNombreRolDuplicado }) => (
-    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2.5, mb: 2 }}>
+const DatosRolFields = ({ formData, setFormData, errores, setErrores, setAvisoNombreDuplicado, verificarNombreRolDuplicado, panelRef }) => (
+    <Box ref={panelRef} sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2.5, mb: 2 }}>
         <FormField
             label="Nombre del Rol"
             name="nombre"

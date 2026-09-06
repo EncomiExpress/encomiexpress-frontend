@@ -18,20 +18,23 @@ const PasoDestinoPares = ({
     vehiculos, conductores, vehiculosExcluidos, conductoresExcluidos,
     vehiculoInputs, setVehiculoInputs, conductorInputs, setConductorInputs,
     getVehiculoOpciones, getConductorOpciones,
-    handleParadaChange, handleAgregarParada, handleQuitarParada, handleMoverParada, handleParadaFechaChange,
-    paradaInputs, setParadaInputs,
+    handleParadaChange, handleAgregarParada, handleQuitarParada, handleMoverParada,
+    paradaInputs, setParadaInputs, getParadaOpciones, setPaso1Ref,
 }) => (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
+            <Box ref={(el) => setPaso1Ref?.('origen', el)}>
             <FormField label="Origen" name="origen" value={form.origen}
                 onChange={handleChange}
                 onBlur={() => setErrores(prev => ({ ...prev, origen: validarCampo('origen', form) }))}
                 required error={errores.origen} helperText={errores.origen}
                 icon={RouteOutlinedIcon} inputProps={{ maxLength: 100 }} placeholder="Ej: Medellín" />
+            </Box>
+            <Box ref={(el) => setPaso1Ref?.('idDestino', el)}>
             <Autocomplete
                 options={destinos}
                 popupIcon={<KeyboardArrowDownOutlinedIcon />}
-                getOptionLabel={(d) => `${d.ciudad} - ${d.departamento}`}
+                getOptionLabel={(d) => `${d.municipio} - ${d.departamento}`}
                 isOptionEqualToValue={(opt, val) => opt.idDestino === val.idDestino}
                 value={destinoSeleccionado}
                 inputValue={destinoInput}
@@ -49,7 +52,7 @@ const PasoDestinoPares = ({
                                 <NacionSVG color={theme.palette.primary.main} />
                             </Box>
                             <Typography variant="body2" fontWeight={500} noWrap sx={{ flex: 1, minWidth: 0 }}>
-                                {d.ciudad}
+                                {d.municipio}
                             </Typography>
                             <Typography variant="caption" color={theme.palette.text.secondary} sx={{ flexShrink: 0 }}>
                                 {d.departamento}
@@ -62,19 +65,21 @@ const PasoDestinoPares = ({
                     const q = normalizarTexto(inputValue)
                     return opts.filter(d =>
                         normalizarTexto(d.nombre || '').includes(q) ||
-                        normalizarTexto(d.ciudad || '').includes(q) ||
+                        normalizarTexto(d.municipio || '').includes(q) ||
                         normalizarTexto(d.departamento || '').includes(q)
                     )
                 }}
                 noOptionsText="No se encontraron destinos"
                 renderInput={(params) => (
                     <TextField {...params} label="Destino *"
-                        error={!!errores.idDestino} helperText={errores.idDestino || 'Busca por nombre, ciudad o departamento'}
+                        error={!!errores.idDestino} helperText={errores.idDestino || 'Busca por nombre, municipio o departamento'}
                         slotProps={{ inputLabel: { shrink: true }, htmlInput: { ...params.inputProps, maxLength: 50 } }} sx={formFieldStyles} />
                 )}
             />
+            </Box>
         </Box>
 
+        <Box ref={(el) => setPaso1Ref?.('pares', el)} sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
         <Typography variant="body2" fontWeight={600} color={theme.palette.text.primary}>
             Vehículos y conductores de esta ruta
         </Typography>
@@ -202,7 +207,14 @@ const PasoDestinoPares = ({
         >
             Agregar vehículo y conductor
         </Button>
+        {form.pares.length >= MAX_PARES && (
+            <Typography variant="caption" color={theme.palette.text.secondary} sx={{ mt: -1.5 }}>
+                Llegaste al límite de vehículos y conductores ({MAX_PARES})
+            </Typography>
+        )}
+        </Box>
 
+        <Box ref={(el) => setPaso1Ref?.('paradas', el)} sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
         <Typography variant="body2" fontWeight={600} color={theme.palette.text.primary} sx={{ mt: 1 }}>
             Paradas intermedias (opcional)
         </Typography>
@@ -214,68 +226,57 @@ const PasoDestinoPares = ({
         )}
         {(form.paradas || []).map((parada, index) => {
             const paradaSeleccionada = destinos.find(d => d.idDestino === parseInt(parada.idDestino)) || null
+            const opcionesParada = getParadaOpciones(index)
             return (
-                <Box key={index} sx={{ display: 'flex', flexDirection: 'column', gap: 1, pb: 1, borderBottom: index < form.paradas.length - 1 ? `1px dashed ${theme.palette.divider}` : 'none' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-                        <Typography variant="body2" color={theme.palette.text.secondary} sx={{ pt: 1.75, minWidth: 18 }}>
-                            {index + 1}.
-                        </Typography>
-                        <Autocomplete
-                            sx={{ flex: 1 }}
-                            options={destinos}
-                            popupIcon={<KeyboardArrowDownOutlinedIcon />}
-                            getOptionLabel={(d) => `${d.ciudad} - ${d.departamento}`}
-                            isOptionEqualToValue={(opt, val) => opt.idDestino === val.idDestino}
-                            value={paradaSeleccionada}
-                            inputValue={paradaInputs[index] || ''}
-                            onInputChange={(_, newVal, reason) => {
-                                const limpio = reason === 'input' ? newVal.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '') : newVal
-                                setParadaInputs(prev => prev.map((v, i) => i === index ? limpio : v))
-                            }}
-                            onChange={(_, val) => handleParadaChange(index, val ? val.idDestino : '')}
-                            renderOption={(props, d) => {
-                                const { key, ...rest } = props
-                                return (
-                                    <Box component="li" key={key} {...rest} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                        <Typography variant="body2" fontWeight={500} noWrap sx={{ flex: 1, minWidth: 0 }}>{d.ciudad}</Typography>
-                                        <Typography variant="caption" color={theme.palette.text.secondary} sx={{ flexShrink: 0 }}>{d.departamento}</Typography>
+                <Box key={index} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, pb: 1, borderBottom: index < form.paradas.length - 1 ? `1px dashed ${theme.palette.divider}` : 'none' }}>
+                    <Typography variant="body2" color={theme.palette.text.secondary} sx={{ pt: 1.75, minWidth: 18 }}>
+                        {index + 1}.
+                    </Typography>
+                    <Autocomplete
+                        sx={{ flex: 1 }}
+                        options={opcionesParada}
+                        popupIcon={<KeyboardArrowDownOutlinedIcon />}
+                        getOptionLabel={(d) => `${d.municipio} - ${d.departamento}`}
+                        isOptionEqualToValue={(opt, val) => opt.idDestino === val.idDestino}
+                        value={paradaSeleccionada}
+                        inputValue={paradaInputs[index] || ''}
+                        onInputChange={(_, newVal, reason) => {
+                            const limpio = reason === 'input' ? newVal.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '') : newVal
+                            setParadaInputs(prev => prev.map((v, i) => i === index ? limpio : v))
+                        }}
+                        onChange={(_, val) => handleParadaChange(index, val ? val.idDestino : '')}
+                        renderOption={(props, d) => {
+                            const { key, ...rest } = props
+                            return (
+                                <Box component="li" key={key} {...rest} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                    <Box sx={{ width: 28, height: 30, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <NacionSVG color={theme.palette.primary.main} />
                                     </Box>
-                                )
-                            }}
-                            filterOptions={(opts, { inputValue }) => {
-                                if (!inputValue.trim()) return [...opts].sort((a, b) => b.idDestino - a.idDestino).slice(0, 5)
-                                const q = normalizarTexto(inputValue)
-                                return opts.filter(d => normalizarTexto(d.ciudad || '').includes(q) || normalizarTexto(d.departamento || '').includes(q))
-                            }}
-                            noOptionsText="No se encontraron destinos"
-                            renderInput={(params) => (
-                                <TextField {...params} label={`Parada ${index + 1}`}
-                                    slotProps={{ inputLabel: { shrink: true }, htmlInput: { ...params.inputProps, maxLength: 50 } }} sx={formFieldStyles} />
-                            )}
-                        />
-                        <IconButton size="small" onClick={() => handleMoverParada(index, -1)} disabled={index === 0} sx={{ mt: 1 }}>
-                            <KeyboardArrowUpOutlinedIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton size="small" onClick={() => handleMoverParada(index, 1)} disabled={index === form.paradas.length - 1} sx={{ mt: 1 }}>
-                            <KeyboardArrowDownOutlinedIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton size="small" onClick={() => handleQuitarParada(index)} sx={{ mt: 1 }}>
-                            <CloseIcon fontSize="small" />
-                        </IconButton>
-                    </Box>
-                    <Box sx={{ display: 'flex', gap: 1.5, pl: 3.5 }}>
-                        <TextField label="Fecha estimada de paso" type="date" size="small"
-                            value={parada.fechaLlegadaEstimada || ''}
-                            onChange={(e) => handleParadaFechaChange(index, 'fechaLlegadaEstimada', e.target.value)}
-                            helperText="Opcional — cuándo pasa el convoy por aquí"
-                            slotProps={{ inputLabel: { shrink: true } }} sx={{ ...formFieldStyles, flex: 1 }} />
-                        <TextField label="Hora estimada" type="time" size="small"
-                            value={parada.horaLlegadaEstimada || ''}
-                            onChange={(e) => handleParadaFechaChange(index, 'horaLlegadaEstimada', e.target.value)}
-                            disabled={!parada.fechaLlegadaEstimada}
-                            helperText="Opcional"
-                            slotProps={{ inputLabel: { shrink: true } }} sx={{ ...formFieldStyles, flex: 1 }} />
-                    </Box>
+                                    <Typography variant="body2" fontWeight={500} noWrap sx={{ flex: 1, minWidth: 0 }}>{d.municipio}</Typography>
+                                    <Typography variant="caption" color={theme.palette.text.secondary} sx={{ flexShrink: 0 }}>{d.departamento}</Typography>
+                                </Box>
+                            )
+                        }}
+                        filterOptions={(opts, { inputValue }) => {
+                            if (!inputValue.trim()) return [...opts].sort((a, b) => b.idDestino - a.idDestino).slice(0, 5)
+                            const q = normalizarTexto(inputValue)
+                            return opts.filter(d => normalizarTexto(d.municipio || '').includes(q) || normalizarTexto(d.departamento || '').includes(q))
+                        }}
+                        noOptionsText="No se encontraron destinos"
+                        renderInput={(params) => (
+                            <TextField {...params} label={`Parada ${index + 1}`}
+                                slotProps={{ inputLabel: { shrink: true }, htmlInput: { ...params.inputProps, maxLength: 50 } }} sx={formFieldStyles} />
+                        )}
+                    />
+                    <IconButton size="small" onClick={() => handleMoverParada(index, -1)} disabled={index === 0} sx={{ mt: 1 }}>
+                        <KeyboardArrowUpOutlinedIcon fontSize="small" />
+                    </IconButton>
+                    <IconButton size="small" onClick={() => handleMoverParada(index, 1)} disabled={index === form.paradas.length - 1} sx={{ mt: 1 }}>
+                        <KeyboardArrowDownOutlinedIcon fontSize="small" />
+                    </IconButton>
+                    <IconButton size="small" onClick={() => handleQuitarParada(index)} sx={{ mt: 1 }}>
+                        <CloseIcon fontSize="small" />
+                    </IconButton>
                 </Box>
             )
         })}
@@ -287,6 +288,12 @@ const PasoDestinoPares = ({
         >
             Agregar parada
         </Button>
+        {(form.paradas || []).length >= MAX_PARADAS && (
+            <Typography variant="caption" color={theme.palette.text.secondary} sx={{ mt: -1.5 }}>
+                Llegaste al límite de paradas ({MAX_PARADAS})
+            </Typography>
+        )}
+        </Box>
     </Box>
 )
 

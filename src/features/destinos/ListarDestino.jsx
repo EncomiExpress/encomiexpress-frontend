@@ -7,7 +7,6 @@ import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import TablaPaginacionFooter from '../../shared/components/TablaPaginacionFooter.jsx'
 import DataTable, { FiltroEstadoTabs, BuscadorField } from '../../shared/components/DataTable.jsx'
 import useEntityCrud from '../../shared/hooks/useEntityCrud.js'
-import { useDestino } from './context/DestinoContext.jsx'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import RegistrarDestino from './RegistrarDestino'
@@ -25,11 +24,16 @@ const ListarDestino = () => {
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [destinoEditar, setDestinoEditar] = useState(null)
-    const { destinos, total, fetchDestinos } = useDestino()
     const { usuario, tienePermiso, PERMISOS } = useAuth()
     const navigate = useNavigate()
 
-    const { confirmInhabilitar, setConfirmInhabilitar, handleToggleHabilitado, onConfirmar } = useDestinoAcciones()
+    // Estado propio de esta tabla paginada (NO el arreglo compartido de DestinoContext,
+    // que otras pantallas usan como "lista completa" con su propio limit:1000 — ver
+    // ../../../LOGICA.md, "Bug transversal — listas paginadas corrompidas por
+    // prefetch compartido"). Si se lee de ahí, cualquier otra pantalla que refresque
+    // ese arreglo compartido pisa la página actual.
+    const [destinos, setDestinos] = useState([])
+    const [total, setTotal] = useState(0)
 
     const {
         theme,
@@ -43,14 +47,20 @@ const ListarDestino = () => {
         filtroContainerRef, filtroBtnRefs, filtroPillStyle,
         refetch,
     } = useEntityCrud({
-        fetchPage: (signal, params) => fetchDestinos(signal, { ...params, departamento: filtroDepartamento || undefined }),
+        fetchPage: async (signal, params) => {
+            const res = await getDestinos(signal, { ...params, departamento: filtroDepartamento || undefined })
+            if (res?.success) {
+                setDestinos(res.data)
+                setTotal(res.total ?? res.data.length)
+            }
+        },
         extraDeps: [filtroDepartamento],
         fetchPageForHighlight: (id, limit) => getPageOfDestino(id, limit),
         exportConfig: {
             fetchAll: (params) => getDestinos(undefined, { ...params, departamento: filtroDepartamento || undefined, limit: 100000 }),
             mapRow: (destino) => ({
                 'ID': destino.idDestino,
-                'Ciudad': destino.ciudad,
+                'Municipio': destino.municipio,
                 'Departamento': destino.departamento,
                 'Dirección': destino.direccion || '',
                 'Tarifa base': Math.round(Number(destino.tarifaBase)) || 0,
@@ -61,6 +71,8 @@ const ListarDestino = () => {
         },
         onExportError: (err) => showToast(err.message || 'Error al exportar.', 'error'),
     })
+
+    const { confirmInhabilitar, setConfirmInhabilitar, handleToggleHabilitado, onConfirmar } = useDestinoAcciones(refetch)
 
     useEffect(() => {
         if (!usuario) navigate('/login')
@@ -207,7 +219,7 @@ const ListarDestino = () => {
                 open={confirmInhabilitar.open}
                 data={confirmInhabilitar}
                 onClose={() => setConfirmInhabilitar(s => ({ ...s, open: false }))}
-                onExited={() => setConfirmInhabilitar({ open: false, id: null, ciudad: '', habilitadoActual: null })}
+                onExited={() => setConfirmInhabilitar({ open: false, id: null, municipio: '', habilitadoActual: null })}
                 onConfirm={onConfirmar}
             />
         </Box>

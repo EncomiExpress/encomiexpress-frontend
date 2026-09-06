@@ -41,14 +41,14 @@ const ModalConsultarAnticipoExcedente = ({ anticipo, conductores, rutas, onClose
         const destino = anticipo.ruta?.destino
             || rutas?.find(r => r.idRuta === parseInt(anticipo.idRuta))?.destino
         if (!destino) return null
-        return [destino.ciudad, destino.departamento].filter(Boolean).join(', ')
+        return [destino.municipio, destino.departamento].filter(Boolean).join(', ')
     }
 
     const nombreConductor = resolveConductor()
     const origen = resolveRuta()
     const destinoTexto = resolveDestino()
-    const destinoCiudad = anticipo.ruta?.destino?.ciudad
-        || rutas?.find(r => r.idRuta === parseInt(anticipo.idRuta))?.destino?.ciudad
+    const destinoCiudad = anticipo.ruta?.destino?.municipio
+        || rutas?.find(r => r.idRuta === parseInt(anticipo.idRuta))?.destino?.municipio
         || null
     // Filtra entradas vacías/rotas — subidas viejas hechas antes de corregir el
     // backend (guardaba `undefined` en vez de la URL real) quedaron como `null`.

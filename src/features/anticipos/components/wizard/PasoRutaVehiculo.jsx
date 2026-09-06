@@ -28,7 +28,7 @@ const PasoRutaVehiculo = ({
             value={rutaSeleccionada || null}
             inputValue={rutaInput}
             onInputChange={(_, newVal, reason) => {
-                if (reason === 'input') setRutaInput(newVal.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ0-9\s\-_]/g, ''))
+                if (reason === 'input') setRutaInput(newVal.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ0-9\s]/g, ''))
                 else setRutaInput(newVal)
             }}
             onChange={(_, val) => {
@@ -54,7 +54,7 @@ const PasoRutaVehiculo = ({
                             <RouteOutlinedIcon sx={{ fontSize: 18 }} />
                         </Avatar>
                         <Typography variant="body2" fontWeight={500} noWrap sx={{ flex: 1, minWidth: 0 }}>
-                            {r.nombre} → {r.destino?.ciudad || 'Sin destino'}
+                            {r.nombre} → {r.destino?.municipio || 'Sin destino'}
                         </Typography>
                         <Typography variant="caption" color={theme.palette.text.secondary} sx={{ flexShrink: 0 }}>
                             ${Number(r.destino?.tarifaBase || 0).toLocaleString('es-CO')}
@@ -67,7 +67,7 @@ const PasoRutaVehiculo = ({
                 const q = normalizarTexto(inputValue)
                 return opts.filter(r =>
                     normalizarTexto(r.nombre).includes(q) ||
-                    normalizarTexto(r.destino?.ciudad || '').includes(q) ||
+                    normalizarTexto(r.destino?.municipio || '').includes(q) ||
                     normalizarTexto(r.destino?.departamento || '').includes(q)
                 )
             }}
@@ -90,7 +90,7 @@ const PasoRutaVehiculo = ({
             value={parSeleccionado || null}
             inputValue={parInput}
             onInputChange={(_, newVal, reason) => {
-                if (reason === 'input') setParInput(newVal.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ0-9\s\-_]/g, ''))
+                if (reason === 'input') setParInput(newVal.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ0-9\s]/g, ''))
                 else setParInput(newVal)
             }}
             onChange={(_, val) => {
@@ -154,7 +154,7 @@ const PasoRutaVehiculo = ({
                 placeholder="Ej: 500.000"
                 error={errores.valorAnticipo}
                 helperText={errores.valorAnticipo || (valorDisabled ? valorHelperTextDisabled : 'Valor en pesos colombianos')}
-                inputProps={{ maxLength: 11 }}
+                inputProps={{ maxLength: 9 }}
             />
             <TextField
                 fullWidth label="Fecha de entrega" name="fechaEntrega" type="date"

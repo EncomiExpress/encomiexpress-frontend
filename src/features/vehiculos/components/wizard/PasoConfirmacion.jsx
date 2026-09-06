@@ -1,6 +1,7 @@
 import { Box, Typography, Paper, Alert } from '@mui/material'
 import { DirectionsCarOutlined, EventOutlined, EditOutlined } from '@mui/icons-material'
 import ConfirmRow from '../../../../shared/components/ConfirmRow.jsx'
+import { formatearMoneda } from '../../../../shared/utils/formatters.js'
 import { formatearPlaca } from '../../validations/vehiculoValidation.js'
 import { cardSx } from '../../style/wizardStyles.js'
 
@@ -54,7 +55,7 @@ const PasoConfirmacion = ({ theme, formData, formOriginal, apiError, setApiError
                     <ConfirmRow label="Modelo" value={formData.modelo} previousValue={formOriginal?.modelo} />
                     <ConfirmRow label="Color" value={formData.color} previousValue={formOriginal?.color} />
                     <ConfirmRow label="Tipo" value={formData.tipo === 'Otro' ? formData.tipoOtro : formData.tipo} previousValue={formOriginal ? (formOriginal.tipo === 'Otro' ? formOriginal.tipoOtro : formOriginal.tipo) : undefined} />
-                    <ConfirmRow label="Capacidad" value={formData.capacidad ? `${formData.capacidad} kg` : ''} previousValue={formOriginal ? (formOriginal.capacidad ? `${formOriginal.capacidad} kg` : undefined) : undefined} />
+                    <ConfirmRow label="Capacidad" value={formData.capacidad ? `${formatearMoneda(formData.capacidad)} kg` : ''} previousValue={formOriginal ? (formOriginal.capacidad ? `${formatearMoneda(formOriginal.capacidad)} kg` : undefined) : undefined} />
                 </Paper>
                 <Paper elevation={0} sx={cardSx(theme)}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>

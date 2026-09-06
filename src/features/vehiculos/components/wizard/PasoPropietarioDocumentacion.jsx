@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Box, MenuItem, Typography, TextField, Autocomplete, Avatar } from '@mui/material'
 import { EventOutlined, DescriptionOutlined, KeyboardArrowDownOutlined } from '@mui/icons-material'
 import { FormField, FormSelect } from '../../../../shared/components/FormularioEstandarizado.jsx'
@@ -5,15 +6,37 @@ import { formFieldStyles } from '../../../../shared/utils/formStyles.js'
 import { normalizarTexto } from '../../../../shared/utils/duplicados.js'
 import { validarCampo } from '../../validations/vehiculoValidation.js'
 
-const PasoPropietarioDocumentacion = ({ theme, formData, errores, setErrores, handleChange, propietarios, validationOpts, minFecha }) => (
+const etiquetaPropietario = (p) => `${p.nombre} ${p.apellido} — ${p.numeroIdentificacion}`
+
+const PasoPropietarioDocumentacion = ({ theme, formData, errores, setErrores, handleChange, propietarios, validationOpts, minFecha }) => {
+    const propietarioSel = (propietarios || []).find(p => p.idPropietario === formData.idPropietario) || null
+
+    // El input del Autocomplete se controla a mano para poder filtrar lo que se teclea
+    // (letras, números, espacios y guion — se busca por nombre/apellido/documento/teléfono,
+    // y un NIT trae guion, ej. "900123456-1").
+    // `busqueda` null = mostrar la etiqueta del propietario seleccionado; string = búsqueda
+    // en curso. Así no hace falta un useEffect que sincronice (evita setState-in-effect) y
+    // la precarga en Actualizar funciona aunque `propietarios` llegue después.
+    const [busqueda, setBusqueda] = useState(null)
+    const propietarioInput = busqueda ?? (propietarioSel ? etiquetaPropietario(propietarioSel) : '')
+
+    return (
     <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
         <Autocomplete
             options={propietarios.filter(p => p.habilitado !== false)}
             popupIcon={<KeyboardArrowDownOutlined />}
-            getOptionLabel={(p) => `${p.nombre} ${p.apellido} — ${p.numeroIdentificacion}`}
+            getOptionLabel={etiquetaPropietario}
             isOptionEqualToValue={(opt, val) => opt.idPropietario === val.idPropietario}
-            value={propietarios.find(p => p.idPropietario === formData.idPropietario) || null}
-            onChange={(_, val) => handleChange({ target: { name: 'idPropietario', value: val ? val.idPropietario : '' } })}
+            value={propietarioSel}
+            inputValue={propietarioInput}
+            onInputChange={(_, newVal, reason) => {
+                if (reason === 'input') setBusqueda(newVal.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ0-9\s-]/g, ''))
+                else setBusqueda(null) // opción elegida / limpiado → volver a mostrar la selección
+            }}
+            onChange={(_, val) => {
+                setBusqueda(null)
+                handleChange({ target: { name: 'idPropietario', value: val ? val.idPropietario : '' } })
+            }}
             onBlur={() => setErrores(prev => ({ ...prev, idPropietario: validarCampo('idPropietario', formData, validationOpts) }))}
             renderOption={(props, p) => {
                 const { key, ...rest } = props
@@ -83,6 +106,7 @@ const PasoPropietarioDocumentacion = ({ theme, formData, errores, setErrores, ha
             inputProps={minFecha ? { min: minFecha } : undefined}
             error={errores.vencimientoSeguroTerceros} helperText={errores.vencimientoSeguroTerceros} />
     </Box>
-)
+    )
+}
 
 export default PasoPropietarioDocumentacion

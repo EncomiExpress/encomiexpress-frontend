@@ -6,14 +6,14 @@ import NacionSVG from '../../../shared/components/NacionSVG.jsx'
 
 const useDestinoColumns = ({ theme, tienePermiso, PERMISOS, onConsultar, onEditar, onToggleHabilitado }) => [
     {
-        key: 'ciudad', label: 'Ciudad', sortField: 'ciudad',
+        key: 'municipio', label: 'Municipio', sortField: 'municipio',
         render: (destino) => (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                 <Box sx={{ width: 28, height: 30, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <NacionSVG color={destino.habilitado ? theme.palette.primary.main : theme.palette.text.disabled} />
                 </Box>
                 <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary} noWrap>
-                    {destino.ciudad}
+                    {destino.municipio}
                 </Typography>
             </Box>
         ),
@@ -65,7 +65,7 @@ const useDestinoColumns = ({ theme, tienePermiso, PERMISOS, onConsultar, onEdita
                     )
                 )}
                 {tienePermiso(PERMISOS.INHABILITAR_DESTINO) && (
-                    <ToggleSwitch id={destino.idDestino} checked={destino.habilitado} onChange={() => onToggleHabilitado(destino.idDestino, destino.habilitado, destino.ciudad)} />
+                    <ToggleSwitch id={destino.idDestino} checked={destino.habilitado} onChange={() => onToggleHabilitado(destino.idDestino, destino.habilitado, destino.municipio)} />
                 )}
             </Box>
         ),

@@ -3,7 +3,10 @@ import { useRutaProgramacion } from '../context/RutaProgramacionContext.jsx'
 import { useToast } from '../../../shared/contexts/ToastContext.jsx'
 import { getRutaId } from '../utils/rutaResolvers.js'
 
-const useRutaAcciones = (rutasProgramadas) => {
+// refetch (opcional): recarga la página actual de ListarRutaProgramacion.jsx tras un
+// toggle exitoso — su tabla ya no lee del arreglo compartido de RutaProgramacionContext
+// (ver ListarRutaProgramacion.jsx), así que sin esto el toggle no se reflejaría ahí.
+const useRutaAcciones = (rutasProgramadas, refetch) => {
     const { toggleHabilitado } = useRutaProgramacion()
     const { showToast } = useToast()
 
@@ -25,6 +28,7 @@ const useRutaAcciones = (rutasProgramadas) => {
         try {
             await toggleHabilitado(idRuta)
             showToast(`Ruta ${habilitadoActual ? 'inhabilitada' : 'habilitada'} correctamente.`, 'success')
+            refetch?.()
         } catch (err) {
             showToast(err.message || 'Error al cambiar habilitado', 'error')
             throw err

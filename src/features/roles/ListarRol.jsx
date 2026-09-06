@@ -40,14 +40,14 @@ const ListarRol = () => {
         refetch: cargarRoles,
     } = useEntityCrud({
         fetchPage: async (signal, params) => {
-            const respuesta = await getRolesBackend(params)
-            if (respuesta.success) {
-                setRoles(respuesta.data || [])
-                setTotal(respuesta.total ?? (respuesta.data || []).length)
-            } else {
-                setRoles([])
-                setTotal(0)
-            }
+            const respuesta = await getRolesBackend(params, signal)
+            // Antes se vaciaba la tabla en CUALQUIER falla (incluida una petición vieja
+            // que llega tarde) sin avisar nada. Ahora una falla real se relanza para que
+            // useEntityCrud la muestre como error de carga en vez de una tabla vacía
+            // engañosa (mismo bug que tenía Usuarios, ver ../../../LOGICA.md).
+            if (!respuesta.success) throw new Error(respuesta.message || 'Error al cargar roles')
+            setRoles(respuesta.data || [])
+            setTotal(respuesta.total ?? (respuesta.data || []).length)
         },
         defaultRowsPerPage: 10,
     })

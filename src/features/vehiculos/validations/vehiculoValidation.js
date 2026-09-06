@@ -30,15 +30,19 @@ export const limpiarPlacaInput = (value) => {
     return resultado
 }
 
-export const CAPACIDAD_MAX = 999999
+export const CAPACIDAD_MAX = 99999
 
 // Mismo alfabeto que ya filtra RegistrarVehiculo.jsx/ActualizarVehiculo.jsx letra por
 // letra en su handleChange (solo letras) — se replica aquí para que el validador sea
 // la fuente de verdad, no solo el filtrado en vivo del input.
-const MARCA_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/
-const COLOR_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/
+const MARCA_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/
+const COLOR_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/
+// El modelo sí es alfanumérico y admite algunos signos de la nomenclatura real de autos:
+// espacio ("Grand Vitara"), guion ("F-150", "CX-5"), punto ("March 1.6") y barra ("4x2/4x4").
+const MODELO_REGEX = /^[a-zA-Z0-9áéíóúÁÉÍÓÚüÜñÑ\s./-]+$/
 const MARCA_MAX_LENGTH = 30
 const COLOR_MAX_LENGTH = 20
+const MODELO_MAX_LENGTH = 30
 
 // checkFechaFutura: solo RegistrarVehiculo.jsx exige que los vencimientos no sean una
 // fecha pasada; ActualizarVehiculo.jsx no lo hace (no tiene sentido bloquear la edición
@@ -61,6 +65,8 @@ export const validarCampo = (name, formData, {
         case 'modelo':
             if (!formData.modelo?.trim()) return 'El modelo es obligatorio'
             if (esSoloRelleno(formData.modelo)) return 'El modelo no puede contener solo espacios o guiones'
+            if (!MODELO_REGEX.test(formData.modelo)) return 'El modelo solo admite letras, números, espacios y los signos . - /'
+            if (formData.modelo.length > MODELO_MAX_LENGTH) return `El modelo no puede superar los ${MODELO_MAX_LENGTH} caracteres`
             return ''
         case 'color':
             if (!formData.color?.trim()) return 'El color es obligatorio'
@@ -73,7 +79,10 @@ export const validarCampo = (name, formData, {
         case 'tipo':
             return formData.tipo ? '' : 'El tipo de vehículo es obligatorio'
         case 'tipoOtro':
-            return (formData.tipo === 'Otro' && !formData.tipoOtro?.trim()) ? 'Especifica el tipo de vehículo' : ''
+            if (formData.tipo !== 'Otro') return ''
+            if (!formData.tipoOtro?.trim()) return 'Especifica el tipo de vehículo'
+            if (esSoloRelleno(formData.tipoOtro)) return 'El tipo no puede contener solo espacios o guiones'
+            return ''
         case 'capacidad':
             if (!formData.capacidad) return 'La capacidad es obligatoria'
             if (parseFloat(formData.capacidad) < 1) return 'La capacidad debe ser de al menos 1 kg'

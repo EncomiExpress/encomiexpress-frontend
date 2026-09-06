@@ -2,7 +2,7 @@ import { Box, Typography, Paper, FormControlLabel, Checkbox } from '@mui/materia
 import { Security } from '@mui/icons-material'
 import { getPermisoLabel } from '../validations/rolValidation.js'
 
-const PermisosGrid = ({ theme, modulos, permisos, errorPermisos, toggleModulo, togglePermiso }) => (
+const PermisosGrid = ({ theme, modulos, permisos, errorPermisos, toggleModulo, togglePermiso, gridRef }) => (
     <>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 1, mb: 1 }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 700, color: theme.palette.text.primary }}>
@@ -15,7 +15,7 @@ const PermisosGrid = ({ theme, modulos, permisos, errorPermisos, toggleModulo, t
             )}
         </Box>
 
-        <Box sx={{
+        <Box ref={gridRef} sx={{
             flex: 1, overflowY: 'auto', pr: 1,
             display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.5, alignContent: 'start',
             ...(errorPermisos ? { border: `1px solid ${theme.palette.error.main}`, borderRadius: 2, p: 1 } : {}),

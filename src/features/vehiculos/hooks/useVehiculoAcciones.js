@@ -3,7 +3,10 @@ import { useVehiculo } from '../context/VehiculoContext.jsx'
 import { useToast } from '../../../shared/contexts/ToastContext.jsx'
 import { getRutas } from '../../rutas/services/rutaService.js'
 
-const useVehiculoAcciones = () => {
+// refetch (opcional): recarga la página actual de ListarVehiculo.jsx tras un cambio
+// exitoso — su tabla ya no lee del arreglo compartido de VehiculoContext (ver
+// ListarVehiculo.jsx), así que sin esto el cambio no se reflejaría ahí.
+const useVehiculoAcciones = (refetch) => {
     const { updateEstado, toggleHabilitado } = useVehiculo()
     const { showToast } = useToast()
 
@@ -26,6 +29,7 @@ const useVehiculoAcciones = () => {
             const success = await updateEstado(id, nuevoEstado)
             if (success) {
                 showToast(`Estado actualizado a ${nuevoEstado}.`, 'success')
+                refetch?.()
             }
         } catch (err) {
             showToast(err.message || 'Error al cambiar el estado del vehículo', 'error')
@@ -41,6 +45,7 @@ const useVehiculoAcciones = () => {
         try {
             await toggleHabilitado(confirmInhabilitar.id)
             showToast(habilitadoActual ? 'Vehículo inhabilitado correctamente.' : 'Vehículo habilitado correctamente.', 'success')
+            refetch?.()
         } catch (err) {
             showToast(err.message || 'Error al cambiar el estado del vehículo', 'error')
             throw err

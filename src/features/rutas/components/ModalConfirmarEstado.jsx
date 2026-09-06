@@ -168,7 +168,7 @@ const ModalConfirmarEstado = ({ open, nuevoEstado, info, ruta, pares = [], onCon
                             : (
                                 <>
                                     {/* Sección 2: Anticipo */}
-                                    {detalle.anticipos.length > 0 && (
+                                    {detalle.anticipos.length > 0 ? (
                                         <>
                                             <Typography variant="body2" color={theme.palette.text.primary} sx={{ mb: 0.5 }}>
                                                 El anticipo entregado pasará a{' '}
@@ -181,6 +181,16 @@ const ModalConfirmarEstado = ({ open, nuevoEstado, info, ruta, pares = [], onCon
                                                 <AnticiposConflictoList theme={theme} anticipos={detalle.anticipos} />
                                             </Box>
                                         </>
+                                    ) : (
+                                        // El anticipo es opcional (a diferencia de las ventas sin fecha de entrega o
+                                        // el vehículo/conductor ocupado, que sí bloquean) -- mismo estilo/tono que el
+                                        // aviso "Sin paquetes asignados" de cada par, pero a nivel de toda la ruta y
+                                        // sin impedir continuar: solo avisa para que no se le pase registrarlo.
+                                        <Box sx={{ px: 1.5, py: 1, mb: 2, borderRadius: 2, backgroundColor: '#f59e0b1a', border: '1px solid #f59e0b40' }}>
+                                            <Typography sx={{ fontSize: '0.78rem', fontWeight: 600, color: '#b45309' }}>
+                                                No hay ningún anticipo registrado para esta ruta — puedes continuar, pero recuerda registrarlo si el conductor va a tener gastos del viaje.
+                                            </Typography>
+                                        </Box>
                                     )}
 
                                     {/* Sección 3: Ventas */}

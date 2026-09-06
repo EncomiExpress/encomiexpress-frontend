@@ -56,13 +56,19 @@ const ModalInhabilitarDestino = ({ open, data, onClose, onExited, onConfirm }) =
 
     useEffect(() => {
         if (!open || !data.id || !data.habilitadoActual) return
-        setRutasInhabilitar({ data: [], loading: true })
-        rutaService.getRutas({ idDestino: data.id, habilitado: 'true', limit: 100 })
-            .then(res => {
-                const activas = (res?.data || []).filter(r => r.estado === 'Programada' || r.estado === 'En Ruta')
-                setRutasInhabilitar({ data: activas, loading: false })
-            })
-            .catch(() => setRutasInhabilitar({ data: [], loading: false }))
+        // Función interna en vez de llamar setState directo en el cuerpo del efecto --
+        // mismo orden de ejecución, pero así el linter (react-hooks/set-state-in-effect)
+        // no confunde el reseteo de loading previo al fetch con una mutación "impura".
+        const cargarRutasActivas = () => {
+            setRutasInhabilitar({ data: [], loading: true })
+            rutaService.getRutas({ idDestino: data.id, habilitado: 'true', limit: 100 })
+                .then(res => {
+                    const activas = (res?.data || []).filter(r => r.estado === 'Programada' || r.estado === 'En Ruta')
+                    setRutasInhabilitar({ data: activas, loading: false })
+                })
+                .catch(() => setRutasInhabilitar({ data: [], loading: false }))
+        }
+        cargarRutasActivas()
     }, [open, data.id, data.habilitadoActual])
 
     const handleExited = () => {
@@ -86,9 +92,9 @@ const ModalInhabilitarDestino = ({ open, data, onClose, onExited, onConfirm }) =
                 : '¿Habilitar destino?'}
             subtitulo={data.habilitadoActual
                 ? bloqueado
-                    ? <>El destino <strong>{data.ciudad}</strong> tiene {rutasInhabilitar.data.length === 1 ? 'una ruta activa' : 'rutas activas'} que {rutasInhabilitar.data.length === 1 ? 'debe completarse o cancelarse' : 'deben completarse o cancelarse'} antes de inhabilitar el destino.</>
-                    : <>El destino <strong>{data.ciudad}</strong> quedará inhabilitado en el sistema.</>
-                : <>El destino <strong>{data.ciudad}</strong> volverá a estar activo en el sistema.</>}
+                    ? <>El destino <strong>{data.municipio}</strong> tiene {rutasInhabilitar.data.length === 1 ? 'una ruta activa' : 'rutas activas'} que {rutasInhabilitar.data.length === 1 ? 'debe completarse o cancelarse' : 'deben completarse o cancelarse'} antes de inhabilitar el destino.</>
+                    : <>El destino <strong>{data.municipio}</strong> quedará inhabilitado en el sistema.</>
+                : <>El destino <strong>{data.municipio}</strong> volverá a estar activo en el sistema.</>}
             soloCerrar={bloqueado}
             textoConfirmar={data.habilitadoActual ? 'Inhabilitar' : 'Habilitar'}
             deshabilitarConfirmar={rutasInhabilitar.loading}

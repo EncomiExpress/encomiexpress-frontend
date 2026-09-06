@@ -99,7 +99,7 @@ const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
                                     sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem', cursor: 'pointer', '&:hover': { filter: 'brightness(0.92)' } }} />
                             </Box>
                             {resolveParadas(ruta).length > 0 && (
-                                <CampoFila label="Paradas" value={resolveParadas(ruta).map((p, i) => `${i + 1}. ${p.ciudad}`).join(' · ')} />
+                                <CampoFila label="Paradas" value={resolveParadas(ruta).map((p, i) => `${i + 1}. ${p.municipio}`).join(' · ')} />
                             )}
                             {resolveDepartamentos(ruta).length > 1 && (
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9, gap: 1 }}>
@@ -129,7 +129,7 @@ const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
                             {ruta.rutaIda && (
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
                                     <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Es el regreso de</Typography>
-                                    <Chip label={`${ruta.rutaIda.origen || '—'} → ${ruta.rutaIda.destino?.ciudad || '—'}`} size="small"
+                                    <Chip label={`${ruta.rutaIda.origen || '—'} → ${ruta.rutaIda.destino?.municipio || '—'}`} size="small"
                                         onClick={() => window.open(`/transporte/rutas?highlight=${ruta.rutaIda.idRuta}`, '_blank')}
                                         sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem', cursor: 'pointer', '&:hover': { filter: 'brightness(0.92)' } }} />
                                 </Box>
@@ -229,7 +229,7 @@ const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
                                             sx={{ cursor: 'pointer', '&:hover': { backgroundColor: theme.palette.background.subtle } }}>
                                             <TableCell sx={{ fontSize: '0.82rem', fontWeight: 600 }}>{getGuiaPrincipal(v) || `#${v.idEncomiendaVenta}`}</TableCell>
                                             <TableCell sx={{ fontSize: '0.82rem' }}>{v.cliente ? `${v.cliente.nombre} ${v.cliente.apellido}` : '—'}</TableCell>
-                                            <TableCell sx={{ fontSize: '0.82rem' }}>${Number(v.valorServicio || 0).toLocaleString('es-CO')}</TableCell>
+                                            <TableCell sx={{ fontSize: '0.82rem' }}>${Math.round(Number(v.total || 0)).toLocaleString('es-CO')}</TableCell>
                                             <TableCell>
                                                 <EstadoDot {...getVentaEstadoDot(v.estado)} />
                                             </TableCell>

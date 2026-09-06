@@ -1,7 +1,7 @@
 import { esSoloRelleno } from '../../../shared/utils/formatters.js'
 
 export const MENSAJE_ROL_DUPLICADO = 'Ya existe un rol con este nombre.'
-const SOLO_LETRAS_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/
+const SOLO_LETRAS_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/
 const NOMBRE_MAX_LENGTH = 50
 const DESCRIPCION_MAX_LENGTH = 200
 

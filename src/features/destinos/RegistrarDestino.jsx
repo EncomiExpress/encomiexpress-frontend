@@ -5,9 +5,10 @@ import { useDestino } from './context/DestinoContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { limpiarMonedaInput } from '../../shared/utils/formatters.js'
+import { filtrarDireccion } from '../../shared/validations/direccionValidation.js'
 import {
-    steps, OTRA_CIUDAD, OTRO_DEPARTAMENTO, TARIFA_MAX,
-    validarCampo, validarCiudadDuplicada, validarPaso,
+    steps, TARIFA_MAX,
+    validarCampo, validarMunicipioDuplicado, validarPaso,
 } from './validations/destinoValidation.js'
 import WizardDialog from '../../shared/components/WizardDialog.jsx'
 import PasoUbicacion from './components/wizard/PasoUbicacion.jsx'
@@ -25,27 +26,20 @@ const RegistrarDestino = ({ open, onClose, onSuccess }) => {
 
     const [form, setForm] = useState({
         departamento: '',
-        ciudad: '',
+        municipio: '',
         direccion: '',
         tarifaBase: '',
     })
-    // true cuando el usuario eligió "Otra ciudad" en el select y está escribiendo el
-    // nombre a mano en vez de elegir una de la lista conocida.
-    const [ciudadOtra, setCiudadOtra] = useState(false)
-    // true cuando eligió "Otro departamento" -- fuerza también ciudadOtra, porque no
-    // hay ninguna lista de ciudades conocida para un departamento fuera de la lista.
-    const [departamentoOtro, setDepartamentoOtro] = useState(false)
-
-    const validarCiudadDup = (ciudad) => validarCiudadDuplicada(destinos, ciudad)
+    const validarMunicipioDup = (municipio) => validarMunicipioDuplicado(destinos, municipio)
 
     const handleChange = (e) => {
         const { name } = e.target
         let { value } = e.target
-        if (name === 'ciudad' || name === 'departamento') {
+        if (name === 'municipio') {
             value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
         }
         if (name === 'direccion') {
-            value = value.replace(/[^a-zA-Z0-9\s,.\-#/' ]/g, '')
+            value = filtrarDireccion(value)
         }
         if (name === 'tarifaBase') {
             // Solo dígitos — los puntos de miles se muestran solos (formatearMoneda),
@@ -59,45 +53,9 @@ const RegistrarDestino = ({ open, onClose, onSuccess }) => {
         setForm(prev => ({ ...prev, [name]: value }))
         setErrores(prev => {
             if (!prev[name]) return prev
-            if (name === 'ciudad') return { ...prev, ciudad: validarCampo('ciudad', formActualizado) || validarCiudadDup(value) }
+            if (name === 'municipio') return { ...prev, municipio: validarCampo('municipio', formActualizado) || validarMunicipioDup(value) }
             return { ...prev, [name]: validarCampo(name, formActualizado) }
         })
-        setApiError(null)
-    }
-
-    // Select de Ciudad: elegir un valor real de la lista fija la ciudad tal cual;
-    // elegir el sentinel OTRA_CIUDAD abre el campo de texto libre en su lugar.
-    const handleCiudadSelectChange = (e) => {
-        const { value } = e.target
-        if (value === OTRA_CIUDAD) {
-            setCiudadOtra(true)
-            setForm(prev => ({ ...prev, ciudad: '' }))
-        } else {
-            setCiudadOtra(false)
-            const formActualizado = { ...form, ciudad: value }
-            setForm(prev => ({ ...prev, ciudad: value }))
-            setErrores(prev => prev.ciudad ? { ...prev, ciudad: validarCampo('ciudad', formActualizado) || validarCiudadDup(value) } : prev)
-        }
-        setApiError(null)
-    }
-
-    // Select de Departamento: elegir un valor real limpia la ciudad (depende del
-    // departamento); elegir el sentinel OTRO_DEPARTAMENTO abre el campo de texto libre
-    // para el departamento Y fuerza el de ciudad, porque no hay lista conocida para un
-    // departamento que no está en la lista.
-    const handleDepartamentoSelectChange = (e) => {
-        const { value } = e.target
-        if (value === OTRO_DEPARTAMENTO) {
-            setDepartamentoOtro(true)
-            setCiudadOtra(true)
-            setForm(prev => ({ ...prev, departamento: '', ciudad: '' }))
-        } else {
-            setDepartamentoOtro(false)
-            setCiudadOtra(false)
-            const formActualizado = { ...form, departamento: value, ciudad: '' }
-            setForm(prev => ({ ...prev, departamento: value, ciudad: '' }))
-            setErrores(prev => ({ ...prev, departamento: prev.departamento ? validarCampo('departamento', formActualizado) : prev.departamento, ciudad: undefined }))
-        }
         setApiError(null)
     }
 
@@ -118,7 +76,7 @@ const RegistrarDestino = ({ open, onClose, onSuccess }) => {
         try {
             await registrarDestino({
                 departamento: form.departamento,
-                ciudad: form.ciudad,
+                municipio: form.municipio,
                 direccion: form.direccion?.trim() || null,
                 tarifaBase: Number(form.tarifaBase) || 0,
             })
@@ -136,9 +94,7 @@ const RegistrarDestino = ({ open, onClose, onSuccess }) => {
 
     const handleClose = () => {
         if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
-        setForm({ departamento: '', ciudad: '', direccion: '', tarifaBase: '' })
-        setCiudadOtra(false)
-        setDepartamentoOtro(false)
+        setForm({ departamento: '', municipio: '', direccion: '', tarifaBase: '' })
         setErrores({})
         setApiError(null)
         setActiveStep(0)
@@ -150,11 +106,8 @@ const RegistrarDestino = ({ open, onClose, onSuccess }) => {
             case 0:
                 return (
                     <PasoUbicacion
-                        theme={theme} form={form} setForm={setForm} errores={errores} setErrores={setErrores} handleChange={handleChange}
-                        handleDepartamentoSelectChange={handleDepartamentoSelectChange} handleCiudadSelectChange={handleCiudadSelectChange}
-                        validarCiudadDup={validarCiudadDup}
-                        ciudadOtra={ciudadOtra} setCiudadOtra={setCiudadOtra}
-                        departamentoOtro={departamentoOtro} setDepartamentoOtro={setDepartamentoOtro}
+                        form={form} setForm={setForm} errores={errores} setErrores={setErrores} handleChange={handleChange}
+                        validarMunicipioDup={validarMunicipioDup} destinos={destinos}
                     />
                 )
             case 1:

@@ -4,7 +4,7 @@ import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import ToggleSwitch from '../../../shared/components/ToggleSwitch.jsx'
 import PlacaDisplay from '../../../shared/components/PlacaDisplay.jsx'
-import { isVencido, formatFecha, capitalizarPrimeraLetra } from '../../../shared/utils/formatters.js'
+import { isVencido, formatFecha, capitalizarPrimeraLetra, formatearMoneda } from '../../../shared/utils/formatters.js'
 
 const vencimientoChipSx = (theme, vencido) => vencido
     ? { fontSize: '0.7rem', backgroundColor: theme.palette.primary.main, color: 'white', borderColor: theme.palette.primary.main }
@@ -26,9 +26,14 @@ const useVehiculoColumns = ({ theme, tienePermiso, PERMISOS, onConsultar, onEdit
         ),
     },
     {
-        key: 'tipo', label: 'Tipo', cellSx: { py: 1.5 },
+        key: 'tipo', label: 'Tipo / Capacidad', cellSx: { py: 1.5 },
         render: (transporte) => (
-            <Chip label={transporte.tipo || '—'} size="small" sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem' }} />
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <Chip label={transporte.tipo || '—'} size="small" sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem' }} />
+                <Typography variant="caption" color={theme.palette.text.secondary} noWrap sx={{ mt: 0.5 }}>
+                    {transporte.capacidad ? `${formatearMoneda(transporte.capacidad)} kg` : '—'}
+                </Typography>
+            </Box>
         ),
     },
     {

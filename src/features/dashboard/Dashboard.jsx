@@ -151,7 +151,7 @@ const Dashboard = () => {
     const contador = {}
     ventas.forEach((venta) => {
       if (!isWithinRange(venta.fechaRegistro, filtroActivo.desde, filtroActivo.hasta)) return
-      const destino = formatRutaDestino(venta.ruta?.destino)
+      const destino = formatRutaDestino(venta.destinatario?.destino)
       if (!destino || destino === '—') return
       contador[destino] = (contador[destino] || 0) + 1
     })

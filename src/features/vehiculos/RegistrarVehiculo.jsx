@@ -5,7 +5,7 @@ import { useVehiculo } from './context/VehiculoContext.jsx'
 import { usePropietario } from '../propietarios/context/PropietarioContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { getErrorMessage } from '../../shared/utils/errorMessage.js'
-import { limpiarDecimalInput, capitalizarPrimeraLetra } from '../../shared/utils/formatters.js'
+import { limpiarMonedaInput, capitalizarPrimeraLetra } from '../../shared/utils/formatters.js'
 import { hoyISO } from '../../shared/utils/horarioLaboral.js'
 import {
     stepsRegistrar as steps, limpiarPlacaInput, CAPACIDAD_MAX,
@@ -56,14 +56,14 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
       value = limpiarPlacaInput(value)
     }
     if (name === 'marca') value = capitalizarPrimeraLetra(value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, ''))
-    if (name === 'modelo') value = value.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚüÜñÑ\s-]/g, '')
+    if (name === 'modelo') value = value.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚüÜñÑ\s./-]/g, '')
     if (name === 'color') value = capitalizarPrimeraLetra(value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, ''))
     if (name === 'tipoOtro') value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
     if (name === 'tarjetaPropiedad') value = value.replace(/[^0-9]/g, '')
     if (name === 'capacidad') {
-      value = limpiarDecimalInput(value)
+      value = limpiarMonedaInput(value)
       if (value !== '') {
-        const num = parseFloat(value)
+        const num = parseInt(value, 10)
         if (!isNaN(num) && num > CAPACIDAD_MAX) return
       }
     }
@@ -115,7 +115,7 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
         modelo: formData.modelo.trim(),
         color: formData.color.trim(),
         tipo: formData.tipo === 'Otro' ? formData.tipoOtro.trim() : formData.tipo,
-        capacidad: formData.capacidad ? parseFloat(formData.capacidad) : null,
+        capacidad: formData.capacidad ? parseInt(formData.capacidad, 10) : null,
         vencimientoSOAT: formData.vencimientoSOAT || null,
         vencimientoRevisionTecnica: formData.vencimientoRevisionTecnica || null,
         vencimientoSeguroTerceros: formData.vencimientoSeguroTerceros || null,

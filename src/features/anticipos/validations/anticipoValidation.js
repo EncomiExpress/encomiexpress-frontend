@@ -2,7 +2,7 @@ import { limpiarMonedaInput } from '../../../shared/utils/formatters.js'
 
 export const steps = ['Datos del Anticipo', 'Confirmación']
 
-export const NUMERIC_LIMITS = { valorAnticipo: 999999999 }
+export const NUMERIC_LIMITS = { valorAnticipo: 9999999 }
 
 // Valida un único campo del formulario (usado en onBlur y para re-validar en vivo mientras
 // se corrige un campo ya marcado con error). "Valor gastado" y las fechas de

@@ -49,7 +49,7 @@ export const AnticipoExcedenteProvider = ({ children }) => {
       sortBy: 'fechaEntrega.desc'
     })
     return () => abortController.abort()
-  }, [token])
+  }, [token, fetchAnticipos])
 
   // Cargar rutas al montar siempre que haya token,
   // independientemente de si el array ya tiene datos en el contexto padre

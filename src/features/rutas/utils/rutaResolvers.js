@@ -30,13 +30,13 @@ export const resolvePares = (ruta, { getVehiculos, getConductores }) => (ruta.pa
 
 // preferNombre: ListarRutaProgramacion.jsx prefiere el nombre propio del destino si lo
 // tiene (getDestinoNombre original); ModalConsultarRutaProgramacion.jsx siempre mostraba
-// "ciudad, departamento" incluso cuando el destino tenía nombre -- diferencia real
+// "municipio, departamento" incluso cuando el destino tenía nombre -- diferencia real
 // preexistente entre ambos, preservada acá en vez de unificada.
 export const resolveDestino = (ruta, destinos, { preferNombre = false } = {}) => {
-    if (ruta.destino) return `${ruta.destino.ciudad}, ${ruta.destino.departamento}`
+    if (ruta.destino) return `${ruta.destino.municipio}, ${ruta.destino.departamento}`
     const d = destinos.find(x => x.idDestino === ruta.idDestino)
     if (!d) return 'N/A'
-    return preferNombre ? (d.nombre || `${d.ciudad}, ${d.departamento}`) : `${d.ciudad}, ${d.departamento}`
+    return preferNombre ? (d.nombre || `${d.municipio}, ${d.departamento}`) : `${d.municipio}, ${d.departamento}`
 }
 
 // paresOriginales / rutaOriginal: solo los pasa ActualizarRutaProgramacion.jsx (el arreglo
@@ -60,10 +60,14 @@ export const getConductorLabel = (id, conductores, paresOriginales = []) => {
     return original ? `${original.nombre} ${original.apellido}` : '—'
 }
 
+// Mismo orden "municipio - departamento" que usa el selector de destino/paradas en
+// PasoDestinoPares.jsx -- antes este resolver devolvía "departamento - municipio" (o
+// "nombre - municipio"), un formato distinto al que el usuario ya vio y eligió en el
+// paso 1, así que la confirmación mostraba el mismo destino con el orden invertido.
 export const getDestinoLabel = (id, destinos, rutaOriginal = null) => {
     const d = destinos.find(x => x.idDestino === parseInt(id))
-    if (d) return d.nombre ? `${d.nombre} - ${d.ciudad}` : `${d.departamento} - ${d.ciudad}`
-    if (rutaOriginal?.destino && parseInt(id) === rutaOriginal.idDestino) return `${rutaOriginal.destino.departamento} - ${rutaOriginal.destino.ciudad}`
+    if (d) return `${d.municipio} - ${d.departamento}`
+    if (rutaOriginal?.destino && parseInt(id) === rutaOriginal.idDestino) return `${rutaOriginal.destino.municipio} - ${rutaOriginal.destino.departamento}`
     return '—'
 }
 
@@ -72,7 +76,7 @@ export const getDestinoLabel = (id, destinos, rutaOriginal = null) => {
 // guardado aparte: solo se lee lo que ya trae la ruta.
 export const resolveParadas = (ruta) => (ruta?.paradas || [])
     .filter(p => p.destino)
-    .map(p => ({ idDestino: p.idDestino, ciudad: p.destino.ciudad, departamento: p.destino.departamento }))
+    .map(p => ({ idDestino: p.idDestino, municipio: p.destino.municipio, departamento: p.destino.departamento }))
 
 // Departamentos que cruza la ruta — se deriva en el momento a partir del destino
 // final y de las paradas intermedias, no es un campo propio (ver LOGICA.md, "Rutas

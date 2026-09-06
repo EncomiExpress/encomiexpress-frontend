@@ -1,5 +1,5 @@
 import { useTheme } from '@mui/material/styles'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Box, Typography, Alert, Dialog, DialogTitle, DialogContent, IconButton, Button, CircularProgress } from '@mui/material'
 import { Close, SaveOutlined } from '@mui/icons-material'
 import { MODULOS, useAuth } from '../../shared/contexts/AuthContext.jsx'
@@ -23,6 +23,10 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
   const [intentoGuardar, setIntentoGuardar] = useState(false)
   const [formOriginal, setFormOriginal] = useState(null)
   const [permisosDisponibles, setPermisosDisponibles] = useState([])
+  // Para hacer scroll hasta el primer error al enviar el formulario -- mismo patrón
+  // que paqueteRefs en Ventas (useVentaWizardForm.js).
+  const datosRolRef = useRef(null)
+  const permisosGridRef = useRef(null)
 
   const { getPermisosBackend, actualizarRolBackend, getRolesBackend } = useAuth()
   const theme = useTheme()
@@ -101,6 +105,13 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
       const erroresEncontrados = validarFormRol(formData, avisoNombreDuplicado)
       if (Object.keys(erroresEncontrados).length > 0) {
         setErrores(erroresEncontrados)
+        // Scroll hasta el primer campo con error, en el orden visual del formulario.
+        if (erroresEncontrados.nombre || erroresEncontrados.descripcion) {
+          datosRolRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        } else if (erroresEncontrados.permisos) {
+          permisosGridRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          if (permisosGridRef.current) permisosGridRef.current.scrollTop = 0
+        }
         return
       }
     }
@@ -169,11 +180,13 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
           <DatosRolFields
             formData={formData} setFormData={setFormData} errores={errores} setErrores={setErrores}
             setAvisoNombreDuplicado={setAvisoNombreDuplicado} verificarNombreRolDuplicado={verificarNombreRolDuplicado}
+            panelRef={datosRolRef}
           />
 
           <PermisosGrid
             theme={theme} modulos={modulos} permisos={formData.permisos} errorPermisos={errores.permisos}
             toggleModulo={toggleModulo} togglePermiso={togglePermiso}
+            gridRef={permisosGridRef}
           />
         </form>
       </DialogContent>

@@ -21,7 +21,7 @@ const renderDot = (dot) => {
 const getRutaLabel = (ruta) => {
     if (!ruta) return '—'
     const placa = ruta.vehiculo?.placa
-    const base = ruta.origen ? `${ruta.origen} → ${ruta.destino?.ciudad || 'Sin destino'}` : '—'
+    const base = ruta.origen ? `${ruta.origen} → ${ruta.destino?.municipio || 'Sin destino'}` : '—'
     return placa ? `${base} · ${placa}` : base
 }
 

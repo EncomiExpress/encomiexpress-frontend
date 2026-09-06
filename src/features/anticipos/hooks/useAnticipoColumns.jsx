@@ -23,7 +23,7 @@ const useAnticipoColumns = ({
         key: 'ruta', label: 'Ruta', cellSx: { py: 2.5 },
         render: (anticipo) => (
             <Typography variant="body2" fontWeight={500} sx={{ fontSize: '0.8rem', color: theme.palette.text.primary }} noWrap>
-                {anticipo.ruta ? `${anticipo.ruta.origen || '—'} → ${anticipo.ruta.destino?.ciudad || 'Sin destino'}` : '—'}
+                {anticipo.ruta ? `${anticipo.ruta.origen || '—'} → ${anticipo.ruta.destino?.municipio || 'Sin destino'}` : '—'}
             </Typography>
         ),
     },

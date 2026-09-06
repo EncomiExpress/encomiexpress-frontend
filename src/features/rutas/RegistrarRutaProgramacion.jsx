@@ -1,5 +1,5 @@
 import { useTheme } from '@mui/material/styles'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import { useRutaProgramacion } from './context/RutaProgramacionContext.jsx'
 import { useVehiculo } from '../vehiculos/context/VehiculoContext.jsx'
@@ -10,6 +10,7 @@ import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { vehiculoDocumentosVigentes, conductorLicenciaVigente } from '../../shared/utils/vigenciaDocumentos.js'
 import WizardDialog from '../../shared/components/WizardDialog.jsx'
 import { steps, validarCampo, validarPares, validarParadas, validarPaso } from './validations/rutaValidation.js'
+import { filtrarObservacionesRuta } from '../../shared/validations/observacionesRutaValidation.js'
 import PasoDestinoPares from './components/wizard/PasoDestinoPares.jsx'
 import PasoHorario from './components/wizard/PasoHorario.jsx'
 import PasoConfirmacion from './components/wizard/PasoConfirmacion.jsx'
@@ -37,6 +38,15 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess, prefill }) => {
     const [conductorInputs, setConductorInputs]   = useState([''])
     const [paradaInputs, setParadaInputs]         = useState([])
     const [refrescarDisponibilidad, setRefrescarDisponibilidad] = useState(0)
+    // Un elemento DOM por campo/sección del paso "Datos de la Ruta", para poder hacer
+    // scroll hasta el primero con error al intentar avanzar — mismo patrón que
+    // paqueteRefs en Ventas (useVentaWizardForm.js). setPaso1Ref (no paso1Refs directo)
+    // es lo que se pasa a PasoDestinoPares.jsx -- mutar un ref recibido por props
+    // dentro de un callback de ref choca con la regla react-hooks/immutability del
+    // linter; pasar una función que hace la mutación del lado de quien es dueño del
+    // ref (acá) sí es válido.
+    const paso1Refs = useRef({})
+    const setPaso1Ref = (campo, el) => { paso1Refs.current[campo] = el }
 
     // Sin tiempo real (WebSockets) en este proyecto, el calendario de disponibilidad
     // trae los datos una sola vez y podría quedar desactualizado si alguien más
@@ -98,7 +108,7 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess, prefill }) => {
         if (prefill.paradas?.length > 0) {
             setParadaInputs(prefill.paradas.map(p => {
                 const d = destinos.find(x => x.idDestino === parseInt(p.idDestino))
-                return d ? `${d.ciudad} - ${d.departamento}` : ''
+                return d ? `${d.municipio} - ${d.departamento}` : ''
             }))
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps -- solo debe correr al abrir con un prefill nuevo, no en cada cambio de vehiculos/conductores/destinos
@@ -107,6 +117,7 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess, prefill }) => {
     const handleChange = (e) => {
         let { name, value } = e.target
         if (name === 'origen') value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s\-_]/g, '')
+        if (name === 'observaciones') value = filtrarObservacionesRuta(value)
         const formActualizado = { ...form, [name]: value }
         setForm(prev => ({ ...prev, [name]: value }))
         setErrores(prev => ({ ...prev, [name]: prev[name] ? validarCampo(name, formActualizado) : '' }))
@@ -146,16 +157,8 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess, prefill }) => {
     }
 
     const handleAgregarParada = () => {
-        setForm(prev => ({ ...prev, paradas: [...prev.paradas, { idDestino: '', fechaLlegadaEstimada: '', horaLlegadaEstimada: '' }] }))
+        setForm(prev => ({ ...prev, paradas: [...prev.paradas, { idDestino: '' }] }))
         setParadaInputs(prev => [...prev, ''])
-    }
-
-    const handleParadaFechaChange = (index, campo, value) => {
-        const paradas = form.paradas.map((p, i) => i === index
-            ? { ...p, [campo]: value, ...(campo === 'fechaLlegadaEstimada' && !value ? { horaLlegadaEstimada: '' } : {}) }
-            : p)
-        setForm(prev => ({ ...prev, paradas }))
-        setApiError(null)
     }
 
     const handleQuitarParada = (index) => {
@@ -183,7 +186,27 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess, prefill }) => {
 
     const handleNext = () => {
         const erroresEncontrados = validarPaso(activeStep, form)
-        if (Object.keys(erroresEncontrados).length > 0) { setErrores(erroresEncontrados); return }
+        if (Object.keys(erroresEncontrados).length > 0) {
+            setErrores(erroresEncontrados)
+            // Scroll hasta el primer campo/sección con error, en el orden visual del
+            // formulario (mismo patrón que el paso "Participantes" de Ventas).
+            if (activeStep === 0) {
+                const orden = ['origen', 'idDestino', 'pares', 'paradas']
+                const primerCampoConError = orden.find(campo => erroresEncontrados[campo])
+                if (primerCampoConError) {
+                    paso1Refs.current[primerCampoConError]?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                }
+            }
+            return
+        }
+        // Una parada agregada con "+ Agregar parada" pero nunca elegida (idDestino
+        // vacío) es válida para avanzar -- paradas son opcionales -- pero no debe
+        // quedar como una fila fantasma al volver con "Anterior": se descarta acá,
+        // así el paso 1 solo vuelve a mostrar las paradas realmente elegidas.
+        if (activeStep === 0 && form.paradas.some(p => !p.idDestino)) {
+            setParadaInputs(prev => prev.filter((_, i) => form.paradas[i]?.idDestino))
+            setForm(prev => ({ ...prev, paradas: prev.paradas.filter(p => p.idDestino) }))
+        }
         setActiveStep(prev => prev + 1)
     }
 
@@ -204,8 +227,6 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess, prefill }) => {
                 idDestino:   parseInt(form.idDestino),
                 paradas: form.paradas.filter(p => p.idDestino).map(p => ({
                     idDestino: parseInt(p.idDestino),
-                    fechaLlegadaEstimada: p.fechaLlegadaEstimada || null,
-                    horaLlegadaEstimada: p.fechaLlegadaEstimada ? (p.horaLlegadaEstimada || null) : null,
                 })),
                 ...(form.idRutaIda ? { idRutaIda: form.idRutaIda } : {}),
                 observaciones: form.observaciones || '',
@@ -243,6 +264,13 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess, prefill }) => {
         const usados = form.pares.filter((_, i) => i !== index).map(p => p.idConductor)
         return conductoresSeleccionables.filter(c => !usados.includes(c.idConductor))
     }
+    // No dejar elegir en una parada el mismo municipio que ya quedó en otra --
+    // mismo criterio que ya aplican getVehiculoOpciones/getConductorOpciones arriba
+    // (backend igual lo rechaza, ver uq_parada_ruta_destino en init.sql).
+    const getParadaOpciones = (index) => {
+        const usados = form.paradas.filter((_, i) => i !== index).map(p => parseInt(p.idDestino))
+        return destinos.filter(d => !usados.includes(d.idDestino))
+    }
 
     const renderStepContent = () => {
         switch (activeStep) {
@@ -257,8 +285,8 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess, prefill }) => {
                         getVehiculoOpciones={getVehiculoOpciones} getConductorOpciones={getConductorOpciones}
                         handleParadaChange={handleParadaChange} handleAgregarParada={handleAgregarParada}
                         handleQuitarParada={handleQuitarParada} handleMoverParada={handleMoverParada}
-                        handleParadaFechaChange={handleParadaFechaChange}
-                        paradaInputs={paradaInputs} setParadaInputs={setParadaInputs}
+                        paradaInputs={paradaInputs} setParadaInputs={setParadaInputs} getParadaOpciones={getParadaOpciones}
+                        setPaso1Ref={setPaso1Ref}
                     />
                 )
             case 1:

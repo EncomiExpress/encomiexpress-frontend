@@ -2,7 +2,11 @@ import { useState, useRef } from 'react'
 import { useAnticipos } from '../context/AnticipoExcedenteContext.jsx'
 import { useToast } from '../../../shared/contexts/ToastContext.jsx'
 
-const useAnticipoAcciones = () => {
+// refetch (opcional): recarga la página actual de ListarAnticipoExcedente.jsx tras un
+// cambio exitoso — su tabla ya no lee del arreglo compartido de
+// AnticipoExcedenteContext (ver ListarAnticipoExcedente.jsx), así que sin esto el
+// cambio no se reflejaría ahí.
+const useAnticipoAcciones = (refetch) => {
     const { toggleHabilitado, entregarExcedente } = useAnticipos()
     const { showToast } = useToast()
     const pendingConfirm = useRef(false)
@@ -27,7 +31,7 @@ const useAnticipoAcciones = () => {
         if (wasPending && anticipo) {
             const habilitadoActual = anticipo.habilitado === true
             toggleHabilitado(anticipo.idAnticipoExcedente)
-                .then(() => showToast(habilitadoActual ? 'Anticipo inhabilitado' : 'Anticipo habilitado', 'success'))
+                .then(() => { showToast(habilitadoActual ? 'Anticipo inhabilitado' : 'Anticipo habilitado', 'success'); refetch?.() })
                 .catch(() => { })
         }
     }
@@ -37,6 +41,7 @@ const useAnticipoAcciones = () => {
         try {
             await entregarExcedente(confirmDev.id)
             showToast(confirmDev.esFaltante ? 'Reposición confirmada: el anticipo quedó Completado' : 'Devolución confirmada: el anticipo quedó Completado', 'success')
+            refetch?.()
         } catch (err) {
             showToast(err.message || (confirmDev.esFaltante ? 'No se pudo confirmar la reposición' : 'No se pudo confirmar la devolución'), 'error')
         }

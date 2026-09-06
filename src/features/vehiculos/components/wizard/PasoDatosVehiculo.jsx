@@ -5,6 +5,7 @@ import {
 } from '@mui/icons-material'
 import { FormField, FormSelect } from '../../../../shared/components/FormularioEstandarizado.jsx'
 import { formFieldStyles } from '../../../../shared/utils/formStyles.js'
+import { formatearMoneda } from '../../../../shared/utils/formatters.js'
 import { TIPOS_VEHICULO, formatearPlaca, validarCampo } from '../../validations/vehiculoValidation.js'
 
 const PasoDatosVehiculo = ({ formData, setFormData, errores, setErrores, handleChange, verificarPlacaDuplicada, validationOpts }) => (
@@ -60,11 +61,11 @@ const PasoDatosVehiculo = ({ formData, setFormData, errores, setErrores, handleC
                 {TIPOS_VEHICULO.map((t) => <MenuItem key={t} value={t}>{t}</MenuItem>)}
             </FormSelect>
         )}
-        <FormField label="Capacidad (kg)" name="capacidad" value={formData.capacidad}
+        <FormField label="Capacidad (kg)" name="capacidad" value={formatearMoneda(formData.capacidad)}
             onChange={handleChange}
-            onBlur={() => setErrores(prev => ({ ...prev, capacidad: validarCampo('capacidad', formData, validationOpts) }))} required placeholder="Ej: 1500" icon={SpeedOutlined}
+            onBlur={() => setErrores(prev => ({ ...prev, capacidad: validarCampo('capacidad', formData, validationOpts) }))} required placeholder="Ej: 1.500" icon={SpeedOutlined}
             error={errores.capacidad} helperText={errores.capacidad}
-            inputProps={{ maxLength: 6 }} />
+            inputProps={{ maxLength: 7 }} />
     </Box>
 )
 
