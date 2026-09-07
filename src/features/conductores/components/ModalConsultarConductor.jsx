@@ -118,6 +118,12 @@ const ModalConsultarConductor = ({ conductor, onClose }) => {
                                     </Typography>
                                 </Box>
                             </Box>
+                            {conductor.destinoActual?.municipio && (
+                                <CampoFila
+                                    label={conductor.estado === 'En Ruta' ? 'Última sede' : 'Fuera de base'}
+                                    value={`${conductor.destinoActual.municipio}${conductor.destinoActual.departamento ? `, ${conductor.destinoActual.departamento}` : ''}`}
+                                />
+                            )}
                         </FichaCard>
                     </Box>
                 </Box>

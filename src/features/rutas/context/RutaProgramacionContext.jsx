@@ -78,8 +78,8 @@ export const RutaProgramacionProvider = ({ children }) => {
     return actualizada
   }, [])
 
-  const updateEstado = useCallback(async (id, nuevoEstado) => {
-    const res = await updateEstadoRuta(id, nuevoEstado)
+  const updateEstado = useCallback(async (id, nuevoEstado, extra = {}) => {
+    const res = await updateEstadoRuta(id, nuevoEstado, extra)
     const actualizada = res?.data
     if (actualizada) {
       setRutasProgramadas(prev =>

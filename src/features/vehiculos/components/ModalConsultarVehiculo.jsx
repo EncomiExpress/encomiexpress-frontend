@@ -108,6 +108,12 @@ const ModalConsultarVehiculo = ({ vehiculo, onClose }) => {
                                     </Typography>
                                 </Box>
                             </Box>
+                            {vehiculo.destinoActual?.municipio && (
+                                <CampoFila
+                                    label={estadoEfectivo === 'En Ruta' ? 'Última sede' : 'Fuera de base'}
+                                    value={`${vehiculo.destinoActual.municipio}${vehiculo.destinoActual.departamento ? `, ${vehiculo.destinoActual.departamento}` : ''}`}
+                                />
+                            )}
                             {[
                                 { label: 'Venc. SOAT',          fecha: vehiculo.vencimientoSOAT },
                                 { label: 'Venc. Rev. Técnica',  fecha: vehiculo.vencimientoRevisionTecnica },

@@ -288,9 +288,9 @@ const ListarRutaProgramacion = () => {
                 ruta={confirmEstado.ruta}
                 pares={confirmEstado.pares}
                 onClose={() => setConfirmEstado(c => ({ ...c, open: false }))}
-                onConfirm={async () => {
+                onConfirm={async (extra) => {
                     const { id, nuevoEstado } = confirmEstado
-                    await ejecutarCambioEstado(id, nuevoEstado)
+                    await ejecutarCambioEstado(id, nuevoEstado, extra || {})
                     setConfirmEstado(c => ({ ...c, open: false }))
                 }}
                 onExited={() => setConfirmEstado({ open: false, id: null, nuevoEstado: null, info: '', ruta: null, pares: [] })}

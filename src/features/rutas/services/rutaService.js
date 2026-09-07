@@ -9,7 +9,10 @@ export const getRutas = (params = {}, signal) => {
 export const getRutaById     = (id)       => fetchWithAuth(`/rutas/${id}`)
 export const createRuta      = (datos)    => fetchWithAuth('/rutas',     { method: 'POST',  body: JSON.stringify(datos) })
 export const updateRuta      = (id, datos)=> fetchWithAuth(`/rutas/${id}`, { method: 'PUT', body: JSON.stringify(datos) })
-export const updateEstadoRuta= (id, estado) => fetchWithAuth(`/rutas/${id}/estado`, { method: 'PATCH', body: JSON.stringify({ estado }) })
+// `extra` queda como punto de extensión (hoy no se envía nada): el backend solo
+// necesita { estado }. La ubicación del vehículo al cancelar ya no se pregunta —
+// se deriva de lo que el conductor haya dejado en sede. Ver LOGICA.md.
+export const updateEstadoRuta = (id, estado, extra = {}) => fetchWithAuth(`/rutas/${id}/estado`, { method: 'PATCH', body: JSON.stringify({ estado, ...extra }) })
 export const toggleHabilitadoRuta = (id) => fetchWithAuth(`/rutas/${id}/toggle-habilitado`, { method: 'PATCH' })
 export const getPageOfRuta = (id, limit = 10) => fetchWithAuth(`/rutas/${id}/page-of?limit=${limit}`)
 export const getAniosDisponiblesRuta = () => fetchWithAuth('/rutas/anios-disponibles')

@@ -49,8 +49,8 @@ const ListarPaqueteDevuelto = () => {
     }, [])
 
     const emptyMessage = debouncedBusqueda.trim()
-        ? 'No se encontraron paquetes devueltos que coincidan con la búsqueda.'
-        : 'No hay paquetes devueltos en este momento.'
+        ? 'No se encontraron paquetes no entregados que coincidan con la búsqueda.'
+        : 'No hay paquetes no entregados en este momento.'
 
     const columns = usePaqueteDevueltoColumns({
         theme,
@@ -63,10 +63,10 @@ const ListarPaqueteDevuelto = () => {
             <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
                 <Box>
                     <Typography variant="h5" fontWeight={700} color={theme.palette.text.primary}>
-                        Paquetes devueltos
+                        Paquetes no entregados
                     </Typography>
                     <Typography variant="body2" color={theme.palette.text.secondary} mt={0.3}>
-                        Paquetes que el conductor marcó como devueltos durante el reparto.
+                        Paquetes que el distribuidor de la sede no logró entregar al destinatario (tras la insistencia).
                     </Typography>
                 </Box>
             </Box>
@@ -111,8 +111,8 @@ const ListarPaqueteDevuelto = () => {
                         <Typography color={theme.palette.text.secondary} variant="body2">{emptyMessage}</Typography>
                     </Box>
                 }
-                loadingMessage="Cargando paquetes devueltos..."
-                errorMessage="No se pudieron cargar los paquetes devueltos. Verifica la conexión con el servidor."
+                loadingMessage="Cargando paquetes no entregados..."
+                errorMessage="No se pudieron cargar los paquetes no entregados. Verifica la conexión con el servidor."
             />
 
             <TablaPaginacionFooter

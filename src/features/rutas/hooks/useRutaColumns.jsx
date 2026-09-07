@@ -147,11 +147,26 @@ const useRutaColumns = ({
                         </Box>
                     </Box>
                     <Typography sx={{ fontSize: '0.68rem', color: theme.palette.text.secondary, px: 0.5 }}>
+                        {ruta.sedesTotales > 0 && `Sedes ${ruta.sedesCompletadas ?? 0}/${ruta.sedesTotales} · `}
                         {ruta.pendienteLegalizacion && ruta.paquetesPendientes
                             ? 'Legalización y paquetes pendientes'
                             : ruta.pendienteLegalizacion
                                 ? 'Legalización pendiente'
-                                : 'Paquetes pendientes de entrega'}
+                                : 'Paquetes pendientes en sede'}
+                    </Typography>
+                </Box>
+            ) : ruta.estado === 'En Ruta' && ruta.sedesTotales > 0 ? (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.3 }}>
+                    <Box
+                        onClick={(e) => onAbrirMenuEstado(e.currentTarget, id, ruta.estado || 'Programada')}
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer', width: '100%', border: `1px solid ${theme.palette.divider}`, borderRadius: 1.5, px: 1, py: 0.6, '&:hover': { borderColor: theme.palette.text.secondary } }}
+                    >
+                        <RutaEstadoDot estado="En Ruta" />
+                        <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: getEstadoColor('En Ruta').color }}>En Ruta</Typography>
+                        <KeyboardArrowDownOutlinedIcon sx={{ fontSize: 14, color: '#9CA3AF', ml: 'auto' }} />
+                    </Box>
+                    <Typography sx={{ fontSize: '0.68rem', color: theme.palette.text.secondary, px: 0.5 }}>
+                        {`Sedes ${ruta.sedesCompletadas ?? 0}/${ruta.sedesTotales} completadas`}
                     </Typography>
                 </Box>
             ) : (

@@ -3,6 +3,7 @@ import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
 import ToggleSwitch from '../../../shared/components/ToggleSwitch.jsx'
 import { isVencido, formatFecha } from '../../../shared/utils/formatters.js'
+import { getUbicacionCaption } from '../../../shared/utils/estadoColors.js'
 
 const useConductorColumns = ({ theme, tienePermiso, PERMISOS, onConsultar, onEditar, onToggleHabilitado }) => [
     {
@@ -54,22 +55,32 @@ const useConductorColumns = ({ theme, tienePermiso, PERMISOS, onConsultar, onEdi
     },
     {
         key: 'estado', label: 'Estado', cellSx: { py: 1.5 },
-        render: (conductor) => (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Box sx={{
-                    width: 10, height: 10, borderRadius: '50%', flexShrink: 0,
-                    ...(conductor.estado === 'En Ruta'
-                        ? { backgroundColor: '#3B82F6', border: '2px solid #3B82F6' }
-                        : { backgroundColor: 'transparent', border: '2px solid #10b981' })
-                }} />
-                <Typography variant="body2" sx={{
-                    fontSize: '0.82rem', fontWeight: 500,
-                    color: conductor.estado === 'En Ruta' ? '#3B82F6' : '#10b981',
-                }}>
-                    {conductor.estado === 'En Ruta' ? 'En Ruta' : 'Disponible'}
-                </Typography>
-            </Box>
-        ),
+        render: (conductor) => {
+            const ubic = getUbicacionCaption(conductor.estado, conductor.destinoActual)
+            return (
+                <Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Box sx={{
+                            width: 10, height: 10, borderRadius: '50%', flexShrink: 0,
+                            ...(conductor.estado === 'En Ruta'
+                                ? { backgroundColor: '#3B82F6', border: '2px solid #3B82F6' }
+                                : { backgroundColor: 'transparent', border: '2px solid #10b981' })
+                        }} />
+                        <Typography variant="body2" sx={{
+                            fontSize: '0.82rem', fontWeight: 500,
+                            color: conductor.estado === 'En Ruta' ? '#3B82F6' : '#10b981',
+                        }}>
+                            {conductor.estado === 'En Ruta' ? 'En Ruta' : 'Disponible'}
+                        </Typography>
+                    </Box>
+                    {ubic && (
+                        <Typography variant="caption" sx={{ display: 'block', ml: 2.25, lineHeight: 1.2, color: ubic.tone === 'warn' ? '#D97706' : theme.palette.text.secondary }}>
+                            {ubic.text}
+                        </Typography>
+                    )}
+                </Box>
+            )
+        },
     },
     {
         key: 'acciones', label: 'Acciones', width: 130, cellSx: { py: 1.5 },

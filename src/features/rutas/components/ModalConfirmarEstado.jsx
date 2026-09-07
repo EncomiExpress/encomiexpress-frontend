@@ -109,7 +109,7 @@ const ModalConfirmarEstado = ({ open, nuevoEstado, info, ruta, pares = [], onCon
                         <Typography fontWeight={700} fontSize="1.4rem" color={theme.palette.text.primary}>
                             Cambiar estado
                         </Typography>
-                        {(nuevoEstado === 'Completada' || nuevoEstado === 'En Ruta') && (
+                        {(nuevoEstado === 'Completada' || nuevoEstado === 'En Ruta' || nuevoEstado === 'Cancelada') && (
                             <Typography fontWeight={700} fontSize="0.8rem" color={theme.palette.text.secondary}>
                                 Estado irreversible.
                             </Typography>
@@ -153,13 +153,6 @@ const ModalConfirmarEstado = ({ open, nuevoEstado, info, ruta, pares = [], onCon
                                     </Box>
                                     <EstadoDot {...p.cDot} />
                                 </Box>
-                                {p.sinPaquetes && (
-                                    <Box sx={{ px: 1.5, py: 0.75, backgroundColor: '#f59e0b1a', borderTop: `1px solid ${theme.palette.divider}` }}>
-                                        <Typography sx={{ fontSize: '0.72rem', fontWeight: 600, color: '#b45309' }}>
-                                            Sin paquetes asignados — este vehículo saldría vacío
-                                        </Typography>
-                                    </Box>
-                                )}
                             </Paper>
                         ))}
 

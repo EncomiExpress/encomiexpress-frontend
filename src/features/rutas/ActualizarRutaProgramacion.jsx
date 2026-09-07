@@ -65,8 +65,23 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
     // tieneLicenciaVigente en rutaService.js del backend). Solo afecta las opciones
     // nuevas a elegir — un par ya asignado a esta ruta sigue mostrándose tal cual,
     // aunque su documento haya vencido después de haberlo asignado.
-    const vehiculosSeleccionables = vehiculos.filter(vehiculoDocumentosVigentes)
-    const conductoresSeleccionables = conductores.filter(c => conductorLicenciaVigente(c.categoriasLicencia))
+    //
+    // "Fuera de base": conductor/vehículo que quedó en otro municipio tras una ruta
+    // que no volvió a Medellín (idDestinoActual). Para una ruta normal se excluye;
+    // para un regreso (ruta.idRutaIda) SOLO se ofrecen los que quedaron en el
+    // municipio de la ida (== ruta.origen, que el backend fuerza así). El par que ya
+    // traía la ruta sigue disponible vía el fallback de getVehiculo/ConductorOpciones.
+    // El backend revalida con validarUbicacionParaRuta.
+    const esRegreso = !!ruta?.idRutaIda
+    const idaIdDestino = esRegreso
+        ? (destinos.find(d => d.municipio === ruta.origen)?.idDestino ?? null)
+        : null
+    const ubicacionOk = (idDestinoActual) => esRegreso
+        ? idDestinoActual === idaIdDestino
+        : (idDestinoActual === null || idDestinoActual === undefined)
+
+    const vehiculosSeleccionables = vehiculos.filter(v => vehiculoDocumentosVigentes(v) && ubicacionOk(v.idDestinoActual))
+    const conductoresSeleccionables = conductores.filter(c => conductorLicenciaVigente(c.categoriasLicencia) && ubicacionOk(c.idDestinoActual))
     const vehiculosExcluidos = vehiculos.length - vehiculosSeleccionables.length
     const conductoresExcluidos = conductores.length - conductoresSeleccionables.length
 
@@ -213,7 +228,7 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
         // El backend rechaza igual un vehículo con documentos vencidos — se excluye acá
         // salvo que sea el que ya tenía asignado esta fila (ver el fallback abajo, que
         // igual lo vuelve a mostrar si venció después de haber sido asignado).
-        const base = vehiculos.filter(v => !usados.includes(v.idVehiculo) && vehiculoDocumentosVigentes(v))
+        const base = vehiculos.filter(v => !usados.includes(v.idVehiculo) && vehiculoDocumentosVigentes(v) && ubicacionOk(v.idDestinoActual))
         if (par.idVehiculo && !base.some(v => v.idVehiculo === parseInt(par.idVehiculo))) {
             const original = (ruta?.paresVehiculoConductor || []).find(p => p.idVehiculo === parseInt(par.idVehiculo))?.vehiculo
             if (original) return [...base, original]
@@ -226,7 +241,7 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
         // El backend rechaza igual un conductor sin licencia vigente — se excluye acá
         // salvo que sea el que ya tenía asignado esta fila (ver el fallback abajo, que
         // igual lo vuelve a mostrar si venció después de haber sido asignado).
-        const base = conductores.filter(c => !usados.includes(c.idConductor) && conductorLicenciaVigente(c.categoriasLicencia))
+        const base = conductores.filter(c => !usados.includes(c.idConductor) && conductorLicenciaVigente(c.categoriasLicencia) && ubicacionOk(c.idDestinoActual))
         if (par.idConductor && !base.some(c => c.idConductor === parseInt(par.idConductor))) {
             const original = (ruta?.paresVehiculoConductor || []).find(p => p.idConductor === parseInt(par.idConductor))?.conductor?.usuario
             if (original) return [...base, { idConductor: parseInt(par.idConductor), nombre: original.nombre, apellido: original.apellido }]

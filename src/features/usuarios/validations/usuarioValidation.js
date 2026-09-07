@@ -49,6 +49,13 @@ export const validarCampo = (name, form, { requerirPassword = false } = {}) => {
             return validarEmail(form.email)
         case 'idRol':
             return form.idRol ? '' : 'Selecciona un rol'
+        case 'sedes':
+            // Solo aplica al rol distribuidor (encargado de sede). Para cualquier
+            // otro rol el campo ni se muestra ni se envía. Ver LOGICA.md.
+            if (form.rolNombre === 'distribuidor' && (!Array.isArray(form.sedes) || form.sedes.length === 0)) {
+                return 'Selecciona al menos una sede para el distribuidor'
+            }
+            return ''
         case 'password':
             if (requerirPassword) {
                 if (!form.password) return 'La contraseña es obligatoria'
@@ -86,6 +93,7 @@ export const validarPaso = (step, form, avisos, { requerirPassword = false } = {
         e.telefono = validarCampo('telefono', form)
         e.email = validarCampo('email', form) || avisoEmailDuplicado
         e.idRol = validarCampo('idRol', form)
+        e.sedes = validarCampo('sedes', form)
         e.password = validarCampo('password', form, { requerirPassword })
         e.confirmarPassword = validarCampo('confirmarPassword', form, { requerirPassword })
     }

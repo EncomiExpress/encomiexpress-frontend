@@ -39,6 +39,21 @@ const AlertaBloqueoDialog = ({ theme, alertaBloqueo, onClose }) => (
                                 basePath="/ventas/listar"
                             />
                         </Box>
+                    ) : alertaBloqueo.tipo === 'carga' ? (
+                        <Box sx={{ width: '100%', mt: 0.5 }}>
+                            <Typography fontSize="0.95rem" color={theme.palette.text.secondary} sx={{ mb: alertaBloqueo.entidades?.length ? 1.5 : 0, textAlign: 'center' }}>
+                                {alertaBloqueo.mensaje}
+                            </Typography>
+                            {alertaBloqueo.entidades?.length > 0 && (
+                                <Paper elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 2, overflow: 'hidden' }}>
+                                    {alertaBloqueo.entidades.map((e, i) => (
+                                        <Box key={i} sx={{ px: 1.5, py: 1, textAlign: 'left', borderTop: i > 0 ? `1px solid ${theme.palette.divider}` : 'none' }}>
+                                            <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.8rem' }}>{e.label}</Typography>
+                                        </Box>
+                                    ))}
+                                </Paper>
+                            )}
+                        </Box>
                     ) : alertaBloqueo.entidades.map((e, i) => {
                         const dot = e.tipo === 'vehiculo' ? getVehiculoEstadoDot(e.estado) : getConductorEstadoDot(e.estado)
                         return (

@@ -186,9 +186,12 @@ const ModalConsultarVenta = ({ venta, onClose }) => {
                             <Box sx={{ borderTop: `1px solid ${theme.palette.divider}`, mt: 1, pt: 1.5 }}>
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
                                     <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Estado del paquete</Typography>
-                                    <EstadoDot info={getPaqueteEstadoDot(paquete?.estado)} label={paquete?.estado || '—'} />
+                                    <EstadoDot info={getPaqueteEstadoDot(paquete?.estado)} label={getPaqueteEstadoDot(paquete?.estado).label} />
                                 </Box>
                                 <CampoFila label="Observación" value={paquete?.observacionEstado || null} />
+                                {paquete?.intentosEntrega > 0 && (
+                                    <CampoFila label="Insistencia" value={`${paquete.intentosEntrega} ${paquete.intentosEntrega === 1 ? 'intento' : 'intentos'}${paquete.fechaUltimoIntento ? ` · último ${formatFecha(paquete.fechaUltimoIntento)}` : ''}`} />
+                                )}
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
                                     <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Evidencia</Typography>
                                     {paquete?.fotoEntrega ? (

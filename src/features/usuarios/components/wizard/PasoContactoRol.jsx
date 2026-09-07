@@ -5,6 +5,7 @@ import LockOutlinedIcon from '@mui/icons-material/LockOutlined'
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
 import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined'
 import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined'
+import LocationCityOutlinedIcon from '@mui/icons-material/LocationCityOutlined'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import { formFieldStyles } from '../../../../shared/utils/formStyles.js'
 import { validarCampo } from '../../validations/usuarioValidation.js'
@@ -13,7 +14,7 @@ const PasoContactoRol = ({
     theme, navigate, form, errores, setErrores, handleChange, verificarEmailDuplicado, validationOpts,
     showPassword, setShowPassword, showConfirmarPassword, setShowConfirmarPassword,
     passwordLabel, passwordRequired, passwordHelperText,
-    rolesDisponibles,
+    rolesDisponibles, sedesDisponibles = [],
 }) => (
     <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
         <TextField fullWidth label="Teléfono" name="telefono" value={form.telefono} onChange={handleChange}
@@ -112,6 +113,35 @@ const PasoContactoRol = ({
                 </MenuItem>
             ))}
         </TextField>
+
+        {/* Sedes que cubre el distribuidor (encargado de sede) — solo visible para ese rol.
+            El distribuidor entrega los paquetes al destinatario en esos municipios. */}
+        {form.rolNombre === 'distribuidor' && (
+            <TextField fullWidth select label="Sedes que cubre" name="sedes"
+                value={Array.isArray(form.sedes) ? form.sedes : []}
+                onChange={handleChange}
+                onBlur={() => setErrores(prev => ({ ...prev, sedes: validarCampo('sedes', form, validationOpts) }))}
+                required
+                error={!!errores.sedes}
+                helperText={errores.sedes || 'Municipios donde este distribuidor entrega los paquetes al destinatario'}
+                sx={{ gridColumn: '1 / -1', ...formFieldStyles }}
+                slotProps={{
+                    input: { startAdornment: <InputAdornment position="start"><LocationCityOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment> },
+                    select: {
+                        multiple: true,
+                        IconComponent: KeyboardArrowDownOutlinedIcon,
+                        renderValue: (selected) => (Array.isArray(selected) ? selected : [])
+                            .map((id) => sedesDisponibles.find(s => s.idDestino === id)?.municipio || id)
+                            .join(', ') || 'Ninguna',
+                    },
+                }}>
+                {sedesDisponibles.map((d) => (
+                    <MenuItem key={d.idDestino} value={d.idDestino}>
+                        {d.municipio}{d.departamento ? ` — ${d.departamento}` : ''}
+                    </MenuItem>
+                ))}
+            </TextField>
+        )}
     </Box>
 )
 

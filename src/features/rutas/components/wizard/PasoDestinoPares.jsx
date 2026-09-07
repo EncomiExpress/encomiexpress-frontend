@@ -24,10 +24,13 @@ const PasoDestinoPares = ({
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
             <Box ref={(el) => setPaso1Ref?.('origen', el)}>
+            {/* El origen no se edita: una ruta normal siempre sale de Medellín; un
+                regreso sale del municipio donde terminó la ida (precargado). El
+                backend lo fuerza igual (resolverOrigenRuta en rutaService.js). */}
             <FormField label="Origen" name="origen" value={form.origen}
-                onChange={handleChange}
-                onBlur={() => setErrores(prev => ({ ...prev, origen: validarCampo('origen', form) }))}
-                required error={errores.origen} helperText={errores.origen}
+                disabled
+                required error={errores.origen}
+                helperText={errores.origen || (form.idRutaIda ? 'Origen del regreso: donde terminó la ruta de ida' : 'Toda ruta sale de Medellín (oficina principal)')}
                 icon={RouteOutlinedIcon} inputProps={{ maxLength: 100 }} placeholder="Ej: Medellín" />
             </Box>
             <Box ref={(el) => setPaso1Ref?.('idDestino', el)}>

@@ -54,12 +54,26 @@ export const getConductorEstadoDot = (estado) => {
     return { type: 'circle', fill: false, color: '#10b981', label: 'Disponible' }
 }
 
+// Ubicación actual de un conductor/vehículo (destinoActual, se va actualizando
+// sede por sede durante la ruta). Devuelve el texto a mostrar bajo el estado, o
+// null si está en base / en tránsito. `tone`: 'warn' = está varado fuera de base
+// (necesita un viaje de regreso); 'muted' = va en ruta y dejó carga ahí.
+// Ver LOGICA.md, "Entrega en dos fases".
+export const getUbicacionCaption = (estado, destinoActual) => {
+    const muni = destinoActual?.municipio
+    if (!muni) return null
+    if (estado === 'En Ruta') return { text: `en ${muni}`, tone: 'muted' }
+    return { text: `fuera de base · ${muni}`, tone: 'warn' }
+}
+
 export const getPaqueteEstadoDot = (estado) => {
     switch (estado) {
         case 'Por entregar':      return { type: 'circle', fill: true,  color: '#3B82F6', label: 'Por entregar' }
         case 'En sede de destino': return { type: 'circle', fill: true,  color: '#D97706', label: 'En sede de destino' }
         case 'Entregado':    return { type: 'symbol', char: '✓',   color: '#059669', label: 'Entregado' }
-        case 'Devuelto':     return { type: 'circle', fill: true,  color: '#DC2626', label: 'Devuelto' }
+        // El valor interno sigue siendo 'Devuelto'; solo cambia la etiqueta visible
+        // — el dueño no maneja "devoluciones" sino insistencia al destinatario.
+        case 'Devuelto':     return { type: 'circle', fill: true,  color: '#DC2626', label: 'No entregado' }
         default:              return { type: 'circle', fill: false, color: '#9CA3AF', label: estado || '—' }
     }
 }

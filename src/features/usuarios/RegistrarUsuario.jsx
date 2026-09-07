@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
+import { useDestino } from '../destinos/context/DestinoContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { capitalizarPalabras } from '../../shared/utils/formatters.js'
 import { getErrorMessage } from '../../shared/utils/errorMessage.js'
@@ -20,6 +21,8 @@ const VALIDATION_OPTS = { requerirPassword: true }
 
 const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
     const { tienePermiso, registrarUsuario, getRolesBackend } = useAuth()
+    const { getDestinosHabilitados } = useDestino()
+    const sedesDisponibles = getDestinosHabilitados()
     const { showToast } = useToast()
     const theme = useTheme()
     const navigate = useNavigate()
@@ -38,7 +41,7 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
                 const filtrados = (respuesta.data || []).filter(r => r.nombre?.toLowerCase() !== 'conductor')
                 setRolesDisponibles(filtrados)
                 const adminRol = filtrados.find(r => r.nombre?.toLowerCase() === 'admin')
-                if (adminRol) setForm(prev => ({ ...prev, idRol: adminRol.idRol }))
+                if (adminRol) setForm(prev => ({ ...prev, idRol: adminRol.idRol, rolNombre: 'admin' }))
             }
         }
         cargarRoles()
@@ -54,6 +57,8 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
         password: '',
         confirmarPassword: '',
         idRol: '',
+        rolNombre: '',   // solo UI: decide si mostrar/exigir el multiselect de sedes
+        sedes: [],       // ids de Destino — solo se envía si rolNombre === 'distribuidor'
     })
 
     const {
@@ -82,6 +87,19 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
         }
         if (name === 'telefono') {
             value = value.replace(/[^0-9]/g, '')
+        }
+        if (name === 'idRol') {
+            const rolNombre = (rolesDisponibles.find(r => String(r.idRol) === String(value))?.nombre || '').toLowerCase()
+            setForm(prev => ({
+                ...prev,
+                idRol: value,
+                rolNombre,
+                // Al salir de "distribuidor" las sedes ya no aplican; al entrar se conservan las que hubiera.
+                sedes: rolNombre === 'distribuidor' ? prev.sedes : [],
+            }))
+            setErrores(prev => ({ ...prev, idRol: '', sedes: '' }))
+            setApiError(null)
+            return
         }
         if (name === 'tipoIdentificacion') {
             setForm(prev => ({ ...prev, tipoIdentificacion: value, numeroIdentificacion: '' }))
@@ -137,11 +155,13 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
         setSubmitting(true)
         setApiError(null)
         try {
-            const { password, confirmarPassword: _confirmarPassword, ...resto } = form
+            const { password, confirmarPassword: _confirmarPassword, rolNombre, sedes, ...resto } = form
             const datosBackend = {
                 ...resto,
                 password,
             }
+            // Las sedes solo viajan si es un distribuidor; para otro rol el backend las ignora igual.
+            if (rolNombre === 'distribuidor') datosBackend.sedes = sedes.map(Number)
 
             const result = await registrarUsuario(datosBackend, false)
 
@@ -173,6 +193,8 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
             password: '',
             confirmarPassword: '',
             idRol: '',
+            rolNombre: '',
+            sedes: [],
         })
         setErrores({})
         setApiError(null)
@@ -200,13 +222,13 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
                         showPassword={showPassword} setShowPassword={setShowPassword}
                         showConfirmarPassword={showConfirmarPassword} setShowConfirmarPassword={setShowConfirmarPassword}
                         passwordLabel="Contraseña" passwordRequired={true} passwordHelperText={PASSWORD_HELP}
-                        rolesDisponibles={rolesDisponibles}
+                        rolesDisponibles={rolesDisponibles} sedesDisponibles={sedesDisponibles}
                     />
                 )
             case 2:
                 return (
                     <PasoConfirmacion
-                        theme={theme} form={form} formOriginal={null} rolesDisponibles={rolesDisponibles}
+                        theme={theme} form={form} formOriginal={null} rolesDisponibles={rolesDisponibles} sedesDisponibles={sedesDisponibles}
                         apiError={apiError} setApiError={setApiError}
                         sinCambios={false} setSinCambios={() => {}}
                         camposCambiados={{}}

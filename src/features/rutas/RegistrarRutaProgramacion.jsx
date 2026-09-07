@@ -67,8 +67,22 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess, prefill }) => {
     // conductor sin licencia vigente — se excluyen acá antes para no dejar elegir algo
     // que de todas formas no puede transitar (ver validarDocumentosVehiculo/
     // tieneLicenciaVigente en rutaService.js del backend).
-    const vehiculosSeleccionables = vehiculos.filter(vehiculoDocumentosVigentes)
-    const conductoresSeleccionables = conductores.filter(c => conductorLicenciaVigente(c.categoriasLicencia))
+    //
+    // "Fuera de base": un conductor/vehículo que quedó en otro municipio tras una
+    // ruta que no volvió a Medellín (idDestinoActual != null). Para una ruta normal
+    // se excluye; para un regreso (prefill.idRutaIda) SOLO se ofrecen los que
+    // quedaron justo en el municipio de la ida (== prefill.origen). El backend
+    // revalida con validarUbicacionParaRuta.
+    const esRegreso = !!prefill?.idRutaIda
+    const idaIdDestino = esRegreso
+        ? (destinos.find(d => d.municipio === prefill.origen)?.idDestino ?? null)
+        : null
+    const ubicacionOk = (idDestinoActual) => esRegreso
+        ? idDestinoActual === idaIdDestino
+        : (idDestinoActual === null || idDestinoActual === undefined)
+
+    const vehiculosSeleccionables = vehiculos.filter(v => vehiculoDocumentosVigentes(v) && ubicacionOk(v.idDestinoActual))
+    const conductoresSeleccionables = conductores.filter(c => conductorLicenciaVigente(c.categoriasLicencia) && ubicacionOk(c.idDestinoActual))
     const vehiculosExcluidos = vehiculos.length - vehiculosSeleccionables.length
     const conductoresExcluidos = conductores.length - conductoresSeleccionables.length
 

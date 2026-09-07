@@ -91,16 +91,18 @@ const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
                 <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
                     <Box sx={{ display: 'flex', gap: 2 }}>
                         <FichaCard icon={RouteOutlinedIcon} title="Datos de la Ruta y Horario" subtitle="Origen, destino, fecha, horas y estado de la ruta">
+                            {/* Orden del recorrido real: Origen → Paradas → Destino (igual que
+                                el paso de Confirmación del wizard). */}
                             <CampoFila label="Origen" value={ruta.origen} />
+                            {resolveParadas(ruta).length > 0 && (
+                                <CampoFila label="Paradas" value={resolveParadas(ruta).map((p, i) => `${i + 1}. ${p.municipio}`).join(' · ')} />
+                            )}
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Destino</Typography>
                                 <Chip label={resolveDestino(ruta, destinos) || '—'} size="small"
                                     onClick={() => window.open(`/transporte/destinos?highlight=${ruta.idDestino}`, '_blank')}
                                     sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem', cursor: 'pointer', '&:hover': { filter: 'brightness(0.92)' } }} />
                             </Box>
-                            {resolveParadas(ruta).length > 0 && (
-                                <CampoFila label="Paradas" value={resolveParadas(ruta).map((p, i) => `${i + 1}. ${p.municipio}`).join(' · ')} />
-                            )}
                             {resolveDepartamentos(ruta).length > 1 && (
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9, gap: 1 }}>
                                     <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Departamentos</Typography>

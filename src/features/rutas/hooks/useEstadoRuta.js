@@ -13,9 +13,9 @@ export function useEstadoRuta({ rutasProgramadas, getVehiculos, getConductores, 
     const [confirmEstado, setConfirmEstado] = useState({ open: false, id: null, nuevoEstado: null, info: '', ruta: null, pares: [] })
     const [alertaBloqueo, setAlertaBloqueo] = useState({ open: false, tipo: 'conflicto', titulo: '', entidades: [] })
 
-    const ejecutarCambioEstado = async (id, nuevoEstado) => {
+    const ejecutarCambioEstado = async (id, nuevoEstado, extra = {}) => {
         try {
-            await updateEstado(id, nuevoEstado)
+            await updateEstado(id, nuevoEstado, extra)
             // updateEstado del contexto solo parcha el campo "estado" en memoria — los
             // indicadores "pendienteLegalizacion"/"paquetesPendientes" salen de una
             // consulta agregada aparte (rutaService.getAll) y quedarían desactualizados
@@ -32,6 +32,18 @@ export function useEstadoRuta({ rutasProgramadas, getVehiculos, getConductores, 
                     tipo: 'ventas',
                     titulo: 'No se puede iniciar la ruta',
                     entidades: err.details || [],
+                })
+                return
+            }
+            if (err.errorCode === 'SEDE_SIN_CARGA' || err.errorCode === 'VEHICULO_SIN_CARGA') {
+                setAlertaBloqueo({
+                    open: true,
+                    tipo: 'carga',
+                    titulo: 'No se puede iniciar la ruta',
+                    mensaje: err.errorCode === 'SEDE_SIN_CARGA'
+                        ? 'Cada parada y el destino final deben tener al menos una encomienda asignada. Sin paquetes:'
+                        : 'Todos los vehículos del convoy deben llevar carga. Sin paquetes:',
+                    entidades: (err.details || []).map(d => ({ label: d.descripcion })),
                 })
                 return
             }
@@ -127,7 +139,46 @@ export function useEstadoRuta({ rutasProgramadas, getVehiculos, getConductores, 
             // bloqueo. Si algo bloquea, se avisa antes de llegar a ese modal.
             try {
                 const ventasRes = await getEncomiendas(undefined, { idRuta: id, habilitado: 'true', limit: 1000 })
-                const ventasSinFecha = (ventasRes?.data || []).filter(v => v.estado !== 'Cancelada' && !v.fechaEstimadaEntrega)
+                const ventas = (ventasRes?.data || []).filter(v => v.estado !== 'Cancelada')
+
+                // Pre-chequeos que replican al backend — así se abre el modal de
+                // BLOQUEO en vez del de confirmación (que da a entender que todo va
+                // bien). No aplica a un viaje de regreso (puede ir vacío).
+                if (!rutaActual?.idRutaIda) {
+                    // (1) Sin ninguna encomienda.
+                    if (ventas.length === 0) {
+                        setAlertaBloqueo({ open: true, tipo: 'carga', titulo: 'No se puede iniciar la ruta',
+                            mensaje: 'Esta ruta no tiene ninguna encomienda asignada. Registra al menos una antes de ponerla En Ruta.', entidades: [] })
+                        return
+                    }
+                    // (2) Alguna sede del recorrido (parada o destino final) sin carga.
+                    const sedesConCarga = new Set(
+                        ventas.filter(v => (v.paquetes || []).length > 0).map(v => v.destinatario?.idDestino).filter(Boolean)
+                    )
+                    const sedesRuta = [
+                        ...(rutaActual.paradas || []).map(p => ({ id: p.idDestino, label: p.destino?.municipio || 'Parada' })),
+                        { id: rutaActual.idDestino, label: rutaActual.destino?.municipio || 'Destino final' },
+                    ]
+                    const sedesVacias = sedesRuta.filter(s => s.id && !sedesConCarga.has(s.id))
+                    if (sedesVacias.length > 0) {
+                        setAlertaBloqueo({ open: true, tipo: 'carga', titulo: 'No se puede iniciar la ruta',
+                            mensaje: 'Cada parada y el destino final deben tener al menos una encomienda asignada. Sin paquetes:',
+                            entidades: sedesVacias.map(s => ({ label: `${s.label} — sin paquetes` })) })
+                        return
+                    }
+                    // (3) Algún vehículo del convoy sin carga.
+                    const paqPorPar = {}
+                    ventas.forEach(v => (v.paquetes || []).forEach(p => { paqPorPar[p.idRutaVehiculoConductor] = (paqPorPar[p.idRutaVehiculoConductor] || 0) + 1 }))
+                    const paresVacios = (rutaActual.paresVehiculoConductor || []).filter(par => !(paqPorPar[par.idRutaVehiculoConductor] > 0))
+                    if (paresVacios.length > 0) {
+                        setAlertaBloqueo({ open: true, tipo: 'carga', titulo: 'No se puede iniciar la ruta',
+                            mensaje: 'Todos los vehículos del convoy deben llevar carga. Sin paquetes:',
+                            entidades: paresVacios.map(par => ({ label: `${par.vehiculo?.placa || 'Vehículo'} — sin paquetes` })) })
+                        return
+                    }
+                }
+
+                const ventasSinFecha = ventas.filter(v => !v.fechaEstimadaEntrega)
                 if (ventasSinFecha.length > 0) {
                     setAlertaBloqueo({
                         open: true,
@@ -139,15 +190,15 @@ export function useEstadoRuta({ rutasProgramadas, getVehiculos, getConductores, 
                 }
             } catch (err) {
                 // Si el chequeo previo falla, no se bloquea el flujo — el backend
-                // igual revalida MISSING_DELIVERY_DATE al confirmar.
-                showToast(err.message || 'No se pudo verificar las fechas de entrega, se validará al confirmar.', 'warning')
+                // igual revalida al confirmar.
+                showToast(err.message || 'No se pudo verificar la ruta, se validará al confirmar.', 'warning')
             }
         }
 
         const INFO_ESTADOS = {
             'Programada': 'Las ventas seguirán asociadas bajo esta ruta. Deberá registrar un nuevo anticipo para el conductor si es necesario.',
-            'Completada': 'El vehículo y el conductor quedarán disponibles y las ventas asociadas pasarán a "Entregada".',
-            'Cancelada': 'El vehículo y el conductor quedarán disponibles, el anticipo pasará a "Excedente pendiente" y las ventas asociadas quedarán pendientes de reasignación a otra ruta.',
+            'Completada': 'El vehículo y el conductor quedarán disponibles. Las ventas con todos los paquetes entregados pasarán a "Entregada"; las que sigan en distribución de sede continuarán su curso con el distribuidor.',
+            'Cancelada': 'El vehículo y el conductor quedarán disponibles y el anticipo pasará a "Excedente pendiente". Las ventas que aún no llegaban a ninguna sede vuelven a "Programada" para reasignarlas.',
         }
         const info = INFO_ESTADOS[nuevoEstado] || ''
         setConfirmEstado({ open: true, id, nuevoEstado, info, ruta: rutaActual, pares: paresResueltos })

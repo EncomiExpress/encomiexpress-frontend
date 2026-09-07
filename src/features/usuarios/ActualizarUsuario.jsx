@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined'
 import { useAuth, ROLES } from '../../shared/contexts/AuthContext.jsx'
+import { useDestino } from '../destinos/context/DestinoContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { capitalizarPalabras } from '../../shared/utils/formatters.js'
 import { getErrorMessage } from '../../shared/utils/errorMessage.js'
@@ -20,6 +21,8 @@ const VALIDATION_OPTS = {}
 
 const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) => {
     const { actualizarUsuario, getRolesBackend } = useAuth()
+    const { getDestinosHabilitados } = useDestino()
+    const sedesDisponibles = getDestinosHabilitados()
     const { showToast } = useToast()
     const theme = useTheme()
     const navigate = useNavigate()
@@ -51,6 +54,8 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
         telefono: '',
         email: '',
         idRol: '',
+        rolNombre: '',
+        sedes: [],
         password: '',
         confirmarPassword: '',
     })
@@ -74,6 +79,10 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
 
         cambios.email = (formOriginal.email || '') !== (form.email || '')
 
+        // Sedes del distribuidor — comparación por conjunto (orden irrelevante).
+        const normSedes = (arr) => [...(Array.isArray(arr) ? arr : [])].map(Number).sort((a, b) => a - b).join(',')
+        cambios.sedes = normSedes(formOriginal.sedes) !== normSedes(form.sedes)
+
         if (form.password) {
             cambios.password = true
         }
@@ -87,12 +96,23 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
             setErrores({})
             setSinCambios(false)
             const usuario = usuarioProp
-            const rolId = Object.values(ROLES).find(r => r.nombre === usuario.rol?.nombre)?.id || ''
+            const rolNombre = (usuario.rol?.nombre || '').toLowerCase()
+            // Preferir el idRol real que ya trae el usuario (columna id_rol de la API);
+            // el mapa hardcodeado ROLES es solo un último recurso y está incompleto
+            // (no incluye 'distribuidor').
+            const rolId = usuario.idRol
+                || Object.values(ROLES).find(r => r.nombre === usuario.rol?.nombre)?.id
+                || ''
+            const sedes = (usuario.sedes || [])
+                .map(s => s.idDestino ?? s.destino?.idDestino)
+                .filter(Boolean)
 
             const datosForm = {
                 ...usuario,
                 email: usuario.email || '',
                 idRol: rolId,
+                rolNombre,
+                sedes,
                 password: '',
                 confirmarPassword: '',
             }
@@ -122,6 +142,19 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
         }
         if (name === 'telefono') {
             value = value.replace(/[^0-9]/g, '')
+        }
+        if (name === 'idRol') {
+            const rolNombre = (rolesDisponibles.find(r => String(r.idRol) === String(value))?.nombre || '').toLowerCase()
+            setForm(prev => ({
+                ...prev,
+                idRol: value,
+                rolNombre,
+                sedes: rolNombre === 'distribuidor' ? prev.sedes : [],
+            }))
+            setErrores(prev => ({ ...prev, idRol: '', sedes: '' }))
+            setApiError(null)
+            setSinCambios(false)
+            return
         }
         if (name === 'tipoIdentificacion') {
             setForm(prev => ({ ...prev, tipoIdentificacion: value, numeroIdentificacion: '' }))
@@ -203,6 +236,12 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
                 idRol: parseInt(form.idRol),
             }
 
+            // Sedes solo si el rol final es distribuidor. Si el rol cambió a otro, el
+            // backend limpia las coberturas por su cuenta (no hay que mandar []).
+            if (form.rolNombre === 'distribuidor') {
+                datosBackend.sedes = (Array.isArray(form.sedes) ? form.sedes : []).map(Number)
+            }
+
             if (form.password) {
                 datosBackend.password = form.password
             }
@@ -246,13 +285,13 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
                         showConfirmarPassword={showConfirmarPassword} setShowConfirmarPassword={setShowConfirmarPassword}
                         passwordLabel="Nueva contraseña" passwordRequired={false}
                         passwordHelperText={form.password ? PASSWORD_HELP : 'Dejar vacío para mantener la actual'}
-                        rolesDisponibles={rolesDisponibles}
+                        rolesDisponibles={rolesDisponibles} sedesDisponibles={sedesDisponibles}
                     />
                 )
             case 2:
                 return (
                     <PasoConfirmacion
-                        theme={theme} form={form} formOriginal={formOriginal} rolesDisponibles={rolesDisponibles}
+                        theme={theme} form={form} formOriginal={formOriginal} rolesDisponibles={rolesDisponibles} sedesDisponibles={sedesDisponibles}
                         apiError={apiError} setApiError={setApiError}
                         sinCambios={sinCambios} setSinCambios={setSinCambios}
                         camposCambiados={getCamposCambiados()}

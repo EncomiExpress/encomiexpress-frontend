@@ -45,7 +45,7 @@ export const SECTIONS = [
       // subItem: se pinta indentado con conector en L bajo Ventas, no como un módulo
       // aparte -- Paquetes devueltos es una extensión de Ventas, no una entidad propia
       // (ver AuthContext.jsx: no tiene permiso propio, usa listar_venta).
-      { id: 'paquetes-devueltos', label: 'Paquetes devueltos', icon: PaqueteDevueltoIcon, path: '/paquetes-devueltos/listar', subItem: true },
+      { id: 'paquetes-devueltos', label: 'Paquetes no entregados', icon: PaqueteDevueltoIcon, path: '/paquetes-no-entregados/listar', subItem: true },
     ],
   },
 ]

@@ -5,9 +5,12 @@ import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import ConfirmRow from '../../../../shared/components/ConfirmRow.jsx'
 import { cardSx } from '../../style/wizardStyles.js'
 
-const PasoConfirmacion = ({ theme, form, formOriginal, rolesDisponibles, apiError, setApiError, sinCambios, setSinCambios, camposCambiados }) => {
+const PasoConfirmacion = ({ theme, form, formOriginal, rolesDisponibles, sedesDisponibles = [], apiError, setApiError, sinCambios, setSinCambios, camposCambiados }) => {
     const getNombreRol = (idRol) => rolesDisponibles.find(r => r.idRol === parseInt(idRol))?.nombre || '—'
     const totalModificados = formOriginal ? Object.values(camposCambiados || {}).filter(Boolean).length : 0
+    const sedesTexto = (Array.isArray(form.sedes) ? form.sedes : [])
+        .map((id) => sedesDisponibles.find(s => s.idDestino === id)?.municipio || id)
+        .join(', ')
 
     return (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -47,6 +50,9 @@ const PasoConfirmacion = ({ theme, form, formOriginal, rolesDisponibles, apiErro
                     <ConfirmRow label="Teléfono" value={form.telefono} previousValue={formOriginal?.telefono} />
                     <ConfirmRow label="Correo" value={form.email} previousValue={formOriginal?.email} />
                     <ConfirmRow label="Rol" value={getNombreRol(form.idRol)} previousValue={formOriginal ? getNombreRol(formOriginal.idRol) : undefined} />
+                    {form.rolNombre === 'distribuidor' && (
+                        <ConfirmRow label="Sedes" value={sedesTexto || '—'} />
+                    )}
                     <ConfirmRow label="Contraseña" value={formOriginal ? (form.password ? '••••••••' : 'Sin cambiar') : '••••••••'} previousValue={formOriginal ? 'Sin cambiar' : undefined} />
                 </Paper>
             </Box>

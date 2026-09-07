@@ -149,17 +149,39 @@ const useVentaColumns = ({
             ) : venta.estado === 'En Ruta' ? (
                 <Box sx={{ pl: 1 }}>
                     {(() => {
+                        // La venta "En Ruta" tiene dos fases visibles:
+                        //  1) FASE CONDUCTOR — aún hay paquetes "Por entregar": el conductor
+                        //     los está llevando a la sede. Se muestra "X de M en sede".
+                        //  2) FASE DISTRIBUIDOR — ya ninguno "Por entregar": la persona de la
+                        //     sede hace la entrega final. Se muestra "N de M entregados" con el
+                        //     desglose (N entregados · D no entregados · S en sede).
                         const paquetes = venta.paquetes || []
+                        const total = paquetes.length
+                        const porEntregar = paquetes.filter(p => p.estado === 'Por entregar').length
+                        const enSede = paquetes.filter(p => p.estado === 'En sede de destino').length
                         const entregados = paquetes.filter(p => p.estado === 'Entregado').length
-                        const devueltos = paquetes.filter(p => p.estado === 'Devuelto').length
-                        const pendientes = paquetes.length - entregados - devueltos
+                        const noEntregados = paquetes.filter(p => p.estado === 'Devuelto').length
                         const info = getVentaEstadoDot('En Ruta')
+
+                        let texto
+                        let tooltip
+                        if (porEntregar > 0) {
+                            texto = `${total - porEntregar} de ${total} en sede`
+                            tooltip = `${total - porEntregar} en sede · ${porEntregar} por dejar`
+                        } else if (entregados + noEntregados === 0) {
+                            texto = 'Entregado en sede'
+                            tooltip = 'Todos los paquetes están en la sede, a la espera de la entrega final'
+                        } else {
+                            texto = `${entregados} de ${total} entregados`
+                            tooltip = `${entregados} entregados · ${noEntregados} no entregados · ${enSede} en sede`
+                        }
+
                         return (
-                            <Tooltip title={`${entregados} entregados · ${devueltos} devueltos · ${pendientes} pendientes`}>
+                            <Tooltip title={tooltip}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                                     <Box sx={{ width: 9, height: 9, borderRadius: '50%', flexShrink: 0, backgroundColor: info.color }} />
                                     <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: info.color }}>
-                                        {`${entregados} de ${paquetes.length} entregados`}
+                                        {texto}
                                     </Typography>
                                 </Box>
                             </Tooltip>

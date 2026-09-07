@@ -5,6 +5,7 @@ import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDown
 import ToggleSwitch from '../../../shared/components/ToggleSwitch.jsx'
 import PlacaDisplay from '../../../shared/components/PlacaDisplay.jsx'
 import { isVencido, formatFecha, capitalizarPrimeraLetra, formatearMoneda } from '../../../shared/utils/formatters.js'
+import { getUbicacionCaption } from '../../../shared/utils/estadoColors.js'
 
 const vencimientoChipSx = (theme, vencido) => vencido
     ? { fontSize: '0.7rem', backgroundColor: theme.palette.primary.main, color: 'white', borderColor: theme.palette.primary.main }
@@ -75,33 +76,45 @@ const useVehiculoColumns = ({ theme, tienePermiso, PERMISOS, onConsultar, onEdit
     },
     {
         key: 'estado', label: 'Estado', cellSx: { py: 1.5 },
-        render: (transporte) => (
-            transporte.estadoEfectivo === 'En Ruta' ? (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1, py: 0.6 }}>
-                    <Box sx={{ width: 10, height: 10, borderRadius: '50%', flexShrink: 0, backgroundColor: '#3B82F6', border: '2px solid #3B82F6' }} />
-                    <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: '#3B82F6' }}>En Ruta</Typography>
+        render: (transporte) => {
+            const ubic = getUbicacionCaption(transporte.estadoEfectivo, transporte.destinoActual)
+            const caption = ubic && (
+                <Typography variant="caption" sx={{ display: 'block', ml: 1, mt: 0.25, lineHeight: 1.2, color: ubic.tone === 'warn' ? '#D97706' : theme.palette.text.secondary }}>
+                    {ubic.text}
+                </Typography>
+            )
+            return transporte.estadoEfectivo === 'En Ruta' ? (
+                <Box sx={{ px: 1, py: 0.6 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Box sx={{ width: 10, height: 10, borderRadius: '50%', flexShrink: 0, backgroundColor: '#3B82F6', border: '2px solid #3B82F6' }} />
+                        <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: '#3B82F6' }}>En Ruta</Typography>
+                    </Box>
+                    {caption}
                 </Box>
             ) : (
-                <Box
-                    onClick={(e) => onAbrirMenuEstado(e.currentTarget, transporte.idVehiculo, transporte.estadoEfectivo)}
-                    sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer', width: '100%', border: `1px solid ${theme.palette.divider}`, borderRadius: 1.5, px: 1, py: 0.6, '&:hover': { borderColor: theme.palette.text.secondary } }}
-                >
-                    <Box sx={{
-                        width: 10, height: 10, borderRadius: '50%', flexShrink: 0,
-                        ...(transporte.estadoEfectivo === 'Disponible'
-                            ? { backgroundColor: 'transparent', border: '2px solid #10b981' }
-                            : { backgroundColor: '#ea580c', border: '2px solid #ea580c' })
-                    }} />
-                    <Typography variant="body2" sx={{
-                        fontSize: '0.82rem', fontWeight: 500,
-                        color: transporte.estadoEfectivo === 'Disponible' ? '#10b981' : '#ea580c',
-                    }}>
-                        {transporte.estadoEfectivo}
-                    </Typography>
-                    <KeyboardArrowDownOutlinedIcon sx={{ fontSize: 14, color: '#9CA3AF', ml: 'auto' }} />
+                <Box>
+                    <Box
+                        onClick={(e) => onAbrirMenuEstado(e.currentTarget, transporte.idVehiculo, transporte.estadoEfectivo)}
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer', width: '100%', border: `1px solid ${theme.palette.divider}`, borderRadius: 1.5, px: 1, py: 0.6, '&:hover': { borderColor: theme.palette.text.secondary } }}
+                    >
+                        <Box sx={{
+                            width: 10, height: 10, borderRadius: '50%', flexShrink: 0,
+                            ...(transporte.estadoEfectivo === 'Disponible'
+                                ? { backgroundColor: 'transparent', border: '2px solid #10b981' }
+                                : { backgroundColor: '#ea580c', border: '2px solid #ea580c' })
+                        }} />
+                        <Typography variant="body2" sx={{
+                            fontSize: '0.82rem', fontWeight: 500,
+                            color: transporte.estadoEfectivo === 'Disponible' ? '#10b981' : '#ea580c',
+                        }}>
+                            {transporte.estadoEfectivo}
+                        </Typography>
+                        <KeyboardArrowDownOutlinedIcon sx={{ fontSize: 14, color: '#9CA3AF', ml: 'auto' }} />
+                    </Box>
+                    {caption}
                 </Box>
             )
-        ),
+        },
     },
     {
         key: 'acciones', label: 'Acciones', width: 130, cellSx: { py: 1.5 },

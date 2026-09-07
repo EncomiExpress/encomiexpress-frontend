@@ -11,10 +11,14 @@ export { PERMISOS }
 const AuthContext = createContext()
 export const useAuth = () => useContext(AuthContext)
 
+// IDs reales de la tabla `rol` (init.sql): admin=1, conductor=2, distribuidor=3.
+// `conductor` y `distribuidor` son solo-móvil (sin permisos granulares); el login
+// web los rechaza (ver login() más abajo). Único consumidor de esta constante:
+// ActualizarUsuario.jsx, y solo como fallback si el usuario no trajera idRol.
 export const ROLES = {
   ADMIN: { id: 1, nombre: 'admin' },
-  USUARIO: { id: 2, nombre: 'usuario' },
-  CONDUCTOR: { id: 3, nombre: 'conductor' },
+  CONDUCTOR: { id: 2, nombre: 'conductor' },
+  DISTRIBUIDOR: { id: 3, nombre: 'distribuidor' },
 }
 
 export const MODULOS = {
@@ -132,6 +136,13 @@ export const AuthProvider = ({ children }) => {
       const rolNombre = typeof usuario.rol === 'string'
         ? usuario.rol
         : usuario.rol?.nombre || null
+
+      // Los roles `conductor` y `distribuidor` no operan el panel web — solo la app
+      // móvil (no tienen permisos granulares). Se corta el ingreso acá, antes de
+      // persistir la sesión, en vez de dejarlos entrar y ver todo difuminado.
+      if (['conductor', 'distribuidor'].includes((rolNombre || '').toLowerCase())) {
+        return { success: false, mensaje: 'Esta cuenta es solo para la aplicación móvil de EncomiExpress.' }
+      }
 
       const usuarioNormalizado = {
         ...usuario,

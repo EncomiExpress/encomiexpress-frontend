@@ -58,10 +58,10 @@ const ModalInhabilitarVenta = ({ open, venta, onClose, onExited, onConfirm }) =>
 
     // Los paquetes no tienen su propio "habilitado" — dependen del de la venta (ver
     // encomiendaService.getPaquetesDevueltos). Si esta venta tiene algún paquete
-    // Devuelto, inhabilitarla también los va a mostrar como inhabilitados en el
-    // listado de Paquetes devueltos — se avisa antes de confirmar, no después.
-    const paquetesDevueltos = habilitadoActual ? (venta?.paquetes || []).filter(p => p.estado === 'Devuelto') : []
-    const tieneDevueltos = paquetesDevueltos.length > 0
+    // no entregado (valor interno 'Devuelto'), inhabilitarla también los va a
+    // mostrar como inhabilitados en "Paquetes no entregados" — se avisa antes.
+    const paquetesNoEntregados = habilitadoActual ? (venta?.paquetes || []).filter(p => p.estado === 'Devuelto') : []
+    const tieneNoEntregados = paquetesNoEntregados.length > 0
 
     return (
         <ConfirmToggleDialog
@@ -77,10 +77,10 @@ const ModalInhabilitarVenta = ({ open, venta, onClose, onExited, onConfirm }) =>
             soloCerrar={bloqueado}
             textoConfirmar={habilitadoActual ? 'Inhabilitar' : 'Habilitar'}
         >
-            {!bloqueado && tieneDevueltos && (
+            {!bloqueado && tieneNoEntregados && (
                 <Box sx={{ mt: 2, mx: 0.5, p: 1.5, borderRadius: 2, textAlign: 'left', backgroundColor: `${theme.palette.warning.main}14`, border: `1px solid ${theme.palette.warning.main}44` }}>
                     <Typography variant="caption" sx={{ color: theme.palette.warning.dark, lineHeight: 1.5 }}>
-                        Esta venta tiene {paquetesDevueltos.length === 1 ? '1 paquete devuelto' : `${paquetesDevueltos.length} paquetes devueltos`}. Al inhabilitarla, también se mostrará{paquetesDevueltos.length === 1 ? '' : 'n'} como inhabilitado{paquetesDevueltos.length === 1 ? '' : 's'} en el listado de Paquetes devueltos.
+                        Esta venta tiene {paquetesNoEntregados.length === 1 ? '1 paquete no entregado' : `${paquetesNoEntregados.length} paquetes no entregados`}. Al inhabilitarla, también se mostrará{paquetesNoEntregados.length === 1 ? '' : 'n'} como inhabilitado{paquetesNoEntregados.length === 1 ? '' : 's'} en el listado de Paquetes no entregados.
                     </Typography>
                 </Box>
             )}

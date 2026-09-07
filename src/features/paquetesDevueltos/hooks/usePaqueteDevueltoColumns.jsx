@@ -40,6 +40,25 @@ const usePaqueteDevueltoColumns = ({ theme, onVerVenta, onVerImagen }) => [
         },
     },
     {
+        key: 'intentos', label: 'Insistencia', width: 130, cellSx: { py: 1.5 },
+        render: (paquete) => {
+            const n = paquete.intentosEntrega || 0
+            return (
+                <>
+                    <Typography variant="body2" fontWeight={600}
+                        color={n > 0 ? '#D97706' : theme.palette.text.secondary}>
+                        {n === 0 ? 'Sin intentos' : n === 1 ? '1 intento' : `${n} intentos`}
+                    </Typography>
+                    {paquete.fechaUltimoIntento && (
+                        <Typography variant="caption" color={theme.palette.text.secondary} noWrap>
+                            Último: {formatFechaHora(paquete.fechaUltimoIntento)}
+                        </Typography>
+                    )}
+                </>
+            )
+        },
+    },
+    {
         key: 'fecha', label: 'Fecha último estado', cellSx: { py: 1.5 },
         render: (paquete) => (
             <Typography variant="body2" color={theme.palette.text.primary}>
