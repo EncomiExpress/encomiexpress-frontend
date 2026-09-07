@@ -54,8 +54,16 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
     const handleBack = () => setActiveStep(prev => prev - 1)
 
     const handleSubmit = async () => {
-        const erroresEncontrados = validarPaso(activeStep, form)
-        if (Object.keys(erroresEncontrados).length > 0) { setErrores(erroresEncontrados); return }
+        // Se llama desde el último paso ("Confirmación", sin campos propios) —
+        // validar con `validarPaso(activeStep, form)` acá era en la práctica un
+        // no-op (siempre devolvía {}). Revalida el único paso con contenido (0)
+        // sin importar en qué paso esté — ver LOGICA.md.
+        const erroresEncontrados = validarPaso(0, form)
+        if (Object.keys(erroresEncontrados).length > 0) {
+            setErrores(erroresEncontrados)
+            setActiveStep(0)
+            return
+        }
 
         setSubmitting(true)
         try {

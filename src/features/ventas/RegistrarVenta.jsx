@@ -58,7 +58,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
         clienteInput, setClienteInput, rutaInput, setRutaInput,
         form, setForm, calcularValorServicio, paqueteRefs, setParticipanteRef, handleResetearTotal, totalEditadoManualmente,
         handleChange, setErrorPaquete, handlePaqueteChange,
-        handleAgregarPaquete, handleQuitarPaquete, handleNext, handleBack,
+        handleAgregarPaquete, handleQuitarPaquete, handleNext, handleBack, validarTodo,
     } = useVentaWizardForm({
         initialForm: getInitialForm(),
         rutasProgramadas, fetchRutasProgramadas, tarifaPorKgHierro, tarifaPorKgNormal, tarifaPorPaquete, fetchConfiguracion,
@@ -77,6 +77,12 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
     }
 
     const handleSubmit = async () => {
+        // Revalida los 4 pasos con contenido antes de guardar — un dato pudo quedar
+        // desactualizado mientras se seguía en "Confirmación" (paso sin campos propios,
+        // sin validación en vivo). Si algo falla, ya deja el paso/campo correcto
+        // marcado en rojo y no sigue con el guardado. Ver LOGICA.md.
+        if (!validarTodo()) return
+
         setSubmitting(true)
         setApiError(null)
         try {

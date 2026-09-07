@@ -291,8 +291,21 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
     const handleBack = () => setActiveStep(prev => prev - 1)
 
     const handleSubmit = async () => {
-        const erroresEncontrados = validarPaso(activeStep, form)
-        if (Object.keys(erroresEncontrados).length > 0) { setErrores(erroresEncontrados); return }
+        // Se llama desde el último paso ("Confirmación", sin campos propios) — validar
+        // solo `validarPaso(activeStep, form)` acá era en la práctica un no-op (siempre
+        // devolvía {}). Hay que revalidar los pasos 0 y 1 completos: un campo puede
+        // quedar desactualizado entre que se validó al avanzar de paso y el momento real
+        // de guardar (ej. "Hora de Salida" con fecha de hoy: era válida cuando se
+        // avanzó del paso "Horario", pero el reloj puede alcanzarla mientras se sigue
+        // en "Confirmación" — ver LOGICA.md).
+        const erroresPaso0 = validarPaso(0, form)
+        const erroresPaso1 = validarPaso(1, form)
+        const erroresEncontrados = { ...erroresPaso0, ...erroresPaso1 }
+        if (Object.keys(erroresEncontrados).length > 0) {
+            setErrores(erroresEncontrados)
+            setActiveStep(Object.keys(erroresPaso0).length > 0 ? 0 : 1)
+            return
+        }
 
         if (originalData) {
             // Comparación genérica (String()) no sirve para "pares": es un array de
@@ -314,7 +327,7 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
         try {
             // El id puede estar como idRuta (API) o idRutaProgramada (legacy)
             const id = ruta.idRuta ?? ruta.idRutaProgramada
-            await actualizarRutaProgramada({
+            const { message } = await actualizarRutaProgramada({
                 idRuta: id,
                 ...form,
                 pares: form.pares
@@ -330,7 +343,7 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
                 })),
                 observaciones: form.observaciones || ''
             })
-            showToast('¡Ruta actualizada exitosamente!', 'success')
+            showToast(message || '¡Ruta actualizada exitosamente!', 'success')
             setTimeout(() => { handleClose(); onSuccess?.() }, 1500)
         } catch (err) {
             setApiError(getErrorMessage(err, 'Error al actualizar la ruta'))

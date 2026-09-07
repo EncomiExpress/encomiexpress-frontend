@@ -76,7 +76,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
         clienteInput, setClienteInput, rutaInput, setRutaInput,
         form, setForm, valorServicioManualRef, calcularValorServicio, paqueteRefs, setParticipanteRef, handleResetearTotal, totalEditadoManualmente,
         handleChange, setErrorPaquete, handlePaqueteChange,
-        handleAgregarPaquete, handleQuitarPaquete, handleNext, handleBack,
+        handleAgregarPaquete, handleQuitarPaquete, handleNext, handleBack, validarTodo,
     } = useVentaWizardForm({
         initialForm: getInitialForm(),
         rutasProgramadas, fetchRutasProgramadas, tarifaPorKgHierro, tarifaPorKgNormal, tarifaPorPaquete, fetchConfiguracion,
@@ -182,6 +182,12 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                 return
             }
         }
+
+        // Revalida los 4 pasos con contenido antes de guardar — un dato pudo quedar
+        // desactualizado mientras se seguía en "Confirmación" (paso sin campos propios,
+        // sin validación en vivo). Si algo falla, ya deja el paso/campo correcto
+        // marcado en rojo y no sigue con el guardado. Ver LOGICA.md.
+        if (!validarTodo()) return
 
         setSinCambios(false)
         setSubmitting(true)

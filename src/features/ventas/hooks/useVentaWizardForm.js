@@ -94,18 +94,36 @@ export const useVentaWizardForm = ({
             setForm(prev => {
                 if (!prev.idRuta) return prev
                 const ruta = (rutasFrescas || []).find(r => r.idRuta === parseInt(prev.idRuta))
-                if (!ruta) return prev
+                if (!ruta) {
+                    // La ruta ya no está entre las Programadas disponibles (salió, se
+                    // completó, se canceló — típico al editar una venta que quedó
+                    // Cancelada) — se limpia la selección en vez de dejar un id
+                    // "fantasma": validarCampo('idRuta') solo mira si hay algo puesto,
+                    // así que un id que ya no es una opción válida pasaría la
+                    // validación sin que nadie lo note. Mismo criterio que elegir
+                    // "ninguna ruta" a mano en el Autocomplete (ver el onChange de
+                    // más abajo).
+                    setErrores(e => ({ ...e, idRuta: '' }))
+                    return {
+                        ...prev,
+                        idRuta: '', destino: '', fechaSalidaRuta: '', fechaLlegadaEstimadaRuta: '',
+                        paquetes: prev.paquetes.map(p => ({ ...p, idRutaVehiculoConductor: '' })),
+                    }
+                }
                 const fechaSalida = ruta.fechaSalida || ''
                 const fechaLlegadaEstimada = ruta.fechaLlegadaEstimada || ''
                 if (fechaSalida === prev.fechaSalidaRuta && fechaLlegadaEstimada === prev.fechaLlegadaEstimadaRuta) return prev
                 const minimaNueva = fechaLlegadaEstimada || (fechaSalida ? sumarDias(fechaSalida, 1) : '')
-                const fechaFueraDeRango = !!(prev.fechaEstimadaEntrega && minimaNueva && prev.fechaEstimadaEntrega < minimaNueva)
-                if (fechaFueraDeRango) setErrores(e => ({ ...e, fechaEstimadaEntrega: validarCampo('fechaEstimadaEntrega', { fechaEstimadaEntrega: '' }, ventaOriginal) }))
+                // La ruta cambió de fecha mientras el formulario seguía abierto (ej. alguien
+                // la editó desde otra pestaña) — se sincroniza igual que al elegir la ruta o
+                // al editarla desde el módulo de Rutas, en vez de solo limpiar si quedó fuera
+                // de rango (ver "Rutas — editar la fecha de una ruta con ventas ya asociadas").
+                setErrores(e => ({ ...e, fechaEstimadaEntrega: '' }))
                 return {
                     ...prev,
                     fechaSalidaRuta: fechaSalida,
                     fechaLlegadaEstimadaRuta: fechaLlegadaEstimada,
-                    fechaEstimadaEntrega: fechaFueraDeRango ? '' : prev.fechaEstimadaEntrega,
+                    fechaEstimadaEntrega: minimaNueva || prev.fechaEstimadaEntrega,
                 }
             })
         }).catch(() => null)
@@ -376,6 +394,33 @@ export const useVentaWizardForm = ({
 
     const handleBack = () => setActiveStep(prev => prev - 1)
 
+    // Revalida los 4 pasos con contenido antes de guardar de verdad (llamada al
+    // principio de handleSubmit, que vive en RegistrarVenta.jsx/ActualizarVenta.jsx —
+    // ver el comentario de arriba sobre qué NO vive en este hook). Antes, el guardado
+    // final no revalidaba nada en absoluto: si un dato quedaba desactualizado mientras
+    // se seguía en "Confirmación" (ej. alguien más editó la ruta elegida, o el reloj
+    // alcanzó una hora que ya no es válida), el guardado pasaba igual. Devuelve
+    // true si todo está bien; si no, devuelve false y ya dejó `errores`/`activeStep`
+    // apuntando al primer paso con problemas, listos para que el campo se vea en rojo.
+    const validarTodo = () => {
+        const pasos = [0, 1, 2, 3].map(step => validarPaso(step, form, rutasProgramadas, {
+            ventaOriginal, getPesoOriginalPorPar,
+        }))
+        const pasoConError = pasos.findIndex(e => Object.keys(e).length > 0)
+        if (pasoConError === -1) return true
+
+        const combinados = { ...pasos[0], ...pasos[1], ...pasos[2], ...pasos[3] }
+        // El paso "Paquete" (medidas/peso) y el paso "Envío" (vehículo asignado) pueden
+        // generar cada uno su propio arreglo `paquetes` — se combinan índice a índice,
+        // si no el spread de arriba descartaría uno de los dos por completo.
+        if (pasos[1].paquetes && pasos[2].paquetes) {
+            combinados.paquetes = pasos[1].paquetes.map((pe, i) => ({ ...pe, ...pasos[2].paquetes[i] }))
+        }
+        setErrores(combinados)
+        setActiveStep(pasoConError)
+        return false
+    }
+
     return {
         errores, setErrores,
         apiError, setApiError,
@@ -396,6 +441,7 @@ export const useVentaWizardForm = ({
         handleQuitarPaquete,
         handleNext,
         handleBack,
+        validarTodo,
     }
 }
 

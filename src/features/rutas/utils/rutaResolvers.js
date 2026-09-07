@@ -1,7 +1,22 @@
 import { getDocumentoVehiculoVencido, conductorLicenciaVigente } from '../../../shared/utils/vigenciaDocumentos.js'
+import { hoyISO } from '../../../shared/utils/horarioLaboral.js'
 
 // El id de una ruta puede venir como idRuta (API actual) o idRutaProgramada (legacy).
 export const getRutaId = (ruta) => ruta.idRuta ?? ruta.idRutaProgramada
+
+// Mismo criterio que yaDebioSalir() (jobs/autoIniciarRutas.js) y motivoSalidaVencida()
+// (rutaService.js, updateEstado/toggleHabilitado) del backend — se duplica acá para
+// avisar en el frontend ANTES de chocar con el backend (menú de estado, modal de
+// habilitar/inhabilitar), que sigue siendo la fuente de verdad. Distingue el motivo
+// ('fecha' vs. 'hora') para un aviso más útil: "hora" solo aplica cuando la fecha
+// sigue siendo hoy pero la hora de salida ya pasó.
+export const motivoSalidaVencida = (ruta) => {
+    if (!ruta?.fechaSalida || !ruta?.horaSalida) return 'fecha'
+    if (ruta.fechaSalida < hoyISO()) return 'fecha'
+    if (ruta.fechaSalida > hoyISO()) return null
+    const salida = new Date(`${ruta.fechaSalida}T${ruta.horaSalida}-05:00`)
+    return (isNaN(salida.getTime()) || salida <= new Date()) ? 'hora' : null
+}
 
 // Une lo que necesitan ListarRutaProgramacion.jsx (vehiculoInhabilitado/conductorInhabilitado,
 // para el chip "Reasignar vehículo/conductor") y ModalConsultarRutaProgramacion.jsx

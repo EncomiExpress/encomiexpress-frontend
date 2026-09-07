@@ -131,7 +131,6 @@ export default function PasoEnvio({
                         const fechaSalida = newValue?.fechaSalida || ''
                         const fechaLlegadaEstimada = newValue?.fechaLlegadaEstimada || ''
                         const minimaNueva = fechaLlegadaEstimada || (fechaSalida ? sumarDias(fechaSalida, 1) : '')
-                        const fechaResetea = !!(newValue && form.fechaEstimadaEntrega && minimaNueva && form.fechaEstimadaEntrega < minimaNueva)
                         if (newValue) {
                             if (valorServicioManualRef) valorServicioManualRef.current = false
                             setForm(prev => {
@@ -142,8 +141,10 @@ export default function PasoEnvio({
                                     destino: `${newValue.origen || 'Sin nombre'} → ${newValue.destino?.municipio || 'Sin destino'} — $${Number(newValue.destino?.tarifaBase || 0).toLocaleString('es-CO')}`,
                                     fechaSalidaRuta: fechaSalida,
                                     fechaLlegadaEstimadaRuta: fechaLlegadaEstimada,
-                                    fechaEstimadaEntrega: prev.fechaEstimadaEntrega && minimaNueva && prev.fechaEstimadaEntrega < minimaNueva
-                                        ? '' : prev.fechaEstimadaEntrega,
+                                    // Se autocompleta con la fecha mínima (llegada de la ruta) al elegir
+                                    // o cambiar de ruta — el campo sigue editable después por si hace
+                                    // falta correrla más adelante (reparto con más días de última milla).
+                                    fechaEstimadaEntrega: minimaNueva || prev.fechaEstimadaEntrega,
                                     total,
                                     paquetes: prev.paquetes.map(p => ({ ...p, idRutaVehiculoConductor: '' })),
                                 }
@@ -159,9 +160,7 @@ export default function PasoEnvio({
                             idRuta: newValue
                                 ? (rutaLlegaAlDestino(newValue, parseInt(form.idDestinoDestinatario) || null) ? '' : MENSAJE_RUTA_NO_LLEGA)
                                 : (prev.idRuta ? validarCampo('idRuta', { idRuta: '' }, ventaOriginal) : prev.idRuta),
-                            fechaEstimadaEntrega: fechaResetea && prev.fechaEstimadaEntrega
-                                ? validarCampo('fechaEstimadaEntrega', { fechaEstimadaEntrega: '' }, ventaOriginal)
-                                : (newValue ? prev.fechaEstimadaEntrega : ''),
+                            fechaEstimadaEntrega: '',
                             // El cambio de ruta invalida el vehículo asignado, pero no otros
                             // errores del paquete (peso, dimensiones, etc.) que no dependen de la ruta.
                             paquetes: prev.paquetes?.map(pe => {

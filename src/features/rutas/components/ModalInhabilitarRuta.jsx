@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useTheme } from '@mui/material/styles'
 import { Box, Typography, CircularProgress } from '@mui/material'
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import DoNotDisturbOutlinedIcon from '@mui/icons-material/DoNotDisturbOutlined'
 import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined'
 import * as ventaService from '../../ventas/services/ventaService.js'
@@ -8,6 +9,7 @@ import * as anticipoService from '../../anticipos/services/anticipoService.js'
 import ConfirmToggleDialog from '../../../shared/components/ConfirmToggleDialog.jsx'
 import VentasConflictoTable from './VentasConflictoTable.jsx'
 import AnticiposConflictoList from './AnticiposConflictoList.jsx'
+import { motivoSalidaVencida } from '../utils/rutaResolvers.js'
 
 const ESTADOS_BLOQUEO_ANTICIPO = ['Entregado', 'En Legalización', 'Excedente pendiente']
 
@@ -51,6 +53,15 @@ const ModalInhabilitarRuta = ({ open, data, onClose, onExited, onConfirm }) => {
 
     const nombre = data?.origen || `#${data?.idRuta}`
 
+    // Si se va a habilitar una ruta Programada cuya fecha/hora de salida ya venció,
+    // rutaService.toggleHabilitado la deja Cancelada en la misma operación (evita que
+    // el job de auto-inicio la agarre de inmediato con una fecha vieja — ver LOGICA.md,
+    // "Mismo problema, otra puerta"). Se avisa acá, antes de confirmar, en vez de en el
+    // toast posterior.
+    const motivoVencida = !data?.habilitadoActual && data?.estadoRuta === 'Programada'
+        ? motivoSalidaVencida({ fechaSalida: data?.fechaSalida, horaSalida: data?.horaSalida })
+        : null
+
     const titulo = !data?.habilitadoActual
         ? '¿Habilitar ruta?'
         : bloqueado
@@ -89,6 +100,17 @@ const ModalInhabilitarRuta = ({ open, data, onClose, onExited, onConfirm }) => {
             {cargando && (
                 <Box sx={{ display: 'flex', justifyContent: 'center', py: 2, mt: 2 }}>
                     <CircularProgress size={22} sx={{ color: theme.palette.primary.main }} />
+                </Box>
+            )}
+
+            {motivoVencida && (
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.75, mt: 2, color: theme.palette.text.secondary }}>
+                    <InfoOutlinedIcon sx={{ fontSize: 18, mt: '1px', flexShrink: 0 }} />
+                    <Typography variant="body2">
+                        {motivoVencida === 'fecha'
+                            ? 'Su fecha de salida ya pasó, así que quedará Cancelada.'
+                            : 'Su hora de salida ya pasó (sigue siendo hoy), así que quedará Cancelada.'}
+                    </Typography>
                 </Box>
             )}
 

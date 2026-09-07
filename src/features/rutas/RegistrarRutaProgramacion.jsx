@@ -234,8 +234,21 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess, prefill }) => {
     const handleBack = () => setActiveStep(prev => prev - 1)
 
     const handleSubmit = async () => {
-        const erroresEncontrados = validarPaso(activeStep, form)
-        if (Object.keys(erroresEncontrados).length > 0) { setErrores(erroresEncontrados); return }
+        // Se llama desde el último paso ("Confirmación", sin campos propios) — validar
+        // solo `validarPaso(activeStep, form)` acá era en la práctica un no-op (siempre
+        // devolvía {}). Hay que revalidar los pasos 0 y 1 completos: un campo puede
+        // quedar desactualizado entre que se validó al avanzar de paso y el momento real
+        // de guardar (ej. "Hora de Salida" con fecha de hoy: era válida cuando se
+        // avanzó del paso "Horario", pero el reloj puede alcanzarla mientras se sigue
+        // en "Confirmación" — ver LOGICA.md).
+        const erroresPaso0 = validarPaso(0, form)
+        const erroresPaso1 = validarPaso(1, form)
+        const erroresEncontrados = { ...erroresPaso0, ...erroresPaso1 }
+        if (Object.keys(erroresEncontrados).length > 0) {
+            setErrores(erroresEncontrados)
+            setActiveStep(Object.keys(erroresPaso0).length > 0 ? 0 : 1)
+            return
+        }
 
         setSubmitting(true)
         setApiError(null)

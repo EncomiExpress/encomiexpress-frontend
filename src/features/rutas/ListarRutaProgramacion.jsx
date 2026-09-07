@@ -32,7 +32,7 @@ const ListarRutaProgramacion = () => {
     const { tienePermiso, PERMISOS, usuario } = useAuth()
     const { showToast } = useToast()
     const [rutaVer, setRutaVer] = useState(null)
-    const [estadoMenu, setEstadoMenu] = useState({ anchor: null, id: null, estadoActual: null })
+    const [estadoMenu, setEstadoMenu] = useState({ anchor: null, id: null, estadoActual: null, ruta: null })
     const [filtroEstadoRuta, setFiltroEstadoRuta] = useState('')
     const [filtroAnio, setFiltroAnio] = useState('')
     const [filtroMes, setFiltroMes] = useState('')
@@ -143,7 +143,7 @@ const ListarRutaProgramacion = () => {
         onConsultar: setRutaVer,
         onEditar: (ruta) => { setRutaEditar(ruta); setModalActualizarOpen(true) },
         onToggleHabilitado: handleToggleHabilitado,
-        onAbrirMenuEstado: (anchor, id, estadoActual) => setEstadoMenu({ anchor, id, estadoActual }),
+        onAbrirMenuEstado: (anchor, id, estadoActual, ruta) => setEstadoMenu({ anchor, id, estadoActual, ruta }),
         onCancelarEnRuta: (id) => handleEstadoChange(id, 'Cancelada'),
         onProgramarRegreso: handleProgramarRegreso,
     })
@@ -300,7 +300,7 @@ const ListarRutaProgramacion = () => {
                 open={confirmInhabilitar.open}
                 data={confirmInhabilitar}
                 onClose={() => setConfirmInhabilitar(s => ({ ...s, open: false }))}
-                onExited={() => setConfirmInhabilitar({ open: false, idRuta: null, origen: '', habilitadoActual: null, estadoRuta: null })}
+                onExited={() => setConfirmInhabilitar({ open: false, idRuta: null, origen: '', habilitadoActual: null, estadoRuta: null, fechaSalida: null, horaSalida: null })}
                 onConfirm={onConfirmarInhabilitar}
             />
 

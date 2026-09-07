@@ -110,6 +110,13 @@ export const validarPaso = (step, form, rutasProgramadas, opts = {}) => {
         e.observaciones = validarCampo('observaciones', form, ventaOriginal)
 
         const rutaSel = rutasProgramadas.find(r => r.idRuta === parseInt(form.idRuta))
+        // form.idRuta puede quedar con un id que ya no es una opción del selector (ruta
+        // que dejó de estar Programada mientras el formulario seguía abierto) — sin
+        // esto, validarCampo('idRuta') lo pasaba igual por solo mirar si hay algo
+        // puesto, no si sigue siendo una elección válida.
+        if (form.idRuta && !rutaSel && !e.idRuta) {
+            e.idRuta = 'Esta ruta ya no está disponible — elige otra'
+        }
         if (rutaSel && !e.idRuta && !rutaLlegaAlDestino(rutaSel, parseInt(form.idDestinoDestinatario) || null)) {
             e.idRuta = MENSAJE_RUTA_NO_LLEGA
         }

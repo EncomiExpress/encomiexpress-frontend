@@ -20,7 +20,6 @@ import ActualizarVenta from './ActualizarVenta'
 import ModalInhabilitarVenta from './components/ModalInhabilitarVenta'
 import ModalConsultarVenta from './components/ModalConsultarVenta'
 import FiltroVenta from './components/FiltroVenta.jsx'
-import ModalCambioEstadoVenta from './components/ModalCambioEstadoVenta.jsx'
 import ModalCambioPagoVenta from './components/ModalCambioPagoVenta.jsx'
 import TarifaControl from './components/TarifaControl.jsx'
 import useVentaColumns from './hooks/useVentaColumns.jsx'
@@ -83,10 +82,9 @@ const ListarVenta = () => {
     const {
         modalInhabilitar, setModalInhabilitar,
         pagoMenuAnchor, setPagoMenuAnchor, pagoMenuId, setPagoMenuId, confirmPago, setConfirmPago,
-        estadoMenuAnchor, setEstadoMenuAnchor, estadoMenuId, setEstadoMenuId, confirmCancelar, setConfirmCancelar,
         confirmandoEstado,
         handleDescargarGuia, handleToggleHabilitado, handleConfirmarToggle, handleExitedInhabilitar,
-        handlePagoConfirm, handleCancelarConfirm,
+        handlePagoConfirm,
     } = useVentaAcciones({ onChanged: refetch })
 
     const { exportando, handleExportar } = useVentaExport({
@@ -106,7 +104,6 @@ const ListarVenta = () => {
         onEditar: (venta) => { setVentaEditar(venta); setModalActualizarOpen(true) },
         onToggleHabilitado: handleToggleHabilitado,
         onAbrirMenuPago: (anchor, id) => { setPagoMenuAnchor(anchor); setPagoMenuId(id) },
-        onAbrirMenuEstado: (anchor, id) => { setEstadoMenuAnchor(anchor); setEstadoMenuId(id) },
     })
 
     return (
@@ -258,17 +255,6 @@ const ListarVenta = () => {
                 onClose={() => setModalInhabilitar(s => ({ ...s, open: false }))}
                 onExited={handleExitedInhabilitar}
                 onConfirm={handleConfirmarToggle}
-            />
-
-            <ModalCambioEstadoVenta
-                theme={theme}
-                estadoMenuAnchor={estadoMenuAnchor}
-                onCloseMenu={() => { setEstadoMenuAnchor(null); setEstadoMenuId(null) }}
-                onSeleccionarCancelar={() => { const id = estadoMenuId; setEstadoMenuAnchor(null); setEstadoMenuId(null); setConfirmCancelar({ open: true, id }) }}
-                confirmCancelar={confirmCancelar}
-                onCloseConfirm={() => setConfirmCancelar({ open: false, id: null })}
-                confirmandoEstado={confirmandoEstado}
-                onConfirmar={handleCancelarConfirm}
             />
 
             <ModalCambioPagoVenta

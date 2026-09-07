@@ -1,10 +1,11 @@
-import { Box } from '@mui/material'
+import { Box, Typography } from '@mui/material'
 import RouteOutlinedIcon from '@mui/icons-material/RouteOutlined'
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import { FormField } from '../../../../shared/components/FormularioEstandarizado.jsx'
 import CalendarioDisponibilidad from '../../../../shared/components/CalendarioDisponibilidad.jsx'
 import SelectorHora from '../../../../shared/components/SelectorHora.jsx'
-import { getRangoHorario, sumarDias, MIN_DIAS_SALIDA_LLEGADA } from '../../../../shared/utils/horarioLaboral.js'
-import { mananaISO, maxISO, validarCampo } from '../../validations/rutaValidation.js'
+import { getRangoHorario, sumarDias, hoyISO, MIN_DIAS_SALIDA_LLEGADA } from '../../../../shared/utils/horarioLaboral.js'
+import { maxISO, validarCampo } from '../../validations/rutaValidation.js'
 
 const PasoHorario = ({
     form, setForm, errores, setErrores, setApiError, handleChange,
@@ -34,7 +35,7 @@ const PasoHorario = ({
                 }}
                 pares={form.pares}
                 idRutaExcluir={idRutaExcluir}
-                minDate={mananaISO()}
+                minDate={hoyISO()}
                 maxDate={maxISO()}
                 refrescarKey={refrescarDisponibilidad}
                 error={errores.fechaSalida}
@@ -55,20 +56,29 @@ const PasoHorario = ({
                 }}
                 pares={form.pares}
                 idRutaExcluir={idRutaExcluir}
-                minDate={form.fechaSalida ? sumarDias(form.fechaSalida, MIN_DIAS_SALIDA_LLEGADA) : mananaISO()}
+                minDate={form.fechaSalida ? sumarDias(form.fechaSalida, MIN_DIAS_SALIDA_LLEGADA) : hoyISO()}
                 maxDate={maxISO()}
                 refrescarKey={refrescarDisponibilidad}
                 error={errores.fechaLlegadaEstimada}
                 helperText={form.fechaSalida ? 'Los días en rojo ya tienen a ese vehículo o conductor ocupado en otra ruta' : 'Selecciona primero la fecha de salida'}
             />
         </Box>
+        {idRutaExcluir && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, color: 'text.secondary' }}>
+                <InfoOutlinedIcon sx={{ fontSize: 16 }} />
+                <Typography variant="caption">
+                    Si cambias estas fechas, se sincroniza también la fecha de entrega de las ventas vinculadas.
+                </Typography>
+            </Box>
+        )}
         <Box sx={{ display: 'flex', gap: 2.5, flexWrap: 'wrap' }}>
             <Box sx={{ flex: 1, minWidth: 220 }}>
                 <SelectorHora label="Hora de Salida" required
                     value={form.horaSalida}
                     onChange={(v) => {
-                        setForm(prev => ({ ...prev, horaSalida: v }))
-                        setErrores(prev => ({ ...prev, horaSalida: '' }))
+                        const formActualizado = { ...form, horaSalida: v }
+                        setForm(formActualizado)
+                        setErrores(prev => ({ ...prev, horaSalida: validarCampo('horaSalida', formActualizado) }))
                         afterChange()
                     }}
                     onBlur={() => setErrores(prev => ({ ...prev, horaSalida: validarCampo('horaSalida', form) }))}

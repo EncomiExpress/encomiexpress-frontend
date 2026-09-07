@@ -55,6 +55,13 @@ export const hoyISO = () => {
     return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
 }
 
+// Hora actual como "HH:MM" (24h, con cero a la izquierda) — para validar en vivo que
+// una hora de salida elegida para HOY no haya quedado ya en el pasado.
+export const ahoraHHMM = () => {
+    const d = new Date()
+    return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`
+}
+
 // Lista de horas "sugeridas" dentro de un rango {min,max} (ambos "HH:MM"), cada
 // "pasoMinutos" minutos, incluyendo los dos extremos — para el menú rápido de
 // SelectorHora (clic en el ícono del reloj). Es solo un atajo de selección: el campo

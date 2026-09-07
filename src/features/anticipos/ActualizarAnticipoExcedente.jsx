@@ -103,6 +103,17 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
             }
         }
 
+        // handleSubmit no llamaba a ninguna validación en absoluto — a diferencia de
+        // Registrar (que sí la llamaba, pero contra el paso "Confirmación" sin campos
+        // propios, un no-op) acá faltaba por completo. Revalida el único paso con
+        // contenido (0) antes de guardar — ver LOGICA.md.
+        const erroresEncontrados = validarPaso(0, form)
+        if (Object.keys(erroresEncontrados).length > 0) {
+            setErrores(erroresEncontrados)
+            setActiveStep(0)
+            return
+        }
+
         setSinCambios(false)
         setSubmitting(true)
         try {

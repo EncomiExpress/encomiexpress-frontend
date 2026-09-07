@@ -13,9 +13,6 @@ export const createAnticipo = (datos) =>
 export const updateAnticipo = (id, datos) =>
   fetchWithAuth(`/anticipos/${id}`, { method: 'PUT', body: JSON.stringify(datos) })
 
-export const cambiarEstadoAnticipo = (id, estado) =>
-  fetchWithAuth(`/anticipos/${id}/estado`, { method: 'PATCH', body: JSON.stringify({ estado }) })
-
 export const entregarExcedenteAnticipo = (id, soporte) =>
   fetchWithAuth(`/anticipos/${id}/entregar-excedente`, { method: 'PATCH', body: JSON.stringify({ soporte }) })
 

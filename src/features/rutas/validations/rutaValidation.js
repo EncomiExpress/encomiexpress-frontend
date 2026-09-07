@@ -1,13 +1,6 @@
 import { formatFecha, esSoloRelleno } from '../../../shared/utils/formatters.js'
-import { getRangoHorario, esDomingo, sumarDias, hoyISO, MIN_DIAS_SALIDA_LLEGADA, MAX_DIAS_ANTICIPACION } from '../../../shared/utils/horarioLaboral.js'
+import { getRangoHorario, esDomingo, sumarDias, hoyISO, ahoraHHMM, MIN_DIAS_SALIDA_LLEGADA, MAX_DIAS_ANTICIPACION } from '../../../shared/utils/horarioLaboral.js'
 import { validarObservacionesRuta } from '../../../shared/validations/observacionesRutaValidation.js'
-
-export const mananaISO = () => {
-    const d = new Date()
-    d.setDate(d.getDate() + 1)
-    const pad2 = (n) => String(n).padStart(2, '0')
-    return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
-}
 
 // Rutas son recorridos regionales cortos — no tiene sentido dejar programar una salida
 // o llegada con meses/años de anticipación. Mismo tope para ambas fechas (no se reduce
@@ -34,9 +27,11 @@ const ORIGEN_MAX_LENGTH = 100
 
 // Valida un único campo del formulario (usado en onBlur y para re-validar en vivo
 // mientras se corrige un campo ya marcado con error). "horaLlegadaEstimada" no vive
-// aquí: es opcional y no tiene ninguna regla que validar. Se mantiene "fecha posterior a
-// hoy" en fechaSalida también en modo Actualizar: una ruta solo se puede editar mientras
-// sigue "Programada", así que su fecha de salida real siempre debe seguir siendo futura.
+// aquí: es opcional y no tiene ninguna regla que validar. El piso de fechaSalida es
+// hoy, no mañana — una ruta puede salir más tarde el mismo día en que se programa o
+// reprograma (ej. reprogramar para la tarde una Cancelada por una falla ya resuelta).
+// Mismo piso replicado en el backend (rutaService.validarHorarioRuta), que además
+// solo lo exige cuando la fecha efectivamente cambia — ver LOGICA.md.
 export const validarCampo = (name, form) => {
     switch (name) {
         case 'origen':
@@ -49,7 +44,7 @@ export const validarCampo = (name, form) => {
             return form.idDestino ? '' : 'Selecciona un destino'
         case 'fechaSalida':
             if (!form.fechaSalida) return 'La fecha de salida es obligatoria'
-            if (form.fechaSalida < mananaISO()) return 'La fecha de salida debe ser posterior a hoy'
+            if (form.fechaSalida < hoyISO()) return 'La fecha de salida no puede ser anterior a hoy'
             if (form.fechaSalida > maxISO()) return `No se puede programar con más de ${MAX_DIAS_ANTICIPACION} días de anticipación (máximo el ${formatFecha(maxISO())})`
             if (esDomingo(form.fechaSalida)) return 'No se puede salir en domingo (la empresa permanece cerrada)'
             return ''
@@ -57,6 +52,14 @@ export const validarCampo = (name, form) => {
             if (!form.horaSalida) return 'La hora de salida es obligatoria'
             const rango = getRangoHorario(form.fechaSalida)
             if (rango && (form.horaSalida < rango.min || form.horaSalida > rango.max)) return `Debe estar entre las ${rango.min} y las ${rango.max}`
+            // Solo aplica cuando la fecha elegida es HOY — un día futuro no tiene "hora ya
+            // pasada". Es una validación de UX (backend no la exige en create/update: una
+            // hora ya vencida hoy simplemente hace que el job de auto-inicio la agarre de
+            // inmediato en su próximo tick, lo cual es válido si de verdad se quiere salir
+            // ya — acá solo se avisa por si fue un error de dedo).
+            if (form.fechaSalida === hoyISO() && form.horaSalida <= ahoraHHMM()) {
+                return 'Esa hora ya pasó — elige una hora más adelante'
+            }
             return ''
         }
         case 'fechaLlegadaEstimada': {

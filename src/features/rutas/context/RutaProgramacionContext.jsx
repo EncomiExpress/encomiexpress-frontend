@@ -64,7 +64,10 @@ export const RutaProgramacionProvider = ({ children }) => {
         prev.map(r => (r.idRuta === id ? { ...r, ...actualizada } : r))
       )
     }
-    return actualizada
+    // `message` viaja el aviso dinámico armado en rutaController.update (ventas
+    // sincronizadas, reactivación automática a Programada) — antes se descartaba acá y
+    // el toast siempre mostraba un texto fijo, sin importar qué hubiera pasado de verdad.
+    return { ruta: actualizada, message: res?.message }
   }, [])
 
   const toggleHabilitado = useCallback(async (id) => {
@@ -72,10 +75,14 @@ export const RutaProgramacionProvider = ({ children }) => {
     const actualizada = res?.data
     if (actualizada) {
       setRutasProgramadas(prev =>
-        prev.map(r => (r.idRuta === id ? { ...r, habilitado: actualizada.habilitado } : r))
+        // `estado` también puede cambiar acá ahora (rehabilitar una Programada con
+        // fecha/hora vencida la deja Cancelada, ver rutaService.toggleHabilitado) — no
+        // se mergea el objeto completo porque `data` es la fila cruda sin las
+        // asociaciones (vehículo/conductor, etc.) que el resto de columnas necesita.
+        prev.map(r => (r.idRuta === id ? { ...r, habilitado: actualizada.habilitado, estado: actualizada.estado } : r))
       )
     }
-    return actualizada
+    return { ruta: actualizada, message: res?.message }
   }, [])
 
   const updateEstado = useCallback(async (id, nuevoEstado, extra = {}) => {

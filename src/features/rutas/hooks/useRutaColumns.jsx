@@ -158,7 +158,7 @@ const useRutaColumns = ({
             ) : ruta.estado === 'En Ruta' && ruta.sedesTotales > 0 ? (
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.3 }}>
                     <Box
-                        onClick={(e) => onAbrirMenuEstado(e.currentTarget, id, ruta.estado || 'Programada')}
+                        onClick={(e) => onAbrirMenuEstado(e.currentTarget, id, ruta.estado || 'Programada', ruta)}
                         sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer', width: '100%', border: `1px solid ${theme.palette.divider}`, borderRadius: 1.5, px: 1, py: 0.6, '&:hover': { borderColor: theme.palette.text.secondary } }}
                     >
                         <RutaEstadoDot estado="En Ruta" />
@@ -171,7 +171,7 @@ const useRutaColumns = ({
                 </Box>
             ) : (
                 <Box
-                    onClick={(e) => onAbrirMenuEstado(e.currentTarget, id, ruta.estado || 'Programada')}
+                    onClick={(e) => onAbrirMenuEstado(e.currentTarget, id, ruta.estado || 'Programada', ruta)}
                     sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer', width: '100%', border: `1px solid ${theme.palette.divider}`, borderRadius: 1.5, px: 1, py: 0.6, '&:hover': { borderColor: theme.palette.text.secondary } }}
                 >
                     <RutaEstadoDot estado={ruta.estado || 'Programada'} />

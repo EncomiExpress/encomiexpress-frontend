@@ -117,18 +117,8 @@ export const AnticipoExcedenteProvider = ({ children }) => {
     return actualizado
   }, [])
 
-  const cambiarEstado = useCallback(async (id, nuevoEstado) => {
-    await anticipoService.cambiarEstadoAnticipo(id, nuevoEstado)
-    setAnticipos((prev) =>
-      prev.map((a) =>
-        a.idAnticipoExcedente === id ? { ...a, estado: nuevoEstado } : a
-      )
-    )
-  }, [])
-
   // Confirma que el conductor devolvió el excedente: pasa el anticipo a
-  // Completado y registra fechaEntregaExcedente con la fecha de hoy, todo en
-  // el mismo paso (a diferencia de cambiarEstado, que no toca esa fecha).
+  // Completado y registra fechaEntregaExcedente con la fecha de hoy.
   const entregarExcedente = useCallback(async (id, soporte) => {
     const res = await anticipoService.entregarExcedenteAnticipo(id, soporte)
     const actualizado = res?.data
@@ -161,7 +151,6 @@ export const AnticipoExcedenteProvider = ({ children }) => {
         error,
         agregarAnticipo,
         actualizarAnticipo,
-        cambiarEstado,
         entregarExcedente,
         toggleHabilitado,
       }}

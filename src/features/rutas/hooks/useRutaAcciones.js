@@ -10,7 +10,7 @@ const useRutaAcciones = (rutasProgramadas, refetch) => {
     const { toggleHabilitado } = useRutaProgramacion()
     const { showToast } = useToast()
 
-    const [confirmInhabilitar, setConfirmInhabilitar] = useState({ open: false, idRuta: null, origen: '', habilitadoActual: null, estadoRuta: null })
+    const [confirmInhabilitar, setConfirmInhabilitar] = useState({ open: false, idRuta: null, origen: '', habilitadoActual: null, estadoRuta: null, fechaSalida: null, horaSalida: null })
 
     const handleToggleHabilitado = (id) => {
         const rutaActual = rutasProgramadas.find(r => getRutaId(r) === id)
@@ -20,14 +20,18 @@ const useRutaAcciones = (rutasProgramadas, refetch) => {
             origen: rutaActual?.origen || '',
             habilitadoActual: rutaActual?.habilitado !== false,
             estadoRuta: rutaActual?.estado || null,
+            // Para que el modal pueda avisar de antemano si al habilitar la ruta va a
+            // quedar Cancelada por fecha/hora vencida (ver ModalInhabilitarRuta.jsx).
+            fechaSalida: rutaActual?.fechaSalida || null,
+            horaSalida: rutaActual?.horaSalida || null,
         })
     }
 
     const onConfirmarInhabilitar = async () => {
         const { idRuta, habilitadoActual } = confirmInhabilitar
         try {
-            await toggleHabilitado(idRuta)
-            showToast(`Ruta ${habilitadoActual ? 'inhabilitada' : 'habilitada'} correctamente.`, 'success')
+            const { message } = await toggleHabilitado(idRuta)
+            showToast(message || `Ruta ${habilitadoActual ? 'inhabilitada' : 'habilitada'} correctamente.`, 'success')
             refetch?.()
         } catch (err) {
             showToast(err.message || 'Error al cambiar habilitado', 'error')

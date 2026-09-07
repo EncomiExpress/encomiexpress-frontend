@@ -7,7 +7,7 @@ import { descargarGuiaPdf } from '../../../shared/utils/exportGuia/exportGuiaPdf
 // `refetch` de useEntityCrud para recargar la página actual desde el servidor, ya que
 // su tabla ya no lee del arreglo compartido de VentaContext (ver ListarVenta.jsx).
 const useVentaAcciones = ({ onChanged } = {}) => {
-    const { cambiarEstadoVenta, cambiarEstadoPagoVenta, toggleHabilitadoVenta } = useVentas()
+    const { cambiarEstadoPagoVenta, toggleHabilitadoVenta } = useVentas()
     const { showToast } = useToast()
     const pendingConfirm = useRef(false)
 
@@ -15,9 +15,6 @@ const useVentaAcciones = ({ onChanged } = {}) => {
     const [pagoMenuAnchor, setPagoMenuAnchor] = useState(null)
     const [pagoMenuId, setPagoMenuId] = useState(null)
     const [confirmPago, setConfirmPago] = useState({ open: false, id: null })
-    const [estadoMenuAnchor, setEstadoMenuAnchor] = useState(null)
-    const [estadoMenuId, setEstadoMenuId] = useState(null)
-    const [confirmCancelar, setConfirmCancelar] = useState({ open: false, id: null })
     const [confirmandoEstado, setConfirmandoEstado] = useState(false)
 
     const handleDescargarGuia = async (venta) => {
@@ -25,16 +22,6 @@ const useVentaAcciones = ({ onChanged } = {}) => {
             await descargarGuiaPdf(venta)
         } catch (err) {
             showToast(err.message || 'Error al generar la guía en PDF.', 'error')
-        }
-    }
-
-    const handleEstadoChange = async (id, nuevoEstado) => {
-        try {
-            await cambiarEstadoVenta(id, nuevoEstado)
-            showToast(`Estado actualizado a ${nuevoEstado.charAt(0).toUpperCase() + nuevoEstado.slice(1)}.`, 'success')
-            onChanged?.()
-        } catch (err) {
-            showToast(err.message || 'Error al cambiar el estado de la encomienda.', 'error')
         }
     }
 
@@ -58,16 +45,6 @@ const useVentaAcciones = ({ onChanged } = {}) => {
         }
     }
 
-    const handleCancelarConfirm = async () => {
-        setConfirmandoEstado(true)
-        try {
-            await handleEstadoChange(confirmCancelar.id, 'Cancelada')
-            setConfirmCancelar({ open: false, id: null })
-        } finally {
-            setConfirmandoEstado(false)
-        }
-    }
-
     const handleToggleHabilitado = (venta) => {
         setModalInhabilitar({ open: true, venta })
     }
@@ -84,18 +61,19 @@ const useVentaAcciones = ({ onChanged } = {}) => {
         if (wasPending && venta) {
             const habilitadoActual = venta.habilitado
             toggleHabilitadoVenta(venta.idEncomiendaVenta)
-                .then(() => { showToast(`Venta ${habilitadoActual ? 'inhabilitada' : 'habilitada'} correctamente.`, 'success'); onChanged?.() })
-                .catch(() => { })
+                .then((res) => { showToast(res?.message || `Venta ${habilitadoActual ? 'inhabilitada' : 'habilitada'} correctamente.`, 'success'); onChanged?.() })
+                // Antes se tragaba cualquier error en silencio — ahora rehabilitar/
+                // inhabilitar sí puede rechazarse (ej. venta "En Ruta"), hay que avisar.
+                .catch((err) => showToast(err.message || 'Error al cambiar habilitado', 'error'))
         }
     }
 
     return {
         modalInhabilitar, setModalInhabilitar,
         pagoMenuAnchor, setPagoMenuAnchor, pagoMenuId, setPagoMenuId, confirmPago, setConfirmPago,
-        estadoMenuAnchor, setEstadoMenuAnchor, estadoMenuId, setEstadoMenuId, confirmCancelar, setConfirmCancelar,
         confirmandoEstado,
         handleDescargarGuia, handleToggleHabilitado, handleConfirmarToggle, handleExitedInhabilitar,
-        handlePagoConfirm, handleCancelarConfirm,
+        handlePagoConfirm,
     }
 }
 

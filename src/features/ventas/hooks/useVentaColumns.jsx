@@ -12,7 +12,7 @@ import VentaEstadoDot from '../components/VentaEstadoDot.jsx'
 const useVentaColumns = ({
     theme, debouncedBusqueda, tienePermiso, PERMISOS,
     onConsultar, onDescargarGuia, onEditar, onToggleHabilitado,
-    onAbrirMenuPago, onAbrirMenuEstado,
+    onAbrirMenuPago,
 }) => [
     {
         key: 'guia', label: 'Guía', sortField: 'numeroGuia', cellSx: { py: 1.5 },
@@ -66,17 +66,23 @@ const useVentaColumns = ({
                 <Typography variant="body2" color={theme.palette.text.primary}>
                     {venta.destinatario?.destino?.municipio || '—'}
                 </Typography>
-                {venta.estado === 'Programada' && venta.ruta?.estado === 'Cancelada' && (
+                {venta.estado === 'Programada' && venta.ruta && (venta.ruta.estado === 'Cancelada' || venta.ruta.habilitado === false) && (
+                    // Una ruta inhabilitada normalmente ya no puede tener ventas Programada
+                    // apuntándole (verificarDependenciasRuta lo bloquea al inhabilitar la
+                    // ruta) — se cubre igual acá por consistencia con rutaSigueSirviendo()
+                    // del backend (encomiendaService.js), no por un hueco activo conocido.
                     <Chip
-                        label="Ruta cancelada · Reasignar"
+                        label="Ruta no disponible · Reasignar"
                         size="small"
                         sx={{ height: 18, fontSize: '0.65rem', fontWeight: 600, backgroundColor: alpha(theme.palette.warning.main, 0.12), color: theme.palette.warning.dark, border: `1px solid ${alpha(theme.palette.warning.main, 0.35)}`, mt: 0.5 }}
                     />
                 )}
                 {venta.estado === 'Programada' && !venta.fechaEstimadaEntrega && (
-                    // Queda así cuando alguien mueve la fecha de la ruta y esta venta
-                    // deja de caber en el rango nuevo — ver rutaService.update() en el
-                    // backend, que vacía el campo en vez de bloquear el cambio de ruta.
+                    // Ya no debería pasar en el flujo normal: al crear la venta se
+                    // autocompleta con la llegada de la ruta, y al editar la fecha de la
+                    // ruta rutaService.update() sincroniza el campo en vez de vaciarlo. Se
+                    // deja como red de seguridad para ventas viejas o creadas directo por
+                    // API sin ese campo.
                     <Chip
                         label="Falta fecha de entrega"
                         size="small"
@@ -138,15 +144,7 @@ const useVentaColumns = ({
     {
         key: 'estado', label: 'Estado', width: 155, cellSx: { py: 1.5, minWidth: 155 },
         render: (venta) => (
-            venta.estado === 'Programada' ? (
-                <Box
-                    onClick={(e) => { e.stopPropagation(); onAbrirMenuEstado(e.currentTarget, venta.idEncomiendaVenta) }}
-                    sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, border: `1px solid ${theme.palette.divider}`, borderRadius: 1.5, px: 1, py: 0.3, cursor: 'pointer', '&:hover': { backgroundColor: theme.palette.action.hover } }}
-                >
-                    <VentaEstadoDot estado="Programada" />
-                    <KeyboardArrowDownOutlinedIcon sx={{ fontSize: 13, color: theme.palette.text.secondary }} />
-                </Box>
-            ) : venta.estado === 'En Ruta' ? (
+            venta.estado === 'En Ruta' ? (
                 <Box sx={{ pl: 1 }}>
                     {(() => {
                         // FASE CONDUCTOR — mientras algún paquete siga "Por entregar", la
@@ -210,12 +208,11 @@ const useVentaColumns = ({
                             </IconButton>
                         </span>
                     </Tooltip>
-                ) : venta.estado !== 'Programada' ? (
+                ) : !['Programada', 'Cancelada'].includes(venta.estado) ? (
                     <Tooltip title={
                         venta.estado === 'En Ruta' ? 'Esta venta ya está en tránsito: no se puede editar'
                             : venta.estado === 'Entregada' ? 'Esta venta ya fue entregada: no se puede editar'
-                                : venta.estado === 'Completada con novedades' ? 'Esta venta ya se cerró con novedades: no se puede editar'
-                                    : 'Esta venta fue cancelada: no se puede editar'
+                                : 'Esta venta ya se cerró con novedades: no se puede editar'
                     }>
                         <span>
                             <IconButton size="small" disabled>

@@ -1,9 +1,11 @@
 import { useTheme } from '@mui/material/styles'
 import { Box, Typography, Paper } from '@mui/material'
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import DoNotDisturbOutlinedIcon from '@mui/icons-material/DoNotDisturbOutlined'
 import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined'
 import { getRutaEstadoDot } from '../../../shared/utils/estadoColors'
 import { getGuiaPrincipal } from '../../../shared/utils/formatters'
+import { sumarDias } from '../../../shared/utils/horarioLaboral.js'
 import ConfirmToggleDialog from '../../../shared/components/ConfirmToggleDialog.jsx'
 
 const renderDot = (dot) => {
@@ -32,9 +34,24 @@ const ModalInhabilitarVenta = ({ open, venta, onClose, onExited, onConfirm }) =>
     const theme = useTheme()
 
     const habilitadoActual = venta?.habilitado === true
-    const bloqueado = habilitadoActual && venta?.estado !== 'Entregada' && venta?.estado !== 'Completada con novedades' && venta?.estado !== 'Cancelada'
+    // Solo bloquea inhabilitar una venta "En Ruta" (paquetes físicamente en tránsito
+    // ahora mismo) — ver LOGICA.md, "Ventas — Cancelada e inhabilitar/habilitar".
+    const bloqueado = habilitadoActual && venta?.estado === 'En Ruta'
     const guia = getGuiaPrincipal(venta) || '—'
     const ruta = venta?.ruta || null
+
+    // Si se va a habilitar una venta Programada, revisa si al reactivarla la ruta ya
+    // no sirve (salió, se completó, se canceló) o si la fecha estimada de entrega va a
+    // necesitar corregirse — mismo cálculo que hace encomiendaService.toggleHabilitado(),
+    // duplicado acá para avisar ANTES de confirmar (ver LOGICA.md).
+    const motivoHabilitar = (!habilitadoActual && venta?.estado === 'Programada')
+        ? (!ruta || ruta.estado !== 'Programada' || ruta.habilitado === false)
+            ? 'ruta'
+            : (() => {
+                const minima = ruta.fechaLlegadaEstimada || (ruta.fechaSalida ? sumarDias(ruta.fechaSalida, 1) : null)
+                return (!venta.fechaEstimadaEntrega || (minima && venta.fechaEstimadaEntrega < minima)) ? 'fecha' : null
+            })()
+        : null
 
     const titulo = !habilitadoActual
         ? '¿Habilitar venta?'
@@ -45,16 +62,10 @@ const ModalInhabilitarVenta = ({ open, venta, onClose, onExited, onConfirm }) =>
     const subtexto = !habilitadoActual
         ? <>La guía <strong>{guia}</strong> volverá a estar activa en el sistema.</>
         : bloqueado
-            ? venta.estado === 'Programada'
-                ? <>La guía <strong>{guia}</strong> aún no ha iniciado su despacho.</>
-                : <>La guía <strong>{guia}</strong> está siendo transportada actualmente.</>
+            ? <>La guía <strong>{guia}</strong> está siendo transportada actualmente.</>
             : <>La guía <strong>{guia}</strong> quedará inhabilitada en el sistema.</>
 
-    const rutaLabel = bloqueado && ruta
-        ? venta.estado === 'En Ruta'
-            ? 'La ruta en curso que impide la inhabilitación'
-            : 'La ruta asociada a esta venta'
-        : null
+    const rutaLabel = bloqueado && ruta ? 'La ruta en curso que impide la inhabilitación' : null
 
     // Los paquetes no tienen su propio "habilitado" — dependen del de la venta (ver
     // encomiendaService.getPaquetesDevueltos). Si esta venta tiene algún paquete
@@ -81,6 +92,17 @@ const ModalInhabilitarVenta = ({ open, venta, onClose, onExited, onConfirm }) =>
                 <Box sx={{ mt: 2, mx: 0.5, p: 1.5, borderRadius: 2, textAlign: 'left', backgroundColor: `${theme.palette.warning.main}14`, border: `1px solid ${theme.palette.warning.main}44` }}>
                     <Typography variant="caption" sx={{ color: theme.palette.warning.dark, lineHeight: 1.5 }}>
                         Esta venta tiene {paquetesNoEntregados.length === 1 ? '1 paquete no entregado' : `${paquetesNoEntregados.length} paquetes no entregados`}. Al inhabilitarla, también se mostrará{paquetesNoEntregados.length === 1 ? '' : 'n'} como inhabilitado{paquetesNoEntregados.length === 1 ? '' : 's'} en el listado de Paquetes no entregados.
+                    </Typography>
+                </Box>
+            )}
+
+            {motivoHabilitar && (
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.75, mt: 2, mx: 0.5, color: theme.palette.text.secondary }}>
+                    <InfoOutlinedIcon sx={{ fontSize: 18, mt: '1px', flexShrink: 0 }} />
+                    <Typography variant="body2">
+                        {motivoHabilitar === 'ruta'
+                            ? 'Su ruta ya no está disponible (salió, se completó o se canceló), así que quedará Cancelada.'
+                            : 'Su fecha estimada de entrega quedó desactualizada mientras estaba inhabilitada — se corrige sola a la mínima vigente de su ruta.'}
                     </Typography>
                 </Box>
             )}
@@ -129,7 +151,7 @@ const ModalInhabilitarVenta = ({ open, venta, onClose, onExited, onConfirm }) =>
                         )
                     })()}
                     <Typography variant="caption" color={theme.palette.text.secondary} sx={{ mt: 1, display: 'block' }}>
-                        Solo se puede inhabilitar una venta cuando esté Entregada, Completada con novedades o Cancelada.
+                        No se puede inhabilitar una venta que está en tránsito.
                     </Typography>
                 </Box>
             )}

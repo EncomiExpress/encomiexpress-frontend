@@ -77,13 +77,6 @@ export const VentaProvider = ({ children }) => {
     return normalizada
   }, [])
 
-  const cambiarEstadoVenta = useCallback(async (id, nuevoEstado) => {
-    await ventaService.cambiarEstadoEncomienda(id, nuevoEstado)
-    setVentas(prev =>
-      prev.map(v => v.idEncomiendaVenta === id ? { ...v, estado: nuevoEstado } : v)
-    )
-  }, [])
-
   const cambiarEstadoPagoVenta = useCallback(async (id, nuevoEstadoPago) => {
     await ventaService.cambiarEstadoPagoEncomienda(id, nuevoEstadoPago)
     setVentas(prev =>
@@ -95,7 +88,7 @@ export const VentaProvider = ({ children }) => {
     const res = await ventaService.toggleHabilitadoEncomienda(id)
     const normalizada = normalize(res.data)
     setVentas(prev => prev.map(v => v.idEncomiendaVenta === id ? normalizada : v))
-    return normalizada
+    return { venta: normalizada, message: res?.message }
   }, [])
 
   return (
@@ -104,7 +97,6 @@ export const VentaProvider = ({ children }) => {
       fetchVentas,
       agregarVenta,
       actualizarVenta,
-      cambiarEstadoVenta,
       cambiarEstadoPagoVenta,
       toggleHabilitadoVenta,
       ESTADOS_ENCOMIENDA,
