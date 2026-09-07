@@ -76,9 +76,10 @@ export const validarCampo = (name, form) => {
             if (form.direccionDestinatario.length > 300) return 'La dirección no puede superar los 300 caracteres'
             return validarDireccion(form.direccionDestinatario)
         case 'correoDestinatario': {
-            // Opcional -- igual que el correo del Cliente, no todos los destinatarios lo tienen.
+            // Obligatorio: es el canal de contacto que usa el distribuidor para la
+            // insistidera cuando no logra la entrega (ver LOGICA.md, "Entrega en dos fases").
             const valor = (form.correoDestinatario || '').trim()
-            if (!valor) return ''
+            if (!valor) return 'El correo es obligatorio'
             const errorUsuario = validarUsuarioCorreo(valor)
             if (errorUsuario) return errorUsuario
             if (!EMAIL_REGEX.test(valor)) return 'El correo no es válido'

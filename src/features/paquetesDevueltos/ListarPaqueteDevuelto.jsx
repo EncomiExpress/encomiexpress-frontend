@@ -66,7 +66,7 @@ const ListarPaqueteDevuelto = () => {
                         Paquetes no entregados
                     </Typography>
                     <Typography variant="body2" color={theme.palette.text.secondary} mt={0.3}>
-                        Paquetes que el distribuidor de la sede no logró entregar al destinatario (tras la insistencia).
+                        Paquetes que el distribuidor no logró entregar al destinatario (tras la insistencia).
                     </Typography>
                 </Box>
             </Box>

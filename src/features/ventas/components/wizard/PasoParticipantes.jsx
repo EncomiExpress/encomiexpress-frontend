@@ -236,8 +236,9 @@ export default function PasoParticipantes({
                         onChange={handleChange}
                         onBlur={() => setErrores(prev => ({ ...prev, correoDestinatario: validarCampo('correoDestinatario', form, ventaOriginal) }))}
                         error={errores.correoDestinatario}
+                        required
                         placeholder="correo@dominio.com"
-                        helperText={errores.correoDestinatario || 'Opcional'} icon={MailOutlinedIcon}
+                        helperText={errores.correoDestinatario || 'Se usa para la insistidera si no se logra la entrega'} icon={MailOutlinedIcon}
                         inputProps={{ maxLength: 150 }} />
                     </Box>
                     <Box ref={(el) => setParticipanteRef?.('idDestinoDestinatario', el)}>

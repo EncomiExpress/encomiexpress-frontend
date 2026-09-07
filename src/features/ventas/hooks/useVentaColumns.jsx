@@ -117,7 +117,7 @@ const useVentaColumns = ({
                     </Box>
                 )
             ) : (venta.metodoPago === 'Contraentrega' && venta.estado !== 'Entregada' && venta.estado !== 'Completada con novedades') ? (
-                <Tooltip title="Es Contraentrega: el pago solo se puede confirmar cuando la venta sea entregada">
+                <Tooltip title="Es Contraentrega: el pago se desbloquea cuando el distribuidor legaliza todos los paquetes de la venta">
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, pl: 1, opacity: 0.55 }}>
                         <Box sx={{ width: 9, height: 9, borderRadius: '50%', border: '2px solid #D97706', backgroundColor: 'transparent', flexShrink: 0 }} />
                         <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: '#D97706' }}>Pendiente</Typography>
@@ -149,39 +149,32 @@ const useVentaColumns = ({
             ) : venta.estado === 'En Ruta' ? (
                 <Box sx={{ pl: 1 }}>
                     {(() => {
-                        // La venta "En Ruta" tiene dos fases visibles:
-                        //  1) FASE CONDUCTOR — aún hay paquetes "Por entregar": el conductor
-                        //     los está llevando a la sede. Se muestra "X de M en sede".
-                        //  2) FASE DISTRIBUIDOR — ya ninguno "Por entregar": la persona de la
-                        //     sede hace la entrega final. Se muestra "N de M entregados" con el
-                        //     desglose (N entregados · D no entregados · S en sede).
+                        // FASE CONDUCTOR — mientras algún paquete siga "Por entregar", la
+                        // venta se ve como una "En Ruta" normal (ese avance se sigue en la
+                        // ruta, no acá).
+                        // FASE DISTRIBUIDOR — ya ningún paquete "Por entregar" (todos en la
+                        // sede): la persona de la sede hace la entrega final. Se muestra
+                        // "N de M entregados" (N cuenta solo los "Entregado") con el
+                        // desglose (N entregados · D no entregados · S en sede).
                         const paquetes = venta.paquetes || []
                         const total = paquetes.length
                         const porEntregar = paquetes.filter(p => p.estado === 'Por entregar').length
+
+                        if (porEntregar > 0) {
+                            return <VentaEstadoDot estado="En Ruta" />
+                        }
+
                         const enSede = paquetes.filter(p => p.estado === 'En sede de destino').length
                         const entregados = paquetes.filter(p => p.estado === 'Entregado').length
                         const noEntregados = paquetes.filter(p => p.estado === 'Devuelto').length
                         const info = getVentaEstadoDot('En Ruta')
 
-                        let texto
-                        let tooltip
-                        if (porEntregar > 0) {
-                            texto = `${total - porEntregar} de ${total} en sede`
-                            tooltip = `${total - porEntregar} en sede · ${porEntregar} por dejar`
-                        } else if (entregados + noEntregados === 0) {
-                            texto = 'Entregado en sede'
-                            tooltip = 'Todos los paquetes están en la sede, a la espera de la entrega final'
-                        } else {
-                            texto = `${entregados} de ${total} entregados`
-                            tooltip = `${entregados} entregados · ${noEntregados} no entregados · ${enSede} en sede`
-                        }
-
                         return (
-                            <Tooltip title={tooltip}>
+                            <Tooltip title={`${entregados} entregados · ${noEntregados} no entregados · ${enSede} en sede`}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                                     <Box sx={{ width: 9, height: 9, borderRadius: '50%', flexShrink: 0, backgroundColor: info.color }} />
                                     <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: info.color }}>
-                                        {texto}
+                                        {`${entregados} de ${total} entregados`}
                                     </Typography>
                                 </Box>
                             </Tooltip>

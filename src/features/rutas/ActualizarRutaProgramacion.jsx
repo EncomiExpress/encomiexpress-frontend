@@ -85,6 +85,12 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
     const vehiculosExcluidos = vehiculos.length - vehiculosSeleccionables.length
     const conductoresExcluidos = conductores.length - conductoresSeleccionables.length
 
+    // El origen (Medellín en una ruta normal, o el municipio de la ida en un
+    // regreso) no puede elegirse también como destino final ni como parada. Se
+    // saca de las dos listas; el backend lo revalida (validarOrigenDistinto).
+    const origenMunicipio = esRegreso ? ruta?.origen : 'Medellín'
+    const destinosSeleccionables = destinos.filter(d => d.municipio !== origenMunicipio)
+
     const [form, setForm] = useState({
         origen: '', pares: [{ idRutaVehiculoConductor: '', idVehiculo: '', idConductor: '' }], idDestino: '', paradas: [],
         fechaSalida: '', horaSalida: '', fechaLlegadaEstimada: '', horaLlegadaEstimada: '', observaciones: ''
@@ -253,7 +259,7 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
     // igual lo rechaza, ver uq_parada_ruta_destino en init.sql).
     const getParadaOpciones = (index) => {
         const usados = form.paradas.filter((_, i) => i !== index).map(p => parseInt(p.idDestino))
-        return destinos.filter(d => !usados.includes(d.idDestino))
+        return destinosSeleccionables.filter(d => !usados.includes(d.idDestino))
     }
 
     const handleNext = () => {
@@ -363,7 +369,7 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
                     <PasoDestinoPares
                         theme={theme} form={form} errores={errores} setErrores={setErrores}
                         handleChange={handleChange} handleParChange={handleParChange} handleAgregarPar={handleAgregarPar} handleQuitarPar={handleQuitarPar}
-                        destinos={destinos} destinoInput={destinoInput} setDestinoInput={setDestinoInput} destinoSeleccionado={destinoSeleccionado}
+                        destinos={destinosSeleccionables} destinoInput={destinoInput} setDestinoInput={setDestinoInput} destinoSeleccionado={destinoSeleccionado}
                         vehiculos={vehiculos} conductores={conductores} vehiculosExcluidos={vehiculosExcluidos} conductoresExcluidos={conductoresExcluidos}
                         vehiculoInputs={vehiculoInputs} setVehiculoInputs={setVehiculoInputs} conductorInputs={conductorInputs} setConductorInputs={setConductorInputs}
                         getVehiculoOpciones={getVehiculoOpciones} getConductorOpciones={getConductorOpciones}

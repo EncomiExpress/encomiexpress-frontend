@@ -57,7 +57,7 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
         password: '',
         confirmarPassword: '',
         idRol: '',
-        rolNombre: '',   // solo UI: decide si mostrar/exigir el multiselect de sedes
+        rolNombre: '',   // solo UI: decide si mostrar/exigir el selector de sede
         sedes: [],       // ids de Destino — solo se envía si rolNombre === 'distribuidor'
     })
 

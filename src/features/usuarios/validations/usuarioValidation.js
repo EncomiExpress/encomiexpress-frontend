@@ -51,9 +51,10 @@ export const validarCampo = (name, form, { requerirPassword = false } = {}) => {
             return form.idRol ? '' : 'Selecciona un rol'
         case 'sedes':
             // Solo aplica al rol distribuidor (encargado de sede). Para cualquier
-            // otro rol el campo ni se muestra ni se envía. Ver LOGICA.md.
+            // otro rol el campo ni se muestra ni se envía. Un distribuidor cubre una
+            // sola sede (se guarda en form.sedes como array de 1). Ver LOGICA.md.
             if (form.rolNombre === 'distribuidor' && (!Array.isArray(form.sedes) || form.sedes.length === 0)) {
-                return 'Selecciona al menos una sede para el distribuidor'
+                return 'Selecciona la sede del distribuidor'
             }
             return ''
         case 'password':

@@ -51,7 +51,7 @@ const PasoConfirmacion = ({ theme, form, formOriginal, rolesDisponibles, sedesDi
                     <ConfirmRow label="Correo" value={form.email} previousValue={formOriginal?.email} />
                     <ConfirmRow label="Rol" value={getNombreRol(form.idRol)} previousValue={formOriginal ? getNombreRol(formOriginal.idRol) : undefined} />
                     {form.rolNombre === 'distribuidor' && (
-                        <ConfirmRow label="Sedes" value={sedesTexto || '—'} />
+                        <ConfirmRow label="Sede" value={sedesTexto || '—'} />
                     )}
                     <ConfirmRow label="Contraseña" value={formOriginal ? (form.password ? '••••••••' : 'Sin cambiar') : '••••••••'} previousValue={formOriginal ? 'Sin cambiar' : undefined} />
                 </Paper>

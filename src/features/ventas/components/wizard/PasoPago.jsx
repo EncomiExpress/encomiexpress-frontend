@@ -11,7 +11,10 @@ export default function PasoPago({ form, errores, setErrores, handleChange, vent
             <FormSelect label="Método de pago" name="metodoPago" value={form.metodoPago}
                 onChange={handleChange}
                 onBlur={() => setErrores(prev => ({ ...prev, metodoPago: validarCampo('metodoPago', form, ventaOriginal) }))} required
-                error={errores.metodoPago} helperText={errores.metodoPago}>
+                error={errores.metodoPago}
+                helperText={errores.metodoPago || (form.metodoPago === 'Contraentrega'
+                    ? 'El estado de pago se desbloquea cuando el distribuidor legaliza todos los paquetes de la venta.'
+                    : undefined)}>
                 <MenuItem value="Contraentrega">Contraentrega</MenuItem>
                 <MenuItem value="Efectivo">Efectivo</MenuItem>
                 <MenuItem value="Transferencia">Transferencia</MenuItem>

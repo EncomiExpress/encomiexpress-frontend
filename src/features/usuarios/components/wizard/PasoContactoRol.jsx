@@ -1,13 +1,15 @@
-import { Box, TextField, MenuItem, InputAdornment, IconButton } from '@mui/material'
+import { useState } from 'react'
+import { Box, Typography, TextField, MenuItem, InputAdornment, IconButton, Autocomplete } from '@mui/material'
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
 import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined'
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined'
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
 import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined'
 import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined'
-import LocationCityOutlinedIcon from '@mui/icons-material/LocationCityOutlined'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
+import NacionSVG from '../../../../shared/components/NacionSVG.jsx'
 import { formFieldStyles } from '../../../../shared/utils/formStyles.js'
+import { normalizarTexto } from '../../../../shared/utils/duplicados.js'
 import { validarCampo } from '../../validations/usuarioValidation.js'
 
 const PasoContactoRol = ({
@@ -15,7 +17,15 @@ const PasoContactoRol = ({
     showPassword, setShowPassword, showConfirmarPassword, setShowConfirmarPassword,
     passwordLabel, passwordRequired, passwordHelperText,
     rolesDisponibles, sedesDisponibles = [],
-}) => (
+}) => {
+    // La sede vive en form.sedes como un array (contrato con el backend), pero un
+    // distribuidor cubre una sola -> el Autocomplete maneja un único valor.
+    const [sedeInput, setSedeInput] = useState('')
+    const sedeSeleccionada = sedesDisponibles.find(
+        s => s.idDestino === (Array.isArray(form.sedes) ? form.sedes[0] : undefined)
+    ) || null
+
+    return (
     <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
         <TextField fullWidth label="Teléfono" name="telefono" value={form.telefono} onChange={handleChange}
             onBlur={() => setErrores(prev => ({ ...prev, telefono: validarCampo('telefono', form, validationOpts) }))} required
@@ -114,35 +124,56 @@ const PasoContactoRol = ({
             ))}
         </TextField>
 
-        {/* Sedes que cubre el distribuidor (encargado de sede) — solo visible para ese rol.
-            El distribuidor entrega los paquetes al destinatario en esos municipios. */}
+        {/* Sede del distribuidor (encargado de sede) — solo visible para ese rol, al
+            lado del campo Rol. Un distribuidor cubre un único municipio: es donde
+            entrega los paquetes al destinatario. Mismo patrón de buscador que el
+            Destino de una ruta (trae los primeros 5 y filtra al escribir). */}
         {form.rolNombre === 'distribuidor' && (
-            <TextField fullWidth select label="Sedes que cubre" name="sedes"
-                value={Array.isArray(form.sedes) ? form.sedes : []}
-                onChange={handleChange}
+            <Autocomplete
+                options={sedesDisponibles}
+                popupIcon={<KeyboardArrowDownOutlinedIcon />}
+                getOptionLabel={(d) => `${d.municipio}${d.departamento ? ` - ${d.departamento}` : ''}`}
+                isOptionEqualToValue={(opt, val) => opt.idDestino === val.idDestino}
+                value={sedeSeleccionada}
+                inputValue={sedeInput}
+                onInputChange={(_, newVal, reason) => {
+                    if (reason === 'input') setSedeInput(newVal.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, ''))
+                    else setSedeInput(newVal)
+                }}
+                onChange={(_, val) => handleChange({ target: { name: 'sedes', value: val ? [val.idDestino] : [] } })}
                 onBlur={() => setErrores(prev => ({ ...prev, sedes: validarCampo('sedes', form, validationOpts) }))}
-                required
-                error={!!errores.sedes}
-                helperText={errores.sedes || 'Municipios donde este distribuidor entrega los paquetes al destinatario'}
-                sx={{ gridColumn: '1 / -1', ...formFieldStyles }}
-                slotProps={{
-                    input: { startAdornment: <InputAdornment position="start"><LocationCityOutlinedIcon sx={{ color: '#94a3b8' }} /></InputAdornment> },
-                    select: {
-                        multiple: true,
-                        IconComponent: KeyboardArrowDownOutlinedIcon,
-                        renderValue: (selected) => (Array.isArray(selected) ? selected : [])
-                            .map((id) => sedesDisponibles.find(s => s.idDestino === id)?.municipio || id)
-                            .join(', ') || 'Ninguna',
-                    },
-                }}>
-                {sedesDisponibles.map((d) => (
-                    <MenuItem key={d.idDestino} value={d.idDestino}>
-                        {d.municipio}{d.departamento ? ` — ${d.departamento}` : ''}
-                    </MenuItem>
-                ))}
-            </TextField>
+                renderOption={(props, d) => {
+                    const { key, ...rest } = props
+                    return (
+                        <Box component="li" key={key} {...rest} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                            <Box sx={{ width: 28, height: 30, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <NacionSVG color={theme.palette.primary.main} />
+                            </Box>
+                            <Typography variant="body2" fontWeight={500} noWrap sx={{ flex: 1, minWidth: 0 }}>{d.municipio}</Typography>
+                            <Typography variant="caption" color={theme.palette.text.secondary} sx={{ flexShrink: 0 }}>{d.departamento}</Typography>
+                        </Box>
+                    )
+                }}
+                filterOptions={(opts, { inputValue }) => {
+                    if (!inputValue.trim()) return [...opts].sort((a, b) => b.idDestino - a.idDestino).slice(0, 5)
+                    const q = normalizarTexto(inputValue)
+                    return opts.filter(d =>
+                        normalizarTexto(d.municipio || '').includes(q) ||
+                        normalizarTexto(d.departamento || '').includes(q)
+                    )
+                }}
+                noOptionsText="No se encontraron sedes"
+                renderInput={(params) => (
+                    <TextField {...params} label="Sede *"
+                        error={!!errores.sedes}
+                        helperText={errores.sedes || 'Municipio donde este distribuidor entrega los paquetes al destinatario'}
+                        slotProps={{ inputLabel: { shrink: true }, htmlInput: { ...params.inputProps, maxLength: 50 } }}
+                        sx={formFieldStyles} />
+                )}
+            />
         )}
     </Box>
-)
+    )
+}
 
 export default PasoContactoRol
