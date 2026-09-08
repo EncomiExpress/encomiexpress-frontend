@@ -103,7 +103,12 @@ export function useEstadoRuta({ rutasProgramadas, getVehiculos, getConductores, 
                     vehiculoBlocked = true
                     entidades.push({
                         tipo: 'vehiculo', etiqueta: par.vehiculo?.placa || '', estado: par.vehiculo?.estado, id: par.vehiculo?.idVehiculo,
-                        mensaje: 'ya está asignado a la ruta', mensajeFin: 'que se encuentra En Ruta.',
+                        // "ya está asignado a la ruta X que se encuentra En Ruta" daba a entender
+                        // que el problema era la asignación en sí (obvio, claro que está asignado)
+                        // en vez de decir lo que de verdad importa: que ya está ocupado ahora mismo
+                        // con otro viaje. Mismo criterio que el mensaje del backend
+                        // (rutaService.updateEstado, VEHICLE_IN_USE/CONDUCTOR_IN_USE).
+                        mensaje: 'está en curso con la ruta',
                         rutaConflicto: { idRuta: conflictoVehiculo.idRuta, label: conflictoVehiculo.origen ? `${conflictoVehiculo.origen} → ${conflictoVehiculo.destino?.municipio || 'Sin destino'}` : `#${conflictoVehiculo.idRuta}` },
                     })
                 }
@@ -113,7 +118,7 @@ export function useEstadoRuta({ rutasProgramadas, getVehiculos, getConductores, 
                     const nombre = par.conductor?.nombre ? `${par.conductor.nombre} ${par.conductor.apellido || ''}`.trim() : 'Conductor'
                     entidades.push({
                         tipo: 'conductor', etiqueta: nombre, estado: par.conductor?.estado || 'en_ruta', id: par.conductor?.idConductor,
-                        mensaje: 'ya está asignado a la ruta', mensajeFin: 'que se encuentra En Ruta.',
+                        mensaje: 'está en curso con la ruta',
                         rutaConflicto: { idRuta: conflictoConductor.idRuta, label: conflictoConductor.origen ? `${conflictoConductor.origen} → ${conflictoConductor.destino?.municipio || 'Sin destino'}` : `#${conflictoConductor.idRuta}` },
                     })
                 }

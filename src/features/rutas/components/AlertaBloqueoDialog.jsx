@@ -64,15 +64,16 @@ const AlertaBloqueoDialog = ({ theme, alertaBloqueo, onClose }) => (
                                     {e.rutaConflicto && (
                                         <>
                                             {' '}
+                                            {/* whiteSpace: 'nowrap' — la ruta (ej. "Medellín → Montería") nunca
+                                                debe partirse a mitad de la flecha en dos líneas. */}
                                             <Box component="span"
                                                 onClick={() => window.open(`/transporte/rutas?highlight=${e.rutaConflicto.idRuta}`, '_blank')}
-                                                sx={{ color: theme.palette.primary.main, cursor: 'pointer', textDecoration: 'underline', textDecorationStyle: 'dotted', fontWeight: 600, '&:hover': { opacity: 0.75 } }}>
+                                                sx={{ color: theme.palette.primary.main, cursor: 'pointer', textDecoration: 'underline', textDecorationStyle: 'dotted', fontWeight: 600, whiteSpace: 'nowrap', '&:hover': { opacity: 0.75 } }}>
                                                 {e.rutaConflicto.label}
                                             </Box>
-                                            {' '}
+                                            .
                                         </>
                                     )}
-                                    {e.mensajeFin}
                                 </Typography>
                                 <Paper elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 2, overflow: 'hidden' }}>
                                     <Box
