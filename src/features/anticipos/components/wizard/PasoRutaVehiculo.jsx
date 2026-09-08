@@ -8,7 +8,8 @@ import { FormField } from '../../../../shared/components/FormularioEstandarizado
 import ModalRutaDiagrama from '../../../../shared/components/ModalRutaDiagrama.jsx'
 import { formFieldStyles } from '../../../../shared/utils/formStyles.js'
 import { normalizarTexto } from '../../../../shared/utils/duplicados.js'
-import { formatearMoneda } from '../../../../shared/utils/formatters.js'
+import { formatearMoneda, formatFecha } from '../../../../shared/utils/formatters.js'
+import { sumarDias, hoyISO, MAX_DIAS_ANTICIPACION } from '../../../../shared/utils/horarioLaboral.js'
 import { validarCampo } from '../../validations/anticipoValidation.js'
 
 const PasoRutaVehiculo = ({
@@ -192,11 +193,16 @@ const PasoRutaVehiculo = ({
             <TextField
                 fullWidth label="Fecha de entrega" name="fechaEntrega" type="date"
                 value={form?.fechaEntrega || ''} onChange={handleChange}
-                onBlur={() => setErrores(prev => ({ ...prev, fechaEntrega: validarCampo('fechaEntrega', form) }))} required
+                onBlur={() => setErrores(prev => ({ ...prev, fechaEntrega: validarCampo('fechaEntrega', form, rutaSeleccionada) }))} required
                 disabled={fechaDisabled}
                 error={!!errores.fechaEntrega}
-                helperText={errores.fechaEntrega || (fechaDisabled ? fechaHelperTextDisabled : undefined)}
-                slotProps={{ inputLabel: { shrink: true } }} sx={formFieldStyles}
+                helperText={errores.fechaEntrega || (fechaDisabled
+                    ? fechaHelperTextDisabled
+                    : (rutaSeleccionada?.fechaSalida ? `Hasta el ${formatFecha(rutaSeleccionada.fechaSalida)} (salida de la ruta)` : undefined))}
+                slotProps={{ inputLabel: { shrink: true }, htmlInput: {
+                    min: sumarDias(hoyISO(), -MAX_DIAS_ANTICIPACION),
+                    max: rutaSeleccionada?.fechaSalida || undefined,
+                } }} sx={formFieldStyles}
             />
         </Box>
         <ModalRutaDiagrama

@@ -82,6 +82,9 @@ export const AnticipoExcedenteProvider = ({ children }) => {
       idRuta: r.idRuta,
       nombre: r.origen || r.nombre || `Ruta ${r.idRuta}`,
       destino: r.destino || null,
+      // Para validar que fechaEntrega del anticipo no sea posterior a la salida de
+      // la ruta (ver anticipoValidation.js, validarCampo 'fechaEntrega').
+      fechaSalida: r.fechaSalida || null,
       // Paradas intermedias del corredor — solo para dibujar el recorrido en el
       // selector de ruta (ModalRutaDiagrama, ver PasoRutaVehiculo.jsx), no se usa
       // para nada más acá.

@@ -43,10 +43,12 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
         onClose()
     }
 
-    const handleChange = (e) => handleChangeAnticipo(e, form, setForm, setErrores)
+    const rutaSeleccionada = rutas.find(r => r.idRuta === parseInt(form.idRuta))
+
+    const handleChange = (e) => handleChangeAnticipo(e, form, setForm, setErrores, { rutaSeleccionada })
 
     const handleNext = () => {
-        const erroresEncontrados = validarPaso(activeStep, form)
+        const erroresEncontrados = validarPaso(activeStep, form, rutaSeleccionada)
         if (Object.keys(erroresEncontrados).length > 0) { setErrores(erroresEncontrados); return }
         setActiveStep(prev => prev + 1)
     }
@@ -58,7 +60,7 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
         // validar con `validarPaso(activeStep, form)` acá era en la práctica un
         // no-op (siempre devolvía {}). Revalida el único paso con contenido (0)
         // sin importar en qué paso esté — ver LOGICA.md.
-        const erroresEncontrados = validarPaso(0, form)
+        const erroresEncontrados = validarPaso(0, form, rutaSeleccionada)
         if (Object.keys(erroresEncontrados).length > 0) {
             setErrores(erroresEncontrados)
             setActiveStep(0)
@@ -80,7 +82,6 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
         }
     }
 
-    const rutaSeleccionada = rutas.find(r => r.idRuta === parseInt(form.idRuta))
     const pares = rutaSeleccionada?.paresVehiculoConductor || []
     const parSeleccionado = pares.find(p => p.idRutaVehiculoConductor === parseInt(form.idRutaVehiculoConductor))
 

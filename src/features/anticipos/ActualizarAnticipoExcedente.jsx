@@ -79,10 +79,34 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
 
     const { paquetesPorPar, loading: cargandoPaquetesPorPar } = usePaquetesPorPar(form?.idRuta)
 
-    const handleChange = (e) => handleChangeAnticipo(e, form, setForm, setErrores, { onCambio: () => setSinCambios(false) })
+    // Si la ruta ya avanzó de estado no aparece en "rutas" (solo trae "Programada") —
+    // se arma una opción sintética con los datos del anticipo para que el Autocomplete
+    // no quede vacío. Calculado antes de handleChange/handleNext porque ambos la usan.
+    const nombreConductorOriginal = anticipoOriginal?.conductor?.usuario
+        ? `${anticipoOriginal.conductor.usuario.nombre} ${anticipoOriginal.conductor.usuario.apellido}`
+        : '—'
+    const rutaSeleccionada = rutas.find(r => r.idRuta === parseInt(form?.idRuta)) || (
+        anticipoOriginal?.ruta
+            ? {
+                idRuta: anticipoOriginal.idRuta,
+                nombre: anticipoOriginal.ruta.origen || `Ruta ${anticipoOriginal.idRuta}`,
+                destino: anticipoOriginal.ruta.destino || null,
+                fechaSalida: anticipoOriginal.ruta.fechaSalida || null,
+                paresVehiculoConductor: [{
+                    idRutaVehiculoConductor: `original-${anticipoOriginal.idConductor}`,
+                    idVehiculo: anticipoOriginal.ruta.vehiculo?.idVehiculo,
+                    idConductor: anticipoOriginal.idConductor,
+                    placa: anticipoOriginal.ruta.vehiculo?.placa || '',
+                    conductorNombre: nombreConductorOriginal,
+                }],
+            }
+            : null
+    )
+
+    const handleChange = (e) => handleChangeAnticipo(e, form, setForm, setErrores, { onCambio: () => setSinCambios(false), rutaSeleccionada })
 
     const handleNext = () => {
-        const erroresEncontrados = validarPaso(activeStep, form)
+        const erroresEncontrados = validarPaso(activeStep, form, rutaSeleccionada)
         if (Object.keys(erroresEncontrados).length > 0) { setErrores(erroresEncontrados); return }
         setActiveStep(prev => prev + 1)
     }
@@ -107,7 +131,7 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
         // Registrar (que sí la llamaba, pero contra el paso "Confirmación" sin campos
         // propios, un no-op) acá faltaba por completo. Revalida el único paso con
         // contenido (0) antes de guardar — ver LOGICA.md.
-        const erroresEncontrados = validarPaso(0, form)
+        const erroresEncontrados = validarPaso(0, form, rutaSeleccionada)
         if (Object.keys(erroresEncontrados).length > 0) {
             setErrores(erroresEncontrados)
             setActiveStep(0)
@@ -157,28 +181,6 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
     // Si la ruta elegida sigue "Programada", su conductor manda (por si se reasignó
     // el anticipo a otra ruta). Si no aparece ahí (ya avanzó de estado), se usa el
     // conductor que ya traía el anticipo desde que se cargó.
-    const nombreConductorOriginal = anticipoOriginal?.conductor?.usuario
-        ? `${anticipoOriginal.conductor.usuario.nombre} ${anticipoOriginal.conductor.usuario.apellido}`
-        : '—'
-
-    // Si la ruta ya avanzó de estado no aparece en "rutas" (solo trae "Programada") —
-    // se arma una opción sintética con los datos del anticipo para que el Autocomplete no quede vacío.
-    const rutaSeleccionada = rutas.find(r => r.idRuta === parseInt(form?.idRuta)) || (
-        anticipoOriginal?.ruta
-            ? {
-                idRuta: anticipoOriginal.idRuta,
-                nombre: anticipoOriginal.ruta.origen || `Ruta ${anticipoOriginal.idRuta}`,
-                destino: anticipoOriginal.ruta.destino || null,
-                paresVehiculoConductor: [{
-                    idRutaVehiculoConductor: `original-${anticipoOriginal.idConductor}`,
-                    idVehiculo: anticipoOriginal.ruta.vehiculo?.idVehiculo,
-                    idConductor: anticipoOriginal.idConductor,
-                    placa: anticipoOriginal.ruta.vehiculo?.placa || '',
-                    conductorNombre: nombreConductorOriginal,
-                }],
-            }
-            : null
-    )
     const pares = rutaSeleccionada?.paresVehiculoConductor || []
     const parSeleccionado = pares.find(p => p.idRutaVehiculoConductor === form?.idRutaVehiculoConductor)
 
