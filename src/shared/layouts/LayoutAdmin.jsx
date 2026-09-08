@@ -30,7 +30,7 @@ const Layout = ({ children }) => {
   const isSidebar = navLayout === 'sidebar'
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: theme.palette.background.default }}>
+    <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden', backgroundColor: theme.palette.background.default }}>
       {/* Barra superior gradiente */}
       <Box sx={{
         position: 'fixed', top: 0, left: 0, right: 0, height: 4,
@@ -55,6 +55,13 @@ const Layout = ({ children }) => {
           flexDirection: 'column',
           ml: isSidebar ? (collapsed ? '70px' : '250px') : 0,
           mt: isSidebar ? '64px' : '120px',
+          // El contenedor raíz ahora es height:100vh + overflow:hidden (para que el
+          // scroll nativo del documento no vuelva a aparecer atravesando el header
+          // fijo) -- por eso "main" ya no puede solo confiar en flex-stretch para su
+          // alto: hay que restarle explícitamente el mt de arriba, si no el sobrante
+          // de abajo queda recortado por el overflow:hidden del padre en vez de
+          // scrolleable.
+          height: isSidebar ? 'calc(100vh - 64px)' : 'calc(100vh - 120px)',
           transition: isSidebar ? 'margin-left 0.3s ease' : 'none',
         }}
       >

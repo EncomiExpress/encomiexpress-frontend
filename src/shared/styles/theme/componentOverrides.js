@@ -9,6 +9,27 @@ export const getComponentOverrides = (pal, mode) => ({
       'input[type="date"]::-webkit-calendar-picker-indicator': {
         filter: mode === 'dark' ? 'invert(1)' : 'none',
       },
+      // Scrollbar delgado y discreto en toda la app (Firefox + Chromium), en vez del
+      // nativo del navegador que se veía grueso y muy llamativo — mismo criterio de
+      // color que ya usaba el scrollbar del Sidebar (colors.divider).
+      '*': {
+        scrollbarWidth: 'thin',
+        scrollbarColor: `${pal.border.hover} transparent`,
+      },
+      '*::-webkit-scrollbar': {
+        width: 8,
+        height: 8,
+      },
+      '*::-webkit-scrollbar-track': {
+        background: 'transparent',
+      },
+      '*::-webkit-scrollbar-thumb': {
+        backgroundColor: pal.border.hover,
+        borderRadius: 8,
+      },
+      '*::-webkit-scrollbar-thumb:hover': {
+        backgroundColor: pal.text.secondary,
+      },
     },
   },
   MuiButton: {
@@ -70,6 +91,18 @@ export const getComponentOverrides = (pal, mode) => ({
         // superposición blanca semitransparente en modo oscuro que se ve gris lavado —
         // se quita para que todos usen background.paper/background.default directamente.
         backgroundImage: 'none',
+      },
+    },
+  },
+  MuiTableCell: {
+    styleOverrides: {
+      // Por defecto MUI no usa palette.divider tal cual: aclara el color en modo claro
+      // y lo OSCURECE en modo oscuro (darken ~68%), lo que sobre un fondo ya oscuro
+      // volvía la línea divisoria entre filas prácticamente invisible. Se fuerza el
+      // mismo divider del tema en los dos modos, igual que ya hacía getThStyle()
+      // (DataTable.jsx) para el encabezado.
+      root: {
+        borderBottom: `1px solid ${pal.divider}`,
       },
     },
   },

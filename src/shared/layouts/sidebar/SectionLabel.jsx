@@ -10,7 +10,7 @@ const SectionLabel = ({ label, isOpen, onClick, collapsed, colors }) => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        px: 3, pt: 2.0, pb: 1,
+        px: 3, pt: 1.25, pb: 0.75,
         cursor: collapsed ? 'default' : 'pointer',
         userSelect: 'none',
         pointerEvents: collapsed ? 'none' : 'auto',

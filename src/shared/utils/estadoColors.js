@@ -4,7 +4,7 @@ export const getVentaEstadoDot = (estado) => {
         case 'En Ruta':               return { type: 'circle', fill: true,  color: '#3B82F6', label: 'En Ruta' }
         case 'Entregada':                return { type: 'symbol', char: '✓',   color: '#059669', label: 'Entregada' }
         case 'Completada con novedades': return { type: 'symbol', char: '!',   color: '#F59E0B', label: 'Completada con novedades' }
-        case 'Cancelada':                return { type: 'symbol', char: '−',   color: '#3F3F46', label: 'Cancelada' }
+        case 'Cancelada':                return { type: 'symbol', char: '−',   color: '#71717A', label: 'Cancelada' }
         default:                         return { type: 'circle', fill: false, color: '#9CA3AF', label: estado || '—' }
     }
 }
@@ -14,7 +14,7 @@ export const getEstadoColorRuta = (estado) => {
         case 'Programada': return { bg: '#F3E8FF', color: '#A855F7' }
         case 'En Ruta':   return { bg: '#DBEAFE', color: '#3B82F6' }
         case 'Completada': return { bg: '#D1FAE5', color: '#059669' }
-        case 'Cancelada':  return { bg: '#E4E4E7', color: '#3F3F46' }
+        case 'Cancelada':  return { bg: '#E4E4E7', color: '#71717A' }
         default:           return { bg: '#F3F4F6', color: '#6B7280' }
     }
 }
@@ -36,7 +36,7 @@ export const getRutaEstadoDot = (estado) => {
         case 'Programada':  return { type: 'circle', fill: false, color: '#A855F7', label: 'Programada' }
         case 'En Ruta':    return { type: 'circle', fill: true,  color: '#3B82F6', label: 'En Ruta' }
         case 'Completada':  return { type: 'symbol', char: '✓',  color: '#059669', label: 'Completada' }
-        case 'Cancelada':   return { type: 'symbol', char: '−',  color: '#3F3F46', label: 'Cancelada' }
+        case 'Cancelada':   return { type: 'symbol', char: '−',  color: '#71717A', label: 'Cancelada' }
         default:            return { type: 'circle', fill: false, color: '#9CA3AF', label: estado || '—' }
     }
 }
@@ -84,7 +84,7 @@ export const getAnticipoEstadoDot = (estado) => {
         case 'En Legalización':    return { type: 'circle', fill: true,  color: '#3B82F6', label: 'En Legalización' }
         case 'Excedente pendiente': return { type: 'symbol', char: '!',  color: '#F59E0B', label: 'Excedente pendiente' }
         case 'Completado':         return { type: 'symbol', char: '✓',  color: '#059669', label: 'Completado' }
-        case 'Cancelado':          return { type: 'symbol', char: '−',  color: '#3F3F46', label: 'Cancelado' }
+        case 'Cancelado':          return { type: 'symbol', char: '−',  color: '#71717A', label: 'Cancelado' }
         default:                   return { type: 'circle', fill: false, color: '#9CA3AF', label: estado || '—' }
     }
 }

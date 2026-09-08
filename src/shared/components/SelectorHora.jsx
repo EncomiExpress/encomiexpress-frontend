@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Box, Typography, IconButton, Menu, MenuItem } from '@mui/material'
 import { useTheme } from '@mui/material/styles'
 import ScheduleOutlinedIcon from '@mui/icons-material/ScheduleOutlined'
@@ -49,6 +49,8 @@ const SelectorHora = ({
     const [horaTexto, setHoraTexto] = useState('')
     const [minutoTexto, setMinutoTexto] = useState('')
     const [anchorMenu, setAnchorMenu] = useState(null)
+    const inputMinutoRef = useRef(null)
+    const inputHoraRef = useRef(null)
 
     // El valor "de verdad" vive en el padre (value) — los textos locales solo existen
     // para poder mostrar un campo vacío mientras se escribe el segundo dígito, sin
@@ -141,21 +143,36 @@ const SelectorHora = ({
                     ))}
                 </Menu>
                 <input
+                    ref={inputHoraRef}
                     aria-label={`${label} — hora`}
                     inputMode="numeric"
                     value={horaTexto}
                     disabled={inactivo}
-                    onChange={(e) => setHoraTexto(soloDigitos2(e.target.value))}
+                    onChange={(e) => {
+                        const limpio = soloDigitos2(e.target.value)
+                        setHoraTexto(limpio)
+                        // Al completar los 2 dígitos de la hora, salta solo a minutos --
+                        // igual que un selector de hora nativo (input type="time").
+                        if (limpio.length === 2) { inputMinutoRef.current?.focus(); inputMinutoRef.current?.select() }
+                    }}
                     onBlur={() => { commit(horaTexto, minutoTexto); onBlur?.() }}
                     onKeyDown={(e) => {
                         if (e.key === 'ArrowUp') manejarFlecha(e, 60)
                         else if (e.key === 'ArrowDown') manejarFlecha(e, -60)
+                        // → al final del texto pasa a minutos, en vez de quedarse sin efecto
+                        // (el input de 2 caracteres no tiene nada más a la derecha del cursor).
+                        else if (e.key === 'ArrowRight' && e.target.selectionStart === e.target.value.length) {
+                            e.preventDefault()
+                            inputMinutoRef.current?.focus()
+                            inputMinutoRef.current?.select()
+                        }
                     }}
                     placeholder="--"
                     style={estiloInput}
                 />
                 <Typography sx={{ fontWeight: 700, color: theme.palette.text.secondary }}>:</Typography>
                 <input
+                    ref={inputMinutoRef}
                     aria-label={`${label} — minuto`}
                     inputMode="numeric"
                     value={minutoTexto}
@@ -165,6 +182,16 @@ const SelectorHora = ({
                     onKeyDown={(e) => {
                         if (e.key === 'ArrowUp') manejarFlecha(e, 1)
                         else if (e.key === 'ArrowDown') manejarFlecha(e, -1)
+                        // ← al inicio del texto vuelve a la hora, mismo criterio que arriba.
+                        else if (e.key === 'ArrowLeft' && e.target.selectionStart === 0) {
+                            e.preventDefault()
+                            inputHoraRef.current?.focus()
+                            inputHoraRef.current?.select()
+                        } else if (e.key === 'Backspace' && minutoTexto === '') {
+                            e.preventDefault()
+                            inputHoraRef.current?.focus()
+                            inputHoraRef.current?.select()
+                        }
                     }}
                     placeholder="--"
                     style={estiloInput}

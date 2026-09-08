@@ -19,9 +19,9 @@ const NavItem = ({ item, depth = 0, location, collapsed, darkMode, colors }) => 
         display: 'flex',
         alignItems: 'center',
         justifyContent: collapsed ? 'center' : 'flex-start',
-        gap: collapsed ? 0 : 1.5,
-        px: collapsed ? 1 : 2,
-        py: depth === 0 ? 0.9 : 0.65,
+        gap: collapsed ? 0 : (depth === 0 ? 1.5 : 1),
+        px: collapsed ? 1 : (depth === 0 ? 2 : 1.5),
+        py: depth === 0 ? 0.7 : 0.5,
         mx: 1,
         borderRadius: '10px',
         cursor: 'pointer',
@@ -59,6 +59,8 @@ const NavItem = ({ item, depth = 0, location, collapsed, darkMode, colors }) => 
           color: isActive && !hasChildren ? C.primary : C.nav,
           flex: 1,
           userSelect: 'none',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
         }}>
           {item.label}
         </Typography>

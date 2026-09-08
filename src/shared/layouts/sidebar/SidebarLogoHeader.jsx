@@ -12,7 +12,7 @@ const SidebarLogoHeader = ({ collapsed, darkMode, onToggleCollapsed }) => {
       position: 'relative',
       px: collapsed ? 1 : 2.5,
       pt: 1.5,
-      pb: collapsed ? 4.5 : 4,
+      pb: collapsed ? 3.5 : 3,
       display: 'flex',
       alignItems: 'center',
       justifyContent: collapsed ? 'center' : 'flex-start',

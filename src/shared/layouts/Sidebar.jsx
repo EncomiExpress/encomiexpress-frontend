@@ -43,7 +43,7 @@ const Sidebar = ({ collapsed, onToggleCollapsed }) => {
 
       {/* ── NAV ITEMS ── */}
       <Box sx={{
-        flex: 1, overflowY: 'auto', py: 1, minHeight: 0,
+        flex: 1, overflowY: 'auto', py: 0.5, minHeight: 0,
         '&::-webkit-scrollbar': { width: 4 },
         '&::-webkit-scrollbar-thumb': { background: colors.divider, borderRadius: 2 },
       }}>
