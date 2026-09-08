@@ -7,7 +7,7 @@ import { descargarGuiaPdf } from '../../../shared/utils/exportGuia/exportGuiaPdf
 // `refetch` de useEntityCrud para recargar la página actual desde el servidor, ya que
 // su tabla ya no lee del arreglo compartido de VentaContext (ver ListarVenta.jsx).
 const useVentaAcciones = ({ onChanged } = {}) => {
-    const { cambiarEstadoPagoVenta, toggleHabilitadoVenta } = useVentas()
+    const { cambiarEstadoPagoVenta, toggleHabilitadoVenta, reactivarVenta } = useVentas()
     const { showToast } = useToast()
     const pendingConfirm = useRef(false)
 
@@ -68,12 +68,25 @@ const useVentaAcciones = ({ onChanged } = {}) => {
         }
     }
 
+    // Reactivar una venta "Cancelada" cuya ruta ya volvió a servir sola — sin
+    // wizard, sin confirmar (acción de bajo riesgo y fácilmente reversible con el
+    // toggle de habilitado si fue un clic de más). Ver EstadoVentaCancelada.jsx.
+    const handleReactivar = async (venta) => {
+        try {
+            await reactivarVenta(venta.idEncomiendaVenta)
+            showToast('Venta reactivada a "Programada".', 'success')
+            onChanged?.()
+        } catch (err) {
+            showToast(err.message || 'Error al reactivar la venta.', 'error')
+        }
+    }
+
     return {
         modalInhabilitar, setModalInhabilitar,
         pagoMenuAnchor, setPagoMenuAnchor, pagoMenuId, setPagoMenuId, confirmPago, setConfirmPago,
         confirmandoEstado,
         handleDescargarGuia, handleToggleHabilitado, handleConfirmarToggle, handleExitedInhabilitar,
-        handlePagoConfirm,
+        handlePagoConfirm, handleReactivar,
     }
 }
 

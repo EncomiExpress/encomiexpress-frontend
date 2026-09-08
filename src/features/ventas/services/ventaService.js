@@ -14,6 +14,11 @@ export const updateEncomienda = (id, datos) =>
 export const toggleHabilitadoEncomienda = (id) =>
   fetchWithAuth(`/encomiendas/${id}/toggle-habilitado`, { method: 'PATCH' })
 
+// Reactiva una venta "Cancelada" a "Programada" sin editar nada — solo cuando la
+// ruta ya volvió a servir sola. Ver EstadoVentaCancelada.jsx / LOGICA.md.
+export const reactivarEncomienda = (id) =>
+  fetchWithAuth(`/encomiendas/${id}/reactivar`, { method: 'PATCH' })
+
 export const cambiarEstadoPagoEncomienda = (id, estadoPago) =>
   fetchWithAuth(`/encomiendas/${id}/estado-pago`, { method: 'PATCH', body: JSON.stringify({ estadoPago }) })
 

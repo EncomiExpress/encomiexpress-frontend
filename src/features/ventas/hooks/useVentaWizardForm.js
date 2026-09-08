@@ -94,15 +94,21 @@ export const useVentaWizardForm = ({
             setForm(prev => {
                 if (!prev.idRuta) return prev
                 const ruta = (rutasFrescas || []).find(r => r.idRuta === parseInt(prev.idRuta))
-                if (!ruta) {
-                    // La ruta ya no está entre las Programadas disponibles (salió, se
-                    // completó, se canceló — típico al editar una venta que quedó
-                    // Cancelada) — se limpia la selección en vez de dejar un id
-                    // "fantasma": validarCampo('idRuta') solo mira si hay algo puesto,
-                    // así que un id que ya no es una opción válida pasaría la
-                    // validación sin que nadie lo note. Mismo criterio que elegir
-                    // "ninguna ruta" a mano en el Autocomplete (ver el onChange de
-                    // más abajo).
+                // Bug corregido (2026-09-07): fetchRutasProgramadas({limit:1000}) trae
+                // TODAS las rutas sin filtrar por estado/habilitado, así que `find()`
+                // siempre "encontraba" una ruta Cancelada/inhabilitada/etc. — este chequeo
+                // solo miraba `!ruta` (ausente del todo), nunca disparaba para una ruta que
+                // sigue existiendo pero ya no sirve, y el selector se quedaba mostrando esa
+                // ruta inválida como si nada (típico al editar una venta que quedó
+                // Cancelada por esa razón). Mismo criterio que rutaSigueSirviendo() del
+                // backend — ver utils/ventaResolvers.js, motivoVentaCancelada().
+                if (!ruta || ruta.estado !== 'Programada' || ruta.habilitado === false) {
+                    // La ruta ya no sirve (salió, se completó, se canceló, se inhabilitó)
+                    // — se limpia la selección en vez de dejar un id "fantasma":
+                    // validarCampo('idRuta') solo mira si hay algo puesto, así que un id
+                    // que ya no es una opción válida pasaría la validación sin que nadie lo
+                    // note. Mismo criterio que elegir "ninguna ruta" a mano en el
+                    // Autocomplete (ver el onChange de más abajo).
                     setErrores(e => ({ ...e, idRuta: '' }))
                     return {
                         ...prev,

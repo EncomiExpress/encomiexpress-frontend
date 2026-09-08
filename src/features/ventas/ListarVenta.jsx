@@ -84,7 +84,7 @@ const ListarVenta = () => {
         pagoMenuAnchor, setPagoMenuAnchor, pagoMenuId, setPagoMenuId, confirmPago, setConfirmPago,
         confirmandoEstado,
         handleDescargarGuia, handleToggleHabilitado, handleConfirmarToggle, handleExitedInhabilitar,
-        handlePagoConfirm,
+        handlePagoConfirm, handleReactivar,
     } = useVentaAcciones({ onChanged: refetch })
 
     const { exportando, handleExportar } = useVentaExport({
@@ -104,6 +104,7 @@ const ListarVenta = () => {
         onEditar: (venta) => { setVentaEditar(venta); setModalActualizarOpen(true) },
         onToggleHabilitado: handleToggleHabilitado,
         onAbrirMenuPago: (anchor, id) => { setPagoMenuAnchor(anchor); setPagoMenuId(id) },
+        onReactivar: handleReactivar,
     })
 
     return (

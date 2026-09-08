@@ -91,6 +91,15 @@ export const VentaProvider = ({ children }) => {
     return { venta: normalizada, message: res?.message }
   }, [])
 
+  // Reactiva una venta "Cancelada" a "Programada" sin editar nada — ver
+  // EstadoVentaCancelada.jsx.
+  const reactivarVenta = useCallback(async (id) => {
+    const res = await ventaService.reactivarEncomienda(id)
+    const normalizada = normalize(res.data)
+    setVentas(prev => prev.map(v => v.idEncomiendaVenta === id ? normalizada : v))
+    return normalizada
+  }, [])
+
   return (
     <VentaContext.Provider value={{
       ventas, total, loading, error,
@@ -99,6 +108,7 @@ export const VentaProvider = ({ children }) => {
       actualizarVenta,
       cambiarEstadoPagoVenta,
       toggleHabilitadoVenta,
+      reactivarVenta,
       ESTADOS_ENCOMIENDA,
       METODOS_PAGO,
       ESTADOS_PAGO,

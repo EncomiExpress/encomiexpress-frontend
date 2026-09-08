@@ -8,11 +8,12 @@ import ToggleSwitch from '../../../shared/components/ToggleSwitch.jsx'
 import { formatFecha } from '../../../shared/utils/formatters.js'
 import { getVentaEstadoDot } from '../../../shared/utils/estadoColors.js'
 import VentaEstadoDot from '../components/VentaEstadoDot.jsx'
+import EstadoVentaCancelada from '../components/EstadoVentaCancelada.jsx'
 
 const useVentaColumns = ({
     theme, debouncedBusqueda, tienePermiso, PERMISOS,
     onConsultar, onDescargarGuia, onEditar, onToggleHabilitado,
-    onAbrirMenuPago,
+    onAbrirMenuPago, onReactivar,
 }) => [
     {
         key: 'guia', label: 'Guía', sortField: 'numeroGuia', cellSx: { py: 1.5 },
@@ -152,8 +153,16 @@ const useVentaColumns = ({
                         // ruta, no acá).
                         // FASE DISTRIBUIDOR — ya ningún paquete "Por entregar" (todos en la
                         // sede): la persona de la sede hace la entrega final. Se muestra
-                        // "N de M entregados" (N cuenta solo los "Entregado") con el
-                        // desglose (N entregados · D no entregados · S en sede).
+                        // "N de M gestionados" (N = Entregado + Devuelto, es decir todo
+                        // paquete que el distribuidor YA resolvió, sin importar si terminó
+                        // entregado o no) con el desglose completo (entregados · no
+                        // entregados · en sede) en el tooltip.
+                        //
+                        // Bug corregido (2026-09-07): antes el número mostraba solo los
+                        // "Entregado" ("N de M entregados") — si el distribuidor marcaba un
+                        // paquete como no entregado, el número seguía en 0 aunque sí hubiera
+                        // actuado sobre él (esa parte solo se veía en el tooltip). Confundía:
+                        // parecía que nada había pasado todavía.
                         const paquetes = venta.paquetes || []
                         const total = paquetes.length
                         const porEntregar = paquetes.filter(p => p.estado === 'Por entregar').length
@@ -165,6 +174,7 @@ const useVentaColumns = ({
                         const enSede = paquetes.filter(p => p.estado === 'En sede de destino').length
                         const entregados = paquetes.filter(p => p.estado === 'Entregado').length
                         const noEntregados = paquetes.filter(p => p.estado === 'Devuelto').length
+                        const gestionados = entregados + noEntregados
                         const info = getVentaEstadoDot('En Ruta')
 
                         return (
@@ -172,13 +182,15 @@ const useVentaColumns = ({
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                                     <Box sx={{ width: 9, height: 9, borderRadius: '50%', flexShrink: 0, backgroundColor: info.color }} />
                                     <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: info.color }}>
-                                        {`${entregados} de ${total} entregados`}
+                                        {`${gestionados} de ${total} gestionados`}
                                     </Typography>
                                 </Box>
                             </Tooltip>
                         )
                     })()}
                 </Box>
+            ) : venta.estado === 'Cancelada' ? (
+                <EstadoVentaCancelada venta={venta} onReactivar={onReactivar} />
             ) : (
                 <Box sx={{ pl: 1 }}><VentaEstadoDot estado={venta.estado} /></Box>
             )

@@ -168,7 +168,14 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
     )
 
     const handleSubmit = async () => {
-        if (formOriginal) {
+        // Una venta "Cancelada" nunca cae en "Sin cambios": encomiendaService.update()
+        // la reactiva a "Programada" como efecto de CUALQUIER guardado exitoso (ver
+        // LOGICA.md, "Ventas — Cancelada e inhabilitar/habilitar") — ni siquiera hace
+        // falta tocar un campo si la ruta ya volvió a servir sola (se reprogramó) y
+        // los demás datos ya son válidos. `estado` no es un campo de `form`, así que la
+        // comparación de abajo nunca detecta esa transición por sí sola; sin este
+        // bypass, el botón se quedaría en "Sin cambios" y la venta jamás se reactivaría.
+        if (formOriginal && ventaOriginal?.estado !== 'Cancelada') {
             const hayCambiosPaquetes = JSON.stringify(form.paquetes) !== JSON.stringify(formOriginal.paquetes)
             const hayCambios = hayCambiosPaquetes || Object.keys(form).filter(key => key !== 'paquetes').some(key => {
                 const original = formOriginal[key] !== undefined ? String(formOriginal[key]) : ''
