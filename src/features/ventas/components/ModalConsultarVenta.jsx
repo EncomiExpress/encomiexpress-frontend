@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useTheme, alpha } from '@mui/material/styles'
 import {
-    Box, Typography, Chip, Button, Dialog, IconButton, Menu, MenuItem, Autocomplete, TextField, Alert
+    Box, Typography, Chip, Button, Dialog, IconButton, Menu, MenuItem
 } from '@mui/material'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined'
@@ -12,14 +12,10 @@ import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import { getVentaEstadoDot, getPaqueteEstadoDot } from '../../../shared/utils/estadoColors.js'
 import { descargarGuiaPaquete } from '../../../shared/utils/exportGuia/exportGuiaPdf.js'
-import { formatFecha } from '../../../shared/utils/formatters.js'
-import { getErrorMessage } from '../../../shared/utils/errorMessage.js'
-import { useConductor } from '../../conductores/context/ConductorContext.jsx'
-import { useToast } from '../../../shared/contexts/ToastContext.jsx'
-import { asignarRepartidorLocal } from '../services/ventaService.js'
+import { formatFecha, formatFechaHora } from '../../../shared/utils/formatters.js'
 import CampoFila from '../../../shared/components/CampoFila.jsx'
 import FichaCard from '../../../shared/components/FichaCard.jsx'
-import { formFieldStyles } from '../../../shared/utils/formStyles.js'
+import ModalHistorialEntrega from './ModalHistorialEntrega.jsx'
 
 const EstadoDot = ({ info, label }) => {
     const theme = useTheme()
@@ -36,55 +32,18 @@ const EstadoDot = ({ info, label }) => {
 
 const ModalConsultarVenta = ({ venta, onClose }) => {
     const theme = useTheme()
-    const { showToast } = useToast()
-    const { getConductoresHabilitados } = useConductor()
     const [paqueteIndex, setPaqueteIndex] = useState(0)
     const [menuAnchor, setMenuAnchor] = useState(null)
     const [imagenAmpliada, setImagenAmpliada] = useState(null)
-    // Overrides locales por idPaquete tras asignar un repartidor local — el modal
-    // recibe `venta` ya cargada del listado, sin forma de refrescarla desde acá, así
-    // que la asignación se refleja de una vez en pantalla sin esperar a que se
-    // vuelva a abrir el modal.
-    const [overrides, setOverrides] = useState({})
-    const [repartidorSeleccionado, setRepartidorSeleccionado] = useState(null)
-    const [asignando, setAsignando] = useState(false)
-    const [errorAsignacion, setErrorAsignacion] = useState(null)
-
-    useEffect(() => {
-        setOverrides({})
-        setRepartidorSeleccionado(null)
-        setErrorAsignacion(null)
-    }, [venta?.idEncomiendaVenta])
+    const [historialOpen, setHistorialOpen] = useState(false)
 
     if (!venta) return null
 
     const estadoInfo = getVentaEstadoDot(venta.estado)
     const esPagado = venta.estadoPago === 'Pagado'
-    const paquetesBase = venta.paquetes?.length > 0 ? venta.paquetes : [venta.paquete].filter(Boolean)
-    const paquetes = paquetesBase.map(p => ({ ...p, ...(overrides[p.idPaquete] || {}) }))
+    const paquetes = venta.paquetes?.length > 0 ? venta.paquetes : [venta.paquete].filter(Boolean)
     const paquete = paquetes[paqueteIndex] || paquetes[0] || null
 
-    const handleAsignarRepartidor = async () => {
-        if (!repartidorSeleccionado || !paquete) return
-        setAsignando(true)
-        setErrorAsignacion(null)
-        try {
-            await asignarRepartidorLocal(paquete.idPaquete, repartidorSeleccionado.idConductor)
-            setOverrides(prev => ({
-                ...prev,
-                [paquete.idPaquete]: {
-                    idConductorEntrega: repartidorSeleccionado.idConductor,
-                    conductorEntrega: { idConductor: repartidorSeleccionado.idConductor, usuario: { nombre: repartidorSeleccionado.nombre, apellido: repartidorSeleccionado.apellido } },
-                },
-            }))
-            setRepartidorSeleccionado(null)
-            showToast('Repartidor local asignado', 'success')
-        } catch (err) {
-            setErrorAsignacion(getErrorMessage(err, 'No se pudo asignar el repartidor local'))
-        } finally {
-            setAsignando(false)
-        }
-    }
     const dim = paquete && [paquete.alto, paquete.ancho, paquete.profundidad].every(v => v != null)
         ? `${paquete.alto}×${paquete.ancho}×${paquete.profundidad} cm`
         : '—'
@@ -242,7 +201,20 @@ const ModalConsultarVenta = ({ venta, onClose }) => {
                             </Box>
                             <CampoFila label="Observación" value={paquete?.observacionEstado || null} />
                             {paquete?.intentosEntrega > 0 && (
-                                <CampoFila label="Insistencia" value={`${paquete.intentosEntrega} ${paquete.intentosEntrega === 1 ? 'intento' : 'intentos'}${paquete.fechaUltimoIntento ? ` · último ${formatFecha(paquete.fechaUltimoIntento)}` : ''}`} />
+                                <CampoFila label="Insistencia" value={`${paquete.intentosEntrega} ${paquete.intentosEntrega === 1 ? 'intento' : 'intentos'}${paquete.fechaUltimoIntento ? ` · último ${formatFechaHora(paquete.fechaUltimoIntento)}` : ''}`} />
+                            )}
+                            {(paquete?.intentosEntrega > 0 || paquete?.estado === 'Entregado' || paquete?.estado === 'Devuelto') && (
+                                <Box sx={{ display: 'flex', justifyContent: 'flex-end', py: 0.5 }}>
+                                    <Typography
+                                        component="button" onClick={() => setHistorialOpen(true)}
+                                        variant="body2" fontWeight={600}
+                                        sx={{
+                                            color: theme.palette.primary.main, cursor: 'pointer', background: 'none', border: 'none', p: 0,
+                                            textDecoration: 'underline', textDecorationStyle: 'dotted', '&:hover': { opacity: 0.75 },
+                                        }}>
+                                        Ver historial de entrega
+                                    </Typography>
+                                </Box>
                             )}
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Evidencia</Typography>
@@ -256,46 +228,6 @@ const ModalConsultarVenta = ({ venta, onClose }) => {
                                     <Typography variant="body2" fontWeight={500} color={theme.palette.text.medium}>—</Typography>
                                 )}
                             </Box>
-                            {paquete?.estado === 'En sede de destino' && (
-                                <Box sx={{ mt: 1 }}>
-                                    {paquete?.conductorEntrega ? (
-                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
-                                            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Repartidor local</Typography>
-                                            <Typography variant="body2" fontWeight={500}>
-                                                {paquete.conductorEntrega.usuario ? `${paquete.conductorEntrega.usuario.nombre} ${paquete.conductorEntrega.usuario.apellido}` : '—'}
-                                            </Typography>
-                                        </Box>
-                                    ) : (
-                                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                                            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>
-                                                Asignar repartidor local
-                                            </Typography>
-                                            {errorAsignacion && (
-                                                <Alert severity="error" sx={{ borderRadius: 2 }} onClose={() => setErrorAsignacion(null)}>{errorAsignacion}</Alert>
-                                            )}
-                                            <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
-                                                <Autocomplete
-                                                    sx={{ flex: 1 }} size="small"
-                                                    options={getConductoresHabilitados()}
-                                                    getOptionLabel={(c) => `${c.nombre} ${c.apellido}`}
-                                                    isOptionEqualToValue={(opt, val) => opt.idConductor === val.idConductor}
-                                                    value={repartidorSeleccionado}
-                                                    onChange={(_, val) => setRepartidorSeleccionado(val)}
-                                                    renderInput={(params) => (
-                                                        <TextField {...params} label="Conductor" placeholder="Busca por nombre"
-                                                            slotProps={{ inputLabel: { shrink: true } }} sx={formFieldStyles} />
-                                                    )}
-                                                />
-                                                <Button onClick={handleAsignarRepartidor} disabled={!repartidorSeleccionado || asignando}
-                                                    variant="contained" size="small"
-                                                    sx={{ backgroundColor: theme.palette.primary.main, borderRadius: 2, textTransform: 'none', mt: 0.25 }}>
-                                                    {asignando ? 'Asignando...' : 'Asignar'}
-                                                </Button>
-                                            </Box>
-                                        </Box>
-                                    )}
-                                </Box>
-                            )}
                         </Box>
                     </Box>
                 </FichaCard>
@@ -335,6 +267,8 @@ const ModalConsultarVenta = ({ venta, onClose }) => {
                     </Box>
                 </Dialog>
             )}
+
+            <ModalHistorialEntrega open={historialOpen} onClose={() => setHistorialOpen(false)} idPaquete={paquete?.idPaquete} />
         </Dialog>
     )
 }

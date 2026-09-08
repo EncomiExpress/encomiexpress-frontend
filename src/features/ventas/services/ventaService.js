@@ -30,9 +30,8 @@ export const getPageOfEncomienda = (id, limit = 10) =>
 export const getRangoFechasVentas = () =>
   fetchWithAuth('/encomiendas/rango-fechas')
 
-// ── Paquetes — reparto local ──────────────────────────────────────────────────
-// Solo admin. El paquete debe estar "En sede de destino" (ver LOGICA.md, "Paquetes
-// — entrega en sede y reasignación local"). No hay un paqueteService.js aparte en
-// el backend tampoco — esta acción vive junto al resto de Ventas.
-export const asignarRepartidorLocal = (idPaquete, idConductor) =>
-  fetchWithAuth(`/paquetes/${idPaquete}/repartidor-local`, { method: 'PATCH', body: JSON.stringify({ idConductor }) })
+// Historial completo de la entrega final de un paquete (una fila por cada
+// Intento/Entregado/Devuelto registrado por el distribuidor) — ver
+// ModalHistorialEntrega.jsx y LOGICA.md, "Historial de entrega final".
+export const getHistorialEntregaPaquete = (idPaquete) =>
+  fetchWithAuth(`/paquetes/${idPaquete}/historial-entrega`)

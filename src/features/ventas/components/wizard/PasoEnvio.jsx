@@ -6,7 +6,7 @@ import { FormField, FormSelect } from '../../../../shared/components/FormularioE
 import { formFieldStyles } from '../../../../shared/utils/formStyles.js'
 import { normalizarTexto } from '../../../../shared/utils/duplicados.js'
 import { formatFecha, formatHora12 } from '../../../../shared/utils/formatters.js'
-import { sumarDias } from '../../../../shared/utils/horarioLaboral.js'
+import { sumarDias, hoyISO, MAX_DIAS_ANTICIPACION } from '../../../../shared/utils/horarioLaboral.js'
 import PlacaDisplay from '../../../../shared/components/PlacaDisplay.jsx'
 import ModalRutaDiagrama from '../../../../shared/components/ModalRutaDiagrama.jsx'
 import { validarCampo, validarCampoPaquete } from '../../validations/validacion.js'
@@ -163,8 +163,12 @@ export default function PasoEnvio({
                                 }
                             })
                         } else {
+                            // fechaEstimadaEntrega también se limpia acá (bug corregido, ver
+                            // LOGICA.md) — antes solo se limpiaba errores.fechaEstimadaEntrega
+                            // (línea de abajo), no el valor en sí, que se quedaba puesto sin
+                            // ninguna ruta que lo acote.
                             setForm(prev => ({
-                                ...prev, idRuta: '', destino: '', fechaSalidaRuta: '', fechaLlegadaEstimadaRuta: '',
+                                ...prev, idRuta: '', destino: '', fechaSalidaRuta: '', fechaLlegadaEstimadaRuta: '', fechaEstimadaEntrega: '',
                                 paquetes: prev.paquetes.map(p => ({ ...p, idRutaVehiculoConductor: '' })),
                             }))
                         }
@@ -225,6 +229,10 @@ export default function PasoEnvio({
                 <TextField fullWidth label="Fecha estimada de entrega" name="fechaEstimadaEntrega"
                     type="date" value={form.fechaEstimadaEntrega} onChange={handleChange}
                     onBlur={() => setErrores(prev => ({ ...prev, fechaEstimadaEntrega: validarCampo('fechaEstimadaEntrega', form, ventaOriginal) }))} required
+                    // Sin ruta elegida no hay contra qué acotar el mínimo/máximo (bug
+                    // corregido, ver LOGICA.md) — el calendario nativo dejaba escoger
+                    // cualquier fecha libremente mientras "Ruta" seguía vacía/inválida.
+                    disabled={!form.idRuta}
                     error={!!errores.fechaEstimadaEntrega}
                     helperText={errores.fechaEstimadaEntrega || (form.fechaLlegadaEstimadaRuta
                         ? `Desde el ${formatFecha(form.fechaLlegadaEstimadaRuta)} (llegada de la ruta) en adelante`
@@ -233,6 +241,7 @@ export default function PasoEnvio({
                             : 'Selecciona primero una ruta')}
                     slotProps={{ inputLabel: { shrink: true }, htmlInput: {
                         min: form.fechaLlegadaEstimadaRuta || (form.fechaSalidaRuta ? sumarDias(form.fechaSalidaRuta, 1) : undefined),
+                        max: sumarDias(hoyISO(), MAX_DIAS_ANTICIPACION),
                     } }}
                     sx={formFieldStyles} />
             </Box>

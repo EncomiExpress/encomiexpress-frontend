@@ -1,5 +1,5 @@
 import { esSoloRelleno } from '../../../shared/utils/formatters.js'
-import { sumarDias } from '../../../shared/utils/horarioLaboral.js'
+import { sumarDias, hoyISO, MAX_DIAS_ANTICIPACION } from '../../../shared/utils/horarioLaboral.js'
 import { EMAIL_REGEX, validarUsuarioCorreo } from '../../../shared/validations/emailValidation.js'
 import { validarDireccion } from '../../../shared/validations/direccionValidation.js'
 import { validarDescripcionContenido } from '../../../shared/validations/descripcionContenidoValidation.js'
@@ -92,6 +92,11 @@ export const validarCampo = (name, form) => {
             return form.idRuta ? '' : 'Selecciona una ruta'
         case 'fechaEstimadaEntrega': {
             if (!form.fechaEstimadaEntrega) return 'La fecha es obligatoria'
+            // Mismo horizonte (MAX_DIAS_ANTICIPACION) que ya limita fechaSalida/
+            // fechaLlegadaEstimada de una Ruta — no tiene sentido prometer una entrega
+            // a meses/años vista. Fuente de verdad: encomiendaService.validarFechaEntrega.
+            const maxima = sumarDias(hoyISO(), MAX_DIAS_ANTICIPACION)
+            if (form.fechaEstimadaEntrega > maxima) return `No puede ser más de ${MAX_DIAS_ANTICIPACION} días a partir de hoy`
             if (form.fechaLlegadaEstimadaRuta) {
                 if (form.fechaEstimadaEntrega < form.fechaLlegadaEstimadaRuta) return 'Debe ser igual o posterior a la llegada de la ruta'
             } else if (form.fechaSalidaRuta) {

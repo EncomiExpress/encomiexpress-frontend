@@ -112,7 +112,11 @@ export const useVentaWizardForm = ({
                     setErrores(e => ({ ...e, idRuta: '' }))
                     return {
                         ...prev,
-                        idRuta: '', destino: '', fechaSalidaRuta: '', fechaLlegadaEstimadaRuta: '',
+                        // fechaEstimadaEntrega también se limpia acá (bug corregido, ver
+                        // LOGICA.md): antes se quedaba con el valor viejo, ya sin ninguna
+                        // ruta que lo acote — sin min/max, el calendario nativo dejaba
+                        // elegir cualquier fecha hasta que se seleccionara una ruta nueva.
+                        idRuta: '', destino: '', fechaSalidaRuta: '', fechaLlegadaEstimadaRuta: '', fechaEstimadaEntrega: '',
                         paquetes: prev.paquetes.map(p => ({ ...p, idRutaVehiculoConductor: '' })),
                     }
                 }
