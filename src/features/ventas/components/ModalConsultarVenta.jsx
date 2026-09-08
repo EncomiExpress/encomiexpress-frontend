@@ -115,23 +115,32 @@ const ModalConsultarVenta = ({ venta, onClose }) => {
                         <ReceiptLongOutlinedIcon sx={{ fontSize: 22, color: theme.palette.primary.main }} />
                     </Box>
                     <Box>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             <Typography fontWeight={700} fontSize="1rem" color={theme.palette.text.primary}>
                                 {paquete?.numeroGuia || '—'}
                             </Typography>
+                            <Chip label={getPaqueteEstadoDot(paquete?.estado).label} size="small"
+                                sx={{ fontWeight: 600, fontSize: '0.68rem', height: 20,
+                                    backgroundColor: alpha(getPaqueteEstadoDot(paquete?.estado).color, 0.12),
+                                    color: getPaqueteEstadoDot(paquete?.estado).color }} />
                             {paquetes.length > 1 && (
                                 <>
                                     <IconButton size="small" onClick={(e) => setMenuAnchor(e.currentTarget)}
-                                        sx={{ color: theme.palette.text.secondary }}>
+                                        sx={{ color: theme.palette.text.secondary, ml: -0.5 }}>
                                         <KeyboardArrowDownOutlinedIcon sx={{ fontSize: 20 }} />
                                     </IconButton>
                                     <Menu anchorEl={menuAnchor} open={!!menuAnchor} onClose={() => setMenuAnchor(null)}>
                                         {paquetes.map((p, i) => (
-                                            <MenuItem key={p.idPaquete || i} selected={i === paqueteIndex} onClick={() => seleccionarPaquete(i)}>
+                                            <MenuItem key={p.idPaquete || i} selected={i === paqueteIndex} onClick={() => seleccionarPaquete(i)}
+                                                sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}>
                                                 <Box>
                                                     <Typography variant="body2" fontWeight={600}>{p.numeroGuia}</Typography>
                                                     <Typography variant="caption" color={theme.palette.text.secondary}>Paquete {i + 1} de {paquetes.length}</Typography>
                                                 </Box>
+                                                <Chip label={getPaqueteEstadoDot(p.estado).label} size="small"
+                                                    sx={{ fontWeight: 600, fontSize: '0.68rem', height: 20, flexShrink: 0,
+                                                        backgroundColor: alpha(getPaqueteEstadoDot(p.estado).color, 0.12),
+                                                        color: getPaqueteEstadoDot(p.estado).color }} />
                                             </MenuItem>
                                         ))}
                                     </Menu>
@@ -145,110 +154,44 @@ const ModalConsultarVenta = ({ venta, onClose }) => {
                 </Box>
             </Box>
 
-            <Box sx={{ p: 3 }}>
+            <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <Box sx={{ display: 'flex', gap: 2, alignItems: 'stretch' }}>
-                    {/* Columna izquierda: Remitente/Destinatario + Paquete */}
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
-                        <FichaCard icon={PersonOutlinedIcon} title="Remitente" sx={{ flex: 'none' }}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
-                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Nombre</Typography>
-                                <Typography variant="body2" fontWeight={500}
-                                    onClick={() => window.open(`/clientes/listar?highlight=${venta.idCliente}`, '_blank')}
-                                    sx={{ color: theme.palette.primary.main, cursor: 'pointer', textDecoration: 'underline', textDecorationStyle: 'dotted', '&:hover': { opacity: 0.75 } }}>
-                                    {venta.cliente?.nombre} {venta.cliente?.apellido}
-                                </Typography>
+                    <FichaCard icon={PersonOutlinedIcon} title="Remitente">
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
+                            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Nombre</Typography>
+                            <Typography variant="body2" fontWeight={500}
+                                onClick={() => window.open(`/clientes/listar?highlight=${venta.idCliente}`, '_blank')}
+                                sx={{ color: theme.palette.primary.main, cursor: 'pointer', textDecoration: 'underline', textDecorationStyle: 'dotted', '&:hover': { opacity: 0.75 } }}>
+                                {venta.cliente?.nombre} {venta.cliente?.apellido}
+                            </Typography>
+                        </Box>
+                        <CampoFila label="Documento" value={venta.cliente?.tipoIdentificacion && venta.cliente?.numeroIdentificacion
+                            ? `${venta.cliente.tipoIdentificacion} ${venta.cliente.numeroIdentificacion}`
+                            : null} />
+                        <CampoFila label="Teléfono" value={venta.cliente?.telefono} />
+                        <CampoFila label="Correo" value={venta.cliente?.email} />
+                        <CampoFila label="Municipio" value={venta.cliente?.destino
+                            ? `${venta.cliente.destino.municipio}, ${venta.cliente.destino.departamento}`
+                            : null} />
+                        <CampoFila label="Dirección" value={venta.cliente?.direccion} />
+                        <Box sx={{ borderTop: `1px solid ${theme.palette.divider}`, mt: 1, pt: 1.5 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                <AssignmentIndOutlinedIcon sx={{ fontSize: 18, color: theme.palette.text.primary }} />
+                                <Typography fontWeight={700} fontSize="0.95rem">Destinatario</Typography>
                             </Box>
-                            <CampoFila label="Teléfono" value={venta.cliente?.telefono} />
-                            <Box sx={{ borderTop: `1px solid ${theme.palette.divider}`, mt: 1, pt: 1.5 }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                    <AssignmentIndOutlinedIcon sx={{ fontSize: 18, color: theme.palette.text.primary }} />
-                                    <Typography fontWeight={700} fontSize="0.95rem">Destinatario</Typography>
-                                </Box>
-                                <CampoFila label="Nombre" value={venta.destinatario?.nombreDestinatario} />
-                                <CampoFila label="Documento" value={venta.destinatario?.tipoIdentificacionDestinatario && venta.destinatario?.numeroIdentificacionDestinatario
-                                    ? `${venta.destinatario.tipoIdentificacionDestinatario} ${venta.destinatario.numeroIdentificacionDestinatario}`
-                                    : null} />
-                                <CampoFila label="Teléfono" value={venta.destinatario?.telefonoDestinatario} />
-                                <CampoFila label="Correo" value={venta.destinatario?.correoDestinatario} />
-                                <CampoFila label="Destino" value={venta.destinatario?.destino
-                                    ? `${venta.destinatario.destino.municipio} - ${venta.destinatario.destino.departamento}`
-                                    : null} />
-                                <CampoFila label="Dirección" value={venta.destinatario?.direccionDestinatario} />
-                            </Box>
-                        </FichaCard>
+                            <CampoFila label="Nombre" value={venta.destinatario?.nombreDestinatario} />
+                            <CampoFila label="Documento" value={venta.destinatario?.tipoIdentificacionDestinatario && venta.destinatario?.numeroIdentificacionDestinatario
+                                ? `${venta.destinatario.tipoIdentificacionDestinatario} ${venta.destinatario.numeroIdentificacionDestinatario}`
+                                : null} />
+                            <CampoFila label="Teléfono" value={venta.destinatario?.telefonoDestinatario} />
+                            <CampoFila label="Correo" value={venta.destinatario?.correoDestinatario} />
+                            <CampoFila label="Destino" value={venta.destinatario?.destino
+                                ? `${venta.destinatario.destino.municipio} - ${venta.destinatario.destino.departamento}`
+                                : null} />
+                            <CampoFila label="Dirección" value={venta.destinatario?.direccionDestinatario} />
+                        </Box>
+                    </FichaCard>
 
-                        <FichaCard icon={Inventory2OutlinedIcon} title="Paquete" sx={{ flex: 'none' }}>
-                            <CampoFila label="Contenido" value={paquete?.descripcionContenido} />
-                            <CampoFila label="Tipo de carga" value={paquete?.tipoCarga === 'hierro' ? 'Hierro' : paquete?.tipoCarga === 'normal' ? 'Paquete normal' : null} />
-                            <CampoFila label="Peso" value={paquete?.peso != null ? `${paquete.peso} kg` : null} />
-                            <CampoFila label="Dimensiones" value={dim} />
-
-                            <Box sx={{ borderTop: `1px solid ${theme.palette.divider}`, mt: 1, pt: 1.5 }}>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
-                                    <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Estado del paquete</Typography>
-                                    <EstadoDot info={getPaqueteEstadoDot(paquete?.estado)} label={getPaqueteEstadoDot(paquete?.estado).label} />
-                                </Box>
-                                <CampoFila label="Observación" value={paquete?.observacionEstado || null} />
-                                {paquete?.intentosEntrega > 0 && (
-                                    <CampoFila label="Insistencia" value={`${paquete.intentosEntrega} ${paquete.intentosEntrega === 1 ? 'intento' : 'intentos'}${paquete.fechaUltimoIntento ? ` · último ${formatFecha(paquete.fechaUltimoIntento)}` : ''}`} />
-                                )}
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
-                                    <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Evidencia</Typography>
-                                    {paquete?.fotoEntrega ? (
-                                        <Typography variant="body2" fontWeight={500}
-                                            onClick={() => setImagenAmpliada(paquete.fotoEntrega)}
-                                            sx={{ color: theme.palette.primary.main, cursor: 'pointer', textDecoration: 'underline', textDecorationStyle: 'dotted', '&:hover': { opacity: 0.75 } }}>
-                                            Ver foto
-                                        </Typography>
-                                    ) : (
-                                        <Typography variant="body2" fontWeight={500} color={theme.palette.text.medium}>—</Typography>
-                                    )}
-                                </Box>
-                                {paquete?.estado === 'En sede de destino' && (
-                                    <Box sx={{ mt: 1 }}>
-                                        {paquete?.conductorEntrega ? (
-                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
-                                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Repartidor local</Typography>
-                                                <Typography variant="body2" fontWeight={500}>
-                                                    {paquete.conductorEntrega.usuario ? `${paquete.conductorEntrega.usuario.nombre} ${paquete.conductorEntrega.usuario.apellido}` : '—'}
-                                                </Typography>
-                                            </Box>
-                                        ) : (
-                                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>
-                                                    Asignar repartidor local
-                                                </Typography>
-                                                {errorAsignacion && (
-                                                    <Alert severity="error" sx={{ borderRadius: 2 }} onClose={() => setErrorAsignacion(null)}>{errorAsignacion}</Alert>
-                                                )}
-                                                <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
-                                                    <Autocomplete
-                                                        sx={{ flex: 1 }} size="small"
-                                                        options={getConductoresHabilitados()}
-                                                        getOptionLabel={(c) => `${c.nombre} ${c.apellido}`}
-                                                        isOptionEqualToValue={(opt, val) => opt.idConductor === val.idConductor}
-                                                        value={repartidorSeleccionado}
-                                                        onChange={(_, val) => setRepartidorSeleccionado(val)}
-                                                        renderInput={(params) => (
-                                                            <TextField {...params} label="Conductor" placeholder="Busca por nombre"
-                                                                slotProps={{ inputLabel: { shrink: true } }} sx={formFieldStyles} />
-                                                        )}
-                                                    />
-                                                    <Button onClick={handleAsignarRepartidor} disabled={!repartidorSeleccionado || asignando}
-                                                        variant="contained" size="small"
-                                                        sx={{ backgroundColor: theme.palette.primary.main, borderRadius: 2, textTransform: 'none', mt: 0.25 }}>
-                                                        {asignando ? 'Asignando...' : 'Asignar'}
-                                                    </Button>
-                                                </Box>
-                                            </Box>
-                                        )}
-                                    </Box>
-                                )}
-                            </Box>
-                        </FichaCard>
-                    </Box>
-
-                    {/* Columna derecha: Envío y Pago — ocupa toda la altura */}
                     <FichaCard icon={PaymentOutlinedIcon} title="Envío y Pago">
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
                             <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Estado envío</Typography>
@@ -279,6 +222,83 @@ const ModalConsultarVenta = ({ venta, onClose }) => {
                         <CampoFila label="Observaciones" value={venta.observaciones} />
                     </FichaCard>
                 </Box>
+
+                {/* Ancho completo, horizontal por dentro (datos del paquete a la izquierda,
+                estado de entrega a la derecha) -- así no queda apretada en la mitad del
+                modal como cuando compartía fila con Remitente/Destinatario. */}
+                <FichaCard icon={Inventory2OutlinedIcon} title="Paquete">
+                    <Box sx={{ display: 'flex', gap: 2.5 }}>
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                            <CampoFila label="Contenido" value={paquete?.descripcionContenido} />
+                            <CampoFila label="Tipo de carga" value={paquete?.tipoCarga === 'hierro' ? 'Hierro' : paquete?.tipoCarga === 'normal' ? 'Paquete normal' : null} />
+                            <CampoFila label="Peso" value={paquete?.peso != null ? `${paquete.peso} kg` : null} />
+                            <CampoFila label="Dimensiones" value={dim} />
+                        </Box>
+                        <Box sx={{ width: '1px', backgroundColor: theme.palette.divider, flexShrink: 0 }} />
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
+                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Estado del paquete</Typography>
+                                <EstadoDot info={getPaqueteEstadoDot(paquete?.estado)} label={getPaqueteEstadoDot(paquete?.estado).label} />
+                            </Box>
+                            <CampoFila label="Observación" value={paquete?.observacionEstado || null} />
+                            {paquete?.intentosEntrega > 0 && (
+                                <CampoFila label="Insistencia" value={`${paquete.intentosEntrega} ${paquete.intentosEntrega === 1 ? 'intento' : 'intentos'}${paquete.fechaUltimoIntento ? ` · último ${formatFecha(paquete.fechaUltimoIntento)}` : ''}`} />
+                            )}
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
+                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Evidencia</Typography>
+                                {paquete?.fotoEntrega ? (
+                                    <Typography variant="body2" fontWeight={500}
+                                        onClick={() => setImagenAmpliada(paquete.fotoEntrega)}
+                                        sx={{ color: theme.palette.primary.main, cursor: 'pointer', textDecoration: 'underline', textDecorationStyle: 'dotted', '&:hover': { opacity: 0.75 } }}>
+                                        Ver foto
+                                    </Typography>
+                                ) : (
+                                    <Typography variant="body2" fontWeight={500} color={theme.palette.text.medium}>—</Typography>
+                                )}
+                            </Box>
+                            {paquete?.estado === 'En sede de destino' && (
+                                <Box sx={{ mt: 1 }}>
+                                    {paquete?.conductorEntrega ? (
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
+                                            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Repartidor local</Typography>
+                                            <Typography variant="body2" fontWeight={500}>
+                                                {paquete.conductorEntrega.usuario ? `${paquete.conductorEntrega.usuario.nombre} ${paquete.conductorEntrega.usuario.apellido}` : '—'}
+                                            </Typography>
+                                        </Box>
+                                    ) : (
+                                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>
+                                                Asignar repartidor local
+                                            </Typography>
+                                            {errorAsignacion && (
+                                                <Alert severity="error" sx={{ borderRadius: 2 }} onClose={() => setErrorAsignacion(null)}>{errorAsignacion}</Alert>
+                                            )}
+                                            <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
+                                                <Autocomplete
+                                                    sx={{ flex: 1 }} size="small"
+                                                    options={getConductoresHabilitados()}
+                                                    getOptionLabel={(c) => `${c.nombre} ${c.apellido}`}
+                                                    isOptionEqualToValue={(opt, val) => opt.idConductor === val.idConductor}
+                                                    value={repartidorSeleccionado}
+                                                    onChange={(_, val) => setRepartidorSeleccionado(val)}
+                                                    renderInput={(params) => (
+                                                        <TextField {...params} label="Conductor" placeholder="Busca por nombre"
+                                                            slotProps={{ inputLabel: { shrink: true } }} sx={formFieldStyles} />
+                                                    )}
+                                                />
+                                                <Button onClick={handleAsignarRepartidor} disabled={!repartidorSeleccionado || asignando}
+                                                    variant="contained" size="small"
+                                                    sx={{ backgroundColor: theme.palette.primary.main, borderRadius: 2, textTransform: 'none', mt: 0.25 }}>
+                                                    {asignando ? 'Asignando...' : 'Asignar'}
+                                                </Button>
+                                            </Box>
+                                        </Box>
+                                    )}
+                                </Box>
+                            )}
+                        </Box>
+                    </Box>
+                </FichaCard>
             </Box>
 
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5, px: 3, pb: 3 }}>

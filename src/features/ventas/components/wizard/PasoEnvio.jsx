@@ -1,4 +1,5 @@
-import { Box, Typography, Paper, Divider, Avatar, TextField, Autocomplete, MenuItem, Alert } from '@mui/material'
+import { useState } from 'react'
+import { Box, Typography, Paper, Divider, Avatar, TextField, Autocomplete, MenuItem, Alert, IconButton, Tooltip } from '@mui/material'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import RouteOutlinedIcon from '@mui/icons-material/RouteOutlined'
 import { FormField, FormSelect } from '../../../../shared/components/FormularioEstandarizado.jsx'
@@ -7,6 +8,7 @@ import { normalizarTexto } from '../../../../shared/utils/duplicados.js'
 import { formatFecha, formatHora12 } from '../../../../shared/utils/formatters.js'
 import { sumarDias } from '../../../../shared/utils/horarioLaboral.js'
 import PlacaDisplay from '../../../../shared/components/PlacaDisplay.jsx'
+import ModalRutaDiagrama from '../../../../shared/components/ModalRutaDiagrama.jsx'
 import { validarCampo, validarCampoPaquete } from '../../validations/validacion.js'
 import { rutaLlegaAlDestino, MENSAJE_RUTA_NO_LLEGA } from '../../validations/ventaValidation.js'
 
@@ -24,6 +26,7 @@ export default function PasoEnvio({
     ventaOriginal, valorServicioManualRef, getPesoOriginalPorPar,
     destinos,
 }) {
+    const [diagramaOpen, setDiagramaOpen] = useState(false)
     const rutaElegida = rutasProgramadas.find(r => r.idRuta === parseInt(form.idRuta))
     const paresElegida = rutaElegida?.paresVehiculoConductor || []
     // El destino de la venta (elegido en el paso "Participantes", uno por venta —
@@ -34,6 +37,14 @@ export default function PasoEnvio({
     const idDestinoVenta = parseInt(form.idDestinoDestinatario) || null
     const destinoCalzaConRuta = rutaLlegaAlDestino(rutaElegida, idDestinoVenta)
     const nombreDestinoVenta = destinos?.find(d => d.idDestino === idDestinoVenta)
+    // Solo tiene sentido ofrecer rutas que de verdad lleguen al municipio de destino de
+    // la venta (destino final o una parada intermedia) — mismo criterio que ya bloqueaba
+    // el paso si se elegía una que no calzaba (rutaLlegaAlDestino/MENSAJE_RUTA_NO_LLEGA
+    // más abajo), ahora aplicado ANTES, para no ni mostrar las que no sirven. Si la venta
+    // ya traía una ruta elegida que dejó de calzar entretanto (ej. le quitaron esa parada),
+    // sigue mostrándose igual como valor seleccionado — el Autocomplete no exige que
+    // `value` esté dentro de `options` — y el Alert de abajo sigue avisando del problema.
+    const rutasOpciones = rutasProgramadas.filter(r => r.habilitado !== false && r.estado === 'Programada' && rutaLlegaAlDestino(r, idDestinoVenta))
 
     const pesoOriginalPorPar = getPesoOriginalPorPar ? getPesoOriginalPorPar() : {}
     // Un Alert por cada vehículo del convoy que ya tiene paquetes asignados —
@@ -74,7 +85,7 @@ export default function PasoEnvio({
             <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                 <Autocomplete
                     popupIcon={<KeyboardArrowDownOutlinedIcon />}
-                    options={rutasProgramadas.filter(r => r.habilitado !== false && r.estado === 'Programada')}
+                    options={rutasOpciones}
                     getOptionLabel={(option) => {
                         // Placas de todos los vehículos del convoy en la etiqueta misma: si hay
                         // dos rutas con el mismo nombre (ej. mismo conductor, distinto vehículo),
@@ -106,12 +117,14 @@ export default function PasoEnvio({
                     }}
                     filterOptions={(opts, { inputValue }) => {
                         if (!inputValue.trim()) return [...opts].sort((a, b) => b.idRuta - a.idRuta).slice(0, 5)
-                        const q = normalizarTexto(inputValue)
-                        return opts.filter(r =>
-                            normalizarTexto(r.origen || '').includes(q) ||
-                            normalizarTexto(r.destino?.municipio || '').includes(q) ||
-                            normalizarTexto(r.destino?.departamento || '').includes(q)
-                        )
+                        // Se busca por palabra, no por el texto completo de una — así "medellin
+                        // caucasia" encuentra la ruta aunque "medellin" sea el origen y "caucasia"
+                        // el destino (en cualquier orden), y sigue funcionando buscar por uno solo.
+                        const palabras = normalizarTexto(inputValue).split(/\s+/).filter(Boolean)
+                        return opts.filter(r => {
+                            const combinado = normalizarTexto(`${r.origen || ''} ${r.destino?.municipio || ''} ${r.destino?.departamento || ''}`)
+                            return palabras.every(p => combinado.includes(p))
+                        })
                     }}
                     value={rutasProgramadas.find(r => r.idRuta === parseInt(form.idRuta)) || null}
                     inputValue={rutaInput}
@@ -176,11 +189,36 @@ export default function PasoEnvio({
                         idRuta: validarCampo('idRuta', form, ventaOriginal)
                             || (rutaElegida && !destinoCalzaConRuta ? MENSAJE_RUTA_NO_LLEGA : ''),
                     }))}
-                    noOptionsText="No se encontraron rutas"
+                    noOptionsText={rutasOpciones.length === 0 && idDestinoVenta
+                        ? `No hay rutas programadas hacia ${nombreDestinoVenta ? `${nombreDestinoVenta.municipio}, ${nombreDestinoVenta.departamento}` : 'ese destino'}`
+                        : 'No se encontraron rutas'}
                     renderInput={(params) => (
                         <TextField {...params} label="Ruta *"
                             error={!!errores.idRuta} helperText={errores.idRuta || 'Busca por origen o destino'}
-                            slotProps={{ inputLabel: { shrink: true }, htmlInput: { ...params.inputProps, maxLength: 100 } }}
+                            slotProps={{
+                                inputLabel: { shrink: true },
+                                htmlInput: { ...params.inputProps, maxLength: 100 },
+                                input: {
+                                    ...params.InputProps,
+                                    endAdornment: (
+                                        <>
+                                            {rutaElegida && (
+                                                <>
+                                                    <Tooltip title="Ver recorrido de la ruta">
+                                                        <IconButton size="small"
+                                                            onMouseDown={(e) => e.stopPropagation()}
+                                                            onClick={() => setDiagramaOpen(true)}>
+                                                            <RouteOutlinedIcon sx={{ fontSize: 18, color: theme.palette.text.secondary }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                    <Divider orientation="vertical" flexItem sx={{ my: 0.75, mx: 0.5 }} />
+                                                </>
+                                            )}
+                                            {params.InputProps.endAdornment}
+                                        </>
+                                    ),
+                                },
+                            }}
                             sx={formFieldStyles} />
                     )}
                 />
@@ -296,6 +334,14 @@ export default function PasoEnvio({
                 helperText={errores.observaciones || `Opcional · ${(form.observaciones || '').length}/500`}
                 error={errores.observaciones}
                 inputProps={{ maxLength: 500 }} />
+            <ModalRutaDiagrama
+                open={diagramaOpen}
+                onClose={() => setDiagramaOpen(false)}
+                origen={rutaElegida?.origen}
+                paradas={(rutaElegida?.paradas || []).filter(p => p.destino).map(p => p.destino.municipio)}
+                destino={rutaElegida?.destino?.municipio}
+                subtitulo={rutaElegida ? `${rutaElegida.origen || ''} → ${rutaElegida.destino?.municipio || ''}` : ''}
+            />
         </Box>
     )
 }

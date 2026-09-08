@@ -79,10 +79,13 @@ export default function PasoConfirmacion({
                     <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la información del remitente</Typography>
                     {clienteSeleccionado && <>
                         <ConfirmRow label="Nombre" value={`${clienteSeleccionado.nombre} ${clienteSeleccionado.apellido || ''}`.trim()} previousValue={clienteOriginal ? `${clienteOriginal.nombre} ${clienteOriginal.apellido || ''}`.trim() : undefined} />
-                        <ConfirmRow label="Identificación" value={clienteSeleccionado.numeroIdentificacion} previousValue={clienteOriginal?.numeroIdentificacion} />
+                        <ConfirmRow label="Documento" value={clienteSeleccionado.tipoIdentificacion && clienteSeleccionado.numeroIdentificacion ? `${clienteSeleccionado.tipoIdentificacion} ${clienteSeleccionado.numeroIdentificacion}` : clienteSeleccionado.numeroIdentificacion}
+                            previousValue={clienteOriginal ? (clienteOriginal.tipoIdentificacion && clienteOriginal.numeroIdentificacion ? `${clienteOriginal.tipoIdentificacion} ${clienteOriginal.numeroIdentificacion}` : clienteOriginal.numeroIdentificacion) : undefined} />
                         <ConfirmRow label="Teléfono" value={clienteSeleccionado.telefono} previousValue={clienteOriginal?.telefono} />
+                        <ConfirmRow label="Correo" value={clienteSeleccionado.email || null} previousValue={clienteOriginal ? (clienteOriginal.email || null) : undefined} />
                         <ConfirmRow label="Municipio" value={clienteSeleccionado.destino ? `${clienteSeleccionado.destino.municipio}, ${clienteSeleccionado.destino.departamento}` : null}
                             previousValue={clienteOriginal ? (clienteOriginal.destino ? `${clienteOriginal.destino.municipio}, ${clienteOriginal.destino.departamento}` : null) : undefined} />
+                        <ConfirmRow label="Dirección" value={clienteSeleccionado.direccion} previousValue={clienteOriginal?.direccion} />
                     </>}
                 </Paper>
                 <Paper elevation={0} sx={cardSx}>
@@ -91,9 +94,9 @@ export default function PasoConfirmacion({
                         <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Destinatario</Typography>
                     </Box>
                     <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la información del destinatario</Typography>
+                    <ConfirmRow label={form.tipoIdentificacionDestinatario === 'NIT' ? 'Razón Social' : 'Nombre'} value={form.nombreDestinatario} previousValue={formOriginal?.nombreDestinatario} />
                     <ConfirmRow label="Documento" value={form.tipoIdentificacionDestinatario && form.numeroIdentificacionDestinatario ? `${form.tipoIdentificacionDestinatario} ${form.numeroIdentificacionDestinatario}` : null}
                         previousValue={formOriginal ? (formOriginal.tipoIdentificacionDestinatario && formOriginal.numeroIdentificacionDestinatario ? `${formOriginal.tipoIdentificacionDestinatario} ${formOriginal.numeroIdentificacionDestinatario}` : null) : undefined} />
-                    <ConfirmRow label={form.tipoIdentificacionDestinatario === 'NIT' ? 'Razón Social' : 'Nombre'} value={form.nombreDestinatario} previousValue={formOriginal?.nombreDestinatario} />
                     <ConfirmRow label="Teléfono" value={form.telefonoDestinatario} previousValue={formOriginal?.telefonoDestinatario} />
                     <ConfirmRow label="Correo" value={form.correoDestinatario || null} previousValue={formOriginal ? (formOriginal.correoDestinatario || null) : undefined} />
                     <ConfirmRow label="Destino" value={destinoDestinatarioTexto} previousValue={destinoDestinatarioOriginal} />

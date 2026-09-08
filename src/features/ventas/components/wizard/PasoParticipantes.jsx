@@ -238,7 +238,7 @@ export default function PasoParticipantes({
                         error={errores.correoDestinatario}
                         required
                         placeholder="correo@dominio.com"
-                        helperText={errores.correoDestinatario || 'Se usa para la insistidera si no se logra la entrega'} icon={MailOutlinedIcon}
+                        helperText={errores.correoDestinatario} icon={MailOutlinedIcon}
                         inputProps={{ maxLength: 150 }} />
                     </Box>
                     <Box ref={(el) => setParticipanteRef?.('idDestinoDestinatario', el)}>
