@@ -10,6 +10,7 @@ import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { vehiculoDocumentosVigentes, conductorLicenciaVigente } from '../../shared/utils/vigenciaDocumentos.js'
 import WizardDialog from '../../shared/components/WizardDialog.jsx'
 import { steps, validarCampo, validarPares, validarParadas, validarPaso } from './validations/rutaValidation.js'
+import { esMunicipioOrigen } from '../../shared/config/negocio.js'
 import { filtrarObservacionesRuta } from '../../shared/validations/observacionesRutaValidation.js'
 import PasoDestinoPares from './components/wizard/PasoDestinoPares.jsx'
 import PasoHorario from './components/wizard/PasoHorario.jsx'
@@ -94,6 +95,13 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess, prefill }) => {
     const origenMunicipio = esRegreso ? prefill.origen : 'Medellín'
     const destinosSeleccionables = destinos.filter(d => d.municipio !== origenMunicipio)
 
+    // En un regreso el destino final NO se elige: el convoy siempre vuelve a la base
+    // (Medellín). Se fija abajo en un efecto (cuando los destinos ya cargaron) y el
+    // campo queda bloqueado. Si el catálogo no tuviera una fila "Medellín",
+    // destinoMedellin es undefined y el campo se deja editable como respaldo.
+    const destinoMedellin = esRegreso ? destinos.find(d => esMunicipioOrigen(d.municipio)) : null
+    const destinoBloqueado = esRegreso && !!destinoMedellin
+
     const [form, setForm] = useState({
         origen: 'Medellín',
         pares: [{ idVehiculo: '', idConductor: '' }],
@@ -135,6 +143,15 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess, prefill }) => {
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps -- solo debe correr al abrir con un prefill nuevo, no en cada cambio de vehiculos/conductores/destinos
     }, [open, prefill])
+
+    // Regreso: fija el destino final en Medellín en cuanto el catálogo de destinos
+    // esté disponible (puede no estarlo todavía cuando corre el efecto del prefill).
+    useEffect(() => {
+        if (!open || !esRegreso || !destinoMedellin) return
+        if (form.idDestino === destinoMedellin.idDestino) return
+        setForm(prev => ({ ...prev, idDestino: destinoMedellin.idDestino }))
+        setDestinoInput(`${destinoMedellin.municipio} - ${destinoMedellin.departamento}`)
+    }, [open, esRegreso, destinoMedellin, form.idDestino])
 
     const handleChange = (e) => {
         let { name, value } = e.target
@@ -333,6 +350,7 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess, prefill }) => {
                         theme={theme} form={form} errores={errores} setErrores={setErrores}
                         handleChange={handleChange} handleParChange={handleParChange} handleAgregarPar={handleAgregarPar} handleQuitarPar={handleQuitarPar}
                         destinos={destinosSeleccionables} destinoInput={destinoInput} setDestinoInput={setDestinoInput} destinoSeleccionado={destinoSeleccionado}
+                        esRegreso={esRegreso} destinoBloqueado={destinoBloqueado}
                         vehiculos={vehiculos} conductores={conductores} vehiculosExcluidos={vehiculosExcluidos} conductoresExcluidos={conductoresExcluidos}
                         vehiculoInputs={vehiculoInputs} setVehiculoInputs={setVehiculoInputs} conductorInputs={conductorInputs} setConductorInputs={setConductorInputs}
                         getVehiculoOpciones={getVehiculoOpciones} getConductorOpciones={getConductorOpciones}
@@ -347,7 +365,7 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess, prefill }) => {
                 return (
                     <PasoHorario
                         form={form} setForm={setForm} errores={errores} setErrores={setErrores} setApiError={setApiError} handleChange={handleChange}
-                        refrescarDisponibilidad={refrescarDisponibilidad}
+                        refrescarDisponibilidad={refrescarDisponibilidad} esRegreso={esRegreso}
                     />
                 )
             case 2:

@@ -11,6 +11,7 @@ import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import WizardDialog from '../../shared/components/WizardDialog.jsx'
 import { steps, PAQUETE_VACIO } from './validations/validacion.js'
+import { esMunicipioOrigen } from '../../shared/config/negocio.js'
 import { cardSx } from './style/wizardStyles.js'
 import useVentaWizardForm from './hooks/useVentaWizardForm.js'
 import PasoParticipantes from './components/wizard/PasoParticipantes.jsx'
@@ -51,7 +52,10 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
     const [submitting, setSubmitting] = useState(false)
     const [modalNuevoCliente, setModalNuevoCliente] = useState(false)
     const [destinoDestinatarioInput, setDestinoDestinatarioInput] = useState('')
-    const destinos = getDestinosHabilitados()
+    // El destino de una venta es a dónde va el paquete: nunca el municipio de origen
+    // (todas las ventas salen de ahí). Se filtra acá para que se propague de una vez a
+    // PasoParticipantes, PasoEnvio y PasoConfirmacion.
+    const destinos = getDestinosHabilitados().filter((d) => !esMunicipioOrigen(d.municipio))
 
     const {
         errores, setErrores, apiError, setApiError, activeStep, setActiveStep,

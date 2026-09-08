@@ -4,6 +4,10 @@ import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import { filterSelectSx } from '../style/filterSelectStyles.js'
 
 const ESTADOS_RUTA = ['Programada', 'En Ruta', 'Completada', 'Cancelada']
+// No es un estado real de la ruta — es un pseudo-filtro (el backend lo traduce a
+// "Completada + sin regreso enlazado + convoy fuera de base"). Ver LOGICA.md,
+// "Rutas — filtro 'Regreso pendiente'".
+const ESTADO_REGRESO_PENDIENTE = 'Regreso pendiente'
 
 const MESES = [
     { value: '1', label: 'Enero' }, { value: '2', label: 'Febrero' },
@@ -61,6 +65,11 @@ const FiltroRuta = ({
                             {filtroEstadoRuta === e && <CheckOutlinedIcon sx={{ fontSize: 14, color: theme.palette.text.secondary }} />}
                         </MenuItem>
                     ))}
+                    <MenuItem value={ESTADO_REGRESO_PENDIENTE}
+                        sx={{ borderTop: `1px solid ${theme.palette.divider}` }}>
+                        {ESTADO_REGRESO_PENDIENTE}
+                        {filtroEstadoRuta === ESTADO_REGRESO_PENDIENTE && <CheckOutlinedIcon sx={{ fontSize: 14, color: theme.palette.text.secondary }} />}
+                    </MenuItem>
                 </Select>
             </FormControl>
 

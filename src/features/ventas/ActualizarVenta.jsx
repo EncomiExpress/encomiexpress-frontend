@@ -14,6 +14,7 @@ import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { getGuiaPrincipal } from '../../shared/utils/formatters.js'
 import WizardDialog from '../../shared/components/WizardDialog.jsx'
 import { steps, PAQUETE_VACIO, formatearNit } from './validations/validacion.js'
+import { esMunicipioOrigen } from '../../shared/config/negocio.js'
 import { cardSx } from './style/wizardStyles.js'
 import useVentaWizardForm from './hooks/useVentaWizardForm.js'
 import PasoParticipantes from './components/wizard/PasoParticipantes.jsx'
@@ -55,7 +56,10 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
     const [formOriginal, setFormOriginal] = useState(null)
     const [sinCambios, setSinCambios] = useState(false)
     const [destinoDestinatarioInput, setDestinoDestinatarioInput] = useState('')
-    const destinos = getDestinosHabilitados()
+    // El destino de una venta nunca es el municipio de origen (ver RegistrarVenta). Una
+    // venta antigua dirigida a ese municipio igual se muestra: PasoParticipantes tiene un
+    // respaldo sintético con ventaOriginal.destinatario.destino cuando el id no está acá.
+    const destinos = getDestinosHabilitados().filter((d) => !esMunicipioOrigen(d.municipio))
 
     // Peso que esta misma venta ya tenía en cada vehículo del convoy, agrupado por par —
     // se resta del "pesoUsado" de cada par para no contar dos veces el peso que ya era de

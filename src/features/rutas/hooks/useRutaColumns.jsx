@@ -8,7 +8,7 @@ import PlacaDisplay from '../../../shared/components/PlacaDisplay.jsx'
 import { formatFecha, formatHora12 } from '../../../shared/utils/formatters.js'
 import { getEstadoColorRuta as getEstadoColor } from '../../../shared/utils/estadoColors.js'
 import { RutaEstadoDot } from '../components/EstadoDot.jsx'
-import { resolvePares, resolveDestino, resolveDepartamentos, getRutaId } from '../utils/rutaResolvers.js'
+import { resolvePares, resolveDestino, getRutaId } from '../utils/rutaResolvers.js'
 import { warningChipSx, errorChipSx } from '../style/chips.js'
 
 const useRutaColumns = ({
@@ -18,21 +18,11 @@ const useRutaColumns = ({
     { key: 'origen', label: 'Origen', sortField: 'origen', cellSx: { py: 1.5, fontSize: '0.85rem' }, render: (ruta) => ruta.origen || '—' },
     {
         key: 'destino', label: 'Destino', width: 190, cellSx: { py: 1.5, fontSize: '0.85rem' },
-        render: (ruta) => {
-            const departamentos = resolveDepartamentos(ruta)
-            return (
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.3 }}>
-                    <Typography sx={{ fontSize: '0.85rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={resolveDestino(ruta, destinos, { preferNombre: true })}>
-                        {resolveDestino(ruta, destinos, { preferNombre: true })}
-                    </Typography>
-                    {departamentos.length > 1 && (
-                        <Typography sx={{ fontSize: '0.7rem', color: theme.palette.text.secondary }}>
-                            Cruza {departamentos.join(', ')}
-                        </Typography>
-                    )}
-                </Box>
-            )
-        },
+        render: (ruta) => (
+            <Typography sx={{ fontSize: '0.85rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={resolveDestino(ruta, destinos, { preferNombre: true })}>
+                {resolveDestino(ruta, destinos, { preferNombre: true })}
+            </Typography>
+        ),
     },
     {
         key: 'fechaHora', label: 'Fecha y hora salida', cellSx: { py: 1.5 },
@@ -127,7 +117,30 @@ const useRutaColumns = ({
         key: 'estado', label: 'Estado', width: 230, cellSx: { py: 1.5, minWidth: 230 },
         render: (ruta) => {
             const id = getRutaId(ruta)
-            return ruta.estado === 'Completada' ? (
+            const esRegreso = ruta.idRutaIda != null
+            // Una ruta de ida ya Completada cuyo convoy sigue "fuera de base" (algún par
+            // con idDestinoActual) y todavía sin regreso programado: el conductor/vehículo
+            // están varados en el destino. Aviso no bloqueante (ver Captura 4/7).
+            const regresoPendiente = !esRegreso && ruta.estado === 'Completada' && !ruta.rutaRegreso
+                && (ruta.paresVehiculoConductor || []).some(
+                    (p) => p?.conductor?.idDestinoActual != null || p?.vehiculo?.idDestinoActual != null
+                )
+            const infoRegreso = (esRegreso || regresoPendiente) && (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25, px: 0.5 }}>
+                    {esRegreso && (
+                        <Chip label="Viaje de regreso" size="small"
+                            sx={{ height: 18, fontSize: '0.62rem', fontWeight: 600, borderRadius: '3px', width: 'fit-content',
+                                backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker,
+                                '& .MuiChip-label': { px: 0.7 } }} />
+                    )}
+                    {regresoPendiente && (
+                        <Typography sx={{ fontSize: '0.66rem', fontWeight: 500, color: '#D97706' }}>
+                            ↩ Regreso pendiente
+                        </Typography>
+                    )}
+                </Box>
+            )
+            const contenido = ruta.estado === 'Completada' ? (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1, py: 0.6 }}>
                     <RutaEstadoDot estado="Completada" />
                     <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: '#059669' }}>Completada</Typography>
@@ -185,6 +198,13 @@ const useRutaColumns = ({
                         {ruta.estado || 'Programada'}
                     </Typography>
                     <KeyboardArrowDownOutlinedIcon sx={{ fontSize: 14, color: '#9CA3AF' }} />
+                </Box>
+            )
+            if (!infoRegreso) return contenido
+            return (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.4 }}>
+                    {contenido}
+                    {infoRegreso}
                 </Box>
             )
         },

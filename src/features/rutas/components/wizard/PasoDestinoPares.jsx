@@ -16,6 +16,10 @@ import { MAX_PARES, MAX_PARADAS, validarCampo, validarPares } from '../../valida
 const PasoDestinoPares = ({
     theme, form, errores, setErrores, handleChange, handleParChange, handleAgregarPar, handleQuitarPar,
     destinos, destinoInput, setDestinoInput, destinoSeleccionado,
+    // esRegreso: viaje de vuelta — el paso 1 va casi todo bloqueado (mismo convoy, y
+    // el destino final es siempre la base). Solo las paradas quedan editables (el
+    // admin decide si el regreso es directo o aprovecha para recoger en el camino).
+    esRegreso = false, destinoBloqueado = false,
     vehiculos, conductores, vehiculosExcluidos, conductoresExcluidos,
     vehiculoInputs, setVehiculoInputs, conductorInputs, setConductorInputs,
     getVehiculoOpciones, getConductorOpciones,
@@ -32,12 +36,13 @@ const PasoDestinoPares = ({
             <FormField label="Origen" name="origen" value={form.origen}
                 disabled
                 required error={errores.origen}
-                helperText={errores.origen || (form.idRutaIda ? 'Origen del regreso: donde terminó la ruta de ida' : 'Toda ruta sale de Medellín (oficina principal)')}
+                helperText={errores.origen || (esRegreso ? 'Origen del regreso: donde terminó la ruta de ida' : 'Toda ruta sale de Medellín (oficina principal)')}
                 icon={RouteOutlinedIcon} inputProps={{ maxLength: 100 }} placeholder="Ej: Medellín" />
             </Box>
             <Box ref={(el) => setPaso1Ref?.('idDestino', el)}>
             <Autocomplete
                 options={destinos}
+                disabled={destinoBloqueado}
                 popupIcon={<KeyboardArrowDownOutlinedIcon />}
                 getOptionLabel={(d) => `${d.municipio} - ${d.departamento}`}
                 isOptionEqualToValue={(opt, val) => opt.idDestino === val.idDestino}
@@ -77,7 +82,7 @@ const PasoDestinoPares = ({
                 noOptionsText="No se encontraron destinos"
                 renderInput={(params) => (
                     <TextField {...params} label="Destino *"
-                        error={!!errores.idDestino} helperText={errores.idDestino || 'Busca por nombre, municipio o departamento'}
+                        error={!!errores.idDestino} helperText={errores.idDestino || (destinoBloqueado ? 'El regreso siempre vuelve a la base (Medellín)' : 'Busca por nombre, municipio o departamento')}
                         slotProps={{ inputLabel: { shrink: true }, htmlInput: { ...params.inputProps, maxLength: 50 } }} sx={formFieldStyles} />
                 )}
             />
@@ -91,7 +96,11 @@ const PasoDestinoPares = ({
         {errores.pares && (
             <Typography variant="caption" color="error" sx={{ mt: -1.5 }}>{errores.pares}</Typography>
         )}
-        {(vehiculosExcluidos > 0 || conductoresExcluidos > 0) && (
+        {esRegreso ? (
+            <Typography variant="caption" color={theme.palette.text.secondary} sx={{ mt: -1.5 }}>
+                Se devuelven los mismos vehículos y conductores de la ida.
+            </Typography>
+        ) : (vehiculosExcluidos > 0 || conductoresExcluidos > 0) && (
             <Typography variant="caption" color={theme.palette.text.secondary} sx={{ mt: -1.5 }}>
                 {vehiculosExcluidos > 0 && `${vehiculosExcluidos} vehículo${vehiculosExcluidos > 1 ? 's' : ''} oculto${vehiculosExcluidos > 1 ? 's' : ''} por documentos vencidos`}
                 {vehiculosExcluidos > 0 && conductoresExcluidos > 0 && ' · '}
@@ -107,6 +116,7 @@ const PasoDestinoPares = ({
                 <Box key={index} sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 1.5, alignItems: 'flex-start' }}>
                     <Autocomplete
                         options={opcionesVehiculo}
+                        disabled={esRegreso}
                         popupIcon={<KeyboardArrowDownOutlinedIcon />}
                         getOptionLabel={(v) => `${v.placa} — ${v.marca} ${v.modelo}`}
                         isOptionEqualToValue={(opt, val) => opt.idVehiculo === val.idVehiculo}
@@ -147,6 +157,7 @@ const PasoDestinoPares = ({
                     />
                     <Autocomplete
                         options={opcionesConductor}
+                        disabled={esRegreso}
                         popupIcon={<KeyboardArrowDownOutlinedIcon />}
                         getOptionLabel={(c) => `${c.nombre} ${c.apellido}`}
                         isOptionEqualToValue={(opt, val) => opt.idConductor === val.idConductor}
@@ -197,22 +208,24 @@ const PasoDestinoPares = ({
                         )}
                     />
                     <IconButton onClick={() => handleQuitarPar(index)}
-                        disabled={form.pares.length === 1}
-                        sx={{ visibility: form.pares.length === 1 ? 'hidden' : 'visible', mt: 1 }}>
+                        disabled={esRegreso || form.pares.length === 1}
+                        sx={{ visibility: (esRegreso || form.pares.length === 1) ? 'hidden' : 'visible', mt: 1 }}>
                         <CloseIcon fontSize="small" />
                     </IconButton>
                 </Box>
             )
         })}
-        <Button
-            onClick={handleAgregarPar}
-            startIcon={<AddOutlinedIcon />}
-            disabled={form.pares.length >= Math.min(MAX_PARES, vehiculos.length, conductores.length)}
-            sx={{ alignSelf: 'flex-start', textTransform: 'none', fontWeight: 600 }}
-        >
-            Agregar vehículo y conductor
-        </Button>
-        {form.pares.length >= MAX_PARES && (
+        {!esRegreso && (
+            <Button
+                onClick={handleAgregarPar}
+                startIcon={<AddOutlinedIcon />}
+                disabled={form.pares.length >= Math.min(MAX_PARES, vehiculos.length, conductores.length)}
+                sx={{ alignSelf: 'flex-start', textTransform: 'none', fontWeight: 600 }}
+            >
+                Agregar vehículo y conductor
+            </Button>
+        )}
+        {!esRegreso && form.pares.length >= MAX_PARES && (
             <Typography variant="caption" color={theme.palette.text.secondary} sx={{ mt: -1.5 }}>
                 Llegaste al límite de vehículos y conductores ({MAX_PARES})
             </Typography>

@@ -117,6 +117,11 @@ export const validarPaso = (step, form, rutasProgramadas, opts = {}) => {
         if (form.idRuta && !rutaSel && !e.idRuta) {
             e.idRuta = 'Esta ruta ya no está disponible — elige otra'
         }
+        // Un viaje de regreso no transporta ventas (mismo criterio que el filtro del
+        // selector en PasoEnvio.jsx y el rechazo del backend).
+        if (rutaSel && !e.idRuta && rutaSel.idRutaIda != null) {
+            e.idRuta = 'Esta ruta es un viaje de regreso — elige una ruta de ida'
+        }
         if (rutaSel && !e.idRuta && !rutaLlegaAlDestino(rutaSel, parseInt(form.idDestinoDestinatario) || null)) {
             e.idRuta = MENSAJE_RUTA_NO_LLEGA
         }

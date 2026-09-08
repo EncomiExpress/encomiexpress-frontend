@@ -44,7 +44,9 @@ export default function PasoEnvio({
     // ya traía una ruta elegida que dejó de calzar entretanto (ej. le quitaron esa parada),
     // sigue mostrándose igual como valor seleccionado — el Autocomplete no exige que
     // `value` esté dentro de `options` — y el Alert de abajo sigue avisando del problema.
-    const rutasOpciones = rutasProgramadas.filter(r => r.habilitado !== false && r.estado === 'Programada' && rutaLlegaAlDestino(r, idDestinoVenta))
+    // Un viaje de regreso (r.idRutaIda) nunca lleva ventas nuevas — solo devuelve el
+    // convoy a la base. Se excluye del selector; el backend también lo rechaza.
+    const rutasOpciones = rutasProgramadas.filter(r => r.habilitado !== false && r.estado === 'Programada' && r.idRutaIda == null && rutaLlegaAlDestino(r, idDestinoVenta))
 
     const pesoOriginalPorPar = getPesoOriginalPorPar ? getPesoOriginalPorPar() : {}
     // Un Alert por cada vehículo del convoy que ya tiene paquetes asignados —

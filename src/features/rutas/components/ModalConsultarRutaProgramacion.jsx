@@ -21,7 +21,7 @@ import CampoFila from '../../../shared/components/CampoFila.jsx'
 import FichaCard from '../../../shared/components/FichaCard.jsx'
 import EstadoDot, { RutaEstadoDot } from './EstadoDot.jsx'
 import ModalRutaDiagrama from '../../../shared/components/ModalRutaDiagrama.jsx'
-import { resolvePares, resolveDestino, resolveDestinoPartes, resolveParadas, resolveDepartamentos } from '../utils/rutaResolvers.js'
+import { resolvePares, resolveDestino, resolveDestinoPartes, resolveParadas } from '../utils/rutaResolvers.js'
 import { errorChipSx } from '../style/chips.js'
 
 const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
@@ -174,17 +174,6 @@ const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
                                 </Typography>
                             </Box>
                         </Box>
-                        {resolveDepartamentos(ruta).length > 1 && (
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9, gap: 1 }}>
-                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Departamentos</Typography>
-                                <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                                    {resolveDepartamentos(ruta).map((dep) => (
-                                        <Chip key={dep} label={dep} size="small"
-                                            sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem' }} />
-                                    ))}
-                                </Box>
-                            </Box>
-                        )}
                         <CampoFila label="Observaciones" value={ruta.observaciones} />
                         {ruta.rutaIda && (
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>

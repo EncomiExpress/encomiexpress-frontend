@@ -9,7 +9,7 @@ import { maxISO, validarCampo } from '../../validations/rutaValidation.js'
 
 const PasoHorario = ({
     form, setForm, errores, setErrores, setApiError, handleChange,
-    idRutaExcluir, refrescarDisponibilidad, afterChange = () => { },
+    idRutaExcluir, refrescarDisponibilidad, esRegreso = false, afterChange = () => { },
 }) => (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
         <Box sx={{ display: 'flex', gap: 2.5, alignItems: 'flex-start', flexWrap: 'wrap' }}>
@@ -35,11 +35,12 @@ const PasoHorario = ({
                 }}
                 pares={form.pares}
                 idRutaExcluir={idRutaExcluir}
+                esRegreso={esRegreso}
                 minDate={hoyISO()}
                 maxDate={maxISO()}
                 refrescarKey={refrescarDisponibilidad}
                 error={errores.fechaSalida}
-                helperText="Los días en rojo ya tienen a ese vehículo o conductor ocupado en otra ruta"
+                helperText={esRegreso ? undefined : 'Los días en rojo ya tienen a ese vehículo o conductor ocupado en otra ruta'}
             />
             <CalendarioDisponibilidad
                 modo="llegada"
@@ -56,11 +57,12 @@ const PasoHorario = ({
                 }}
                 pares={form.pares}
                 idRutaExcluir={idRutaExcluir}
+                esRegreso={esRegreso}
                 minDate={form.fechaSalida ? sumarDias(form.fechaSalida, MIN_DIAS_SALIDA_LLEGADA) : hoyISO()}
                 maxDate={maxISO()}
                 refrescarKey={refrescarDisponibilidad}
                 error={errores.fechaLlegadaEstimada}
-                helperText={form.fechaSalida ? 'Los días en rojo ya tienen a ese vehículo o conductor ocupado en otra ruta' : 'Selecciona primero la fecha de salida'}
+                helperText={!form.fechaSalida ? 'Selecciona primero la fecha de salida' : (esRegreso ? undefined : 'Los días en rojo ya tienen a ese vehículo o conductor ocupado en otra ruta')}
             />
         </Box>
         {idRutaExcluir && (

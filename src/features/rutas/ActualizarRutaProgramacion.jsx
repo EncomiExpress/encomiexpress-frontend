@@ -92,6 +92,12 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
     const origenMunicipio = esRegreso ? ruta?.origen : 'Medellín'
     const destinosSeleccionables = destinos.filter(d => d.municipio !== origenMunicipio)
 
+    // En un regreso el destino final no se edita (el convoy siempre vuelve a la
+    // base): el campo va bloqueado si ya tiene un valor. Toda ruta de regreso trae
+    // su idDestino desde que se creó — el `!!form.idDestino` es solo una guarda para
+    // no bloquear un campo vacío y dejar sin salida a algún caso borde.
+    const destinoBloqueado = esRegreso && !!form.idDestino
+
     const [form, setForm] = useState({
         origen: '', pares: [{ idRutaVehiculoConductor: '', idVehiculo: '', idConductor: '' }], idDestino: '', paradas: [],
         fechaSalida: '', horaSalida: '', fechaLlegadaEstimada: '', horaLlegadaEstimada: '', observaciones: ''
@@ -384,6 +390,7 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
                         theme={theme} form={form} errores={errores} setErrores={setErrores}
                         handleChange={handleChange} handleParChange={handleParChange} handleAgregarPar={handleAgregarPar} handleQuitarPar={handleQuitarPar}
                         destinos={destinosSeleccionables} destinoInput={destinoInput} setDestinoInput={setDestinoInput} destinoSeleccionado={destinoSeleccionado}
+                        esRegreso={esRegreso} destinoBloqueado={destinoBloqueado}
                         vehiculos={vehiculos} conductores={conductores} vehiculosExcluidos={vehiculosExcluidos} conductoresExcluidos={conductoresExcluidos}
                         vehiculoInputs={vehiculoInputs} setVehiculoInputs={setVehiculoInputs} conductorInputs={conductorInputs} setConductorInputs={setConductorInputs}
                         getVehiculoOpciones={getVehiculoOpciones} getConductorOpciones={getConductorOpciones}
@@ -398,7 +405,7 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
                     <PasoHorario
                         form={form} setForm={setForm} errores={errores} setErrores={setErrores} setApiError={setApiError} handleChange={handleChange}
                         idRutaExcluir={ruta?.idRuta ?? ruta?.idRutaProgramada}
-                        refrescarDisponibilidad={refrescarDisponibilidad}
+                        refrescarDisponibilidad={refrescarDisponibilidad} esRegreso={esRegreso}
                         afterChange={() => setSinCambios(false)}
                     />
                 )

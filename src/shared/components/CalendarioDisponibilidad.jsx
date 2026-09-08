@@ -33,6 +33,11 @@ const CalendarioDisponibilidad = ({
     // elegida) para poder calcular el choque real contra otras rutas.
     modo = 'salida',
     fechaReferencia,
+    // Viaje de regreso: el par (conductor+vehículo) está "fuera de base" y no puede
+    // estar comprometido en ninguna otra ruta, así que la leyenda "Ocupado /
+    // Seleccionado" nunca aplica — se oculta. El calendario sigue funcionando para
+    // elegir la fecha; solo se quita el adorno de ocupación.
+    esRegreso = false,
     // Sin tiempo real (WebSockets) en este proyecto, la disponibilidad se trae una
     // sola vez y podría quedar desactualizada si alguien más registra otra ruta con
     // este mismo vehículo/conductor mientras el formulario sigue abierto. Cambiar este
@@ -206,7 +211,7 @@ const CalendarioDisponibilidad = ({
                     </Box>
                 )}
 
-                {!loading && (idVehiculos.length > 0 || idConductores.length > 0) && (
+                {!loading && !esRegreso && (idVehiculos.length > 0 || idConductores.length > 0) && (
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 1, pt: 1, borderTop: `1px solid ${theme.palette.divider}` }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                             <Box sx={{ width: 8, height: 8, borderRadius: 0.5, backgroundColor: alpha(theme.palette.error.main, 0.12), border: `1px solid ${alpha(theme.palette.error.main, 0.4)}` }} />
