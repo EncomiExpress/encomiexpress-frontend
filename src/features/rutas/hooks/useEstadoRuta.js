@@ -16,13 +16,13 @@ export function useEstadoRuta({ rutasProgramadas, getVehiculos, getConductores, 
     const ejecutarCambioEstado = async (id, nuevoEstado, extra = {}) => {
         try {
             await updateEstado(id, nuevoEstado, extra)
-            // updateEstado del contexto solo parcha el campo "estado" en memoria — los
-            // indicadores "pendienteLegalizacion"/"paquetesPendientes" salen de una
-            // consulta agregada aparte (rutaService.getAll) y quedarían desactualizados
-            // (ej. al pasar a "En Ruta" recién ahí nace el anticipo "En Legalización" y
-            // los paquetes "Por entregar", pero la fila seguiría mostrando el selector
-            // normal hasta el próximo refresco). Se refresca la lista completa para que
-            // el selector dividido de bloqueo aparezca de inmediato si corresponde.
+            // updateEstado del contexto solo parcha el campo "estado" en memoria — el
+            // indicador "paquetesPendientes" sale de una consulta agregada aparte
+            // (rutaService.getAll) y quedaría desactualizado (ej. al pasar a "En Ruta"
+            // recién ahí nacen los paquetes "Por entregar", pero la fila seguiría
+            // mostrando el selector normal hasta el próximo refresco). Se refresca la
+            // lista completa para que el selector dividido de bloqueo aparezca de
+            // inmediato si corresponde.
             refetch()
             showToast(`Estado actualizado a "${nuevoEstado}".`, 'success')
         } catch (err) {
@@ -195,9 +195,20 @@ export function useEstadoRuta({ rutasProgramadas, getVehiculos, getConductores, 
             }
         }
 
+        // "Completada": el vehículo/conductor SIEMPRE quedan con estado "Disponible"
+        // en BD (rutaService.updateEstado), pero solo quedan realmente libres para
+        // cualquier ruta nueva si esta era un viaje de regreso (idRutaIda) — si no,
+        // quedan marcados "fuera de base" en el destino de la ruta (idDestinoActual)
+        // y validarUbicacionParaRuta bloquea asignarlos a una ruta nueva desde
+        // Medellín hasta que se les programe el regreso. Ver LOGICA.md, "Rutas —
+        // origen y fuera de base".
+        const infoCompletada = rutaActual?.idRutaIda
+            ? 'El vehículo y el conductor volvieron a base: quedan disponibles para rutas nuevas. Las ventas con todos los paquetes entregados pasarán a "Entregada"; las que sigan en distribución continuarán su curso.'
+            : `El vehículo y el conductor quedan marcados en ${rutaActual?.destino?.municipio || 'el destino de esta ruta'}: no se les podrá asignar una ruta nueva desde Medellín hasta programarles el regreso. Las ventas con todos los paquetes entregados pasarán a "Entregada"; las que sigan en distribución continuarán su curso.`
+
         const INFO_ESTADOS = {
             'Programada': 'Las ventas seguirán asociadas bajo esta ruta. Deberá registrar un nuevo anticipo para el conductor si es necesario.',
-            'Completada': 'El vehículo y el conductor quedarán disponibles. Las ventas con todos los paquetes entregados pasarán a "Entregada"; las que sigan en distribución de sede continuarán su curso con el distribuidor.',
+            'Completada': infoCompletada,
             'Cancelada': 'El vehículo y el conductor quedarán disponibles y el anticipo pasará a "Excedente pendiente". Las ventas que aún no llegaban a ninguna sede vuelven a "Programada" para reasignarlas.',
         }
         const info = INFO_ESTADOS[nuevoEstado] || ''

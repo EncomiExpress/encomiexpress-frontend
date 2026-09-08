@@ -24,6 +24,9 @@ const ModalConfirmarExcedente = ({ theme, confirmDev, onClose, confirmandoEstado
                     <Typography fontWeight={700} fontSize="1.4rem" color={theme.palette.text.primary}>
                         {confirmDev.esFaltante ? 'Confirmar reposición' : 'Confirmar devolución'}
                     </Typography>
+                    <Typography fontWeight={700} fontSize="0.8rem" color={theme.palette.text.secondary}>
+                        Estado irreversible.
+                    </Typography>
                     <Typography fontSize="1rem" color={theme.palette.text.secondary}>
                         {confirmDev.esFaltante ? '¿Ya le repusiste el faltante al conductor?' : '¿El conductor devolvió el excedente?'}
                     </Typography>
