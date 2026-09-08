@@ -50,13 +50,16 @@ const ModalConsultarUsuario = ({ usuario, onClose }) => {
                     <FichaCard icon={AssignmentIndOutlinedIcon} title="Detalles del Usuario" subtitle="Identificación y datos personales">
                         <CampoFila label="Identificación" value={`${usuario.tipoIdentificacion} ${usuario.numeroIdentificacion}`} />
                         <CampoFila label="Nombre" value={usuario.nombre} />
-                        <CampoFila label="Apellido" value={usuario.apellido} />
+                        <CampoFila label="Apellidos" value={usuario.apellido} />
                     </FichaCard>
 
                     <FichaCard icon={BadgeOutlinedIcon} title="Contacto y Cuenta" subtitle="Datos de contacto y estado de la cuenta">
                         <CampoFila label="Teléfono" value={usuario.telefono || '—'} />
                         <CampoFila label="Email" value={usuario.email} />
                         <CampoFila label="Rol" value={usuario.rol?.nombre} esChip chipVariant="outlined-pill" />
+                        {usuario.rol?.nombre === 'distribuidor' && (
+                            <CampoFila label="Sede" value={(usuario.sedes || []).map(s => s.destino?.municipio).filter(Boolean).join(', ') || '—'} />
+                        )}
                         <CampoFila label="Estado" value={usuario.habilitado ? 'Habilitado' : 'Inhabilitado'} />
                     </FichaCard>
                 </Box>

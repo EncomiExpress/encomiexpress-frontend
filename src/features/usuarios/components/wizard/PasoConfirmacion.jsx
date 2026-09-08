@@ -39,7 +39,7 @@ const PasoConfirmacion = ({ theme, form, formOriginal, rolesDisponibles, sedesDi
                     <ConfirmRow label="Tipo de documento" value={form.tipoIdentificacion} previousValue={formOriginal?.tipoIdentificacion} />
                     <ConfirmRow label="N° de documento" value={form.numeroIdentificacion} previousValue={formOriginal?.numeroIdentificacion} />
                     <ConfirmRow label="Nombre" value={form.nombre} previousValue={formOriginal?.nombre} />
-                    <ConfirmRow label="Apellido" value={form.apellido} previousValue={formOriginal?.apellido} />
+                    <ConfirmRow label="Apellidos" value={form.apellido} previousValue={formOriginal?.apellido} />
                 </Paper>
                 <Paper elevation={0} sx={cardSx(theme)}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
