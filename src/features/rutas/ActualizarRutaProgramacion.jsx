@@ -10,6 +10,7 @@ import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { vehiculoDocumentosVigentes, conductorLicenciaVigente } from '../../shared/utils/vigenciaDocumentos.js'
 import WizardDialog from '../../shared/components/WizardDialog.jsx'
 import { steps, validarCampo, validarPares, validarParadas, validarPaso } from './validations/rutaValidation.js'
+import { resolveDestinoPartes } from './utils/rutaResolvers.js'
 import { filtrarObservacionesRuta } from '../../shared/validations/observacionesRutaValidation.js'
 import PasoDestinoPares from './components/wizard/PasoDestinoPares.jsx'
 import PasoHorario from './components/wizard/PasoHorario.jsx'
@@ -418,7 +419,9 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
         <WizardDialog
             open={open} onClose={handleClose}
             title="Editar Ruta"
-            subtitle={originalData?.origen ? `Modificando datos de ${originalData.origen}` : 'Modifica los campos que necesites.'}
+            subtitle={originalData?.origen
+                ? `Modificando datos de ${originalData.origen} - ${resolveDestinoPartes(ruta || {}, destinos).municipio}`
+                : 'Modifica los campos que necesites.'}
             steps={steps} activeStep={activeStep}
             onBack={handleBack} onNext={handleNext} onSubmit={handleSubmit}
             submitting={submitting} submitDisabled={sinCambios}

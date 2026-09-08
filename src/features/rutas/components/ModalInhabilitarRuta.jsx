@@ -51,7 +51,9 @@ const ModalInhabilitarRuta = ({ open, data, onClose, onExited, onConfirm }) => {
     const bloqueado = data?.habilitadoActual && (enCurso || nVentas > 0 || hayAnticipo)
     const cargando = data?.habilitadoActual && deps.loading
 
-    const nombre = data?.origen || `#${data?.idRuta}`
+    const nombre = data?.origen
+        ? (data?.destino ? `${data.origen} - ${data.destino}` : data.origen)
+        : `#${data?.idRuta}`
 
     // Si se va a habilitar una ruta Programada cuya fecha/hora de salida ya venció,
     // rutaService.toggleHabilitado la deja Cancelada en la misma operación (evita que

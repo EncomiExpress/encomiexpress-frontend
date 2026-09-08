@@ -14,6 +14,7 @@ import { filtrarObservacionesRuta } from '../../shared/validations/observaciones
 import PasoDestinoPares from './components/wizard/PasoDestinoPares.jsx'
 import PasoHorario from './components/wizard/PasoHorario.jsx'
 import PasoConfirmacion from './components/wizard/PasoConfirmacion.jsx'
+import { useSugerenciaParadas } from './hooks/useSugerenciaParadas.js'
 
 // `prefill` (opcional): datos con los que arranca el formulario — hoy solo lo usa
 // "Programar regreso" (ListarRutaProgramacion.jsx), para precargar origen/pares/
@@ -290,6 +291,24 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess, prefill }) => {
 
     const destinoSeleccionado = destinos.find(d => d.idDestino === parseInt(form.idDestino)) || null
 
+    // Sugiere las paradas más usadas en rutas anteriores hacia el mismo destino
+    // final, para no volver a armarlas a mano cada vez (ver useSugerenciaParadas).
+    // Se oculta sola si ya coincide con lo que el formulario tiene seleccionado.
+    const sugerenciaParadasRaw = useSugerenciaParadas(parseInt(form.idDestino) || null)
+    const paradasActualesIds = form.paradas.filter(p => p.idDestino).map(p => parseInt(p.idDestino))
+    const sugerenciaParadas = sugerenciaParadasRaw && sugerenciaParadasRaw.ids.join(',') !== paradasActualesIds.join(',')
+        ? sugerenciaParadasRaw
+        : null
+    const handleUsarSugerenciaParadas = () => {
+        if (!sugerenciaParadas) return
+        setForm(prev => ({ ...prev, paradas: sugerenciaParadas.ids.map(id => ({ idDestino: id })) }))
+        setParadaInputs(sugerenciaParadas.ids.map(id => {
+            const d = destinos.find(x => x.idDestino === id)
+            return d ? `${d.municipio} - ${d.departamento}` : ''
+        }))
+        setErrores(prev => ({ ...prev, paradas: '' }))
+    }
+
     const getVehiculoOpciones = (index) => {
         const usados = form.pares.filter((_, i) => i !== index).map(p => p.idVehiculo)
         return vehiculosSeleccionables.filter(v => !usados.includes(v.idVehiculo))
@@ -320,6 +339,7 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess, prefill }) => {
                         handleParadaChange={handleParadaChange} handleAgregarParada={handleAgregarParada}
                         handleQuitarParada={handleQuitarParada} handleMoverParada={handleMoverParada}
                         paradaInputs={paradaInputs} setParadaInputs={setParadaInputs} getParadaOpciones={getParadaOpciones}
+                        sugerenciaParadas={sugerenciaParadas} onUsarSugerenciaParadas={handleUsarSugerenciaParadas}
                         setPaso1Ref={setPaso1Ref}
                     />
                 )

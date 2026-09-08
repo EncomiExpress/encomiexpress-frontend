@@ -1,8 +1,11 @@
-import { Box, Typography, Paper, Alert, Divider } from '@mui/material'
+import { useState } from 'react'
+import { Box, Typography, Paper, Alert, Divider, Button } from '@mui/material'
 import RouteOutlinedIcon from '@mui/icons-material/RouteOutlined'
 import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
+import ScheduleOutlinedIcon from '@mui/icons-material/ScheduleOutlined'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import ConfirmRow from '../../../../shared/components/ConfirmRow.jsx'
+import ModalRutaDiagrama from '../../../../shared/components/ModalRutaDiagrama.jsx'
 import { formatFecha, formatHora12 } from '../../../../shared/utils/formatters.js'
 import { getVehiculoLabel, getConductorLabel, getDestinoLabel } from '../../utils/rutaResolvers.js'
 import { cardSx } from '../../style/wizardStyles.js'
@@ -13,7 +16,10 @@ const PasoConfirmacion = ({
     theme, form, formOriginal, apiError, setApiError, sinCambios, setSinCambios,
     destinos, vehiculos, conductores, ruta,
 }) => {
+    const [diagramaOpen, setDiagramaOpen] = useState(false)
     const paresOriginales = ruta?.paresVehiculoConductor || []
+    const destinoLabel = getDestinoLabel(form.idDestino, destinos, ruta).split(' - ')[0]
+    const paradasLabels = form.paradas.filter(p => p.idDestino).map(p => getDestinoLabel(p.idDestino, destinos, ruta).split(' - ')[0])
 
     const camposComparados = formOriginal ? [
         [form.origen, formOriginal.origen],
@@ -51,9 +57,16 @@ const PasoConfirmacion = ({
                 <Paper elevation={0} sx={cardSx(theme)}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                         <RouteOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
-                        <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Datos de la Ruta y Horario</Typography>
+                        <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Recorrido</Typography>
                     </Box>
-                    <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica la información y el horario de la ruta</Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, mb: 1 }}>
+                        <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>Verifica el origen, las paradas y el destino de la ruta</Typography>
+                        <Button size="small" startIcon={<RouteOutlinedIcon sx={{ fontSize: 16 }} />}
+                            onClick={() => setDiagramaOpen(true)}
+                            sx={{ textTransform: 'none', color: theme.palette.text.secondary, fontSize: '0.78rem', flexShrink: 0 }}>
+                            Ver recorrido
+                        </Button>
+                    </Box>
                     <ConfirmRow label="Origen" value={form.origen} previousValue={formOriginal?.origen} />
                     {(() => {
                         const paradasActuales = form.paradas.filter(p => p.idDestino)
@@ -65,11 +78,6 @@ const PasoConfirmacion = ({
                         ))
                     })()}
                     <ConfirmRow label="Destino" value={getDestinoLabel(form.idDestino, destinos, ruta)} previousValue={formOriginal ? getDestinoLabel(formOriginal.idDestino, destinos, ruta) : undefined} />
-                    <ConfirmRow label="Fecha Salida" value={formatFecha(form.fechaSalida)} previousValue={formOriginal?.fechaSalida ? formatFecha(formOriginal.fechaSalida) : undefined} />
-                    <ConfirmRow label="Hora Salida" value={formatHora12(form.horaSalida)} previousValue={formOriginal?.horaSalida ? formatHora12(formOriginal.horaSalida) : undefined} />
-                    <ConfirmRow label="Fecha Estimada de Llegada" value={formatFecha(form.fechaLlegadaEstimada)} previousValue={formOriginal?.fechaLlegadaEstimada ? formatFecha(formOriginal.fechaLlegadaEstimada) : undefined} />
-                    <ConfirmRow label="Hora Llegada" value={formatHora12(form.horaLlegadaEstimada) || 'N/A'} previousValue={formOriginal ? (formatHora12(formOriginal.horaLlegadaEstimada) || 'N/A') : undefined} />
-                    <ConfirmRow label="Observaciones" value={form.observaciones} previousValue={formOriginal?.observaciones} />
                 </Paper>
                 <Paper elevation={0} sx={cardSx(theme)}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
@@ -97,6 +105,26 @@ const PasoConfirmacion = ({
                     })}
                 </Paper>
             </Box>
+            <Paper elevation={0} sx={cardSx(theme)}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                    <ScheduleOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.primary }} />
+                    <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Horario y Detalles</Typography>
+                </Box>
+                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>Verifica el horario y las observaciones de la ruta</Typography>
+                <ConfirmRow label="Fecha Salida" value={formatFecha(form.fechaSalida)} previousValue={formOriginal?.fechaSalida ? formatFecha(formOriginal.fechaSalida) : undefined} />
+                <ConfirmRow label="Hora Salida" value={formatHora12(form.horaSalida)} previousValue={formOriginal?.horaSalida ? formatHora12(formOriginal.horaSalida) : undefined} />
+                <ConfirmRow label="Fecha Estimada de Llegada" value={formatFecha(form.fechaLlegadaEstimada)} previousValue={formOriginal?.fechaLlegadaEstimada ? formatFecha(formOriginal.fechaLlegadaEstimada) : undefined} />
+                <ConfirmRow label="Hora Llegada" value={formatHora12(form.horaLlegadaEstimada) || 'N/A'} previousValue={formOriginal ? (formatHora12(formOriginal.horaLlegadaEstimada) || 'N/A') : undefined} />
+                <ConfirmRow label="Observaciones" value={form.observaciones} previousValue={formOriginal?.observaciones} />
+            </Paper>
+            <ModalRutaDiagrama
+                open={diagramaOpen}
+                onClose={() => setDiagramaOpen(false)}
+                origen={form.origen}
+                paradas={paradasLabels}
+                destino={destinoLabel}
+                subtitulo={`${form.origen || ''} → ${destinoLabel}`}
+            />
         </Box>
     )
 }

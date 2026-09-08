@@ -17,12 +17,14 @@ const useRutaColumns = ({
 }) => [
     { key: 'origen', label: 'Origen', sortField: 'origen', cellSx: { py: 1.5, fontSize: '0.85rem' }, render: (ruta) => ruta.origen || '—' },
     {
-        key: 'destino', label: 'Destino', cellSx: { py: 1.5, fontSize: '0.85rem' },
+        key: 'destino', label: 'Destino', width: 190, cellSx: { py: 1.5, fontSize: '0.85rem' },
         render: (ruta) => {
             const departamentos = resolveDepartamentos(ruta)
             return (
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.3 }}>
-                    <Typography sx={{ fontSize: '0.85rem' }}>{resolveDestino(ruta, destinos, { preferNombre: true })}</Typography>
+                    <Typography sx={{ fontSize: '0.85rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={resolveDestino(ruta, destinos, { preferNombre: true })}>
+                        {resolveDestino(ruta, destinos, { preferNombre: true })}
+                    </Typography>
                     {departamentos.length > 1 && (
                         <Typography sx={{ fontSize: '0.7rem', color: theme.palette.text.secondary }}>
                             Cruza {departamentos.join(', ')}
@@ -53,11 +55,13 @@ const useRutaColumns = ({
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                         <PlacaDisplay placa={pares[0]?.placa} theme={theme} />
                         {adicionales > 0 && (
-                            <Chip
-                                label={`+${adicionales} ${adicionales === 1 ? 'vehículo' : 'vehículos'}`}
-                                size="small"
-                                sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.65rem', borderRadius: '2px', height: 18 }}
-                            />
+                            <Tooltip title={`${adicionales} ${adicionales === 1 ? 'vehículo adicional' : 'vehículos adicionales'}`}>
+                                <Chip
+                                    label={`+${adicionales}`}
+                                    size="small"
+                                    sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.65rem', borderRadius: '2px', height: 18 }}
+                                />
+                            </Tooltip>
                         )}
                     </Box>
                     {pares.some(p => p.vehiculoInhabilitado) && ruta.estado === 'Programada' && (
@@ -90,11 +94,13 @@ const useRutaColumns = ({
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                         <Typography sx={{ fontSize: '0.875rem' }}>{pares[0]?.conductorNombre || 'N/A'}</Typography>
                         {adicionales > 0 && (
-                            <Chip
-                                label={`+${adicionales} ${adicionales === 1 ? 'conductor' : 'conductores'}`}
-                                size="small"
-                                sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.65rem', borderRadius: '2px', height: 18 }}
-                            />
+                            <Tooltip title={`${adicionales} ${adicionales === 1 ? 'conductor adicional' : 'conductores adicionales'}`}>
+                                <Chip
+                                    label={`+${adicionales}`}
+                                    size="small"
+                                    sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.65rem', borderRadius: '2px', height: 18 }}
+                                />
+                            </Tooltip>
                         )}
                     </Box>
                     {pares.some(p => p.conductorInhabilitado) && ruta.estado === 'Programada' && (
@@ -118,7 +124,7 @@ const useRutaColumns = ({
         },
     },
     {
-        key: 'estado', label: 'Estado', width: 150, cellSx: { py: 1.5, minWidth: 150 },
+        key: 'estado', label: 'Estado', width: 230, cellSx: { py: 1.5, minWidth: 230 },
         render: (ruta) => {
             const id = getRutaId(ruta)
             return ruta.estado === 'Completada' ? (
@@ -126,33 +132,29 @@ const useRutaColumns = ({
                     <RutaEstadoDot estado="Completada" />
                     <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: '#059669' }}>Completada</Typography>
                 </Box>
-            ) : ruta.estado === 'En Ruta' && (ruta.pendienteLegalizacion || ruta.paquetesPendientes) ? (
+            ) : ruta.estado === 'En Ruta' && ruta.paquetesPendientes ? (
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', border: `1px solid ${theme.palette.divider}`, borderRadius: 1.5, overflow: 'hidden' }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1, py: 0.6, flex: 1 }}>
                             <RutaEstadoDot estado="En Ruta" />
-                            <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: getEstadoColor('En Ruta').color }}>
+                            <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, whiteSpace: 'nowrap', color: getEstadoColor('En Ruta').color }}>
                                 En Ruta
                             </Typography>
                         </Box>
                         <Box sx={{ width: '1px', height: 28, backgroundColor: theme.palette.divider, flexShrink: 0 }} />
                         <Box
                             onClick={() => onCancelarEnRuta(id)}
-                            sx={{ display: 'flex', alignItems: 'center', gap: 0.5, px: 0.75, py: 0.5, cursor: 'pointer' }}
+                            sx={{ display: 'flex', alignItems: 'center', gap: 0.5, px: 0.75, py: 0.5, cursor: 'pointer', flexShrink: 0 }}
                         >
                             <RutaEstadoDot estado="Cancelada" />
-                            <Typography variant="body2" sx={{ fontSize: '0.72rem', fontWeight: 500, color: getEstadoColor('Cancelada').color }}>
+                            <Typography variant="body2" sx={{ fontSize: '0.72rem', fontWeight: 500, whiteSpace: 'nowrap', color: getEstadoColor('Cancelada').color }}>
                                 Cancelada
                             </Typography>
                         </Box>
                     </Box>
                     <Typography sx={{ fontSize: '0.68rem', color: theme.palette.text.secondary, px: 0.5 }}>
                         {ruta.sedesTotales > 0 && `Sedes ${ruta.sedesCompletadas ?? 0}/${ruta.sedesTotales} · `}
-                        {ruta.pendienteLegalizacion && ruta.paquetesPendientes
-                            ? 'Legalización y paquetes pendientes'
-                            : ruta.pendienteLegalizacion
-                                ? 'Legalización pendiente'
-                                : 'Paquetes pendientes en sede'}
+                        Paquetes pendientes
                     </Typography>
                 </Box>
             ) : ruta.estado === 'En Ruta' && ruta.sedesTotales > 0 ? (
@@ -170,15 +172,19 @@ const useRutaColumns = ({
                     </Typography>
                 </Box>
             ) : (
+                // Sin "En Ruta" de por medio (Programada/Cancelada/etc.) esta caja no
+                // necesita todo el ancho de la columna -- se deja del tamaño de su propio
+                // contenido, en vez de estirarse igual que la de "En Ruta" (que sí lo
+                // necesita: trae el botón partido de cancelar o el texto de sedes debajo).
                 <Box
                     onClick={(e) => onAbrirMenuEstado(e.currentTarget, id, ruta.estado || 'Programada', ruta)}
-                    sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer', width: '100%', border: `1px solid ${theme.palette.divider}`, borderRadius: 1.5, px: 1, py: 0.6, '&:hover': { borderColor: theme.palette.text.secondary } }}
+                    sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer', width: 'fit-content', border: `1px solid ${theme.palette.divider}`, borderRadius: 1.5, px: 1, py: 0.6, '&:hover': { borderColor: theme.palette.text.secondary } }}
                 >
                     <RutaEstadoDot estado={ruta.estado || 'Programada'} />
-                    <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: getEstadoColor(ruta.estado).color }}>
+                    <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, whiteSpace: 'nowrap', color: getEstadoColor(ruta.estado).color }}>
                         {ruta.estado || 'Programada'}
                     </Typography>
-                    <KeyboardArrowDownOutlinedIcon sx={{ fontSize: 14, color: '#9CA3AF', ml: 'auto' }} />
+                    <KeyboardArrowDownOutlinedIcon sx={{ fontSize: 14, color: '#9CA3AF' }} />
                 </Box>
             )
         },

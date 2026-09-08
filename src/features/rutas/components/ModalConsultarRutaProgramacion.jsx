@@ -14,12 +14,14 @@ import CloseIcon from '@mui/icons-material/Close'
 import AdsClickOutlinedIcon from '@mui/icons-material/AdsClickOutlined'
 import RouteIcon from '@mui/icons-material/Route'
 import RouteOutlinedIcon from '@mui/icons-material/RouteOutlined'
+import ScheduleOutlinedIcon from '@mui/icons-material/ScheduleOutlined'
 import { getAnticipoEstadoDot, getVentaEstadoDot } from '../../../shared/utils/estadoColors.js'
 import { formatFecha, formatHora12, getGuiaPrincipal } from '../../../shared/utils/formatters.js'
 import CampoFila from '../../../shared/components/CampoFila.jsx'
 import FichaCard from '../../../shared/components/FichaCard.jsx'
 import EstadoDot, { RutaEstadoDot } from './EstadoDot.jsx'
-import { resolvePares, resolveDestino, resolveParadas, resolveDepartamentos } from '../utils/rutaResolvers.js'
+import ModalRutaDiagrama from '../../../shared/components/ModalRutaDiagrama.jsx'
+import { resolvePares, resolveDestino, resolveDestinoPartes, resolveParadas, resolveDepartamentos } from '../utils/rutaResolvers.js'
 import { errorChipSx } from '../style/chips.js'
 
 const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
@@ -27,6 +29,7 @@ const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
     const [tabIndex, setTabIndex] = useState(0)
     const [tabEncomiendas, setTabEncomiendas] = useState({ data: [], total: 0, loading: false })
     const [tabAnticipos, setTabAnticipos] = useState({ data: [], total: 0, loading: false })
+    const [diagramaOpen, setDiagramaOpen] = useState(false)
 
     const { getVehiculos } = useVehiculo()
     const { getConductores } = useConductor()
@@ -75,9 +78,9 @@ const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
                     </Box>
                     <Box>
                         <Typography fontWeight={700} fontSize="1rem" color={theme.palette.text.primary}>
-                            {ruta.origen || 'Ruta Programada'}
+                            {ruta.origen ? `${ruta.origen} - ${resolveDestinoPartes(ruta, destinos).municipio}` : 'Ruta Programada'}
                         </Typography>
-                        <Typography variant="caption" color={theme.palette.text.secondary}>{resolveDestino(ruta, destinos)}</Typography>
+                        <Typography variant="caption" color={theme.palette.text.secondary}>Hacia {resolveDestinoPartes(ruta, destinos).departamento}</Typography>
                     </Box>
                 </Box>
                 <Tabs value={tabIndex} onChange={(_, v) => setTabIndex(v)} textColor="primary" indicatorColor="primary">
@@ -90,7 +93,15 @@ const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
             {tabIndex === 0 && (
                 <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
                     <Box sx={{ display: 'flex', gap: 2 }}>
-                        <FichaCard icon={RouteOutlinedIcon} title="Datos de la Ruta y Horario" subtitle="Origen, destino, fecha, horas y estado de la ruta">
+                        <FichaCard icon={RouteOutlinedIcon} title="Recorrido">
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, mb: 1 }}>
+                                <Typography variant="body2" color={theme.palette.text.secondary}>Origen, paradas y destino de la ruta</Typography>
+                                <Button size="small" startIcon={<RouteOutlinedIcon sx={{ fontSize: 16 }} />}
+                                    onClick={() => setDiagramaOpen(true)}
+                                    sx={{ textTransform: 'none', color: theme.palette.text.secondary, fontSize: '0.78rem', flexShrink: 0 }}>
+                                    Ver recorrido
+                                </Button>
+                            </Box>
                             {/* Orden del recorrido real: Origen → Paradas → Destino (igual que
                                 el paso de Confirmación del wizard). */}
                             <CampoFila label="Origen" value={ruta.origen} />
@@ -103,47 +114,6 @@ const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
                                     onClick={() => window.open(`/transporte/destinos?highlight=${ruta.idDestino}`, '_blank')}
                                     sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem', cursor: 'pointer', '&:hover': { filter: 'brightness(0.92)' } }} />
                             </Box>
-                            {resolveDepartamentos(ruta).length > 1 && (
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9, gap: 1 }}>
-                                    <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Departamentos</Typography>
-                                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                                        {resolveDepartamentos(ruta).map((dep) => (
-                                            <Chip key={dep} label={dep} size="small"
-                                                sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem' }} />
-                                        ))}
-                                    </Box>
-                                </Box>
-                            )}
-                            <CampoFila label="Fecha salida" value={formatFecha(ruta.fechaSalida)} />
-                            <CampoFila label="Hora salida" value={formatHora12(ruta.horaSalida) || '—'} />
-                            <CampoFila label="Fecha llegada est." value={formatFecha(ruta.fechaLlegadaEstimada)} />
-                            <CampoFila label="Hora llegada est." value={formatHora12(ruta.horaLlegadaEstimada) || '—'} />
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
-                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Estado</Typography>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                                    <RutaEstadoDot estado={ruta.estado} />
-                                    <Typography variant="body2" fontWeight={500} color={theme.palette.text.medium}>
-                                        {ruta.estado || '—'}
-                                    </Typography>
-                                </Box>
-                            </Box>
-                            <CampoFila label="Observaciones" value={ruta.observaciones} />
-                            {ruta.rutaIda && (
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
-                                    <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Es el regreso de</Typography>
-                                    <Chip label={`${ruta.rutaIda.origen || '—'} → ${ruta.rutaIda.destino?.municipio || '—'}`} size="small"
-                                        onClick={() => window.open(`/transporte/rutas?highlight=${ruta.rutaIda.idRuta}`, '_blank')}
-                                        sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem', cursor: 'pointer', '&:hover': { filter: 'brightness(0.92)' } }} />
-                                </Box>
-                            )}
-                            {ruta.rutaRegreso && (
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
-                                    <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Viaje de regreso</Typography>
-                                    <Chip label={`${ruta.rutaRegreso.estado || '—'}`} size="small"
-                                        onClick={() => window.open(`/transporte/rutas?highlight=${ruta.rutaRegreso.idRuta}`, '_blank')}
-                                        sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem', cursor: 'pointer', '&:hover': { filter: 'brightness(0.92)' } }} />
-                                </Box>
-                            )}
                         </FichaCard>
 
                         <FichaCard icon={DirectionsCarOutlinedIcon}
@@ -189,6 +159,50 @@ const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
                             )}
                         </FichaCard>
                     </Box>
+
+                    <FichaCard icon={ScheduleOutlinedIcon} title="Horario y Detalles" subtitle="Fecha, horas y estado de la ruta">
+                        <CampoFila label="Fecha salida" value={formatFecha(ruta.fechaSalida)} />
+                        <CampoFila label="Hora salida" value={formatHora12(ruta.horaSalida) || '—'} />
+                        <CampoFila label="Fecha llegada est." value={formatFecha(ruta.fechaLlegadaEstimada)} />
+                        <CampoFila label="Hora llegada est." value={formatHora12(ruta.horaLlegadaEstimada) || '—'} />
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
+                            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Estado</Typography>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                                <RutaEstadoDot estado={ruta.estado} />
+                                <Typography variant="body2" fontWeight={500} color={theme.palette.text.medium}>
+                                    {ruta.estado || '—'}
+                                </Typography>
+                            </Box>
+                        </Box>
+                        {resolveDepartamentos(ruta).length > 1 && (
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9, gap: 1 }}>
+                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Departamentos</Typography>
+                                <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                                    {resolveDepartamentos(ruta).map((dep) => (
+                                        <Chip key={dep} label={dep} size="small"
+                                            sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem' }} />
+                                    ))}
+                                </Box>
+                            </Box>
+                        )}
+                        <CampoFila label="Observaciones" value={ruta.observaciones} />
+                        {ruta.rutaIda && (
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
+                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Es el regreso de</Typography>
+                                <Chip label={`${ruta.rutaIda.origen || '—'} → ${ruta.rutaIda.destino?.municipio || '—'}`} size="small"
+                                    onClick={() => window.open(`/transporte/rutas?highlight=${ruta.rutaIda.idRuta}`, '_blank')}
+                                    sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem', cursor: 'pointer', '&:hover': { filter: 'brightness(0.92)' } }} />
+                            </Box>
+                        )}
+                        {ruta.rutaRegreso && (
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
+                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Viaje de regreso</Typography>
+                                <Chip label={`${ruta.rutaRegreso.estado || '—'}`} size="small"
+                                    onClick={() => window.open(`/transporte/rutas?highlight=${ruta.rutaRegreso.idRuta}`, '_blank')}
+                                    sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem', cursor: 'pointer', '&:hover': { filter: 'brightness(0.92)' } }} />
+                            </Box>
+                        )}
+                    </FichaCard>
                 </Box>
             )}
 
@@ -246,9 +260,17 @@ const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
 
             {tabIndex === 2 && (
                 <Box sx={{ p: 3 }}>
-                    <Typography variant="body2" color={theme.palette.text.secondary} sx={{ mb: tabAnticipos.total > 100 ? 0.5 : 2 }}>
-                        Anticipos asociados a esta ruta
-                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, mb: tabAnticipos.total > 100 ? 0.5 : 2 }}>
+                        <Typography variant="body2" color={theme.palette.text.secondary}>
+                            Anticipos asociados a esta ruta
+                        </Typography>
+                        {!tabAnticipos.loading && tabAnticipos.data.length > 0 && (
+                            <Typography variant="caption" color={theme.palette.text.secondary} sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
+                                <AdsClickOutlinedIcon sx={{ fontSize: 14 }} />
+                                Puedes hacer clic en cada fila para abrirla en otra pestaña
+                            </Typography>
+                        )}
+                    </Box>
                     {tabAnticipos.total > 100 && (
                         <Typography variant="caption" color={theme.palette.text.secondary} sx={{ display: 'block', mb: 2 }}>
                             Mostrando los 100 más recientes de {tabAnticipos.total}.
@@ -295,6 +317,14 @@ const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
                     Cerrar
                 </Button>
             </Box>
+            <ModalRutaDiagrama
+                open={diagramaOpen}
+                onClose={() => setDiagramaOpen(false)}
+                origen={ruta.origen}
+                paradas={resolveParadas(ruta).map(p => p.municipio)}
+                destino={resolveDestinoPartes(ruta, destinos).municipio}
+                subtitulo={`${ruta.origen || ''} → ${resolveDestinoPartes(ruta, destinos).municipio}`}
+            />
         </Dialog>
     )
 }

@@ -54,6 +54,14 @@ export const resolveDestino = (ruta, destinos, { preferNombre = false } = {}) =>
     return preferNombre ? (d.nombre || `${d.municipio}, ${d.departamento}`) : `${d.municipio}, ${d.departamento}`
 }
 
+// Igual que resolveDestino pero sin unir municipio/departamento en un solo string --
+// lo necesita ModalConsultarRutaProgramacion.jsx para mostrar "Origen - Destino" en el
+// título (con el municipio) y "Hacia {departamento}" aparte en el subtítulo.
+export const resolveDestinoPartes = (ruta, destinos) => {
+    const d = ruta.destino || destinos.find(x => x.idDestino === ruta.idDestino)
+    return { municipio: d?.municipio || 'N/A', departamento: d?.departamento || 'N/A' }
+}
+
 // paresOriginales / rutaOriginal: solo los pasa ActualizarRutaProgramacion.jsx (el arreglo
 // de pares ya guardados en la ruta, o la ruta original completa) -- sirven de respaldo
 // cuando el vehículo/conductor/destino ya fue inhabilitado desde que se creó la ruta y por

@@ -4,6 +4,7 @@ import RouteOutlinedIcon from '@mui/icons-material/RouteOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
 import KeyboardArrowUpOutlinedIcon from '@mui/icons-material/KeyboardArrowUpOutlined'
+import LightbulbOutlinedIcon from '@mui/icons-material/LightbulbOutlined'
 import { Button, IconButton } from '@mui/material'
 import { FormField } from '../../../../shared/components/FormularioEstandarizado.jsx'
 import NacionSVG from '../../../../shared/components/NacionSVG.jsx'
@@ -20,6 +21,7 @@ const PasoDestinoPares = ({
     getVehiculoOpciones, getConductorOpciones,
     handleParadaChange, handleAgregarParada, handleQuitarParada, handleMoverParada,
     paradaInputs, setParadaInputs, getParadaOpciones, setPaso1Ref,
+    sugerenciaParadas, onUsarSugerenciaParadas,
 }) => (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
@@ -226,6 +228,24 @@ const PasoDestinoPares = ({
         </Typography>
         {errores.paradas && (
             <Typography variant="caption" color="error" sx={{ mt: -1.5 }}>{errores.paradas}</Typography>
+        )}
+        {sugerenciaParadas && (
+            <Box sx={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, flexWrap: 'wrap',
+                p: 1.25, borderRadius: 2, mt: -1,
+                backgroundColor: theme.palette.primary.light, border: `1px solid ${theme.palette.primary.light}`,
+            }}>
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                    <LightbulbOutlinedIcon sx={{ fontSize: 18, color: theme.palette.primary.darker, mt: '1px', flexShrink: 0 }} />
+                    <Typography variant="body2" color={theme.palette.primary.darker}>
+                        La mayoría de tus rutas a <strong>{destinoSeleccionado?.municipio || 'este destino'}</strong> pasan por: {sugerenciaParadas.municipios.join(' → ')}
+                    </Typography>
+                </Box>
+                <Button size="small" onClick={onUsarSugerenciaParadas}
+                    sx={{ textTransform: 'none', fontWeight: 600, flexShrink: 0, color: theme.palette.primary.darker }}>
+                    Usar esta configuración
+                </Button>
+            </Box>
         )}
         {(form.paradas || []).map((parada, index) => {
             const paradaSeleccionada = destinos.find(d => d.idDestino === parseInt(parada.idDestino)) || null

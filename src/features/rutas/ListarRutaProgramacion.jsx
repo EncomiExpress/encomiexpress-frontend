@@ -87,7 +87,7 @@ const ListarRutaProgramacion = () => {
         rutasProgramadas, getVehiculos, getConductores, fetchVehiculos, fetchConductores, updateEstado, refetch, showToast,
     })
 
-    const { confirmInhabilitar, setConfirmInhabilitar, handleToggleHabilitado, onConfirmarInhabilitar } = useRutaAcciones(rutasProgramadas, refetch)
+    const { confirmInhabilitar, setConfirmInhabilitar, handleToggleHabilitado, onConfirmarInhabilitar } = useRutaAcciones(rutasProgramadas, refetch, destinos)
 
     const { exportando, handleExportar } = useRutaExport({
         theme, sortBy, filtroHabilitado, filtroEstadoRuta, filtroAnio, filtroMes, debouncedSearch,
@@ -300,7 +300,7 @@ const ListarRutaProgramacion = () => {
                 open={confirmInhabilitar.open}
                 data={confirmInhabilitar}
                 onClose={() => setConfirmInhabilitar(s => ({ ...s, open: false }))}
-                onExited={() => setConfirmInhabilitar({ open: false, idRuta: null, origen: '', habilitadoActual: null, estadoRuta: null, fechaSalida: null, horaSalida: null })}
+                onExited={() => setConfirmInhabilitar({ open: false, idRuta: null, origen: '', destino: '', habilitadoActual: null, estadoRuta: null, fechaSalida: null, horaSalida: null })}
                 onConfirm={onConfirmarInhabilitar}
             />
 

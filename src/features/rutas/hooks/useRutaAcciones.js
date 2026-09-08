@@ -1,16 +1,16 @@
 import { useState } from 'react'
 import { useRutaProgramacion } from '../context/RutaProgramacionContext.jsx'
 import { useToast } from '../../../shared/contexts/ToastContext.jsx'
-import { getRutaId } from '../utils/rutaResolvers.js'
+import { getRutaId, resolveDestinoPartes } from '../utils/rutaResolvers.js'
 
 // refetch (opcional): recarga la página actual de ListarRutaProgramacion.jsx tras un
 // toggle exitoso — su tabla ya no lee del arreglo compartido de RutaProgramacionContext
 // (ver ListarRutaProgramacion.jsx), así que sin esto el toggle no se reflejaría ahí.
-const useRutaAcciones = (rutasProgramadas, refetch) => {
+const useRutaAcciones = (rutasProgramadas, refetch, destinos = []) => {
     const { toggleHabilitado } = useRutaProgramacion()
     const { showToast } = useToast()
 
-    const [confirmInhabilitar, setConfirmInhabilitar] = useState({ open: false, idRuta: null, origen: '', habilitadoActual: null, estadoRuta: null, fechaSalida: null, horaSalida: null })
+    const [confirmInhabilitar, setConfirmInhabilitar] = useState({ open: false, idRuta: null, origen: '', destino: '', habilitadoActual: null, estadoRuta: null, fechaSalida: null, horaSalida: null })
 
     const handleToggleHabilitado = (id) => {
         const rutaActual = rutasProgramadas.find(r => getRutaId(r) === id)
@@ -18,6 +18,7 @@ const useRutaAcciones = (rutasProgramadas, refetch) => {
             open: true,
             idRuta: id,
             origen: rutaActual?.origen || '',
+            destino: rutaActual ? resolveDestinoPartes(rutaActual, destinos).municipio : '',
             habilitadoActual: rutaActual?.habilitado !== false,
             estadoRuta: rutaActual?.estado || null,
             // Para que el modal pueda avisar de antemano si al habilitar la ruta va a
