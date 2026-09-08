@@ -30,6 +30,9 @@ export const limpiarPlacaInput = (value) => {
     return resultado
 }
 
+// 500 kg: peso vacío mínimo legal en Colombia para un vehículo de 4 llantas
+// (camioneta/camión liviano) — no tendría sentido registrar uno por debajo de eso.
+export const CAPACIDAD_MIN = 500
 export const CAPACIDAD_MAX = 99999
 
 // Mismo alfabeto que ya filtra RegistrarVehiculo.jsx/ActualizarVehiculo.jsx letra por
@@ -85,7 +88,7 @@ export const validarCampo = (name, formData, {
             return ''
         case 'capacidad':
             if (!formData.capacidad) return 'La capacidad es obligatoria'
-            if (parseFloat(formData.capacidad) < 1) return 'La capacidad debe ser de al menos 1 kg'
+            if (parseFloat(formData.capacidad) < CAPACIDAD_MIN) return `La capacidad debe ser de al menos ${CAPACIDAD_MIN.toLocaleString('es-CO')} kg`
             if (parseFloat(formData.capacidad) > CAPACIDAD_MAX) return `La capacidad no puede ser mayor a ${CAPACIDAD_MAX.toLocaleString('es-CO')} kg`
             return ''
         case 'idPropietario':
