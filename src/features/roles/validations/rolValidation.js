@@ -106,6 +106,7 @@ const PERMISO_LABELS = {
     'actualizar_propietario': 'Actualizar',
     'inhabilitar_propietario': 'Inhabilitar',
     'ver_dashboard': 'Ver',
+    'acceder_app_movil': 'Acceder',
 }
 
 export const getPermisoLabel = (permiso) =>

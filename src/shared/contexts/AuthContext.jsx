@@ -23,6 +23,7 @@ export const ROLES = {
 
 export const MODULOS = {
   DASHBOARD:    { nombre: 'Dashboard',    listar: null,                  permisos: ['ver_dashboard'] },
+  MOVIL:        { nombre: 'App Móvil',    listar: null,                  permisos: ['acceder_app_movil'] },
   ROLES:        { nombre: 'Roles',        listar: 'listar_rol',          permisos: ['registrar_rol', 'consultar_rol', 'actualizar_rol', 'inhabilitar_rol'] },
   USUARIOS:     { nombre: 'Usuarios',     listar: 'listar_usuario',      permisos: ['registrar_usuario', 'consultar_usuario', 'actualizar_usuario', 'inhabilitar_usuario'] },
   PROPIETARIOS: { nombre: 'Propietarios', listar: 'listar_propietario',  permisos: ['registrar_propietario', 'consultar_propietario', 'actualizar_propietario', 'inhabilitar_propietario'] },
@@ -137,10 +138,17 @@ export const AuthProvider = ({ children }) => {
         ? usuario.rol
         : usuario.rol?.nombre || null
 
-      // Los roles `conductor` y `distribuidor` no operan el panel web — solo la app
-      // móvil (no tienen permisos granulares). Se corta el ingreso acá, antes de
-      // persistir la sesión, en vez de dejarlos entrar y ver todo difuminado.
-      if (['conductor', 'distribuidor'].includes((rolNombre || '').toLowerCase())) {
+      // Antes esto comparaba el nombre del rol a mano (['conductor','distribuidor']).
+      // Ahora es dinámico: un rol sin NINGÚN permiso de panel web (los 50
+      // verbo_entidad + ver_dashboard — 'acceder_app_movil' no cuenta, es el único
+      // que no es de panel web) no tiene nada que hacer acá, sin importar su
+      // nombre. Así, un rol futuro creado solo para la app móvil queda bloqueado
+      // del panel automáticamente, sin tocar este archivo — y un rol mixto que sí
+      // tenga algún permiso de panel web (ej. admin, que también tiene
+      // 'acceder_app_movil') nunca queda bloqueado por error. Ver LOGICA.md,
+      // "Permiso acceder_app_movil".
+      const permisosWeb = (usuario.permisos || []).filter(p => p !== 'acceder_app_movil')
+      if (permisosWeb.length === 0) {
         return { success: false, mensaje: 'Esta cuenta es solo para la aplicación móvil de EncomiExpress.' }
       }
 
@@ -267,12 +275,16 @@ export const AuthProvider = ({ children }) => {
   }
 
   const habilitarInhabilitarUsuario = async (id) => {
-    try {
-      const data = await usuarioService.toggleHabilitadoUsuario(id)
-      return { success: true, message: data.message }
-    } catch (err) {
-      return { success: false, message: err.message || 'Error de conexión' }
-    }
+    // A propósito NO se atrapa el error acá — fetchWithAuth ya lanza un Error con
+    // el mensaje real del backend (ej. los 6 guardias de toggleHabilitado, ver
+    // LOGICA.md "Inhabilitar (toggle-habilitado)"). Quien llama (useUsuarioAcciones)
+    // necesita ese throw para distinguir éxito de bloqueo — antes se atrapaba acá y
+    // se devolvía {success:false} silenciosamente, y como nadie revisaba ese
+    // `.success`, CUALQUIER bloqueo (admin id=1, último admin, conductor con rutas
+    // activas, cliente con encomiendas activas, y ahora también el choque de
+    // correo/documento al rehabilitar) terminaba mostrando igual el toast de éxito.
+    const data = await usuarioService.toggleHabilitadoUsuario(id)
+    return { success: true, message: data.message }
   }
 
   return (
