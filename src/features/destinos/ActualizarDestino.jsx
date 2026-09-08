@@ -93,6 +93,17 @@ const ActualizarDestino = ({ open, onClose, destino, onSuccess }) => {
     const handleBack = () => setActiveStep(prev => prev - 1)
 
     const handleSubmit = async () => {
+        // Se llama desde el último paso ("Confirmación", sin campos propios) — antes no
+        // revalidaba nada. Revalida los pasos 0 y 1 y salta al primero con error.
+        const erroresPaso0 = validarPaso(0, form, destinos, destino?.idDestino)
+        const erroresPaso1 = validarPaso(1, form, destinos, destino?.idDestino)
+        const erroresEncontrados = { ...erroresPaso0, ...erroresPaso1 }
+        if (Object.keys(erroresEncontrados).length > 0) {
+            setErrores(erroresEncontrados)
+            setActiveStep(Object.keys(erroresPaso0).length > 0 ? 0 : 1)
+            return
+        }
+
         if (originalData) {
             const hayCambios = Object.keys(form).some(key => String(form[key]) !== String(originalData[key]))
             if (!hayCambios) {

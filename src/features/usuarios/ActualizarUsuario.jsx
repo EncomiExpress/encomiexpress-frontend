@@ -208,9 +208,16 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
     const handleBack = () => setActiveStep((prev) => prev - 1)
 
     const handleSubmit = async () => {
-        const erroresEncontrados = validarPaso(activeStep, form, { avisoDocDuplicado, avisoNombreDuplicado, avisoEmailDuplicado }, VALIDATION_OPTS)
+        // Se llama desde el último paso ("Confirmación", sin campos propios) —
+        // validar con `validarPaso(activeStep, ...)` acá era en la práctica un no-op
+        // (activeStep siempre vale 2 en este punto). Revalida los pasos 0 y 1 y salta
+        // al primero con error.
+        const erroresPaso0 = validarPaso(0, form, { avisoDocDuplicado, avisoNombreDuplicado, avisoEmailDuplicado }, VALIDATION_OPTS)
+        const erroresPaso1 = validarPaso(1, form, { avisoDocDuplicado, avisoNombreDuplicado, avisoEmailDuplicado }, VALIDATION_OPTS)
+        const erroresEncontrados = { ...erroresPaso0, ...erroresPaso1 }
         if (Object.keys(erroresEncontrados).length > 0) {
             setErrores(erroresEncontrados)
+            setActiveStep(Object.keys(erroresPaso0).length > 0 ? 0 : 1)
             return
         }
 

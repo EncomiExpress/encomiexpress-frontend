@@ -182,8 +182,19 @@ const ActualizarConductor = ({ open, onClose, conductor: conductorProp, onSucces
     const handleCancelar = () => cerrar()
 
     const handleSubmit = async () => {
-        const erroresEncontrados = validarPaso(activeStep, form, { avisoDocDuplicado, avisoNombreDuplicado, avisoEmailDuplicado }, VALIDATION_OPTS)
-        if (Object.keys(erroresEncontrados).length > 0) { setErrores(erroresEncontrados); return }
+        // Se llama desde el último paso ("Confirmación", sin campos propios) —
+        // validar con `validarPaso(activeStep, ...)` acá era en la práctica un no-op
+        // (activeStep siempre vale 3 en este punto). Revalida los pasos 0, 1 y 2 y
+        // salta al primero con error.
+        const erroresPaso0 = validarPaso(0, form, { avisoDocDuplicado, avisoNombreDuplicado, avisoEmailDuplicado }, VALIDATION_OPTS)
+        const erroresPaso1 = validarPaso(1, form, { avisoDocDuplicado, avisoNombreDuplicado, avisoEmailDuplicado }, VALIDATION_OPTS)
+        const erroresPaso2 = validarPaso(2, form, { avisoDocDuplicado, avisoNombreDuplicado, avisoEmailDuplicado }, VALIDATION_OPTS)
+        const erroresEncontrados = { ...erroresPaso0, ...erroresPaso1, ...erroresPaso2 }
+        if (Object.keys(erroresEncontrados).length > 0) {
+            setErrores(erroresEncontrados)
+            setActiveStep(Object.keys(erroresPaso0).length > 0 ? 0 : Object.keys(erroresPaso1).length > 0 ? 1 : 2)
+            return
+        }
 
         // Detectar si realmente hubo cambios
         if (formOriginal) {

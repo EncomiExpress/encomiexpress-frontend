@@ -104,6 +104,17 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
   }
 
   const handleSubmit = async () => {
+    // Se llama desde el último paso ("Confirmación", sin campos propios) — antes no
+    // revalidaba nada. Revalida los pasos 0 y 1 y salta al primero con error.
+    const erroresPaso0 = validarPaso(0, formData, avisoPlacaDuplicada, VALIDATION_OPTS)
+    const erroresPaso1 = validarPaso(1, formData, avisoPlacaDuplicada, VALIDATION_OPTS)
+    const erroresEncontrados = { ...erroresPaso0, ...erroresPaso1 }
+    if (Object.keys(erroresEncontrados).length > 0) {
+      setErrores(erroresEncontrados)
+      setActiveStep(Object.keys(erroresPaso0).length > 0 ? 0 : 1)
+      return
+    }
+
     setSubmitting(true)
     setApiError('')
     try {
