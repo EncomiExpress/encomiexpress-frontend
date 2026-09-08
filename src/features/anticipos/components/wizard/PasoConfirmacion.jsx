@@ -34,7 +34,7 @@ const PasoConfirmacion = ({
             <ConfirmRow label="Vehículo" value={placa || '—'} />
             <ConfirmRow label="Conductor" value={nombreConductor} previousValue={previousNombreConductor} />
             <ConfirmRow label="Anticipo" value={formatMoney(valorAnticipo)} previousValue={previousValorAnticipo !== undefined ? formatMoney(previousValorAnticipo) : undefined} />
-            <ConfirmRow label="F. Entrega" value={fechaEntrega} previousValue={previousFechaEntrega} />
+            <ConfirmRow label="Fecha de Entrega" value={fechaEntrega} previousValue={previousFechaEntrega} />
         </Paper>
     </Box>
 )

@@ -1,9 +1,11 @@
-import { Box, Typography, TextField, Alert, Autocomplete, Avatar, Divider } from '@mui/material'
+import { useState } from 'react'
+import { Box, Typography, TextField, Alert, Autocomplete, Avatar, Divider, Button } from '@mui/material'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import RouteOutlinedIcon from '@mui/icons-material/RouteOutlined'
 import AttachMoneyOutlinedIcon from '@mui/icons-material/AttachMoneyOutlined'
 import PlacaDisplay from '../../../../shared/components/PlacaDisplay.jsx'
 import { FormField } from '../../../../shared/components/FormularioEstandarizado.jsx'
+import ModalRutaDiagrama from '../../../../shared/components/ModalRutaDiagrama.jsx'
 import { formFieldStyles } from '../../../../shared/utils/formStyles.js'
 import { normalizarTexto } from '../../../../shared/utils/duplicados.js'
 import { formatearMoneda } from '../../../../shared/utils/formatters.js'
@@ -17,7 +19,9 @@ const PasoRutaVehiculo = ({
     rutaDisabled = false, parDisabled, valorDisabled = false, fechaDisabled = false,
     rutaHelperTextOk, rutaHelperTextDisabled, parHelperTextDisabled, valorHelperTextDisabled, fechaHelperTextDisabled,
     mostrarAdvertencia,
-}) => (
+}) => {
+    const [diagramaOpen, setDiagramaOpen] = useState(false)
+    return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
         <Autocomplete
             options={rutas}
@@ -64,19 +68,48 @@ const PasoRutaVehiculo = ({
             }}
             filterOptions={(opts, { inputValue }) => {
                 if (!inputValue.trim()) return [...opts].sort((a, b) => b.idRuta - a.idRuta).slice(0, 5)
-                const q = normalizarTexto(inputValue)
-                return opts.filter(r =>
-                    normalizarTexto(r.nombre).includes(q) ||
-                    normalizarTexto(r.destino?.municipio || '').includes(q) ||
-                    normalizarTexto(r.destino?.departamento || '').includes(q)
-                )
+                // Se busca por palabra, no por el texto completo de una — así "medellin
+                // caucasia" encuentra la ruta aunque "medellin" sea el origen y "caucasia"
+                // el destino (en cualquier orden), y sigue funcionando buscar por uno solo.
+                const palabras = normalizarTexto(inputValue).split(/\s+/).filter(Boolean)
+                return opts.filter(r => {
+                    const combinado = normalizarTexto(`${r.nombre} ${r.destino?.municipio || ''} ${r.destino?.departamento || ''}`)
+                    return palabras.every(p => combinado.includes(p))
+                })
             }}
             noOptionsText="No se encontraron rutas"
             renderInput={(params) => (
                 <TextField {...params} label="Ruta *"
                     error={!!errores.idRuta}
                     helperText={errores.idRuta || (rutaDisabled ? rutaHelperTextDisabled : rutaHelperTextOk)}
-                    slotProps={{ inputLabel: { shrink: true }, htmlInput: { ...params.inputProps, maxLength: 100 } }}
+                    slotProps={{
+                        inputLabel: { shrink: true },
+                        htmlInput: { ...params.inputProps, maxLength: 100 },
+                        input: {
+                            ...params.InputProps,
+                            endAdornment: (
+                                <>
+                                    {rutaSeleccionada && (
+                                        <>
+                                            <Button size="small"
+                                                onMouseDown={(e) => e.stopPropagation()}
+                                                onClick={() => setDiagramaOpen(true)}
+                                                startIcon={<RouteOutlinedIcon sx={{ fontSize: 16 }} />}
+                                                sx={{
+                                                    textTransform: 'none', color: theme.palette.text.secondary,
+                                                    fontSize: '0.72rem', minWidth: 0, px: 1, py: 0.25, whiteSpace: 'nowrap',
+                                                    '& .MuiButton-startIcon': { mr: 0.5 },
+                                                }}>
+                                                Ver recorrido
+                                            </Button>
+                                            <Divider orientation="vertical" flexItem sx={{ my: 0.75, mx: 0.5 }} />
+                                        </>
+                                    )}
+                                    {params.InputProps.endAdornment}
+                                </>
+                            ),
+                        },
+                    }}
                     sx={formFieldStyles} />
             )}
         />
@@ -166,7 +199,16 @@ const PasoRutaVehiculo = ({
                 slotProps={{ inputLabel: { shrink: true } }} sx={formFieldStyles}
             />
         </Box>
+        <ModalRutaDiagrama
+            open={diagramaOpen}
+            onClose={() => setDiagramaOpen(false)}
+            origen={rutaSeleccionada?.nombre}
+            paradas={(rutaSeleccionada?.paradas || []).filter(p => p.destino).map(p => p.destino.municipio)}
+            destino={rutaSeleccionada?.destino?.municipio}
+            subtitulo={rutaSeleccionada ? `${rutaSeleccionada.nombre || ''} → ${rutaSeleccionada.destino?.municipio || ''}` : ''}
+        />
     </Box>
-)
+    )
+}
 
 export default PasoRutaVehiculo

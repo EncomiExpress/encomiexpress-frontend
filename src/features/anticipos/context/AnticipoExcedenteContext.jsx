@@ -82,6 +82,10 @@ export const AnticipoExcedenteProvider = ({ children }) => {
       idRuta: r.idRuta,
       nombre: r.origen || r.nombre || `Ruta ${r.idRuta}`,
       destino: r.destino || null,
+      // Paradas intermedias del corredor — solo para dibujar el recorrido en el
+      // selector de ruta (ModalRutaDiagrama, ver PasoRutaVehiculo.jsx), no se usa
+      // para nada más acá.
+      paradas: r.paradas || [],
       paresVehiculoConductor: (r.paresVehiculoConductor || [])
         .filter((p) => p.habilitado !== false)
         .map((p) => {
