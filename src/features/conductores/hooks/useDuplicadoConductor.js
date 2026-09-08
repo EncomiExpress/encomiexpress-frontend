@@ -23,7 +23,11 @@ export function useDuplicadoConductor({ form, setErrores, excludeConductorId, ex
         try {
             const res = await conductorService.getConductores(undefined, { q: form.numeroIdentificacion.trim(), limit: 10 })
             if (!res?.success) return
-            const duplicado = hayDocumentoDuplicado(res.data, form.numeroIdentificacion, {
+            // El documento vive en Usuario (1:1 con Conductor) y el backend solo lo
+            // compara contra cuentas ACTIVAS (conductorService.create/update) — usar
+            // usuario.habilitado, no conductor.habilitado (son flags independientes).
+            const activos = res.data.filter(r => r.usuario?.habilitado !== false)
+            const duplicado = hayDocumentoDuplicado(activos, form.numeroIdentificacion, {
                 getDoc: (r) => r.usuario?.numeroIdentificacion || r.numeroIdentificacion,
                 ...conductorIdOptions,
             })
@@ -46,7 +50,9 @@ export function useDuplicadoConductor({ form, setErrores, excludeConductorId, ex
             // ya usado por un admin (u otro rol) no se detecta como duplicado acá.
             const res = await usuarioService.getUsuarios({ q: valor, limit: 10 })
             if (!res?.success) return
-            const duplicado = hayDocumentoDuplicado(res.data, valor, {
+            // Mismo criterio: el correo solo choca contra cuentas de Usuario activas.
+            const activos = res.data.filter(r => r.habilitado !== false)
+            const duplicado = hayDocumentoDuplicado(activos, valor, {
                 getDoc: (r) => r.email,
                 ...(excludeUsuarioId !== undefined ? { excludeId: excludeUsuarioId, getId: (r) => r.idUsuario } : {}),
             })

@@ -63,15 +63,12 @@ const useUsuarioColumns = ({ theme, tienePermiso, PERMISOS, usuarioActual, onCon
                     </Tooltip>
                 )}
                 {tienePermiso(PERMISOS.ACTUALIZAR_USUARIO) && (
-                    usuario.habilitado === false ? (
-                        <Tooltip title="Habilita el registro para poder editarlo">
-                            <span>
-                                <IconButton size="small" disabled>
-                                    <EditOutlinedIcon sx={{ fontSize: 18 }} />
-                                </IconButton>
-                            </span>
-                        </Tooltip>
-                    ) : usuario.idUsuario === 1 && usuarioActual?.idUsuario !== 1 ? (
+                    // A diferencia de otros módulos, un usuario inhabilitado SÍ se puede
+                    // editar directamente (el backend, usuarioService.update, nunca lo
+                    // bloqueó — es puramente una decisión de UI). Hace falta para poder
+                    // corregir un correo/documento repetido con otro registro inhabilitado
+                    // sin tener que habilitarlo primero solo para editarlo.
+                    usuario.idUsuario === 1 && usuarioActual?.idUsuario !== 1 ? (
                         <Tooltip title="Esta cuenta administradora solo puede editarse a sí misma">
                             <span>
                                 <IconButton size="small" disabled>

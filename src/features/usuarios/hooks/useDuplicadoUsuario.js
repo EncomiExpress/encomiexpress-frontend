@@ -20,7 +20,12 @@ export function useDuplicadoUsuario({ form, setErrores, excludeId }) {
         try {
             const res = await usuarioService.getUsuarios({ q: form.numeroIdentificacion.trim(), limit: 10 })
             if (!res?.success) return
-            const duplicado = hayDocumentoDuplicado(res.data, form.numeroIdentificacion, idOptions)
+            // El backend solo bloquea el documento contra cuentas ACTIVAS (ver
+            // usuarioService.create/update) — un registro inhabilitado no debe
+            // disparar este aviso, o se vería un falso positivo que el guardado
+            // real sí permitiría.
+            const activos = res.data.filter(r => r.habilitado !== false)
+            const duplicado = hayDocumentoDuplicado(activos, form.numeroIdentificacion, idOptions)
             setAvisoDocDuplicado(duplicado ? MENSAJE_DOC_DUPLICADO : '')
             if (duplicado) setErrores(prev => ({ ...prev, numeroIdentificacion: MENSAJE_DOC_DUPLICADO }))
         } catch {
@@ -37,7 +42,9 @@ export function useDuplicadoUsuario({ form, setErrores, excludeId }) {
         try {
             const res = await usuarioService.getUsuarios({ q: valor, limit: 10 })
             if (!res?.success) return
-            const duplicado = hayDocumentoDuplicado(res.data, valor, { getDoc: (r) => r.email, ...idOptions })
+            // Mismo criterio que arriba: el correo solo choca contra cuentas activas.
+            const activos = res.data.filter(r => r.habilitado !== false)
+            const duplicado = hayDocumentoDuplicado(activos, valor, { getDoc: (r) => r.email, ...idOptions })
             setAvisoEmailDuplicado(duplicado ? MENSAJE_EMAIL_DUPLICADO : '')
             if (duplicado) setErrores(prev => ({ ...prev, email: MENSAJE_EMAIL_DUPLICADO }))
         } catch {
