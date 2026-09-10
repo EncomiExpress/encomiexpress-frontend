@@ -83,11 +83,24 @@ const useVehiculoColumns = ({ theme, tienePermiso, PERMISOS, onConsultar, onEdit
                     {ubic.text}
                 </Typography>
             )
-            return transporte.estadoEfectivo === 'En Ruta' ? (
+            const colorPorEstado = { 'En Ruta': '#3B82F6', 'Disponible': '#10b981', 'Mantenimiento': '#ea580c' }
+            const color = colorPorEstado[transporte.estadoEfectivo] || '#9CA3AF'
+            const dotSx = transporte.estadoEfectivo === 'Disponible'
+                ? { backgroundColor: 'transparent', border: `2px solid ${color}` }
+                : { backgroundColor: color, border: `2px solid ${color}` }
+            // "Fuera de base": Disponible, pero quedó en otro municipio al terminar/
+            // cancelar una ruta que no volvió a Medellín (destinoActual). Mantenimiento
+            // solo tiene sentido en la base (ahí está el taller) -- se oculta el menú
+            // entero para que no se pueda pasar a Mantenimiento sin antes volver, igual
+            // que ya pasa con "En Ruta".
+            const fueraDeBaseDisponible = transporte.estadoEfectivo === 'Disponible' && !!transporte.destinoActual
+            const bloqueado = transporte.estadoEfectivo === 'En Ruta' || fueraDeBaseDisponible
+
+            return bloqueado ? (
                 <Box sx={{ px: 1, py: 0.6 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Box sx={{ width: 10, height: 10, borderRadius: '50%', flexShrink: 0, backgroundColor: '#3B82F6', border: '2px solid #3B82F6' }} />
-                        <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: '#3B82F6' }}>En Ruta</Typography>
+                        <Box sx={{ width: 10, height: 10, borderRadius: '50%', flexShrink: 0, ...dotSx }} />
+                        <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color }}>{transporte.estadoEfectivo}</Typography>
                     </Box>
                     {caption}
                 </Box>
@@ -97,16 +110,8 @@ const useVehiculoColumns = ({ theme, tienePermiso, PERMISOS, onConsultar, onEdit
                         onClick={(e) => onAbrirMenuEstado(e.currentTarget, transporte.idVehiculo, transporte.estadoEfectivo)}
                         sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer', width: '100%', border: `1px solid ${theme.palette.divider}`, borderRadius: 1.5, px: 1, py: 0.6, '&:hover': { borderColor: theme.palette.text.secondary } }}
                     >
-                        <Box sx={{
-                            width: 10, height: 10, borderRadius: '50%', flexShrink: 0,
-                            ...(transporte.estadoEfectivo === 'Disponible'
-                                ? { backgroundColor: 'transparent', border: '2px solid #10b981' }
-                                : { backgroundColor: '#ea580c', border: '2px solid #ea580c' })
-                        }} />
-                        <Typography variant="body2" sx={{
-                            fontSize: '0.82rem', fontWeight: 500,
-                            color: transporte.estadoEfectivo === 'Disponible' ? '#10b981' : '#ea580c',
-                        }}>
+                        <Box sx={{ width: 10, height: 10, borderRadius: '50%', flexShrink: 0, ...dotSx }} />
+                        <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color }}>
                             {transporte.estadoEfectivo}
                         </Typography>
                         <KeyboardArrowDownOutlinedIcon sx={{ fontSize: 14, color: '#9CA3AF', ml: 'auto' }} />
