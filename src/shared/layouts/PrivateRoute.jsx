@@ -52,6 +52,12 @@ const PrivateRoute = ({ children, permisosRequeridos = [] }) => {
   }
 
   if (permisosRequeridos.length > 0 && !tieneAlgunPermiso(permisosRequeridos)) {
+    // operador_sede tiene un panel deliberadamente recortado (Ventas/Rutas/
+    // Clientes) — para cualquier otra sección, en vez del difuminado genérico
+    // se lo redirige a su propio listado (ver LOGICA.md, "Sedes remotas", WS3).
+    if (usuario?.rol?.nombre === 'operador_sede') {
+      return <Navigate to="/ventas/listar" replace />
+    }
     return (
       <LayoutAdmin>
         <Box sx={{ position: 'relative', overflow: 'hidden', flex: 1 }}>

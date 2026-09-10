@@ -79,7 +79,7 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
 
         cambios.email = (formOriginal.email || '') !== (form.email || '')
 
-        // Sedes del distribuidor — comparación por conjunto (orden irrelevante).
+        // Sedes del distribuidor/operador_sede — comparación por conjunto (orden irrelevante).
         const normSedes = (arr) => [...(Array.isArray(arr) ? arr : [])].map(Number).sort((a, b) => a - b).join(',')
         cambios.sedes = normSedes(formOriginal.sedes) !== normSedes(form.sedes)
 
@@ -149,7 +149,7 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
                 ...prev,
                 idRol: value,
                 rolNombre,
-                sedes: rolNombre === 'distribuidor' ? prev.sedes : [],
+                sedes: ['distribuidor', 'operador_sede'].includes(rolNombre) ? prev.sedes : [],
             }))
             setErrores(prev => ({ ...prev, idRol: '', sedes: '' }))
             setApiError(null)
@@ -243,9 +243,10 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
                 idRol: parseInt(form.idRol),
             }
 
-            // Sedes solo si el rol final es distribuidor. Si el rol cambió a otro, el
-            // backend limpia las coberturas por su cuenta (no hay que mandar []).
-            if (form.rolNombre === 'distribuidor') {
+            // Sedes solo si el rol final es distribuidor u operador_sede. Si el rol
+            // cambió a otro, el backend limpia las coberturas por su cuenta (no hay
+            // que mandar []).
+            if (['distribuidor', 'operador_sede'].includes(form.rolNombre)) {
                 datosBackend.sedes = (Array.isArray(form.sedes) ? form.sedes : []).map(Number)
             }
 

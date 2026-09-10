@@ -39,9 +39,13 @@ const Login = () => {
   const theme = useTheme()
   const tardando = useSlowRequest(apiCargando)
 
+  // operador_sede no tiene ver_dashboard — su destino post-login/catch-all es
+  // /ventas/listar, no /dashboard (ver LOGICA.md, "Sedes remotas", D-D).
+  const destinoPostLogin = (rolNombre) => rolNombre === 'operador_sede' ? '/ventas/listar' : '/dashboard'
+
   useEffect(() => {
     if (!loading && !cargando && !apiCargando && usuario) {
-      navigate('/dashboard', { replace: true })
+      navigate(destinoPostLogin(usuario.rol?.nombre), { replace: true })
     }
   }, [usuario, loading, cargando, apiCargando, navigate])
 
@@ -61,7 +65,7 @@ const Login = () => {
       if (resultado.success) {
         setApiCargando(false)
         setCargando(true)
-        setTimeout(() => { navigate('/dashboard', { replace: true }) }, 2500)
+        setTimeout(() => { navigate(destinoPostLogin(resultado.usuario?.rol?.nombre), { replace: true }) }, 2500)
       } else {
         setApiCargando(false)
         setError(resultado.mensaje)

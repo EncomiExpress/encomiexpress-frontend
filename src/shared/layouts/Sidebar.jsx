@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { Box, Collapse } from '@mui/material'
 import { useDarkMode } from '../contexts/ThemeContext.jsx'
-import { SECTIONS, DASHBOARD_ITEM } from '../config/navSections.js'
+import useVisibleNav from '../hooks/useVisibleNav.js'
 import NavItem from './sidebar/NavItem.jsx'
 import SectionLabel from './sidebar/SectionLabel.jsx'
 import SidebarLogoHeader from './sidebar/SidebarLogoHeader.jsx'
@@ -12,6 +12,7 @@ import useSidebarColors, { SIDEBAR_TRANSITION } from './sidebar/useSidebarColors
 const Sidebar = ({ collapsed, onToggleCollapsed }) => {
   const location = useLocation()
   const { darkMode } = useDarkMode()
+  const { sections: SECTIONS, dashboardItem: DASHBOARD_ITEM } = useVisibleNav()
 
   const [openSections, setOpenSections] = useState(
     SECTIONS.reduce((acc, s) => ({ ...acc, [s.id]: true }), {})
@@ -48,11 +49,13 @@ const Sidebar = ({ collapsed, onToggleCollapsed }) => {
         '&::-webkit-scrollbar-thumb': { background: colors.divider, borderRadius: 2 },
       }}>
 
-        {/* ── Dashboard suelto ── */}
-        <Box sx={{ mb: 1 }}>
-          <NavItem item={DASHBOARD_ITEM} depth={0} location={location}
-            collapsed={collapsed} darkMode={darkMode} colors={colors} />
-        </Box>
+        {/* ── Dashboard suelto — oculto para roles sin ver_dashboard (ej. operador_sede) ── */}
+        {DASHBOARD_ITEM && (
+          <Box sx={{ mb: 1 }}>
+            <NavItem item={DASHBOARD_ITEM} depth={0} location={location}
+              collapsed={collapsed} darkMode={darkMode} colors={colors} />
+          </Box>
+        )}
 
         {/* ── Secciones ── */}
         {SECTIONS.map((section) => (

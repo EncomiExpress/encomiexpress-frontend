@@ -3,7 +3,7 @@ import { useTheme } from '@mui/material/styles'
 import { useLocation } from 'react-router-dom'
 import { Box, Typography } from '@mui/material'
 import { useDarkMode } from '../contexts/ThemeContext.jsx'
-import { SECTIONS } from '../config/navSections.js'
+import useVisibleNav from '../hooks/useVisibleNav.js'
 import useDateTime from '../hooks/useDateTime.js'
 import TopNavSection from './topnav/TopNavSection.jsx'
 
@@ -13,6 +13,7 @@ const TopNav = () => {
   const location = useLocation()
   const { darkMode } = useDarkMode()
   const dateTime = useDateTime()
+  const { sections: SECTIONS } = useVisibleNav()
 
   const [openSection, setOpenSection] = useState(null)
   const timerRef = useRef(null)

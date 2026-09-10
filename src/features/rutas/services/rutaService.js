@@ -17,6 +17,12 @@ export const toggleHabilitadoRuta = (id) => fetchWithAuth(`/rutas/${id}/toggle-h
 export const getPageOfRuta = (id, limit = 10) => fetchWithAuth(`/rutas/${id}/page-of?limit=${limit}`)
 export const getAniosDisponiblesRuta = () => fetchWithAuth('/rutas/anios-disponibles')
 
+// operador_sede: dispara el regreso de su sede con solo fecha/hora de salida —
+// el resto (convoy, paradas, origen, destino) lo arma el backend a partir de la
+// ida. Ver LOGICA.md, "Sedes remotas".
+export const crearRegresoDesdeSede = (idRutaIda, { fechaSalida, horaSalida }) =>
+  fetchWithAuth(`/rutas/${idRutaIda}/regreso-sede`, { method: 'POST', body: JSON.stringify({ fechaSalida, horaSalida }) })
+
 // idVehiculos/idConductores: arrays de ids. idRutaExcluir: opcional, para editar sin
 // chocar contra la propia ruta. Usado por CalendarioDisponibilidad.jsx.
 export const getDisponibilidadRuta = ({ idVehiculos = [], idConductores = [], idRutaExcluir } = {}) => {
@@ -27,4 +33,4 @@ export const getDisponibilidadRuta = ({ idVehiculos = [], idConductores = [], id
   return fetchWithAuth(`/rutas/disponibilidad?${qs.toString()}`)
 }
 
-export default { getRutas, getRutaById, createRuta, updateRuta, updateEstadoRuta, toggleHabilitadoRuta, getPageOfRuta, getAniosDisponiblesRuta, getDisponibilidadRuta }
+export default { getRutas, getRutaById, createRuta, updateRuta, updateEstadoRuta, toggleHabilitadoRuta, getPageOfRuta, getAniosDisponiblesRuta, getDisponibilidadRuta, crearRegresoDesdeSede }

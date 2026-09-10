@@ -12,8 +12,8 @@ import { resolvePares, resolveDestino, getRutaId } from '../utils/rutaResolvers.
 import { warningChipSx, errorChipSx } from '../style/chips.js'
 
 const useRutaColumns = ({
-    theme, tienePermiso, PERMISOS, destinos, getVehiculos, getConductores,
-    onConsultar, onEditar, onToggleHabilitado, onAbrirMenuEstado, onCancelarEnRuta, onProgramarRegreso,
+    theme, tienePermiso, PERMISOS, destinos, getVehiculos, getConductores, sedeActual,
+    onConsultar, onEditar, onToggleHabilitado, onAbrirMenuEstado, onCancelarEnRuta, onProgramarRegreso, onProgramarRegresoSede,
 }) => [
     { key: 'origen', label: 'Origen', sortField: 'origen', cellSx: { py: 1.5, fontSize: '0.85rem' }, render: (ruta) => ruta.origen || '—' },
     {
@@ -117,6 +117,10 @@ const useRutaColumns = ({
         key: 'estado', label: 'Estado', width: 230, cellSx: { py: 1.5, minWidth: 230 },
         render: (ruta) => {
             const id = getRutaId(ruta)
+            // El menú de cambiar estado (PATCH /rutas/:id/estado) exige actualizar_ruta
+            // en el backend — sin el permiso, la caja se muestra igual pero sin el
+            // click ni el chevron, para no ofrecer una acción que no llevaría a nada.
+            const puedeGestionarEstado = tienePermiso(PERMISOS.ACTUALIZAR_RUTA)
             const esRegreso = ruta.idRutaIda != null
             // Una ruta de ida ya Completada cuyo convoy sigue "fuera de base" (algún par
             // con idDestinoActual) y todavía sin regreso programado: el conductor/vehículo
@@ -154,16 +158,20 @@ const useRutaColumns = ({
                                 En Ruta
                             </Typography>
                         </Box>
-                        <Box sx={{ width: '1px', height: 28, backgroundColor: theme.palette.divider, flexShrink: 0 }} />
-                        <Box
-                            onClick={() => onCancelarEnRuta(id)}
-                            sx={{ display: 'flex', alignItems: 'center', gap: 0.5, px: 0.75, py: 0.5, cursor: 'pointer', flexShrink: 0 }}
-                        >
-                            <RutaEstadoDot estado="Cancelada" />
-                            <Typography variant="body2" sx={{ fontSize: '0.72rem', fontWeight: 500, whiteSpace: 'nowrap', color: getEstadoColor('Cancelada').color }}>
-                                Cancelada
-                            </Typography>
-                        </Box>
+                        {puedeGestionarEstado && (
+                            <>
+                                <Box sx={{ width: '1px', height: 28, backgroundColor: theme.palette.divider, flexShrink: 0 }} />
+                                <Box
+                                    onClick={() => onCancelarEnRuta(id)}
+                                    sx={{ display: 'flex', alignItems: 'center', gap: 0.5, px: 0.75, py: 0.5, cursor: 'pointer', flexShrink: 0 }}
+                                >
+                                    <RutaEstadoDot estado="Cancelada" />
+                                    <Typography variant="body2" sx={{ fontSize: '0.72rem', fontWeight: 500, whiteSpace: 'nowrap', color: getEstadoColor('Cancelada').color }}>
+                                        Cancelada
+                                    </Typography>
+                                </Box>
+                            </>
+                        )}
                     </Box>
                     <Typography sx={{ fontSize: '0.68rem', color: theme.palette.text.secondary, px: 0.5 }}>
                         {ruta.sedesTotales > 0 && `Sedes ${ruta.sedesCompletadas ?? 0}/${ruta.sedesTotales} · `}
@@ -173,12 +181,12 @@ const useRutaColumns = ({
             ) : ruta.estado === 'En Ruta' && ruta.sedesTotales > 0 ? (
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.3 }}>
                     <Box
-                        onClick={(e) => onAbrirMenuEstado(e.currentTarget, id, ruta.estado || 'Programada', ruta)}
-                        sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer', width: '100%', border: `1px solid ${theme.palette.divider}`, borderRadius: 1.5, px: 1, py: 0.6, '&:hover': { borderColor: theme.palette.text.secondary } }}
+                        onClick={puedeGestionarEstado ? (e) => onAbrirMenuEstado(e.currentTarget, id, ruta.estado || 'Programada', ruta) : undefined}
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: puedeGestionarEstado ? 'pointer' : 'default', width: '100%', border: `1px solid ${theme.palette.divider}`, borderRadius: 1.5, px: 1, py: 0.6, '&:hover': puedeGestionarEstado ? { borderColor: theme.palette.text.secondary } : undefined }}
                     >
                         <RutaEstadoDot estado="En Ruta" />
                         <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: getEstadoColor('En Ruta').color }}>En Ruta</Typography>
-                        <KeyboardArrowDownOutlinedIcon sx={{ fontSize: 14, color: '#9CA3AF', ml: 'auto' }} />
+                        {puedeGestionarEstado && <KeyboardArrowDownOutlinedIcon sx={{ fontSize: 14, color: '#9CA3AF', ml: 'auto' }} />}
                     </Box>
                     <Typography sx={{ fontSize: '0.68rem', color: theme.palette.text.secondary, px: 0.5 }}>
                         {`Sedes ${ruta.sedesCompletadas ?? 0}/${ruta.sedesTotales} completadas`}
@@ -190,14 +198,14 @@ const useRutaColumns = ({
                 // contenido, en vez de estirarse igual que la de "En Ruta" (que sí lo
                 // necesita: trae el botón partido de cancelar o el texto de sedes debajo).
                 <Box
-                    onClick={(e) => onAbrirMenuEstado(e.currentTarget, id, ruta.estado || 'Programada', ruta)}
-                    sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer', width: 'fit-content', border: `1px solid ${theme.palette.divider}`, borderRadius: 1.5, px: 1, py: 0.6, '&:hover': { borderColor: theme.palette.text.secondary } }}
+                    onClick={puedeGestionarEstado ? (e) => onAbrirMenuEstado(e.currentTarget, id, ruta.estado || 'Programada', ruta) : undefined}
+                    sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: puedeGestionarEstado ? 'pointer' : 'default', width: 'fit-content', border: `1px solid ${theme.palette.divider}`, borderRadius: 1.5, px: 1, py: 0.6, '&:hover': puedeGestionarEstado ? { borderColor: theme.palette.text.secondary } : undefined }}
                 >
                     <RutaEstadoDot estado={ruta.estado || 'Programada'} />
                     <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, whiteSpace: 'nowrap', color: getEstadoColor(ruta.estado).color }}>
                         {ruta.estado || 'Programada'}
                     </Typography>
-                    <KeyboardArrowDownOutlinedIcon sx={{ fontSize: 14, color: '#9CA3AF' }} />
+                    {puedeGestionarEstado && <KeyboardArrowDownOutlinedIcon sx={{ fontSize: 14, color: '#9CA3AF' }} />}
                 </Box>
             )
             if (!infoRegreso) return contenido
@@ -218,6 +226,23 @@ const useRutaColumns = ({
                     {tienePermiso(PERMISOS.REGISTRAR_RUTA) && ruta.estado === 'Completada' && !ruta.rutaRegreso && (
                         <Tooltip title="Programar viaje de regreso">
                             <IconButton size="small" onClick={() => onProgramarRegreso(ruta)}
+                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}>
+                                <SyncAltOutlinedIcon sx={{ fontSize: 18 }} />
+                            </IconButton>
+                        </Tooltip>
+                    )}
+                    {/* operador_sede: acción propia (WS4, "Sedes remotas") — una ida
+                        Completada, sin regreso enlazado, cuyo convoy sigue en el
+                        municipio de la sede del operador. Distinta del ícono de arriba
+                        (ese abre el wizard completo, gateado por registrar_ruta; este
+                        abre solo el modal chico de fecha/hora, gateado por
+                        programar_regreso_sede). */}
+                    {tienePermiso(PERMISOS.PROGRAMAR_REGRESO_SEDE) && ruta.estado === 'Completada' && !ruta.rutaRegreso
+                        && sedeActual && (ruta.paresVehiculoConductor || []).some(
+                            (p) => p?.conductor?.idDestinoActual === sedeActual.idDestino || p?.vehiculo?.idDestinoActual === sedeActual.idDestino
+                        ) && (
+                        <Tooltip title="Programar regreso">
+                            <IconButton size="small" onClick={() => onProgramarRegresoSede(ruta)}
                                 sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}>
                                 <SyncAltOutlinedIcon sx={{ fontSize: 18 }} />
                             </IconButton>

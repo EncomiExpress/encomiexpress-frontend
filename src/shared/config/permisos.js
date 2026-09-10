@@ -49,4 +49,7 @@ export const PERMISOS = {
   INHABILITAR_RUTA: 'inhabilitar_ruta',
   INHABILITAR_ANTICIPO: 'inhabilitar_anticipo',
   INHABILITAR_VENTA: 'inhabilitar_venta',
+  // Especial, no sigue el patrón verbo_entidad (igual que ver_dashboard) — dispara
+  // la ruta de regreso de su sede (operador_sede). Ver LOGICA.md, "Sedes remotas".
+  PROGRAMAR_REGRESO_SEDE: 'programar_regreso_sede',
 }

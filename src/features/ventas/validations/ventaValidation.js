@@ -78,7 +78,7 @@ export const calcularValoresPaquetes = (idRuta, paquetes, rutasProgramadas, tari
 }
 
 export const validarPaso = (step, form, rutasProgramadas, opts = {}) => {
-    const { ventaOriginal = null, getPesoOriginalPorPar } = opts
+    const { ventaOriginal = null, getPesoOriginalPorPar, esOperadorSede = false, sedeMunicipio } = opts
     const e = {}
 
     if (step === 0) {
@@ -117,10 +117,16 @@ export const validarPaso = (step, form, rutasProgramadas, opts = {}) => {
         if (form.idRuta && !rutaSel && !e.idRuta) {
             e.idRuta = 'Esta ruta ya no está disponible — elige otra'
         }
-        // Un viaje de regreso no transporta ventas (mismo criterio que el filtro del
-        // selector en PasoEnvio.jsx y el rechazo del backend).
-        if (rutaSel && !e.idRuta && rutaSel.idRutaIda != null) {
+        // Un viaje de regreso no transporta ventas nuevas — EXCEPTO para
+        // operador_sede sobre el regreso de su propia sede (WS5, "Sedes
+        // remotas"), mismo criterio que el filtro del selector en PasoEnvio.jsx
+        // y la excepción simétrica del backend.
+        const esRegresoDeSuSede = esOperadorSede && rutaSel?.idRutaIda != null && rutaSel.origen === sedeMunicipio
+        if (rutaSel && !e.idRuta && rutaSel.idRutaIda != null && !esRegresoDeSuSede) {
             e.idRuta = 'Esta ruta es un viaje de regreso — elige una ruta de ida'
+        }
+        if (rutaSel && !e.idRuta && esOperadorSede && rutaSel.idRutaIda == null) {
+            e.idRuta = 'Elige un viaje de regreso de tu sede'
         }
         if (rutaSel && !e.idRuta && !rutaLlegaAlDestino(rutaSel, parseInt(form.idDestinoDestinatario) || null)) {
             e.idRuta = MENSAJE_RUTA_NO_LLEGA

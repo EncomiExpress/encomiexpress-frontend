@@ -18,9 +18,11 @@ const PasoContactoRol = ({
     passwordLabel, passwordRequired, passwordHelperText,
     rolesDisponibles, sedesDisponibles = [],
 }) => {
-    // La sede vive en form.sedes como un array (contrato con el backend), pero un
-    // distribuidor cubre una sola -> el Autocomplete maneja un único valor.
+    // La sede vive en form.sedes como un array (contrato con el backend), pero
+    // tanto un distribuidor como un operador_sede cubren una sola -> el
+    // Autocomplete maneja un único valor. Ver LOGICA.md, "Sedes remotas".
     const [sedeInput, setSedeInput] = useState('')
+    const requiereSede = form.rolNombre === 'distribuidor' || form.rolNombre === 'operador_sede'
     const sedeSeleccionada = sedesDisponibles.find(
         s => s.idDestino === (Array.isArray(form.sedes) ? form.sedes[0] : undefined)
     ) || null
@@ -124,11 +126,12 @@ const PasoContactoRol = ({
             ))}
         </TextField>
 
-        {/* Sede del distribuidor (encargado de sede) — solo visible para ese rol, al
-            lado del campo Rol. Un distribuidor cubre un único municipio: es donde
-            entrega los paquetes al destinatario. Mismo patrón de buscador que el
+        {/* Sede del distribuidor u operador_sede — solo visible para esos roles, al
+            lado del campo Rol. Cada uno cubre un único municipio: el distribuidor
+            entrega ahí los paquetes al destinatario; el operador_sede opera desde
+            ahí (ver LOGICA.md, "Sedes remotas"). Mismo patrón de buscador que el
             Destino de una ruta (trae los primeros 5 y filtra al escribir). */}
-        {form.rolNombre === 'distribuidor' && (
+        {requiereSede && (
             <Autocomplete
                 options={sedesDisponibles}
                 popupIcon={<KeyboardArrowDownOutlinedIcon />}
@@ -166,7 +169,9 @@ const PasoContactoRol = ({
                 renderInput={(params) => (
                     <TextField {...params} label="Sede *"
                         error={!!errores.sedes}
-                        helperText={errores.sedes || 'Municipio donde este distribuidor entrega los paquetes al destinatario'}
+                        helperText={errores.sedes || (form.rolNombre === 'operador_sede'
+                            ? 'Municipio desde el que este operador registra ventas y clientes'
+                            : 'Municipio donde este distribuidor entrega los paquetes al destinatario')}
                         slotProps={{ inputLabel: { shrink: true }, htmlInput: { ...params.inputProps, maxLength: 50 } }}
                         sx={formFieldStyles} />
                 )}

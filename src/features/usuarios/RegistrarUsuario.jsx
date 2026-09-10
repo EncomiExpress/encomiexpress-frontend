@@ -58,7 +58,7 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
         confirmarPassword: '',
         idRol: '',
         rolNombre: '',   // solo UI: decide si mostrar/exigir el selector de sede
-        sedes: [],       // ids de Destino — solo se envía si rolNombre === 'distribuidor'
+        sedes: [],       // ids de Destino — solo se envía si el rol es distribuidor u operador_sede
     })
 
     const {
@@ -94,8 +94,9 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
                 ...prev,
                 idRol: value,
                 rolNombre,
-                // Al salir de "distribuidor" las sedes ya no aplican; al entrar se conservan las que hubiera.
-                sedes: rolNombre === 'distribuidor' ? prev.sedes : [],
+                // Al salir de un rol con sede (distribuidor/operador_sede) las sedes ya
+                // no aplican; al entrar se conservan las que hubiera.
+                sedes: ['distribuidor', 'operador_sede'].includes(rolNombre) ? prev.sedes : [],
             }))
             setErrores(prev => ({ ...prev, idRol: '', sedes: '' }))
             setApiError(null)
@@ -171,8 +172,9 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
                 ...resto,
                 password,
             }
-            // Las sedes solo viajan si es un distribuidor; para otro rol el backend las ignora igual.
-            if (rolNombre === 'distribuidor') datosBackend.sedes = sedes.map(Number)
+            // Las sedes solo viajan si el rol las requiere (distribuidor/operador_sede);
+            // para otro rol el backend las ignora igual.
+            if (['distribuidor', 'operador_sede'].includes(rolNombre)) datosBackend.sedes = sedes.map(Number)
 
             const result = await registrarUsuario(datosBackend, false)
 

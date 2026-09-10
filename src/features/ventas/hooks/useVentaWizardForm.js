@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useAuth } from '../../../shared/contexts/AuthContext.jsx'
 import { limpiarMonedaInput, limpiarDecimalInput, capitalizarPalabras } from '../../../shared/utils/formatters.js'
 import { sumarDias } from '../../../shared/utils/horarioLaboral.js'
 import { filtrarDireccion } from '../../../shared/validations/direccionValidation.js'
@@ -26,6 +27,11 @@ export const useVentaWizardForm = ({
     afterChange = () => {},
     getPesoOriginalPorPar,
 }) => {
+    // Contexto de sede — solo tiene efecto para operador_sede (WS5, "Sedes
+    // remotas"): ahí el paso "Envío" ofrece regresos en vez de idas.
+    const { usuario, sedeActual } = useAuth()
+    const esOperadorSede = usuario?.rol?.nombre === 'operador_sede'
+
     // true en cuanto el admin edita "Total a pagar" a mano — a partir de ahí el
     // refresco de tarifas de los pasos "Paquete"/"Pago" (más abajo) deja de recalcularlo
     // por encima, hasta que vuelva a cambiar la ruta o el peso/cantidad de paquetes.
@@ -375,7 +381,7 @@ export const useVentaWizardForm = ({
 
     const handleNext = () => {
         const erroresEncontrados = validarPaso(activeStep, form, rutasProgramadas, {
-            ventaOriginal, getPesoOriginalPorPar,
+            ventaOriginal, getPesoOriginalPorPar, esOperadorSede, sedeMunicipio: sedeActual?.municipio,
         })
         if (Object.keys(erroresEncontrados).length > 0) {
             setErrores(erroresEncontrados)
@@ -414,7 +420,7 @@ export const useVentaWizardForm = ({
     // apuntando al primer paso con problemas, listos para que el campo se vea en rojo.
     const validarTodo = () => {
         const pasos = [0, 1, 2, 3].map(step => validarPaso(step, form, rutasProgramadas, {
-            ventaOriginal, getPesoOriginalPorPar,
+            ventaOriginal, getPesoOriginalPorPar, esOperadorSede, sedeMunicipio: sedeActual?.municipio,
         }))
         const pasoConError = pasos.findIndex(e => Object.keys(e).length > 0)
         if (pasoConError === -1) return true

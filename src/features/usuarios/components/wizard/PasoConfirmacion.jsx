@@ -50,7 +50,7 @@ const PasoConfirmacion = ({ theme, form, formOriginal, rolesDisponibles, sedesDi
                     <ConfirmRow label="Teléfono" value={form.telefono} previousValue={formOriginal?.telefono} />
                     <ConfirmRow label="Correo" value={form.email} previousValue={formOriginal?.email} />
                     <ConfirmRow label="Rol" value={getNombreRol(form.idRol)} previousValue={formOriginal ? getNombreRol(formOriginal.idRol) : undefined} />
-                    {form.rolNombre === 'distribuidor' && (
+                    {['distribuidor', 'operador_sede'].includes(form.rolNombre) && (
                         <ConfirmRow label="Sede" value={sedesTexto || '—'} />
                     )}
                     <ConfirmRow label="Contraseña" value={formOriginal ? (form.password ? '••••••••' : 'Sin cambiar') : '••••••••'} previousValue={formOriginal ? 'Sin cambiar' : undefined} />

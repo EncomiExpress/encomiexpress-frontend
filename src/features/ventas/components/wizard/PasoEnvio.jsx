@@ -11,6 +11,7 @@ import PlacaDisplay from '../../../../shared/components/PlacaDisplay.jsx'
 import ModalRutaDiagrama from '../../../../shared/components/ModalRutaDiagrama.jsx'
 import { validarCampo, validarCampoPaquete } from '../../validations/validacion.js'
 import { rutaLlegaAlDestino, MENSAJE_RUTA_NO_LLEGA } from '../../validations/ventaValidation.js'
+import { useAuth } from '../../../../shared/contexts/AuthContext.jsx'
 
 /**
  * Paso 3 del wizard: elegir la ruta, la fecha estimada de entrega y asignar cada paquete a un
@@ -26,6 +27,8 @@ export default function PasoEnvio({
     ventaOriginal, valorServicioManualRef, getPesoOriginalPorPar,
     destinos,
 }) {
+    const { usuario, sedeActual } = useAuth()
+    const esOperadorSede = usuario?.rol?.nombre === 'operador_sede'
     const [diagramaOpen, setDiagramaOpen] = useState(false)
     const rutaElegida = rutasProgramadas.find(r => r.idRuta === parseInt(form.idRuta))
     const paresElegida = rutaElegida?.paresVehiculoConductor || []
@@ -46,7 +49,15 @@ export default function PasoEnvio({
     // `value` esté dentro de `options` — y el Alert de abajo sigue avisando del problema.
     // Un viaje de regreso (r.idRutaIda) nunca lleva ventas nuevas — solo devuelve el
     // convoy a la base. Se excluye del selector; el backend también lo rechaza.
-    const rutasOpciones = rutasProgramadas.filter(r => r.habilitado !== false && r.estado === 'Programada' && r.idRutaIda == null && rutaLlegaAlDestino(r, idDestinoVenta))
+    // EXCEPTO para operador_sede (WS5, "Sedes remotas"): la sede recibe y
+    // devuelve, no despacha hacia afuera — ahí es al revés, solo se ofrecen los
+    // regresos que salen de SU sede (nunca una ida).
+    const rutasOpciones = rutasProgramadas.filter(r => {
+        if (r.habilitado === false || r.estado !== 'Programada' || !rutaLlegaAlDestino(r, idDestinoVenta)) return false
+        return esOperadorSede
+            ? r.idRutaIda != null && r.origen === sedeActual?.municipio
+            : r.idRutaIda == null
+    })
 
     const pesoOriginalPorPar = getPesoOriginalPorPar ? getPesoOriginalPorPar() : {}
     // Un Alert por cada vehículo del convoy que ya tiene paquetes asignados —

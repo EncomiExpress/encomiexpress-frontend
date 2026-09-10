@@ -11,14 +11,17 @@ export { PERMISOS }
 const AuthContext = createContext()
 export const useAuth = () => useContext(AuthContext)
 
-// IDs reales de la tabla `rol` (init.sql): admin=1, conductor=2, distribuidor=3.
-// `conductor` y `distribuidor` son solo-móvil (sin permisos granulares); el login
-// web los rechaza (ver login() más abajo). Único consumidor de esta constante:
-// ActualizarUsuario.jsx, y solo como fallback si el usuario no trajera idRol.
+// IDs reales de la tabla `rol` (init.sql): admin=1, conductor=2, distribuidor=3,
+// operador_sede=4. `conductor` y `distribuidor` son solo-móvil (sin permisos
+// granulares); el login web los rechaza (ver login() más abajo). `operador_sede`
+// SÍ es panel web, con un panel recortado (ver LOGICA.md, "Sedes remotas").
+// Único consumidor de esta constante: ActualizarUsuario.jsx, y solo como
+// fallback si el usuario no trajera idRol.
 export const ROLES = {
   ADMIN: { id: 1, nombre: 'admin' },
   CONDUCTOR: { id: 2, nombre: 'conductor' },
   DISTRIBUIDOR: { id: 3, nombre: 'distribuidor' },
+  OPERADOR_SEDE: { id: 4, nombre: 'operador_sede' },
 }
 
 export const MODULOS = {
@@ -287,12 +290,17 @@ export const AuthProvider = ({ children }) => {
     return { success: true, message: data.message }
   }
 
+  // Sede activa del usuario (operador_sede) — null para roles sin sede propia
+  // (admin) o mientras la sesión sigue cargando. Ver LOGICA.md, "Sedes remotas".
+  const sedeActual = usuario?.sede ?? null
+
   return (
     <AuthContext.Provider value={{
       usuario,
       token,
       loading,
       sessionExpired,
+      sedeActual,
       login,
       logout,
       tienePermiso,

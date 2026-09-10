@@ -17,6 +17,7 @@ import ActualizarRutaProgramacion from './ActualizarRutaProgramacion'
 import ModalConsultarRutaProgramacion from './components/ModalConsultarRutaProgramacion'
 import ModalConfirmarEstado from './components/ModalConfirmarEstado'
 import ModalInhabilitarRuta from './components/ModalInhabilitarRuta'
+import ModalProgramarRegresoSede from './components/ModalProgramarRegresoSede.jsx'
 import FiltroRuta from './components/FiltroRuta.jsx'
 import AlertaBloqueoDialog from './components/AlertaBloqueoDialog.jsx'
 import MenuCambioEstadoRuta from './components/MenuCambioEstadoRuta.jsx'
@@ -29,7 +30,7 @@ import useRutaExport from './hooks/useRutaExport.js'
 
 const ListarRutaProgramacion = () => {
     const navigate = useNavigate()
-    const { tienePermiso, PERMISOS, usuario } = useAuth()
+    const { tienePermiso, PERMISOS, usuario, sedeActual } = useAuth()
     const { showToast } = useToast()
     const [rutaVer, setRutaVer] = useState(null)
     const [estadoMenu, setEstadoMenu] = useState({ anchor: null, id: null, estadoActual: null, ruta: null })
@@ -41,6 +42,7 @@ const ListarRutaProgramacion = () => {
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [rutaEditar, setRutaEditar] = useState(null)
     const [prefillRegreso, setPrefillRegreso] = useState(null)
+    const [rutaRegresoSede, setRutaRegresoSede] = useState(null)
 
     // Estado propio de esta tabla paginada (NO el arreglo compartido de
     // RutaProgramacionContext, que otras pantallas/hooks piden completo o con un
@@ -50,7 +52,7 @@ const ListarRutaProgramacion = () => {
     // otra pantalla que refresque ese arreglo compartido pisa la página actual.
     const [rutasProgramadas, setRutasProgramadas] = useState([])
     const [total, setTotal] = useState(0)
-    const { updateEstado } = useRutaProgramacion()
+    const { updateEstado, programarRegresoSede } = useRutaProgramacion()
     const { getVehiculos, fetchVehiculos } = useVehiculo()
     const { getConductores, fetchConductores } = useConductor()
     const { destinos } = useDestino()
@@ -132,6 +134,15 @@ const ListarRutaProgramacion = () => {
         showToast('Ruta actualizada correctamente', 'success')
     }
 
+    // WS4 "Sedes remotas": operador_sede dispara el regreso de su sede con solo
+    // fecha/hora de salida — sin abrir el wizard completo de Ruta.
+    const handleConfirmarRegresoSede = async (ruta, datos) => {
+        await programarRegresoSede(ruta.idRuta, datos)
+        setRutaRegresoSede(null)
+        refetch()
+        showToast('Regreso programado correctamente', 'success')
+    }
+
     const emptyMessage = filtroHabilitado !== 'todo' || filtroEstadoRuta !== '' || filtroAnio !== '' || filtroMes !== ''
         ? 'No se encontraron rutas que coincidan con los filtros aplicados.'
         : debouncedSearch.trim()
@@ -139,12 +150,13 @@ const ListarRutaProgramacion = () => {
             : 'No hay rutas programadas en el sistema.'
 
     const columns = useRutaColumns({
-        theme, tienePermiso, PERMISOS, destinos, getVehiculos, getConductores,
+        theme, tienePermiso, PERMISOS, destinos, getVehiculos, getConductores, sedeActual,
         onConsultar: setRutaVer,
         onEditar: (ruta) => { setRutaEditar(ruta); setModalActualizarOpen(true) },
         onToggleHabilitado: handleToggleHabilitado,
         onAbrirMenuEstado: (anchor, id, estadoActual, ruta) => setEstadoMenu({ anchor, id, estadoActual, ruta }),
         onCancelarEnRuta: (id) => handleEstadoChange(id, 'Cancelada'),
+        onProgramarRegresoSede: setRutaRegresoSede,
         onProgramarRegreso: handleProgramarRegreso,
     })
 
@@ -317,6 +329,14 @@ const ListarRutaProgramacion = () => {
                     setEstadoMenu(prev => ({ ...prev, anchor: null }))
                     handleEstadoChange(estadoMenu.id, op)
                 }}
+            />
+
+            <ModalProgramarRegresoSede
+                open={!!rutaRegresoSede}
+                ruta={rutaRegresoSede}
+                destinos={destinos}
+                onClose={() => setRutaRegresoSede(null)}
+                onConfirmar={handleConfirmarRegresoSede}
             />
 
         </Box>

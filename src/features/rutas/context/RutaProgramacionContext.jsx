@@ -5,7 +5,8 @@ import {
   createRuta,
   updateRuta,
   toggleHabilitadoRuta,
-  updateEstadoRuta
+  updateEstadoRuta,
+  crearRegresoDesdeSede
 } from '../services/rutaService'
 import { useVehiculo } from '../../vehiculos/context/VehiculoContext.jsx'
 import { useConductor } from '../../conductores/context/ConductorContext.jsx'
@@ -85,6 +86,17 @@ export const RutaProgramacionProvider = ({ children }) => {
     return { ruta: actualizada, message: res?.message }
   }, [])
 
+  // operador_sede: dispara el regreso de su sede (WS4, "Sedes remotas") —
+  // solo fecha/hora de salida, el backend arma el resto a partir de la ida.
+  const programarRegresoSede = useCallback(async (idRutaIda, datos) => {
+    const res = await crearRegresoDesdeSede(idRutaIda, datos)
+    const creada = res?.data
+    if (creada) {
+      setRutasProgramadas(prev => [creada, ...prev])
+    }
+    return creada
+  }, [])
+
   const updateEstado = useCallback(async (id, nuevoEstado, extra = {}) => {
     const res = await updateEstadoRuta(id, nuevoEstado, extra)
     const actualizada = res?.data
@@ -109,6 +121,7 @@ export const RutaProgramacionProvider = ({ children }) => {
       actualizarRutaProgramada,
       toggleHabilitado,
       updateEstado,
+      programarRegresoSede,
     }}>
       {children}
     </RutaProgramacionContext.Provider>

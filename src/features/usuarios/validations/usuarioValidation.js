@@ -50,11 +50,12 @@ export const validarCampo = (name, form, { requerirPassword = false } = {}) => {
         case 'idRol':
             return form.idRol ? '' : 'Selecciona un rol'
         case 'sedes':
-            // Solo aplica al rol distribuidor (encargado de sede). Para cualquier
-            // otro rol el campo ni se muestra ni se envía. Un distribuidor cubre una
-            // sola sede (se guarda en form.sedes como array de 1). Ver LOGICA.md.
-            if (form.rolNombre === 'distribuidor' && (!Array.isArray(form.sedes) || form.sedes.length === 0)) {
-                return 'Selecciona la sede del distribuidor'
+            // Aplica a distribuidor (encargado de sede) y a operador_sede (panel web
+            // restringido). Para cualquier otro rol el campo ni se muestra ni se
+            // envía. Cada uno cubre una sola sede (se guarda en form.sedes como
+            // array de 1). Ver LOGICA.md, "Sedes remotas".
+            if (['distribuidor', 'operador_sede'].includes(form.rolNombre) && (!Array.isArray(form.sedes) || form.sedes.length === 0)) {
+                return 'Selecciona la sede'
             }
             return ''
         case 'password':

@@ -130,7 +130,10 @@ const useVentaColumns = ({
                         <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: '#D97706' }}>Pendiente</Typography>
                     </Box>
                 </Tooltip>
-            ) : (
+            ) : tienePermiso(PERMISOS.ACTUALIZAR_VENTA) ? (
+                // PATCH /encomiendas/:id/estado-pago exige actualizar_venta en el
+                // backend — sin el permiso, se muestra el mismo indicador pero sin
+                // click ni chevron (ver Rutas/reactivar de Ventas, mismo patrón).
                 <Box
                     onClick={(e) => { e.stopPropagation(); onAbrirMenuPago(e.currentTarget, venta.idEncomiendaVenta) }}
                     sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75, border: `1px solid ${theme.palette.divider}`, borderRadius: 1.5, px: 1, py: 0.3, cursor: 'pointer', '&:hover': { backgroundColor: theme.palette.action.hover } }}
@@ -138,6 +141,11 @@ const useVentaColumns = ({
                     <Box sx={{ width: 9, height: 9, borderRadius: '50%', border: '2px solid #D97706', backgroundColor: 'transparent', flexShrink: 0 }} />
                     <Typography variant="body2" sx={{ fontSize: '0.8rem', fontWeight: 500, color: '#D97706' }}>Pendiente</Typography>
                     <KeyboardArrowDownOutlinedIcon sx={{ fontSize: 13, color: theme.palette.text.secondary, ml: 0.25 }} />
+                </Box>
+            ) : (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, pl: 1 }}>
+                    <Box sx={{ width: 9, height: 9, borderRadius: '50%', border: '2px solid #D97706', backgroundColor: 'transparent', flexShrink: 0 }} />
+                    <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: '#D97706' }}>Pendiente</Typography>
                 </Box>
             )
         ),
@@ -190,7 +198,14 @@ const useVentaColumns = ({
                     })()}
                 </Box>
             ) : venta.estado === 'Cancelada' ? (
-                <EstadoVentaCancelada venta={venta} onReactivar={onReactivar} />
+                // El menú de reactivar (PATCH /encomiendas/:id/reactivar) exige
+                // actualizar_venta en el backend — sin el permiso, se muestra el
+                // chip plano en vez del selector clickeable que no llevaría a nada.
+                tienePermiso(PERMISOS.ACTUALIZAR_VENTA) ? (
+                    <EstadoVentaCancelada venta={venta} onReactivar={onReactivar} />
+                ) : (
+                    <Box sx={{ pl: 1 }}><VentaEstadoDot estado="Cancelada" /></Box>
+                )
             ) : (
                 <Box sx={{ pl: 1 }}><VentaEstadoDot estado={venta.estado} /></Box>
             )
@@ -212,7 +227,7 @@ const useVentaColumns = ({
                         <ReceiptLongOutlinedIcon sx={{ fontSize: 18 }} />
                     </IconButton>
                 </Tooltip>
-                {venta.habilitado === false ? (
+                {!tienePermiso(PERMISOS.ACTUALIZAR_VENTA) ? null : venta.habilitado === false ? (
                     <Tooltip title="Habilita el registro para poder editarlo">
                         <span>
                             <IconButton size="small" disabled>
