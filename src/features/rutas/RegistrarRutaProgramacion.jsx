@@ -246,6 +246,17 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess, prefill }) => {
             setParadaInputs(prev => prev.filter((_, i) => form.paradas[i]?.idDestino))
             setForm(prev => ({ ...prev, paradas: prev.paradas.filter(p => p.idDestino) }))
         }
+        // Mismo criterio con "+ Agregar vehículo y conductor": una fila que se agregó
+        // y se dejó completamente vacía (ni vehículo ni conductor) es válida para
+        // avanzar -- validarPares ya la deja pasar -- pero se descarta acá para que no
+        // quede como fila fantasma al volver con "Anterior". Una fila a medias (solo
+        // uno de los dos) no llega hasta acá: validarPares ya bloqueó el avance.
+        if (activeStep === 0 && form.pares.some(p => !p.idVehiculo && !p.idConductor)) {
+            const quedan = (_, i) => form.pares[i]?.idVehiculo || form.pares[i]?.idConductor
+            setVehiculoInputs(prev => prev.filter(quedan))
+            setConductorInputs(prev => prev.filter(quedan))
+            setForm(prev => ({ ...prev, pares: prev.pares.filter(p => p.idVehiculo || p.idConductor) }))
+        }
         setActiveStep(prev => prev + 1)
     }
 
@@ -336,10 +347,13 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess, prefill }) => {
     }
     // No dejar elegir en una parada el mismo municipio que ya quedó en otra --
     // mismo criterio que ya aplican getVehiculoOpciones/getConductorOpciones arriba
-    // (backend igual lo rechaza, ver uq_parada_ruta_destino en init.sql).
+    // (backend igual lo rechaza, ver uq_parada_ruta_destino en init.sql). Tampoco el
+    // destino final de la ruta -- una parada es un municipio ANTES de llegar, no el
+    // mismo lugar de llegada (backend lo rechaza igual, ver validarParadas).
     const getParadaOpciones = (index) => {
         const usados = form.paradas.filter((_, i) => i !== index).map(p => parseInt(p.idDestino))
-        return destinosSeleccionables.filter(d => !usados.includes(d.idDestino))
+        const idDestinoFinal = parseInt(form.idDestino)
+        return destinosSeleccionables.filter(d => !usados.includes(d.idDestino) && d.idDestino !== idDestinoFinal)
     }
 
     const renderStepContent = () => {
