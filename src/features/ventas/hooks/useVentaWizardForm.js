@@ -30,7 +30,7 @@ export const useVentaWizardForm = ({
     // Contexto de sede — solo tiene efecto para operador_sede (WS5, "Sedes
     // remotas"): ahí el paso "Envío" ofrece regresos en vez de idas.
     const { usuario, sedeActual } = useAuth()
-    const esOperadorSede = usuario?.rol?.nombre === 'operador_sede'
+    const esOperadorSede = usuario?.rol?.codigo === 'operador_sede'
 
     // true en cuanto el admin edita "Total a pagar" a mano — a partir de ahí el
     // refresco de tarifas de los pasos "Paquete"/"Pago" (más abajo) deja de recalcularlo

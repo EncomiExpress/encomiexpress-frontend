@@ -38,9 +38,11 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
         const cargarRoles = async () => {
             const respuesta = await getRolesBackend({ habilitado: 'true' })
             if (respuesta.success) {
-                const filtrados = (respuesta.data || []).filter(r => r.nombre?.toLowerCase() !== 'conductor')
+                // Por codigo (estable), no por nombre (editable) — ver LOGICA.md,
+                // "Rol: nombre editable vs codigo".
+                const filtrados = (respuesta.data || []).filter(r => r.codigo !== 'conductor')
                 setRolesDisponibles(filtrados)
-                const adminRol = filtrados.find(r => r.nombre?.toLowerCase() === 'admin')
+                const adminRol = filtrados.find(r => r.codigo === 'admin')
                 if (adminRol) setForm(prev => ({ ...prev, idRol: adminRol.idRol, rolNombre: 'admin' }))
             }
         }
@@ -89,7 +91,10 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
             value = value.replace(/[^0-9]/g, '')
         }
         if (name === 'idRol') {
-            const rolNombre = (rolesDisponibles.find(r => String(r.idRol) === String(value))?.nombre || '').toLowerCase()
+            // form.rolNombre guarda el CÓDIGO estable del rol (Rol.codigo), no su
+            // nombre visible — así este gate no se rompe si alguien renombra el rol
+            // desde el módulo de Roles. Ver LOGICA.md, "Rol: nombre editable vs codigo".
+            const rolNombre = (rolesDisponibles.find(r => String(r.idRol) === String(value))?.codigo || '').toLowerCase()
             setForm(prev => ({
                 ...prev,
                 idRol: value,

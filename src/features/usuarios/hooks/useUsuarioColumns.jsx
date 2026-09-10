@@ -51,6 +51,34 @@ const useUsuarioColumns = ({ theme, tienePermiso, PERMISOS, usuarioActual, onCon
         ),
     },
     {
+        // Solo distribuidor y operador_sede cubren una sede propia — verla de un
+        // vistazo en el listado evita tener que abrir "Consultar" para saberlo.
+        // admin/conductor no tienen sede asignable (operan desde Medellín, la sede
+        // principal) — se rotula distinto (texto, no chip) para no confundirla con
+        // una asignación real.
+        key: 'sede', label: 'Sede', cellSx: { py: 1.5 },
+        render: (usuario) => {
+            if (['admin', 'conductor'].includes(usuario.rol?.codigo)) {
+                return (
+                    <Box>
+                        <Typography variant="caption" display="block" color={theme.palette.text.secondary}>Sede principal:</Typography>
+                        <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary}>Medellín</Typography>
+                    </Box>
+                )
+            }
+            if (!['distribuidor', 'operador_sede'].includes(usuario.rol?.codigo)) return '—'
+            const municipios = (usuario.sedes || []).map(s => s.destino?.municipio).filter(Boolean)
+            if (municipios.length === 0) return '—'
+            return (
+                <Chip
+                    label={municipios.join(', ')}
+                    size="small"
+                    sx={{ backgroundColor: theme.palette.primary.activeBg, color: theme.palette.primary.main, fontWeight: 700, fontSize: '0.72rem', height: 22, borderRadius: 10 }}
+                />
+            )
+        },
+    },
+    {
         key: 'acciones', label: 'Acciones', width: 130, cellSx: { py: 1.5 },
         render: (usuario) => (
             <Box sx={{ display: 'flex', gap: 0.5 }}>
@@ -76,7 +104,7 @@ const useUsuarioColumns = ({ theme, tienePermiso, PERMISOS, usuarioActual, onCon
                                 </IconButton>
                             </span>
                         </Tooltip>
-                    ) : usuario.rol?.nombre?.toLowerCase() === 'conductor' ? (
+                    ) : usuario.rol?.codigo === 'conductor' ? (
                         <Tooltip title="Este usuario es un conductor: actualízalo desde el módulo de Conductores">
                             <span>
                                 <IconButton size="small" disabled>

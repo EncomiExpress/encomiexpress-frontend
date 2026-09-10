@@ -47,15 +47,10 @@ const useRolColumns = ({ theme, tienePermiso, PERMISOS, onConsultar, onEditar, o
           </Tooltip>
         )}
         {tienePermiso(PERMISOS.ACTUALIZAR_ROL) && (
-          rol.id === 1 ? (
-            <Tooltip title="El rol de administrador no se puede modificar">
-              <span>
-                <IconButton size="small" disabled>
-                  <EditOutlinedIcon sx={{ fontSize: 18 }} />
-                </IconButton>
-              </span>
-            </Tooltip>
-          ) : rol.habilitado === false ? (
+          // El rol admin (id=1) sí se puede editar (nombre, descripción) — solo
+          // sus permisos y su estado quedan protegidos, y eso lo aplica el
+          // backend (rolService.update) al guardar.
+          rol.habilitado === false ? (
             <Tooltip title="Habilita el registro para poder editarlo">
               <span>
                 <IconButton size="small" disabled>

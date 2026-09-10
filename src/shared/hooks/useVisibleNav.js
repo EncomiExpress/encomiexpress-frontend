@@ -8,10 +8,12 @@ import { useAuth } from '../contexts/AuthContext.jsx'
 // Usado por Sidebar.jsx y TopNav.jsx — ver LOGICA.md, "Sedes remotas".
 const useVisibleNav = () => {
   const { tienePermiso, usuario } = useAuth()
-  const rolNombre = usuario?.rol?.nombre
+  // `excluirRoles` en navSections.js son códigos estables, no el nombre
+  // editable — ver LOGICA.md, "Rol: nombre editable vs codigo".
+  const rolCodigo = usuario?.rol?.codigo
 
   const itemVisible = (item) =>
-    tienePermiso(item.permiso) && !(item.excluirRoles || []).includes(rolNombre)
+    tienePermiso(item.permiso) && !(item.excluirRoles || []).includes(rolCodigo)
 
   const sections = SECTIONS
     .map((s) => ({ ...s, items: s.items.filter(itemVisible) }))

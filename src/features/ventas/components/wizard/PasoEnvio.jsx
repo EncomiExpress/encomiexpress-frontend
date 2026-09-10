@@ -28,7 +28,7 @@ export default function PasoEnvio({
     destinos,
 }) {
     const { usuario, sedeActual } = useAuth()
-    const esOperadorSede = usuario?.rol?.nombre === 'operador_sede'
+    const esOperadorSede = usuario?.rol?.codigo === 'operador_sede'
     const [diagramaOpen, setDiagramaOpen] = useState(false)
     const rutaElegida = rutasProgramadas.find(r => r.idRuta === parseInt(form.idRuta))
     const paresElegida = rutaElegida?.paresVehiculoConductor || []

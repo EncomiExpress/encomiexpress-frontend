@@ -23,7 +23,7 @@ const AppRoutes = () => {
   // una ruta no reconocida lo manda a su propio listado en vez de al inicio
   // público. Para cualquier otro caso (sin sesión, u otro rol) se mantiene el
   // comportamiento de siempre. Ver LOGICA.md, "Sedes remotas", D-D.
-  const destinoNoReconocido = usuario?.rol?.nombre === 'operador_sede' ? '/ventas/listar' : '/'
+  const destinoNoReconocido = usuario?.rol?.codigo === 'operador_sede' ? '/ventas/listar' : '/'
 
   return (
     <>

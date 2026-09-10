@@ -40,7 +40,7 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
         const cargarRoles = async () => {
             const respuesta = await getRolesBackend({ habilitado: 'true' })
             if (respuesta.success) {
-                setRolesDisponibles((respuesta.data || []).filter(r => r.nombre?.toLowerCase() !== 'conductor'))
+                setRolesDisponibles((respuesta.data || []).filter(r => r.codigo !== 'conductor'))
             }
         }
         cargarRoles()
@@ -96,12 +96,14 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
             setErrores({})
             setSinCambios(false)
             const usuario = usuarioProp
-            const rolNombre = (usuario.rol?.nombre || '').toLowerCase()
+            // form.rolNombre guarda el CÓDIGO estable del rol (Rol.codigo), no su
+            // nombre visible — ver LOGICA.md, "Rol: nombre editable vs codigo".
+            const rolNombre = (usuario.rol?.codigo || '').toLowerCase()
             // Preferir el idRol real que ya trae el usuario (columna id_rol de la API);
             // el mapa hardcodeado ROLES es solo un último recurso y está incompleto
-            // (no incluye 'distribuidor').
+            // (no incluye 'distribuidor'). Match por codigo, igual que arriba.
             const rolId = usuario.idRol
-                || Object.values(ROLES).find(r => r.nombre === usuario.rol?.nombre)?.id
+                || Object.values(ROLES).find(r => r.codigo === usuario.rol?.codigo)?.id
                 || ''
             const sedes = (usuario.sedes || [])
                 .map(s => s.idDestino ?? s.destino?.idDestino)
@@ -144,7 +146,7 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
             value = value.replace(/[^0-9]/g, '')
         }
         if (name === 'idRol') {
-            const rolNombre = (rolesDisponibles.find(r => String(r.idRol) === String(value))?.nombre || '').toLowerCase()
+            const rolNombre = (rolesDisponibles.find(r => String(r.idRol) === String(value))?.codigo || '').toLowerCase()
             setForm(prev => ({
                 ...prev,
                 idRol: value,

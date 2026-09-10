@@ -17,11 +17,14 @@ export const useAuth = () => useContext(AuthContext)
 // SÍ es panel web, con un panel recortado (ver LOGICA.md, "Sedes remotas").
 // Único consumidor de esta constante: ActualizarUsuario.jsx, y solo como
 // fallback si el usuario no trajera idRol.
+// `codigo` es el identificador estable (Rol.codigo en el backend) — nunca
+// cambia aunque se renombre el rol. `nombre` es el valor de fábrica, solo
+// útil como texto por defecto; no lo uses para comparar.
 export const ROLES = {
-  ADMIN: { id: 1, nombre: 'admin' },
-  CONDUCTOR: { id: 2, nombre: 'conductor' },
-  DISTRIBUIDOR: { id: 3, nombre: 'distribuidor' },
-  OPERADOR_SEDE: { id: 4, nombre: 'operador_sede' },
+  ADMIN: { id: 1, nombre: 'admin', codigo: 'admin' },
+  CONDUCTOR: { id: 2, nombre: 'conductor', codigo: 'conductor' },
+  DISTRIBUIDOR: { id: 3, nombre: 'distribuidor', codigo: 'distribuidor' },
+  OPERADOR_SEDE: { id: 4, nombre: 'operador_sede', codigo: 'operador_sede' },
 }
 
 export const MODULOS = {
@@ -90,7 +93,12 @@ export const AuthProvider = ({ children }) => {
           const rolNombre = typeof perfilFresco.rol === 'string'
             ? perfilFresco.rol
             : perfilFresco.rol?.nombre || null
-          const usuarioActualizado = { ...perfilFresco, rol: rolNombre ? { nombre: rolNombre } : null }
+          // `codigo` es el identificador estable del rol (ver Rol.codigo en el
+          // backend) — todo lo que decide comportamiento (redirecciones, sidebar,
+          // exclusiones) compara contra esto, nunca contra `nombre` (editable
+          // libremente). Ver LOGICA.md, "Rol: nombre editable vs codigo".
+          const rolCodigo = perfilFresco.rolCodigo ?? null
+          const usuarioActualizado = { ...perfilFresco, rol: rolNombre ? { nombre: rolNombre, codigo: rolCodigo } : null }
           setToken(getToken())
           setUsuario(usuarioActualizado)
           sessionStorage.setItem(STORAGE_KEYS.USUARIO, JSON.stringify(usuarioActualizado))
@@ -140,6 +148,8 @@ export const AuthProvider = ({ children }) => {
       const rolNombre = typeof usuario.rol === 'string'
         ? usuario.rol
         : usuario.rol?.nombre || null
+      // Identificador estable del rol — ver nota en validateSession() arriba.
+      const rolCodigo = usuario.rolCodigo ?? null
 
       // Antes esto comparaba el nombre del rol a mano (['conductor','distribuidor']).
       // Ahora es dinámico: un rol sin NINGÚN permiso de panel web (los 50
@@ -157,7 +167,7 @@ export const AuthProvider = ({ children }) => {
 
       const usuarioNormalizado = {
         ...usuario,
-        rol: rolNombre ? { nombre: rolNombre } : null
+        rol: rolNombre ? { nombre: rolNombre, codigo: rolCodigo } : null
       }
 
       setSessionExpired(false)

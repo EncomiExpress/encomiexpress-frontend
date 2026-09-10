@@ -57,7 +57,7 @@ const ModalConsultarUsuario = ({ usuario, onClose }) => {
                         <CampoFila label="Teléfono" value={usuario.telefono || '—'} />
                         <CampoFila label="Email" value={usuario.email} />
                         <CampoFila label="Rol" value={usuario.rol?.nombre} esChip chipVariant="outlined-pill" />
-                        {['distribuidor', 'operador_sede'].includes(usuario.rol?.nombre) && (
+                        {['distribuidor', 'operador_sede'].includes(usuario.rol?.codigo) && (
                             <CampoFila label="Sede" value={(usuario.sedes || []).map(s => s.destino?.municipio).filter(Boolean).join(', ') || '—'} />
                         )}
                         <CampoFila label="Estado" value={usuario.habilitado ? 'Habilitado' : 'Inhabilitado'} />
