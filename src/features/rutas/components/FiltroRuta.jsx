@@ -8,6 +8,9 @@ const ESTADOS_RUTA = ['Programada', 'En Ruta', 'Completada', 'Cancelada']
 // "Completada + sin regreso enlazado + convoy fuera de base"). Ver LOGICA.md,
 // "Rutas — filtro 'Regreso pendiente'".
 const ESTADO_REGRESO_PENDIENTE = 'Regreso pendiente'
+// Tampoco es un estado real — toda ruta que ES un viaje de regreso (idRutaIda no
+// nulo), mismo criterio que ya pinta el chip "Viaje de regreso" del listado.
+const ESTADO_VIAJE_REGRESO = 'Viaje de regreso'
 
 const MESES = [
     { value: '1', label: 'Enero' }, { value: '2', label: 'Febrero' },
@@ -69,6 +72,10 @@ const FiltroRuta = ({
                         sx={{ borderTop: `1px solid ${theme.palette.divider}` }}>
                         {ESTADO_REGRESO_PENDIENTE}
                         {filtroEstadoRuta === ESTADO_REGRESO_PENDIENTE && <CheckOutlinedIcon sx={{ fontSize: 14, color: theme.palette.text.secondary }} />}
+                    </MenuItem>
+                    <MenuItem value={ESTADO_VIAJE_REGRESO}>
+                        {ESTADO_VIAJE_REGRESO}
+                        {filtroEstadoRuta === ESTADO_VIAJE_REGRESO && <CheckOutlinedIcon sx={{ fontSize: 14, color: theme.palette.text.secondary }} />}
                     </MenuItem>
                 </Select>
             </FormControl>
