@@ -18,7 +18,7 @@ export const validarEmail = (email) => {
 
 const SOLO_LETRAS_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/
 // Sin TI/RC (menores de edad) -- ver LOGICA.md ("Tipos de documento por módulo").
-const TIPOS_DOC_PERMITIDOS = ['CC', 'NIT', 'CE', 'PAS']
+export const TIPOS_DOC_PERMITIDOS = ['CC', 'NIT', 'CE', 'PAS']
 
 export const validarCampo = (name, form) => {
     const esNIT = form.tipoIdentificacion === 'NIT'

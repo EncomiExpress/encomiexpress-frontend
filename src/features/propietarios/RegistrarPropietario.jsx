@@ -2,6 +2,7 @@ import { useTheme } from '@mui/material/styles'
 import { useState } from 'react'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import { usePropietario } from './context/PropietarioContext.jsx'
+import { useConductor } from '../conductores/context/ConductorContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { capitalizarPalabras } from '../../shared/utils/formatters.js'
@@ -9,6 +10,7 @@ import { MENSAJE_NOMBRE_DUPLICADO } from '../../shared/utils/duplicados.js'
 import { esDocAlfanumerico } from '../../shared/utils/documento.js'
 import {
     steps, validarCampo, validarDocumentoCompleto, validarPaso, formatearNit, EMPTY_FORM,
+    TIPOS_DOC_PERMITIDOS,
 } from './validations/propietarioValidation.js'
 import { filtrarCorreo } from '../../shared/validations/emailValidation.js'
 import { filtrarTelefono } from '../../shared/validations/telefonoValidation.js'
@@ -20,6 +22,7 @@ import PasoConfirmacion from './components/wizard/PasoConfirmacion.jsx'
 
 const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
     const { registrarPropietario } = usePropietario()
+    const { conductores } = useConductor()
     const { showToast } = useToast()
     const theme = useTheme()
     const [errores, setErrores] = useState({})
@@ -103,6 +106,34 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
         setApiError(null)
     }
 
+    // Atajo "¿también es conductor?" (PasoDocumento.jsx) -- copia una sola vez los
+    // datos del Conductor elegido hacia el formulario de Propietario. No queda ningún
+    // vínculo entre las dos filas (Propietario no tiene FK a Conductor/Usuario, ver
+    // LOGICA.md) -- de acá en adelante los campos son de edición libre, igual que si
+    // se hubieran tecleado a mano.
+    const handleAutocompletarDesdeConductor = (conductor) => {
+        const tipoValido = TIPOS_DOC_PERMITIDOS.includes(conductor.tipoIdentificacion)
+        setForm(prev => ({
+            ...prev,
+            ...(tipoValido ? { tipoIdentificacion: conductor.tipoIdentificacion } : {}),
+            numeroIdentificacion: conductor.numeroIdentificacion || prev.numeroIdentificacion,
+            nombre: conductor.nombre || prev.nombre,
+            apellido: conductor.apellido || prev.apellido,
+            telefono: conductor.telefono || prev.telefono,
+            email: conductor.email || prev.email,
+        }))
+        setErrores({})
+        setAvisoDocDuplicado('')
+        setAvisoNombreDuplicado('')
+        setApiError(null)
+        if (!tipoValido) {
+            showToast(
+                `${conductor.nombre} tiene documento tipo ${conductor.tipoIdentificacion}, que no aplica para Propietario -- elige el tipo de documento manualmente.`,
+                'warning'
+            )
+        }
+    }
+
     const handleNext = () => {
         const erroresEncontrados = validarPaso(activeStep, form, { avisoDocDuplicado, avisoNombreDuplicado })
         if (Object.keys(erroresEncontrados).length > 0) {
@@ -152,6 +183,7 @@ const RegistrarPropietario = ({ open, onClose, onSuccess }) => {
                     <PasoDocumento
                         form={form} errores={errores} setErrores={setErrores} handleChange={handleChange}
                         verificarDocumentoDuplicado={verificarDocumentoDuplicado} verificarNombreDuplicado={verificarNombreDuplicado}
+                        conductores={conductores} onSeleccionarConductor={handleAutocompletarDesdeConductor}
                     />
                 )
             case 1:
