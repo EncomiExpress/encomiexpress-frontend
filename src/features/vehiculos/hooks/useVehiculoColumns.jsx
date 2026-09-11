@@ -152,7 +152,7 @@ const useVehiculoColumns = ({ theme, tienePermiso, PERMISOS, onConsultar, onEdit
                     )
                 )}
                 {tienePermiso(PERMISOS.INHABILITAR_VEHICULO) && (
-                    <ToggleSwitch id={transporte.idVehiculo} checked={transporte.habilitado !== false} onChange={() => onToggleHabilitado(transporte.idVehiculo, transporte.habilitado, transporte.estadoEfectivo, transporte.placa)} />
+                    <ToggleSwitch id={transporte.idVehiculo} checked={transporte.habilitado !== false} onChange={() => onToggleHabilitado(transporte.idVehiculo, transporte.habilitado, transporte.estadoEfectivo, transporte.placa, transporte.destinoActual)} />
                 )}
             </Box>
         ),

@@ -77,6 +77,10 @@ const ModalInhabilitarVehiculo = ({ open, data, onClose, onExited, onConfirm }) 
     }
 
     const modalCargando = rutasInhabilitar.loading
+    // Fuera de base: idDestinoActual queda en null en cuanto arranca una ruta (ver
+    // rutaService.js), así que nunca coincide con "En Ruta" al mismo tiempo -- no hace
+    // falta combinar los dos mensajes.
+    const fueraDeBase = data.habilitadoActual && !!data.destinoActual
     const modalBloqueado = data.habilitadoActual && rutasInhabilitar.data.some(r => r.estado === 'En Ruta')
     const modalProgramadas = rutasInhabilitar.data.filter(r => r.estado === 'Programada')
     const enMantenimiento = data.estadoVehiculo === 'Mantenimiento'
@@ -96,6 +100,9 @@ const ModalInhabilitarVehiculo = ({ open, data, onClose, onExited, onConfirm }) 
                 <CircularProgress size={22} sx={{ color: theme.palette.primary.main }} />
             </Box>
         )
+    } else if (fueraDeBase) {
+        titulo = 'No se puede inhabilitar'
+        subtitulo = <>No es posible inhabilitar el vehículo <strong>{data.placa}</strong> mientras esté fuera de base, en <strong>{data.destinoActual.municipio}</strong>.</>
     } else if (modalBloqueado) {
         titulo = 'No se puede inhabilitar'
         subtitulo = <>No es posible inhabilitar el vehículo <strong>{data.placa}</strong> mientras esté en ruta.</>
@@ -136,7 +143,7 @@ const ModalInhabilitarVehiculo = ({ open, data, onClose, onExited, onConfirm }) 
                 : <BlockOutlinedIcon sx={{ fontSize: 35, color: theme.palette.primary.darker }} />}
             titulo={titulo}
             subtitulo={subtitulo}
-            soloCerrar={data.habilitadoActual && modalBloqueado}
+            soloCerrar={data.habilitadoActual && (fueraDeBase || modalBloqueado)}
             textoConfirmar={data.habilitadoActual ? 'Inhabilitar' : 'Habilitar'}
             deshabilitarConfirmar={modalCargando}
         >

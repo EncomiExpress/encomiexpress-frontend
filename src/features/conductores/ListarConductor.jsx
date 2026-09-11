@@ -10,6 +10,7 @@ import { useAuth } from '../../shared/contexts/AuthContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { getPageOfConductor, getConductores } from './services/conductorService.js'
 import { normalizarConductor } from './utils/normalizarConductor.js'
+import { formatFecha } from '../../shared/utils/formatters.js'
 import RegistrarConductor from './RegistrarConductor'
 import ActualizarConductor from './ActualizarConductor'
 import ModalBloqueoInhabilitacion from '../../shared/components/ModalBloqueoInhabilitacion'
@@ -70,7 +71,7 @@ const ListarConductor = () => {
                     'Teléfono': conductor.telefono,
                     'Número de Licencia': conductor.numeroLicencia,
                     'Categorías de licencia': (conductor.categoriasLicencia || [])
-                        .map(c => `${c.categoria} (${c.vencimiento})`)
+                        .map(c => `${c.categoria} · ${c.vencimiento ? formatFecha(c.vencimiento) : 'N/A'}`)
                         .join(', '),
                     'Estado': conductor.estado,
                     'Habilitado': conductor.habilitado === false ? 'No' : 'Sí',
@@ -228,7 +229,7 @@ const ListarConductor = () => {
                 open={confirmToggle.open}
                 data={confirmToggle}
                 onClose={() => setConfirmToggle(s => ({ ...s, open: false }))}
-                onExited={() => setConfirmToggle({ open: false, idConductor: null, nombreCompleto: '', habilitadoActual: false })}
+                onExited={() => setConfirmToggle({ open: false, idConductor: null, nombreCompleto: '', habilitadoActual: false, destinoActual: null })}
                 onConfirm={onConfirmar}
             />
 

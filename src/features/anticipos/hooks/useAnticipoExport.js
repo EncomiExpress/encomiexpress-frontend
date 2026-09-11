@@ -3,6 +3,7 @@ import { useToast } from '../../../shared/contexts/ToastContext.jsx'
 import { getAnticipos } from '../services/anticipoService.js'
 import { exportToExcel } from '../../../shared/utils/exportExcel.js'
 import { formatFecha } from '../../../shared/utils/formatters.js'
+import { formatMoney } from '../validations/anticipoValidation.js'
 
 // El export propio de anticipos necesita filtros de estado/año/mes además de
 // habilitado/búsqueda -- el handleExportar genérico de useEntityCrud no los conoce.
@@ -25,9 +26,9 @@ const useAnticipoExport = ({ theme, getNombreConductor, debouncedBusqueda, filtr
                 'ID': anticipo.idAnticipoExcedente || anticipo.idAnticipo,
                 'Conductor': getNombreConductor(anticipo),
                 'Ruta': anticipo.ruta ? `${anticipo.ruta.origen || '-'} → ${anticipo.ruta.destino?.municipio || 'Sin destino'}` : (anticipo.idRuta || '-'),
-                'Valor anticipo': Math.round(Number(anticipo.valorAnticipo)) || 0,
-                'Valor gastado': Math.round(Number(anticipo.valorGastado)) || 0,
-                'Excedente': Math.round(Number(anticipo.excedente)) || 0,
+                'Valor anticipo': formatMoney(anticipo.valorAnticipo),
+                'Valor gastado': formatMoney(anticipo.valorGastado),
+                'Excedente': formatMoney(anticipo.excedente),
                 'Fecha de entrega': formatFecha(anticipo.fechaEntrega),
                 'Estado': anticipo.estado,
                 'Habilitado': anticipo.habilitado === false ? 'No' : 'Sí',

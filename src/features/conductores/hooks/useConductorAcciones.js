@@ -9,7 +9,7 @@ const useConductorAcciones = (refetch) => {
     const { toggleHabilitado } = useConductor()
     const { showToast } = useToast()
 
-    const [confirmToggle, setConfirmToggle] = useState({ open: false, idConductor: null, nombreCompleto: '', habilitadoActual: false })
+    const [confirmToggle, setConfirmToggle] = useState({ open: false, idConductor: null, nombreCompleto: '', habilitadoActual: false, destinoActual: null })
     const [modalBloqueo, setModalBloqueo] = useState({ open: false, dependencias: [], mensaje: '' })
 
     const solicitarToggle = (conductor) => {
@@ -18,6 +18,7 @@ const useConductorAcciones = (refetch) => {
             idConductor: conductor.idConductor,
             nombreCompleto: `${conductor.nombre} ${conductor.apellido}`,
             habilitadoActual: conductor.habilitado,
+            destinoActual: conductor.destinoActual || null,
         })
     }
 

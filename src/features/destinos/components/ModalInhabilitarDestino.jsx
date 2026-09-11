@@ -61,10 +61,19 @@ const ModalInhabilitarDestino = ({ open, data, onClose, onExited, onConfirm }) =
         // no confunde el reseteo de loading previo al fetch con una mutación "impura".
         const cargarRutasActivas = () => {
             setRutasInhabilitar({ data: [], loading: true })
-            rutaService.getRutas({ idDestino: data.id, habilitado: 'true', limit: 100 })
-                .then(res => {
-                    const activas = (res?.data || []).filter(r => r.estado === 'Programada' || r.estado === 'En Ruta')
-                    setRutasInhabilitar({ data: activas, loading: false })
+            Promise.all([
+                rutaService.getRutas({ idDestino: data.id, habilitado: 'true', limit: 100 }),
+                // "Regreso pendiente": la ida ya llegó (Completada) pero el convoy sigue
+                // fuera de base y nadie le programó el regreso todavía -- mismo pseudo-estado
+                // que ya usa el filtro de Listar Rutas (no es un valor real de ruta.estado,
+                // el backend lo traduce a su propio criterio). Sin esto, un destino con un
+                // convoy varado (como Caucasia en este caso) se dejaba inhabilitar igual.
+                rutaService.getRutas({ idDestino: data.id, estado: 'Regreso pendiente', habilitado: 'true', limit: 100 }),
+            ])
+                .then(([activasRes, regresoRes]) => {
+                    const activas = (activasRes?.data || []).filter(r => r.estado === 'Programada' || r.estado === 'En Ruta')
+                    const regresosPendientes = (regresoRes?.data || []).map(r => ({ ...r, estado: 'Regreso pendiente' }))
+                    setRutasInhabilitar({ data: [...activas, ...regresosPendientes], loading: false })
                 })
                 .catch(() => setRutasInhabilitar({ data: [], loading: false }))
         }
@@ -76,6 +85,8 @@ const ModalInhabilitarDestino = ({ open, data, onClose, onExited, onConfirm }) =
         onExited?.()
     }
 
+    const rutasActivas = rutasInhabilitar.data.filter(r => r.estado === 'Programada' || r.estado === 'En Ruta')
+    const regresosPendientes = rutasInhabilitar.data.filter(r => r.estado === 'Regreso pendiente')
     const bloqueado = data.habilitadoActual && rutasInhabilitar.data.length > 0
 
     return (
@@ -92,7 +103,11 @@ const ModalInhabilitarDestino = ({ open, data, onClose, onExited, onConfirm }) =
                 : '¿Habilitar destino?'}
             subtitulo={data.habilitadoActual
                 ? bloqueado
-                    ? <>El destino <strong>{data.municipio}</strong> tiene {rutasInhabilitar.data.length === 1 ? 'una ruta activa' : 'rutas activas'} que {rutasInhabilitar.data.length === 1 ? 'debe completarse o cancelarse' : 'deben completarse o cancelarse'} antes de inhabilitar el destino.</>
+                    ? rutasActivas.length > 0 && regresosPendientes.length > 0
+                        ? <>El destino <strong>{data.municipio}</strong> tiene rutas activas y un convoy fuera de base con el regreso sin programar — hay que resolver los dos antes de inhabilitar el destino.</>
+                        : regresosPendientes.length > 0
+                            ? <>El destino <strong>{data.municipio}</strong> tiene {regresosPendientes.length === 1 ? 'un convoy' : 'convoyes'} fuera de base con el regreso sin programar todavía.</>
+                            : <>El destino <strong>{data.municipio}</strong> tiene {rutasActivas.length === 1 ? 'una ruta activa' : 'rutas activas'} que {rutasActivas.length === 1 ? 'debe completarse o cancelarse' : 'deben completarse o cancelarse'} antes de inhabilitar el destino.</>
                     : <>El destino <strong>{data.municipio}</strong> quedará inhabilitado en el sistema.</>
                 : <>El destino <strong>{data.municipio}</strong> volverá a estar activo en el sistema.</>}
             soloCerrar={bloqueado}

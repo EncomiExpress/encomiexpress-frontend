@@ -88,7 +88,12 @@ const ModalInhabilitarConductor = ({ open, data, onClose, onExited, onConfirm })
     const rutasProgramadas = rutasDetalle.data.filter(r => r.estado === 'Programada')
     const anticiposBloqueo = anticiposDetalle.data.filter(a => ESTADOS_BLOQUEO_ANTICIPO.includes(a.estado))
     const cargando = rutasDetalle.loading || anticiposDetalle.loading
-    const bloqueado = data.habilitadoActual && (rutasEnCurso.length > 0 || anticiposBloqueo.length > 0)
+    // idDestinoActual queda en null en cuanto arranca una ruta (ver rutaService.js),
+    // así que nunca coincide con "en ruta" al mismo tiempo -- pero sí puede coincidir
+    // con un anticipo pendiente (son estados independientes), por eso el mensaje de
+    // abajo sí combina esos dos.
+    const fueraDeBase = data.habilitadoActual && !!data.destinoActual
+    const bloqueado = data.habilitadoActual && (fueraDeBase || rutasEnCurso.length > 0 || anticiposBloqueo.length > 0)
 
     return (
         <ConfirmToggleDialog
@@ -103,13 +108,17 @@ const ModalInhabilitarConductor = ({ open, data, onClose, onExited, onConfirm })
                 ? bloqueado ? 'No se puede inhabilitar' : cargando ? 'Inhabilitar conductor' : '¿Inhabilitar conductor?'
                 : '¿Habilitar conductor?'}
             subtitulo={data.habilitadoActual
-                ? rutasEnCurso.length > 0 && anticiposBloqueo.length > 0
-                    ? <>No es posible inhabilitar a <strong>{data.nombreCompleto}</strong> mientras esté en ruta y tenga {anticiposBloqueo.length === 1 ? 'un anticipo pendiente' : 'anticipos pendientes'} de legalización.</>
-                    : rutasEnCurso.length > 0
-                        ? <>No es posible inhabilitar a <strong>{data.nombreCompleto}</strong> mientras esté en ruta.</>
-                        : anticiposBloqueo.length > 0
-                            ? <>No es posible inhabilitar a <strong>{data.nombreCompleto}</strong> mientras tenga {anticiposBloqueo.length === 1 ? 'un anticipo pendiente' : 'anticipos pendientes'} de legalización.</>
-                            : <><strong>{data.nombreCompleto}</strong> quedará inhabilitado en el sistema.</>
+                ? fueraDeBase && anticiposBloqueo.length > 0
+                    ? <>No es posible inhabilitar a <strong>{data.nombreCompleto}</strong> mientras esté fuera de base, en <strong>{data.destinoActual.municipio}</strong>, y tenga {anticiposBloqueo.length === 1 ? 'un anticipo pendiente' : 'anticipos pendientes'} de legalización.</>
+                    : fueraDeBase
+                        ? <>No es posible inhabilitar a <strong>{data.nombreCompleto}</strong> mientras esté fuera de base, en <strong>{data.destinoActual.municipio}</strong>.</>
+                        : rutasEnCurso.length > 0 && anticiposBloqueo.length > 0
+                            ? <>No es posible inhabilitar a <strong>{data.nombreCompleto}</strong> mientras esté en ruta y tenga {anticiposBloqueo.length === 1 ? 'un anticipo pendiente' : 'anticipos pendientes'} de legalización.</>
+                            : rutasEnCurso.length > 0
+                                ? <>No es posible inhabilitar a <strong>{data.nombreCompleto}</strong> mientras esté en ruta.</>
+                                : anticiposBloqueo.length > 0
+                                    ? <>No es posible inhabilitar a <strong>{data.nombreCompleto}</strong> mientras tenga {anticiposBloqueo.length === 1 ? 'un anticipo pendiente' : 'anticipos pendientes'} de legalización.</>
+                                    : <><strong>{data.nombreCompleto}</strong> quedará inhabilitado en el sistema.</>
                 : <><strong>{data.nombreCompleto}</strong> volverá a estar activo en el sistema.</>}
             soloCerrar={bloqueado}
             textoConfirmar={data.habilitadoActual ? 'Inhabilitar' : 'Habilitar'}

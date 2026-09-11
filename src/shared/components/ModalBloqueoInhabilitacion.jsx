@@ -23,6 +23,7 @@ const ICONOS_TIPO = {
     'Conductor': <PersonOutlinedIcon sx={{ fontSize: 16 }} />,
     'Conflicto de vehículo': <DirectionsCarOutlinedIcon sx={{ fontSize: 16 }} />,
     'Conflicto de conductor': <PersonOutlinedIcon sx={{ fontSize: 16 }} />,
+    'Fuera de base': <PlaceOutlinedIcon sx={{ fontSize: 16 }} />,
 }
 
 const agruparPorTipo = (dependencias) => {

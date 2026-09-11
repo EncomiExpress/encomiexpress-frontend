@@ -13,7 +13,7 @@ const useVehiculoAcciones = (refetch) => {
     const [estadoMenu, setEstadoMenu] = useState({ anchor: null, id: null, estadoActual: null })
     const [confirmMantenimiento, setConfirmMantenimiento] = useState({ open: false, id: null })
     const [confirmandoEstado, setConfirmandoEstado] = useState(false)
-    const [confirmInhabilitar, setConfirmInhabilitar] = useState({ open: false, id: null, habilitadoActual: null, placa: '', estadoVehiculo: null })
+    const [confirmInhabilitar, setConfirmInhabilitar] = useState({ open: false, id: null, habilitadoActual: null, placa: '', estadoVehiculo: null, destinoActual: null })
     const [rutasMantenimiento, setRutasMantenimiento] = useState({ data: [], loading: false })
 
     useEffect(() => {
@@ -36,8 +36,8 @@ const useVehiculoAcciones = (refetch) => {
         }
     }
 
-    const handleToggleHabilitado = (id, habilitadoActual, estadoVehiculo, placa) => {
-        setConfirmInhabilitar({ open: true, id, habilitadoActual, placa: placa || '', estadoVehiculo })
+    const handleToggleHabilitado = (id, habilitadoActual, estadoVehiculo, placa, destinoActual) => {
+        setConfirmInhabilitar({ open: true, id, habilitadoActual, placa: placa || '', estadoVehiculo, destinoActual: destinoActual || null })
     }
 
     const onConfirmar = async () => {

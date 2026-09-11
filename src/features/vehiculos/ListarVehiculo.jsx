@@ -15,7 +15,7 @@ import ModalInhabilitarVehiculo from './components/ModalInhabilitarVehiculo'
 import ModalCambioEstadoVehiculo from './components/ModalCambioEstadoVehiculo.jsx'
 import FiltroEstadoTipoVehiculo from './components/FiltroEstadoTipoVehiculo.jsx'
 import { getPageOfVehiculo, getVehiculos } from './services/vehiculoService.js'
-import { capitalizarPrimeraLetra } from '../../shared/utils/formatters.js'
+import { capitalizarPrimeraLetra, formatearMoneda, formatFecha } from '../../shared/utils/formatters.js'
 import useVehiculoColumns from './hooks/useVehiculoColumns.jsx'
 import useVehiculoAcciones from './hooks/useVehiculoAcciones.js'
 import useVehiculosEnRuta from './hooks/useVehiculosEnRuta.js'
@@ -77,11 +77,11 @@ const ListarTransporte = () => {
                 'Marca': capitalizarPrimeraLetra(vehiculo.marca),
                 'Modelo': vehiculo.modelo,
                 'Tipo': vehiculo.tipo,
-                'Capacidad (kg)': vehiculo.capacidad ? Math.round(Number(vehiculo.capacidad)) : '—',
+                'Capacidad (kg)': vehiculo.capacidad ? formatearMoneda(vehiculo.capacidad) : '—',
                 'Propietario': vehiculo.propietario ? `${vehiculo.propietario.nombre} ${vehiculo.propietario.apellido}`.trim() : '-',
-                'Vencimiento SOAT': vehiculo.vencimientoSOAT,
-                'Vencimiento Rev. Técnica': vehiculo.vencimientoRevisionTecnica,
-                'Vencimiento Seguro Terceros': vehiculo.vencimientoSeguroTerceros,
+                'Vencimiento SOAT': formatFecha(vehiculo.vencimientoSOAT),
+                'Vencimiento Rev. Técnica': formatFecha(vehiculo.vencimientoRevisionTecnica),
+                'Vencimiento Seguro Terceros': formatFecha(vehiculo.vencimientoSeguroTerceros),
                 'Estado': (vehiculosOcupadosIds.has(vehiculo.idVehiculo) ? 'En Ruta' : vehiculo.estado),
                 'Habilitado': vehiculo.habilitado === false ? 'No' : 'Sí',
             }),
@@ -276,7 +276,7 @@ const ListarTransporte = () => {
                 open={confirmInhabilitar.open}
                 data={confirmInhabilitar}
                 onClose={() => setConfirmInhabilitar(s => ({ ...s, open: false }))}
-                onExited={() => setConfirmInhabilitar({ open: false, id: null, habilitadoActual: null, placa: '', estadoVehiculo: null })}
+                onExited={() => setConfirmInhabilitar({ open: false, id: null, habilitadoActual: null, placa: '', estadoVehiculo: null, destinoActual: null })}
                 onConfirm={onConfirmar}
             />
 

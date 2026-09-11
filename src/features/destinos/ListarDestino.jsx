@@ -63,7 +63,7 @@ const ListarDestino = () => {
                 'Municipio': destino.municipio,
                 'Departamento': destino.departamento,
                 'Dirección': destino.direccion || '',
-                'Tarifa base': Math.round(Number(destino.tarifaBase)) || 0,
+                'Tarifa base': `$${(Math.round(Number(destino.tarifaBase)) || 0).toLocaleString('es-CO')}`,
                 'Estado': destino.habilitado === false ? 'Inhabilitado' : 'Habilitado',
             }),
             fileName: 'Destinos',
