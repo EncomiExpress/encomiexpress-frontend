@@ -49,7 +49,6 @@ const ListarRol = () => {
             setRoles(respuesta.data || [])
             setTotal(respuesta.total ?? (respuesta.data || []).length)
         },
-        defaultRowsPerPage: 10,
     })
 
     const emptyMessage = debouncedBusqueda.trim() || filtroHabilitado !== 'todo'
