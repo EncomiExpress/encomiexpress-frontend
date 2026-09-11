@@ -1,4 +1,4 @@
-import { hayDocumentoDuplicado, getValoresUnicos } from '../../../shared/utils/duplicados.js'
+import { hayDocumentoDuplicado } from '../../../shared/utils/duplicados.js'
 import { esSoloRelleno } from '../../../shared/utils/formatters.js'
 import { validarDireccion } from '../../../shared/validations/direccionValidation.js'
 
@@ -7,16 +7,13 @@ export const steps = ['Ubicación', 'Tarifa', 'Confirmación']
 export const TARIFA_MAX = 9999999
 export const MENSAJE_MUNICIPIO_DUPLICADO = 'Ya existe un destino registrado con este municipio.'
 
-// Sugerencias del campo Departamento (Autocomplete freeSolo): no hay tabla de
-// departamentos aparte, es solo el texto que cada destino ya guarda en su propia fila.
-// Se recalcula de los destinos en memoria — sin persistencia extra, sin restricción de
-// cantidad (a diferencia de Municipio, el departamento SÍ puede repetirse entre destinos,
-// por eso no hace falta filtrar los ya usados ni validar duplicado acá).
-export const getOpcionesDepartamento = (destinos) => getValoresUnicos(destinos, d => d.departamento)
-
-// Mismo alfabeto que ya filtra RegistrarDestino.jsx/ActualizarDestino.jsx en vivo para
-// municipio/departamento (incluye ü/Ü, ej: "Güicán") — el validador replica esa misma regla.
-const SOLO_LETRAS_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/
+// Departamento/Municipio ahora se eligen de dos Autocomplete controlados (no freeSolo)
+// alimentados por colombiaService.js (API-Colombia) — PasoUbicacion.jsx ya no deja
+// escribir nada fuera de esas listas. Este regex se queda como defensa en el submit
+// (y su espejo en el backend, destinosValidator.js) por si el dato llega de otra
+// forma. Incluye el punto porque "Bogotá D.C." es el único municipio real de los
+// ~1100 que trae la API que no es solo letras/espacios/tildes.
+const SOLO_LETRAS_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s.]+$/
 const DIRECCION_MAX_LENGTH = 200
 
 // Valida un único campo del formulario (usado en onBlur y para re-validar en vivo

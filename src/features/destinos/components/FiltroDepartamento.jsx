@@ -1,8 +1,8 @@
+import { useState, useEffect } from 'react'
 import { Select, MenuItem, FormControl } from '@mui/material'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
-
-const DEPARTAMENTOS = ['Antioquia', 'Córdoba']
+import { getDepartamentosRegistrados } from '../services/destinoService.js'
 
 const getFilterMenuProps = (theme) => ({
     slotProps: {
@@ -23,7 +23,22 @@ const getFilterMenuProps = (theme) => ({
     },
 })
 
-const FiltroDepartamento = ({ theme, filtroDepartamento, setFiltroDepartamento, setPage }) => (
+const FiltroDepartamento = ({ theme, filtroDepartamento, setFiltroDepartamento, setPage }) => {
+    const [departamentos, setDepartamentos] = useState([])
+
+    useEffect(() => {
+        const cargarDepartamentos = async () => {
+            try {
+                const respuesta = await getDepartamentosRegistrados()
+                if (respuesta.success) setDepartamentos(respuesta.data || [])
+            } catch {
+                setDepartamentos([])
+            }
+        }
+        cargarDepartamentos()
+    }, [])
+
+    return (
     <FormControl size="small" sx={{ minWidth: 150 }}>
         <Select
             displayEmpty
@@ -43,7 +58,7 @@ const FiltroDepartamento = ({ theme, filtroDepartamento, setFiltroDepartamento, 
             }}
             MenuProps={getFilterMenuProps(theme)}>
             <MenuItem value="">Todos</MenuItem>
-            {DEPARTAMENTOS.map(d => (
+            {departamentos.map(d => (
                 <MenuItem key={d} value={d}>
                     {d}
                     {filtroDepartamento === d && <CheckOutlinedIcon sx={{ fontSize: 14, color: theme.palette.text.secondary }} />}
@@ -51,6 +66,7 @@ const FiltroDepartamento = ({ theme, filtroDepartamento, setFiltroDepartamento, 
             ))}
         </Select>
     </FormControl>
-)
+    )
+}
 
 export default FiltroDepartamento

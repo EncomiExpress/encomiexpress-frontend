@@ -39,19 +39,3 @@ export const MENSAJE_DOC_DUPLICADO = 'Ya existe un registro con este número de 
 export const MENSAJE_PLACA_DUPLICADA = 'Ya existe un vehículo registrado con esta placa. Verifica que no sea un duplicado.'
 
 export const MENSAJE_EMAIL_DUPLICADO = 'Ya existe un usuario registrado con este correo electrónico.'
-
-// Deriva las opciones sugeridas para un campo de texto libre (ej. Autocomplete freeSolo)
-// a partir de los valores ya usados en una lista de registros — sin tabla de referencia
-// aparte, la "lista" es solo lo que ya existe en los datos cargados en memoria. Dedupe
-// sin importar mayúsculas/tildes (normalizarTexto), preservando la primera grafía real
-// encontrada para cada valor.
-export const getValoresUnicos = (registros, getValor) => {
-    const vistos = new Map()
-    for (const r of registros || []) {
-        const val = getValor(r)?.trim()
-        if (!val) continue
-        const n = normalizarTexto(val)
-        if (!vistos.has(n)) vistos.set(n, val)
-    }
-    return [...vistos.values()].sort((a, b) => a.localeCompare(b, 'es'))
-}
