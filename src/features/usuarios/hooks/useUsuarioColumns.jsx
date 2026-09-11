@@ -53,28 +53,29 @@ const useUsuarioColumns = ({ theme, tienePermiso, PERMISOS, usuarioActual, onCon
     {
         // Solo distribuidor y operador_sede cubren una sede propia — verla de un
         // vistazo en el listado evita tener que abrir "Consultar" para saberlo.
-        // admin/conductor no tienen sede asignable (operan desde Medellín, la sede
-        // principal) — se rotula distinto (texto, no chip) para no confundirla con
-        // una asignación real.
+        // Cualquier otro rol (admin, conductor, o uno nuevo creado a mano desde
+        // Roles) no tiene sede asignable -- opera desde Medellín, la sede
+        // principal -- y se rotula distinto (texto, no chip) para no confundirla
+        // con una asignación real. Antes solo admin/conductor mostraban esto
+        // (hardcodeado por codigo); un rol nuevo caía en '—' en blanco.
         key: 'sede', label: 'Sede', cellSx: { py: 1.5 },
         render: (usuario) => {
-            if (['admin', 'conductor'].includes(usuario.rol?.codigo)) {
+            if (['distribuidor', 'operador_sede'].includes(usuario.rol?.codigo)) {
+                const municipios = (usuario.sedes || []).map(s => s.destino?.municipio).filter(Boolean)
+                if (municipios.length === 0) return '—'
                 return (
-                    <Box>
-                        <Typography variant="caption" display="block" color={theme.palette.text.secondary}>Sede principal:</Typography>
-                        <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary}>Medellín</Typography>
-                    </Box>
+                    <Chip
+                        label={municipios.join(', ')}
+                        size="small"
+                        sx={{ backgroundColor: theme.palette.primary.activeBg, color: theme.palette.primary.main, fontWeight: 700, fontSize: '0.72rem', height: 22, borderRadius: 10 }}
+                    />
                 )
             }
-            if (!['distribuidor', 'operador_sede'].includes(usuario.rol?.codigo)) return '—'
-            const municipios = (usuario.sedes || []).map(s => s.destino?.municipio).filter(Boolean)
-            if (municipios.length === 0) return '—'
             return (
-                <Chip
-                    label={municipios.join(', ')}
-                    size="small"
-                    sx={{ backgroundColor: theme.palette.primary.activeBg, color: theme.palette.primary.main, fontWeight: 700, fontSize: '0.72rem', height: 22, borderRadius: 10 }}
-                />
+                <Box>
+                    <Typography variant="caption" display="block" color={theme.palette.text.secondary}>Sede principal:</Typography>
+                    <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary}>Medellín</Typography>
+                </Box>
             )
         },
     },

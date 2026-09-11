@@ -1,7 +1,6 @@
 import { Box } from '@mui/material'
 import { FormField } from '../../../shared/components/FormularioEstandarizado.jsx'
-import { esSoloRelleno } from '../../../shared/utils/formatters.js'
-import { validarNombreRol } from '../validations/rolValidation.js'
+import { validarNombreRol, validarDescripcionRol } from '../validations/rolValidation.js'
 
 const DatosRolFields = ({ formData, setFormData, errores, setErrores, setAvisoNombreDuplicado, verificarNombreRolDuplicado, panelRef }) => (
     <Box ref={panelRef} sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2.5, mb: 2 }}>
@@ -33,9 +32,9 @@ const DatosRolFields = ({ formData, setFormData, errores, setErrores, setAvisoNo
             onChange={(e) => {
                 const valor = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
                 setFormData({ ...formData, descripcion: valor })
-                setErrores(prev => prev.descripcion ? { ...prev, descripcion: esSoloRelleno(valor) ? prev.descripcion : '' } : prev)
+                setErrores(prev => prev.descripcion ? { ...prev, descripcion: validarDescripcionRol(valor) } : prev)
             }}
-            onBlur={() => setErrores(prev => ({ ...prev, descripcion: (formData.descripcion && esSoloRelleno(formData.descripcion)) ? 'La descripción no puede contener solo espacios' : '' }))}
+            onBlur={() => setErrores(prev => ({ ...prev, descripcion: validarDescripcionRol(formData.descripcion) }))}
             placeholder="Descripción del rol"
             inputProps={{ maxLength: 200 }}
             error={!!errores.descripcion}

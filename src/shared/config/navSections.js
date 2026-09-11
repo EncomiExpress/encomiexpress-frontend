@@ -55,3 +55,30 @@ export const SECTIONS = [
     ],
   },
 ]
+
+// A dónde mandar a un usuario logueado que no tiene por qué ver la sección en
+// la que está parado -- post-login, una ruta no reconocida, o el "difuminado"
+// de PrivateRoute: el Dashboard si tiene el permiso, si no la primera sección
+// real que sí puede ver (mismo orden que el sidebar). Antes esto vivía
+// hardcodeado por rol ('operador_sede' -> /ventas/listar, cualquier otro ->
+// /dashboard) -- cualquier rol nuevo sin ver_dashboard armado a mano desde
+// Roles (ej. un Distribuidor con panel web recortado a Usuarios) caía igual
+// en /dashboard aunque no tuviera el permiso. Recibe `usuario` directo (no el
+// `tienePermiso` de AuthContext) para poder llamarse justo después de login(),
+// antes de que el contexto termine de propagar el nuevo usuario -- ver
+// LOGICA.md, "Destino post-login/catch-all: por permisos, no por rol
+// hardcodeado".
+export const getPrimerDestinoVisible = (usuario) => {
+  const permisos = usuario?.permisos || []
+  const rolCodigo = usuario?.rol?.codigo
+  const visible = (item) => permisos.includes(item.permiso) && !(item.excluirRoles || []).includes(rolCodigo)
+  if (visible(DASHBOARD_ITEM)) return DASHBOARD_ITEM.path
+  for (const s of SECTIONS) {
+    for (const item of s.items) {
+      if (visible(item)) return item.path
+    }
+  }
+  // No debería pasar -- login() ya rechaza una cuenta sin ningún permiso de
+  // panel web (ver LOGICA.md, "Permiso acceder_app_movil").
+  return '/login'
+}

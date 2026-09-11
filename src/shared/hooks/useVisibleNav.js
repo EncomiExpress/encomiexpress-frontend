@@ -1,4 +1,4 @@
-import { SECTIONS, DASHBOARD_ITEM } from '../config/navSections.js'
+import { SECTIONS, DASHBOARD_ITEM, getPrimerDestinoVisible } from '../config/navSections.js'
 import { useAuth } from '../contexts/AuthContext.jsx'
 
 // Filtra navSections.js por lo que el usuario logueado puede ver de verdad —
@@ -21,7 +21,7 @@ const useVisibleNav = () => {
 
   const dashboardItem = itemVisible(DASHBOARD_ITEM) ? DASHBOARD_ITEM : null
 
-  return { sections, dashboardItem }
+  return { sections, dashboardItem, primerDestino: getPrimerDestinoVisible(usuario) }
 }
 
 export default useVisibleNav

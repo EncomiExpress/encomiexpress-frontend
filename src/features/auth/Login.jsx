@@ -11,6 +11,7 @@ import {
   ArrowBack,
 } from '@mui/icons-material'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
+import { getPrimerDestinoVisible } from '../../shared/config/navSections.js'
 import LoadingScreen from '../../shared/components/LoadingScreen.jsx'
 import useSlowRequest from '../../shared/hooks/useSlowRequest.js'
 import { formFieldStyles } from '../../shared/utils/formStyles.js'
@@ -39,15 +40,9 @@ const Login = () => {
   const theme = useTheme()
   const tardando = useSlowRequest(apiCargando)
 
-  // operador_sede no tiene ver_dashboard — su destino post-login/catch-all es
-  // /ventas/listar, no /dashboard (ver LOGICA.md, "Sedes remotas", D-D).
-  // Por codigo (estable), no por nombre (editable) — ver LOGICA.md, "Rol:
-  // nombre editable vs codigo".
-  const destinoPostLogin = (rolCodigo) => rolCodigo === 'operador_sede' ? '/ventas/listar' : '/dashboard'
-
   useEffect(() => {
     if (!loading && !cargando && !apiCargando && usuario) {
-      navigate(destinoPostLogin(usuario.rol?.codigo), { replace: true })
+      navigate(getPrimerDestinoVisible(usuario), { replace: true })
     }
   }, [usuario, loading, cargando, apiCargando, navigate])
 
@@ -67,7 +62,7 @@ const Login = () => {
       if (resultado.success) {
         setApiCargando(false)
         setCargando(true)
-        setTimeout(() => { navigate(destinoPostLogin(resultado.usuario?.rol?.codigo), { replace: true }) }, 2500)
+        setTimeout(() => { navigate(getPrimerDestinoVisible(resultado.usuario), { replace: true }) }, 2500)
       } else {
         setApiCargando(false)
         setError(resultado.mensaje)
@@ -89,7 +84,17 @@ const Login = () => {
       position: 'relative',
       overflow: 'hidden',
     }}>
-      {cargando && <LoadingScreen mensaje={<>Sesión iniciada correctamente:<br />Preparando panel de administrador...</>} />}
+      {cargando && (
+        <LoadingScreen mensaje={<>
+          Sesión iniciada correctamente:<br />
+          {/* Por nombre de la persona, no por rol -- un texto por rol tocaría
+              personalizarlo cada vez que se cree un rol nuevo (ver LOGICA.md,
+              "Rol: nombre editable vs codigo": puede haber tantos como quiera
+              el admin). "Administrador" quedaba hardcodeado sin importar quién
+              entrara. */}
+          Preparando panel{usuario?.nombre ? ` para ${usuario.nombre}` : ''}...
+        </>} />
+      )}
 
       <Box sx={{
         position: 'absolute', top: 0, left: 0, right: 0, height: 4,

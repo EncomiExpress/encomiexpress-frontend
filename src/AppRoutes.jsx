@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import SessionExpiredDialog from './shared/components/SessionExpiredDialog.jsx'
 import { useAuth } from './shared/contexts/AuthContext.jsx'
+import { getPrimerDestinoVisible } from './shared/config/navSections.js'
 
 import homeRoutes from './features/home/home.routes.jsx'
 import authRoutes from './features/auth/auth.routes.jsx'
@@ -19,11 +20,10 @@ import paquetesDevueltosRoutes from './features/paquetesDevueltos/paquetesDevuel
 
 const AppRoutes = () => {
   const { usuario } = useAuth()
-  // operador_sede no tiene ver_dashboard ni acceso a la mayoría de módulos —
-  // una ruta no reconocida lo manda a su propio listado en vez de al inicio
-  // público. Para cualquier otro caso (sin sesión, u otro rol) se mantiene el
-  // comportamiento de siempre. Ver LOGICA.md, "Sedes remotas", D-D.
-  const destinoNoReconocido = usuario?.rol?.codigo === 'operador_sede' ? '/ventas/listar' : '/'
+  // Sin sesión: al inicio público, como siempre. Con sesión: a la primera
+  // sección que de verdad puede ver (por permisos, no por rol hardcodeado —
+  // ver navSections.js, getPrimerDestinoVisible).
+  const destinoNoReconocido = usuario ? getPrimerDestinoVisible(usuario) : '/'
 
   return (
     <>
@@ -44,7 +44,7 @@ const AppRoutes = () => {
       {ventasRoutes}
       {paquetesDevueltosRoutes}
 
-      {/* Cualquier ruta no reconocida redirige al inicio (o, para operador_sede, a sus ventas) */}
+      {/* Cualquier ruta no reconocida redirige al inicio, o (con sesión) a la primera sección visible */}
       <Route path="*" element={<Navigate to={destinoNoReconocido} replace />} />
     </Routes>
     </>

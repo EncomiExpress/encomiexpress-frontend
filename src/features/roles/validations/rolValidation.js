@@ -16,6 +16,11 @@ export const validarDescripcionRol = (descripcion) => {
     if (!descripcion) return ''
     if (esSoloRelleno(descripcion)) return 'La descripción no puede contener solo espacios'
     if (descripcion.length > DESCRIPCION_MAX_LENGTH) return `La descripción no puede superar los ${DESCRIPCION_MAX_LENGTH} caracteres`
+    // Antes esta función no validaba el juego de caracteres para nada -- el
+    // backend sí lo exigía (mismo SOLO_LETRAS_REGEX que el nombre), así que
+    // una descripción con guiones/punto y coma pasaba en vivo sin ningún
+    // aviso y solo se enteraba al fallar el guardado con un mensaje genérico.
+    if (!SOLO_LETRAS_REGEX.test(descripcion)) return 'La descripción solo puede contener letras'
     return ''
 }
 

@@ -5,6 +5,7 @@ import { PERMISOS } from '../config/permisos.js'
 import * as rolService from '../services/rolService'
 import * as usuarioService from '../../features/usuarios/services/usuarioService.js'
 import { fetchWithAuth, getToken } from '../services/authService.js'
+import { getErrorMessage } from '../utils/errorMessage.js'
 
 export { PERMISOS }
 
@@ -256,7 +257,11 @@ export const AuthProvider = ({ children }) => {
       const data = await rolService.createRol(nombre, descripcion, permisos)
       return { success: true, data: data.data, message: data.message }
     } catch (err) {
-      return { success: false, message: err.message || 'Error de conexión' }
+      // getErrorMessage arma "campo: mensaje" a partir de err.details (que
+      // fetchWithAuth sí adjunta) -- antes se descartaba acá y solo quedaba el
+      // mensaje genérico de arriba ("Errores de validación"), sin decir cuál
+      // campo ni por qué.
+      return { success: false, message: getErrorMessage(err, 'Error de conexión') }
     }
   }
 
@@ -265,7 +270,7 @@ export const AuthProvider = ({ children }) => {
       const data = await rolService.updateRol(id, nombre, descripcion, permisos, habilitado)
       return { success: true, data: data.data, message: data.message }
     } catch (err) {
-      return { success: false, message: err.message || 'Error de conexión' }
+      return { success: false, message: getErrorMessage(err, 'Error de conexión') }
     }
   }
 
