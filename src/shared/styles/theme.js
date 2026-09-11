@@ -10,7 +10,14 @@ import { getComponentOverrides } from './theme/componentOverrides.js'
 
 export const getTheme = (mode = 'light', paletteKey = 'red') => {
   const t   = tokens[paletteKey]?.[mode] ?? tokens.red[mode]
-  const pal = mode === 'dark' ? buildDarkPalette(t) : buildLightPalette(t)
+  // El otro color de marca (rojo↔azul) para el mismo modo -- se expone como
+  // palette.accent, para acentos que necesitan contrastar con primary sin importar
+  // cuál paleta esté activa (ej. el ícono de "Conductores Disponibles" del
+  // Dashboard). No confundir con secondary, que es el navy fijo del Sidebar/
+  // encabezados y no cambia con la paleta.
+  const otroKey = paletteKey === 'blue' ? 'red' : 'blue'
+  const otro = tokens[otroKey]?.[mode] ?? tokens.blue[mode]
+  const pal = mode === 'dark' ? buildDarkPalette(t, otro) : buildLightPalette(t, otro)
 
   return createTheme({
     palette: pal,

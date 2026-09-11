@@ -2,7 +2,7 @@
 //  Construcción de paletas MUI
 // ─────────────────────────────────────────────
 
-export const buildLightPalette = (t) => ({
+export const buildLightPalette = (t, otro) => ({
   mode: 'light',
   primary: {
     main:          t.primary,
@@ -21,6 +21,15 @@ export const buildLightPalette = (t) => ({
     main:          '#1A2E6E',
     light:         '#2a3f8f',
     dark:          '#0f1c45',
+    contrastText:  '#ffffff',
+  },
+  // El otro color de marca (si primary es rojo, esto es el azul, y viceversa) --
+  // ver comentario en theme.js. Con paleta activa "blue", esto coincide con el
+  // secondary de arriba (ambos navy); con paleta "red" queda distinto del navy fijo.
+  accent: {
+    main:          otro?.primary ?? '#1A2E6E',
+    light:         otro?.primaryLight ?? '#E8EEFF',
+    dark:          otro?.primaryDark ?? '#0f1c45',
     contrastText:  '#ffffff',
   },
   background: {
@@ -82,7 +91,7 @@ export const buildLightPalette = (t) => ({
   },
 })
 
-export const buildDarkPalette = (t) => ({
+export const buildDarkPalette = (t, otro) => ({
   mode: 'dark',
   primary: {
     main:          t.primary,
@@ -100,6 +109,13 @@ export const buildDarkPalette = (t) => ({
     main:          '#C62828',
     light:         '#E57373',
     dark:          '#B71C1C',
+    contrastText:  '#ffffff',
+  },
+  // El otro color de marca -- ver comentario en buildLightPalette/theme.js.
+  accent: {
+    main:          otro?.primary ?? '#E57373',
+    light:         otro?.primaryLight ?? '#FFCDD2',
+    dark:          otro?.primaryDark ?? '#D32F2F',
     contrastText:  '#ffffff',
   },
   background: {

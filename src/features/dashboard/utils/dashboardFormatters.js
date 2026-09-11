@@ -47,3 +47,14 @@ export const hoyISO = () => {
     const pad2 = (n) => String(n).padStart(2, '0')
     return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
 }
+
+// Suma/resta días a una fecha ISO ("YYYY-MM-DD") sin pasar por toISOString() (que
+// convierte a UTC y puede correr la fecha un día, mismo bug de fondo que parseFechaLocal
+// ya evita). Usado para calcular el período anterior comparable (mismo N° de días,
+// justo antes del "Desde" activo) en los KPIs del Dashboard.
+export const addDiasISO = (iso, delta) => {
+    const fecha = parseFechaLocal(iso)
+    fecha.setDate(fecha.getDate() + delta)
+    const pad2 = (n) => String(n).padStart(2, '0')
+    return `${fecha.getFullYear()}-${pad2(fecha.getMonth() + 1)}-${pad2(fecha.getDate())}`
+}

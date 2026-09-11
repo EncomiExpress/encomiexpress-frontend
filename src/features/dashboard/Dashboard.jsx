@@ -10,16 +10,18 @@ import AttachMoneyOutlinedIcon from '@mui/icons-material/AttachMoneyOutlined'
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined'
-import { formatRutaDestino } from '../../shared/utils/formatters.js'
 import { exportToExcel } from '../../shared/utils/exportExcel.js'
+import { formatFecha } from '../../shared/utils/formatters.js'
 import { getVentaEstadoDot } from '../../shared/utils/estadoColors.js'
+import { conductorLicenciaVigente, vehiculoDocumentosVigentes } from '../../shared/utils/vigenciaDocumentos.js'
 import { getRangoFechasVentas } from '../ventas/services/ventaService.js'
-import { STATUS_LABEL, formatCOP, normalizeMonth, isWithinRange, hoyISO } from './utils/dashboardFormatters.js'
-import VividKpiCard from './components/VividKpiCard.jsx'
+import { STATUS_LABEL, formatCOP, normalizeMonth, isWithinRange, hoyISO, addDiasISO, parseFechaLocal } from './utils/dashboardFormatters.js'
+import KpiCard from './components/KpiCard.jsx'
 import FiltroPeriodo from './components/FiltroPeriodo.jsx'
 import IngresosPorMesChart from './components/IngresosPorMesChart.jsx'
-import TopDestinosList from './components/TopDestinosList.jsx'
-import EnviosPorEstadoChart from './components/EnviosPorEstadoChart.jsx'
+import TopRutasList from './components/TopRutasList.jsx'
+import VentasPorEstadoChart from './components/VentasPorEstadoChart.jsx'
+import UltimasVentasList from './components/UltimasVentasList.jsx'
 
 const Dashboard = () => {
   const [desde, setDesde] = useState(() => {
@@ -47,7 +49,7 @@ const Dashboard = () => {
   const theme = useTheme()
 
   // El dashboard necesita el histórico completo de ventas para calcular
-  // ingresos/envíos por estado, no la página parcial que deja ListarVenta en el contexto.
+  // ingresos/ventas por estado, no la página parcial que deja ListarVenta en el contexto.
   useEffect(() => {
     const abortController = new AbortController()
     fetchVentas(abortController.signal, { limit: 1000 })
@@ -129,7 +131,7 @@ const Dashboard = () => {
     return Array.from(meses.values()).sort((a, b) => a.key.localeCompare(b.key))
   }, [ventas, filtroActivo])
 
-  const enviosEstado = useMemo(() => {
+  const ventasPorEstado = useMemo(() => {
     const contador = {}
     ventas.forEach((venta) => {
       if (!isWithinRange(venta.fechaRegistro, filtroActivo.desde, filtroActivo.hasta)) return
@@ -147,37 +149,131 @@ const Dashboard = () => {
       }))
   }, [ventas, filtroActivo])
 
-  const topDestinos = useMemo(() => {
+  // Ruta = corredor origen → destino de la Ruta asociada a la venta (Ruta.origen +
+  // Ruta.destino), no el destino del destinatario -- una misma ruta puede repartir
+  // paquetes a destinatarios de distintos municipios cercanos, así que agrupar por
+  // destinatario no reflejaba qué corredores se usan más.
+  const topRutas = useMemo(() => {
     const contador = {}
     ventas.forEach((venta) => {
       if (!isWithinRange(venta.fechaRegistro, filtroActivo.desde, filtroActivo.hasta)) return
-      const destino = formatRutaDestino(venta.destinatario?.destino)
-      if (!destino || destino === '—') return
-      contador[destino] = (contador[destino] || 0) + 1
+      if (!venta.ruta?.origen) return
+      // Solo municipio, sin departamento -- mismo criterio que la columna "Destino"
+      // de Listar Ventas (venta.destinatario.destino.municipio), no formatRutaDestino
+      // (que agrega " — Departamento").
+      const ruta = `${venta.ruta.origen} → ${venta.ruta.destino?.municipio || '—'}`
+      contador[ruta] = (contador[ruta] || 0) + 1
     })
     return Object.entries(contador)
-      .map(([destino, envios]) => ({ destino, envios }))
-      .sort((a, b) => b.envios - a.envios)
+      .map(([ruta, cantidad]) => ({ ruta, cantidad }))
+      .sort((a, b) => b.cantidad - a.cantidad)
       .slice(0, 5)
   }, [ventas, filtroActivo])
 
-  const conductoresTotales = conductores.length
-  const conductoresDisponibles = conductores.filter(c => c.habilitado && c.estado === 'Disponible').length
-  const vehiculosTotales = transportes.length
-  const vehiculosDisponibles = transportes.filter(t => t.habilitado && t.estado === 'Disponible').length
+  // Últimas 5 ventas registradas dentro del período activo (mismo orden por defecto
+  // que Listar Ventas: fechaRegistro DESC, desempatado por id) -- reemplaza la idea
+  // de "Actividad Reciente" por algo estático, ver UltimasVentasList.jsx.
+  const ultimasVentas = useMemo(() => {
+    return ventas
+      .filter((venta) => isWithinRange(venta.fechaRegistro, filtroActivo.desde, filtroActivo.hasta))
+      .sort((a, b) => {
+        if (a.fechaRegistro !== b.fechaRegistro) return b.fechaRegistro.localeCompare(a.fechaRegistro)
+        return b.idEncomiendaVenta - a.idEncomiendaVenta
+      })
+      .slice(0, 5)
+  }, [ventas, filtroActivo])
 
-  // Total real de envíos del período — la suma de enviosEstado, no un conteo aparte de
-  // ventas, para que el KPI y las porciones de la dona siempre sumen lo mismo.
-  const totalEnvios = enviosEstado.reduce((s, e) => s + e.count, 0)
+  // "Disponible" real = habilitado, en estado Disponible (ni En Ruta ni, para
+  // vehículo, Mantenimiento), EN BASE (idDestinoActual null -- no varado fuera tras
+  // una ruta que no volvió) y con documentos vigentes (licencia del conductor / SOAT
+  // + tecnomecánica + seguro del vehículo) -- exactamente el mismo criterio que ya
+  // usan los wizards de Ruta para decidir quién es asignable (ver ubicacionOk +
+  // conductorLicenciaVigente/vehiculoDocumentosVigentes en RegistrarRutaProgramacion).
+  // El total también se acota a habilitados: un conductor/vehículo inhabilitado
+  // (baja/retirado) no debería contar en el denominador de "disponibilidad".
+  const conductoresHabilitados = conductores.filter(c => c.habilitado)
+  const conductoresTotales = conductoresHabilitados.length
+  const conductoresDisponibles = conductoresHabilitados.filter(c =>
+    c.estado === 'Disponible' &&
+    (c.idDestinoActual === null || c.idDestinoActual === undefined) &&
+    conductorLicenciaVigente(c.categoriasLicencia)
+  ).length
+  const conductoresDisponiblesPct = conductoresTotales > 0 ? (conductoresDisponibles / conductoresTotales) * 100 : 0
+
+  const vehiculosHabilitados = transportes.filter(v => v.habilitado)
+  const vehiculosTotales = vehiculosHabilitados.length
+  const vehiculosDisponibles = vehiculosHabilitados.filter(v =>
+    v.estado === 'Disponible' &&
+    (v.idDestinoActual === null || v.idDestinoActual === undefined) &&
+    vehiculoDocumentosVigentes(v)
+  ).length
+  const vehiculosDisponiblesPct = vehiculosTotales > 0 ? (vehiculosDisponibles / vehiculosTotales) * 100 : 0
+
+  // Paquetes Entregados -- reemplaza "Envíos Totales" (contaba VENTAS por estado, no
+  // paquetes; y "envío" no es un término que use el sistema). Cuenta paquetes en
+  // estado 'Entregado' dentro de las ventas del período -- el paquete es la unidad
+  // real que se entrega, una venta puede tener varios. La venta que los contiene
+  // sigue siendo el criterio de período (mismo campo fechaRegistro que el resto del
+  // dashboard), no la fecha del último cambio de estado del paquete.
+  const paquetesEntregados = useMemo(() => {
+    let count = 0
+    ventas.forEach((venta) => {
+      if (!isWithinRange(venta.fechaRegistro, filtroActivo.desde, filtroActivo.hasta)) return
+      ;(venta.paquetes || []).forEach((p) => { if (p.estado === 'Entregado') count++ })
+    })
+    return count
+  }, [ventas, filtroActivo])
+
+  // Período anterior comparable: mismo número de días, justo antes del "Desde"
+  // activo -- para las tarjetas de variación % (Ingresos/Paquetes Entregados), sin
+  // pedir nada nuevo al backend (se recalcula sobre las mismas ventas ya cargadas).
+  const periodoAnteriorRango = useMemo(() => {
+    const dias = Math.round(
+      (parseFechaLocal(filtroActivo.hasta) - parseFechaLocal(filtroActivo.desde)) / 86400000
+    ) + 1
+    return {
+      hasta: addDiasISO(filtroActivo.desde, -1),
+      desde: addDiasISO(filtroActivo.desde, -dias),
+    }
+  }, [filtroActivo])
+
+  const ingresosAnterior = useMemo(() => {
+    let total = 0
+    ventas.forEach((venta) => {
+      if (!isWithinRange(venta.fechaRegistro, periodoAnteriorRango.desde, periodoAnteriorRango.hasta)) return
+      total += Number(venta.total) || 0
+    })
+    return total
+  }, [ventas, periodoAnteriorRango])
+
+  const paquetesEntregadosAnterior = useMemo(() => {
+    let count = 0
+    ventas.forEach((venta) => {
+      if (!isWithinRange(venta.fechaRegistro, periodoAnteriorRango.desde, periodoAnteriorRango.hasta)) return
+      ;(venta.paquetes || []).forEach((p) => { if (p.estado === 'Entregado') count++ })
+    })
+    return count
+  }, [ventas, periodoAnteriorRango])
+
+  // null cuando el período anterior no tiene con qué comparar (ej. recién se limpió
+  // la base de datos) -- la tarjeta simplemente no muestra variación en ese caso.
+  const deltaPct = (actual, anterior) => (anterior > 0 ? Math.round(((actual - anterior) / anterior) * 100) : null)
+
+  const totalVentas = ventasPorEstado.reduce((s, e) => s + e.count, 0)
   const totalIngresos = ingresosMes.reduce((s, m) => s + m.valor, 0)
   const totalIngresosLabel = totalIngresos >= 1000000
     ? `$${(totalIngresos / 1000000).toFixed(1)}M`
     : formatCOP(totalIngresos)
   const maxIngresoValor = ingresosMes.length ? Math.max(...ingresosMes.map(m => m.valor)) : 0
+  const ingresosDelta = deltaPct(totalIngresos, ingresosAnterior)
+  const paquetesEntregadosDelta = deltaPct(paquetesEntregados, paquetesEntregadosAnterior)
+  // dd/mm/yyyy en vez de las fechas ISO crudas de filtroActivo -- se usa tanto en el
+  // subtítulo de "Ingresos por Mes" como en la hoja "Resumen" del Excel exportado.
+  const periodoLabel = `${formatFecha(filtroActivo.desde)} — ${formatFecha(filtroActivo.hasta)}`
 
   // Exporta lo que el dashboard realmente muestra (no las ventas) — un libro
   // con una hoja por sección, usando los mismos datos ya calculados arriba
-  // (ingresosMes/enviosEstado/topDestinos), filtrados por el mismo período activo.
+  // (ingresosMes/ventasPorEstado/topRutas), filtrados por el mismo período activo.
   const handleExportar = async () => {
     setExportando(true)
     try {
@@ -185,24 +281,25 @@ const Dashboard = () => {
         {
           name: 'Resumen',
           rows: [{
-            'Período': `${filtroActivo.desde} — ${filtroActivo.hasta}`,
+            'Período': periodoLabel,
             'Conductores disponibles': conductoresDisponibles,
             'Conductores totales': conductoresTotales,
             'Vehículos disponibles': vehiculosDisponibles,
             'Vehículos totales': vehiculosTotales,
+            'Paquetes entregados': paquetesEntregados,
           }],
         },
         {
           name: 'Ingresos por Mes',
-          rows: ingresosMes.map(m => ({ 'Mes': m.mes, 'Ingresos': m.valor })),
+          rows: ingresosMes.map(m => ({ 'Mes': m.mes, 'Ingresos': formatCOP(m.valor) })),
         },
         {
-          name: 'Envíos por Estado',
-          rows: enviosEstado.map(e => ({ 'Estado': e.label, 'Cantidad': e.count })),
+          name: 'Ventas por Estado',
+          rows: ventasPorEstado.map(e => ({ 'Estado': e.label, 'Cantidad': e.count })),
         },
         {
-          name: 'Top Destinos',
-          rows: topDestinos.map((d, i) => ({ 'Puesto': i + 1, 'Destino': d.destino, 'Envíos': d.envios })),
+          name: 'Top Rutas',
+          rows: topRutas.map((r, i) => ({ 'Puesto': i + 1, 'Ruta': r.ruta, 'Cantidad': r.cantidad })),
         },
       ]
 
@@ -269,33 +366,37 @@ const Dashboard = () => {
         gridTemplateColumns: { xs: 'repeat(2, minmax(0,1fr))', md: 'repeat(4, minmax(0,1fr))' },
         gap: { xs: 1.5, md: 2.5 },
       }}>
-        <VividKpiCard
-          icon={<AttachMoneyOutlinedIcon sx={{ fontSize: 18, color: '#ffffff' }} />}
+        <KpiCard
+          theme={theme}
+          icon={<AttachMoneyOutlinedIcon sx={{ fontSize: 19, color: theme.palette.primary.main }} />}
+          iconColor={theme.palette.primary.main}
           label="Ingresos del Período"
           main={totalIngresosLabel}
-          bg={theme.palette.gradient.primary}
-          shadow={`${theme.palette.primary.main}40`}
+          delta={ingresosDelta}
         />
-        <VividKpiCard
-          icon={<PersonOutlinedIcon sx={{ fontSize: 18, color: '#ffffff' }} />}
+        <KpiCard
+          theme={theme}
+          icon={<PersonOutlinedIcon sx={{ fontSize: 19, color: theme.palette.accent.main }} />}
+          iconColor={theme.palette.accent.main}
           label="Conductores Disponibles"
           main={`${conductoresDisponibles} / ${conductoresTotales}`}
-          bg={theme.palette.gradient.primaryHover}
-          shadow={`${theme.palette.primary.dark}40`}
+          ring={conductoresDisponiblesPct}
         />
-        <VividKpiCard
-          icon={<DirectionsCarOutlinedIcon sx={{ fontSize: 18, color: '#ffffff' }} />}
+        <KpiCard
+          theme={theme}
+          icon={<DirectionsCarOutlinedIcon sx={{ fontSize: 19, color: theme.palette.status.success.color }} />}
+          iconColor={theme.palette.status.success.color}
           label="Vehículos Disponibles"
           main={`${vehiculosDisponibles} / ${vehiculosTotales}`}
-          bg={theme.palette.gradient.primaryHover}
-          shadow={`${theme.palette.primary.dark}40`}
+          ring={vehiculosDisponiblesPct}
         />
-        <VividKpiCard
-          icon={<Inventory2OutlinedIcon sx={{ fontSize: 18, color: '#ffffff' }} />}
-          label="Envíos Totales"
-          main={`${totalEnvios}`}
-          bg={theme.palette.gradient.primary}
-          shadow={`${theme.palette.primary.main}40`}
+        <KpiCard
+          theme={theme}
+          icon={<Inventory2OutlinedIcon sx={{ fontSize: 19, color: theme.palette.status.warningAmber.color }} />}
+          iconColor={theme.palette.status.warningAmber.color}
+          label="Paquetes Entregados"
+          main={`${paquetesEntregados}`}
+          delta={paquetesEntregadosDelta}
         />
       </Box>
 
@@ -304,13 +405,14 @@ const Dashboard = () => {
         <Box sx={{ flex: { md: 1.35 }, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
           <IngresosPorMesChart
             theme={theme} ingresosMes={ingresosMes} maxIngresoValor={maxIngresoValor}
-            periodoLabel={`${filtroActivo.desde} — ${filtroActivo.hasta}`}
+            periodoLabel={periodoLabel}
           />
-          <TopDestinosList theme={theme} topDestinos={topDestinos} />
+          <TopRutasList theme={theme} topRutas={topRutas} />
         </Box>
 
         <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <EnviosPorEstadoChart theme={theme} enviosEstado={enviosEstado} totalEnvios={totalEnvios} />
+          <VentasPorEstadoChart theme={theme} ventasPorEstado={ventasPorEstado} totalVentas={totalVentas} />
+          <UltimasVentasList theme={theme} ultimasVentas={ultimasVentas} />
         </Box>
       </Box>
 

@@ -2,24 +2,24 @@ import { Box, Paper, Typography } from '@mui/material'
 import RouteOutlinedIcon from '@mui/icons-material/RouteOutlined'
 import SectionHeader from './SectionHeader.jsx'
 
-const TopDestinosList = ({ theme, topDestinos }) => (
+const TopRutasList = ({ theme, topRutas }) => (
     <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, border: `1px solid ${theme.palette.divider}` }}>
         <SectionHeader
             icon={<RouteOutlinedIcon sx={{ fontSize: 16, color: theme.palette.primary.darker }} />}
-            title="Top 5 Destinos más Utilizados"
+            title="Top 5 Rutas más Utilizadas"
         />
-        {topDestinos.length > 0 ? (
+        {topRutas.length > 0 ? (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.6 }}>
-                {topDestinos.map((d, i) => {
-                    const max = topDestinos[0]?.envios || 1
-                    const pct = (d.envios / max) * 100
+                {topRutas.map((r, i) => {
+                    const max = topRutas[0]?.cantidad || 1
+                    const pct = (r.cantidad / max) * 100
                     return (
-                        <Box key={d.destino} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <Box key={r.ruta} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                             <Typography sx={{
-                                width: { xs: 88, sm: 118 }, flexShrink: 0, fontSize: '0.8rem', fontWeight: 600,
+                                width: { xs: 110, sm: 150 }, flexShrink: 0, fontSize: '0.8rem', fontWeight: 600,
                                 color: theme.palette.text.medium, lineHeight: 1.25,
                             }}>
-                                {d.destino}
+                                {r.ruta}
                             </Typography>
                             <Box sx={{ flex: 1, height: 8, borderRadius: 4, backgroundColor: theme.palette.background.subtle }}>
                                 <Box sx={{
@@ -31,7 +31,7 @@ const TopDestinosList = ({ theme, topDestinos }) => (
                                 width: 34, flexShrink: 0, textAlign: 'right', fontSize: '0.8rem', fontWeight: 700,
                                 color: theme.palette.primary.main,
                             }}>
-                                {d.envios}
+                                {r.cantidad}
                             </Typography>
                         </Box>
                     )
@@ -39,10 +39,10 @@ const TopDestinosList = ({ theme, topDestinos }) => (
             </Box>
         ) : (
             <Typography variant="body2" sx={{ color: theme.palette.text.secondary, textAlign: 'center', py: 2 }}>
-                Sin destinos registrados en este período.
+                Sin rutas registradas en este período.
             </Typography>
         )}
     </Paper>
 )
 
-export default TopDestinosList
+export default TopRutasList
