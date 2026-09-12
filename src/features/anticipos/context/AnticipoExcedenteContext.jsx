@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react'
 import * as anticipoService from '../services/anticipoService'
 import { useAuth } from '../../../shared/contexts/AuthContext.jsx'
 import { useConductor } from '../../conductores/context/ConductorContext.jsx'
@@ -59,8 +59,15 @@ export const AnticipoExcedenteProvider = ({ children }) => {
     }
   }, [token]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Normalizar conductores para el selector: { idConductor, nombre } — solo habilitados
-  const conductoresNormalizados = conductores
+  // Normalizar conductores para el selector: { idConductor, nombre } — solo habilitados.
+  // Memoizado: sin esto, este array (y los de rutas de abajo) se reconstruían enteros —
+  // con objetos nuevos — en CADA render del provider, aunque `conductores`/`rutasProgramadas`
+  // no hubieran cambiado en nada. Un Autocomplete controlado (ver PasoRutaVehiculo.jsx)
+  // interpreta esa referencia nueva como "el valor cambió" y resetea lo que el usuario
+  // esté escribiendo para buscar — mismo bug de fondo que el de la "x" en Editar Anticipo
+  // (ver ActualizarAnticipoExcedente.jsx, rutaSintetica), solo que acá podía disparar con
+  // cualquier ruta/conductor, no solo el caso sintético.
+  const conductoresNormalizados = useMemo(() => conductores
     .filter((c) => c.habilitado !== false)
     .map((c) => ({
       idConductor: c.idConductor,
@@ -69,14 +76,14 @@ export const AnticipoExcedenteProvider = ({ children }) => {
           ? `${c.nombre} ${c.apellido}`
           : c.nombre || `Conductor ${c.idConductor}`,
       numeroIdentificacion: c.numeroIdentificacion || '',
-    }))
+    })), [conductores])
 
   // Normalizar rutas para el selector: { idRuta, nombre, paresVehiculoConductor } —
   // solo habilitadas y Programadas (una ruta "En Ruta"/"Completada"/"Cancelada" ya no
   // debería recibir anticipos nuevos). Una ruta ahora puede tener varios vehículo+conductor
   // (convoy), así que el conductor ya no se autocompleta solo: el formulario debe dejar
   // elegir cuál par corresponde entre los de `paresVehiculoConductor`.
-  const rutasNormalizadas = rutasProgramadas
+  const rutasNormalizadas = useMemo(() => rutasProgramadas
     .filter((r) => r.habilitado !== false && r.estado === 'Programada')
     .map((r) => ({
       idRuta: r.idRuta,
@@ -101,7 +108,7 @@ export const AnticipoExcedenteProvider = ({ children }) => {
             conductorNombre: u ? `${u.nombre} ${u.apellido}` : `Conductor ${p.idConductor}`,
           }
         }),
-    }))
+    })), [rutasProgramadas])
 
   // ── CRUD ────────────────────────────────────────────────────────────────────
 
@@ -154,6 +161,12 @@ export const AnticipoExcedenteProvider = ({ children }) => {
         fetchAnticipos,
         conductores: conductoresNormalizados,
         rutas: rutasNormalizadas,
+        // Se reexpone para que Registrar/Editar Anticipo puedan pedir las rutas
+        // frescas al abrirse — `rutasProgramadas` solo se carga una vez por sesión
+        // (ver el useEffect de arriba, atado a `token`), así que si una ruta se edita
+        // en otra pantalla (ej. se reasigna un conductor) mientras el usuario sigue
+        // logueado, el wizard de Anticipos seguiría viendo la versión vieja sin esto.
+        fetchRutasProgramadas,
         loading,
         error,
         agregarAnticipo,

@@ -22,9 +22,24 @@ const useAnticipoColumns = ({
     {
         key: 'ruta', label: 'Ruta', cellSx: { py: 2.5 },
         render: (anticipo) => (
-            <Typography variant="body2" fontWeight={500} sx={{ fontSize: '0.8rem', color: theme.palette.text.primary }} noWrap>
-                {anticipo.ruta ? `${anticipo.ruta.origen || '—'} → ${anticipo.ruta.destino?.municipio || 'Sin destino'}` : '—'}
-            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.4 }}>
+                <Typography variant="body2" fontWeight={500} sx={{ fontSize: '0.8rem', color: theme.palette.text.primary }} noWrap>
+                    {anticipo.ruta ? `${anticipo.ruta.origen || '—'} → ${anticipo.ruta.destino?.municipio || 'Sin destino'}` : '—'}
+                </Typography>
+                {/* Huérfano: el par de la ruta se reasignó a otro conductor después de
+                    entregarle este anticipo — ver LOGICA.md "Anticipos huérfanos al
+                    reasignar conductor". Ya completado no importa (nada más va a pasar
+                    con él), así que no se muestra ahí. */}
+                {anticipo.esHuerfano && anticipo.estado !== 'Completado' && (
+                    <Tooltip title="El conductor de este anticipo ya no es par de esta ruta — se reasignó a alguien más.">
+                        <Chip
+                            label="Conductor ya no está en la ruta"
+                            size="small"
+                            sx={{ fontWeight: 600, backgroundColor: alpha(theme.palette.warning.main, 0.12), color: theme.palette.warning.dark, fontSize: '0.65rem', borderRadius: '2px', height: 18 }}
+                        />
+                    </Tooltip>
+                )}
+            </Box>
         ),
     },
     {

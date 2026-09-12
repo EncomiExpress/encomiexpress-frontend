@@ -29,7 +29,12 @@ const ModalInhabilitarAnticipo = ({ open, anticipo, onClose, onExited, onConfirm
     const theme = useTheme()
 
     const habilitadoActual = anticipo?.habilitado === true
-    const bloqueado = habilitadoActual && anticipo?.estado !== 'Completado'
+    // Huérfano (ver LOGICA.md, "Anticipos huérfanos al reasignar conductor"): el
+    // conductor de este anticipo ya no es par activo de su ruta, así que nada del flujo
+    // normal (legalizar desde el móvil, cerrar la ruta) va a llegar a completarlo nunca
+    // — se deja inhabilitar sin exigir "Completado", igual que ya lo permite el backend
+    // (anticipoService.toggleHabilitado). Cualquier otro anticipo sigue bloqueado igual.
+    const bloqueado = habilitadoActual && anticipo?.estado !== 'Completado' && !anticipo?.esHuerfano
     const ruta = anticipo?.ruta || null
 
     const nombreConductor = anticipo?.conductor?.usuario

@@ -168,6 +168,8 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
         setSinCambios(false)
     }
 
+    const capacidadCtx = { vehiculos, paresOriginales: ruta?.paresVehiculoConductor }
+
     const handleParChange = (index, campo, value) => {
         const pares = form.pares.map((p, i) => i === index ? { ...p, [campo]: value } : p)
         // La fecha ya elegida se conserva — casi siempre sigue siendo válida con el
@@ -175,7 +177,11 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
         // para el par actualizado y marca el día en rojo si de verdad queda bloqueado
         // (ver CalendarioDisponibilidad, estilo de celda seleccionada+bloqueada).
         setForm(prev => ({ ...prev, pares }))
-        setErrores(prev => ({ ...prev, pares: prev.pares ? validarPares(pares) : '' }))
+        // Revalida siempre (no solo si ya había error) cuando cambia el vehículo/conductor
+        // de un par existente — a diferencia de los demás campos, acá el aviso de
+        // capacidad debe encenderse apenas eliges un vehículo que no aguanta lo que ese
+        // par ya tiene asignado, no solo después de un primer intento fallido de avanzar.
+        setErrores(prev => ({ ...prev, pares: (prev.pares || campo === 'idVehiculo') ? validarPares(pares, capacidadCtx) : '' }))
         setApiError(null)
         setSinCambios(false)
     }
@@ -188,9 +194,29 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
     }
 
     const handleQuitarPar = (index) => {
+        // Mismo chequeo que rutaService.js al guardar ("No puedes quitar un vehículo de
+        // la ruta si ya tiene paquetes asignados") — se avisa acá, antes de quitar la
+        // fila, en vez de dejar que el usuario la borre y recién enterarse al guardar.
+        const parAQuitar = form.pares[index]
+        const original = parAQuitar?.idRutaVehiculoConductor
+            ? (ruta?.paresVehiculoConductor || []).find(p => p.idRutaVehiculoConductor === parAQuitar.idRutaVehiculoConductor)
+            : null
+        if (original && Number(original.paquetesAsignados || 0) > 0) {
+            const cantidad = original.paquetesAsignados
+            // Ojo con la redacción: lo que se protege es que desaparezca esta FILA
+            // (este cupo del convoy) — cambiar cuál vehículo/conductor va en ella sigue
+            // permitido sin restricción (los paquetes ya asignados se van con el cambio,
+            // ver el aviso de capacidad más arriba). El mensaje no debe sonar a que el
+            // vehículo en sí quedó "trabado" y no se puede reemplazar.
+            setErrores(prev => ({
+                ...prev,
+                pares: `No puedes quitar esta fila del convoy: ya tiene ${cantidad} paquete${cantidad > 1 ? 's' : ''} asignado${cantidad > 1 ? 's' : ''} en este par (actualmente ${original.vehiculo?.placa || 'sin placa'}).`,
+            }))
+            return
+        }
         const pares = form.pares.filter((_, i) => i !== index)
         setForm(prev => ({ ...prev, pares }))
-        setErrores(prev => ({ ...prev, pares: prev.pares ? validarPares(pares) : '' }))
+        setErrores(prev => ({ ...prev, pares: prev.pares ? validarPares(pares, capacidadCtx) : '' }))
         setVehiculoInputs(prev => prev.filter((_, i) => i !== index))
         setConductorInputs(prev => prev.filter((_, i) => i !== index))
         setSinCambios(false)
@@ -273,7 +299,7 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
     }
 
     const handleNext = () => {
-        const erroresEncontrados = validarPaso(activeStep, form)
+        const erroresEncontrados = validarPaso(activeStep, form, capacidadCtx)
         if (Object.keys(erroresEncontrados).length > 0) {
             setErrores(erroresEncontrados)
             // Scroll hasta el primer campo/sección con error, en el orden visual del
@@ -319,7 +345,7 @@ const ActualizarRutaProgramacion = ({ open, onClose, ruta, onSuccess }) => {
         // de guardar (ej. "Hora de Salida" con fecha de hoy: era válida cuando se
         // avanzó del paso "Horario", pero el reloj puede alcanzarla mientras se sigue
         // en "Confirmación" — ver LOGICA.md).
-        const erroresPaso0 = validarPaso(0, form)
+        const erroresPaso0 = validarPaso(0, form, capacidadCtx)
         const erroresPaso1 = validarPaso(1, form)
         const erroresEncontrados = { ...erroresPaso0, ...erroresPaso1 }
         if (Object.keys(erroresEncontrados).length > 0) {

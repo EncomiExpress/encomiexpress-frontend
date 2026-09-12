@@ -1,5 +1,5 @@
 import { useTheme } from '@mui/material/styles'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import { useAnticipos } from './context/AnticipoExcedenteContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
@@ -7,12 +7,13 @@ import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { steps, validarPaso, handleChangeAnticipo } from './validations/anticipoValidation.js'
 import { usePaquetesPorPar } from './hooks/usePaquetesPorPar.js'
 import { useAutoSeleccionParUnico } from './hooks/useAutoSeleccionParUnico.js'
+import { useAnticiposActivos } from './hooks/useAnticiposActivos.js'
 import WizardDialog from '../../shared/components/WizardDialog.jsx'
 import PasoRutaVehiculo from './components/wizard/PasoRutaVehiculo.jsx'
 import PasoConfirmacion from './components/wizard/PasoConfirmacion.jsx'
 
 const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
-    const { agregarAnticipo, rutas } = useAnticipos()
+    const { agregarAnticipo, rutas, fetchRutasProgramadas } = useAnticipos()
     const { showToast } = useToast()
     const theme = useTheme()
     const [errores, setErrores] = useState({})
@@ -30,8 +31,15 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
 
     const [form, setForm] = useState(formInicial)
 
+    // "rutas" (del contexto) solo se carga una vez por sesión — si una ruta se editó en
+    // otra pantalla (ej. se le reasignó el conductor a un par) mientras el usuario seguía
+    // logueado, este wizard vería la versión vieja sin este refresco al abrir.
+    useEffect(() => {
+        if (open) fetchRutasProgramadas({ limit: 1000 })
+    }, [open, fetchRutasProgramadas])
+
     const { paquetesPorPar, loading: cargandoPaquetesPorPar } = usePaquetesPorPar(form.idRuta)
-    useAutoSeleccionParUnico(form.idRuta, rutas, setForm, setParInput)
+    const { filtrarRutasDisponibles, filtrarParesDisponibles } = useAnticiposActivos()
 
     const handleClose = () => {
         if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
@@ -44,6 +52,10 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
     }
 
     const rutaSeleccionada = rutas.find(r => r.idRuta === parseInt(form.idRuta))
+    // Rutas donde ya no queda ningún par vehículo-conductor sin anticipo activo no se
+    // ofrecen en el buscador — si a la ruta le queda al menos un par disponible, se
+    // sigue mostrando igual.
+    const rutasDisponibles = filtrarRutasDisponibles(rutas)
 
     const handleChange = (e) => handleChangeAnticipo(e, form, setForm, setErrores, { rutaSeleccionada })
 
@@ -83,7 +95,12 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
     }
 
     const pares = rutaSeleccionada?.paresVehiculoConductor || []
-    const parSeleccionado = pares.find(p => p.idRutaVehiculoConductor === parseInt(form.idRutaVehiculoConductor))
+    // Del select de "Vehículo y conductor" solo se ofrecen los pares que todavía no
+    // tienen anticipo activo — los que ya tienen uno no aparecen, ni deshabilitados.
+    const paresDisponibles = filtrarParesDisponibles(pares, rutaSeleccionada?.idRuta)
+    const parSeleccionado = paresDisponibles.find(p => p.idRutaVehiculoConductor === parseInt(form.idRutaVehiculoConductor))
+
+    useAutoSeleccionParUnico(form.idRuta, paresDisponibles, setForm, setParInput)
 
     const getNombreConductor = () => parSeleccionado?.conductorNombre || '—'
 
@@ -102,7 +119,7 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
                 return (
                     <PasoRutaVehiculo
                         theme={theme} form={form} errores={errores} setErrores={setErrores} setForm={setForm} handleChange={handleChange}
-                        rutas={rutas} rutaSeleccionada={rutaSeleccionada} pares={pares} parSeleccionado={parSeleccionado} paquetesPorPar={paquetesPorPar}
+                        rutas={rutasDisponibles} rutaSeleccionada={rutaSeleccionada} pares={paresDisponibles} parSeleccionado={parSeleccionado} paquetesPorPar={paquetesPorPar}
                         rutaInput={rutaInput} setRutaInput={setRutaInput} parInput={parInput} setParInput={setParInput}
                         getEtiquetaRuta={getEtiquetaRuta}
                         parDisabled={!form.idRuta}

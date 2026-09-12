@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTheme } from '@mui/material/styles'
 import { Box, Typography } from '@mui/material'
-import { DarkModeOutlined as MoonIcon, LightModeOutlined as SunIcon } from '@mui/icons-material'
+import { DarkModeOutlined as MoonIcon, LightModeOutlined as SunIcon, LocationOnOutlined as SedeIcon } from '@mui/icons-material'
 import logo from '../../assets/logo.png'
 import logoDark from '../../assets/logoDark.png'
 import { useAuth } from '../contexts/AuthContext.jsx'
@@ -31,7 +31,7 @@ const Header = ({ collapsed }) => {
   const [openLogoutDialog,  setOpenLogoutDialog]  = useState(false)
   const [openCambiarDialog, setOpenCambiarDialog] = useState(false)
 
-  const { usuario, logout, token } = useAuth()
+  const { usuario, logout, token, sedeActual } = useAuth()
   const navigate = useNavigate()
   const greeting = getGreeting()
   const dateTime = useDateTime()
@@ -88,6 +88,21 @@ const Header = ({ collapsed }) => {
 
       {/* ── Acciones ── */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        {/* Sede del usuario logueado (operador_sede) — null para roles sin sede propia
+            (admin), así que no se muestra nada para ellos. Ver LOGICA.md, "Sedes remotas". */}
+        {sedeActual && (
+          <Box sx={{
+            display: 'flex', alignItems: 'center', gap: 0.6,
+            px: 1.4, py: 0.7, borderRadius: '10px',
+            backgroundColor: pal.primary.activeBg,
+          }}>
+            <SedeIcon sx={{ fontSize: '1.1rem', color: pal.primary.main }} />
+            <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: pal.primary.main, whiteSpace: 'nowrap' }}>
+              Sede {sedeActual.municipio}
+            </Typography>
+          </Box>
+        )}
+
         <Box
           onClick={toggleDarkMode}
           sx={{

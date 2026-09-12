@@ -1,5 +1,5 @@
 import { useTheme } from '@mui/material/styles'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { Box, Typography, Dialog } from '@mui/material'
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined'
 import { useAnticipos } from './context/AnticipoExcedenteContext.jsx'
@@ -9,12 +9,13 @@ import { formatFecha } from '../../shared/utils/formatters.js'
 import { steps, validarPaso, handleChangeAnticipo } from './validations/anticipoValidation.js'
 import { usePaquetesPorPar } from './hooks/usePaquetesPorPar.js'
 import { useAutoSeleccionParUnico } from './hooks/useAutoSeleccionParUnico.js'
+import { useAnticiposActivos } from './hooks/useAnticiposActivos.js'
 import WizardDialog from '../../shared/components/WizardDialog.jsx'
 import PasoRutaVehiculo from './components/wizard/PasoRutaVehiculo.jsx'
 import PasoConfirmacion from './components/wizard/PasoConfirmacion.jsx'
 
 const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, onSuccess }) => {
-    const { anticipos, actualizarAnticipo, rutas } = useAnticipos()
+    const { anticipos, actualizarAnticipo, rutas, fetchRutasProgramadas } = useAnticipos()
     const { showToast } = useToast()
     const theme = useTheme()
     const [errores, setErrores] = useState({})
@@ -27,6 +28,13 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
     const cargado = useRef(false)
     const [rutaInput, setRutaInput] = useState('')
     const [parInput, setParInput] = useState('')
+
+    // "rutas" (del contexto) solo se carga una vez por sesión — si una ruta se editó en
+    // otra pantalla (ej. se le reasignó el conductor a un par) mientras el usuario seguía
+    // logueado, este wizard vería la versión vieja sin este refresco al abrir.
+    useEffect(() => {
+        if (open) fetchRutasProgramadas({ limit: 1000 })
+    }, [open, fetchRutasProgramadas])
 
     useEffect(() => {
         if (!open) { cargado.current = false; return }
@@ -72,12 +80,11 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
         setParInput(parActivo ? `${parActivo.placa || 'Sin placa'} — ${parActivo.conductorNombre}` : '')
     }, [open, anticipoProp, anticipos, rutas])
 
-    // Si se reasigna a una ruta con un solo vehículo+conductor, no tiene caso elegir — se
-    // autocompleta, igual que en RegistrarAnticipoExcedente.jsx. Solo aplica mientras la
-    // asignación sigue siendo editable (anticipo en estado "Entregado").
-    useAutoSeleccionParUnico(form?.idRuta, rutas, setForm, setParInput, anticipoOriginal?.estado === 'Entregado')
-
     const { paquetesPorPar, loading: cargandoPaquetesPorPar } = usePaquetesPorPar(form?.idRuta)
+    // excluirIdAnticipo: este mismo anticipo no debe contar contra sí mismo al decidir
+    // qué rutas/pares ya "tienen anticipo activo" — igual que el backend con
+    // `idAnticipoExcedente: Op.ne` en update() (ver anticipoService.js).
+    const { filtrarRutasDisponibles, filtrarParesDisponibles } = useAnticiposActivos({ excluirIdAnticipo: anticipoProp?.idAnticipoExcedente })
 
     // Si la ruta ya avanzó de estado no aparece en "rutas" (solo trae "Programada") —
     // se arma una opción sintética con los datos del anticipo para que el Autocomplete
@@ -85,7 +92,12 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
     const nombreConductorOriginal = anticipoOriginal?.conductor?.usuario
         ? `${anticipoOriginal.conductor.usuario.nombre} ${anticipoOriginal.conductor.usuario.apellido}`
         : '—'
-    const rutaSeleccionada = rutas.find(r => r.idRuta === parseInt(form?.idRuta)) || (
+    // Objeto sintético memoizado: si no se memoiza, se recrea (nueva referencia) en cada
+    // render y el Autocomplete de Ruta lo interpreta como "el valor cambió" en cada tecla
+    // que se escribe para buscar, reseteando el input al texto de la ruta — bloqueando la
+    // búsqueda por completo. Solo depende de anticipoOriginal (estable mientras el modal
+    // sigue abierto) y del nombre del conductor original.
+    const rutaSintetica = useMemo(() => (
         anticipoOriginal?.ruta
             ? {
                 idRuta: anticipoOriginal.idRuta,
@@ -101,7 +113,18 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
                 }],
             }
             : null
+    ), [anticipoOriginal, nombreConductorOriginal])
+
+    // El objeto sintético solo debe mostrarse mientras el campo siga en la ruta ORIGINAL
+    // del anticipo (form.idRuta === anticipoOriginal.idRuta) — si el usuario lo limpia con
+    // la "x" (form.idRuta pasa a ''), antes esto caía igual al sintético porque solo miraba
+    // si anticipoOriginal tenía ruta, ignorando que ya se había limpiado a propósito.
+    const rutaSeleccionada = rutas.find(r => r.idRuta === parseInt(form?.idRuta)) || (
+        form?.idRuta && String(form.idRuta) === String(anticipoOriginal?.idRuta) ? rutaSintetica : null
     )
+    // Rutas donde ya no queda ningún par vehículo-conductor sin anticipo activo (aparte
+    // de este mismo anticipo, excluido arriba) no se ofrecen en el buscador.
+    const rutasDisponibles = filtrarRutasDisponibles(rutas)
 
     const handleChange = (e) => handleChangeAnticipo(e, form, setForm, setErrores, { onCambio: () => setSinCambios(false), rutaSeleccionada })
 
@@ -182,7 +205,17 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
     // el anticipo a otra ruta). Si no aparece ahí (ya avanzó de estado), se usa el
     // conductor que ya traía el anticipo desde que se cargó.
     const pares = rutaSeleccionada?.paresVehiculoConductor || []
-    const parSeleccionado = pares.find(p => p.idRutaVehiculoConductor === form?.idRutaVehiculoConductor)
+    // Del select de "Vehículo y conductor" solo se ofrecen los pares que todavía no
+    // tienen anticipo activo (aparte de este mismo anticipo) — los que ya tienen uno no
+    // aparecen ahí, ni deshabilitados.
+    const paresDisponibles = filtrarParesDisponibles(pares, rutaSeleccionada?.idRuta)
+    const parSeleccionado = paresDisponibles.find(p => p.idRutaVehiculoConductor === form?.idRutaVehiculoConductor)
+
+    // Si se reasigna a una ruta donde solo queda un vehículo+conductor disponible (sin
+    // anticipo activo), no tiene caso elegir — se autocompleta, igual que en
+    // RegistrarAnticipoExcedente.jsx. Solo aplica mientras la asignación sigue siendo
+    // editable (anticipo en estado "Entregado").
+    useAutoSeleccionParUnico(form?.idRuta, paresDisponibles, setForm, setParInput, anticipoOriginal?.estado === 'Entregado')
 
     const getNombreConductor = () => parSeleccionado?.conductorNombre || nombreConductorOriginal
 
@@ -214,7 +247,7 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
                 return (
                     <PasoRutaVehiculo
                         theme={theme} form={form} errores={errores} setErrores={setErrores} setForm={setForm} handleChange={handleChange}
-                        rutas={rutas} rutaSeleccionada={rutaSeleccionada} pares={pares} parSeleccionado={parSeleccionado} paquetesPorPar={paquetesPorPar}
+                        rutas={rutasDisponibles} rutaSeleccionada={rutaSeleccionada} pares={paresDisponibles} parSeleccionado={parSeleccionado} paquetesPorPar={paquetesPorPar}
                         rutaInput={rutaInput} setRutaInput={setRutaInput} parInput={parInput} setParInput={setParInput}
                         getEtiquetaRuta={getEtiquetaRuta}
                         afterChange={() => setSinCambios(false)}

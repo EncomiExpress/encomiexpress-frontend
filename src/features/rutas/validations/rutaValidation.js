@@ -92,7 +92,14 @@ export const validarCampo = (name, form) => {
 
 // Valida el array de pares vehículo+conductor (convoy de la ruta) — mismo patrón que
 // validarCategorias() en RegistrarConductor.jsx para categoriasLicencia.
-export const validarPares = (pares) => {
+//
+// `capacidadCtx` (opcional, solo lo manda ActualizarRutaProgramacion.jsx — Registrar
+// nunca tiene paquetes ya asignados) — { vehiculos, paresOriginales }: si al cambiarle
+// el vehículo a un par que YA tiene paquetes asignados el vehículo nuevo no aguanta ese
+// peso, se avisa acá en vez de esperar a que lo rechace el backend recién al guardar
+// (mismo chequeo que rutaService.js, ver "Si se está cambiando el vehículo de un par que
+// YA tiene paquetes asignados").
+export const validarPares = (pares, { vehiculos, paresOriginales } = {}) => {
     const completos = pares.filter(p => p.idVehiculo && p.idConductor)
     const incompletos = pares.some(p => (p.idVehiculo && !p.idConductor) || (!p.idVehiculo && p.idConductor))
     if (completos.length === 0) return 'Agrega al menos un vehículo y su conductor'
@@ -101,6 +108,19 @@ export const validarPares = (pares) => {
     const idsConductor = completos.map(p => p.idConductor)
     if (new Set(idsVehiculo).size !== idsVehiculo.length) return 'No repitas el mismo vehículo en dos filas'
     if (new Set(idsConductor).size !== idsConductor.length) return 'No repitas el mismo conductor en dos filas'
+    if (vehiculos && paresOriginales) {
+        for (const par of completos) {
+            const original = paresOriginales.find(p => p.idRutaVehiculoConductor === par.idRutaVehiculoConductor)
+            if (!original || parseInt(par.idVehiculo) === original.idVehiculo) continue
+            const pesoAsignado = Number(original.pesoUsado || 0)
+            if (pesoAsignado <= 0) continue
+            const vehiculo = vehiculos.find(v => v.idVehiculo === parseInt(par.idVehiculo))
+            const capacidad = vehiculo?.capacidad ? Number(vehiculo.capacidad) : null
+            if (capacidad != null && pesoAsignado > capacidad) {
+                return `El vehículo ${vehiculo.placa || ''} tiene capacidad para ${capacidad} kg, pero este par ya tiene ${pesoAsignado.toFixed(2)} kg en paquetes asignados. Elige un vehículo con más capacidad.`
+            }
+        }
+    }
     return ''
 }
 
@@ -114,11 +134,11 @@ export const validarParadas = (paradas) => {
     return ''
 }
 
-export const validarPaso = (step, form) => {
+export const validarPaso = (step, form, capacidadCtx) => {
     const e = {}
     if (step === 0) {
         e.origen = validarCampo('origen', form)
-        e.pares = validarPares(form.pares)
+        e.pares = validarPares(form.pares, capacidadCtx)
         e.idDestino = validarCampo('idDestino', form)
         e.paradas = validarParadas(form.paradas)
     }
