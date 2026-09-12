@@ -105,8 +105,8 @@ export const validarCampo = (name, form) => {
             }
             return ''
         }
-        case 'metodoPago':
-            return form.metodoPago ? '' : 'Selecciona un método de pago'
+        case 'modalidadRecaudo':
+            return form.modalidadRecaudo ? '' : 'Selecciona una modalidad de recaudo'
         case 'observaciones':
             if (form.observaciones && form.observaciones.length > 500) return 'Máximo 500 caracteres'
             if (form.observaciones && esSoloRelleno(form.observaciones)) return 'Las observaciones no pueden contener solo espacios o guiones'

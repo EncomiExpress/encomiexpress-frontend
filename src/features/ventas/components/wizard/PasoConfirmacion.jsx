@@ -48,7 +48,7 @@ export default function PasoConfirmacion({
         [form.idRuta, formOriginal.idRuta],
         [form.fechaEstimadaEntrega, formOriginal.fechaEstimadaEntrega],
         [form.observaciones, formOriginal.observaciones],
-        [form.metodoPago, formOriginal.metodoPago],
+        [form.modalidadRecaudo, formOriginal.modalidadRecaudo],
         [form.total, formOriginal.total],
     ] : []
     const totalModificados = camposComparados.filter(([a, b]) => sonDistintos(a, b)).length
@@ -146,7 +146,7 @@ export default function PasoConfirmacion({
                     <ConfirmRow label="Ruta" value={form.destino} previousValue={formOriginal?.destino} />
                     <ConfirmRow label="Fecha entrega" value={formatFecha(form.fechaEstimadaEntrega)} previousValue={formOriginal?.fechaEstimadaEntrega ? formatFecha(formOriginal.fechaEstimadaEntrega) : undefined} />
                     <ConfirmRow label="Observaciones" value={form.observaciones} previousValue={formOriginal?.observaciones} />
-                    <ConfirmRow label="Método de pago" value={form.metodoPago} previousValue={formOriginal?.metodoPago} />
+                    <ConfirmRow label="Modalidad de recaudo" value={form.modalidadRecaudo} previousValue={formOriginal?.modalidadRecaudo} />
                     <ConfirmRow label="Total a pagar" value={totalActual} previousValue={totalOriginal} />
                 </Paper>
             </Box>

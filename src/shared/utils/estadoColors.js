@@ -78,6 +78,19 @@ export const getPaqueteEstadoDot = (estado) => {
     }
 }
 
+// Rollup de EncomiendaVenta.estadoPago (ver paqueteStateUtils.determinarEstadoPago
+// en el backend) — 'Pendiente' es el genérico "en curso" (solo Contraentrega
+// mientras algún paquete no tiene el pago definido); los otros 3 son terminales.
+export const getEstadoPagoDot = (estado) => {
+    switch (estado) {
+        case 'Pendiente':    return { type: 'circle', fill: false, color: '#D97706', label: 'Pendiente' }
+        case 'Pagada':       return { type: 'symbol', char: '✓',   color: '#059669', label: 'Pagada' }
+        case 'Pago parcial': return { type: 'symbol', char: '!',   color: '#D97706', label: 'Pago parcial' }
+        case 'Sin pago':     return { type: 'symbol', char: '−',   color: '#71717A', label: 'Sin pago' }
+        default:              return { type: 'circle', fill: false, color: '#9CA3AF', label: estado || '—' }
+    }
+}
+
 export const getAnticipoEstadoDot = (estado) => {
     switch (estado) {
         case 'Entregado':          return { type: 'circle', fill: false, color: '#A855F7', label: 'Entregado' }

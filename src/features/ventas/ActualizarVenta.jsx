@@ -39,7 +39,7 @@ const getInitialForm = () => ({
     fechaLlegadaEstimadaRuta: '',
     fechaEstimadaEntrega: '',
     observaciones: '',
-    metodoPago: '',
+    modalidadRecaudo: '',
     total: '',
 })
 
@@ -140,7 +140,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                 ? ventaData.fechaEstimadaEntrega.split('T')[0]
                 : '',
             observaciones: ventaData.observaciones || '',
-            metodoPago: ventaData.metodoPago || '',
+            modalidadRecaudo: ventaData.modalidadRecaudo || '',
             total: limpiarNumero(ventaData.total),
         }
         setForm(datosForm)
@@ -209,7 +209,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                 idRuta: parseInt(form.idRuta),
                 fechaEstimadaEntrega: form.fechaEstimadaEntrega || null,
                 observaciones: form.observaciones || null,
-                metodoPago: form.metodoPago,
+                modalidadRecaudo: form.modalidadRecaudo,
                 total: parseFloat(form.total) || 0,
                 destinatario: {
                     nombreDestinatario: form.nombreDestinatario,

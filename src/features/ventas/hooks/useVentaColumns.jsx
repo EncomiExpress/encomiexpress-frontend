@@ -3,17 +3,16 @@ import { Box, Typography, IconButton, Chip, Tooltip } from '@mui/material'
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined'
-import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import ToggleSwitch from '../../../shared/components/ToggleSwitch.jsx'
 import { formatFecha } from '../../../shared/utils/formatters.js'
-import { getVentaEstadoDot } from '../../../shared/utils/estadoColors.js'
+import { getVentaEstadoDot, getEstadoPagoDot } from '../../../shared/utils/estadoColors.js'
 import VentaEstadoDot from '../components/VentaEstadoDot.jsx'
 import EstadoVentaCancelada from '../components/EstadoVentaCancelada.jsx'
 
 const useVentaColumns = ({
     theme, debouncedBusqueda, tienePermiso, PERMISOS,
     onConsultar, onDescargarGuia, onEditar, onToggleHabilitado,
-    onAbrirMenuPago, onReactivar,
+    onReactivar,
 }) => [
     {
         key: 'guia', label: 'Guía', sortField: 'numeroGuia', cellSx: { py: 1.5 },
@@ -103,52 +102,66 @@ const useVentaColumns = ({
                     sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem', borderRadius: '2px', height: 24 }}
                 />
                 <Typography variant="caption" color={theme.palette.text.secondary} sx={{ display: 'block', mt: 0.5 }}>
-                    {venta.metodoPago || '—'}
+                    {venta.modalidadRecaudo || '—'}
                 </Typography>
             </>
         ),
     },
     {
         key: 'estadoPago', label: 'Estado pago', width: 130, cellSx: { py: 1.5, minWidth: 130 },
-        render: (venta) => (
-            (venta.estadoPago === 'Pagado' || venta.estado === 'Cancelada') ? (
-                venta.estadoPago === 'Pagado' ? (
+        render: (venta) => {
+            // Terminal (Pagada / Pago parcial / Sin pago): chip plano, sin selector
+            // clickeable ni chevron — la confirmación manual de pago ya no existe,
+            // el rollup lo calcula el backend solo (determinarEstadoPago).
+            if (venta.estadoPago !== 'Pendiente') {
+                const info = getEstadoPagoDot(venta.estadoPago)
+                return (
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, pl: 1 }}>
-                        <Box sx={{ width: 9, height: 9, borderRadius: '50%', backgroundColor: '#059669', flexShrink: 0 }} />
-                        <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: '#059669' }}>Pagado</Typography>
-                    </Box>
-                ) : (
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, pl: 1 }}>
-                        <Box sx={{ width: 9, height: 9, borderRadius: '50%', border: '2px solid #D97706', backgroundColor: 'transparent', flexShrink: 0 }} />
-                        <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: '#D97706' }}>Pendiente</Typography>
+                        {info.type === 'circle' ? (
+                            <Box sx={{
+                                width: 9, height: 9, borderRadius: '50%', flexShrink: 0,
+                                backgroundColor: info.fill ? info.color : 'transparent',
+                                border: `2px solid ${info.color}`,
+                            }} />
+                        ) : (
+                            <Box sx={{
+                                width: 14, height: 14, display: 'flex', alignItems: 'center',
+                                justifyContent: 'center', flexShrink: 0,
+                                fontSize: info.char === '✓' ? '0.75rem' : '1rem',
+                                fontWeight: 700, color: info.color, lineHeight: 1,
+                            }}>
+                                {info.char}
+                            </Box>
+                        )}
+                        <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: info.color }}>
+                            {info.label}
+                        </Typography>
                     </Box>
                 )
-            ) : (venta.metodoPago === 'Contraentrega' && venta.estado !== 'Entregada' && venta.estado !== 'Completada con novedades') ? (
-                <Tooltip title="Es Contraentrega: el pago se desbloquea cuando el distribuidor legaliza todos los paquetes de la venta">
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, pl: 1, opacity: 0.55 }}>
-                        <Box sx={{ width: 9, height: 9, borderRadius: '50%', border: '2px solid #D97706', backgroundColor: 'transparent', flexShrink: 0 }} />
-                        <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: '#D97706' }}>Pendiente</Typography>
+            }
+
+            // 'Pendiente' (solo ocurre en Contraentrega en curso): contador "{X} de
+            // {N} con pago definido" — X = pagado o Devuelto (cerrado sin cobro).
+            // Mismo patrón que el contador de la columna "Estado" de arriba.
+            const paquetes = venta.paquetes || []
+            const total = paquetes.length
+            const pagados = paquetes.filter(p => p.estadoPago === 'Pagado').length
+            const sinPago = paquetes.filter(p => p.estado === 'Devuelto').length
+            const definidos = pagados + sinPago
+            const enCurso = total - definidos
+            const info = getEstadoPagoDot('Pendiente')
+
+            return (
+                <Tooltip title={`${pagados} pagados · ${sinPago} sin pago · ${enCurso} en curso`}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, pl: 1 }}>
+                        <Box sx={{ width: 9, height: 9, borderRadius: '50%', border: `2px solid ${info.color}`, backgroundColor: 'transparent', flexShrink: 0 }} />
+                        <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: info.color }}>
+                            {`${definidos} de ${total} con pago definido`}
+                        </Typography>
                     </Box>
                 </Tooltip>
-            ) : tienePermiso(PERMISOS.ACTUALIZAR_VENTA) ? (
-                // PATCH /encomiendas/:id/estado-pago exige actualizar_venta en el
-                // backend — sin el permiso, se muestra el mismo indicador pero sin
-                // click ni chevron (ver Rutas/reactivar de Ventas, mismo patrón).
-                <Box
-                    onClick={(e) => { e.stopPropagation(); onAbrirMenuPago(e.currentTarget, venta.idEncomiendaVenta) }}
-                    sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75, border: `1px solid ${theme.palette.divider}`, borderRadius: 1.5, px: 1, py: 0.3, cursor: 'pointer', '&:hover': { backgroundColor: theme.palette.action.hover } }}
-                >
-                    <Box sx={{ width: 9, height: 9, borderRadius: '50%', border: '2px solid #D97706', backgroundColor: 'transparent', flexShrink: 0 }} />
-                    <Typography variant="body2" sx={{ fontSize: '0.8rem', fontWeight: 500, color: '#D97706' }}>Pendiente</Typography>
-                    <KeyboardArrowDownOutlinedIcon sx={{ fontSize: 13, color: theme.palette.text.secondary, ml: 0.25 }} />
-                </Box>
-            ) : (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, pl: 1 }}>
-                    <Box sx={{ width: 9, height: 9, borderRadius: '50%', border: '2px solid #D97706', backgroundColor: 'transparent', flexShrink: 0 }} />
-                    <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: '#D97706' }}>Pendiente</Typography>
-                </Box>
             )
-        ),
+        },
     },
     {
         key: 'estado', label: 'Estado', width: 155, cellSx: { py: 1.5, minWidth: 155 },

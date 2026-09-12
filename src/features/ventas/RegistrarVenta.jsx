@@ -36,8 +36,7 @@ const getInitialForm = () => ({
     fechaLlegadaEstimadaRuta: '',
     fechaEstimadaEntrega: '',
     observaciones: '',
-    metodoPago: '',
-    estadoPago: 'Pendiente',
+    modalidadRecaudo: '',
     total: '',
 })
 
@@ -115,9 +114,8 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                 })),
                 fechaEstimadaEntrega: form.fechaEstimadaEntrega || null,
                 observaciones: form.observaciones || null,
-                metodoPago: form.metodoPago,
+                modalidadRecaudo: form.modalidadRecaudo,
                 total: parseFloat(form.total) || 0,
-                estadoPago: form.estadoPago,
             })
             showToast('¡Venta registrada exitosamente!', 'success')
             setTimeout(() => { handleClose(); if (onSuccess) onSuccess() }, 1500)

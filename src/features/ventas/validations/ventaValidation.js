@@ -167,7 +167,7 @@ export const validarPaso = (step, form, rutasProgramadas, opts = {}) => {
     }
 
     if (step === 3) {
-        e.metodoPago = validarCampo('metodoPago', form, ventaOriginal)
+        e.modalidadRecaudo = validarCampo('modalidadRecaudo', form, ventaOriginal)
     }
 
     Object.keys(e).forEach(k => { if (!e[k]) delete e[k] })

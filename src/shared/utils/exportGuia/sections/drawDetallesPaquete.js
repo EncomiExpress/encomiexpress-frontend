@@ -2,7 +2,7 @@ import { MARGIN, CONTENT_W, ensureSpace, drawGrowingBox, drawGridCell } from '..
 import { formatCurrency } from '../empresaConfig.js'
 
 // Caja de contenido del paquete + las 3 grillas de valores (dimensiones del
-// paquete, valores de la venta, método/estado de pago) + observaciones opcionales.
+// paquete, valores de la venta, modalidad/estado de pago) + observaciones opcionales.
 export const drawDetallesPaquete = (doc, y, venta, pkg) => {
   y = drawGrowingBox(doc, y, 'Contenido del paquete', pkg?.descripcionContenido)
 
@@ -21,16 +21,16 @@ export const drawDetallesPaquete = (doc, y, venta, pkg) => {
   // ── Grid de valores de la venta (igual en todas las páginas: es el mismo envío) ──
   y = ensureSpace(doc, y, 14)
   const gridColsVenta = [
-    [venta.metodoPago === 'Contraentrega' ? 'Valor a cobrar' : 'Total a pagar', formatCurrency(venta.total)],
+    [venta.modalidadRecaudo === 'Contraentrega' ? 'Valor a cobrar' : 'Total a pagar', formatCurrency(venta.total)],
   ]
   const cellWVenta = CONTENT_W / gridColsVenta.length
   gridColsVenta.forEach(([label, value], i) => drawGridCell(doc, MARGIN + cellWVenta * i, y, cellWVenta, 14, label, value))
   y += 16
 
-  // ── Grid de método de pago / estado de pago ──
+  // ── Grid de modalidad de recaudo / estado de pago ──
   y = ensureSpace(doc, y, 14)
   const gridColsB = [
-    ['Método de pago', venta.metodoPago],
+    ['Modalidad de recaudo', venta.modalidadRecaudo],
     ['Estado de pago', venta.estadoPago],
   ]
   const cellWB = CONTENT_W / gridColsB.length

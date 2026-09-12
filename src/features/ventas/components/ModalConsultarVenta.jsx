@@ -10,7 +10,7 @@ import PaymentOutlinedIcon from '@mui/icons-material/PaymentOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
-import { getVentaEstadoDot, getPaqueteEstadoDot } from '../../../shared/utils/estadoColors.js'
+import { getVentaEstadoDot, getPaqueteEstadoDot, getEstadoPagoDot } from '../../../shared/utils/estadoColors.js'
 import { descargarGuiaPaquete } from '../../../shared/utils/exportGuia/exportGuiaPdf.js'
 import { formatFecha, formatFechaHora } from '../../../shared/utils/formatters.js'
 import CampoFila from '../../../shared/components/CampoFila.jsx'
@@ -40,7 +40,6 @@ const ModalConsultarVenta = ({ venta, onClose }) => {
     if (!venta) return null
 
     const estadoInfo = getVentaEstadoDot(venta.estado)
-    const esPagado = venta.estadoPago === 'Pagado'
     const paquetes = venta.paquetes?.length > 0 ? venta.paquetes : [venta.paquete].filter(Boolean)
     const paquete = paquetes[paqueteIndex] || paquetes[0] || null
 
@@ -158,10 +157,7 @@ const ModalConsultarVenta = ({ venta, onClose }) => {
                         </Box>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
                             <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Estado pago</Typography>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                                <Box sx={{ width: 10, height: 10, borderRadius: '50%', flexShrink: 0, backgroundColor: esPagado ? '#059669' : 'transparent', border: `2px solid ${esPagado ? '#059669' : '#D97706'}` }} />
-                                <Typography variant="body2" fontWeight={500} color={theme.palette.text.medium}>{venta.estadoPago || '—'}</Typography>
-                            </Box>
+                            <EstadoDot info={getEstadoPagoDot(venta.estadoPago)} label={getEstadoPagoDot(venta.estadoPago).label} />
                         </Box>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
                             <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Ruta</Typography>
@@ -174,7 +170,7 @@ const ModalConsultarVenta = ({ venta, onClose }) => {
                         puede ir en uno distinto, así que esto ya no es un dato único por ruta. */}
                         <CampoFila label="Vehículo" value={paquete?.asignacion?.vehiculo ? `${paquete.asignacion.vehiculo.placa} — ${paquete.asignacion.vehiculo.marca} ${paquete.asignacion.vehiculo.modelo}` : null} />
                         <CampoFila label="Conductor" value={paquete?.asignacion?.conductor?.usuario ? `${paquete.asignacion.conductor.usuario.nombre} ${paquete.asignacion.conductor.usuario.apellido}` : null} />
-                        <CampoFila label="Método de pago" value={venta.metodoPago} />
+                        <CampoFila label="Modalidad de recaudo" value={venta.modalidadRecaudo} />
                         <CampoFila label="Total a pagar" value={venta.total != null ? `$${Math.round(Number(venta.total)).toLocaleString('es-CO')}` : null} />
                         <CampoFila label="Fecha registro" value={formatFecha(venta.fechaRegistro)} />
                         <CampoFila label="Fecha est. entrega" value={formatFecha(venta.fechaEstimadaEntrega)} />
@@ -198,6 +194,13 @@ const ModalConsultarVenta = ({ venta, onClose }) => {
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Estado del paquete</Typography>
                                 <EstadoDot info={getPaqueteEstadoDot(paquete?.estado)} label={getPaqueteEstadoDot(paquete?.estado).label} />
+                            </Box>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
+                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Estado de pago</Typography>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                                    <Box sx={{ width: 10, height: 10, borderRadius: '50%', flexShrink: 0, backgroundColor: paquete?.estadoPago === 'Pagado' ? '#059669' : 'transparent', border: `2px solid ${paquete?.estadoPago === 'Pagado' ? '#059669' : '#D97706'}` }} />
+                                    <Typography variant="body2" fontWeight={500} color={theme.palette.text.medium}>{paquete?.estadoPago || '—'}</Typography>
+                                </Box>
                             </Box>
                             <CampoFila label="Observación" value={paquete?.observacionEstado || null} />
                             {paquete?.intentosEntrega > 0 && (

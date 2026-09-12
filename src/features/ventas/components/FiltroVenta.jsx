@@ -56,7 +56,7 @@ const FilterSelect = ({ theme, value, onChange, placeholder, options }) => (
 const FiltroVenta = ({
     theme,
     filtroEstadoEncomienda, setFiltroEstadoEncomienda, estadosEncomienda,
-    filtroMetodoPago, setFiltroMetodoPago, metodosPago,
+    filtroModalidad, setFiltroModalidad, modalidades,
     filtroPago, setFiltroPago, estadosPago,
     setPage,
 }) => (
@@ -70,10 +70,10 @@ const FiltroVenta = ({
         />
         <FilterSelect
             theme={theme}
-            value={filtroMetodoPago}
-            onChange={e => { setFiltroMetodoPago(e.target.value); setPage(1) }}
-            placeholder="Método pago"
-            options={metodosPago}
+            value={filtroModalidad}
+            onChange={e => { setFiltroModalidad(e.target.value); setPage(1) }}
+            placeholder="Modalidad"
+            options={modalidades}
         />
         <FilterSelect
             theme={theme}

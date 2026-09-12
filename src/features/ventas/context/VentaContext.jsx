@@ -14,9 +14,13 @@ export const ESTADOS_ENCOMIENDA = [
   'Cancelada',
 ]
 
-export const METODOS_PAGO = ['Contraentrega', 'Efectivo', 'Transferencia']
+export const MODALIDADES_RECAUDO = ['Pago Inmediato', 'Contraentrega']
 
-export const ESTADOS_PAGO = ['Pendiente', 'Pagado']
+// Rollup derivado de EncomiendaVenta.estadoPago (lo calcula el backend,
+// paqueteStateUtils.determinarEstadoPago) — 'Pendiente' es el genérico "en
+// curso" (solo ocurre en Contraentrega mientras algún paquete no tiene el pago
+// definido); 'Pagada'/'Pago parcial'/'Sin pago' son los 3 desenlaces terminales.
+export const ESTADOS_PAGO = ['Pendiente', 'Pagada', 'Pago parcial', 'Sin pago']
 
 // El backend devuelve destinatario como objeto singular (1:1) y paquetes[] (1:N) —
 // paquete queda como atajo al primero para las vistas que aún no muestran la lista completa.
@@ -77,13 +81,6 @@ export const VentaProvider = ({ children }) => {
     return normalizada
   }, [])
 
-  const cambiarEstadoPagoVenta = useCallback(async (id, nuevoEstadoPago) => {
-    await ventaService.cambiarEstadoPagoEncomienda(id, nuevoEstadoPago)
-    setVentas(prev =>
-      prev.map(v => v.idEncomiendaVenta === id ? { ...v, estadoPago: nuevoEstadoPago } : v)
-    )
-  }, [])
-
   const toggleHabilitadoVenta = useCallback(async (id) => {
     const res = await ventaService.toggleHabilitadoEncomienda(id)
     const normalizada = normalize(res.data)
@@ -106,11 +103,10 @@ export const VentaProvider = ({ children }) => {
       fetchVentas,
       agregarVenta,
       actualizarVenta,
-      cambiarEstadoPagoVenta,
       toggleHabilitadoVenta,
       reactivarVenta,
       ESTADOS_ENCOMIENDA,
-      METODOS_PAGO,
+      MODALIDADES_RECAUDO,
       ESTADOS_PAGO,
     }}>
       {children}

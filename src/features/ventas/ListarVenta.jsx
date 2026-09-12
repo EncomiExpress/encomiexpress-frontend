@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ESTADOS_ENCOMIENDA, METODOS_PAGO, ESTADOS_PAGO, normalize } from './context/VentaContext.jsx'
+import { ESTADOS_ENCOMIENDA, MODALIDADES_RECAUDO, ESTADOS_PAGO, normalize } from './context/VentaContext.jsx'
 import { Box, Typography, Button, CircularProgress } from '@mui/material'
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
@@ -20,7 +20,6 @@ import ActualizarVenta from './ActualizarVenta'
 import ModalInhabilitarVenta from './components/ModalInhabilitarVenta'
 import ModalConsultarVenta from './components/ModalConsultarVenta'
 import FiltroVenta from './components/FiltroVenta.jsx'
-import ModalCambioPagoVenta from './components/ModalCambioPagoVenta.jsx'
 import TarifaControl from './components/TarifaControl.jsx'
 import useVentaColumns from './hooks/useVentaColumns.jsx'
 import useVentaAcciones from './hooks/useVentaAcciones.js'
@@ -42,7 +41,7 @@ const ListarVenta = () => {
 
     const [filtroEstadoEncomienda, setFiltroEstadoEncomienda] = useState('')
     const [filtroPago, setFiltroPago] = useState('')
-    const [filtroMetodoPago, setFiltroMetodoPago] = useState('')
+    const [filtroModalidad, setFiltroModalidad] = useState('')
     const [ventaConsulta, setVentaConsulta] = useState(null)
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
@@ -68,30 +67,28 @@ const ListarVenta = () => {
                 ...params,
                 estado: filtroEstadoEncomienda || undefined,
                 estadoPago: filtroPago || undefined,
-                metodoPago: filtroMetodoPago || undefined,
+                modalidadRecaudo: filtroModalidad || undefined,
             })
             if (res?.success) {
                 setVentas((res.data || []).map(normalize))
                 setTotal(res.total ?? (res.data || []).length)
             }
         },
-        extraDeps: [filtroEstadoEncomienda, filtroPago, filtroMetodoPago],
+        extraDeps: [filtroEstadoEncomienda, filtroPago, filtroModalidad],
         fetchPageForHighlight: (id, limit) => getPageOfEncomienda(id, limit),
     })
 
     const {
         modalInhabilitar, setModalInhabilitar,
-        pagoMenuAnchor, setPagoMenuAnchor, pagoMenuId, setPagoMenuId, confirmPago, setConfirmPago,
-        confirmandoEstado,
         handleDescargarGuia, handleToggleHabilitado, handleConfirmarToggle, handleExitedInhabilitar,
-        handlePagoConfirm, handleReactivar,
+        handleReactivar,
     } = useVentaAcciones({ onChanged: refetch })
 
     const { exportando, handleExportar } = useVentaExport({
-        theme, debouncedBusqueda, filtroHabilitado, filtroEstadoEncomienda, filtroPago, filtroMetodoPago,
+        theme, debouncedBusqueda, filtroHabilitado, filtroEstadoEncomienda, filtroPago, filtroModalidad,
     })
 
-    const emptyMessage = filtroHabilitado !== 'todo' || filtroEstadoEncomienda !== '' || filtroPago !== '' || filtroMetodoPago !== ''
+    const emptyMessage = filtroHabilitado !== 'todo' || filtroEstadoEncomienda !== '' || filtroPago !== '' || filtroModalidad !== ''
         ? 'No se encontraron ventas que coincidan con los filtros aplicados.'
         : debouncedBusqueda.trim()
             ? 'No se encontraron ventas que coincidan con la búsqueda.'
@@ -103,7 +100,6 @@ const ListarVenta = () => {
         onDescargarGuia: handleDescargarGuia,
         onEditar: (venta) => { setVentaEditar(venta); setModalActualizarOpen(true) },
         onToggleHabilitado: handleToggleHabilitado,
-        onAbrirMenuPago: (anchor, id) => { setPagoMenuAnchor(anchor); setPagoMenuId(id) },
         onReactivar: handleReactivar,
     })
 
@@ -192,7 +188,7 @@ const ListarVenta = () => {
                     <FiltroVenta
                         theme={theme}
                         filtroEstadoEncomienda={filtroEstadoEncomienda} setFiltroEstadoEncomienda={setFiltroEstadoEncomienda} estadosEncomienda={ESTADOS_ENCOMIENDA}
-                        filtroMetodoPago={filtroMetodoPago} setFiltroMetodoPago={setFiltroMetodoPago} metodosPago={METODOS_PAGO}
+                        filtroModalidad={filtroModalidad} setFiltroModalidad={setFiltroModalidad} modalidades={MODALIDADES_RECAUDO}
                         filtroPago={filtroPago} setFiltroPago={setFiltroPago} estadosPago={ESTADOS_PAGO}
                         setPage={setPage}
                     />
@@ -256,17 +252,6 @@ const ListarVenta = () => {
                 onClose={() => setModalInhabilitar(s => ({ ...s, open: false }))}
                 onExited={handleExitedInhabilitar}
                 onConfirm={handleConfirmarToggle}
-            />
-
-            <ModalCambioPagoVenta
-                theme={theme}
-                pagoMenuAnchor={pagoMenuAnchor}
-                onCloseMenu={() => { setPagoMenuAnchor(null); setPagoMenuId(null) }}
-                onSeleccionarPagado={() => { setPagoMenuAnchor(null); setConfirmPago({ open: true, id: pagoMenuId }); setPagoMenuId(null) }}
-                confirmPago={confirmPago}
-                onCloseConfirm={() => setConfirmPago({ open: false, id: null })}
-                confirmandoEstado={confirmandoEstado}
-                onConfirmar={handlePagoConfirm}
             />
 
         </Box>

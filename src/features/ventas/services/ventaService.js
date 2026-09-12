@@ -19,9 +19,6 @@ export const toggleHabilitadoEncomienda = (id) =>
 export const reactivarEncomienda = (id) =>
   fetchWithAuth(`/encomiendas/${id}/reactivar`, { method: 'PATCH' })
 
-export const cambiarEstadoPagoEncomienda = (id, estadoPago) =>
-  fetchWithAuth(`/encomiendas/${id}/estado-pago`, { method: 'PATCH', body: JSON.stringify({ estadoPago }) })
-
 export const getPageOfEncomienda = (id, limit = 10) =>
   fetchWithAuth(`/encomiendas/${id}/page-of?limit=${limit}`)
 

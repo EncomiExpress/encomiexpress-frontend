@@ -8,16 +8,17 @@ import { validarCampo } from '../../validations/validacion.js'
 export default function PasoPago({ form, errores, setErrores, handleChange, ventaOriginal, handleResetearTotal, totalEditadoManualmente }) {
     return (
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
-            <FormSelect label="Método de pago" name="metodoPago" value={form.metodoPago}
+            <FormSelect label="Modalidad de recaudo" name="modalidadRecaudo" value={form.modalidadRecaudo}
                 onChange={handleChange}
-                onBlur={() => setErrores(prev => ({ ...prev, metodoPago: validarCampo('metodoPago', form, ventaOriginal) }))} required
-                error={errores.metodoPago}
-                helperText={errores.metodoPago || (form.metodoPago === 'Contraentrega'
-                    ? 'El estado de pago se desbloquea cuando el distribuidor legaliza todos los paquetes de la venta.'
-                    : undefined)}>
+                onBlur={() => setErrores(prev => ({ ...prev, modalidadRecaudo: validarCampo('modalidadRecaudo', form, ventaOriginal) }))} required
+                error={errores.modalidadRecaudo}
+                helperText={errores.modalidadRecaudo || (form.modalidadRecaudo === 'Contraentrega'
+                    ? 'El pago se resuelve por paquete cuando el distribuidor legaliza la entrega final.'
+                    : form.modalidadRecaudo === 'Pago Inmediato'
+                        ? 'El remitente paga al registrar la venta.'
+                        : undefined)}>
+                <MenuItem value="Pago Inmediato">Pago Inmediato</MenuItem>
                 <MenuItem value="Contraentrega">Contraentrega</MenuItem>
-                <MenuItem value="Efectivo">Efectivo</MenuItem>
-                <MenuItem value="Transferencia">Transferencia</MenuItem>
             </FormSelect>
             <FormField label="Total a pagar ($)" name="total"
                 value={formatearMoneda(form.total)} onChange={handleChange}
