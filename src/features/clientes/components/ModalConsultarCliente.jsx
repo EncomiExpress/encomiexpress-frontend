@@ -83,7 +83,7 @@ const ModalConsultarCliente = ({ cliente, onClose }) => {
                                 <CampoFila label="Teléfono" value={cliente.telefono} />
                                 <CampoFila label="Email" value={cliente.email} />
                                 <CampoFila label="Dirección" value={cliente.direccion} />
-                                <CampoFila label="Municipio" value={cliente.destino ? `${cliente.destino.municipio}, ${cliente.destino.departamento}` : null} />
+                                <CampoFila label="Sede" value={cliente.sedeRegistro?.municipio || 'Medellín'} />
                                 <CampoFila label="Estado" value={cliente.habilitado ? 'Habilitado' : 'Inhabilitado'} />
                             </Box>
                         </FichaCard>

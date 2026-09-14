@@ -4,7 +4,7 @@ import { EMAIL_REGEX, validarUsuarioCorreo } from '../../../shared/validations/e
 import { validarDireccion } from '../../../shared/validations/direccionValidation.js'
 import { validarTelefono } from '../../../shared/validations/telefonoValidation.js'
 
-export const steps = ['Datos Personales', 'Contacto y Ubicación', 'Confirmación']
+export const steps = ['Datos Personales', 'Contacto', 'Confirmación']
 
 const EMAIL_MAX_LENGTH = 100
 export const validarEmail = (email) => {
@@ -51,8 +51,6 @@ export const validarCampo = (name, form) => {
             if (!form.direccion.trim()) return 'La dirección es obligatoria'
             if (form.direccion.length > DIRECCION_MAX_LENGTH) return `La dirección no puede superar los ${DIRECCION_MAX_LENGTH} caracteres`
             return validarDireccion(form.direccion)
-        case 'idDestino':
-            return form.idDestino ? '' : 'Selecciona el municipio del cliente'
         default:
             return ''
     }
@@ -95,7 +93,6 @@ export const validarPaso = (step, form, { avisoDocDuplicado, avisoNombreDuplicad
         e.telefono = validarCampo('telefono', form)
         e.email = validarCampo('email', form)
         e.direccion = validarCampo('direccion', form)
-        e.idDestino = validarCampo('idDestino', form)
     }
 
     Object.keys(e).forEach(k => { if (!e[k]) delete e[k] })

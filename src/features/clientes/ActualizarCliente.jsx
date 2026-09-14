@@ -2,7 +2,6 @@ import { useTheme } from '@mui/material/styles'
 import { useState, useEffect, useRef } from 'react'
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined'
 import { useClientes } from './context/ClienteContext.jsx'
-import { useDestino } from '../destinos/context/DestinoContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { MENSAJE_NOMBRE_DUPLICADO } from '../../shared/utils/duplicados.js'
@@ -20,7 +19,6 @@ import PasoConfirmacion from './components/wizard/PasoConfirmacion.jsx'
 
 const ActualizarCliente = ({ open, onClose, cliente: clienteProp, onSuccess }) => {
     const { clientes, loading, actualizarCliente } = useClientes()
-    const { getDestinosHabilitados } = useDestino()
     const { showToast } = useToast()
     const theme = useTheme()
     const [apiError, setApiError] = useState(null)
@@ -29,10 +27,7 @@ const ActualizarCliente = ({ open, onClose, cliente: clienteProp, onSuccess }) =
     const [submitting, setSubmitting] = useState(false)
     const [formOriginal, setFormOriginal] = useState(null)
     const [sinCambios, setSinCambios] = useState(false)
-    const [destinoInput, setDestinoInput] = useState('')
     const cargado = useRef(false)
-
-    const destinos = getDestinosHabilitados()
 
     const [form, setForm] = useState({
         nombre: '',
@@ -42,7 +37,6 @@ const ActualizarCliente = ({ open, onClose, cliente: clienteProp, onSuccess }) =
         telefono: '',
         email: '',
         direccion: '',
-        idDestino: '',
         habilitado: true
     })
 
@@ -68,10 +62,7 @@ const ActualizarCliente = ({ open, onClose, cliente: clienteProp, onSuccess }) =
             if (cliente.tipoIdentificacion === 'NIT') datosForm.numeroIdentificacion = formatearNit(cliente.numeroIdentificacion)
             setForm(datosForm)
             setFormOriginal(datosForm)
-            const d = getDestinosHabilitados().find(x => x.idDestino === cliente.idDestino)
-            setDestinoInput(d ? `${d.municipio} - ${d.departamento}` : (cliente.destino ? `${cliente.destino.municipio} - ${cliente.destino.departamento}` : ''))
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps -- getDestinosHabilitados es estable, no hace falta re-correr por eso
     }, [open, clienteProp, clientes, loading])
 
     const handleChange = (e) => {
@@ -181,7 +172,7 @@ const ActualizarCliente = ({ open, onClose, cliente: clienteProp, onSuccess }) =
         setSubmitting(true)
         setApiError(null)
         try {
-            await actualizarCliente({ ...form, apellido: form.tipoIdentificacion === 'NIT' ? '' : form.apellido, idDestino: parseInt(form.idDestino) })
+            await actualizarCliente({ ...form, apellido: form.tipoIdentificacion === 'NIT' ? '' : form.apellido })
             showToast('¡Cliente actualizado exitosamente!', 'success')
             setTimeout(() => {
                 cerrar()
@@ -212,9 +203,7 @@ const ActualizarCliente = ({ open, onClose, cliente: clienteProp, onSuccess }) =
                 )
             case 1:
                 return (
-                    <PasoContacto theme={theme} form={form} errores={errores} setErrores={setErrores} handleChange={handleChange}
-                        destinos={destinos} destinoInput={destinoInput} setDestinoInput={setDestinoInput}
-                        clienteOriginal={formOriginal} />
+                    <PasoContacto form={form} errores={errores} setErrores={setErrores} handleChange={handleChange} />
                 )
             case 2:
                 return (
@@ -222,7 +211,6 @@ const ActualizarCliente = ({ open, onClose, cliente: clienteProp, onSuccess }) =
                         theme={theme} form={form} formOriginal={formOriginal}
                         apiError={apiError} setApiError={setApiError}
                         sinCambios={sinCambios} setSinCambios={setSinCambios}
-                        destinos={destinos}
                     />
                 )
             default:
