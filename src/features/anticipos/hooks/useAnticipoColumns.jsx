@@ -26,6 +26,11 @@ const useAnticipoColumns = ({
                 <Typography variant="body2" fontWeight={500} sx={{ fontSize: '0.8rem', color: theme.palette.text.primary }} noWrap>
                     {anticipo.ruta ? `${anticipo.ruta.origen || '—'} → ${anticipo.ruta.destino?.municipio || 'Sin destino'}` : '—'}
                 </Typography>
+                {anticipo.ruta?.fechaSalida && (
+                    <Typography variant="caption" sx={{ fontSize: '0.7rem', color: theme.palette.text.secondary }} noWrap>
+                        Sale el {formatFecha(anticipo.ruta.fechaSalida)}
+                    </Typography>
+                )}
                 {/* Huérfano: el par de la ruta se reasignó a otro conductor después de
                     entregarle este anticipo — ver LOGICA.md "Anticipos huérfanos al
                     reasignar conductor". Ya completado no importa (nada más va a pasar
@@ -125,12 +130,14 @@ const useAnticipoColumns = ({
                                 </IconButton>
                             </span>
                         </Tooltip>
-                    ) : ['En Legalización', 'Excedente pendiente', 'Completado'].includes(anticipo.estado) ? (
+                    ) : ['En Legalización', 'Excedente pendiente', 'Completado', 'Cerrado sin entregar'].includes(anticipo.estado) ? (
                         <Tooltip title={anticipo.estado === 'En Legalización'
                             ? 'La ruta ya está en curso: el conductor legaliza este anticipo desde la app móvil'
                             : anticipo.estado === 'Excedente pendiente'
                                 ? 'Este anticipo ya está legalizado: no se puede editar'
-                                : 'Este anticipo ya está completado: no se puede editar'}>
+                                : anticipo.estado === 'Cerrado sin entregar'
+                                    ? 'Este anticipo ya fue cerrado: no se puede editar'
+                                    : 'Este anticipo ya está completado: no se puede editar'}>
                             <span>
                                 <IconButton size="small" disabled>
                                     <EditOutlinedIcon sx={{ fontSize: 18 }} />

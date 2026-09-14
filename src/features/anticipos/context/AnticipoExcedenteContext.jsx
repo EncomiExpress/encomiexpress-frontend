@@ -144,8 +144,13 @@ export const AnticipoExcedenteProvider = ({ children }) => {
     return actualizado
   }, [])
 
-  const toggleHabilitado = useCallback(async (id) => {
-    const res = await anticipoService.toggleHabilitadoAnticipo(id)
+  // `motivo` (opcional): solo se usa cuando se inhabilita un anticipo no huérfano que
+  // todavía no está Completado — "Cerrar sin haberse entregado" (ver LOGICA.md, "Cerrar
+  // un anticipo que nunca se llegó a entregar") vive fusionado en este mismo toggle,
+  // no en una acción aparte. El backend rechaza inhabilitar sin motivo cuando de verdad
+  // hace falta; en cualquier otro caso el motivo se ignora.
+  const toggleHabilitado = useCallback(async (id, motivo) => {
+    const res = await anticipoService.toggleHabilitadoAnticipo(id, motivo)
     if (res?.data) {
       setAnticipos((prev) =>
         prev.map((a) => (a.idAnticipoExcedente === id ? res.data : a))

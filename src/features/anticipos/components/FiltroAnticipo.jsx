@@ -2,7 +2,7 @@ import { Select, MenuItem, FormControl, Tooltip } from '@mui/material'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 
-const ESTADOS_ANTICIPO = ['Entregado', 'En Legalización', 'Excedente pendiente', 'Completado']
+const ESTADOS_ANTICIPO = ['Entregado', 'En Legalización', 'Excedente pendiente', 'Completado', 'Cerrado sin entregar']
 
 const MESES = [
     { value: '1', label: 'Enero' }, { value: '2', label: 'Febrero' },

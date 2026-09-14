@@ -62,7 +62,7 @@ const PasoRutaVehiculo = ({
                             {r.nombre} → {r.destino?.municipio || 'Sin destino'}
                         </Typography>
                         <Typography variant="caption" color={theme.palette.text.secondary} sx={{ flexShrink: 0 }}>
-                            ${Number(r.destino?.tarifaBase || 0).toLocaleString('es-CO')}
+                            {r.fechaSalida ? formatFecha(r.fechaSalida) : 'Sin fecha'}
                         </Typography>
                     </Box>
                 )
@@ -114,6 +114,20 @@ const PasoRutaVehiculo = ({
                     sx={formFieldStyles} />
             )}
         />
+
+        {/* Anticipo ida+retorno (2026-09-13, ver LOGICA.md): un anticipo sobre una
+            IDA (idRutaIda == null) cubre también su regreso, aunque ese regreso
+            todavía no exista -- se avisa acá, en el momento en que se elige la
+            ruta, para que no sea una sorpresa cuando el conductor no pueda
+            legalizar recién al completar la ida. Un anticipo creado directo
+            sobre un regreso (caso raro) no lo necesita: se legaliza solo con sus
+            propias sedes, como cualquier ruta suelta. */}
+        {rutaSeleccionada && rutaSeleccionada.idRutaIda == null && (
+            <Alert severity="info" sx={{ borderRadius: 2, mt: -1 }}>
+                Este anticipo cubre ida y regreso de la ruta. El conductor solo podrá legalizarlo
+                cuando también termine de entregar los paquetes asignados de regreso.
+            </Alert>
+        )}
 
         <Autocomplete
             options={pares}

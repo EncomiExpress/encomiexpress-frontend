@@ -4,6 +4,7 @@ import CheckOutlinedIcon from '@mui/icons-material/CheckOutlined'
 import { useAnticipos } from './context/AnticipoExcedenteContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { getErrorMessage } from '../../shared/utils/errorMessage.js'
+import { formatFecha } from '../../shared/utils/formatters.js'
 import { steps, validarPaso, handleChangeAnticipo } from './validations/anticipoValidation.js'
 import { usePaquetesPorPar } from './hooks/usePaquetesPorPar.js'
 import { useAutoSeleccionParUnico } from './hooks/useAutoSeleccionParUnico.js'
@@ -107,8 +108,8 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
     const getEtiquetaRuta = (r) => {
         if (!r) return '—'
         const destinoTxt = r.destino ? `${r.destino.municipio}` : 'Sin destino'
-        const tarifa = r.destino?.tarifaBase != null ? ` — $${Number(r.destino.tarifaBase).toLocaleString('es-CO')}` : ''
-        return `${r.nombre} → ${destinoTxt}${tarifa}`
+        const fechaTxt = r.fechaSalida ? ` — ${formatFecha(r.fechaSalida)}` : ''
+        return `${r.nombre} → ${destinoTxt}${fechaTxt}`
     }
 
     const getNombreRuta = (id) => getEtiquetaRuta(rutas.find(r => r.idRuta === parseInt(id)))

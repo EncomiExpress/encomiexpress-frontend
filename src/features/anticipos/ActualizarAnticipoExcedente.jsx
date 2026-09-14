@@ -222,10 +222,9 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
     const getEtiquetaRuta = (ruta) => {
         if (!ruta) return null
         const origen = ruta.nombre || ruta.origen || 'Sin nombre'
-        const destino = ruta.destino
-        const destinoTxt = destino ? destino.municipio : 'Sin destino'
-        const tarifa = destino?.tarifaBase != null ? ` — $${Number(destino.tarifaBase).toLocaleString('es-CO')}` : ''
-        return `${origen} → ${destinoTxt}${tarifa}`
+        const destinoTxt = ruta.destino ? ruta.destino.municipio : 'Sin destino'
+        const fechaTxt = ruta.fechaSalida ? ` — ${formatFecha(ruta.fechaSalida)}` : ''
+        return `${origen} → ${destinoTxt}${fechaTxt}`
     }
 
     const getNombreRuta = (id) => {

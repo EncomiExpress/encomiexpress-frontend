@@ -141,6 +141,9 @@ const ModalConsultarAnticipoExcedente = ({ anticipo, conductores, rutas, onClose
                         <CampoFila label="F. Entrega" value={formatFecha(anticipo.fechaEntrega) || '—'} />
                         <CampoFila label="F. Legalización" value={formatFecha(anticipo.fechaLegalizacion) || '—'} />
                         <CampoFila label="F. Entrega excedente" value={formatFecha(anticipo.fechaEntregaExcedente) || '—'} />
+                        {anticipo.motivoCierre && (
+                            <CampoFila label="Motivo de cierre" value={anticipo.motivoCierre} />
+                        )}
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', py: 0.9 }}>
                             <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Soporte</Typography>
                             {soporteValido.length > 0 ? (

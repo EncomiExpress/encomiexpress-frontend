@@ -16,8 +16,8 @@ export const updateAnticipo = (id, datos) =>
 export const entregarExcedenteAnticipo = (id, soporte) =>
   fetchWithAuth(`/anticipos/${id}/entregar-excedente`, { method: 'PATCH', body: JSON.stringify({ soporte }) })
 
-export const toggleHabilitadoAnticipo = (id) =>
-  fetchWithAuth(`/anticipos/${id}/toggle-habilitado`, { method: 'PATCH' })
+export const toggleHabilitadoAnticipo = (id, motivo) =>
+  fetchWithAuth(`/anticipos/${id}/toggle-habilitado`, { method: 'PATCH', body: JSON.stringify({ motivo }) })
 
 export const getPageOfAnticipo = (id, limit = 10) =>
   fetchWithAuth(`/anticipos/${id}/page-of?limit=${limit}`)

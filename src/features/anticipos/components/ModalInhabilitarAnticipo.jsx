@@ -1,9 +1,13 @@
 import { useTheme } from '@mui/material/styles'
-import { Box, Typography, Paper } from '@mui/material'
+import { useState } from 'react'
+import { Box, Typography, Paper, TextField } from '@mui/material'
 import DoNotDisturbOutlinedIcon from '@mui/icons-material/DoNotDisturbOutlined'
 import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined'
 import { getAnticipoEstadoDot, getRutaEstadoDot } from '../../../shared/utils/estadoColors'
 import ConfirmToggleDialog from '../../../shared/components/ConfirmToggleDialog.jsx'
+import { formFieldStyles } from '../../../shared/utils/formStyles.js'
+
+const MOTIVO_MAX_LENGTH = 500
 
 const renderDot = (dot) => {
     if (dot.type === 'circle') {
@@ -25,16 +29,28 @@ const getRutaLabel = (ruta) => {
     return placa ? `${base} · ${placa}` : base
 }
 
+// "Cerrar sin haberse entregado" (2026-09-13, ver LOGICA.md "Cerrar un anticipo que
+// nunca se llegó a entregar") vive fusionado en este mismo modal, no en un botón/modal
+// aparte -- decisión de la usuaria: un solo botón ("Inhabilitar"), no dos. Si el
+// anticipo no está Completado/Cerrado, no es huérfano, y todavía no hay un
+// `valorGastado` real reportado (Entregado/En Legalización), inhabilitar exige un
+// motivo obligatorio y cierra el anticipo como "Cerrado sin entregar" en el mismo
+// golpe. "Excedente pendiente" sigue bloqueado del todo -- ahí sí hubo plata real de
+// por medio (el conductor ya reportó gasto), eso se resuelve por "Confirmar
+// devolución/reposición" primero, no por acá.
 const ModalInhabilitarAnticipo = ({ open, anticipo, onClose, onExited, onConfirm }) => {
     const theme = useTheme()
+    const [motivo, setMotivo] = useState('')
 
     const habilitadoActual = anticipo?.habilitado === true
+    const yaCerrado = ['Completado', 'Cerrado sin entregar'].includes(anticipo?.estado)
+    const puedeCerrarSinEntregar = ['Entregado', 'En Legalización'].includes(anticipo?.estado)
     // Huérfano (ver LOGICA.md, "Anticipos huérfanos al reasignar conductor"): el
     // conductor de este anticipo ya no es par activo de su ruta, así que nada del flujo
     // normal (legalizar desde el móvil, cerrar la ruta) va a llegar a completarlo nunca
-    // — se deja inhabilitar sin exigir "Completado", igual que ya lo permite el backend
-    // (anticipoService.toggleHabilitado). Cualquier otro anticipo sigue bloqueado igual.
-    const bloqueado = habilitadoActual && anticipo?.estado !== 'Completado' && !anticipo?.esHuerfano
+    // — se deja inhabilitar sin exigir motivo ni "Completado".
+    const necesitaMotivo = habilitadoActual && !yaCerrado && !anticipo?.esHuerfano && puedeCerrarSinEntregar
+    const bloqueadoDuro = habilitadoActual && !yaCerrado && !anticipo?.esHuerfano && !puedeCerrarSinEntregar
     const ruta = anticipo?.ruta || null
 
     const nombreConductor = anticipo?.conductor?.usuario
@@ -43,43 +59,43 @@ const ModalInhabilitarAnticipo = ({ open, anticipo, onClose, onExited, onConfirm
 
     const titulo = !habilitadoActual
         ? '¿Habilitar anticipo?'
-        : bloqueado
+        : bloqueadoDuro
             ? 'No se puede inhabilitar'
             : '¿Inhabilitar anticipo?'
 
     const subtexto = !habilitadoActual
         ? <>El anticipo de <strong>{nombreConductor}</strong> volverá a estar activo.</>
-        : bloqueado
-            ? anticipo.estado === 'En Legalización'
-                ? <><strong>{nombreConductor}</strong> aún no ha registrado los gastos del anticipo.</>
-                : anticipo.estado === 'Excedente pendiente'
-                    ? (parseFloat(anticipo.excedente) < 0
-                        ? <>Hay un faltante pendiente de reponerle al conductor.</>
-                        : <>El conductor tiene un excedente pendiente de devolución.</>)
-                    : <>El anticipo aún no ha sido completado.</>
-            : <>El anticipo de <strong>{nombreConductor}</strong> quedará inhabilitado.</>
+        : bloqueadoDuro
+            ? (parseFloat(anticipo.excedente) < 0
+                ? <>Hay un faltante pendiente de reponerle al conductor.</>
+                : <>El conductor tiene un excedente pendiente de devolución.</>)
+            : necesitaMotivo
+                ? <>Este anticipo no ha sido completado. Para inhabilitarlo, confirma que <strong>{nombreConductor}</strong> nunca recibió esta plata.</>
+                : <>El anticipo de <strong>{nombreConductor}</strong> quedará inhabilitado.</>
 
-    const rutaLabel = bloqueado && ruta
-        ? anticipo.estado === 'En Legalización'
-            ? 'La ruta en curso que impide la inhabilitación'
-            : 'La ruta asociada a este anticipo'
-        : null
+    const rutaLabel = bloqueadoDuro && ruta ? 'La ruta en curso que impide la inhabilitación' : null
+
+    const motivoValido = motivo.trim().length > 0
 
     return (
         <ConfirmToggleDialog
             open={open}
             onClose={onClose}
-            onExited={onExited}
-            onConfirm={onConfirm}
+            // Limpia el motivo recién cuando termina la animación de salida (evita un
+            // setState síncrono dentro de un efecto) — y deja pasar el `onExited` real,
+            // que es el que de verdad dispara el toggle en el padre.
+            onExited={() => { setMotivo(''); onExited?.() }}
+            onConfirm={() => onConfirm(necesitaMotivo ? motivo.trim() : undefined)}
             icono={habilitadoActual
                 ? <DoNotDisturbOutlinedIcon sx={{ fontSize: 35, color: theme.palette.primary.darker }} />
                 : <CheckCircleOutlinedIcon sx={{ fontSize: 35, color: theme.palette.primary.darker }} />}
             titulo={titulo}
             subtitulo={subtexto}
-            soloCerrar={bloqueado}
+            soloCerrar={bloqueadoDuro}
+            confirmarInvalido={necesitaMotivo && !motivoValido}
             textoConfirmar={habilitadoActual ? 'Inhabilitar' : 'Habilitar'}
         >
-            {bloqueado && (
+            {bloqueadoDuro && (
                 <Box sx={{ mt: 2.5, textAlign: 'left' }}>
                     {ruta ? (() => {
                         const dot = getRutaEstadoDot(ruta.estado)
@@ -132,8 +148,25 @@ const ModalInhabilitarAnticipo = ({ open, anticipo, onClose, onExited, onConfirm
                         )
                     })()}
                     <Typography variant="caption" color={theme.palette.text.secondary} sx={{ mt: 1, display: 'block' }}>
-                        Solo se puede inhabilitar un anticipo cuando esté Completado.
+                        Este anticipo tiene un excedente/faltante pendiente — resuélvelo primero con "Confirmar devolución/reposición".
                     </Typography>
+                </Box>
+            )}
+            {necesitaMotivo && (
+                <Box sx={{ mt: 2.5, textAlign: 'left' }}>
+                    <TextField
+                        autoFocus
+                        fullWidth
+                        multiline
+                        minRows={3}
+                        label="Motivo"
+                        required
+                        placeholder="Ej: se registró por error, el conductor nunca recibió el efectivo"
+                        value={motivo}
+                        onChange={(e) => setMotivo(e.target.value.slice(0, MOTIVO_MAX_LENGTH))}
+                        helperText={`Obligatorio · ${motivo.length}/${MOTIVO_MAX_LENGTH}`}
+                        sx={formFieldStyles}
+                    />
                 </Box>
             )}
         </ConfirmToggleDialog>

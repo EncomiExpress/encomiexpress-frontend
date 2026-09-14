@@ -19,7 +19,14 @@ const ConfirmToggleDialog = ({
     subtitulo,
     soloCerrar = false,
     textoConfirmar = 'Confirmar',
+    // Significa "está cargando algo de fondo" en los llamadores existentes (ej. trayendo
+    // dependencias antes de poder confirmar) -- por eso, mientras está en true, el botón
+    // muestra el spinner además de deshabilitarse.
     deshabilitarConfirmar = false,
+    // Distinto de lo de arriba: el formulario mismo no está listo (ej. un campo
+    // obligatorio vacío) -- deshabilita el botón pero NUNCA muestra el spinner, porque
+    // no hay nada cargando, solo falta que el usuario complete algo.
+    confirmarInvalido = false,
     children,
 }) => {
     const theme = useTheme()
@@ -94,7 +101,7 @@ const ConfirmToggleDialog = ({
                             Cancelar
                         </Button>
                         <Button onClick={handleConfirm} variant="contained" disableRipple
-                            disabled={confirming || deshabilitarConfirmar}
+                            disabled={confirming || deshabilitarConfirmar || confirmarInvalido}
                             sx={{
                                 textTransform: 'none', borderRadius: 2, fontWeight: 600, minWidth: 140,
                                 px: 5, py: 0.76, fontSize: '0.875rem',

@@ -74,6 +74,9 @@ export const getPaqueteEstadoDot = (estado) => {
         // El valor interno sigue siendo 'Devuelto'; solo cambia la etiqueta visible
         // — el dueño no maneja "devoluciones" sino insistencia al destinatario.
         case 'Devuelto':     return { type: 'circle', fill: true,  color: '#DC2626', label: 'No entregado' }
+        // Terminal aparte, alcanzable solo desde 'Devuelto' — el paquete volvió a
+        // Medellín en el convoy de regreso sin entregarse. Ver LOGICA.md, Parte B.
+        case 'Devuelto a base': return { type: 'symbol', char: '↩', color: '#71717A', label: 'Devuelto a Medellín' }
         default:              return { type: 'circle', fill: false, color: '#9CA3AF', label: estado || '—' }
     }
 }
@@ -98,6 +101,11 @@ export const getAnticipoEstadoDot = (estado) => {
         case 'Excedente pendiente': return { type: 'symbol', char: '!',  color: '#F59E0B', label: 'Excedente pendiente' }
         case 'Completado':         return { type: 'symbol', char: '✓',  color: '#059669', label: 'Completado' }
         case 'Cancelado':          return { type: 'symbol', char: '−',  color: '#71717A', label: 'Cancelado' }
+        // "Cerrar sin haberse entregado" (2026-09-13, solo admin) — el conductor nunca
+        // recibió esta plata; distinto de "Completado" (se entregó, gastó y se
+        // conciliaron cuentas) y de inhabilitar (apagado silencioso genérico). Ver
+        // LOGICA.md, "Cerrar un anticipo que nunca se llegó a entregar".
+        case 'Cerrado sin entregar': return { type: 'symbol', char: '×', color: '#78716C', label: 'Cerrado sin entregar' }
         default:                   return { type: 'circle', fill: false, color: '#9CA3AF', label: estado || '—' }
     }
 }
