@@ -77,7 +77,8 @@ export const validarCampo = (name, formData, {
             if (formData.color.length > COLOR_MAX_LENGTH) return `El color no puede superar los ${COLOR_MAX_LENGTH} caracteres`
             return ''
         case 'tarjetaPropiedad':
-            if (formData.tarjetaPropiedad && (formData.tarjetaPropiedad.length < 6 || formData.tarjetaPropiedad.length > 11)) return 'Debe tener entre 6 y 11 dígitos'
+            if (!formData.tarjetaPropiedad?.trim()) return 'La tarjeta de propiedad es obligatoria'
+            if (formData.tarjetaPropiedad.length < 6 || formData.tarjetaPropiedad.length > 11) return 'Debe tener entre 6 y 11 dígitos'
             return ''
         case 'tipo':
             return formData.tipo ? '' : 'El tipo de vehículo es obligatorio'

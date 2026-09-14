@@ -83,9 +83,9 @@ const PasoPropietarioDocumentacion = ({ theme, formData, errores, setErrores, ha
         <FormField label="Tarjeta de propiedad" name="tarjetaPropiedad" value={formData.tarjetaPropiedad}
             onChange={handleChange}
             onBlur={() => setErrores(prev => ({ ...prev, tarjetaPropiedad: validarCampo('tarjetaPropiedad', formData, validationOpts) }))}
-            icon={DescriptionOutlined}
+            icon={DescriptionOutlined} required
             inputProps={{ maxLength: 11 }} placeholder="Ej: 12345678901"
-            error={errores.tarjetaPropiedad} helperText={errores.tarjetaPropiedad || 'Opcional · solo números, entre 6 y 11 dígitos'} />
+            error={errores.tarjetaPropiedad} helperText={errores.tarjetaPropiedad || 'Solo números, entre 6 y 11 dígitos'} />
         <FormSelect label="Origen" name="origen" value={formData.origen} onChange={handleChange} required>
             <MenuItem value="Propio">Propio</MenuItem>
             <MenuItem value="Tercerizado">Tercerizado</MenuItem>
