@@ -1,6 +1,6 @@
 # EncomiExpress - Frontend
 
-Panel web administrativo para la gestión operativa de OsvaldoC Mensajería y Logística S.A.S., empresa especializada en el transporte de encomiendas. Diseñada como una herramienta centralizada para administradores, que permite gestionar ventas, encomiendas, rutas, conductores, vehículos y anticipos, complementando la aplicación móvil orientada a la gestión y legalización de anticipos.
+Panel web administrativo para la gestión operativa de OsvaldoC Mensajería y Logística S.A.S., empresa especializada en el transporte de encomiendas. Diseñada como una herramienta centralizada para administradores, que permite gestionar ventas, encomiendas, rutas, conductores, vehículos y anticipos — con una vista recortada para el operador de una sede remota (solo sus propias ventas, rutas y clientes) — y complementa a la aplicación móvil, usada por conductores y distribuidores para la entrega de paquetes y la legalización de anticipos.
 
 ---
 
@@ -37,7 +37,8 @@ Panel web administrativo para la gestión operativa de OsvaldoC Mensajería y Lo
 | Rol | Funcionalidades |
 |------|----------------|
 | **Administrador** | - Gestión completa de usuarios <br> - Asignación de roles y permisos <br> - Administración de clientes, conductores y propietarios <br> - Control de flota vehicular <br> - Programación de rutas y destinos <br> - Gestión de encomiendas y ventas <br> - Control de anticipos y excedentes <br> - Medición de desempeño del sistema <br> - Descarga de guía de envío en PDF <br> - Exportación a Excel de los datos registrados |
-| **General** | - Inicio de sesión <br> - Cierre de sesión <br> - Navegación basada en permisos <br> - Dashboard de indicadores <br> - Modo oscuro / modo claro <br> - Paleta de colores personalizable (rojo / azul) <br> - Dos modos de navegación: Sidebar y Top Nav |
+| **Operador de sede** *(panel recortado)* | - CRUD de Ventas y Clientes propios de su sede <br> - Solo lectura de Rutas, salvo disparar el regreso de su propia sede <br> - Sin Dashboard ni acceso al resto de módulos |
+| **General** | - Inicio de sesión <br> - Cierre de sesión <br> - Navegación basada en permisos <br> - Dashboard de indicadores *(no visible para el operador de sede)* <br> - Modo oscuro / modo claro <br> - Paleta de colores personalizable (rojo / azul) <br> - Dos modos de navegación: Sidebar y Top Nav |
 
 ---
 
@@ -152,6 +153,7 @@ La aplicación utiliza un patrón de navegación basado en permisos que verifica
    - `Usuarios`: Gestión de cuentas de usuario
    - `Roles`: Asignación de permisos
    - `Ventas`: Gestión de encomiendas
+   - `Paquetes no entregados`: Consulta de paquetes que no se pudieron entregar
    - `Anticipos`: Control de anticipos y excedentes
 
 La navegación se implementa utilizando `react-router-dom` v7 con rutas programáticas y `PrivateRoute` para verificación de permisos.
