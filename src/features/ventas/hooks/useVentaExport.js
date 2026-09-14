@@ -3,6 +3,7 @@ import { useToast } from '../../../shared/contexts/ToastContext.jsx'
 import { getEncomiendas } from '../services/ventaService.js'
 import { exportToExcel } from '../../../shared/utils/exportExcel.js'
 import { getGuiaPrincipal, formatFecha } from '../../../shared/utils/formatters.js'
+import { motivoVentaCancelada, LABEL_VENTA_CANCELADA } from '../utils/ventaResolvers.js'
 
 // El export propio de ventas necesita filtros de estado/pago/modalidad además de
 // habilitado/búsqueda -- el handleExportar genérico de useEntityCrud no los conoce.
@@ -29,10 +30,21 @@ const useVentaExport = ({ theme, debouncedBusqueda, filtroHabilitado, filtroEsta
                 'Destino': venta.destinatario?.destino?.municipio || '-',
                 'Fecha registro': formatFecha(venta.fechaRegistro),
                 'Fecha est. entrega': formatFecha(venta.fechaEstimadaEntrega),
-                'Estado': venta.estado,
+                // Mismo criterio que la columna "Estado" del listado (useVentaColumns.jsx):
+                // una venta "Cancelada" solo porque quedó con el destino fuera del
+                // recorrido de su ruta (destinoFueraDeRuta) no es una cancelación real --
+                // sigue siendo válida, solo le falta reasignar la ruta. Sin esto, el Excel
+                // mostraba "Cancelada" en un caso donde el propio listado ya no lo hace.
+                'Estado': venta.estado === 'Cancelada'
+                    ? (LABEL_VENTA_CANCELADA[motivoVentaCancelada(venta)] || venta.estado)
+                    : venta.estado,
                 'Estado de pago': venta.estadoPago,
                 'Modalidad de recaudo': venta.modalidadRecaudo,
-                'Total a pagar': Math.round(Number(venta.total)) || 0,
+                // Mismo formato que la columna "Total" del listado ("$150.000") -- antes
+                // salía como número pelado ("150000"), sin signo ni puntos de miles.
+                'Total a pagar': venta.total != null
+                    ? `$${Math.round(Number(venta.total)).toLocaleString('es-CO')}`
+                    : '—',
                 'Habilitado': venta.habilitado === false ? 'No' : 'Sí',
             }))
             await exportToExcel({ data: rows, fileName: 'Ventas', sheetName: 'Ventas', themeColor: theme.palette.primary.main })
