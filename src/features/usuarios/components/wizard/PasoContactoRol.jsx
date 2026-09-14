@@ -23,6 +23,13 @@ const PasoContactoRol = ({
     // Autocomplete maneja un único valor. Ver LOGICA.md, "Sedes remotas".
     const [sedeInput, setSedeInput] = useState('')
     const requiereSede = form.rolNombre === 'distribuidor' || form.rolNombre === 'operador_sede'
+    // Medellín es la bodega principal, no una sede remota — un operador_sede "de
+    // Medellín" no tendría ningún regreso propio que disparar (sería, en la
+    // práctica, la misma operación que ya hace admin desde ahí). Sí sigue
+    // ofreciéndose para distribuidor, que reparte en cualquier municipio.
+    const sedesParaRol = form.rolNombre === 'operador_sede'
+        ? sedesDisponibles.filter(s => s.municipio !== 'Medellín')
+        : sedesDisponibles
     const sedeSeleccionada = sedesDisponibles.find(
         s => s.idDestino === (Array.isArray(form.sedes) ? form.sedes[0] : undefined)
     ) || null
@@ -133,7 +140,7 @@ const PasoContactoRol = ({
             Destino de una ruta (trae los primeros 5 y filtra al escribir). */}
         {requiereSede && (
             <Autocomplete
-                options={sedesDisponibles}
+                options={sedesParaRol}
                 popupIcon={<KeyboardArrowDownOutlinedIcon />}
                 getOptionLabel={(d) => `${d.municipio}${d.departamento ? ` - ${d.departamento}` : ''}`}
                 isOptionEqualToValue={(opt, val) => opt.idDestino === val.idDestino}
