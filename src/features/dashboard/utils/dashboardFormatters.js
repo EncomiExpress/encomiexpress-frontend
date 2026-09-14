@@ -48,6 +48,22 @@ export const hoyISO = () => {
     return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
 }
 
+// Ingreso realmente devengado de una venta -- no venta.total a secas. En una venta
+// mixta (Contraentrega con algunos paquetes Entregado y otros Devuelto, típico de
+// "Completada con novedades") no todo el total se llegó a cobrar: los Devuelto se
+// cierran sin cobro (ver paqueteStateUtils.determinarEstadoPago, backend). No hay un
+// precio guardado por paquete (un solo `total` por venta, ver CLAUDE.md del backend,
+// "Cálculo de precios en Ventas"), así que se reparte el total en partes iguales entre
+// los paquetes y se cuenta solo la porción de los que ya están estadoPago === 'Pagado'.
+// Pago Inmediato: todos los paquetes nacen 'Pagado' -> sigue sumando el total completo.
+export const ingresoRealizadoVenta = (venta) => {
+    const total = Number(venta.total) || 0
+    const paquetes = venta.paquetes || []
+    if (paquetes.length === 0) return total
+    const pagados = paquetes.filter((p) => p.estadoPago === 'Pagado').length
+    return total * (pagados / paquetes.length)
+}
+
 // Suma/resta días a una fecha ISO ("YYYY-MM-DD") sin pasar por toISOString() (que
 // convierte a UTC y puede correr la fecha un día, mismo bug de fondo que parseFechaLocal
 // ya evita). Usado para calcular el período anterior comparable (mismo N° de días,

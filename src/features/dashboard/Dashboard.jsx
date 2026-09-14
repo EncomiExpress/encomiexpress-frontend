@@ -15,7 +15,7 @@ import { formatFecha } from '../../shared/utils/formatters.js'
 import { getVentaEstadoDot } from '../../shared/utils/estadoColors.js'
 import { conductorLicenciaVigente, vehiculoDocumentosVigentes } from '../../shared/utils/vigenciaDocumentos.js'
 import { getRangoFechasVentas } from '../ventas/services/ventaService.js'
-import { STATUS_LABEL, formatCOP, normalizeMonth, isWithinRange, hoyISO, addDiasISO, parseFechaLocal } from './utils/dashboardFormatters.js'
+import { STATUS_LABEL, formatCOP, normalizeMonth, isWithinRange, hoyISO, addDiasISO, parseFechaLocal, ingresoRealizadoVenta } from './utils/dashboardFormatters.js'
 import KpiCard from './components/KpiCard.jsx'
 import FiltroPeriodo from './components/FiltroPeriodo.jsx'
 import IngresosPorMesChart from './components/IngresosPorMesChart.jsx'
@@ -124,7 +124,7 @@ const Dashboard = () => {
       if (!isWithinRange(venta.fechaRegistro, filtroActivo.desde, filtroActivo.hasta)) return
       const fecha = normalizeMonth(venta.fechaRegistro)
       if (!fecha || venta.total == null) return
-      const valor = Number(venta.total) || 0
+      const valor = ingresoRealizadoVenta(venta)
       const current = meses.get(fecha.key) || { key: fecha.key, mes: fecha.label, mesCorto: fecha.shortLabel, valor: 0 }
       meses.set(fecha.key, { ...current, valor: current.valor + valor })
     })
@@ -241,7 +241,7 @@ const Dashboard = () => {
     let total = 0
     ventas.forEach((venta) => {
       if (!isWithinRange(venta.fechaRegistro, periodoAnteriorRango.desde, periodoAnteriorRango.hasta)) return
-      total += Number(venta.total) || 0
+      total += ingresoRealizadoVenta(venta)
     })
     return total
   }, [ventas, periodoAnteriorRango])
