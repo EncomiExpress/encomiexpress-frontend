@@ -13,6 +13,31 @@ export const rutaLlegaAlDestino = (ruta, idDestinoVenta) => {
 }
 export const MENSAJE_RUTA_NO_LLEGA = 'Esta ruta no llega al municipio de destino de la venta'
 
+// Para operador_sede, el destino de una venta solo puede ser uno al que de verdad
+// pueda llegar alguno de los regresos disponibles de SU sede (mismo filtro de rutas
+// que ofrece PasoEnvio — regreso, sale de mi sede, Programada, habilitada). Se arma
+// directo del `destino`/`paradas[].destino` que YA vienen anidados en cada ruta
+// (mismo dato que ya usa `rutaLlegaAlDestino` y que PasoEnvio pinta en el diagrama)
+// — a propósito SIN llamar a `/destinos`: ese catálogo es el listado nacional
+// completo (con tarifas), y `operador_sede` no tiene ni debería tener el permiso
+// `listar_destino` para verlo (le expondría además el menú de gestión "Destinos"
+// completo, fuera del panel recortado — ver LOGICA.md, "Sedes remotas"). Si no hay
+// ningún regreso disponible todavía, el resultado es un array vacío (a propósito:
+// no hay ningún destino válido para ofrecer, ver plan-sedes-remotas.md, WS5).
+export const destinosDesdeSede = (rutas, municipioSede) => {
+    const regresosDisponibles = (rutas || []).filter((r) =>
+        r.habilitado !== false && r.estado === 'Programada' && r.idRutaIda != null && r.origen === municipioSede
+    )
+    const porId = new Map()
+    for (const r of regresosDisponibles) {
+        if (r.destino) porId.set(r.destino.idDestino, r.destino)
+        for (const p of (r.paradas || [])) {
+            if (p.destino) porId.set(p.destino.idDestino, p.destino)
+        }
+    }
+    return [...porId.values()]
+}
+
 // "Factor 400": constante de negocio del peso volumétrico (alto×ancho×profundidad, en
 // METROS, × 400). Las dimensiones se capturan en cm (ver PasoPaquetes.jsx), por eso se
 // dividen entre 100 antes de aplicar el factor.

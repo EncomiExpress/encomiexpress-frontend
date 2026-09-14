@@ -32,3 +32,10 @@ export const getRangoFechasVentas = () =>
 // ModalHistorialEntrega.jsx y LOGICA.md, "Historial de entrega final".
 export const getHistorialEntregaPaquete = (idPaquete) =>
   fetchWithAuth(`/paquetes/${idPaquete}/historial-entrega`)
+
+// Confirma "Llegó a Medellín" para un paquete No entregado de una ruta de
+// regreso — Devuelto -> Devuelto a base (Parte B, plan-ventas-regreso-paquetes.md).
+// Solo disponible mientras la ruta de regreso está "En Ruta" — ver
+// ModalConsultarVenta.jsx.
+export const registrarDevolucionPaquete = (idPaquete) =>
+  fetchWithAuth(`/paquetes/${idPaquete}/devolucion`, { method: 'PATCH' })

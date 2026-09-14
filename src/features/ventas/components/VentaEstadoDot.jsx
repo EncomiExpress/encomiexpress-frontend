@@ -1,10 +1,14 @@
 import { Box, Typography } from '@mui/material'
 import { getVentaEstadoDot } from '../../../shared/utils/estadoColors.js'
 
-const VentaEstadoDot = ({ estado }) => {
+// `label` (opcional) sobreescribe el texto que trae `getVentaEstadoDot(estado)` sin
+// tocar el color/símbolo — usado por Ventas cuando `estado === 'Cancelada'` por dentro
+// pero el motivo puntual no debe leerse como una cancelación real (ver
+// ventaResolvers.js, LABEL_VENTA_CANCELADA).
+const VentaEstadoDot = ({ estado, label }) => {
     const info = getVentaEstadoDot(estado)
     return (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, minWidth: 0 }}>
             {info.type === 'circle' ? (
                 <Box sx={{
                     width: 9, height: 9, borderRadius: '50%', flexShrink: 0,
@@ -21,8 +25,8 @@ const VentaEstadoDot = ({ estado }) => {
                     {info.char}
                 </Box>
             )}
-            <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: info.color }}>
-                {info.label}
+            <Typography variant="body2" noWrap sx={{ fontSize: '0.82rem', fontWeight: 500, color: info.color, minWidth: 0 }}>
+                {label || info.label}
             </Typography>
         </Box>
     )

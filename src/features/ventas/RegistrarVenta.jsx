@@ -8,9 +8,11 @@ import { useDestino } from '../destinos/context/DestinoContext.jsx'
 import { useRutaProgramacion } from '../rutas/context/RutaProgramacionContext.jsx'
 import { useConfiguracion } from '../../shared/contexts/ConfiguracionContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
+import { useAuth } from '../../shared/contexts/AuthContext.jsx'
 import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import WizardDialog from '../../shared/components/WizardDialog.jsx'
 import { steps, PAQUETE_VACIO } from './validations/validacion.js'
+import { destinosDesdeSede } from './validations/ventaValidation.js'
 import { esMunicipioOrigen } from '../../shared/config/negocio.js'
 import { cardSx } from './style/wizardStyles.js'
 import useVentaWizardForm from './hooks/useVentaWizardForm.js'
@@ -44,6 +46,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
     const { agregarVenta } = useVentas()
     const { showToast } = useToast()
     const theme = useTheme()
+    const { usuario, sedeActual } = useAuth()
     const { clientes } = useClientes()
     const { getDestinosHabilitados } = useDestino()
     const { rutasProgramadas, fetchRutasProgramadas } = useRutaProgramacion()
@@ -53,8 +56,15 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
     const [destinoDestinatarioInput, setDestinoDestinatarioInput] = useState('')
     // El destino de una venta es a dónde va el paquete: nunca el municipio de origen
     // (todas las ventas salen de ahí). Se filtra acá para que se propague de una vez a
-    // PasoParticipantes, PasoEnvio y PasoConfirmacion.
-    const destinos = getDestinosHabilitados().filter((d) => !esMunicipioOrigen(d.municipio))
+    // PasoParticipantes, PasoEnvio y PasoConfirmacion. Para operador_sede el destino
+    // válido no es "cualquiera menos mi sede" sino solo los que de verdad alcanza
+    // alguno de sus regresos disponibles (Medellín o una parada de esa ruta) — y se
+    // arma directo de esas rutas, sin tocar el catálogo nacional de `/destinos`
+    // (`destinosDesdeSede`, ver ahí por qué).
+    const esOperadorSede = usuario?.rol?.codigo === 'operador_sede'
+    const destinos = esOperadorSede
+        ? destinosDesdeSede(rutasProgramadas, sedeActual?.municipio)
+        : getDestinosHabilitados().filter((d) => !esMunicipioOrigen(d.municipio))
 
     const {
         errores, setErrores, apiError, setApiError, activeStep, setActiveStep,

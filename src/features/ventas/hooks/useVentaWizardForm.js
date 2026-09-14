@@ -108,7 +108,18 @@ export const useVentaWizardForm = ({
                 // ruta inválida como si nada (típico al editar una venta que quedó
                 // Cancelada por esa razón). Mismo criterio que rutaSigueSirviendo() del
                 // backend — ver utils/ventaResolvers.js, motivoVentaCancelada().
-                if (!ruta || ruta.estado !== 'Programada' || ruta.habilitado === false) {
+                //
+                // Se le sumó (2026-09-13, ver LOGICA.md "Ventas huérfanas al editar
+                // paradas/destino de una ruta"): la ruta puede seguir Programada y
+                // habilitada, pero haber dejado de cubrir el destino de ESTA venta (se le
+                // quitó como parada o como destino final). Mismo criterio que
+                // motivoVentaCancelada() -- si no calza, se trata igual que "la ruta ya
+                // no sirve" y se limpia el selector, para que la usuaria elija una nueva
+                // ruta a propósito en vez de guardar sin darse cuenta.
+                const idDestinoVenta = parseInt(prev.idDestinoDestinatario) || null
+                const municipiosCubiertos = ruta ? new Set([ruta.destino?.idDestino, ...(ruta.paradas || []).map(p => p.idDestino)]) : null
+                const destinoFueraDeRuta = !!ruta && idDestinoVenta != null && !municipiosCubiertos.has(idDestinoVenta)
+                if (!ruta || ruta.estado !== 'Programada' || ruta.habilitado === false || destinoFueraDeRuta) {
                     // La ruta ya no sirve (salió, se completó, se canceló, se inhabilitó)
                     // — se limpia la selección en vez de dejar un id "fantasma":
                     // validarCampo('idRuta') solo mira si hay algo puesto, así que un id

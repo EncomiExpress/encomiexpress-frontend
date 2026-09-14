@@ -105,7 +105,8 @@ export default function PasoEnvio({
                         // así se distinguen directo en la lista, sin tener que elegir una para verlo.
                         const placas = (option.paresVehiculoConductor || []).map(p => p.vehiculo?.placa).filter(Boolean).join(', ')
                         const destinoTxt = option.destino?.municipio || 'Sin destino'
-                        return `${option.origen || 'Sin nombre'} → ${destinoTxt}${placas ? ` (${placas})` : ''} — $${Number(option.destino?.tarifaBase || 0).toLocaleString()}`
+                        const fechaTxt = option.fechaSalida ? ` — ${formatFecha(option.fechaSalida)}` : ''
+                        return `${option.origen || 'Sin nombre'} → ${destinoTxt}${placas ? ` (${placas})` : ''}${fechaTxt}`
                     }}
                     isOptionEqualToValue={(opt, val) => opt.idRuta === val.idRuta}
                     renderOption={(props, option) => {
@@ -123,7 +124,7 @@ export default function PasoEnvio({
                                     {option.origen || 'Sin nombre'} → {option.destino?.municipio || 'Sin destino'}
                                 </Typography>
                                 <Typography variant="caption" color={theme.palette.text.secondary} sx={{ flexShrink: 0 }}>
-                                    ${Number(option.destino?.tarifaBase || 0).toLocaleString('es-CO')}
+                                    {option.fechaSalida ? formatFecha(option.fechaSalida) : 'Sin fecha'}
                                 </Typography>
                             </Box>
                         )
@@ -164,7 +165,7 @@ export default function PasoEnvio({
                                 return {
                                     ...prev,
                                     idRuta: newValue.idRuta,
-                                    destino: `${newValue.origen || 'Sin nombre'} → ${newValue.destino?.municipio || 'Sin destino'} — $${Number(newValue.destino?.tarifaBase || 0).toLocaleString('es-CO')}`,
+                                    destino: `${newValue.origen || 'Sin nombre'} → ${newValue.destino?.municipio || 'Sin destino'}${newValue.fechaSalida ? ` — ${formatFecha(newValue.fechaSalida)}` : ''}`,
                                     fechaSalidaRuta: fechaSalida,
                                     fechaLlegadaEstimadaRuta: fechaLlegadaEstimada,
                                     // Se autocompleta con la fecha mínima (llegada de la ruta) al elegir

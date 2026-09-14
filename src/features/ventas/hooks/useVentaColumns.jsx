@@ -8,6 +8,7 @@ import { formatFecha } from '../../../shared/utils/formatters.js'
 import { getVentaEstadoDot, getEstadoPagoDot } from '../../../shared/utils/estadoColors.js'
 import VentaEstadoDot from '../components/VentaEstadoDot.jsx'
 import EstadoVentaCancelada from '../components/EstadoVentaCancelada.jsx'
+import { motivoVentaCancelada, LABEL_VENTA_CANCELADA } from '../utils/ventaResolvers.js'
 
 const useVentaColumns = ({
     theme, debouncedBusqueda, tienePermiso, PERMISOS,
@@ -60,7 +61,16 @@ const useVentaColumns = ({
         ),
     },
     {
-        key: 'destino', label: 'Destino', cellSx: { py: 1.5 },
+        // maxWidth agregado (2026-09-13): los dos Chip de abajo no tienen tope de
+        // ancho propio, así que en la fila donde aparecen (poco frecuente) la
+        // columna se ensancha más que en el resto — como el ancho de columna en
+        // table-layout:auto sale del máximo de TODAS las filas de la página
+        // actual, una página sin ninguna fila así se ve bien y otra con una sola
+        // fila así arrastra a toda la tabla a desbordar (por eso "la página 1 se
+        // ve bien pero la 2 no": no es que una página esté mal, es que el ancho
+        // de la columna depende de qué filas le tocaron). `title` conserva el
+        // texto completo del Chip al pasar el mouse aunque se trunque.
+        key: 'destino', label: 'Destino', cellSx: { py: 1.5, maxWidth: 150 },
         render: (venta) => (
             <>
                 <Typography variant="body2" color={theme.palette.text.primary}>
@@ -73,8 +83,9 @@ const useVentaColumns = ({
                     // del backend (encomiendaService.js), no por un hueco activo conocido.
                     <Chip
                         label="Ruta no disponible · Reasignar"
+                        title="Ruta no disponible · Reasignar"
                         size="small"
-                        sx={{ height: 18, fontSize: '0.65rem', fontWeight: 600, backgroundColor: alpha(theme.palette.warning.main, 0.12), color: theme.palette.warning.dark, border: `1px solid ${alpha(theme.palette.warning.main, 0.35)}`, mt: 0.5 }}
+                        sx={{ height: 18, maxWidth: '100%', fontSize: '0.65rem', fontWeight: 600, backgroundColor: alpha(theme.palette.warning.main, 0.12), color: theme.palette.warning.dark, border: `1px solid ${alpha(theme.palette.warning.main, 0.35)}`, mt: 0.5 }}
                     />
                 )}
                 {venta.estado === 'Programada' && !venta.fechaEstimadaEntrega && (
@@ -86,7 +97,7 @@ const useVentaColumns = ({
                     <Chip
                         label="Falta fecha de entrega"
                         size="small"
-                        sx={{ height: 18, fontSize: '0.65rem', fontWeight: 600, backgroundColor: alpha(theme.palette.warning.main, 0.12), color: theme.palette.warning.dark, border: `1px solid ${alpha(theme.palette.warning.main, 0.35)}`, mt: 0.5 }}
+                        sx={{ height: 18, maxWidth: '100%', fontSize: '0.65rem', fontWeight: 600, backgroundColor: alpha(theme.palette.warning.main, 0.12), color: theme.palette.warning.dark, border: `1px solid ${alpha(theme.palette.warning.main, 0.35)}`, mt: 0.5 }}
                     />
                 )}
             </>
@@ -108,7 +119,7 @@ const useVentaColumns = ({
         ),
     },
     {
-        key: 'estadoPago', label: 'Estado pago', width: 130, cellSx: { py: 1.5, minWidth: 130 },
+        key: 'estadoPago', label: 'Estado pago', width: 150, cellSx: { py: 1.5, minWidth: 150 },
         render: (venta) => {
             // Terminal (Pagada / Pago parcial / Sin pago): chip plano, sin selector
             // clickeable ni chevron — la confirmación manual de pago ya no existe,
@@ -141,8 +152,11 @@ const useVentaColumns = ({
             }
 
             // 'Pendiente' (solo ocurre en Contraentrega en curso): contador "{X} de
-            // {N} con pago definido" — X = pagado o Devuelto (cerrado sin cobro).
-            // Mismo patrón que el contador de la columna "Estado" de arriba.
+            // {N} definido" — X = pagado o Devuelto (cerrado sin cobro). Mismo
+            // patrón que el contador de la columna "Estado" de arriba ("N de M
+            // gestionados"). Texto acortado (sin "con pago", ya lo dice el
+            // encabezado "Estado pago") — corregido 2026-09-12: con la frase
+            // completa partía en 3 líneas dentro del ancho de la columna.
             const paquetes = venta.paquetes || []
             const total = paquetes.length
             const pagados = paquetes.filter(p => p.estadoPago === 'Pagado').length
@@ -156,7 +170,7 @@ const useVentaColumns = ({
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, pl: 1 }}>
                         <Box sx={{ width: 9, height: 9, borderRadius: '50%', border: `2px solid ${info.color}`, backgroundColor: 'transparent', flexShrink: 0 }} />
                         <Typography variant="body2" sx={{ fontSize: '0.82rem', fontWeight: 500, color: info.color }}>
-                            {`${definidos} de ${total} con pago definido`}
+                            {`${definidos} de ${total} definido`}
                         </Typography>
                     </Box>
                 </Tooltip>
@@ -164,7 +178,10 @@ const useVentaColumns = ({
         },
     },
     {
-        key: 'estado', label: 'Estado', width: 155, cellSx: { py: 1.5, minWidth: 155 },
+        // Ancho subido de 155 a 185 (2026-09-13): "Reasignar ruta" (LABEL_VENTA_CANCELADA)
+        // no cabía en una sola línea a 155 y se partía en dos ("Reasignar" / "ruta")
+        // dentro del box con borde de EstadoVentaCancelada.jsx.
+        key: 'estado', label: 'Estado', width: 185, cellSx: { py: 1.5, minWidth: 185 },
         render: (venta) => (
             venta.estado === 'En Ruta' ? (
                 <Box sx={{ pl: 1 }}>
@@ -217,7 +234,7 @@ const useVentaColumns = ({
                 tienePermiso(PERMISOS.ACTUALIZAR_VENTA) ? (
                     <EstadoVentaCancelada venta={venta} onReactivar={onReactivar} />
                 ) : (
-                    <Box sx={{ pl: 1 }}><VentaEstadoDot estado="Cancelada" /></Box>
+                    <Box sx={{ pl: 1 }}><VentaEstadoDot estado="Cancelada" label={LABEL_VENTA_CANCELADA[motivoVentaCancelada(venta)]} /></Box>
                 )
             ) : (
                 <Box sx={{ pl: 1 }}><VentaEstadoDot estado={venta.estado} /></Box>

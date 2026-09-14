@@ -3,7 +3,7 @@ import { useTheme } from '@mui/material/styles'
 import { Box, Menu, MenuItem, Tooltip } from '@mui/material'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import VentaEstadoDot from './VentaEstadoDot.jsx'
-import { motivoVentaCancelada, MENSAJE_VENTA_CANCELADA } from '../utils/ventaResolvers.js'
+import { motivoVentaCancelada, MENSAJE_VENTA_CANCELADA, LABEL_VENTA_CANCELADA } from '../utils/ventaResolvers.js'
 
 // Mismo look & feel que MenuCambioEstadoRuta.jsx. Cancelada en Ventas sigue siendo
 // 100% automática (ver LOGICA.md, "Ventas — Cancelada e inhabilitar/habilitar") — no
@@ -20,6 +20,7 @@ const EstadoVentaCancelada = ({ venta, onReactivar }) => {
     const motivo = motivoVentaCancelada(venta)
     const mensaje = MENSAJE_VENTA_CANCELADA[motivo] || 'Edítala para reactivarla.'
     const puedeReactivar = motivo === 'rutaYaSirve'
+    const label = LABEL_VENTA_CANCELADA[motivo]
 
     const cerrarYReactivar = () => {
         setAnchor(null)
@@ -32,7 +33,7 @@ const EstadoVentaCancelada = ({ venta, onReactivar }) => {
                 onClick={(e) => setAnchor(e.currentTarget)}
                 sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer', width: '100%', border: `1px solid ${theme.palette.divider}`, borderRadius: 1.5, px: 1, py: 0.6, '&:hover': { borderColor: theme.palette.text.secondary } }}
             >
-                <VentaEstadoDot estado="Cancelada" />
+                <VentaEstadoDot estado="Cancelada" label={label} />
                 <KeyboardArrowDownOutlinedIcon sx={{ fontSize: 14, color: '#9CA3AF', ml: 'auto' }} />
             </Box>
             <Menu

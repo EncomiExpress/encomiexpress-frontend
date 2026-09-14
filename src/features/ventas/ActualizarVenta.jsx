@@ -10,10 +10,12 @@ import { useDestino } from '../destinos/context/DestinoContext.jsx'
 import { useRutaProgramacion } from '../rutas/context/RutaProgramacionContext.jsx'
 import { useConfiguracion } from '../../shared/contexts/ConfiguracionContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
+import { useAuth } from '../../shared/contexts/AuthContext.jsx'
 import { getErrorMessage } from '../../shared/utils/errorMessage.js'
-import { getGuiaPrincipal } from '../../shared/utils/formatters.js'
+import { getGuiaPrincipal, formatFecha } from '../../shared/utils/formatters.js'
 import WizardDialog from '../../shared/components/WizardDialog.jsx'
 import { steps, PAQUETE_VACIO, formatearNit } from './validations/validacion.js'
+import { destinosDesdeSede } from './validations/ventaValidation.js'
 import { esMunicipioOrigen } from '../../shared/config/negocio.js'
 import { cardSx } from './style/wizardStyles.js'
 import useVentaWizardForm from './hooks/useVentaWizardForm.js'
@@ -47,6 +49,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
     const { actualizarVenta } = useVentas()
     const { showToast } = useToast()
     const theme = useTheme()
+    const { usuario, sedeActual } = useAuth()
     const { clientes } = useClientes()
     const { getDestinosHabilitados } = useDestino()
     const { rutasProgramadas, fetchRutasProgramadas } = useRutaProgramacion()
@@ -59,7 +62,14 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
     // El destino de una venta nunca es el municipio de origen (ver RegistrarVenta). Una
     // venta antigua dirigida a ese municipio igual se muestra: PasoParticipantes tiene un
     // respaldo sintético con ventaOriginal.destinatario.destino cuando el id no está acá.
-    const destinos = getDestinosHabilitados().filter((d) => !esMunicipioOrigen(d.municipio))
+    // Para operador_sede el destino válido es solo el que alcanza alguno de sus
+    // regresos disponibles (ver destinosDesdeSede en RegistrarVenta) — hoy este
+    // wizard no es alcanzable para ese rol (sin permiso actualizar_venta), pero se
+    // deja consistente con RegistrarVenta.jsx por si esa restricción cambia.
+    const esOperadorSede = usuario?.rol?.codigo === 'operador_sede'
+    const destinos = esOperadorSede
+        ? destinosDesdeSede(rutasProgramadas, sedeActual?.municipio)
+        : getDestinosHabilitados().filter((d) => !esMunicipioOrigen(d.municipio))
 
     // Peso que esta misma venta ya tenía en cada vehículo del convoy, agrupado por par —
     // se resta del "pesoUsado" de cada par para no contar dos veces el peso que ya era de
@@ -132,7 +142,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
             paquetes: paquetesArr,
             idRuta: ventaData.idRuta || ventaData.ruta?.idRuta || '',
             destino: ventaData.ruta
-                ? `${ventaData.ruta.origen || 'Sin nombre'} → ${ventaData.ruta.destino?.municipio || 'Sin destino'} — $${Number(ventaData.ruta.destino?.tarifaBase || 0).toLocaleString('es-CO')}`
+                ? `${ventaData.ruta.origen || 'Sin nombre'} → ${ventaData.ruta.destino?.municipio || 'Sin destino'}${ventaData.ruta.fechaSalida ? ` — ${formatFecha(ventaData.ruta.fechaSalida)}` : ''}`
                 : '',
             fechaSalidaRuta: ventaData.ruta?.fechaSalida || '',
             fechaLlegadaEstimadaRuta: ventaData.ruta?.fechaLlegadaEstimada || '',
@@ -154,7 +164,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
         }
         const r = ventaData.ruta
         if (r) {
-            setRutaInput(`${r.origen || 'Sin nombre'} → ${r.destino?.municipio || 'Sin destino'} — $${Number(r.destino?.tarifaBase || 0).toLocaleString()}`)
+            setRutaInput(`${r.origen || 'Sin nombre'} → ${r.destino?.municipio || 'Sin destino'}${r.fechaSalida ? ` — ${formatFecha(r.fechaSalida)}` : ''}`)
         } else {
             setRutaInput('')
         }
