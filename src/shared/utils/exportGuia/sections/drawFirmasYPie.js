@@ -1,5 +1,6 @@
 import { MARGIN, CONTENT_W, ensureSpace, sanitizeForPdf } from '../pdfDrawHelpers.js'
 import { EMPRESA } from '../empresaConfig.js'
+import { formatFecha } from '../../formatters.js'
 
 // Cajas de firma (entrega/recibe), la línea de referencia operativa
 // (ruta/vehículo/conductor de ESTE paquete) y el pie de página legal.
@@ -30,8 +31,15 @@ export const drawFirmasYPie = (doc, y, venta, pkg) => {
   const conductorNombre = pkg?.asignacion?.conductor?.usuario
     ? `${pkg.asignacion.conductor.usuario.nombre || ''} ${pkg.asignacion.conductor.usuario.apellido || ''}`.trim()
     : ''
+  // "Ruta: origen" antes se quedaba corto -- se completa con el destino (mismo
+  // criterio "origen → destino" que el resto de la aplicación) y, al lado, la
+  // fecha de salida de esa ruta.
+  const rutaTexto = venta.ruta?.origen &&
+    `Ruta: ${venta.ruta.origen}${venta.ruta.destino?.municipio ? ` → ${venta.ruta.destino.municipio}` : ''}`
+  const salidaTexto = venta.ruta?.fechaSalida && `Salida: ${formatFecha(venta.ruta.fechaSalida)}`
   const refOperativa = [
-    venta.ruta?.origen && `Ruta: ${venta.ruta.origen}`,
+    rutaTexto,
+    salidaTexto,
     pkg?.asignacion?.vehiculo?.placa && `Vehículo: ${pkg.asignacion.vehiculo.placa}`,
     conductorNombre && `Conductor: ${conductorNombre}`,
   ].filter(Boolean).join(' · ')

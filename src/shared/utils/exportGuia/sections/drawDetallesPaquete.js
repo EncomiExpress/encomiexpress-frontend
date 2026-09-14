@@ -1,8 +1,8 @@
 import { MARGIN, CONTENT_W, ensureSpace, drawGrowingBox, drawGridCell } from '../pdfDrawHelpers.js'
 import { formatCurrency } from '../empresaConfig.js'
 
-// Caja de contenido del paquete + las 3 grillas de valores (dimensiones del
-// paquete, valores de la venta, modalidad/estado de pago) + observaciones opcionales.
+// Caja de contenido del paquete + las 2 grillas de valores (dimensiones del
+// paquete, valor total/modalidad de recaudo) + observaciones opcionales.
 export const drawDetallesPaquete = (doc, y, venta, pkg) => {
   y = drawGrowingBox(doc, y, 'Contenido del paquete', pkg?.descripcionContenido)
 
@@ -18,23 +18,17 @@ export const drawDetallesPaquete = (doc, y, venta, pkg) => {
   gridColsPaquete.forEach(([label, value], j) => drawGridCell(doc, MARGIN + cellWPaquete * j, y, cellWPaquete, 14, label, value))
   y += 16
 
-  // ── Grid de valores de la venta (igual en todas las páginas: es el mismo envío) ──
+  // ── Grid de valores de la venta + modalidad de recaudo (igual en todas las
+  // páginas: es el mismo envío). "Estado de pago" se quitó (2026-09-13): es un
+  // dato de conciliación interna, no algo que el remitente/destinatario
+  // necesiten leer en la guía física.
   y = ensureSpace(doc, y, 14)
   const gridColsVenta = [
     [venta.modalidadRecaudo === 'Contraentrega' ? 'Valor a cobrar' : 'Total a pagar', formatCurrency(venta.total)],
+    ['Modalidad de recaudo', venta.modalidadRecaudo],
   ]
   const cellWVenta = CONTENT_W / gridColsVenta.length
   gridColsVenta.forEach(([label, value], i) => drawGridCell(doc, MARGIN + cellWVenta * i, y, cellWVenta, 14, label, value))
-  y += 16
-
-  // ── Grid de modalidad de recaudo / estado de pago ──
-  y = ensureSpace(doc, y, 14)
-  const gridColsB = [
-    ['Modalidad de recaudo', venta.modalidadRecaudo],
-    ['Estado de pago', venta.estadoPago],
-  ]
-  const cellWB = CONTENT_W / gridColsB.length
-  gridColsB.forEach(([label, value], i) => drawGridCell(doc, MARGIN + cellWB * i, y, cellWB, 14, label, value))
   y += 16
 
   if (venta.observaciones) {

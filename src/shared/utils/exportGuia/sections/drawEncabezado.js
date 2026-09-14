@@ -1,9 +1,10 @@
 import { PAGE_W, MARGIN, CONTENT_W, sanitizeForPdf, generateBarcodeDataUrl } from '../pdfDrawHelpers.js'
 import { EMPRESA } from '../empresaConfig.js'
+import { formatFecha } from '../../formatters.js'
 
 // Encabezado de la guía: logo + datos de la empresa, indicador "Paquete X de Y"
 // (cuando la venta tiene varios paquetes), caja de número de guía + código de
-// barras, y la fila de fecha emisión / fecha estimada / estado del envío.
+// barras, y la fila de fecha emisión / fecha estimada de entrega.
 export const drawEncabezado = (doc, venta, pkg, index, totalPaginas, assets) => {
   let y = MARGIN
 
@@ -61,10 +62,11 @@ export const drawEncabezado = (doc, venta, pkg, index, totalPaginas, assets) => 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(8)
   doc.setTextColor(90, 90, 90)
-  const infoColW = CONTENT_W / 3
-  doc.text(`Fecha emisión: ${sanitizeForPdf(venta.fechaRegistro) || '—'}`, MARGIN, y)
-  doc.text(`Fecha est. entrega: ${sanitizeForPdf(venta.fechaEstimadaEntrega) || '—'}`, MARGIN + infoColW, y)
-  doc.text(`Estado envío: ${sanitizeForPdf(venta.estado) || '—'}`, MARGIN + infoColW * 2, y)
+  // "Estado envío" se quitó (2026-09-13): es un dato operativo/administrativo,
+  // no algo que el remitente/destinatario necesiten leer en la guía física.
+  const infoColW = CONTENT_W / 2
+  doc.text(`Fecha emisión: ${formatFecha(venta.fechaRegistro)}`, MARGIN, y)
+  doc.text(`Fecha est. entrega: ${formatFecha(venta.fechaEstimadaEntrega)}`, MARGIN + infoColW, y)
   y += 4
   doc.setLineWidth(0.2)
   doc.line(MARGIN, y, PAGE_W - MARGIN, y)
