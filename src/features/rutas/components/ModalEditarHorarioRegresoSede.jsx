@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useTheme } from '@mui/material/styles'
 import { Box, Dialog, DialogTitle, DialogContent, DialogActions, Typography, Button, IconButton, CircularProgress } from '@mui/material'
 import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined'
-import SyncAltOutlinedIcon from '@mui/icons-material/SyncAltOutlined'
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined'
 import RouteOutlinedIcon from '@mui/icons-material/RouteOutlined'
 import CalendarioDisponibilidad from '../../../shared/components/CalendarioDisponibilidad.jsx'
@@ -12,19 +12,16 @@ import { hoyISO, getRangoHorario, sumarDias, MIN_DIAS_SALIDA_LLEGADA } from '../
 import { validarCampo, maxISO } from '../validations/rutaValidation.js'
 import { resolveParadas, resolveDestino } from '../utils/rutaResolvers.js'
 
-// Modal chico del operador_sede para disparar el regreso de una ida ya
-// Completada (WS4, "Sedes remotas") — pide fecha/hora de salida y fecha/hora
-// estimada de llegada (mismos campos y misma validación que PasoHorario del
-// wizard completo — corregido 2026-09-12: sin fechaLlegadaEstimada, el choque
-// de vehículo/conductor la trata como ocupación de un solo día
-// (validarChoqueVehiculoConductor, rutaService.js), lo que podía dejar
-// reasignar el mismo conductor/vehículo a otra ruta antes de que el regreso
-// real terminara); el resto (convoy, paradas invertidas, origen, destino) lo
-// arma el backend a partir de la ida y se muestra acá solo como resumen de
-// confirmación. A diferencia del wizard completo de Ruta
-// (RegistrarRutaProgramacion con prefill), este modal no permite tocar nada
-// más. Ver LOGICA.md, "Sedes remotas".
-const ModalProgramarRegresoSede = ({ open, ruta, destinos = [], onClose, onConfirmar }) => {
+// Modal chico del operador_sede para editar SOLO la fecha/hora de su propio
+// regreso ya creado (Programado o Cancelado) — corregido 2026-09-12: es lo
+// único que le compete de verdad (cuándo sale, cuándo se espera que llegue);
+// convoy, paradas, destino y origen los hereda de la ida y no puede tocarlos.
+// El backend (rutaService.update) revalida ownership y rechaza cualquier otro
+// campo que no sea uno de estos 4. Si la ruta estaba `Cancelada` por una
+// fecha vencida, corregirla acá la reactiva sola a `Programada` (mismo
+// comportamiento que ya tiene update() para cualquier ruta). Ver LOGICA.md,
+// "Sedes remotas".
+const ModalEditarHorarioRegresoSede = ({ open, ruta, destinos = [], onClose, onConfirmar }) => {
     const theme = useTheme()
     const [form, setForm] = useState({ fechaSalida: '', horaSalida: '', fechaLlegadaEstimada: '', horaLlegadaEstimada: '' })
     const [errores, setErrores] = useState({})
@@ -33,16 +30,21 @@ const ModalProgramarRegresoSede = ({ open, ruta, destinos = [], onClose, onConfi
     const [diagramaOpen, setDiagramaOpen] = useState(false)
 
     useEffect(() => {
-        if (open) {
-            setForm({ fechaSalida: '', horaSalida: '', fechaLlegadaEstimada: '', horaLlegadaEstimada: '' })
+        if (open && ruta) {
+            setForm({
+                fechaSalida: ruta.fechaSalida || '',
+                horaSalida: (ruta.horaSalida || '').slice(0, 5),
+                fechaLlegadaEstimada: ruta.fechaLlegadaEstimada || '',
+                horaLlegadaEstimada: (ruta.horaLlegadaEstimada || '').slice(0, 5),
+            })
             setErrores({})
             setApiError('')
         }
-    }, [open])
+    }, [open, ruta])
 
     if (!ruta) return null
 
-    const origenRegreso = resolveDestino(ruta, destinos, { preferNombre: true })
+    const destinoRegreso = resolveDestino(ruta, destinos, { preferNombre: true })
     const paradasInvertidas = [...resolveParadas(ruta)].reverse()
     const pares = (ruta.paresVehiculoConductor || []).map(p => ({ idVehiculo: p.idVehiculo, idConductor: p.idConductor }))
 
@@ -61,7 +63,7 @@ const ModalProgramarRegresoSede = ({ open, ruta, destinos = [], onClose, onConfi
         try {
             await onConfirmar(ruta, form)
         } catch (err) {
-            setApiError(err.message || 'No se pudo programar el regreso')
+            setApiError(err.message || 'No se pudo actualizar el regreso')
         } finally {
             setEnviando(false)
         }
@@ -72,8 +74,8 @@ const ModalProgramarRegresoSede = ({ open, ruta, destinos = [], onClose, onConfi
             slotProps={{ paper: { sx: { borderRadius: 3 } } }}>
             <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 2, borderBottom: `1px solid ${theme.palette.divider}` }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <SyncAltOutlinedIcon sx={{ color: theme.palette.primary.main }} />
-                    <Typography fontWeight={700} fontSize="1.05rem">Programar regreso</Typography>
+                    <EditOutlinedIcon sx={{ color: theme.palette.primary.main }} />
+                    <Typography fontWeight={700} fontSize="1.05rem">Editar fecha/hora del regreso</Typography>
                 </Box>
                 <IconButton size="small" onClick={onClose} disabled={enviando}>
                     <CloseOutlinedIcon sx={{ fontSize: 18 }} />
@@ -86,13 +88,9 @@ const ModalProgramarRegresoSede = ({ open, ruta, destinos = [], onClose, onConfi
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             <LocalShippingOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.secondary }} />
                             <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                                {origenRegreso} → Medellín
+                                {ruta.origen || 'Tu sede'} → {destinoRegreso}
                             </Typography>
                         </Box>
-                        {/* Siempre visible (no solo cuando hay paradas), igual que en
-                            PasoConfirmacion — reutiliza el mismo diagrama con scroll
-                            horizontal en vez de listar las paradas como chips acá, que con
-                            varias se habría visto descontrolado. */}
                         <Button size="small" startIcon={<RouteOutlinedIcon sx={{ fontSize: 16 }} />}
                             onClick={() => setDiagramaOpen(true)}
                             sx={{ textTransform: 'none', color: theme.palette.text.secondary, fontSize: '0.78rem' }}>
@@ -102,7 +100,7 @@ const ModalProgramarRegresoSede = ({ open, ruta, destinos = [], onClose, onConfi
                     <Box sx={{ width: '1px', backgroundColor: theme.palette.divider, my: 1.5 }} />
                     <Box sx={{ p: 1.5, flex: 1, minWidth: 200 }}>
                         <Typography variant="caption" color={theme.palette.text.secondary} sx={{ display: 'block', mb: 0.5 }}>
-                            Convoy (mismo de la ida)
+                            Convoy (no editable acá)
                         </Typography>
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
                             {pares.length === 0 ? (
@@ -123,8 +121,6 @@ const ModalProgramarRegresoSede = ({ open, ruta, destinos = [], onClose, onConfi
                         required
                         value={form.fechaSalida}
                         onChange={(iso) => {
-                            // Igual que en el wizard completo (PasoHorario): si la salida
-                            // cambia, la llegada ya elegida podría dejar de ser válida.
                             const formActualizado = { ...form, fechaSalida: iso, fechaLlegadaEstimada: '' }
                             setForm(formActualizado)
                             setErrores(prev => ({
@@ -136,6 +132,7 @@ const ModalProgramarRegresoSede = ({ open, ruta, destinos = [], onClose, onConfi
                             setApiError('')
                         }}
                         pares={pares}
+                        idRutaExcluir={ruta.idRuta}
                         esRegreso
                         minDate={hoyISO()}
                         maxDate={maxISO()}
@@ -156,6 +153,7 @@ const ModalProgramarRegresoSede = ({ open, ruta, destinos = [], onClose, onConfi
                             setApiError('')
                         }}
                         pares={pares}
+                        idRutaExcluir={ruta.idRuta}
                         esRegreso
                         minDate={form.fechaSalida ? sumarDias(form.fechaSalida, MIN_DIAS_SALIDA_LLEGADA) : hoyISO()}
                         maxDate={maxISO()}
@@ -204,19 +202,19 @@ const ModalProgramarRegresoSede = ({ open, ruta, destinos = [], onClose, onConfi
                 <Button onClick={handleConfirmar} disabled={enviando} variant="contained"
                     startIcon={enviando ? <CircularProgress size={16} sx={{ color: 'inherit' }} /> : undefined}
                     sx={{ textTransform: 'none', borderRadius: 2 }}>
-                    {enviando ? 'Programando...' : 'Programar regreso'}
+                    {enviando ? 'Guardando...' : 'Guardar'}
                 </Button>
             </DialogActions>
             <ModalRutaDiagrama
                 open={diagramaOpen}
                 onClose={() => setDiagramaOpen(false)}
-                origen={origenRegreso}
+                origen={ruta.origen || 'Tu sede'}
                 paradas={paradasInvertidas.map(p => p.municipio)}
-                destino="Medellín"
-                subtitulo={`${origenRegreso} → Medellín`}
+                destino={destinoRegreso}
+                subtitulo={`${ruta.origen || 'Tu sede'} → ${destinoRegreso}`}
             />
         </Dialog>
     )
 }
 
-export default ModalProgramarRegresoSede
+export default ModalEditarHorarioRegresoSede

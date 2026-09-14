@@ -18,6 +18,7 @@ import ModalConsultarRutaProgramacion from './components/ModalConsultarRutaProgr
 import ModalConfirmarEstado from './components/ModalConfirmarEstado'
 import ModalInhabilitarRuta from './components/ModalInhabilitarRuta'
 import ModalProgramarRegresoSede from './components/ModalProgramarRegresoSede.jsx'
+import ModalEditarHorarioRegresoSede from './components/ModalEditarHorarioRegresoSede.jsx'
 import FiltroRuta from './components/FiltroRuta.jsx'
 import AlertaBloqueoDialog from './components/AlertaBloqueoDialog.jsx'
 import MenuCambioEstadoRuta from './components/MenuCambioEstadoRuta.jsx'
@@ -43,6 +44,7 @@ const ListarRutaProgramacion = () => {
     const [rutaEditar, setRutaEditar] = useState(null)
     const [prefillRegreso, setPrefillRegreso] = useState(null)
     const [rutaRegresoSede, setRutaRegresoSede] = useState(null)
+    const [rutaEditarHorarioSede, setRutaEditarHorarioSede] = useState(null)
 
     // Estado propio de esta tabla paginada (NO el arreglo compartido de
     // RutaProgramacionContext, que otras pantallas/hooks piden completo o con un
@@ -52,7 +54,7 @@ const ListarRutaProgramacion = () => {
     // otra pantalla que refresque ese arreglo compartido pisa la página actual.
     const [rutasProgramadas, setRutasProgramadas] = useState([])
     const [total, setTotal] = useState(0)
-    const { updateEstado, programarRegresoSede } = useRutaProgramacion()
+    const { updateEstado, programarRegresoSede, actualizarRutaProgramada } = useRutaProgramacion()
     const { getVehiculos, fetchVehiculos } = useVehiculo()
     const { getConductores, fetchConductores } = useConductor()
     const { destinos } = useDestino()
@@ -113,7 +115,8 @@ const ListarRutaProgramacion = () => {
 
     const handleRegistrarSuccess = () => {
         refetch()
-        showToast(prefillRegreso ? 'Viaje de regreso programado correctamente' : 'Ruta registrada correctamente', 'success')
+        const esProgramarRegreso = prefillRegreso && !prefillRegreso.reutilizar
+        showToast(esProgramarRegreso ? 'Viaje de regreso programado correctamente' : 'Ruta registrada correctamente', 'success')
     }
 
     // Precarga el formulario de Registrar con el corredor invertido de una ruta ya
@@ -125,6 +128,21 @@ const ListarRutaProgramacion = () => {
             origen: ruta.destino?.municipio || '',
             pares: (ruta.paresVehiculoConductor || []).map(p => ({ idVehiculo: p.idVehiculo, idConductor: p.idConductor })),
             paradas: [...(ruta.paradas || [])].sort((a, b) => b.orden - a.orden).map(p => ({ idDestino: p.idDestino })),
+        })
+        setModalRegistrarOpen(true)
+    }
+
+    // "Reutilizar ruta": precarga el mismo destino/paradas/convoy de una ida ya
+    // Completada, en el mismo orden (sin invertir nada) — a diferencia de
+    // "Programar Regreso", no manda idRutaIda: la ruta que se cree queda
+    // totalmente independiente de esta, solo repite los datos como punto de
+    // partida editable (ver RegistrarRutaProgramacion.jsx, modo `reutilizar`).
+    const handleReutilizarRuta = (ruta) => {
+        setPrefillRegreso({
+            reutilizar: true,
+            idDestino: ruta.idDestino,
+            pares: (ruta.paresVehiculoConductor || []).map(p => ({ idVehiculo: p.idVehiculo, idConductor: p.idConductor })),
+            paradas: [...(ruta.paradas || [])].sort((a, b) => a.orden - b.orden).map(p => ({ idDestino: p.idDestino })),
         })
         setModalRegistrarOpen(true)
     }
@@ -143,6 +161,17 @@ const ListarRutaProgramacion = () => {
         showToast('Regreso programado correctamente', 'success')
     }
 
+    // operador_sede edita SOLO fecha/hora de su propio regreso (corregido
+    // 2026-09-12) — reusa el mismo PUT /rutas/:id que el wizard completo del
+    // admin, pero mandando nada más esos 4 campos; rutaService.update valida
+    // en el backend que no venga ningún otro campo. Ver LOGICA.md.
+    const handleConfirmarEditarHorarioSede = async (ruta, datos) => {
+        await actualizarRutaProgramada({ idRuta: ruta.idRuta, ...datos })
+        setRutaEditarHorarioSede(null)
+        refetch()
+        showToast('Regreso actualizado correctamente', 'success')
+    }
+
     const emptyMessage = filtroHabilitado !== 'todo' || filtroEstadoRuta !== '' || filtroAnio !== '' || filtroMes !== ''
         ? 'No se encontraron rutas que coincidan con los filtros aplicados.'
         : debouncedSearch.trim()
@@ -150,14 +179,16 @@ const ListarRutaProgramacion = () => {
             : 'No hay rutas programadas en el sistema.'
 
     const columns = useRutaColumns({
-        theme, tienePermiso, PERMISOS, destinos, getVehiculos, getConductores, sedeActual,
+        theme, tienePermiso, PERMISOS, destinos, getVehiculos, getConductores, sedeActual, usuario,
         onConsultar: setRutaVer,
         onEditar: (ruta) => { setRutaEditar(ruta); setModalActualizarOpen(true) },
+        onEditarHorarioSede: setRutaEditarHorarioSede,
         onToggleHabilitado: handleToggleHabilitado,
         onAbrirMenuEstado: (anchor, id, estadoActual, ruta) => setEstadoMenu({ anchor, id, estadoActual, ruta }),
         onCancelarEnRuta: (id) => handleEstadoChange(id, 'Cancelada'),
         onProgramarRegresoSede: setRutaRegresoSede,
         onProgramarRegreso: handleProgramarRegreso,
+        onReutilizarRuta: handleReutilizarRuta,
     })
 
     return (
@@ -337,6 +368,14 @@ const ListarRutaProgramacion = () => {
                 destinos={destinos}
                 onClose={() => setRutaRegresoSede(null)}
                 onConfirmar={handleConfirmarRegresoSede}
+            />
+
+            <ModalEditarHorarioRegresoSede
+                open={!!rutaEditarHorarioSede}
+                ruta={rutaEditarHorarioSede}
+                destinos={destinos}
+                onClose={() => setRutaEditarHorarioSede(null)}
+                onConfirmar={handleConfirmarEditarHorarioSede}
             />
 
         </Box>

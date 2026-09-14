@@ -96,7 +96,7 @@ const CalendarioDisponibilidad = ({
     }
 
     return (
-        <Box sx={{ width: 320 }}>
+        <Box sx={{ width: '100%' }}>
             {label && (
                 <Typography variant="caption" fontWeight={600} color={theme.palette.text.secondary} sx={{ display: 'block', lineHeight: 1, mb: 0.75, ml: 0.5 }}>
                     {label}{required ? ' *' : ''}
@@ -224,11 +224,14 @@ const CalendarioDisponibilidad = ({
                     </Box>
                 )}
             </Box>
-            {(error || helperText) && (
-                <Typography variant="caption" color={error ? 'error' : theme.palette.text.secondary} sx={{ display: 'block', mt: 0.5, ml: 0.5 }}>
-                    {error || helperText}
-                </Typography>
-            )}
+            {/* Renglón siempre presente (aunque esté vacío) — si solo aparece cuando hay
+                error/helperText, dos calendarios uno al lado del otro (salida/llegada)
+                quedan de alturas distintas apenas uno de los dos trae mensaje y el otro
+                no, y lo que va debajo (ej. los campos de Hora) queda desalineado entre
+                columnas. Ver LOGICA.md. */}
+            <Typography variant="caption" color={error ? 'error' : theme.palette.text.secondary} sx={{ display: 'block', mt: 0.5, ml: 0.5, minHeight: '1.2em' }}>
+                {error || helperText || ' '}
+            </Typography>
         </Box>
     )
 }

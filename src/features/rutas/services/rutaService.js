@@ -20,8 +20,8 @@ export const getAniosDisponiblesRuta = () => fetchWithAuth('/rutas/anios-disponi
 // operador_sede: dispara el regreso de su sede con solo fecha/hora de salida —
 // el resto (convoy, paradas, origen, destino) lo arma el backend a partir de la
 // ida. Ver LOGICA.md, "Sedes remotas".
-export const crearRegresoDesdeSede = (idRutaIda, { fechaSalida, horaSalida }) =>
-  fetchWithAuth(`/rutas/${idRutaIda}/regreso-sede`, { method: 'POST', body: JSON.stringify({ fechaSalida, horaSalida }) })
+export const crearRegresoDesdeSede = (idRutaIda, { fechaSalida, horaSalida, fechaLlegadaEstimada, horaLlegadaEstimada }) =>
+  fetchWithAuth(`/rutas/${idRutaIda}/regreso-sede`, { method: 'POST', body: JSON.stringify({ fechaSalida, horaSalida, fechaLlegadaEstimada, horaLlegadaEstimada }) })
 
 // idVehiculos/idConductores: arrays de ids. idRutaExcluir: opcional, para editar sin
 // chocar contra la propia ruta. Usado por CalendarioDisponibilidad.jsx.

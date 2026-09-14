@@ -82,7 +82,7 @@ const PasoDestinoPares = ({
                 noOptionsText="No se encontraron destinos"
                 renderInput={(params) => (
                     <TextField {...params} label="Destino *"
-                        error={!!errores.idDestino} helperText={errores.idDestino || (destinoBloqueado ? 'El regreso siempre vuelve a la base (Medellín)' : 'Busca por nombre, municipio o departamento')}
+                        error={!!errores.idDestino} helperText={errores.idDestino || (destinoBloqueado ? (esRegreso ? 'El regreso siempre vuelve a la base (Medellín)' : 'Mismo destino de la ruta que estás reutilizando') : 'Busca por nombre, municipio o departamento')}
                         slotProps={{ inputLabel: { shrink: true }, htmlInput: { ...params.inputProps, maxLength: 50 } }} sx={formFieldStyles} />
                 )}
             />

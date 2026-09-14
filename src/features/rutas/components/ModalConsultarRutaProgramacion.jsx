@@ -5,6 +5,7 @@ import * as anticipoService from '../../anticipos/services/anticipoService.js'
 import { useVehiculo } from '../../vehiculos/context/VehiculoContext.jsx'
 import { useConductor } from '../../conductores/context/ConductorContext.jsx'
 import { useDestino } from '../../destinos/context/DestinoContext.jsx'
+import { useAuth } from '../../../shared/contexts/AuthContext.jsx'
 import {
     Box, Typography, Paper, Chip, Button, Dialog, IconButton, CircularProgress, Divider,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tabs, Tab
@@ -26,7 +27,7 @@ import { errorChipSx } from '../style/chips.js'
 
 const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
     const theme = useTheme()
-    const [tabIndex, setTabIndex] = useState(0)
+    const [tabIndex, setTabIndex] = useState('info')
     const [tabEncomiendas, setTabEncomiendas] = useState({ data: [], total: 0, loading: false })
     const [tabAnticipos, setTabAnticipos] = useState({ data: [], total: 0, loading: false })
     const [diagramaOpen, setDiagramaOpen] = useState(false)
@@ -34,9 +35,23 @@ const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
     const { getVehiculos } = useVehiculo()
     const { getConductores } = useConductor()
     const { destinos } = useDestino()
+    const { usuario } = useAuth()
+
+    // Mismo criterio de exclusividad que useRutaColumns.jsx/rutaService.js ("Sedes
+    // remotas"): el regreso de una sede con operador propio es gestión operativa DE
+    // ESA SEDE, ni Medellín lo ve acá -- y los anticipos son gestión de Medellín
+    // exclusivamente, operador_sede nunca los toca (se registran, si acaso, sobre la
+    // ida). Sin esto, las dos pestañas quedaban visibles para el rol equivocado y
+    // encima "Anticipos" consultaba por el id del regreso, que nunca tiene el
+    // anticipo (vive en la ida, ver "Anticipo ida+retorno") -- por eso salía vacía
+    // aunque sí hubiera uno. Corregido 2026-09-13.
+    const esOperadorSede = usuario?.rol?.codigo === 'operador_sede'
+    const ocultarEncomiendas = !esOperadorSede && ruta?.esRegresoDeSedePropia
+    const ocultarAnticipos = esOperadorSede
+    const idRutaAnticipo = ruta?.idRutaIda || ruta?.idRuta
 
     useEffect(() => {
-        if (!ruta || tabIndex !== 1) return
+        if (!ruta || tabIndex !== 'encomiendas') return
         // eslint-disable-next-line react-hooks/set-state-in-effect -- loading flag antes de fetch, patrón recomendado por React
         setTabEncomiendas({ data: [], total: 0, loading: true })
         ventaService.getEncomiendas(undefined, { idRuta: ruta.idRuta, limit: 100 })
@@ -45,17 +60,17 @@ const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
     }, [ruta, tabIndex])
 
     useEffect(() => {
-        if (!ruta || tabIndex !== 2) return
+        if (!ruta || tabIndex !== 'anticipos') return
         // eslint-disable-next-line react-hooks/set-state-in-effect -- loading flag antes de fetch, patrón recomendado por React
         setTabAnticipos({ data: [], total: 0, loading: true })
-        anticipoService.getAnticipos(undefined, { idRuta: ruta.idRuta, limit: 100 })
+        anticipoService.getAnticipos(undefined, { idRuta: idRutaAnticipo, limit: 100 })
             .then(res => setTabAnticipos({ data: res?.data || [], total: res?.total ?? 0, loading: false }))
             .catch(() => setTabAnticipos({ data: [], total: 0, loading: false }))
-    }, [ruta, tabIndex])
+    }, [ruta, tabIndex, idRutaAnticipo])
 
     if (!ruta) return null
 
-    const handleClose = () => { setTabIndex(0); onClose() }
+    const handleClose = () => { setTabIndex('info'); onClose() }
 
     return (
         <Dialog open onClose={handleClose} maxWidth="md" fullWidth
@@ -84,13 +99,13 @@ const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
                     </Box>
                 </Box>
                 <Tabs value={tabIndex} onChange={(_, v) => setTabIndex(v)} textColor="primary" indicatorColor="primary">
-                    <Tab label="Información" sx={{ textTransform: 'none', fontWeight: 600, fontSize: '0.875rem' }} />
-                    <Tab label="Encomiendas" sx={{ textTransform: 'none', fontWeight: 600, fontSize: '0.875rem' }} />
-                    <Tab label="Anticipos" sx={{ textTransform: 'none', fontWeight: 600, fontSize: '0.875rem' }} />
+                    <Tab value="info" label="Información" sx={{ textTransform: 'none', fontWeight: 600, fontSize: '0.875rem' }} />
+                    {!ocultarEncomiendas && <Tab value="encomiendas" label="Encomiendas" sx={{ textTransform: 'none', fontWeight: 600, fontSize: '0.875rem' }} />}
+                    {!ocultarAnticipos && <Tab value="anticipos" label="Anticipos" sx={{ textTransform: 'none', fontWeight: 600, fontSize: '0.875rem' }} />}
                 </Tabs>
             </Box>
 
-            {tabIndex === 0 && (
+            {tabIndex === 'info' && (
                 <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
                     <Box sx={{ display: 'flex', gap: 2 }}>
                         <FichaCard icon={RouteOutlinedIcon} title="Recorrido">
@@ -195,7 +210,7 @@ const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
                 </Box>
             )}
 
-            {tabIndex === 1 && (
+            {tabIndex === 'encomiendas' && (
                 <Box sx={{ p: 3 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, mb: tabEncomiendas.total > 100 ? 0.5 : 2 }}>
                         <Typography variant="body2" color={theme.palette.text.secondary}>
@@ -247,11 +262,13 @@ const ModalConsultarRutaProgramacion = ({ ruta, onClose }) => {
                 </Box>
             )}
 
-            {tabIndex === 2 && (
+            {tabIndex === 'anticipos' && (
                 <Box sx={{ p: 3 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, mb: tabAnticipos.total > 100 ? 0.5 : 2 }}>
                         <Typography variant="body2" color={theme.palette.text.secondary}>
-                            Anticipos asociados a esta ruta
+                            {ruta.idRutaIda
+                                ? 'Anticipo de la ida (cubre también este regreso)'
+                                : 'Anticipos asociados a esta ruta'}
                         </Typography>
                         {!tabAnticipos.loading && tabAnticipos.data.length > 0 && (
                             <Typography variant="caption" color={theme.palette.text.secondary} sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>

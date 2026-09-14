@@ -13,6 +13,7 @@ const PasoHorario = ({
 }) => (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
         <Box sx={{ display: 'flex', gap: 2.5, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+            <Box sx={{ flex: 1, minWidth: 260 }}>
             <CalendarioDisponibilidad
                 label="Fecha de Salida"
                 required
@@ -42,6 +43,8 @@ const PasoHorario = ({
                 error={errores.fechaSalida}
                 helperText={esRegreso ? undefined : 'Los días en rojo ya tienen a ese vehículo o conductor ocupado en otra ruta'}
             />
+            </Box>
+            <Box sx={{ flex: 1, minWidth: 260 }}>
             <CalendarioDisponibilidad
                 modo="llegada"
                 fechaReferencia={form.fechaSalida}
@@ -64,6 +67,7 @@ const PasoHorario = ({
                 error={errores.fechaLlegadaEstimada}
                 helperText={!form.fechaSalida ? 'Selecciona primero la fecha de salida' : (esRegreso ? undefined : 'Los días en rojo ya tienen a ese vehículo o conductor ocupado en otra ruta')}
             />
+            </Box>
         </Box>
         {idRutaExcluir && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, color: 'text.secondary' }}>

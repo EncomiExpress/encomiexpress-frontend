@@ -24,11 +24,22 @@ const ModalInhabilitarRuta = ({ open, data, onClose, onExited, onConfirm }) => {
         // Función interna en vez de llamar setState directo en el cuerpo del efecto --
         // mismo orden de ejecución, pero así el linter (react-hooks/set-state-in-effect)
         // no confunde el reseteo de loading previo al fetch con una mutación "impura".
+        // Cada fetch atrapa su propio error (en vez de un solo .catch sobre el
+        // Promise.all) — corregido 2026-09-12: operador_sede no tiene
+        // `listar_anticipo` (Anticipos no es su módulo), así que esa consulta le
+        // daba 403; como antes las dos colgaban del mismo Promise.all, ese 403
+        // tumbaba TAMBIÉN el resultado de Ventas (que ella sí puede ver, son las
+        // suyas) y el catch-all lo dejaba en "sin nada bloqueando" — el modal
+        // mostraba el botón "Inhabilitar" habilitado como si no hubiera ningún
+        // problema, y solo al confirmar el backend rechazaba con un aviso plano
+        // en vez de la tabla. Ningún cambio de comportamiento para admin: su
+        // consulta a Anticipos nunca falla, así que sigue viendo exactamente lo
+        // mismo de antes.
         const cargarDependencias = () => {
             setDeps({ ventas: [], anticipos: [], loading: true })
             Promise.all([
-                ventaService.getEncomiendas(undefined, { idRuta: data.idRuta, habilitado: 'true', limit: 100 }),
-                anticipoService.getAnticipos(undefined, { idRuta: data.idRuta, habilitado: 'true', limit: 100 }),
+                ventaService.getEncomiendas(undefined, { idRuta: data.idRuta, habilitado: 'true', limit: 100 }).catch(() => ({ data: [] })),
+                anticipoService.getAnticipos(undefined, { idRuta: data.idRuta, habilitado: 'true', limit: 100 }).catch(() => ({ data: [] })),
             ])
                 .then(([ventRes, antRes]) => {
                     const ventas = (ventRes?.data || []).filter(v => v.estado !== 'Entregada' && v.estado !== 'Completada con novedades' && v.estado !== 'Cancelada')

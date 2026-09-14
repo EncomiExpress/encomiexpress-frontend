@@ -7,6 +7,7 @@ import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import * as ventaService from '../../ventas/services/ventaService.js'
 import * as anticipoService from '../../anticipos/services/anticipoService.js'
+import { useAuth } from '../../../shared/contexts/AuthContext.jsx'
 import { getEstadoColorRuta, getEstadoColorAnticipo, getVentaEstadoDot } from '../../../shared/utils/estadoColors.js'
 import EstadoDot from './EstadoDot.jsx'
 import VentasConflictoTable from './VentasConflictoTable.jsx'
@@ -25,9 +26,23 @@ const conductorDot = (estado) => {
 
 const ModalConfirmarEstado = ({ open, nuevoEstado, info, ruta, pares = [], onConfirm, onClose, onExited }) => {
     const theme = useTheme()
+    const { usuario } = useAuth()
     const { color } = getEstadoColorRuta(nuevoEstado)
     const [detalle, setDetalle] = useState({ anticipos: [], ventas: [], loading: false })
     const [confirming, setConfirming] = useState(false)
+
+    // El anticipo no es dominio de operador_sede (ver LOGICA.md, "Sedes remotas") --
+    // nunca se le muestra nada de la Sección 2, exista o no. Y para un regreso
+    // (idRutaIda), aunque lo vea el admin, el anticipo que lo cubre SIEMPRE vive en
+    // la ida ("Anticipo ida+retorno") y arrancar el regreso no le mueve el estado a
+    // nada -- por eso la consulta de abajo sigue filtrando por `ruta.idRuta` (así
+    // detecta si ALGO va a pasar a "En Legalización" ahora mismo, que solo ocurre al
+    // arrancar la ida), pero el aviso "no hay anticipo registrado" deja de mostrarse
+    // para un regreso: uno ya existe, solo que no cambia de estado en este paso, y
+    // decirle "regístralo" sería instruir a crear uno de más que el sistema no
+    // espera. Corregido 2026-09-13.
+    const esOperadorSede = usuario?.rol?.codigo === 'operador_sede'
+    const esRegreso = ruta?.idRutaIda != null
 
     const handleConfirm = async () => {
         setConfirming(true)
@@ -160,8 +175,9 @@ const ModalConfirmarEstado = ({ open, nuevoEstado, info, ruta, pares = [], onCon
                             ? <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}><CircularProgress size={22} /></Box>
                             : (
                                 <>
-                                    {/* Sección 2: Anticipo */}
-                                    {detalle.anticipos.length > 0 ? (
+                                    {/* Sección 2: Anticipo — nunca para operador_sede; el aviso de "no
+                                        hay anticipo" tampoco aplica a un regreso (ver comentario arriba) */}
+                                    {!esOperadorSede && detalle.anticipos.length > 0 && (
                                         <>
                                             <Typography variant="body2" color={theme.palette.text.primary} sx={{ mb: 0.5 }}>
                                                 El anticipo entregado pasará a{' '}
@@ -174,7 +190,8 @@ const ModalConfirmarEstado = ({ open, nuevoEstado, info, ruta, pares = [], onCon
                                                 <AnticiposConflictoList theme={theme} anticipos={detalle.anticipos} />
                                             </Box>
                                         </>
-                                    ) : (
+                                    )}
+                                    {!esOperadorSede && detalle.anticipos.length === 0 && !esRegreso && (
                                         // El anticipo es opcional (a diferencia de las ventas sin fecha de entrega o
                                         // el vehículo/conductor ocupado, que sí bloquean) -- mismo estilo/tono que el
                                         // aviso "Sin paquetes asignados" de cada par, pero a nivel de toda la ruta y

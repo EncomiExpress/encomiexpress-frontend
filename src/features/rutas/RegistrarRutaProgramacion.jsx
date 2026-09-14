@@ -17,12 +17,21 @@ import PasoHorario from './components/wizard/PasoHorario.jsx'
 import PasoConfirmacion from './components/wizard/PasoConfirmacion.jsx'
 import { useSugerenciaParadas } from './hooks/useSugerenciaParadas.js'
 
-// `prefill` (opcional): datos con los que arranca el formulario — hoy solo lo usa
-// "Programar regreso" (ListarRutaProgramacion.jsx), para precargar origen/pares/
-// paradas invertidos de la ruta que ya se completó. `{ idRutaIda, origen, pares,
-// paradas }` — el destino final del regreso queda vacío a propósito: el origen de
-// la ruta original es texto libre, no un Destino real, así que no se puede inferir
-// con certeza a cuál Destino corresponde.
+// `prefill` (opcional): datos con los que arranca el formulario — dos modos
+// distintos, según lo que traiga:
+// - "Programar regreso" (`idRutaIda` presente, ListarRutaProgramacion.jsx
+//   handleProgramarRegreso): precarga origen/pares/paradas invertidos de la
+//   ida ya Completada. El destino final queda vacío a propósito hasta que el
+//   catálogo de destinos cargue (ver el efecto de "Regreso" más abajo) — el
+//   origen de la ruta original es texto libre, no un Destino real, así que no
+//   se puede inferir con certeza a cuál Destino corresponde.
+// - "Reutilizar ruta" (`reutilizar: true`, handleReutilizarRuta): precarga
+//   destino/paradas/pares TAL CUAL de una ida ya Completada, sin invertir
+//   nada. A diferencia del regreso, acá si se conoce el destino real
+//   (`prefill.idDestino`, un Destino de verdad, no texto libre) porque no hay
+//   que adivinarlo — es el mismo destino de la ruta que se está reutilizando.
+//   No manda `idRutaIda`: la ruta que se cree queda totalmente independiente,
+//   solo repite los datos como punto de partida editable.
 const RegistrarRutaProgramacion = ({ open, onClose, onSuccess, prefill }) => {
     const { registrarRutaProgramada } = useRutaProgramacion()
     const { showToast } = useToast()
@@ -76,6 +85,7 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess, prefill }) => {
     // quedaron justo en el municipio de la ida (== prefill.origen). El backend
     // revalida con validarUbicacionParaRuta.
     const esRegreso = !!prefill?.idRutaIda
+    const esReutilizar = !!prefill?.reutilizar
     const idaIdDestino = esRegreso
         ? (destinos.find(d => d.municipio === prefill.origen)?.idDestino ?? null)
         : null
@@ -96,11 +106,16 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess, prefill }) => {
     const destinosSeleccionables = destinos.filter(d => d.municipio !== origenMunicipio)
 
     // En un regreso el destino final NO se elige: el convoy siempre vuelve a la base
-    // (Medellín). Se fija abajo en un efecto (cuando los destinos ya cargaron) y el
-    // campo queda bloqueado. Si el catálogo no tuviera una fila "Medellín",
-    // destinoMedellin es undefined y el campo se deja editable como respaldo.
+    // (Medellín). Si el catálogo no tuviera una fila "Medellín", destinoMedellin es
+    // undefined y el campo se deja editable como respaldo.
     const destinoMedellin = esRegreso ? destinos.find(d => esMunicipioOrigen(d.municipio)) : null
-    const destinoBloqueado = esRegreso && !!destinoMedellin
+    // Destino a bloquear, sin importar el modo: en un regreso siempre Medellín
+    // (resuelto arriba); en "reutilizar" el mismo destino de la ruta que se está
+    // repitiendo (ya viene como id real en el prefill, no hay que buscarlo). Se fija
+    // en un efecto más abajo (cuando el catálogo de destinos ya cargó) y el campo
+    // queda bloqueado mientras `idDestinoBloqueado` tenga valor.
+    const idDestinoBloqueado = esRegreso ? (destinoMedellin?.idDestino ?? null) : (esReutilizar ? (prefill?.idDestino ?? null) : null)
+    const destinoBloqueado = idDestinoBloqueado != null
 
     const [form, setForm] = useState({
         origen: 'Medellín',
@@ -144,14 +159,16 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess, prefill }) => {
         // eslint-disable-next-line react-hooks/exhaustive-deps -- solo debe correr al abrir con un prefill nuevo, no en cada cambio de vehiculos/conductores/destinos
     }, [open, prefill])
 
-    // Regreso: fija el destino final en Medellín en cuanto el catálogo de destinos
-    // esté disponible (puede no estarlo todavía cuando corre el efecto del prefill).
+    // Fija el destino bloqueado (Medellín en un regreso, o el destino original en
+    // "reutilizar") en cuanto el catálogo de destinos esté disponible (puede no
+    // estarlo todavía cuando corre el efecto del prefill).
     useEffect(() => {
-        if (!open || !esRegreso || !destinoMedellin) return
-        if (form.idDestino === destinoMedellin.idDestino) return
-        setForm(prev => ({ ...prev, idDestino: destinoMedellin.idDestino }))
-        setDestinoInput(`${destinoMedellin.municipio} - ${destinoMedellin.departamento}`)
-    }, [open, esRegreso, destinoMedellin, form.idDestino])
+        if (!open || !destinoBloqueado) return
+        if (form.idDestino === idDestinoBloqueado) return
+        setForm(prev => ({ ...prev, idDestino: idDestinoBloqueado }))
+        const d = destinos.find(x => x.idDestino === idDestinoBloqueado)
+        if (d) setDestinoInput(`${d.municipio} - ${d.departamento}`)
+    }, [open, destinoBloqueado, idDestinoBloqueado, destinos, form.idDestino])
 
     const handleChange = (e) => {
         let { name, value } = e.target
@@ -398,8 +415,8 @@ const RegistrarRutaProgramacion = ({ open, onClose, onSuccess, prefill }) => {
     return (
         <WizardDialog
             open={open} onClose={handleClose}
-            title={prefill ? 'Programar Regreso' : 'Registrar Ruta'}
-            subtitle={prefill ? 'Revisa los datos precargados del viaje de vuelta y complétalos.' : 'Ingresa los datos de la nueva ruta paso a paso.'}
+            title={esReutilizar ? 'Reutilizar Ruta' : prefill ? 'Programar Regreso' : 'Registrar Ruta'}
+            subtitle={esReutilizar ? 'Revisa los datos precargados de la ruta y complétalos.' : prefill ? 'Revisa los datos precargados del viaje de vuelta y complétalos.' : 'Ingresa los datos de la nueva ruta paso a paso.'}
             steps={steps} activeStep={activeStep}
             onBack={handleBack} onNext={handleNext} onSubmit={handleSubmit}
             submitting={submitting} submitLabel="Registrar" submitIcon={<CheckOutlinedIcon />}
