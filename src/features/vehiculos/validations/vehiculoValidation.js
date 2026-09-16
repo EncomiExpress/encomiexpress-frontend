@@ -4,8 +4,6 @@ import { hoyISO } from '../../../shared/utils/horarioLaboral.js'
 export const stepsRegistrar = ['Datos del Vehículo', 'Documentación y Estado', 'Confirmación']
 export const stepsActualizar = ['Datos del Vehículo', 'Documentación', 'Confirmación']
 
-export const TIPOS_VEHICULO = ['Camioneta', 'Camión', 'Furgón', 'Semi Trayler', 'Trayler', 'Otro']
-
 // La placa se guarda siempre sin guion (6 caracteres alfanuméricos) — el guion que se ve
 // en el campo es solo un formato visual mientras se escribe, igual que el punto decorativo
 // que ya se usa en los chips de Listar/Consultar (ver PlacaDisplay en ListarVehiculo.jsx).
@@ -33,7 +31,9 @@ export const limpiarPlacaInput = (value) => {
 // 500 kg: peso vacío mínimo legal en Colombia para un vehículo de 4 llantas
 // (camioneta/camión liviano) — no tendría sentido registrar uno por debajo de eso.
 export const CAPACIDAD_MIN = 500
-export const CAPACIDAD_MAX = 99999
+// 8000 kg = 8 toneladas, el límite máximo que maneja la empresa (indicado por
+// el cliente).
+export const CAPACIDAD_MAX = 8000
 
 // Mismo alfabeto que ya filtra RegistrarVehiculo.jsx/ActualizarVehiculo.jsx letra por
 // letra en su handleChange (solo letras) — se replica aquí para que el validador sea
@@ -82,11 +82,6 @@ export const validarCampo = (name, formData, {
             return ''
         case 'tipo':
             return formData.tipo ? '' : 'El tipo de vehículo es obligatorio'
-        case 'tipoOtro':
-            if (formData.tipo !== 'Otro') return ''
-            if (!formData.tipoOtro?.trim()) return 'Especifica el tipo de vehículo'
-            if (esSoloRelleno(formData.tipoOtro)) return 'El tipo no puede contener solo espacios o guiones'
-            return ''
         case 'capacidad':
             if (!formData.capacidad) return 'La capacidad es obligatoria'
             if (parseFloat(formData.capacidad) < CAPACIDAD_MIN) return `La capacidad debe ser de al menos ${CAPACIDAD_MIN.toLocaleString('es-CO')} kg`
@@ -119,7 +114,6 @@ export const validarPaso = (step, formData, avisoPlacaDuplicada, options = {}) =
         e.modelo = validarCampo('modelo', formData, options)
         e.color = validarCampo('color', formData, options)
         e.tipo = validarCampo('tipo', formData, options)
-        e.tipoOtro = validarCampo('tipoOtro', formData, options)
         e.capacidad = validarCampo('capacidad', formData, options)
     }
     if (step === 1) {

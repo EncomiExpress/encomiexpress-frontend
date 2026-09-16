@@ -7,7 +7,7 @@ import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { limpiarMonedaInput, capitalizarPrimeraLetra } from '../../shared/utils/formatters.js'
 import {
-    stepsActualizar as steps, TIPOS_VEHICULO, limpiarPlacaInput, CAPACIDAD_MAX,
+    stepsActualizar as steps, limpiarPlacaInput, CAPACIDAD_MAX,
     validarCampo, validarPaso,
 } from './validations/vehiculoValidation.js'
 import { useDuplicadoVehiculo } from './hooks/useDuplicadoVehiculo.js'
@@ -26,7 +26,7 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
 
   const [formData, setFormData] = useState({
     idPropietario: '', placa: '', tarjetaPropiedad: '', marca: '', modelo: '', color: '',
-    tipo: '', origen: 'Propio', capacidad: '',
+    tipo: 'Camión', origen: 'Propio', capacidad: '',
     vencimientoSOAT: '', vencimientoRevisionTecnica: '', vencimientoSeguroTerceros: ''
   })
   const [errores, setErrores] = useState({})
@@ -49,15 +49,10 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
     setApiError('')
     const transporte = getVehiculoById(transporteProp.idVehiculo)
     if (transporte) {
-      // Si el tipo guardado no está en la lista fija, es un tipo "personalizado"
-      // que se escribió a mano — el select se muestra en "Otro" con ese valor
-      // en el campo de texto.
-      const esTipoFijo = TIPOS_VEHICULO.includes(transporte.tipo)
-      const datos = {
-        ...transporte,
-        tipo: esTipoFijo ? transporte.tipo : 'Otro',
-        tipoOtro: esTipoFijo ? '' : (transporte.tipo || ''),
-      }
+      // La empresa solo maneja camiones -- ver PasoDatosVehiculo.jsx (campo de
+      // solo lectura, ya no un select); se normaliza acá cualquier valor viejo
+      // distinto que haya quedado en la BD.
+      const datos = { ...transporte, tipo: 'Camión' }
       setFormData(datos)
       setFormOriginal(datos)
     }
@@ -74,7 +69,6 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
     if (name === 'marca') value = capitalizarPrimeraLetra(value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, ''))
     if (name === 'modelo') value = value.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚüÜñÑ\s./-]/g, '')
     if (name === 'color') value = capitalizarPrimeraLetra(value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, ''))
-    if (name === 'tipoOtro') value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
     if (name === 'tarjetaPropiedad') value = value.replace(/[^0-9]/g, '')
     if (name === 'capacidad') {
       value = limpiarMonedaInput(value)
@@ -86,14 +80,7 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
 
     const formActualizado = { ...formData, [name]: value }
     setFormData(prev => ({ ...prev, [name]: value }))
-    setErrores(prev => {
-      const siguiente = { ...prev, [name]: prev[name] ? validarCampo(name, formActualizado, VALIDATION_OPTS) : '' }
-      // Si se corrige el tipo de vehículo, revalida también "tipoOtro" si ya estaba marcado con error
-      if (name === 'tipo' && prev.tipoOtro) {
-        siguiente.tipoOtro = validarCampo('tipoOtro', formActualizado, VALIDATION_OPTS)
-      }
-      return siguiente
-    })
+    setErrores(prev => ({ ...prev, [name]: prev[name] ? validarCampo(name, formActualizado, VALIDATION_OPTS) : '' }))
     setApiError('')
     setSinCambios(false)
   }
@@ -138,7 +125,6 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
       await actualizarVehiculo({
         idVehiculo: parseInt(transporteProp?.idVehiculo),
         ...formData,
-        tipo: formData.tipo === 'Otro' ? formData.tipoOtro.trim() : formData.tipo,
         capacidad: parseInt(formData.capacidad, 10),
         idPropietario: parseInt(formData.idPropietario)
       })
@@ -156,7 +142,7 @@ const ActualizarVehiculo = ({ open, onClose, transporte: transporteProp, onSucce
       case 0:
         return (
           <PasoDatosVehiculo
-            formData={formData} setFormData={setFormData} errores={errores} setErrores={setErrores}
+            formData={formData} errores={errores} setErrores={setErrores}
             handleChange={handleChange} verificarPlacaDuplicada={verificarPlacaDuplicada} validationOpts={VALIDATION_OPTS}
           />
         )

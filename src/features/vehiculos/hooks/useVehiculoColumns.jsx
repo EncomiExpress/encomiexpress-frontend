@@ -27,14 +27,13 @@ const useVehiculoColumns = ({ theme, tienePermiso, PERMISOS, onConsultar, onEdit
         ),
     },
     {
-        key: 'tipo', label: 'Tipo / Capacidad', cellSx: { py: 1.5 },
+        // La empresa solo maneja camiones -- "Tipo" dejó de mostrarse acá (ver
+        // PasoDatosVehiculo.jsx), esta columna queda solo con la capacidad.
+        key: 'capacidad', label: 'Capacidad', cellSx: { py: 1.5 },
         render: (transporte) => (
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <Chip label={transporte.tipo || '—'} size="small" sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem' }} />
-                <Typography variant="caption" color={theme.palette.text.secondary} noWrap sx={{ mt: 0.5 }}>
-                    {transporte.capacidad ? `${formatearMoneda(transporte.capacidad)} kg` : '—'}
-                </Typography>
-            </Box>
+            <Typography variant="body2" color={theme.palette.text.primary} noWrap align="center">
+                {transporte.capacidad ? `${formatearMoneda(transporte.capacidad)} kg` : '—'}
+            </Typography>
         ),
     },
     {

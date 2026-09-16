@@ -27,8 +27,9 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
     marca: '',
     modelo: '',
     color: '',
-    tipo: '',
-    tipoOtro: '',
+    // La empresa solo maneja camiones -- ver PasoDatosVehiculo.jsx (campo de
+    // solo lectura, ya no un select).
+    tipo: 'Camión',
     origen: 'Propio',
     capacidad: '',
     vencimientoSOAT: '',
@@ -58,7 +59,6 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
     if (name === 'marca') value = capitalizarPrimeraLetra(value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, ''))
     if (name === 'modelo') value = value.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚüÜñÑ\s./-]/g, '')
     if (name === 'color') value = capitalizarPrimeraLetra(value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, ''))
-    if (name === 'tipoOtro') value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '')
     if (name === 'tarjetaPropiedad') value = value.replace(/[^0-9]/g, '')
     if (name === 'capacidad') {
       value = limpiarMonedaInput(value)
@@ -70,14 +70,7 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
 
     const formActualizado = { ...formData, [name]: value }
     setFormData(prev => ({ ...prev, [name]: value }))
-    setErrores(prev => {
-      const siguiente = { ...prev, [name]: prev[name] ? validarCampo(name, formActualizado, VALIDATION_OPTS) : '' }
-      // Si se corrige el tipo de vehículo, revalida también "tipoOtro" si ya estaba marcado con error
-      if (name === 'tipo' && prev.tipoOtro) {
-        siguiente.tipoOtro = validarCampo('tipoOtro', formActualizado, VALIDATION_OPTS)
-      }
-      return siguiente
-    })
+    setErrores(prev => ({ ...prev, [name]: prev[name] ? validarCampo(name, formActualizado, VALIDATION_OPTS) : '' }))
     setApiError('')
   }
 
@@ -87,7 +80,7 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
     setFormData({
       idPropietario: '', placa: '', tarjetaPropiedad: '', marca: '', modelo: '', color: '',
-      tipo: '', tipoOtro: '', origen: 'Propio', capacidad: '',
+      tipo: 'Camión', origen: 'Propio', capacidad: '',
       vencimientoSOAT: '', vencimientoRevisionTecnica: '', vencimientoSeguroTerceros: ''
     })
     setErrores({})
@@ -125,7 +118,7 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
         marca: formData.marca.trim(),
         modelo: formData.modelo.trim(),
         color: formData.color.trim(),
-        tipo: formData.tipo === 'Otro' ? formData.tipoOtro.trim() : formData.tipo,
+        tipo: formData.tipo,
         capacidad: formData.capacidad ? parseInt(formData.capacidad, 10) : null,
         vencimientoSOAT: formData.vencimientoSOAT || null,
         vencimientoRevisionTecnica: formData.vencimientoRevisionTecnica || null,
@@ -145,7 +138,7 @@ const RegistrarVehiculo = ({ open, onClose, onSuccess }) => {
       case 0:
         return (
           <PasoDatosVehiculo
-            formData={formData} setFormData={setFormData} errores={errores} setErrores={setErrores}
+            formData={formData} errores={errores} setErrores={setErrores}
             handleChange={handleChange} verificarPlacaDuplicada={verificarPlacaDuplicada} validationOpts={VALIDATION_OPTS}
           />
         )

@@ -1,14 +1,13 @@
-import { Box, MenuItem, TextField, InputAdornment, IconButton } from '@mui/material'
+import { Box } from '@mui/material'
 import {
     DirectionsCarOutlined, BadgeOutlined, SellOutlined, InvertColorsOutlined,
-    SpeedOutlined, Close,
+    SpeedOutlined, LocalShippingOutlined,
 } from '@mui/icons-material'
-import { FormField, FormSelect } from '../../../../shared/components/FormularioEstandarizado.jsx'
-import { formFieldStyles } from '../../../../shared/utils/formStyles.js'
+import { FormField } from '../../../../shared/components/FormularioEstandarizado.jsx'
 import { formatearMoneda } from '../../../../shared/utils/formatters.js'
-import { TIPOS_VEHICULO, formatearPlaca, validarCampo } from '../../validations/vehiculoValidation.js'
+import { formatearPlaca, validarCampo } from '../../validations/vehiculoValidation.js'
 
-const PasoDatosVehiculo = ({ formData, setFormData, errores, setErrores, handleChange, verificarPlacaDuplicada, validationOpts }) => (
+const PasoDatosVehiculo = ({ formData, errores, setErrores, handleChange, verificarPlacaDuplicada, validationOpts }) => (
     <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
         <FormField label="Placa" name="placa" value={formatearPlaca(formData.placa)} onChange={handleChange}
             onBlur={() => {
@@ -33,34 +32,10 @@ const PasoDatosVehiculo = ({ formData, setFormData, errores, setErrores, handleC
             placeholder="Ej: Blanco" icon={InvertColorsOutlined}
             error={errores.color} helperText={errores.color}
             inputProps={{ maxLength: 20 }} />
-        {formData.tipo === 'Otro' ? (
-            <TextField
-                fullWidth label="Tipo de Vehículo" name="tipoOtro" value={formData.tipoOtro || ''} onChange={handleChange}
-                onBlur={() => setErrores(prev => ({ ...prev, tipoOtro: validarCampo('tipoOtro', formData, validationOpts) }))} required
-                placeholder="Escribe el tipo de vehículo"
-                error={!!errores.tipoOtro} helperText={errores.tipoOtro || 'Presiona la X para volver a la lista'}
-                slotProps={{
-                    inputLabel: { shrink: true },
-                    htmlInput: { maxLength: 30 },
-                    input: {
-                        endAdornment: (
-                            <InputAdornment position="end">
-                                <IconButton size="small" onClick={() => setFormData(prev => ({ ...prev, tipo: '', tipoOtro: '' }))} edge="end">
-                                    <Close fontSize="small" />
-                                </IconButton>
-                            </InputAdornment>
-                        ),
-                    },
-                }}
-                sx={formFieldStyles}
-            />
-        ) : (
-            <FormSelect label="Tipo de Vehículo" name="tipo" value={formData.tipo} onChange={handleChange}
-                onBlur={() => setErrores(prev => ({ ...prev, tipo: validarCampo('tipo', formData, validationOpts) }))} required
-                error={errores.tipo} helperText={errores.tipo}>
-                {TIPOS_VEHICULO.map((t) => <MenuItem key={t} value={t}>{t}</MenuItem>)}
-            </FormSelect>
-        )}
+        {/* La empresa solo maneja camiones -- ya no es un select, es un campo
+            fijo de solo lectura (siempre "Camión"). */}
+        <FormField label="Tipo de Vehículo" name="tipo" value="Camión" disabled
+            icon={LocalShippingOutlined} helperText="La empresa solo maneja camiones" />
         <FormField label="Capacidad (kg)" name="capacidad" value={formatearMoneda(formData.capacidad)}
             onChange={handleChange}
             onBlur={() => setErrores(prev => ({ ...prev, capacidad: validarCampo('capacidad', formData, validationOpts) }))} required placeholder="Ej: 1.500" icon={SpeedOutlined}

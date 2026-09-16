@@ -54,7 +54,7 @@ const PasoConfirmacion = ({ theme, formData, formOriginal, apiError, setApiError
                     <ConfirmRow label="Marca" value={formData.marca} previousValue={formOriginal?.marca} />
                     <ConfirmRow label="Modelo" value={formData.modelo} previousValue={formOriginal?.modelo} />
                     <ConfirmRow label="Color" value={formData.color} previousValue={formOriginal?.color} />
-                    <ConfirmRow label="Tipo" value={formData.tipo === 'Otro' ? formData.tipoOtro : formData.tipo} previousValue={formOriginal ? (formOriginal.tipo === 'Otro' ? formOriginal.tipoOtro : formOriginal.tipo) : undefined} />
+                    <ConfirmRow label="Tipo" value={formData.tipo} previousValue={formOriginal?.tipo} />
                     <ConfirmRow label="Capacidad" value={formData.capacidad ? `${formatearMoneda(formData.capacidad)} kg` : ''} previousValue={formOriginal ? (formOriginal.capacidad ? `${formatearMoneda(formOriginal.capacidad)} kg` : undefined) : undefined} />
                 </Paper>
                 <Paper elevation={0} sx={cardSx(theme)}>

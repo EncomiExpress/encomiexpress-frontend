@@ -13,7 +13,7 @@ import ActualizarVehiculo from './ActualizarVehiculo'
 import ModalConsultarVehiculo from './components/ModalConsultarVehiculo'
 import ModalInhabilitarVehiculo from './components/ModalInhabilitarVehiculo'
 import ModalCambioEstadoVehiculo from './components/ModalCambioEstadoVehiculo.jsx'
-import FiltroEstadoTipoVehiculo from './components/FiltroEstadoTipoVehiculo.jsx'
+import FiltroEstadoVehiculo from './components/FiltroEstadoVehiculo.jsx'
 import { getPageOfVehiculo, getVehiculos } from './services/vehiculoService.js'
 import { capitalizarPrimeraLetra, formatearMoneda, formatFecha } from '../../shared/utils/formatters.js'
 import useVehiculoColumns from './hooks/useVehiculoColumns.jsx'
@@ -24,7 +24,6 @@ const ListarTransporte = () => {
     const [vehiculoVer, setVehiculoVer] = useState(null)
     const { showToast } = useToast()
     const [filtroEstadoVehiculo, setFiltroEstadoVehiculo] = useState('')
-    const [filtroTipo, setFiltroTipo] = useState('')
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [vehiculoEditar, setVehiculoEditar] = useState(null)
@@ -55,20 +54,18 @@ const ListarTransporte = () => {
             const res = await getVehiculos(signal, {
                 ...params,
                 estado: filtroEstadoVehiculo === '' || filtroEstadoVehiculo === 'En Ruta' ? undefined : filtroEstadoVehiculo,
-                tipo: filtroTipo || undefined,
             })
             if (res?.success) {
                 setTransportes(res.data)
                 setTotalBackend(res.total ?? res.data.length)
             }
         },
-        extraDeps: [filtroEstadoVehiculo, filtroTipo],
+        extraDeps: [filtroEstadoVehiculo],
         fetchPageForHighlight: (id, limit) => getPageOfVehiculo(id, limit),
         exportConfig: {
             fetchAll: (params) => getVehiculos(undefined, {
                 ...params,
                 estado: filtroEstadoVehiculo === '' || filtroEstadoVehiculo === 'En Ruta' ? undefined : filtroEstadoVehiculo,
-                tipo: filtroTipo || undefined,
                 limit: 100000,
             }),
             mapRow: (vehiculo) => ({
@@ -76,7 +73,6 @@ const ListarTransporte = () => {
                 'Placa': vehiculo.placa,
                 'Marca': capitalizarPrimeraLetra(vehiculo.marca),
                 'Modelo': vehiculo.modelo,
-                'Tipo': vehiculo.tipo,
                 'Capacidad (kg)': vehiculo.capacidad ? formatearMoneda(vehiculo.capacidad) : '—',
                 'Propietario': vehiculo.propietario ? `${vehiculo.propietario.nombre} ${vehiculo.propietario.apellido}`.trim() : '-',
                 'Vencimiento SOAT': formatFecha(vehiculo.vencimientoSOAT),
@@ -127,7 +123,7 @@ const ListarTransporte = () => {
         return coincideBusqueda && coincideHabilitado && coincideEstado
     })
 
-    const emptyMessage = filtroEstadoVehiculo !== '' || filtroTipo !== '' || filtroHabilitado !== 'todo'
+    const emptyMessage = filtroEstadoVehiculo !== '' || filtroHabilitado !== 'todo'
         ? 'No se encontraron vehículos que coincidan con los filtros aplicados.'
         : debouncedBusqueda.trim()
             ? 'No se encontraron vehículos que coincidan con la búsqueda.'
@@ -211,12 +207,10 @@ const ListarTransporte = () => {
                         btnRefs={filtroBtnRefs}
                         pillStyle={filtroPillStyle}
                     />
-                    <FiltroEstadoTipoVehiculo
+                    <FiltroEstadoVehiculo
                         theme={theme}
                         filtroEstadoVehiculo={filtroEstadoVehiculo}
                         setFiltroEstadoVehiculo={setFiltroEstadoVehiculo}
-                        filtroTipo={filtroTipo}
-                        setFiltroTipo={setFiltroTipo}
                         setPage={setPage}
                     />
                 </Box>
