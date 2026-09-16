@@ -13,7 +13,6 @@ import ActualizarPropietario from './ActualizarPropietario'
 import ModalBloqueoInhabilitacion from '../../shared/components/ModalBloqueoInhabilitacion'
 import ModalConsultarPropietario from './components/ModalConsultarPropietario'
 import ModalInhabilitarPropietario from './components/ModalInhabilitarPropietario'
-import FiltroTipoFlota from './components/FiltroTipoFlota.jsx'
 import { getPageOfPropietario, getPropietarios } from './services/propietarioService.js'
 import usePropietarioColumns from './hooks/usePropietarioColumns.jsx'
 import usePropietarioAcciones from './hooks/usePropietarioAcciones.js'
@@ -22,7 +21,6 @@ const ListarPropietario = () => {
     const navigate = useNavigate()
     const [propietarioVer, setPropietarioVer] = useState(null)
     const { showToast } = useToast()
-    const [filtroTipoFlota, setFiltroTipoFlota] = useState('')
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [propietarioEditar, setPropietarioEditar] = useState(null)
@@ -51,23 +49,21 @@ const ListarPropietario = () => {
         refetch,
     } = useEntityCrud({
         fetchPage: async (signal, params) => {
-            const res = await getPropietarios(signal, { ...params, tipoFlota: filtroTipoFlota || undefined })
+            const res = await getPropietarios(signal, params)
             if (res?.success) {
                 setPropietarios(res.data)
                 setTotal(res.total ?? res.data.length)
             }
         },
-        extraDeps: [filtroTipoFlota],
         fetchPageForHighlight: (id, limit) => getPageOfPropietario(id, limit),
         exportConfig: {
-            fetchAll: (params) => getPropietarios(undefined, { ...params, tipoFlota: filtroTipoFlota || undefined, limit: 100000 }),
+            fetchAll: (params) => getPropietarios(undefined, { ...params, limit: 100000 }),
             mapRow: (propietario) => ({
                 'ID': propietario.idPropietario,
                 'Nombre': `${propietario.nombre || ''} ${propietario.apellido || ''}`.trim(),
                 'Identificación': `${propietario.tipoIdentificacion || ''} ${propietario.numeroIdentificacion || ''}`.trim(),
                 'Email': propietario.email,
                 'Teléfono': propietario.telefono,
-                'Tipo de flota': propietario.tipoFlota,
                 'Estado': propietario.habilitado === false ? 'Inhabilitado' : 'Habilitado',
             }),
             fileName: 'Propietarios',
@@ -157,7 +153,6 @@ const ListarPropietario = () => {
                         btnRefs={filtroBtnRefs}
                         pillStyle={filtroPillStyle}
                     />
-                    <FiltroTipoFlota theme={theme} filtroTipoFlota={filtroTipoFlota} setFiltroTipoFlota={setFiltroTipoFlota} setPage={setPage} />
                 </Box>
 
                 <BuscadorField value={busqueda} onChange={setBusqueda} placeholder="Buscar propietarios..." />

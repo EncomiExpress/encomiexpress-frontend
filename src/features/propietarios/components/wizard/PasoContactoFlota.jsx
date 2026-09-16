@@ -1,7 +1,7 @@
-import { Box, MenuItem } from '@mui/material'
+import { Box } from '@mui/material'
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
 import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined'
-import { FormField, FormSelect } from '../../../../shared/components/FormularioEstandarizado.jsx'
+import { FormField } from '../../../../shared/components/FormularioEstandarizado.jsx'
 import { maxLengthTelefono, telefonoHelperText } from '../../../../shared/validations/telefonoValidation.js'
 import { validarCampo } from '../../validations/propietarioValidation.js'
 
@@ -17,14 +17,10 @@ const PasoContactoFlota = ({ form, errores, setErrores, handleChange }) => (
             required error={errores.email} helperText={errores.email}
             icon={EmailOutlinedIcon} placeholder="correo@dominio.com"
             inputProps={{ maxLength: 100 }} />
-        <FormSelect label="Tipo de flota" name="tipoFlota" value={form.tipoFlota}
-            onChange={handleChange} helperText="Opcional">
-            <MenuItem value="">Sin especificar</MenuItem>
-            <MenuItem value="Mensajería">Mensajería</MenuItem>
-            <MenuItem value="Carga Liviana">Carga Liviana</MenuItem>
-            <MenuItem value="Carga Pesada">Carga Pesada</MenuItem>
-            <MenuItem value="Mixta">Mixta</MenuItem>
-        </FormSelect>
+        {/* La empresa solo maneja flota mixta -- ya no es un select, es un campo
+            fijo de solo lectura (siempre "Mixta"). */}
+        <FormField label="Tipo de flota" name="tipoFlota" value="Mixta" disabled
+            helperText="La empresa solo maneja flota mixta" />
     </Box>
 )
 

@@ -80,7 +80,9 @@ export const EMPTY_FORM = {
     apellido: '',
     telefono: '',
     email: '',
-    tipoFlota: '',
+    // La empresa solo maneja flota mixta -- ver PasoContactoFlota.jsx (campo
+    // de solo lectura, ya no un select).
+    tipoFlota: 'Mixta',
 }
 
 export const validarPaso = (step, form, { avisoDocDuplicado, avisoNombreDuplicado }) => {

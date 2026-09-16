@@ -1,4 +1,4 @@
-import { Box, Typography, Chip, IconButton, Tooltip, Avatar } from '@mui/material'
+import { Box, Typography, IconButton, Tooltip, Avatar } from '@mui/material'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
 import ToggleSwitch from '../../../shared/components/ToggleSwitch.jsx'
@@ -29,16 +29,6 @@ const usePropietarioColumns = ({ theme, tienePermiso, PERMISOS, onConsultar, onE
     },
     { key: 'telefono', label: 'Teléfono', cellSx: { py: 1.5 }, render: (propietario) => propietario.telefono || '—' },
     { key: 'email', label: 'Email', cellSx: { py: 1.5 }, render: (propietario) => propietario.email || '—' },
-    {
-        key: 'tipoFlota', label: 'Tipo Flota', cellSx: { py: 1.5 },
-        render: (propietario) => (
-            <Chip
-                label={propietario.tipoFlota || '—'}
-                size="small"
-                sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem' }}
-            />
-        ),
-    },
     {
         key: 'acciones', label: 'Acciones', width: 130, cellSx: { py: 1.5 },
         render: (propietario) => (

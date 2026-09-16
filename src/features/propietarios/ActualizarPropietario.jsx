@@ -62,7 +62,10 @@ const ActualizarPropietario = ({ open, onClose, propietario: propietarioProp, on
             apellido: propietario.apellido || '',
             telefono: propietario.telefono || '',
             email: propietario.email || '',
-            tipoFlota: propietario.tipoFlota || '',
+            // La empresa solo maneja flota mixta -- ver PasoContactoFlota.jsx (campo
+            // de solo lectura, ya no un select); se normaliza acá cualquier valor
+            // viejo distinto que haya quedado en la BD.
+            tipoFlota: 'Mixta',
         }
         setForm(datosForm)
         setFormOriginal(datosForm)
