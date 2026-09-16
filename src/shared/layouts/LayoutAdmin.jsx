@@ -12,7 +12,7 @@ const Layout = ({ children }) => {
   // deja muy poco espacio a las tablas y toca hacer scroll horizontal para llegar
   // a la columna de Acciones. Arranca contraído por debajo de este ancho — pero
   // si el usuario ya lo abrió/cerró a mano antes, esa preferencia guardada manda
-  // sobre el tamaño de pantalla (igual que darkMode/paletteKey/navLayout).
+  // sobre el tamaño de pantalla (igual que darkMode/navLayout).
   const pantallaAngosta = useMediaQuery('(max-width:1550px)')
   const [collapsed, setCollapsed] = useState(() => {
     const guardado = localStorage.getItem(STORAGE_KEYS.SIDEBAR_COLLAPSED)

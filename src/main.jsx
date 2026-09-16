@@ -7,8 +7,8 @@ import { getTheme } from './shared/styles/theme.js'
 import { ThemeProviderWrapper as ThemeModeProvider, useDarkMode } from './shared/contexts/ThemeContext.jsx'
 
 const ThemedApp = () => {
-  const { darkMode, paletteKey } = useDarkMode()
-  const theme = createTheme(getTheme(darkMode ? 'dark' : 'light', paletteKey))
+  const { darkMode } = useDarkMode()
+  const theme = createTheme(getTheme(darkMode ? 'dark' : 'light'))
 
   return (
     <ThemeProvider theme={theme}>

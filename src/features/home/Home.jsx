@@ -19,8 +19,10 @@ const modules = [
   { iconClass: 'fi fi-ss-shipping-fast', name: 'Transporte', desc: 'Flota y rutas', color: '#8b5cf6' },
   { iconClass: 'fi fi-ss-money-bill-wave', name: 'Anticipos', desc: 'Movimientos de caja', color: '#f59e0b' },
   { iconClass: 'fi fi-ss-users', name: 'Clientes', desc: 'Datos y contacto', color: '#3b82f6' },
-  { iconClass: 'fi fi-ss-boxes', name: 'Encomiendas', desc: 'Registro y control', color: '#ef4444' },
-  { iconClass: 'fi fi-rs-chat-arrow-grow', name: 'Ventas', desc: 'Control de ingresos', color: '#10b981' },
+  // Antes rojo/verde -- se retiraron como decorativos: esos dos colores quedan
+  // reservados para indicadores semánticos (negativo/positivo).
+  { iconClass: 'fi fi-ss-boxes', name: 'Encomiendas', desc: 'Registro y control', color: '#0d9488' },
+  { iconClass: 'fi fi-rs-chat-arrow-grow', name: 'Ventas', desc: 'Control de ingresos', color: '#6366f1' },
 ]
 
 const stats = [
@@ -64,7 +66,7 @@ const Home = () => {
       <Box sx={{
         position: 'absolute', bottom: -100, right: -100,
         width: 400, height: 400, borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(204,24,24,0.06) 0%, transparent 70%)',
+        background: 'radial-gradient(circle, rgba(13,148,136,0.06) 0%, transparent 70%)',
         zIndex: 0,
       }} />
 
@@ -138,7 +140,7 @@ const Home = () => {
                   lineHeight: 1.08, letterSpacing: '-2px', mb: 3, color: theme.palette.background.default === '#121212' ? '#64BBE2' : 'rgb(26, 46, 110, 0.95)',
                 }}>
                   Panel de{' '}
-                  <Box component="span" sx={{ color: theme.palette.background.default === '#121212' ? '#E57373' : 'rgba(204,24,24,0.95)' }}>administración</Box>
+                  <Box component="span" sx={{ color: theme.palette.accent.main }}>administración</Box>
                   <br /> operativa
                 </Typography>
                 <Typography sx={{ color: theme.palette.text.secondary, fontSize: '1.05rem', lineHeight: 1.8, mb: 5, maxWidth: 480 }}>
@@ -221,10 +223,10 @@ const Home = () => {
             </Typography>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2.5, justifyContent: 'center', textAlign: 'center' }}>
               {[
-                { iconClass: 'fi fi-ss-boxes', title: 'Registro de encomiendas', desc: 'Envíos, guías PDF, estados y métodos de pago. Reportes de ventas.', accent: '#CC1818' },
-                { iconClass: 'fi fi-ss-shipping-fast', title: 'Logística de transporte', desc: 'Vehículos, conductores, rutas, destinos y propietarios. Control documental y reportes.', accent: '#1A2E6E' },
-                { iconClass: 'fi fi-ss-users', title: 'Gestión de clientes', desc: 'Registro y datos de contacto.', accent: '#CC1818' },
-                { iconClass: 'fi fi-ss-money-bill-wave', title: 'Control financiero', desc: 'Anticipos, legalización, excedentes y pagos de ventas. Reportes contables.', accent: '#1A2E6E' },
+                { iconClass: 'fi fi-ss-boxes', title: 'Registro de encomiendas', desc: 'Envíos, guías PDF, estados y métodos de pago. Reportes de ventas.', accent: theme.palette.accent.main },
+                { iconClass: 'fi fi-ss-shipping-fast', title: 'Logística de transporte', desc: 'Vehículos, conductores, rutas, destinos y propietarios. Control documental y reportes.', accent: theme.palette.primary.main },
+                { iconClass: 'fi fi-ss-users', title: 'Gestión de clientes', desc: 'Registro y datos de contacto.', accent: theme.palette.accent.main },
+                { iconClass: 'fi fi-ss-money-bill-wave', title: 'Control financiero', desc: 'Anticipos, legalización, excedentes y pagos de ventas. Reportes contables.', accent: theme.palette.primary.main },
               ].map((item, i) => (
                 <Box key={i} sx={{
                   flex: '1 1 220px', maxWidth: 260, p: 3.5, borderRadius: '20px', backgroundColor: theme.palette.background.subtle,

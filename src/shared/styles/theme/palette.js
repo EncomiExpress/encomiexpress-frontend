@@ -2,7 +2,7 @@
 //  Construcción de paletas MUI
 // ─────────────────────────────────────────────
 
-export const buildLightPalette = (t, otro) => ({
+export const buildLightPalette = (t) => ({
   mode: 'light',
   primary: {
     main:          t.primary,
@@ -23,13 +23,14 @@ export const buildLightPalette = (t, otro) => ({
     dark:          '#0f1c45',
     contrastText:  '#ffffff',
   },
-  // El otro color de marca (si primary es rojo, esto es el azul, y viceversa) --
-  // ver comentario en theme.js. Con paleta activa "blue", esto coincide con el
-  // secondary de arriba (ambos navy); con paleta "red" queda distinto del navy fijo.
+  // Acento fijo, no-semántico (verde azulado) para contrastar con primary sin
+  // recurrir a rojo/verde -- esos quedan reservados para status (ver
+  // shared/utils/estadoColors.js y status.* más abajo). Antes este acento era
+  // "el otro color de marca" de la paleta roja retirada.
   accent: {
-    main:          otro?.primary ?? '#1A2E6E',
-    light:         otro?.primaryLight ?? '#E8EEFF',
-    dark:          otro?.primaryDark ?? '#0f1c45',
+    main:          '#0d9488',
+    light:         '#CCFBF1',
+    dark:          '#0f766e',
     contrastText:  '#ffffff',
   },
   background: {
@@ -91,7 +92,7 @@ export const buildLightPalette = (t, otro) => ({
   },
 })
 
-export const buildDarkPalette = (t, otro) => ({
+export const buildDarkPalette = (t) => ({
   mode: 'dark',
   primary: {
     main:          t.primary,
@@ -105,17 +106,21 @@ export const buildDarkPalette = (t, otro) => ({
     hoverIcon:     t.hoverIcon,
     hoverText:     t.hoverText,
   },
+  // Mismo azul de marca que primary (igual que en buildLightPalette, donde
+  // secondary.main ya coincidía con primary.main) -- antes era un rojo fijo
+  // que se colaba en piezas no semánticas como el chip de valor de un
+  // anticipo o los polígonos decorativos de Login/ResetearPassword.
   secondary: {
-    main:          '#C62828',
-    light:         '#E57373',
-    dark:          '#B71C1C',
+    main:          t.primary,
+    light:         t.primaryLight,
+    dark:          t.primaryDark,
     contrastText:  '#ffffff',
   },
-  // El otro color de marca -- ver comentario en buildLightPalette/theme.js.
+  // Ver comentario en buildLightPalette: acento fijo no-semántico.
   accent: {
-    main:          otro?.primary ?? '#E57373',
-    light:         otro?.primaryLight ?? '#FFCDD2',
-    dark:          otro?.primaryDark ?? '#D32F2F',
+    main:          '#2dd4bf',
+    light:         '#99f6e4',
+    dark:          '#14b8a6',
     contrastText:  '#ffffff',
   },
   background: {

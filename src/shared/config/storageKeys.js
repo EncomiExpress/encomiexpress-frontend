@@ -3,7 +3,6 @@ export const STORAGE_KEYS = {
   REFRESH_TOKEN: 'refreshToken',
   USUARIO: 'usuario',
   DARK_MODE: 'darkMode',
-  PALETTE_KEY: 'paletteKey',
   NAV_LAYOUT: 'navLayout',
   SIDEBAR_COLLAPSED: 'sidebarCollapsed',
 }

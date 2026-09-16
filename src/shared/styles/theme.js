@@ -4,20 +4,12 @@ import { buildLightPalette, buildDarkPalette } from './theme/palette.js'
 import { getComponentOverrides } from './theme/componentOverrides.js'
 
 // ─────────────────────────────────────────────
-//  getTheme — hoy acepta solo mode,
-//  en el futuro aceptará también { palette: 'red'|'blue' }
+//  getTheme — azul es el único color de marca (ver tokens.js).
 // ─────────────────────────────────────────────
 
-export const getTheme = (mode = 'light', paletteKey = 'red') => {
-  const t   = tokens[paletteKey]?.[mode] ?? tokens.red[mode]
-  // El otro color de marca (rojo↔azul) para el mismo modo -- se expone como
-  // palette.accent, para acentos que necesitan contrastar con primary sin importar
-  // cuál paleta esté activa (ej. el ícono de "Conductores Disponibles" del
-  // Dashboard). No confundir con secondary, que es el navy fijo del Sidebar/
-  // encabezados y no cambia con la paleta.
-  const otroKey = paletteKey === 'blue' ? 'red' : 'blue'
-  const otro = tokens[otroKey]?.[mode] ?? tokens.blue[mode]
-  const pal = mode === 'dark' ? buildDarkPalette(t, otro) : buildLightPalette(t, otro)
+export const getTheme = (mode = 'light') => {
+  const t   = tokens[mode]
+  const pal = mode === 'dark' ? buildDarkPalette(t) : buildLightPalette(t)
 
   return createTheme({
     palette: pal,

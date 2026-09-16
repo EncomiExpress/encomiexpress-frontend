@@ -1,7 +1,7 @@
 import ExcelJS from 'exceljs'
 import logo from '../../assets/logo.png'
 
-const BRAND_RED = 'FFCC1818'
+const BRAND_BLUE = 'FF1A2E6E'
 // Proporción real del PNG (1504×467) — si no se respeta, el logo queda
 // deformado/recortado al forzarlo a un tamaño de otra proporción.
 const LOGO_RATIO = 1504 / 467
@@ -20,9 +20,9 @@ const TEXT_COL = 4
 
 // theme.palette.primary.main llega como '#RRGGBB' — ExcelJS espera ARGB ('FFRRGGBB').
 const toArgb = (hex) => {
-  if (!hex || typeof hex !== 'string') return BRAND_RED
+  if (!hex || typeof hex !== 'string') return BRAND_BLUE
   const clean = hex.replace('#', '').toUpperCase()
-  return clean.length === 6 ? `FF${clean}` : BRAND_RED
+  return clean.length === 6 ? `FF${clean}` : BRAND_BLUE
 }
 
 // Aclara un color ARGB mezclándolo con blanco, para un fondo de encabezado

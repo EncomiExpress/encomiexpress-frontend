@@ -8,7 +8,6 @@ const DarkModeContext = createContext()
 
 export const ThemeProviderWrapper = ({ children }) => {
   const [darkMode,   setDarkMode]   = useState(() => localStorage.getItem(STORAGE_KEYS.DARK_MODE)   === 'true')
-  const [paletteKey, setPaletteKey] = useState(() => localStorage.getItem(STORAGE_KEYS.PALETTE_KEY) || 'red')
   const [navLayout,  setNavLayoutState] = useState(() => localStorage.getItem(STORAGE_KEYS.NAV_LAYOUT) || 'sidebar')
 
   const toggleDarkMode = () =>
@@ -17,25 +16,18 @@ export const ThemeProviderWrapper = ({ children }) => {
       return !prev
     })
 
-  const togglePalette = (newPalette) =>
-    setPaletteKey(prev => {
-      const next = newPalette || (prev === 'red' ? 'blue' : 'red')
-      localStorage.setItem(STORAGE_KEYS.PALETTE_KEY, next)
-      return next
-    })
-
   const setNavLayout = (layout) => {
     localStorage.setItem(STORAGE_KEYS.NAV_LAYOUT, layout)
     setNavLayoutState(layout)
   }
 
   const theme = useMemo(
-    () => getTheme(darkMode ? 'dark' : 'light', paletteKey),
-    [darkMode, paletteKey]
+    () => getTheme(darkMode ? 'dark' : 'light'),
+    [darkMode]
   )
 
   return (
-    <DarkModeContext.Provider value={{ darkMode, toggleDarkMode, paletteKey, togglePalette, navLayout, setNavLayout }}>
+    <DarkModeContext.Provider value={{ darkMode, toggleDarkMode, navLayout, setNavLayout }}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
         {children}

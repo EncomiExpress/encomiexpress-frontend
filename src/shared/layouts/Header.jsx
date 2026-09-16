@@ -22,7 +22,7 @@ const getGreeting = () => {
 }
 
 const Header = ({ collapsed }) => {
-  const { darkMode, toggleDarkMode, paletteKey, togglePalette, navLayout, setNavLayout } = useDarkMode()
+  const { darkMode, toggleDarkMode, navLayout, setNavLayout } = useDarkMode()
   const theme = useTheme()
   const pal   = theme.palette
 
@@ -140,8 +140,6 @@ const Header = ({ collapsed }) => {
         pal={pal}
         darkMode={darkMode}
         toggleDarkMode={toggleDarkMode}
-        paletteKey={paletteKey}
-        togglePalette={togglePalette}
         navLayout={navLayout}
         setNavLayout={setNavLayout}
       />
