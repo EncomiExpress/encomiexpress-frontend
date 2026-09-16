@@ -25,7 +25,7 @@ const useAnticipoExport = ({ theme, getNombreConductor, debouncedBusqueda, filtr
             const rows = (res?.data || []).map(anticipo => ({
                 'ID': anticipo.idAnticipoExcedente || anticipo.idAnticipo,
                 'Conductor': getNombreConductor(anticipo),
-                'Ruta': anticipo.ruta ? `${anticipo.ruta.origen || '-'} → ${anticipo.ruta.destino?.municipio || 'Sin destino'}` : (anticipo.idRuta || '-'),
+                'Ruta': anticipo.salida ? `${anticipo.salida.origen || '-'} → ${anticipo.salida.ruta?.destino?.municipio || 'Sin destino'}` : (anticipo.idSalida || '-'),
                 'Valor anticipo': formatMoney(anticipo.valorAnticipo),
                 'Valor gastado': formatMoney(anticipo.valorGastado),
                 'Excedente': formatMoney(anticipo.excedente),

@@ -1,0 +1,168 @@
+import { formatFecha, esSoloRelleno } from '../../../shared/utils/formatters.js'
+import { getRangoHorario, esDomingo, sumarDias, hoyISO, ahoraHHMM, MIN_DIAS_SALIDA_LLEGADA, MAX_DIAS_ANTICIPACION } from '../../../shared/utils/horarioLaboral.js'
+import { validarObservacionesRuta } from '../../../shared/validations/observacionesRutaValidation.js'
+
+// Salidas son recorridos regionales cortos — no tiene sentido dejar programar una
+// salida o llegada con meses/años de anticipación. Debe coincidir con
+// MAX_DIAS_ANTICIPACION del backend (salidaProgramadaService.js/horarioLaboral.js).
+export const maxISO = () => sumarDias(hoyISO(), MAX_DIAS_ANTICIPACION)
+
+// Orden pensado como se arma una salida en la práctica: primero la Ruta
+// (plantilla, define destino final), luego el Horario (a qué hora sale de la
+// base y cuándo se espera que llegue), y por último a quién se le encarga el
+// viaje -- Vehículo y Conductor, con las paradas de CADA par integradas en su
+// propia fila (ya no un paso global "Paradas": desde que las paradas pasaron a
+// ser del par, no de toda la salida, pedirlas aparte ya no tenía sentido -- dos
+// pares pueden tener recorridos distintos, ver PasoConvoy.jsx).
+export const steps = ['Ruta', 'Horario', 'Vehículo y Conductor', 'Confirmación']
+
+// Máximo de pares vehículo+conductor por salida — igual al tope del backend
+// (MAX_PARES_RUTA en salidaProgramadaService.js), mismo criterio que MAX_PAQUETES en Ventas.
+export const MAX_PARES = 10
+
+// Máximo de paradas intermedias por CADA par vehículo+conductor (no por la suma de
+// todos los pares) — igual al tope del backend (MAX_PARADAS en
+// salidaProgramadaService.js/validarParadas).
+export const MAX_PARADAS = 20
+
+// Mismo alfabeto que ya filtra RegistrarSalidaProgramada.jsx en vivo para origen
+// (letras + guion + guion bajo) — el validador replica esa misma regla.
+const ORIGEN_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s\-_]+$/
+const ORIGEN_MAX_LENGTH = 100
+
+// Valida un único campo del formulario (usado en onBlur y para re-validar en vivo
+// mientras se corrige un campo ya marcado con error). "horaLlegadaEstimada" no vive
+// aquí: es opcional y no tiene ninguna regla que validar. El piso de fechaSalida es
+// hoy, no mañana — una salida puede salir más tarde el mismo día en que se programa o
+// reprograma. Mismo piso replicado en el backend (salidaProgramadaService.validarHorarioRuta).
+export const validarCampo = (name, form) => {
+    switch (name) {
+        case 'origen':
+            if (!form.origen?.trim()) return 'El origen es obligatorio'
+            if (esSoloRelleno(form.origen)) return 'El origen no puede contener solo espacios o guiones'
+            if (!ORIGEN_REGEX.test(form.origen)) return 'El origen contiene caracteres no permitidos'
+            if (form.origen.length > ORIGEN_MAX_LENGTH) return `El origen no puede superar los ${ORIGEN_MAX_LENGTH} caracteres`
+            return ''
+        case 'idRuta':
+            return form.idRuta ? '' : 'Selecciona una ruta (plantilla)'
+        case 'fechaSalida':
+            if (!form.fechaSalida) return 'La fecha de salida es obligatoria'
+            if (form.fechaSalida < hoyISO()) return 'La fecha de salida no puede ser anterior a hoy'
+            if (form.fechaSalida > maxISO()) return `No se puede programar con más de ${MAX_DIAS_ANTICIPACION} días de anticipación (máximo el ${formatFecha(maxISO())})`
+            if (esDomingo(form.fechaSalida)) return 'No se puede salir en domingo (la empresa permanece cerrada)'
+            return ''
+        case 'horaSalida': {
+            if (!form.horaSalida) return 'La hora de salida es obligatoria'
+            const rango = getRangoHorario(form.fechaSalida)
+            if (rango && (form.horaSalida < rango.min || form.horaSalida > rango.max)) return `Debe estar entre las ${rango.min} y las ${rango.max}`
+            if (form.fechaSalida === hoyISO() && form.horaSalida <= ahoraHHMM()) {
+                return 'Esa hora ya pasó — elige una hora más adelante'
+            }
+            return ''
+        }
+        case 'fechaLlegadaEstimada': {
+            if (!form.fechaSalida) return 'Primero selecciona la fecha de salida'
+            if (!form.fechaLlegadaEstimada) return 'La fecha de llegada es obligatoria'
+            if (esDomingo(form.fechaLlegadaEstimada)) return 'No se puede llegar en domingo (la empresa permanece cerrada)'
+            if (form.fechaLlegadaEstimada > maxISO()) return `No se puede programar con más de ${MAX_DIAS_ANTICIPACION} días de anticipación (máximo el ${formatFecha(maxISO())})`
+            const minima = sumarDias(form.fechaSalida, MIN_DIAS_SALIDA_LLEGADA)
+            if (form.fechaLlegadaEstimada < minima) {
+                return MIN_DIAS_SALIDA_LLEGADA > 0
+                    ? `Debe ser al menos ${MIN_DIAS_SALIDA_LLEGADA} día(s) después de la salida (mínimo el ${formatFecha(minima)})`
+                    : `No puede ser anterior a la fecha de salida (mínimo el ${formatFecha(minima)})`
+            }
+            return ''
+        }
+        case 'horaLlegadaEstimada': {
+            if (!form.horaLlegadaEstimada) return ''
+            const rango = getRangoHorario(form.fechaLlegadaEstimada)
+            if (rango && (form.horaLlegadaEstimada < rango.min || form.horaLlegadaEstimada > rango.max)) return `Debe estar entre las ${rango.min} y las ${rango.max}`
+            return ''
+        }
+        case 'observaciones':
+            if (form.observaciones && esSoloRelleno(form.observaciones)) return 'Las observaciones no pueden contener solo espacios o guiones'
+            if (form.observaciones && form.observaciones.length > 500) return 'Las observaciones no pueden superar los 500 caracteres'
+            return validarObservacionesRuta(form.observaciones)
+        default:
+            return ''
+    }
+}
+
+// Valida el array de pares vehículo+conductor (convoy de la salida) — mismo patrón
+// que validarCategorias() en RegistrarConductor.jsx.
+//
+// `capacidadCtx` (opcional, solo lo manda ActualizarSalidaProgramada.jsx) — si al
+// cambiarle el vehículo a un par que YA tiene paquetes asignados el vehículo nuevo
+// no aguanta ese peso, se avisa acá (mismo chequeo que el backend).
+export const validarPares = (pares, { vehiculos, paresOriginales } = {}) => {
+    const completos = pares.filter(p => p.idVehiculo && p.idConductor)
+    const incompletos = pares.some(p => (p.idVehiculo && !p.idConductor) || (!p.idVehiculo && p.idConductor))
+    if (completos.length === 0) return 'Agrega al menos un vehículo y su conductor'
+    if (incompletos) return 'Completa el vehículo y el conductor de cada fila (o quítala)'
+    const idsVehiculo = completos.map(p => p.idVehiculo)
+    const idsConductor = completos.map(p => p.idConductor)
+    if (new Set(idsVehiculo).size !== idsVehiculo.length) return 'No repitas el mismo vehículo en dos filas'
+    if (new Set(idsConductor).size !== idsConductor.length) return 'No repitas el mismo conductor en dos filas'
+    if (vehiculos && paresOriginales) {
+        for (const par of completos) {
+            const original = paresOriginales.find(p => p.idSalidaVehiculoConductor === par.idSalidaVehiculoConductor)
+            if (!original || parseInt(par.idVehiculo) === original.idVehiculo) continue
+            const pesoAsignado = Number(original.pesoUsado || 0)
+            if (pesoAsignado <= 0) continue
+            const vehiculo = vehiculos.find(v => v.idVehiculo === parseInt(par.idVehiculo))
+            const capacidad = vehiculo?.capacidad ? Number(vehiculo.capacidad) : null
+            if (capacidad != null && pesoAsignado > capacidad) {
+                return `El vehículo ${vehiculo.placa || ''} tiene capacidad para ${capacidad} kg, pero este par ya tiene ${pesoAsignado.toFixed(2)} kg en paquetes asignados. Elige un vehículo con más capacidad.`
+            }
+        }
+    }
+    return ''
+}
+
+// Paradas intermedias del recorrido de UN PAR vehículo+conductor — opcionales. Si
+// se agregan, no se puede repetir el mismo municipio dos veces DENTRO del
+// recorrido de ese mismo par (mismo criterio que valida el backend,
+// salidaProgramadaService.validarParadas) — dos pares DISTINTOS sí pueden
+// compartir una misma parada (ruta fraccionada), por eso esto se llama una vez
+// POR PAR, nunca con el array combinado de todos los pares.
+export const validarParadas = (paradas) => {
+    const completas = (paradas || []).filter(p => p.idDestino)
+    const idsDestino = completas.map(p => p.idDestino)
+    if (new Set(idsDestino).size !== idsDestino.length) return 'No repitas el mismo municipio en el recorrido de este vehículo'
+    return ''
+}
+
+// esRegreso: en modo regreso el paso "Ruta" no pide plantilla (la determina el
+// backend a partir de la ida) y el paso "Vehículo y Conductor" no valida nada (el
+// convoy y sus paradas los hereda el backend, ver REGLA NUEVA en
+// salidaProgramadaService.js).
+// `esRegreso` lo pasan los componentes del wizard
+// (RegistrarSalidaProgramada/ActualizarSalidaProgramada).
+export const validarPaso = (step, form, capacidadCtx, esRegreso = false) => {
+    const e = {}
+    if (step === 0) {
+        e.origen = validarCampo('origen', form)
+        if (!esRegreso) e.idRuta = validarCampo('idRuta', form)
+    }
+    if (step === 1) {
+        e.fechaSalida = validarCampo('fechaSalida', form)
+        e.horaSalida = validarCampo('horaSalida', form)
+        e.fechaLlegadaEstimada = validarCampo('fechaLlegadaEstimada', form)
+        e.horaLlegadaEstimada = validarCampo('horaLlegadaEstimada', form)
+        e.observaciones = validarCampo('observaciones', form)
+    }
+    if (step === 2) {
+        e.pares = esRegreso ? '' : validarPares(form.pares, capacidadCtx)
+        // Las paradas viven ahora dentro de cada par -- se validan una por una, cada
+        // una contra el recorrido de SU par. `paradasPorPar[i]` es el mensaje de
+        // error (si hay) para form.pares[i].paradas; el array solo se agrega al
+        // resultado si algún par realmente tiene un error, para no ensuciar
+        // `errores` con un array de strings vacíos.
+        if (!esRegreso) {
+            const paradasPorPar = form.pares.map(p => validarParadas(p.paradas))
+            if (paradasPorPar.some(err => err)) e.paradasPorPar = paradasPorPar
+        }
+    }
+    Object.keys(e).forEach(k => { if (!e[k]) delete e[k] })
+    return e
+}

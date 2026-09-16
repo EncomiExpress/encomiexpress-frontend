@@ -38,15 +38,19 @@ const agruparPorTipo = (dependencias) => {
 // A qué módulo lleva cada tipo de dependencia al hacer clic (siempre con
 // ?highlight=id, mismo comportamiento que el resto del sistema: abre en otra
 // pestaña, ubica la página correcta y resalta la fila).
+// "Ruta"/"Ruta activa"/"Conflicto de..." son dependencias sobre la AGENDA (una
+// salida concreta: fecha/hora/estado/convoy), no sobre la plantilla liviana de
+// /transporte/rutas -- por eso apuntan a /transporte/salidas (ver Fase 4 de la
+// migración Ruta/SalidaProgramada).
 const RUTA_POR_TIPO = {
     'Vehículo': '/vehiculos/listar',
-    'Ruta': '/transporte/rutas',
-    'Ruta activa': '/transporte/rutas',
+    'Ruta': '/transporte/salidas',
+    'Ruta activa': '/transporte/salidas',
     'Encomienda': '/ventas/listar',
     'Anticipo Pendiente': '/anticipos/listar',
     'Estado del anticipo': '/anticipos/listar',
-    'Conflicto de vehículo': '/transporte/rutas',
-    'Conflicto de conductor': '/transporte/rutas',
+    'Conflicto de vehículo': '/transporte/salidas',
+    'Conflicto de conductor': '/transporte/salidas',
 }
 
 const ModalBloqueoInhabilitacion = ({ open, onClose, entidad = 'registro', mensaje, dependencias = [] }) => {

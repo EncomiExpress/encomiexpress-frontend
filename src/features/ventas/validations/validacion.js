@@ -9,7 +9,7 @@ import { maxLengthDocumento, docHelperText as docHelperTextBase, validarNumeroDo
 export const steps = ['Participantes', 'Paquete', 'Envío', 'Pago', 'Confirmación']
 
 export const MAX_PAQUETES = 10
-export const PAQUETE_VACIO = { descripcionContenido: '', peso: '', alto: '', ancho: '', profundidad: '', tipoCarga: 'normal', idRutaVehiculoConductor: '' }
+export const PAQUETE_VACIO = { descripcionContenido: '', peso: '', alto: '', ancho: '', profundidad: '', tipoCarga: 'normal', idSalidaVehiculoConductor: '' }
 export const CAMPOS_PAQUETE = ['descripcionContenido', 'peso', 'alto', 'ancho', 'profundidad', 'tipoCarga']
 const SOLO_LETRAS_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/
 const NOMBRE_DESTINATARIO_MAX_LENGTH = 50
@@ -88,8 +88,8 @@ export const validarCampo = (name, form) => {
         }
         case 'idDestinoDestinatario':
             return form.idDestinoDestinatario ? '' : 'Selecciona el municipio de destino'
-        case 'idRuta':
-            return form.idRuta ? '' : 'Selecciona una ruta'
+        case 'idSalida':
+            return form.idSalida ? '' : 'Selecciona una salida'
         case 'fechaEstimadaEntrega': {
             if (!form.fechaEstimadaEntrega) return 'La fecha es obligatoria'
             // Mismo horizonte (MAX_DIAS_ANTICIPACION) que ya limita fechaSalida/
@@ -156,8 +156,8 @@ export const validarCampoPaquete = (campo, paquete) => {
         }
         case 'tipoCarga':
             return ['hierro', 'normal'].includes(paquete.tipoCarga) ? '' : 'Selecciona el tipo de carga'
-        case 'idRutaVehiculoConductor':
-            return paquete.idRutaVehiculoConductor ? '' : 'Asigna un vehículo'
+        case 'idSalidaVehiculoConductor':
+            return paquete.idSalidaVehiculoConductor ? '' : 'Asigna un vehículo'
         default:
             return ''
     }

@@ -8,7 +8,8 @@ import { VehiculoProvider } from './features/vehiculos/context/VehiculoContext'
 import { PropietarioProvider } from './features/propietarios/context/PropietarioContext'
 import { ConductorProvider } from './features/conductores/context/ConductorContext'
 import { DestinoProvider } from './features/destinos/context/DestinoContext'
-import { RutaProgramacionProvider } from './features/rutas/context/RutaProgramacionContext'
+import { RutaProvider } from './features/rutas/context/RutaContext'
+import { SalidaProgramacionProvider } from './features/salidas/context/SalidaProgramacionContext'
 import { VentaProvider } from './features/ventas/context/VentaContext'
 import AppRoutes from './AppRoutes'
 
@@ -22,15 +23,17 @@ function App() {
               <ConductorProvider>
                 <DestinoProvider>
                   <ConfiguracionProvider>
-                    <RutaProgramacionProvider>
-                      <ClienteProvider>
-                        <VentaProvider>
-                          <AnticipoExcedenteProvider>
-                            <AppRoutes />
-                          </AnticipoExcedenteProvider>
-                        </VentaProvider>
-                      </ClienteProvider>
-                    </RutaProgramacionProvider>
+                    <RutaProvider>
+                      <SalidaProgramacionProvider>
+                        <ClienteProvider>
+                          <VentaProvider>
+                            <AnticipoExcedenteProvider>
+                              <AppRoutes />
+                            </AnticipoExcedenteProvider>
+                          </VentaProvider>
+                        </ClienteProvider>
+                      </SalidaProgramacionProvider>
+                    </RutaProvider>
                   </ConfiguracionProvider>
                 </DestinoProvider>
               </ConductorProvider>

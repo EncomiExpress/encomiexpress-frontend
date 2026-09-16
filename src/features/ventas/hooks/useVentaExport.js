@@ -26,7 +26,7 @@ const useVentaExport = ({ theme, debouncedBusqueda, filtroHabilitado, filtroEsta
                 'ID': venta.idEncomiendaVenta || venta.idVenta,
                 'Guía': (venta.paquetes || []).map(p => p.numeroGuia).filter(Boolean).join(', ') || getGuiaPrincipal(venta) || '—',
                 'Cliente': `${venta.cliente?.nombre || ''} ${venta.cliente?.apellido || ''}`.trim() || venta.idCliente || '-',
-                'Ruta': venta.ruta?.origen || '-',
+                'Ruta': venta.salida?.origen || '-',
                 'Destino': venta.destinatario?.destino?.municipio || '-',
                 'Fecha registro': formatFecha(venta.fechaRegistro),
                 'Fecha est. entrega': formatFecha(venta.fechaEstimadaEntrega),

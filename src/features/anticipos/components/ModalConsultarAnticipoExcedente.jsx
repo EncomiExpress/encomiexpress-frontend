@@ -12,6 +12,7 @@ import { formatFecha } from '../../../shared/utils/formatters.js'
 import { formatMoney } from '../validations/anticipoValidation.js'
 import CampoFila from '../../../shared/components/CampoFila.jsx'
 import FichaCard from '../../../shared/components/FichaCard.jsx'
+import { buildSalidaHighlightUrl } from '../../../shared/utils/salidaLinks.js'
 
 const esImagen = (url) => {
     const ext = url.split('.').pop()?.toLowerCase().split('?')[0]
@@ -32,14 +33,14 @@ const ModalConsultarAnticipoExcedente = ({ anticipo, conductores, rutas, onClose
     }
 
     const resolveRuta = () => {
-        if (anticipo.ruta?.origen) return anticipo.ruta.origen
-        const r = rutas?.find(r => r.idRuta === parseInt(anticipo.idRuta))
+        if (anticipo.salida?.origen) return anticipo.salida.origen
+        const r = rutas?.find(r => r.idSalida === parseInt(anticipo.idSalida))
         return r ? (r.origen || r.nombre) : '—'
     }
 
     const resolveDestino = () => {
-        const destino = anticipo.ruta?.destino
-            || rutas?.find(r => r.idRuta === parseInt(anticipo.idRuta))?.destino
+        const destino = anticipo.salida?.ruta?.destino
+            || rutas?.find(r => r.idSalida === parseInt(anticipo.idSalida))?.destino
         if (!destino) return null
         return [destino.municipio, destino.departamento].filter(Boolean).join(', ')
     }
@@ -47,9 +48,13 @@ const ModalConsultarAnticipoExcedente = ({ anticipo, conductores, rutas, onClose
     const nombreConductor = resolveConductor()
     const origen = resolveRuta()
     const destinoTexto = resolveDestino()
-    const destinoCiudad = anticipo.ruta?.destino?.municipio
-        || rutas?.find(r => r.idRuta === parseInt(anticipo.idRuta))?.destino?.municipio
+    const destinoCiudad = anticipo.salida?.ruta?.destino?.municipio
+        || rutas?.find(r => r.idSalida === parseInt(anticipo.idSalida))?.destino?.municipio
         || null
+    // anticipo.salida (si vino en el include) o, como respaldo, la fila
+    // correspondiente en `rutas` (en realidad "salidas", nombre heredado del
+    // contexto viejo) — cualquiera de los dos le basta a buildSalidaHighlightUrl.
+    const salidaParaLink = anticipo.salida || { idSalida: anticipo.idSalida, ...rutas?.find(r => r.idSalida === parseInt(anticipo.idSalida)) }
     // Filtra entradas vacías/rotas — subidas viejas hechas antes de corregir el
     // backend (guardaba `undefined` en vez de la URL real) quedaron como `null`.
     const soporteValido = (anticipo.soporte || []).filter(Boolean)
@@ -101,7 +106,7 @@ const ModalConsultarAnticipoExcedente = ({ anticipo, conductores, rutas, onClose
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
                             <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Ruta</Typography>
                             <Chip label={destinoCiudad ? `${origen} - ${destinoCiudad}` : (origen || '—')} size="small"
-                                onClick={() => window.open(`/transporte/rutas?highlight=${anticipo.idRuta}`, '_blank')}
+                                onClick={() => window.open(buildSalidaHighlightUrl(salidaParaLink), '_blank')}
                                 sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem', cursor: 'pointer', '&:hover': { filter: 'brightness(0.92)' } }} />
                         </Box>
                         <CampoFila label="Destino" value={destinoTexto} />

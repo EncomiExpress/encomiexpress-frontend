@@ -21,7 +21,7 @@ import {
 // venta existente, el estado sinCambios/formOriginal, y el modal de "nuevo cliente".
 export const useVentaWizardForm = ({
     initialForm,
-    rutasProgramadas, fetchRutasProgramadas,
+    salidasProgramadas, fetchSalidasProgramadas,
     tarifaPorKgHierro, tarifaPorKgNormal, tarifaPorPaquete, fetchConfiguracion,
     ventaOriginal = null,
     afterChange = () => {},
@@ -34,7 +34,7 @@ export const useVentaWizardForm = ({
 
     // true en cuanto el admin edita "Total a pagar" a mano — a partir de ahí el
     // refresco de tarifas de los pasos "Paquete"/"Pago" (más abajo) deja de recalcularlo
-    // por encima, hasta que vuelva a cambiar la ruta o el peso/cantidad de paquetes.
+    // por encima, hasta que vuelva a cambiar la salida o el peso/cantidad de paquetes.
     const valorServicioManualRef = useRef(false)
     // Un elemento DOM por paquete (índice), para poder hacer scroll hasta el primero
     // que quede con error al intentar avanzar de paso — ver handleNext.
@@ -55,15 +55,15 @@ export const useVentaWizardForm = ({
     const [form, setForm] = useState(initialForm)
 
     useEffect(() => {
-        fetchRutasProgramadas({ limit: 1000 }).catch(() => null)
-    }, [fetchRutasProgramadas])
+        fetchSalidasProgramadas({ limit: 1000 }).catch(() => null)
+    }, [fetchSalidasProgramadas])
 
     // Las tarifas por kg (hierro/normal) y por paquete pueden cambiar mientras el
     // formulario sigue abierto -- igual que el refresco del paso "Pago" más abajo, se
     // refrescan al ENTRAR al paso "Paquete" (índice 1) para que el preview de peso
     // volumétrico/costo por paquete (calculado en vivo en el render de PasoPaquetes.jsx
     // a partir de tarifaPorKgHierro/tarifaPorKgNormal) nunca quede con tarifas obsoletas.
-    // Si ya hay una ruta elegida (se volvió con "Anterior" desde un paso posterior),
+    // Si ya hay una salida elegida (se volvió con "Anterior" desde un paso posterior),
     // además recalcula total con los datos frescos, respetando
     // valorServicioManualRef.
     useEffect(() => {
@@ -73,7 +73,7 @@ export const useVentaWizardForm = ({
             if (cancelado || valorServicioManualRef.current) return
             setForm(prev => {
                 const resultado = calcularValoresPaquetes(
-                    prev.idRuta, prev.paquetes, rutasProgramadas,
+                    prev.idSalida, prev.paquetes, salidasProgramadas,
                     tarifasFrescas?.tarifaPorKgHierro ?? tarifaPorKgHierro,
                     tarifasFrescas?.tarifaPorKgNormal ?? tarifaPorKgNormal,
                     tarifasFrescas?.tarifaPorPaquete ?? tarifaPorPaquete,
@@ -95,56 +95,61 @@ export const useVentaWizardForm = ({
     useEffect(() => {
         if (activeStep !== 2) return
         let cancelado = false
-        fetchRutasProgramadas({ limit: 1000 }).then(rutasFrescas => {
+        fetchSalidasProgramadas({ limit: 1000 }).then(salidasFrescas => {
             if (cancelado) return
             setForm(prev => {
-                if (!prev.idRuta) return prev
-                const ruta = (rutasFrescas || []).find(r => r.idRuta === parseInt(prev.idRuta))
-                // Bug corregido (2026-09-07): fetchRutasProgramadas({limit:1000}) trae
-                // TODAS las rutas sin filtrar por estado/habilitado, así que `find()`
-                // siempre "encontraba" una ruta Cancelada/inhabilitada/etc. — este chequeo
-                // solo miraba `!ruta` (ausente del todo), nunca disparaba para una ruta que
+                if (!prev.idSalida) return prev
+                const ruta = (salidasFrescas || []).find(r => r.idSalida === parseInt(prev.idSalida))
+                // Bug corregido (2026-09-07): fetchSalidasProgramadas({limit:1000}) trae
+                // TODAS las salidas sin filtrar por estado/habilitado, así que `find()`
+                // siempre "encontraba" una salida Cancelada/inhabilitada/etc. — este chequeo
+                // solo miraba `!ruta` (ausente del todo), nunca disparaba para una salida que
                 // sigue existiendo pero ya no sirve, y el selector se quedaba mostrando esa
-                // ruta inválida como si nada (típico al editar una venta que quedó
+                // salida inválida como si nada (típico al editar una venta que quedó
                 // Cancelada por esa razón). Mismo criterio que rutaSigueSirviendo() del
                 // backend — ver utils/ventaResolvers.js, motivoVentaCancelada().
                 //
                 // Se le sumó (2026-09-13, ver LOGICA.md "Ventas huérfanas al editar
-                // paradas/destino de una ruta"): la ruta puede seguir Programada y
+                // paradas/destino de una ruta"): la salida puede seguir Programada y
                 // habilitada, pero haber dejado de cubrir el destino de ESTA venta (se le
-                // quitó como parada o como destino final). Mismo criterio que
-                // motivoVentaCancelada() -- si no calza, se trata igual que "la ruta ya
-                // no sirve" y se limpia el selector, para que la usuaria elija una nueva
-                // ruta a propósito en vez de guardar sin darse cuenta.
+                // quitó como parada o como destino final de su plantilla). Mismo criterio
+                // que motivoVentaCancelada() -- si no calza, se trata igual que "la salida
+                // ya no sirve" y se limpia el selector, para que la usuaria elija una nueva
+                // salida a propósito en vez de guardar sin darse cuenta.
                 const idDestinoVenta = parseInt(prev.idDestinoDestinatario) || null
-                const municipiosCubiertos = ruta ? new Set([ruta.destino?.idDestino, ...(ruta.paradas || []).map(p => p.idDestino)]) : null
+                // Las paradas ya no son un array a nivel de la salida completa -- cada
+                // par del convoy trae el suyo (ruta fraccionada), así que se unen las de
+                // TODOS los pares: basta con que alguno cubra el destino de la venta.
+                const municipiosCubiertos = ruta
+                    ? new Set([ruta.ruta?.idDestino, ...(ruta.paresVehiculoConductor || []).flatMap(par => (par.paradas || []).map(p => p.idDestino))])
+                    : null
                 const destinoFueraDeRuta = !!ruta && idDestinoVenta != null && !municipiosCubiertos.has(idDestinoVenta)
                 if (!ruta || ruta.estado !== 'Programada' || ruta.habilitado === false || destinoFueraDeRuta) {
-                    // La ruta ya no sirve (salió, se completó, se canceló, se inhabilitó)
+                    // La salida ya no sirve (salió, se completó, se canceló, se inhabilitó)
                     // — se limpia la selección en vez de dejar un id "fantasma":
-                    // validarCampo('idRuta') solo mira si hay algo puesto, así que un id
+                    // validarCampo('idSalida') solo mira si hay algo puesto, así que un id
                     // que ya no es una opción válida pasaría la validación sin que nadie lo
-                    // note. Mismo criterio que elegir "ninguna ruta" a mano en el
+                    // note. Mismo criterio que elegir "ninguna salida" a mano en el
                     // Autocomplete (ver el onChange de más abajo).
-                    setErrores(e => ({ ...e, idRuta: '' }))
+                    setErrores(e => ({ ...e, idSalida: '' }))
                     return {
                         ...prev,
                         // fechaEstimadaEntrega también se limpia acá (bug corregido, ver
                         // LOGICA.md): antes se quedaba con el valor viejo, ya sin ninguna
-                        // ruta que lo acote — sin min/max, el calendario nativo dejaba
-                        // elegir cualquier fecha hasta que se seleccionara una ruta nueva.
-                        idRuta: '', destino: '', fechaSalidaRuta: '', fechaLlegadaEstimadaRuta: '', fechaEstimadaEntrega: '',
-                        paquetes: prev.paquetes.map(p => ({ ...p, idRutaVehiculoConductor: '' })),
+                        // salida que lo acote — sin min/max, el calendario nativo dejaba
+                        // elegir cualquier fecha hasta que se seleccionara una salida nueva.
+                        idSalida: '', destino: '', fechaSalidaRuta: '', fechaLlegadaEstimadaRuta: '', fechaEstimadaEntrega: '',
+                        paquetes: prev.paquetes.map(p => ({ ...p, idSalidaVehiculoConductor: '' })),
                     }
                 }
                 const fechaSalida = ruta.fechaSalida || ''
                 const fechaLlegadaEstimada = ruta.fechaLlegadaEstimada || ''
                 if (fechaSalida === prev.fechaSalidaRuta && fechaLlegadaEstimada === prev.fechaLlegadaEstimadaRuta) return prev
                 const minimaNueva = fechaLlegadaEstimada || (fechaSalida ? sumarDias(fechaSalida, 1) : '')
-                // La ruta cambió de fecha mientras el formulario seguía abierto (ej. alguien
-                // la editó desde otra pestaña) — se sincroniza igual que al elegir la ruta o
-                // al editarla desde el módulo de Rutas, en vez de solo limpiar si quedó fuera
-                // de rango (ver "Rutas — editar la fecha de una ruta con ventas ya asociadas").
+                // La salida cambió de fecha mientras el formulario seguía abierto (ej.
+                // alguien la editó desde otra pestaña) — se sincroniza igual que al
+                // elegirla o al editarla desde el módulo de Salidas, en vez de solo
+                // limpiar si quedó fuera de rango.
                 setErrores(e => ({ ...e, fechaEstimadaEntrega: '' }))
                 return {
                     ...prev,
@@ -156,7 +161,7 @@ export const useVentaWizardForm = ({
         }).catch(() => null)
         return () => { cancelado = true }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [activeStep, fetchRutasProgramadas])
+    }, [activeStep, fetchSalidasProgramadas])
 
     // La tarifa del destino, las tarifas por kg y la tarifa por paquete (fijas en
     // Configuración) pueden cambiar mientras el formulario sigue abierto — se refrescan
@@ -166,11 +171,11 @@ export const useVentaWizardForm = ({
     // aunque ya estuviera editado a mano (ver handleResetearTotal más abajo). Ambos
     // casos comparten el cálculo en sí (calcularTotalConTarifasFrescas); cada uno decide
     // por separado cuándo pedir los datos frescos y qué hacer con la promesa.
-    const calcularTotalConTarifasFrescas = (paquetes, idRuta, tarifasFrescas, rutasFrescas) => {
-        const ruta = (rutasFrescas || []).find(r => r.idRuta === parseInt(idRuta))
-        if (!ruta || !idRuta) return null
+    const calcularTotalConTarifasFrescas = (paquetes, idSalida, tarifasFrescas, salidasFrescas) => {
+        const ruta = (salidasFrescas || []).find(r => r.idSalida === parseInt(idSalida))
+        if (!ruta || !idSalida) return null
         return calcularValorServicioBase(
-            ruta.destino?.tarifaBase, paquetes,
+            ruta.ruta?.destino?.tarifaBase, paquetes,
             tarifasFrescas?.tarifaPorKgHierro ?? tarifaPorKgHierro,
             tarifasFrescas?.tarifaPorKgNormal ?? tarifaPorKgNormal,
             tarifasFrescas?.tarifaPorPaquete ?? tarifaPorPaquete,
@@ -182,11 +187,11 @@ export const useVentaWizardForm = ({
         let cancelado = false
         Promise.all([
             fetchConfiguracion(),
-            fetchRutasProgramadas({ limit: 1000 }),
-        ]).then(([tarifasFrescas, rutasFrescas]) => {
+            fetchSalidasProgramadas({ limit: 1000 }),
+        ]).then(([tarifasFrescas, salidasFrescas]) => {
             if (cancelado) return
             setForm(prev => {
-                const vs = calcularTotalConTarifasFrescas(prev.paquetes, prev.idRuta, tarifasFrescas, rutasFrescas)
+                const vs = calcularTotalConTarifasFrescas(prev.paquetes, prev.idSalida, tarifasFrescas, salidasFrescas)
                 return vs == null ? prev : { ...prev, total: vs }
             })
         }).catch(() => {})
@@ -202,27 +207,27 @@ export const useVentaWizardForm = ({
         valorServicioManualRef.current = false
         Promise.all([
             fetchConfiguracion(),
-            fetchRutasProgramadas({ limit: 1000 }),
-        ]).then(([tarifasFrescas, rutasFrescas]) => {
+            fetchSalidasProgramadas({ limit: 1000 }),
+        ]).then(([tarifasFrescas, salidasFrescas]) => {
             setForm(prev => {
-                const vs = calcularTotalConTarifasFrescas(prev.paquetes, prev.idRuta, tarifasFrescas, rutasFrescas)
+                const vs = calcularTotalConTarifasFrescas(prev.paquetes, prev.idSalida, tarifasFrescas, salidasFrescas)
                 return vs == null ? prev : { ...prev, total: vs }
             })
         }).catch(() => {})
     }
 
-    // Si la ruta elegida tiene un solo vehículo, no tiene caso elegir — todos los
+    // Si la salida elegida tiene un solo vehículo, no tiene caso elegir — todos los
     // paquetes (incluidos los que se agreguen después) van directo a ese único vehículo.
     useEffect(() => {
-        const ruta = rutasProgramadas.find(r => r.idRuta === parseInt(form.idRuta))
+        const ruta = salidasProgramadas.find(r => r.idSalida === parseInt(form.idSalida))
         const pares = ruta?.paresVehiculoConductor || []
         if (pares.length !== 1) return
-        const unico = pares[0].idRutaVehiculoConductor
+        const unico = pares[0].idSalidaVehiculoConductor
         setForm(prev => {
-            if (prev.paquetes.every(p => p.idRutaVehiculoConductor === unico)) return prev
-            return { ...prev, paquetes: prev.paquetes.map(p => ({ ...p, idRutaVehiculoConductor: unico })) }
+            if (prev.paquetes.every(p => p.idSalidaVehiculoConductor === unico)) return prev
+            return { ...prev, paquetes: prev.paquetes.map(p => ({ ...p, idSalidaVehiculoConductor: unico })) }
         })
-    }, [form.idRuta, form.paquetes.length, rutasProgramadas])
+    }, [form.idSalida, form.paquetes.length, salidasProgramadas])
 
     const calcularValorServicio = (tarifaBase, paquetes = form.paquetes) =>
         calcularValorServicioBase(tarifaBase, paquetes, tarifaPorKgHierro, tarifaPorKgNormal, tarifaPorPaquete)
@@ -233,9 +238,9 @@ export const useVentaWizardForm = ({
     // valorServicioManualRef (ese decide si un refresco automático puede pisarlo o no;
     // esto decide si mostrar el botón). Se compara redondeado a entero porque el campo
     // en pantalla nunca muestra decimales (formatearMoneda los descarta al formatear).
-    const rutaParaTotal = rutasProgramadas.find(r => r.idRuta === parseInt(form.idRuta))
+    const rutaParaTotal = salidasProgramadas.find(r => r.idSalida === parseInt(form.idSalida))
     const totalEditadoManualmente = !!rutaParaTotal && Math.round(Number(form.total) || 0) !==
-        Math.round(calcularValorServicio(rutaParaTotal.destino?.tarifaBase, form.paquetes))
+        Math.round(calcularValorServicio(rutaParaTotal.ruta?.destino?.tarifaBase, form.paquetes))
 
     const handleChange = (e) => {
         const { name } = e.target
@@ -310,7 +315,7 @@ export const useVentaWizardForm = ({
     }
 
     const recalcularValorServicio = (prev, paquetes) => {
-        const resultado = calcularValoresPaquetes(prev.idRuta, paquetes, rutasProgramadas, tarifaPorKgHierro, tarifaPorKgNormal, tarifaPorPaquete)
+        const resultado = calcularValoresPaquetes(prev.idSalida, paquetes, salidasProgramadas, tarifaPorKgHierro, tarifaPorKgNormal, tarifaPorPaquete)
         if (Object.keys(resultado).length > 0) {
             valorServicioManualRef.current = false
         }
@@ -344,12 +349,12 @@ export const useVentaWizardForm = ({
         // "ya no tiene espacio" (guardado al intentar "Siguiente") puede quedar
         // desactualizado en los DEMÁS paquetes. Se limpia acá; el cálculo en vivo del
         // render (alertaPorIndice) ya refleja el estado real mientras tanto.
-        if (campo === 'peso' || campo === 'idRutaVehiculoConductor') {
+        if (campo === 'peso' || campo === 'idSalidaVehiculoConductor') {
             setErrores(prev => ({
                 ...prev,
                 paquetes: (prev.paquetes || []).map((pe, i) => {
-                    if (i === index || !pe?.idRutaVehiculoConductor) return pe
-                    const { idRutaVehiculoConductor: _omit, ...resto } = pe
+                    if (i === index || !pe?.idSalidaVehiculoConductor) return pe
+                    const { idSalidaVehiculoConductor: _omit, ...resto } = pe
                     return resto
                 }),
             }))
@@ -382,8 +387,8 @@ export const useVentaWizardForm = ({
             paquetes: (prev.paquetes || [])
                 .filter((_, i) => i !== index)
                 .map(pe => {
-                    if (!pe?.idRutaVehiculoConductor) return pe
-                    const { idRutaVehiculoConductor: _omit, ...resto } = pe
+                    if (!pe?.idSalidaVehiculoConductor) return pe
+                    const { idSalidaVehiculoConductor: _omit, ...resto } = pe
                     return resto
                 }),
         }))
@@ -391,7 +396,7 @@ export const useVentaWizardForm = ({
     }
 
     const handleNext = () => {
-        const erroresEncontrados = validarPaso(activeStep, form, rutasProgramadas, {
+        const erroresEncontrados = validarPaso(activeStep, form, salidasProgramadas, {
             ventaOriginal, getPesoOriginalPorPar, esOperadorSede, sedeMunicipio: sedeActual?.municipio,
         })
         if (Object.keys(erroresEncontrados).length > 0) {
@@ -425,12 +430,12 @@ export const useVentaWizardForm = ({
     // principio de handleSubmit, que vive en RegistrarVenta.jsx/ActualizarVenta.jsx —
     // ver el comentario de arriba sobre qué NO vive en este hook). Antes, el guardado
     // final no revalidaba nada en absoluto: si un dato quedaba desactualizado mientras
-    // se seguía en "Confirmación" (ej. alguien más editó la ruta elegida, o el reloj
+    // se seguía en "Confirmación" (ej. alguien más editó la salida elegida, o el reloj
     // alcanzó una hora que ya no es válida), el guardado pasaba igual. Devuelve
     // true si todo está bien; si no, devuelve false y ya dejó `errores`/`activeStep`
     // apuntando al primer paso con problemas, listos para que el campo se vea en rojo.
     const validarTodo = () => {
-        const pasos = [0, 1, 2, 3].map(step => validarPaso(step, form, rutasProgramadas, {
+        const pasos = [0, 1, 2, 3].map(step => validarPaso(step, form, salidasProgramadas, {
             ventaOriginal, getPesoOriginalPorPar, esOperadorSede, sedeMunicipio: sedeActual?.municipio,
         }))
         const pasoConError = pasos.findIndex(e => Object.keys(e).length > 0)

@@ -1,46 +1,33 @@
 import { useState } from 'react'
-import { useRutaProgramacion } from '../context/RutaProgramacionContext.jsx'
+import { useRuta } from '../context/RutaContext.jsx'
 import { useToast } from '../../../shared/contexts/ToastContext.jsx'
-import { getRutaId, resolveDestinoPartes } from '../utils/rutaResolvers.js'
 
-// refetch (opcional): recarga la página actual de ListarRutaProgramacion.jsx tras un
-// toggle exitoso — su tabla ya no lee del arreglo compartido de RutaProgramacionContext
-// (ver ListarRutaProgramacion.jsx), así que sin esto el toggle no se reflejaría ahí.
-const useRutaAcciones = (rutasProgramadas, refetch, destinos = []) => {
-    const { toggleHabilitado } = useRutaProgramacion()
+// refetch (opcional): recarga la página actual de ListarRuta.jsx tras un toggle
+// exitoso — mismo patrón que useDestinoAcciones.js.
+const useRutaAcciones = (refetch) => {
+    const { toggleHabilitado } = useRuta()
     const { showToast } = useToast()
 
-    const [confirmInhabilitar, setConfirmInhabilitar] = useState({ open: false, idRuta: null, origen: '', destino: '', habilitadoActual: null, estadoRuta: null, fechaSalida: null, horaSalida: null })
+    const [confirmInhabilitar, setConfirmInhabilitar] = useState({ open: false, id: null, etiqueta: '', habilitadoActual: null })
 
-    const handleToggleHabilitado = (id) => {
-        const rutaActual = rutasProgramadas.find(r => getRutaId(r) === id)
-        setConfirmInhabilitar({
-            open: true,
-            idRuta: id,
-            origen: rutaActual?.origen || '',
-            destino: rutaActual ? resolveDestinoPartes(rutaActual, destinos).municipio : '',
-            habilitadoActual: rutaActual?.habilitado !== false,
-            estadoRuta: rutaActual?.estado || null,
-            // Para que el modal pueda avisar de antemano si al habilitar la ruta va a
-            // quedar Cancelada por fecha/hora vencida (ver ModalInhabilitarRuta.jsx).
-            fechaSalida: rutaActual?.fechaSalida || null,
-            horaSalida: rutaActual?.horaSalida || null,
-        })
+    // `etiqueta`: el corredor "Medellín -> Destino" (getRutaLabel), ya no un nombre
+    // propio -- ver ../utils/rutaResolvers.js.
+    const handleToggleHabilitado = (id, habilitadoActual, etiqueta) => {
+        setConfirmInhabilitar({ open: true, id, etiqueta: etiqueta || '', habilitadoActual })
     }
 
-    const onConfirmarInhabilitar = async () => {
-        const { idRuta, habilitadoActual } = confirmInhabilitar
+    const onConfirmar = async () => {
         try {
-            const { message } = await toggleHabilitado(idRuta)
-            showToast(message || `Ruta ${habilitadoActual ? 'inhabilitada' : 'habilitada'} correctamente.`, 'success')
+            const { message } = await toggleHabilitado(confirmInhabilitar.id)
+            showToast(message || (confirmInhabilitar.habilitadoActual ? 'Ruta inhabilitada correctamente.' : 'Ruta habilitada correctamente.'), 'success')
             refetch?.()
         } catch (err) {
-            showToast(err.message || 'Error al cambiar habilitado', 'error')
+            showToast(err.message || 'No se pudo cambiar el estado de la ruta.', 'error')
             throw err
         }
     }
 
-    return { confirmInhabilitar, setConfirmInhabilitar, handleToggleHabilitado, onConfirmarInhabilitar }
+    return { confirmInhabilitar, setConfirmInhabilitar, handleToggleHabilitado, onConfirmar }
 }
 
 export default useRutaAcciones

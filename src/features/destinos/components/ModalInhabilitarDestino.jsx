@@ -6,8 +6,9 @@ import {
 } from '@mui/material'
 import BlockOutlinedIcon from '@mui/icons-material/BlockOutlined'
 import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined'
-import * as rutaService from '../../rutas/services/rutaService.js'
+import * as salidaService from '../../salidas/services/salidaService.js'
 import { getEstadoColorRuta } from '../../../shared/utils/estadoColors.js'
+import { buildSalidaHighlightUrl } from '../../../shared/utils/salidaLinks.js'
 import ConfirmToggleDialog from '../../../shared/components/ConfirmToggleDialog.jsx'
 
 const RutasMiniTabla = ({ rutas, theme }) => (
@@ -26,11 +27,11 @@ const RutasMiniTabla = ({ rutas, theme }) => (
                         const { color } = getEstadoColorRuta(r.estado)
                         const esProgramada = r.estado === 'Programada'
                         return (
-                            <TableRow key={r.idRuta}
-                                onClick={() => window.open(`/transporte/rutas?highlight=${r.idRuta}`, '_blank')}
+                            <TableRow key={r.idSalida}
+                                onClick={() => window.open(buildSalidaHighlightUrl(r), '_blank')}
                                 sx={{ cursor: 'pointer', '&:hover td': { backgroundColor: theme.palette.action.hover } }}>
                                 <TableCell sx={{ fontSize: '0.8rem', fontWeight: 600, py: 0.75 }}>
-                                    {r.origen || `#${r.idRuta}`}
+                                    {r.origen || `#${r.idSalida}`}
                                 </TableCell>
                                 <TableCell sx={{ fontSize: '0.8rem', py: 0.75 }}>
                                     {r.fechaSalida ? new Date(r.fechaSalida + 'T00:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
@@ -62,13 +63,14 @@ const ModalInhabilitarDestino = ({ open, data, onClose, onExited, onConfirm }) =
         const cargarRutasActivas = () => {
             setRutasInhabilitar({ data: [], loading: true })
             Promise.all([
-                rutaService.getRutas({ idDestino: data.id, habilitado: 'true', limit: 100 }),
+                salidaService.getSalidas({ idDestino: data.id, habilitado: 'true', limit: 100 }),
                 // "Regreso pendiente": la ida ya llegó (Completada) pero el convoy sigue
                 // fuera de base y nadie le programó el regreso todavía -- mismo pseudo-estado
-                // que ya usa el filtro de Listar Rutas (no es un valor real de ruta.estado,
-                // el backend lo traduce a su propio criterio). Sin esto, un destino con un
-                // convoy varado (como Caucasia en este caso) se dejaba inhabilitar igual.
-                rutaService.getRutas({ idDestino: data.id, estado: 'Regreso pendiente', habilitado: 'true', limit: 100 }),
+                // que ya usa el filtro de Listar Salidas (no es un valor real de
+                // salida.estado, el backend lo traduce a su propio criterio). Sin esto, un
+                // destino con un convoy varado (como Caucasia en este caso) se dejaba
+                // inhabilitar igual.
+                salidaService.getSalidas({ idDestino: data.id, estado: 'Regreso pendiente', habilitado: 'true', limit: 100 }),
             ])
                 .then(([activasRes, regresoRes]) => {
                     const activas = (activasRes?.data || []).filter(r => r.estado === 'Programada' || r.estado === 'En Ruta')

@@ -24,8 +24,8 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
     const [parInput, setParInput] = useState('')
 
     const formInicial = {
-        idRuta: '',
-        idRutaVehiculoConductor: '',
+        idSalida: '',
+        idSalidaVehiculoConductor: '',
         valorAnticipo: '',
         fechaEntrega: '',
     }
@@ -39,7 +39,7 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
         if (open) fetchRutasProgramadas({ limit: 1000 })
     }, [open, fetchRutasProgramadas])
 
-    const { paquetesPorPar, loading: cargandoPaquetesPorPar } = usePaquetesPorPar(form.idRuta)
+    const { paquetesPorPar, loading: cargandoPaquetesPorPar } = usePaquetesPorPar(form.idSalida)
     const { filtrarRutasDisponibles, filtrarParesDisponibles } = useAnticiposActivos()
 
     const handleClose = () => {
@@ -52,7 +52,7 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
         onClose()
     }
 
-    const rutaSeleccionada = rutas.find(r => r.idRuta === parseInt(form.idRuta))
+    const rutaSeleccionada = rutas.find(r => r.idSalida === parseInt(form.idSalida))
     // Rutas donde ya no queda ningún par vehículo-conductor sin anticipo activo no se
     // ofrecen en el buscador — si a la ruta le queda al menos un par disponible, se
     // sigue mostrando igual.
@@ -98,10 +98,10 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
     const pares = rutaSeleccionada?.paresVehiculoConductor || []
     // Del select de "Vehículo y conductor" solo se ofrecen los pares que todavía no
     // tienen anticipo activo — los que ya tienen uno no aparecen, ni deshabilitados.
-    const paresDisponibles = filtrarParesDisponibles(pares, rutaSeleccionada?.idRuta)
-    const parSeleccionado = paresDisponibles.find(p => p.idRutaVehiculoConductor === parseInt(form.idRutaVehiculoConductor))
+    const paresDisponibles = filtrarParesDisponibles(pares, rutaSeleccionada?.idSalida)
+    const parSeleccionado = paresDisponibles.find(p => p.idSalidaVehiculoConductor === parseInt(form.idSalidaVehiculoConductor))
 
-    useAutoSeleccionParUnico(form.idRuta, paresDisponibles, setForm, setParInput)
+    useAutoSeleccionParUnico(form.idSalida, paresDisponibles, setForm, setParInput)
 
     const getNombreConductor = () => parSeleccionado?.conductorNombre || '—'
 
@@ -112,7 +112,7 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
         return `${r.nombre} → ${destinoTxt}${fechaTxt}`
     }
 
-    const getNombreRuta = (id) => getEtiquetaRuta(rutas.find(r => r.idRuta === parseInt(id)))
+    const getNombreRuta = (id) => getEtiquetaRuta(rutas.find(r => r.idSalida === parseInt(id)))
 
     const renderStepContent = () => {
         switch (activeStep) {
@@ -123,10 +123,10 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
                         rutas={rutasDisponibles} rutaSeleccionada={rutaSeleccionada} pares={paresDisponibles} parSeleccionado={parSeleccionado} paquetesPorPar={paquetesPorPar}
                         rutaInput={rutaInput} setRutaInput={setRutaInput} parInput={parInput} setParInput={setParInput}
                         getEtiquetaRuta={getEtiquetaRuta}
-                        parDisabled={!form.idRuta}
+                        parDisabled={!form.idSalida}
                         rutaHelperTextOk="Busca por origen o destino"
-                        parHelperTextDisabled="Selecciona primero una ruta"
-                        mostrarAdvertencia={!!(!cargandoPaquetesPorPar && parSeleccionado && !(paquetesPorPar[parSeleccionado.idRutaVehiculoConductor] > 0))}
+                        parHelperTextDisabled="Selecciona primero una salida"
+                        mostrarAdvertencia={!!(!cargandoPaquetesPorPar && parSeleccionado && !(paquetesPorPar[parSeleccionado.idSalidaVehiculoConductor] > 0))}
                     />
                 )
 
@@ -134,7 +134,7 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
                 return (
                     <PasoConfirmacion
                         theme={theme} errorSubmit={errores.submit} esEdicion={false}
-                        nombreRuta={getNombreRuta(form.idRuta)}
+                        nombreRuta={getNombreRuta(form.idSalida)}
                         placa={parSeleccionado?.placa} nombreConductor={getNombreConductor()}
                         valorAnticipo={form.valorAnticipo}
                         fechaEntrega={form.fechaEntrega || '—'}

@@ -50,21 +50,21 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
         // un anticipo nuevo) — la ruta real de este anticipo puede ya estar "En Ruta" o
         // más adelante, así que si no aparece ahí se arma un par sintético con los datos
         // que ya trae el anticipo, solo para mostrarlo (el campo queda deshabilitado).
-        const r = rutas.find(x => x.idRuta === anticipo.idRuta)
+        const r = rutas.find(x => x.idSalida === anticipo.idSalida)
         const parInicial = r?.paresVehiculoConductor?.find(p => p.idConductor === anticipo.idConductor)
         const nombreConductorAnticipo = anticipo.conductor?.usuario
             ? `${anticipo.conductor.usuario.nombre} ${anticipo.conductor.usuario.apellido}`
             : '—'
         const parSintetico = !r ? {
-            idRutaVehiculoConductor: `original-${anticipo.idConductor}`,
-            idVehiculo: anticipo.ruta?.vehiculo?.idVehiculo,
+            idSalidaVehiculoConductor: `original-${anticipo.idConductor}`,
+            idVehiculo: anticipo.salida?.vehiculo?.idVehiculo,
             idConductor: anticipo.idConductor,
-            placa: anticipo.ruta?.vehiculo?.placa || '',
+            placa: anticipo.salida?.vehiculo?.placa || '',
             conductorNombre: nombreConductorAnticipo,
         } : null
         const datos = {
             ...anticipo,
-            idRutaVehiculoConductor: parInicial?.idRutaVehiculoConductor || parSintetico?.idRutaVehiculoConductor || '',
+            idSalidaVehiculoConductor: parInicial?.idSalidaVehiculoConductor || parSintetico?.idSalidaVehiculoConductor || '',
             fechaEntrega: anticipo.fechaEntrega || '',
             // valorAnticipo llega como string desde el backend por ser columna DECIMAL
             // (ej. "500000.00") — se limpia a entero plano para que nunca se vea el
@@ -75,12 +75,12 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
         }
         setFormOriginal(datos)
         setForm(datos)
-        setRutaInput(r ? getEtiquetaRuta(r) : (getEtiquetaRuta(anticipo.ruta) || ''))
+        setRutaInput(r ? getEtiquetaRuta(r) : (getEtiquetaRuta(anticipo.salida) || ''))
         const parActivo = parInicial || parSintetico
         setParInput(parActivo ? `${parActivo.placa || 'Sin placa'} — ${parActivo.conductorNombre}` : '')
     }, [open, anticipoProp, anticipos, rutas])
 
-    const { paquetesPorPar, loading: cargandoPaquetesPorPar } = usePaquetesPorPar(form?.idRuta)
+    const { paquetesPorPar, loading: cargandoPaquetesPorPar } = usePaquetesPorPar(form?.idSalida)
     // excluirIdAnticipo: este mismo anticipo no debe contar contra sí mismo al decidir
     // qué rutas/pares ya "tienen anticipo activo" — igual que el backend con
     // `idAnticipoExcedente: Op.ne` en update() (ver anticipoService.js).
@@ -98,17 +98,17 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
     // búsqueda por completo. Solo depende de anticipoOriginal (estable mientras el modal
     // sigue abierto) y del nombre del conductor original.
     const rutaSintetica = useMemo(() => (
-        anticipoOriginal?.ruta
+        anticipoOriginal?.salida
             ? {
-                idRuta: anticipoOriginal.idRuta,
-                nombre: anticipoOriginal.ruta.origen || `Ruta ${anticipoOriginal.idRuta}`,
-                destino: anticipoOriginal.ruta.destino || null,
-                fechaSalida: anticipoOriginal.ruta.fechaSalida || null,
+                idSalida: anticipoOriginal.idSalida,
+                nombre: anticipoOriginal.salida.origen || `Salida ${anticipoOriginal.idSalida}`,
+                destino: anticipoOriginal.salida.ruta?.destino || null,
+                fechaSalida: anticipoOriginal.salida.fechaSalida || null,
                 paresVehiculoConductor: [{
-                    idRutaVehiculoConductor: `original-${anticipoOriginal.idConductor}`,
-                    idVehiculo: anticipoOriginal.ruta.vehiculo?.idVehiculo,
+                    idSalidaVehiculoConductor: `original-${anticipoOriginal.idConductor}`,
+                    idVehiculo: anticipoOriginal.salida.vehiculo?.idVehiculo,
                     idConductor: anticipoOriginal.idConductor,
-                    placa: anticipoOriginal.ruta.vehiculo?.placa || '',
+                    placa: anticipoOriginal.salida.vehiculo?.placa || '',
                     conductorNombre: nombreConductorOriginal,
                 }],
             }
@@ -116,11 +116,11 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
     ), [anticipoOriginal, nombreConductorOriginal])
 
     // El objeto sintético solo debe mostrarse mientras el campo siga en la ruta ORIGINAL
-    // del anticipo (form.idRuta === anticipoOriginal.idRuta) — si el usuario lo limpia con
-    // la "x" (form.idRuta pasa a ''), antes esto caía igual al sintético porque solo miraba
+    // del anticipo (form.idSalida === anticipoOriginal.idSalida) — si el usuario lo limpia con
+    // la "x" (form.idSalida pasa a ''), antes esto caía igual al sintético porque solo miraba
     // si anticipoOriginal tenía ruta, ignorando que ya se había limpiado a propósito.
-    const rutaSeleccionada = rutas.find(r => r.idRuta === parseInt(form?.idRuta)) || (
-        form?.idRuta && String(form.idRuta) === String(anticipoOriginal?.idRuta) ? rutaSintetica : null
+    const rutaSeleccionada = rutas.find(r => r.idSalida === parseInt(form?.idSalida)) || (
+        form?.idSalida && String(form.idSalida) === String(anticipoOriginal?.idSalida) ? rutaSintetica : null
     )
     // Rutas donde ya no queda ningún par vehículo-conductor sin anticipo activo (aparte
     // de este mismo anticipo, excluido arriba) no se ofrecen en el buscador.
@@ -176,8 +176,8 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
                 idAnticipoExcedente: form.idAnticipoExcedente,
             }
             if (puedeEditarAsignacion) {
-                payload.idRuta = form.idRuta
-                payload.idRutaVehiculoConductor = form.idRutaVehiculoConductor
+                payload.idSalida = form.idSalida
+                payload.idSalidaVehiculoConductor = form.idSalidaVehiculoConductor
                 payload.valorAnticipo = form.valorAnticipo
                 payload.fechaEntrega = form.fechaEntrega
             }
@@ -208,14 +208,14 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
     // Del select de "Vehículo y conductor" solo se ofrecen los pares que todavía no
     // tienen anticipo activo (aparte de este mismo anticipo) — los que ya tienen uno no
     // aparecen ahí, ni deshabilitados.
-    const paresDisponibles = filtrarParesDisponibles(pares, rutaSeleccionada?.idRuta)
-    const parSeleccionado = paresDisponibles.find(p => p.idRutaVehiculoConductor === form?.idRutaVehiculoConductor)
+    const paresDisponibles = filtrarParesDisponibles(pares, rutaSeleccionada?.idSalida)
+    const parSeleccionado = paresDisponibles.find(p => p.idSalidaVehiculoConductor === form?.idSalidaVehiculoConductor)
 
-    // Si se reasigna a una ruta donde solo queda un vehículo+conductor disponible (sin
+    // Si se reasigna a una salida donde solo queda un vehículo+conductor disponible (sin
     // anticipo activo), no tiene caso elegir — se autocompleta, igual que en
     // RegistrarAnticipoExcedente.jsx. Solo aplica mientras la asignación sigue siendo
     // editable (anticipo en estado "Entregado").
-    useAutoSeleccionParUnico(form?.idRuta, paresDisponibles, setForm, setParInput, anticipoOriginal?.estado === 'Entregado')
+    useAutoSeleccionParUnico(form?.idSalida, paresDisponibles, setForm, setParInput, anticipoOriginal?.estado === 'Entregado')
 
     const getNombreConductor = () => parSeleccionado?.conductorNombre || nombreConductorOriginal
 
@@ -228,8 +228,8 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
     }
 
     const getNombreRuta = (id) => {
-        const r = rutas.find(r => r.idRuta === parseInt(id))
-        return r ? getEtiquetaRuta(r) : (getEtiquetaRuta(anticipoOriginal?.ruta) || '—')
+        const r = rutas.find(r => r.idSalida === parseInt(id))
+        return r ? getEtiquetaRuta(r) : (getEtiquetaRuta(anticipoOriginal?.salida) || '—')
     }
 
     // La ruta/conductor/valor del anticipo/fecha de entrega solo se pueden tocar
@@ -257,15 +257,15 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
                         parHelperTextDisabled="La ruta ya arrancó: no se puede reasignar"
                         valorHelperTextDisabled="La ruta ya arrancó: no se puede modificar"
                         fechaHelperTextDisabled="La ruta ya arrancó: no se puede modificar"
-                        mostrarAdvertencia={!!(!cargandoPaquetesPorPar && puedeEditarAsignacion && parSeleccionado && !(paquetesPorPar[parSeleccionado.idRutaVehiculoConductor] > 0))}
+                        mostrarAdvertencia={!!(!cargandoPaquetesPorPar && puedeEditarAsignacion && parSeleccionado && !(paquetesPorPar[parSeleccionado.idSalidaVehiculoConductor] > 0))}
                     />
                 )
 
             case 1: {
                 const sonDistintos = (a, b) => String(a ?? '') !== String(b ?? '')
                 const camposComparados = formOriginal ? [
-                    [form.idRutaVehiculoConductor, formOriginal.idRutaVehiculoConductor],
-                    [form.idRuta, formOriginal.idRuta],
+                    [form.idSalidaVehiculoConductor, formOriginal.idSalidaVehiculoConductor],
+                    [form.idSalida, formOriginal.idSalida],
                     [form.valorAnticipo, formOriginal.valorAnticipo],
                     [form.fechaEntrega, formOriginal.fechaEntrega],
                 ] : []
@@ -275,7 +275,7 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
                     <PasoConfirmacion
                         theme={theme} errorSubmit={errores.submit} esEdicion={true}
                         totalModificados={totalModificados} sinCambios={sinCambios} setSinCambios={setSinCambios}
-                        nombreRuta={getNombreRuta(form?.idRuta)} previousNombreRuta={formOriginal ? getNombreRuta(formOriginal.idRuta) : undefined}
+                        nombreRuta={getNombreRuta(form?.idSalida)} previousNombreRuta={formOriginal ? getNombreRuta(formOriginal.idSalida) : undefined}
                         placa={parSeleccionado?.placa} nombreConductor={getNombreConductor()} previousNombreConductor={formOriginal ? nombreConductorOriginal : undefined}
                         valorAnticipo={form?.valorAnticipo} previousValorAnticipo={formOriginal ? formOriginal.valorAnticipo : undefined}
                         fechaEntrega={formatFecha(form?.fechaEntrega)} previousFechaEntrega={formOriginal ? formatFecha(formOriginal.fechaEntrega) : undefined}

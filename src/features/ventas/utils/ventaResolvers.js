@@ -10,7 +10,7 @@
 // en sus causas posibles para un mensaje específico — mismo patrón que
 // motivoSalidaVencida() en rutas/utils/rutaResolvers.js.
 export const motivoVentaCancelada = (venta) => {
-    const ruta = venta?.ruta
+    const ruta = venta?.salida
     if (!ruta) return 'sinRuta'
     if (ruta.habilitado === false) return 'rutaInhabilitada'
     if (ruta.estado === 'Cancelada') return 'rutaCancelada'
@@ -22,7 +22,9 @@ export const motivoVentaCancelada = (venta) => {
     // LABEL_VENTA_CANCELADA más abajo): la venta sigue siendo válida, solo la
     // ruta dejó de cubrir su destino.
     const idDestinoVenta = venta?.destinatario?.idDestino
-    const municipiosCubiertos = new Set([ruta.destino?.idDestino, ...(ruta.paradas || []).map(p => p.idDestino)])
+    // Las paradas ahora son propias de CADA par del convoy (ruta fraccionada) -- se
+    // unen las de todos los pares, basta con que alguno cubra el destino de la venta.
+    const municipiosCubiertos = new Set([ruta.ruta?.idDestino, ...(ruta.paresVehiculoConductor || []).flatMap(par => (par.paradas || []).map(p => p.idDestino))])
     if (idDestinoVenta != null && !municipiosCubiertos.has(idDestinoVenta)) return 'destinoFueraDeRuta'
     // La ruta sigue sirviendo (Programada + habilitada) — típicamente porque se
     // canceló y ya se reprogramó de nuevo. No hace falta asignarle una ruta

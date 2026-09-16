@@ -6,6 +6,7 @@ import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined'
 import { getRutaEstadoDot } from '../../../shared/utils/estadoColors'
 import { getGuiaPrincipal } from '../../../shared/utils/formatters'
 import { sumarDias } from '../../../shared/utils/horarioLaboral.js'
+import { buildSalidaHighlightUrl } from '../../../shared/utils/salidaLinks.js'
 import ConfirmToggleDialog from '../../../shared/components/ConfirmToggleDialog.jsx'
 
 const renderDot = (dot) => {
@@ -25,7 +26,7 @@ const renderDot = (dot) => {
 // primer paquete de la venta como referencia rápida, igual que hace la guía principal.
 const getRutaLabel = (ruta, venta) => {
     if (!ruta) return '—'
-    const base = ruta.origen ? `${ruta.origen} → ${ruta.destino?.municipio || 'Sin destino'}` : '—'
+    const base = ruta.origen ? `${ruta.origen} → ${ruta.ruta?.destino?.municipio || 'Sin destino'}` : '—'
     const placa = venta?.paquetes?.[0]?.asignacion?.vehiculo?.placa
     return placa ? `${base} · ${placa}` : base
 }
@@ -38,7 +39,7 @@ const ModalInhabilitarVenta = ({ open, venta, onClose, onExited, onConfirm }) =>
     // ahora mismo) — ver LOGICA.md, "Ventas — Cancelada e inhabilitar/habilitar".
     const bloqueado = habilitadoActual && venta?.estado === 'En Ruta'
     const guia = getGuiaPrincipal(venta) || '—'
-    const ruta = venta?.ruta || null
+    const ruta = venta?.salida || null
 
     // Si se va a habilitar una venta Programada, revisa si al reactivarla la ruta ya
     // no sirve (salió, se completó, se canceló) o si la fecha estimada de entrega va a
@@ -120,7 +121,7 @@ const ModalInhabilitarVenta = ({ open, venta, onClose, onExited, onConfirm }) =>
                                 )}
                                 <Paper elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 2, overflow: 'hidden' }}>
                                     <Box
-                                        onClick={() => window.open(`/transporte/rutas?highlight=${ruta.idRuta}`, '_blank')}
+                                        onClick={() => window.open(buildSalidaHighlightUrl(ruta), '_blank')}
                                         sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1.5, py: 1, cursor: 'pointer', '&:hover': { backgroundColor: theme.palette.action.hover } }}
                                     >
                                         <Typography variant="body2" fontWeight={500} sx={{ fontSize: '0.8rem' }}>

@@ -6,6 +6,7 @@ import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined'
 import { getAnticipoEstadoDot, getRutaEstadoDot } from '../../../shared/utils/estadoColors'
 import ConfirmToggleDialog from '../../../shared/components/ConfirmToggleDialog.jsx'
 import { formFieldStyles } from '../../../shared/utils/formStyles.js'
+import { buildSalidaHighlightUrl } from '../../../shared/utils/salidaLinks.js'
 
 const MOTIVO_MAX_LENGTH = 500
 
@@ -25,7 +26,7 @@ const renderDot = (dot) => {
 const getRutaLabel = (ruta) => {
     if (!ruta) return '—'
     const placa = ruta.vehiculo?.placa
-    const base = ruta.origen ? `${ruta.origen} → ${ruta.destino?.municipio || 'Sin destino'}` : '—'
+    const base = ruta.origen ? `${ruta.origen} → ${ruta.ruta?.destino?.municipio || 'Sin destino'}` : '—'
     return placa ? `${base} · ${placa}` : base
 }
 
@@ -51,7 +52,7 @@ const ModalInhabilitarAnticipo = ({ open, anticipo, onClose, onExited, onConfirm
     // — se deja inhabilitar sin exigir motivo ni "Completado".
     const necesitaMotivo = habilitadoActual && !yaCerrado && !anticipo?.esHuerfano && puedeCerrarSinEntregar
     const bloqueadoDuro = habilitadoActual && !yaCerrado && !anticipo?.esHuerfano && !puedeCerrarSinEntregar
-    const ruta = anticipo?.ruta || null
+    const ruta = anticipo?.salida || null
 
     const nombreConductor = anticipo?.conductor?.usuario
         ? `${anticipo.conductor.usuario.nombre} ${anticipo.conductor.usuario.apellido}`
@@ -108,7 +109,7 @@ const ModalInhabilitarAnticipo = ({ open, anticipo, onClose, onExited, onConfirm
                                 )}
                                 <Paper elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 2, overflow: 'hidden' }}>
                                     <Box
-                                        onClick={() => window.open(`/transporte/rutas?highlight=${ruta.idRuta}`, '_blank')}
+                                        onClick={() => window.open(buildSalidaHighlightUrl(ruta), '_blank')}
                                         sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1.5, py: 1, cursor: 'pointer', '&:hover': { backgroundColor: theme.palette.action.hover } }}
                                     >
                                         <Typography variant="body2" fontWeight={500} sx={{ fontSize: '0.8rem' }}>

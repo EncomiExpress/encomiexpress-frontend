@@ -1,6 +1,6 @@
 import { useTheme } from '@mui/material/styles'
 import { useState, useEffect } from 'react'
-import * as rutaService from '../../rutas/services/rutaService.js'
+import * as salidaService from '../../salidas/services/salidaService.js'
 import * as anticipoService from '../../anticipos/services/anticipoService.js'
 import {
     Box, Typography, Paper, Chip, Button, Dialog, Avatar, IconButton, CircularProgress,
@@ -12,6 +12,7 @@ import CloseIcon from '@mui/icons-material/Close'
 import AdsClickOutlinedIcon from '@mui/icons-material/AdsClickOutlined'
 import { isVencido, formatFecha } from '../../../shared/utils/formatters.js'
 import { getAnticipoEstadoDot } from '../../../shared/utils/estadoColors.js'
+import { buildSalidaHighlightUrl } from '../../../shared/utils/salidaLinks.js'
 import CampoFila from '../../../shared/components/CampoFila.jsx'
 import FichaCard from '../../../shared/components/FichaCard.jsx'
 import { RutaEstadoDot } from '../../rutas/components/EstadoDot.jsx'
@@ -26,7 +27,7 @@ const ModalConsultarConductor = ({ conductor, onClose }) => {
         if (!conductor || tabIndex !== 1) return
         // eslint-disable-next-line react-hooks/set-state-in-effect -- loading flag antes de fetch, patrón recomendado por React
         setTabRutas({ data: [], total: 0, loading: true })
-        rutaService.getRutas({ idConductor: conductor.idConductor, limit: 100 })
+        salidaService.getSalidas({ idConductor: conductor.idConductor, limit: 100 })
             .then(res => setTabRutas({ data: res?.data || [], total: res?.total ?? 0, loading: false }))
             .catch(() => setTabRutas({ data: [], total: 0, loading: false }))
     }, [conductor, tabIndex])
@@ -163,11 +164,11 @@ const ModalConsultarConductor = ({ conductor, onClose }) => {
                                     </TableHead>
                                     <TableBody>
                                         {tabRutas.data.map(r => (
-                                            <TableRow key={r.idRuta}
-                                                onClick={() => window.open(`/transporte/rutas?highlight=${r.idRuta}`, '_blank')}
+                                            <TableRow key={r.idSalida}
+                                                onClick={() => window.open(buildSalidaHighlightUrl(r), '_blank')}
                                                 sx={{ cursor: 'pointer', '&:hover': { backgroundColor: theme.palette.background.subtle } }}>
                                                 <TableCell sx={{ fontSize: '0.82rem' }}>{r.origen || '—'}</TableCell>
-                                                <TableCell sx={{ fontSize: '0.82rem' }}>{r.destino?.municipio || '—'}</TableCell>
+                                                <TableCell sx={{ fontSize: '0.82rem' }}>{r.ruta?.destino?.municipio || '—'}</TableCell>
                                                 <TableCell sx={{ fontSize: '0.82rem' }}>{r.fechaSalida ? formatFecha(r.fechaSalida) : '—'}</TableCell>
                                                 <TableCell>
                                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>

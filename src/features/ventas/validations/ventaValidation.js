@@ -4,35 +4,62 @@ export const NUMERIC_LIMITS = { total: 9999999 }
 export const PAQUETE_NUMERIC_LIMITS = { peso: 999, alto: 999, ancho: 999, profundidad: 999 }
 
 // El municipio de destino de la venta (elegido en "Participantes") tiene que ser el
-// destino final de la ruta elegida o una de sus paradas intermedias. Si no, esa ruta no
-// sirve para esta venta — se BLOQUEA el paso (antes era solo un aviso).
-export const rutaLlegaAlDestino = (ruta, idDestinoVenta) => {
-    if (!ruta || !idDestinoVenta) return true
-    if (idDestinoVenta === ruta.idDestino) return true
-    return (ruta.paradas || []).some(p => p.idDestino === idDestinoVenta)
+// destino final de la salida elegida o una parada intermedia de ALGÚN par de su
+// convoy. Si no, esa salida no sirve para esta venta — se BLOQUEA el paso (antes
+// era solo un aviso). El destino final ya no es un campo directo de la Salida — se
+// hereda de su Ruta (plantilla): `salida.ruta.idDestino` (ver models/index.js). Las
+// paradas ya no viven en un array a nivel de la salida completa: cada elemento de
+// `paresVehiculoConductor` trae su propio recorrido (ruta fraccionada -- dos pares
+// pueden pasar por municipios distintos), así que acá basta con que CUALQUIER par
+// del convoy llegue al destino -- el filtro fino de "cuál PAR en particular llega"
+// (para elegir `idSalidaVehiculoConductor` en cada paquete) lo hace
+// paresQueLleganAlDestino más abajo, usado por PasoEnvio.jsx.
+export const rutaLlegaAlDestino = (salida, idDestinoVenta) => {
+    if (!salida || !idDestinoVenta) return true
+    if (idDestinoVenta === salida.ruta?.idDestino) return true
+    return (salida.paresVehiculoConductor || []).some(par => (par.paradas || []).some(p => p.idDestino === idDestinoVenta))
 }
-export const MENSAJE_RUTA_NO_LLEGA = 'Esta ruta no llega al municipio de destino de la venta'
+export const MENSAJE_RUTA_NO_LLEGA = 'Esta salida no llega al municipio de destino de la venta'
+
+// A diferencia de rutaLlegaAlDestino (¿llega ALGÚN par?), esto filtra a los pares
+// que de verdad llegan a idDestinoVenta -- por su propio recorrido o porque el
+// destino final de la salida es compartido por todo el convoy. Nueva regla de
+// negocio (ver encomiendaService.validarParLlegaADestino en el backend): un
+// paquete solo puede asignarse a un `idSalidaVehiculoConductor` que realmente pase
+// por el destino de SU venta, ya no basta con que cualquier par de la salida
+// llegue ahí.
+export const paresQueLleganAlDestino = (salida, idDestinoVenta) => {
+    const pares = salida?.paresVehiculoConductor || []
+    if (!idDestinoVenta) return pares
+    const destinoFinalCompartido = idDestinoVenta === salida?.ruta?.idDestino
+    if (destinoFinalCompartido) return pares
+    return pares.filter(par => (par.paradas || []).some(p => p.idDestino === idDestinoVenta))
+}
 
 // Para operador_sede, el destino de una venta solo puede ser uno al que de verdad
-// pueda llegar alguno de los regresos disponibles de SU sede (mismo filtro de rutas
-// que ofrece PasoEnvio — regreso, sale de mi sede, Programada, habilitada). Se arma
-// directo del `destino`/`paradas[].destino` que YA vienen anidados en cada ruta
-// (mismo dato que ya usa `rutaLlegaAlDestino` y que PasoEnvio pinta en el diagrama)
-// — a propósito SIN llamar a `/destinos`: ese catálogo es el listado nacional
-// completo (con tarifas), y `operador_sede` no tiene ni debería tener el permiso
-// `listar_destino` para verlo (le expondría además el menú de gestión "Destinos"
-// completo, fuera del panel recortado — ver LOGICA.md, "Sedes remotas"). Si no hay
-// ningún regreso disponible todavía, el resultado es un array vacío (a propósito:
-// no hay ningún destino válido para ofrecer, ver plan-sedes-remotas.md, WS5).
-export const destinosDesdeSede = (rutas, municipioSede) => {
-    const regresosDisponibles = (rutas || []).filter((r) =>
-        r.habilitado !== false && r.estado === 'Programada' && r.idRutaIda != null && r.origen === municipioSede
+// pueda llegar alguno de los regresos disponibles de SU sede (mismo filtro de
+// salidas que ofrece PasoEnvio — regreso, sale de mi sede, Programada, habilitada).
+// Se arma directo del `ruta.destino`/`paradas[].destino` que YA vienen anidados en
+// cada salida (mismo dato que ya usa `rutaLlegaAlDestino` y que PasoEnvio pinta en
+// el diagrama) — a propósito SIN llamar a `/destinos`: ese catálogo es el listado
+// nacional completo (con tarifas), y `operador_sede` no tiene ni debería tener el
+// permiso `listar_destino` para verlo. Si no hay ningún regreso disponible todavía,
+// el resultado es un array vacío (a propósito: no hay ningún destino válido para
+// ofrecer, ver plan-sedes-remotas.md, WS5).
+export const destinosDesdeSede = (salidas, municipioSede) => {
+    const regresosDisponibles = (salidas || []).filter((r) =>
+        r.habilitado !== false && r.estado === 'Programada' && r.idSalidaIda != null && r.origen === municipioSede
     )
     const porId = new Map()
     for (const r of regresosDisponibles) {
-        if (r.destino) porId.set(r.destino.idDestino, r.destino)
-        for (const p of (r.paradas || [])) {
-            if (p.destino) porId.set(p.destino.idDestino, p.destino)
+        if (r.ruta?.destino) porId.set(r.ruta.destino.idDestino, r.ruta.destino)
+        // Paradas propias de CADA par del convoy (ya no un array a nivel de la
+        // salida) -- se recorren todos, cualquier par que pase por un municipio lo
+        // vuelve un destino ofrecible.
+        for (const par of (r.paresVehiculoConductor || [])) {
+            for (const p of (par.paradas || [])) {
+                if (p.destino) porId.set(p.destino.idDestino, p.destino)
+            }
         }
     }
     return [...porId.values()]
@@ -93,16 +120,16 @@ export const calcularValorServicio = (tarifaBase, paquetes, tarifaPorKgHierro, t
     return Math.min(Math.round(total), NUMERIC_LIMITS.total)
 }
 
-// Devuelve {} (sin recalcular nada) si todavía no hay ruta seleccionada -- el call site
-// usa eso para decidir si también debe resetear el ref de "editado a mano".
-export const calcularValoresPaquetes = (idRuta, paquetes, rutasProgramadas, tarifaPorKgHierro, tarifaPorKgNormal, tarifaPorPaquete) => {
-    if (!idRuta) return {}
-    const ruta = rutasProgramadas.find(r => r.idRuta === parseInt(idRuta))
-    const total = calcularValorServicio(ruta?.destino?.tarifaBase, paquetes, tarifaPorKgHierro, tarifaPorKgNormal, tarifaPorPaquete)
+// Devuelve {} (sin recalcular nada) si todavía no hay salida seleccionada -- el call
+// site usa eso para decidir si también debe resetear el ref de "editado a mano".
+export const calcularValoresPaquetes = (idSalida, paquetes, salidasProgramadas, tarifaPorKgHierro, tarifaPorKgNormal, tarifaPorPaquete) => {
+    if (!idSalida) return {}
+    const salida = salidasProgramadas.find(r => r.idSalida === parseInt(idSalida))
+    const total = calcularValorServicio(salida?.ruta?.destino?.tarifaBase, paquetes, tarifaPorKgHierro, tarifaPorKgNormal, tarifaPorPaquete)
     return { total }
 }
 
-export const validarPaso = (step, form, rutasProgramadas, opts = {}) => {
+export const validarPaso = (step, form, salidasProgramadas, opts = {}) => {
     const { ventaOriginal = null, getPesoOriginalPorPar, esOperadorSede = false, sedeMunicipio } = opts
     const e = {}
 
@@ -130,36 +157,36 @@ export const validarPaso = (step, form, rutasProgramadas, opts = {}) => {
     }
 
     if (step === 2) {
-        e.idRuta = validarCampo('idRuta', form, ventaOriginal)
+        e.idSalida = validarCampo('idSalida', form, ventaOriginal)
         e.fechaEstimadaEntrega = validarCampo('fechaEstimadaEntrega', form, ventaOriginal)
         e.observaciones = validarCampo('observaciones', form, ventaOriginal)
 
-        const rutaSel = rutasProgramadas.find(r => r.idRuta === parseInt(form.idRuta))
-        // form.idRuta puede quedar con un id que ya no es una opción del selector (ruta
-        // que dejó de estar Programada mientras el formulario seguía abierto) — sin
-        // esto, validarCampo('idRuta') lo pasaba igual por solo mirar si hay algo
-        // puesto, no si sigue siendo una elección válida.
-        if (form.idRuta && !rutaSel && !e.idRuta) {
-            e.idRuta = 'Esta ruta ya no está disponible — elige otra'
+        const rutaSel = salidasProgramadas.find(r => r.idSalida === parseInt(form.idSalida))
+        // form.idSalida puede quedar con un id que ya no es una opción del selector
+        // (salida que dejó de estar Programada mientras el formulario seguía
+        // abierto) — sin esto, validarCampo('idSalida') lo pasaba igual por solo
+        // mirar si hay algo puesto, no si sigue siendo una elección válida.
+        if (form.idSalida && !rutaSel && !e.idSalida) {
+            e.idSalida = 'Esta salida ya no está disponible — elige otra'
         }
         // Un viaje de regreso no transporta ventas nuevas — EXCEPTO para
         // operador_sede sobre el regreso de su propia sede (WS5, "Sedes
         // remotas"), mismo criterio que el filtro del selector en PasoEnvio.jsx
         // y la excepción simétrica del backend.
-        const esRegresoDeSuSede = esOperadorSede && rutaSel?.idRutaIda != null && rutaSel.origen === sedeMunicipio
-        if (rutaSel && !e.idRuta && rutaSel.idRutaIda != null && !esRegresoDeSuSede) {
-            e.idRuta = 'Esta ruta es un viaje de regreso — elige una ruta de ida'
+        const esRegresoDeSuSede = esOperadorSede && rutaSel?.idSalidaIda != null && rutaSel.origen === sedeMunicipio
+        if (rutaSel && !e.idSalida && rutaSel.idSalidaIda != null && !esRegresoDeSuSede) {
+            e.idSalida = 'Esta salida es un viaje de regreso — elige una salida de ida'
         }
-        if (rutaSel && !e.idRuta && esOperadorSede && rutaSel.idRutaIda == null) {
-            e.idRuta = 'Elige un viaje de regreso de tu sede'
+        if (rutaSel && !e.idSalida && esOperadorSede && rutaSel.idSalidaIda == null) {
+            e.idSalida = 'Elige un viaje de regreso de tu sede'
         }
-        if (rutaSel && !e.idRuta && !rutaLlegaAlDestino(rutaSel, parseInt(form.idDestinoDestinatario) || null)) {
-            e.idRuta = MENSAJE_RUTA_NO_LLEGA
+        if (rutaSel && !e.idSalida && !rutaLlegaAlDestino(rutaSel, parseInt(form.idDestinoDestinatario) || null)) {
+            e.idSalida = MENSAJE_RUTA_NO_LLEGA
         }
         if (rutaSel) {
             const erroresAsignacion = form.paquetes.map(p => {
-                const err = validarCampoPaquete('idRutaVehiculoConductor', p)
-                return err ? { idRutaVehiculoConductor: err } : {}
+                const err = validarCampoPaquete('idSalidaVehiculoConductor', p)
+                return err ? { idSalidaVehiculoConductor: err } : {}
             })
 
             // Mismo cálculo que las alertas de capacidad en el render -- si algún vehículo
@@ -173,15 +200,15 @@ export const validarPaso = (step, form, rutasProgramadas, opts = {}) => {
             for (const par of pares) {
                 const capacidad = par.vehiculo?.capacidad ? Number(par.vehiculo.capacidad) : null
                 if (capacidad == null) continue
-                const pesoUsadoOtras = Math.max(0, Number(par.pesoUsado || 0) - (pesoOriginalPorPar[par.idRutaVehiculoConductor] || 0))
+                const pesoUsadoOtras = Math.max(0, Number(par.pesoUsado || 0) - (pesoOriginalPorPar[par.idSalidaVehiculoConductor] || 0))
                 const disponible = capacidad - pesoUsadoOtras
                 const indices = form.paquetes
                     .map((p, i) => i)
-                    .filter(i => parseInt(form.paquetes[i].idRutaVehiculoConductor) === par.idRutaVehiculoConductor)
+                    .filter(i => parseInt(form.paquetes[i].idSalidaVehiculoConductor) === par.idSalidaVehiculoConductor)
                 const pesoNuevo = indices.reduce((s, i) => s + (parseFloat(form.paquetes[i].peso) || 0), 0)
                 if (pesoNuevo > disponible) {
                     const mensaje = `${par.vehiculo?.placa || 'Este vehículo'} ya no tiene espacio — supera la capacidad en ${Number((pesoNuevo - disponible).toFixed(2))} kg.`
-                    indices.forEach(i => { erroresAsignacion[i] = { ...erroresAsignacion[i], idRutaVehiculoConductor: mensaje } })
+                    indices.forEach(i => { erroresAsignacion[i] = { ...erroresAsignacion[i], idSalidaVehiculoConductor: mensaje } })
                 }
             }
 

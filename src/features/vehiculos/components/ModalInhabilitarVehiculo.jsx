@@ -6,8 +6,9 @@ import {
 } from '@mui/material'
 import BlockOutlinedIcon from '@mui/icons-material/BlockOutlined'
 import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined'
-import * as rutaService from '../../rutas/services/rutaService.js'
+import * as salidaService from '../../salidas/services/salidaService.js'
 import { getEstadoColorRuta } from '../../../shared/utils/estadoColors.js'
+import { buildSalidaHighlightUrl } from '../../../shared/utils/salidaLinks.js'
 import ConfirmToggleDialog from '../../../shared/components/ConfirmToggleDialog.jsx'
 
 const RutasMiniTabla = ({ rutas, theme }) => (
@@ -26,14 +27,14 @@ const RutasMiniTabla = ({ rutas, theme }) => (
                         const { color } = getEstadoColorRuta(r.estado)
                         const esProgramada = r.estado === 'Programada'
                         return (
-                            <TableRow key={r.idRuta}
-                                onClick={() => window.open(`/transporte/rutas?highlight=${r.idRuta}`, '_blank')}
+                            <TableRow key={r.idSalida}
+                                onClick={() => window.open(buildSalidaHighlightUrl(r), '_blank')}
                                 sx={{ cursor: 'pointer', '&:hover td': { backgroundColor: theme.palette.action.hover } }}>
                                 <TableCell sx={{ fontSize: '0.8rem', fontWeight: 600, py: 0.75 }}>
-                                    {r.origen || `#${r.idRuta}`}
+                                    {r.origen || `#${r.idSalida}`}
                                 </TableCell>
                                 <TableCell sx={{ fontSize: '0.8rem', py: 0.75 }}>
-                                    {r.destino?.municipio || '—'}
+                                    {r.ruta?.destino?.municipio || '—'}
                                 </TableCell>
                                 <TableCell sx={{ py: 0.75, textAlign: 'right' }}>
                                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.75 }}>
@@ -61,7 +62,7 @@ const ModalInhabilitarVehiculo = ({ open, data, onClose, onExited, onConfirm }) 
         // no confunde el reseteo de loading previo al fetch con una mutación "impura".
         const cargarRutasActivas = () => {
             setRutasInhabilitar({ data: [], loading: true })
-            rutaService.getRutas({ idVehiculo: data.id, habilitado: 'true', limit: 100 })
+            salidaService.getSalidas({ idVehiculo: data.id, habilitado: 'true', limit: 100 })
                 .then(res => {
                     const activas = (res?.data || []).filter(r => r.estado === 'Programada' || r.estado === 'En Ruta')
                     setRutasInhabilitar({ data: activas, loading: false })

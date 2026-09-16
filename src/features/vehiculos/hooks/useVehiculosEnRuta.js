@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getRutas } from '../../rutas/services/rutaService.js'
+import { getSalidas } from '../../salidas/services/salidaService.js'
 
 // Consulta dedicada y fresca (no la lista paginada de Rutas, que puede no traer
 // todas las rutas En Ruta). A diferencia de Conductor, Vehiculo sí tiene una vía
@@ -11,7 +11,7 @@ const useVehiculosEnRuta = (transportes, usuario) => {
 
     useEffect(() => {
         if (!usuario) return
-        getRutas({ estado: 'En Ruta', habilitado: 'true', limit: 100 })
+        getSalidas({ estado: 'En Ruta', habilitado: 'true', limit: 100 })
             .then(res => setVehiculosOcupadosIds(new Set((res?.data || []).flatMap(r => (r.paresVehiculoConductor || []).map(p => p.idVehiculo)))))
             .catch(() => { })
     }, [usuario])

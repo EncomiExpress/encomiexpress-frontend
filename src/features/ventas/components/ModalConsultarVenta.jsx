@@ -12,6 +12,7 @@ import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import UndoOutlinedIcon from '@mui/icons-material/UndoOutlined'
 import ConfirmToggleDialog from '../../../shared/components/ConfirmToggleDialog.jsx'
+import { buildSalidaHighlightUrl } from '../../../shared/utils/salidaLinks.js'
 import { getVentaEstadoDot, getPaqueteEstadoDot, getEstadoPagoDot } from '../../../shared/utils/estadoColors.js'
 import { descargarGuiaPaquete } from '../../../shared/utils/exportGuia/exportGuiaPdf.js'
 import { formatFecha, formatFechaHora } from '../../../shared/utils/formatters.js'
@@ -208,8 +209,8 @@ const ModalConsultarVenta = ({ venta, onClose }) => {
                         </Box>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
                             <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Ruta</Typography>
-                            <Chip label={venta.ruta ? `${venta.ruta.origen || '—'} → ${venta.ruta.destino?.municipio || '—'}` : '—'} size="small"
-                                onClick={() => window.open(`/transporte/rutas?highlight=${venta.idRuta}`, '_blank')}
+                            <Chip label={venta.salida ? `${venta.salida.origen || '—'} → ${venta.salida.ruta?.destino?.municipio || '—'}` : '—'} size="small"
+                                onClick={() => window.open(buildSalidaHighlightUrl(venta.salida ?? { idSalida: venta.idSalida }), '_blank')}
                                 sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.7rem', cursor: 'pointer', '&:hover': { filter: 'brightness(0.92)' } }} />
                         </Box>
                         {/* Vehículo/conductor del PAQUETE que se está viendo (paquete/i arriba) —

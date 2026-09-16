@@ -5,7 +5,7 @@ import RegistrarCliente from '../clientes/RegistrarCliente.jsx'
 import { useVentas } from './context/VentaContext.jsx'
 import { useClientes } from '../clientes/context/ClienteContext.jsx'
 import { useDestino } from '../destinos/context/DestinoContext.jsx'
-import { useRutaProgramacion } from '../rutas/context/RutaProgramacionContext.jsx'
+import { useSalidaProgramacion } from '../salidas/context/SalidaProgramacionContext.jsx'
 import { useConfiguracion } from '../../shared/contexts/ConfiguracionContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
@@ -32,7 +32,7 @@ const getInitialForm = () => ({
     idDestinoDestinatario: '',
     direccionDestinatario: '',
     paquetes: [{ ...PAQUETE_VACIO }],
-    idRuta: '',
+    idSalida: '',
     destino: '',
     fechaSalidaRuta: '',
     fechaLlegadaEstimadaRuta: '',
@@ -49,7 +49,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
     const { usuario, sedeActual } = useAuth()
     const { clientes } = useClientes()
     const { getDestinosHabilitados } = useDestino()
-    const { rutasProgramadas, fetchRutasProgramadas } = useRutaProgramacion()
+    const { salidasProgramadas, fetchSalidasProgramadas } = useSalidaProgramacion()
     const { tarifaPorKgHierro, tarifaPorKgNormal, tarifaPorPaquete, fetchConfiguracion } = useConfiguracion()
     const [submitting, setSubmitting] = useState(false)
     const [modalNuevoCliente, setModalNuevoCliente] = useState(false)
@@ -58,12 +58,12 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
     // (todas las ventas salen de ahí). Se filtra acá para que se propague de una vez a
     // PasoParticipantes, PasoEnvio y PasoConfirmacion. Para operador_sede el destino
     // válido no es "cualquiera menos mi sede" sino solo los que de verdad alcanza
-    // alguno de sus regresos disponibles (Medellín o una parada de esa ruta) — y se
-    // arma directo de esas rutas, sin tocar el catálogo nacional de `/destinos`
+    // alguno de sus regresos disponibles (Medellín o una parada de esa salida) — y se
+    // arma directo de esas salidas, sin tocar el catálogo nacional de `/destinos`
     // (`destinosDesdeSede`, ver ahí por qué).
     const esOperadorSede = usuario?.rol?.codigo === 'operador_sede'
     const destinos = esOperadorSede
-        ? destinosDesdeSede(rutasProgramadas, sedeActual?.municipio)
+        ? destinosDesdeSede(salidasProgramadas, sedeActual?.municipio)
         : getDestinosHabilitados().filter((d) => !esMunicipioOrigen(d.municipio))
 
     const {
@@ -74,7 +74,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
         handleAgregarPaquete, handleQuitarPaquete, handleNext, handleBack, validarTodo,
     } = useVentaWizardForm({
         initialForm: getInitialForm(),
-        rutasProgramadas, fetchRutasProgramadas, tarifaPorKgHierro, tarifaPorKgNormal, tarifaPorPaquete, fetchConfiguracion,
+        salidasProgramadas, fetchSalidasProgramadas, tarifaPorKgHierro, tarifaPorKgNormal, tarifaPorPaquete, fetchConfiguracion,
     })
 
     const handleClose = () => {
@@ -101,7 +101,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
         try {
             await agregarVenta({
                 idCliente: parseInt(form.idCliente),
-                idRuta: parseInt(form.idRuta),
+                idSalida: parseInt(form.idSalida),
                 destinatario: {
                     nombreDestinatario: form.nombreDestinatario,
                     tipoIdentificacionDestinatario: form.tipoIdentificacionDestinatario,
@@ -120,7 +120,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                     // null y no 0 -- el validador del backend acepta el campo vacío
                     // (optional nullable), pero 0 sí choca contra isFloat({min:1}).
                     tipoCarga: p.tipoCarga,
-                    idRutaVehiculoConductor: parseInt(p.idRutaVehiculoConductor),
+                    idSalidaVehiculoConductor: parseInt(p.idSalidaVehiculoConductor),
                 })),
                 fechaEstimadaEntrega: form.fechaEstimadaEntrega || null,
                 observaciones: form.observaciones || null,
@@ -166,7 +166,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                 return (
                     <PasoEnvio
                         theme={theme} form={form} setForm={setForm} errores={errores} setErrores={setErrores} setApiError={setApiError}
-                        rutasProgramadas={rutasProgramadas} rutaInput={rutaInput} setRutaInput={setRutaInput}
+                        salidasProgramadas={salidasProgramadas} rutaInput={rutaInput} setRutaInput={setRutaInput}
                         handleChange={handleChange} calcularValorServicio={calcularValorServicio}
                         handlePaqueteChange={handlePaqueteChange} setErrorPaquete={setErrorPaquete}
                         destinos={destinos}
@@ -178,7 +178,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                 return (
                     <PasoConfirmacion
                         theme={theme} apiError={apiError} setApiError={setApiError} cardSx={cardSx(theme)}
-                        clienteSeleccionado={clienteSeleccionado} form={form} rutasProgramadas={rutasProgramadas}
+                        clienteSeleccionado={clienteSeleccionado} form={form} salidasProgramadas={salidasProgramadas}
                         destinos={destinos}
                     />
                 )

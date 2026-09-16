@@ -50,6 +50,11 @@ export const sumarDias = (iso, dias) => {
     return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
 }
 
+// Primer día hábil (no domingo) a partir de `iso` (inclusive) -- usado para
+// proponer fecha de salida/llegada por defecto sin caer en un domingo, que la
+// empresa no opera (ver validarCampo 'fechaSalida'/'fechaLlegadaEstimada').
+export const siguienteDiaHabil = (iso) => (esDomingo(iso) ? sumarDias(iso, 1) : iso)
+
 export const hoyISO = () => {
     const d = new Date()
     return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`

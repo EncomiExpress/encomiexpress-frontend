@@ -20,7 +20,7 @@ const CalendarioDisponibilidad = ({
     value,
     onChange,
     pares = [],
-    idRutaExcluir,
+    idSalidaExcluir,
     minDate,
     maxDate,
     label = 'Fecha de Salida',
@@ -53,7 +53,7 @@ const CalendarioDisponibilidad = ({
     })
 
     const { motivosPorDia, loading, idVehiculos, idConductores } = useDisponibilidadRuta({
-        pares, idRutaExcluir, refrescarKey, modo, fechaReferencia, maxDate,
+        pares, idSalidaExcluir, refrescarKey, modo, fechaReferencia, maxDate,
     })
 
     const minISO = minDate || toISO(hoy)

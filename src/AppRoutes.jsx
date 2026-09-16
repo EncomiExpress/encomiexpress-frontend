@@ -15,6 +15,7 @@ import propietariosRoutes from './features/propietarios/propietarios.routes.jsx'
 import conductoresRoutes from './features/conductores/conductores.routes.jsx'
 import destinosRoutes from './features/destinos/destinos.routes.jsx'
 import rutasRoutes from './features/rutas/rutas.routes.jsx'
+import salidasRoutes from './features/salidas/salidas.routes.jsx'
 import ventasRoutes from './features/ventas/ventas.routes.jsx'
 import paquetesDevueltosRoutes from './features/paquetesDevueltos/paquetesDevueltos.routes.jsx'
 
@@ -41,6 +42,7 @@ const AppRoutes = () => {
       {conductoresRoutes}
       {destinosRoutes}
       {rutasRoutes}
+      {salidasRoutes}
       {ventasRoutes}
       {paquetesDevueltosRoutes}
 

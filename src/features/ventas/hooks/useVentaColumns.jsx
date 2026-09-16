@@ -76,7 +76,7 @@ const useVentaColumns = ({
                 <Typography variant="body2" color={theme.palette.text.primary}>
                     {venta.destinatario?.destino?.municipio || '—'}
                 </Typography>
-                {venta.estado === 'Programada' && venta.ruta && (venta.ruta.estado === 'Cancelada' || venta.ruta.habilitado === false) && (
+                {venta.estado === 'Programada' && venta.salida && (venta.salida.estado === 'Cancelada' || venta.salida.habilitado === false) && (
                     // Una ruta inhabilitada normalmente ya no puede tener ventas Programada
                     // apuntándole (verificarDependenciasRuta lo bloquea al inhabilitar la
                     // ruta) — se cubre igual acá por consistencia con rutaSigueSirviendo()

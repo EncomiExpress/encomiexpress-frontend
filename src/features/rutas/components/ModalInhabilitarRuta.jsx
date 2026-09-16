@@ -1,156 +1,31 @@
-import { useState, useEffect } from 'react'
 import { useTheme } from '@mui/material/styles'
-import { Box, Typography, CircularProgress } from '@mui/material'
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
-import DoNotDisturbOutlinedIcon from '@mui/icons-material/DoNotDisturbOutlined'
+import BlockOutlinedIcon from '@mui/icons-material/BlockOutlined'
 import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined'
-import * as ventaService from '../../ventas/services/ventaService.js'
-import * as anticipoService from '../../anticipos/services/anticipoService.js'
 import ConfirmToggleDialog from '../../../shared/components/ConfirmToggleDialog.jsx'
-import VentasConflictoTable from './VentasConflictoTable.jsx'
-import AnticiposConflictoList from './AnticiposConflictoList.jsx'
-import { motivoSalidaVencida } from '../utils/rutaResolvers.js'
 
-const ESTADOS_BLOQUEO_ANTICIPO = ['Entregado', 'En Legalización', 'Excedente pendiente']
-
+// El backend (rutaService.toggleHabilitado) rechaza (400) inhabilitar una
+// plantilla que todavía tiene alguna SalidaProgramada Programada/En Ruta — acá
+// no se pre-chequea esa lista (eso vive del lado de /salidas, fuera del alcance
+// de esta feature liviana); si el backend rechaza, el mensaje de error llega tal
+// cual vía el toast de useRutaAcciones.js.
 const ModalInhabilitarRuta = ({ open, data, onClose, onExited, onConfirm }) => {
     const theme = useTheme()
-    const [deps, setDeps] = useState({ ventas: [], anticipos: [], loading: false })
-
-    useEffect(() => {
-        if (!open || !data?.idRuta || !data?.habilitadoActual) {
-            return
-        }
-        // Función interna en vez de llamar setState directo en el cuerpo del efecto --
-        // mismo orden de ejecución, pero así el linter (react-hooks/set-state-in-effect)
-        // no confunde el reseteo de loading previo al fetch con una mutación "impura".
-        // Cada fetch atrapa su propio error (en vez de un solo .catch sobre el
-        // Promise.all) — corregido 2026-09-12: operador_sede no tiene
-        // `listar_anticipo` (Anticipos no es su módulo), así que esa consulta le
-        // daba 403; como antes las dos colgaban del mismo Promise.all, ese 403
-        // tumbaba TAMBIÉN el resultado de Ventas (que ella sí puede ver, son las
-        // suyas) y el catch-all lo dejaba en "sin nada bloqueando" — el modal
-        // mostraba el botón "Inhabilitar" habilitado como si no hubiera ningún
-        // problema, y solo al confirmar el backend rechazaba con un aviso plano
-        // en vez de la tabla. Ningún cambio de comportamiento para admin: su
-        // consulta a Anticipos nunca falla, así que sigue viendo exactamente lo
-        // mismo de antes.
-        const cargarDependencias = () => {
-            setDeps({ ventas: [], anticipos: [], loading: true })
-            Promise.all([
-                ventaService.getEncomiendas(undefined, { idRuta: data.idRuta, habilitado: 'true', limit: 100 }).catch(() => ({ data: [] })),
-                anticipoService.getAnticipos(undefined, { idRuta: data.idRuta, habilitado: 'true', limit: 100 }).catch(() => ({ data: [] })),
-            ])
-                .then(([ventRes, antRes]) => {
-                    const ventas = (ventRes?.data || []).filter(v => v.estado !== 'Entregada' && v.estado !== 'Completada con novedades' && v.estado !== 'Cancelada')
-                    const anticipos = (antRes?.data || []).filter(a => ESTADOS_BLOQUEO_ANTICIPO.includes(a.estado))
-                    setDeps({ ventas, anticipos, loading: false })
-                })
-                .catch(() => setDeps({ ventas: [], anticipos: [], loading: false }))
-        }
-        cargarDependencias()
-    }, [open, data?.idRuta, data?.habilitadoActual])
-
-    const handleExited = () => {
-        setDeps({ ventas: [], anticipos: [], loading: false })
-        onExited?.()
-    }
-
-    const enCurso = data?.habilitadoActual && data?.estadoRuta === 'En Ruta'
-    const nVentas = deps.ventas.length
-    const hayAnticipo = deps.anticipos.length > 0
-    const bloqueado = data?.habilitadoActual && (enCurso || nVentas > 0 || hayAnticipo)
-    const cargando = data?.habilitadoActual && deps.loading
-
-    const nombre = data?.origen
-        ? (data?.destino ? `${data.origen} - ${data.destino}` : data.origen)
-        : `#${data?.idRuta}`
-
-    // Si se va a habilitar una ruta Programada cuya fecha/hora de salida ya venció,
-    // rutaService.toggleHabilitado la deja Cancelada en la misma operación (evita que
-    // el job de auto-inicio la agarre de inmediato con una fecha vieja — ver LOGICA.md,
-    // "Mismo problema, otra puerta"). Se avisa acá, antes de confirmar, en vez de en el
-    // toast posterior.
-    const motivoVencida = !data?.habilitadoActual && data?.estadoRuta === 'Programada'
-        ? motivoSalidaVencida({ fechaSalida: data?.fechaSalida, horaSalida: data?.horaSalida })
-        : null
-
-    const titulo = !data?.habilitadoActual
-        ? '¿Habilitar ruta?'
-        : bloqueado
-            ? 'No se puede inhabilitar'
-            : cargando
-                ? 'Inhabilitar ruta'
-                : '¿Inhabilitar ruta?'
-
-    const subtexto = !data?.habilitadoActual
-        ? <>La ruta <strong>{nombre}</strong> volverá a estar activa en el sistema.</>
-        : enCurso
-            ? <>La ruta <strong>{nombre}</strong> está en curso. Complétala o cancélala antes de inhabilitarla.</>
-            : nVentas > 0 && hayAnticipo
-                ? <>No es posible inhabilitar la ruta <strong>{nombre}</strong> mientras tenga ventas activas y un anticipo activo.</>
-                : nVentas > 0
-                    ? <>No es posible inhabilitar la ruta <strong>{nombre}</strong> mientras tenga {nVentas === 1 ? 'una venta activa' : 'ventas activas'}.</>
-                    : hayAnticipo
-                        ? <>No es posible inhabilitar la ruta <strong>{nombre}</strong> mientras tenga un anticipo activo.</>
-                        : <>La ruta <strong>{nombre}</strong> quedará inhabilitada en el sistema.</>
 
     return (
         <ConfirmToggleDialog
             open={open}
             onClose={onClose}
-            onExited={handleExited}
+            onExited={onExited}
             onConfirm={onConfirm}
-            icono={data?.habilitadoActual
-                ? <DoNotDisturbOutlinedIcon sx={{ fontSize: 35, color: theme.palette.primary.darker }} />
+            icono={data.habilitadoActual
+                ? <BlockOutlinedIcon sx={{ fontSize: 35, color: theme.palette.primary.darker }} />
                 : <CheckCircleOutlinedIcon sx={{ fontSize: 35, color: theme.palette.primary.darker }} />}
-            titulo={titulo}
-            subtitulo={subtexto}
-            soloCerrar={enCurso || bloqueado}
-            textoConfirmar={data?.habilitadoActual ? 'Inhabilitar' : 'Habilitar'}
-            deshabilitarConfirmar={cargando}
-        >
-            {cargando && (
-                <Box sx={{ display: 'flex', justifyContent: 'center', py: 2, mt: 2 }}>
-                    <CircularProgress size={22} sx={{ color: theme.palette.primary.main }} />
-                </Box>
-            )}
-
-            {motivoVencida && (
-                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.75, mt: 2, color: theme.palette.text.secondary }}>
-                    <InfoOutlinedIcon sx={{ fontSize: 18, mt: '1px', flexShrink: 0 }} />
-                    <Typography variant="body2">
-                        {motivoVencida === 'fecha'
-                            ? 'Su fecha de salida ya pasó, así que quedará Cancelada.'
-                            : 'Su hora de salida ya pasó (sigue siendo hoy), así que quedará Cancelada.'}
-                    </Typography>
-                </Box>
-            )}
-
-            {!cargando && bloqueado && (
-                <Box sx={{ mt: 2.5, textAlign: 'left' }}>
-                    {nVentas > 0 && (
-                        <Box sx={{ mb: hayAnticipo ? 2.5 : 0 }}>
-                            <Typography variant="body2" color={theme.palette.text.primary} sx={{ mb: 1 }}>
-                                {enCurso
-                                    ? nVentas === 1 ? 'La venta en tránsito' : 'Las ventas en tránsito'
-                                    : nVentas === 1 ? 'La venta activa que impide la inhabilitación' : 'Las ventas activas que impiden la inhabilitación'}
-                            </Typography>
-                            <VentasConflictoTable theme={theme} ventas={deps.ventas} maxHeight={140} />
-                        </Box>
-                    )}
-
-                    {deps.anticipos.length > 0 && (
-                        <Box>
-                            <Typography variant="body2" color={theme.palette.text.primary} sx={{ mb: 1 }}>
-                                {enCurso ? 'El anticipo en legalización' : 'El anticipo activo que impide la inhabilitación'}
-                            </Typography>
-                            <AnticiposConflictoList theme={theme} anticipos={deps.anticipos.slice(0, 1)} />
-                        </Box>
-                    )}
-                </Box>
-            )}
-        </ConfirmToggleDialog>
+            titulo={data.habilitadoActual ? '¿Inhabilitar ruta?' : '¿Habilitar ruta?'}
+            subtitulo={data.habilitadoActual
+                ? <>La plantilla <strong>{data.etiqueta}</strong> quedará inhabilitada y no podrá elegirse para programar nuevas salidas. Si tiene alguna salida Programada o En Ruta, el sistema rechazará el cambio.</>
+                : <>La plantilla <strong>{data.etiqueta}</strong> volverá a estar disponible para programar salidas.</>}
+            textoConfirmar={data.habilitadoActual ? 'Inhabilitar' : 'Habilitar'}
+        />
     )
 }
 

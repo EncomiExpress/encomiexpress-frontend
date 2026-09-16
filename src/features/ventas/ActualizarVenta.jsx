@@ -7,7 +7,7 @@ import CloseIcon from '@mui/icons-material/Close'
 import { useVentas } from './context/VentaContext.jsx'
 import { useClientes } from '../clientes/context/ClienteContext.jsx'
 import { useDestino } from '../destinos/context/DestinoContext.jsx'
-import { useRutaProgramacion } from '../rutas/context/RutaProgramacionContext.jsx'
+import { useSalidaProgramacion } from '../salidas/context/SalidaProgramacionContext.jsx'
 import { useConfiguracion } from '../../shared/contexts/ConfiguracionContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { useAuth } from '../../shared/contexts/AuthContext.jsx'
@@ -35,7 +35,7 @@ const getInitialForm = () => ({
     idDestinoDestinatario: '',
     direccionDestinatario: '',
     paquetes: [{ ...PAQUETE_VACIO }],
-    idRuta: '',
+    idSalida: '',
     destino: '',
     fechaSalidaRuta: '',
     fechaLlegadaEstimadaRuta: '',
@@ -52,7 +52,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
     const { usuario, sedeActual } = useAuth()
     const { clientes } = useClientes()
     const { getDestinosHabilitados } = useDestino()
-    const { rutasProgramadas, fetchRutasProgramadas } = useRutaProgramacion()
+    const { salidasProgramadas, fetchSalidasProgramadas } = useSalidaProgramacion()
     const { tarifaPorKgHierro, tarifaPorKgNormal, tarifaPorPaquete, fetchConfiguracion } = useConfiguracion()
     const [submitting, setSubmitting] = useState(false)
     const [ventaOriginal, setVentaOriginal] = useState(null)
@@ -68,7 +68,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
     // deja consistente con RegistrarVenta.jsx por si esa restricción cambia.
     const esOperadorSede = usuario?.rol?.codigo === 'operador_sede'
     const destinos = esOperadorSede
-        ? destinosDesdeSede(rutasProgramadas, sedeActual?.municipio)
+        ? destinosDesdeSede(salidasProgramadas, sedeActual?.municipio)
         : getDestinosHabilitados().filter((d) => !esMunicipioOrigen(d.municipio))
 
     // Peso que esta misma venta ya tenía en cada vehículo del convoy, agrupado por par —
@@ -78,7 +78,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
     const getPesoOriginalPorPar = () => {
         const acc = {}
         for (const p of (ventaOriginal?.paquetes || [])) {
-            const id = p.idRutaVehiculoConductor
+            const id = p.idSalidaVehiculoConductor
             if (id == null) continue
             acc[id] = (acc[id] || 0) + (parseFloat(p.peso) || 0)
         }
@@ -93,7 +93,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
         handleAgregarPaquete, handleQuitarPaquete, handleNext, handleBack, validarTodo,
     } = useVentaWizardForm({
         initialForm: getInitialForm(),
-        rutasProgramadas, fetchRutasProgramadas, tarifaPorKgHierro, tarifaPorKgNormal, tarifaPorPaquete, fetchConfiguracion,
+        salidasProgramadas, fetchSalidasProgramadas, tarifaPorKgHierro, tarifaPorKgNormal, tarifaPorPaquete, fetchConfiguracion,
         ventaOriginal,
         afterChange: () => setSinCambios(false),
         getPesoOriginalPorPar,
@@ -122,7 +122,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                 peso: limpiarNumero(p.peso), alto: limpiarNumero(p.alto), ancho: limpiarNumero(p.ancho),
                 profundidad: limpiarNumero(p.profundidad),
                 tipoCarga: p.tipoCarga || 'normal',
-                idRutaVehiculoConductor: p.idRutaVehiculoConductor || '',
+                idSalidaVehiculoConductor: p.idSalidaVehiculoConductor || '',
             }))
             : [{ ...PAQUETE_VACIO }]
         const datosForm = {
@@ -140,12 +140,12 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
             idDestinoDestinatario: destinatario?.idDestino || '',
             direccionDestinatario: destinatario?.direccionDestinatario || '',
             paquetes: paquetesArr,
-            idRuta: ventaData.idRuta || ventaData.ruta?.idRuta || '',
-            destino: ventaData.ruta
-                ? `${ventaData.ruta.origen || 'Sin nombre'} → ${ventaData.ruta.destino?.municipio || 'Sin destino'}${ventaData.ruta.fechaSalida ? ` — ${formatFecha(ventaData.ruta.fechaSalida)}` : ''}`
+            idSalida: ventaData.idSalida || ventaData.salida?.idSalida || '',
+            destino: ventaData.salida
+                ? `${ventaData.salida.origen || 'Sin nombre'} → ${ventaData.salida.ruta?.destino?.municipio || 'Sin destino'}${ventaData.salida.fechaSalida ? ` — ${formatFecha(ventaData.salida.fechaSalida)}` : ''}`
                 : '',
-            fechaSalidaRuta: ventaData.ruta?.fechaSalida || '',
-            fechaLlegadaEstimadaRuta: ventaData.ruta?.fechaLlegadaEstimada || '',
+            fechaSalidaRuta: ventaData.salida?.fechaSalida || '',
+            fechaLlegadaEstimadaRuta: ventaData.salida?.fechaLlegadaEstimada || '',
             fechaEstimadaEntrega: ventaData.fechaEstimadaEntrega
                 ? ventaData.fechaEstimadaEntrega.split('T')[0]
                 : '',
@@ -162,9 +162,9 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
         } else {
             setClienteInput('')
         }
-        const r = ventaData.ruta
+        const r = ventaData.salida
         if (r) {
-            setRutaInput(`${r.origen || 'Sin nombre'} → ${r.destino?.municipio || 'Sin destino'}${r.fechaSalida ? ` — ${formatFecha(r.fechaSalida)}` : ''}`)
+            setRutaInput(`${r.origen || 'Sin nombre'} → ${r.ruta?.destino?.municipio || 'Sin destino'}${r.fechaSalida ? ` — ${formatFecha(r.fechaSalida)}` : ''}`)
         } else {
             setRutaInput('')
         }
@@ -216,7 +216,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
         try {
             const numId = venta?.idEncomiendaVenta || venta?.id
             const payload = {
-                idRuta: parseInt(form.idRuta),
+                idSalida: parseInt(form.idSalida),
                 fechaEstimadaEntrega: form.fechaEstimadaEntrega || null,
                 observaciones: form.observaciones || null,
                 modalidadRecaudo: form.modalidadRecaudo,
@@ -238,7 +238,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                     ancho: p.ancho ? parseFloat(p.ancho) : null,
                     profundidad: p.profundidad ? parseFloat(p.profundidad) : null,
                     tipoCarga: p.tipoCarga,
-                    idRutaVehiculoConductor: parseInt(p.idRutaVehiculoConductor),
+                    idSalidaVehiculoConductor: parseInt(p.idSalidaVehiculoConductor),
                 })),
             }
             await actualizarVenta(numId, payload)
@@ -291,7 +291,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                     <PasoEnvio
                         theme={theme} form={form} setForm={setForm} errores={errores} setErrores={setErrores}
                         setApiError={setApiError} setSinCambios={setSinCambios}
-                        rutasProgramadas={rutasProgramadas} rutaInput={rutaInput} setRutaInput={setRutaInput}
+                        salidasProgramadas={salidasProgramadas} rutaInput={rutaInput} setRutaInput={setRutaInput}
                         handleChange={handleChange} calcularValorServicio={calcularValorServicio}
                         handlePaqueteChange={handlePaqueteChange} setErrorPaquete={setErrorPaquete}
                         ventaOriginal={ventaOriginal} valorServicioManualRef={valorServicioManualRef}
@@ -307,7 +307,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                         theme={theme} apiError={apiError} setApiError={setApiError} cardSx={cardSx(theme)}
                         clienteSeleccionado={clienteSeleccionado} form={form} formOriginal={formOriginal}
                         ventaOriginal={ventaOriginal} sinCambios={sinCambios} setSinCambios={setSinCambios}
-                        clientes={clientes} rutasProgramadas={rutasProgramadas} destinos={destinos}
+                        clientes={clientes} salidasProgramadas={salidasProgramadas} destinos={destinos}
                     />
                 )
             default:

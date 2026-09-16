@@ -1,5 +1,6 @@
 import { Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material'
 import { getEstadoColorRuta } from '../../../shared/utils/estadoColors.js'
+import { buildSalidaHighlightUrl } from '../../../shared/utils/salidaLinks.js'
 
 const RutasMiniTabla = ({ rutas, theme }) => (
     <Paper elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: 2, overflow: 'hidden', mt: 1.5 }}>
@@ -17,14 +18,14 @@ const RutasMiniTabla = ({ rutas, theme }) => (
                         const { color } = getEstadoColorRuta(r.estado)
                         const esProgramada = r.estado === 'Programada'
                         return (
-                            <TableRow key={r.idRuta}
-                                onClick={() => window.open(`/transporte/rutas?highlight=${r.idRuta}`, '_blank')}
+                            <TableRow key={r.idSalida}
+                                onClick={() => window.open(buildSalidaHighlightUrl(r), '_blank')}
                                 sx={{ cursor: 'pointer', '&:hover td': { backgroundColor: theme.palette.action.hover } }}>
                                 <TableCell sx={{ fontSize: '0.8rem', fontWeight: 600, py: 0.75 }}>
-                                    {r.origen || `#${r.idRuta}`}
+                                    {r.origen || `#${r.idSalida}`}
                                 </TableCell>
                                 <TableCell sx={{ fontSize: '0.8rem', py: 0.75 }}>
-                                    {r.destino?.municipio || '—'}
+                                    {r.ruta?.destino?.municipio || '—'}
                                 </TableCell>
                                 <TableCell sx={{ py: 0.75, textAlign: 'right' }}>
                                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.75 }}>

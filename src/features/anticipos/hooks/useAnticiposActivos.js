@@ -3,10 +3,10 @@ import * as anticipoService from '../services/anticipoService.js'
 
 // Anticipos "activos" = habilitado:true + estado en {Entregado, En Legalización} — mismo
 // criterio que usa anticipoService.js del backend (create()/update()) para decidir si un
-// conductor "ya tiene anticipo" en una ruta. Se usa para no ofrecer en el buscador de
-// Registrar/Editar Anticipo una ruta (o un par vehículo-conductor puntual) que el backend
-// de todas formas iba a rechazar — antes solo se sabía al final, con el error 409 ya en
-// el paso de Confirmación.
+// conductor "ya tiene anticipo" en una salida. Se usa para no ofrecer en el buscador de
+// Registrar/Editar Anticipo una salida (o un par vehículo-conductor puntual) que el
+// backend de todas formas iba a rechazar — antes solo se sabía al final, con el error
+// 409 ya en el paso de Confirmación.
 //
 // Fetch propio (no el `anticipos` del contexto, que solo trae los 5 más recientes para
 // otra pantalla) — se pide fresco cada vez que se abre el wizard, paginando si hace falta
@@ -14,7 +14,7 @@ import * as anticipoService from '../services/anticipoService.js'
 //
 // `excluirIdAnticipo`: en Editar, el propio anticipo que se está editando no debe contar
 // contra sí mismo (mismo criterio que el backend con `idAnticipoExcedente: Op.ne` en
-// update()) — si no, la ruta/conductor de ESTE anticipo se autoexcluirían del selector.
+// update()) — si no, la salida/conductor de ESTE anticipo se autoexcluirían del selector.
 export function useAnticiposActivos({ excluirIdAnticipo } = {}) {
     const [activos, setActivos] = useState([])
     const [loading, setLoading] = useState(true)
@@ -48,24 +48,24 @@ export function useAnticiposActivos({ excluirIdAnticipo } = {}) {
         return () => { cancelado = true }
     }, [])
 
-    const clave = (idRuta, idConductor) => `${idRuta}-${idConductor}`
+    const clave = (idSalida, idConductor) => `${idSalida}-${idConductor}`
     const activosPorRutaConductor = new Set(
         activos
             .filter(a => a.idAnticipoExcedente !== excluirIdAnticipo)
-            .map(a => clave(a.idRuta, a.idConductor))
+            .map(a => clave(a.idSalida, a.idConductor))
     )
-    const tieneAnticipoActivo = (idRuta, idConductor) => activosPorRutaConductor.has(clave(idRuta, idConductor))
+    const tieneAnticipoActivo = (idSalida, idConductor) => activosPorRutaConductor.has(clave(idSalida, idConductor))
 
-    // Oculta del buscador de Ruta las que ya no tienen NINGÚN par disponible (todos sus
+    // Oculta del buscador de Salida las que ya no tienen NINGÚN par disponible (todos sus
     // conductores ya tienen anticipo activo en ella). Si le queda al menos un par sin
-    // anticipo, la ruta se sigue mostrando normal.
-    const filtrarRutasDisponibles = (rutas) => (rutas || []).filter(r =>
-        (r.paresVehiculoConductor || []).some(p => !tieneAnticipoActivo(r.idRuta, p.idConductor))
+    // anticipo, la salida se sigue mostrando normal.
+    const filtrarRutasDisponibles = (salidas) => (salidas || []).filter(r =>
+        (r.paresVehiculoConductor || []).some(p => !tieneAnticipoActivo(r.idSalida, p.idConductor))
     )
 
-    // Del select de "Vehículo y conductor" de la ruta ya elegida, solo los pares sin
+    // Del select de "Vehículo y conductor" de la salida ya elegida, solo los pares sin
     // anticipo activo — los que ya tienen uno no aparecen ahí, ni deshabilitados.
-    const filtrarParesDisponibles = (pares, idRuta) => (pares || []).filter(p => !tieneAnticipoActivo(idRuta, p.idConductor))
+    const filtrarParesDisponibles = (pares, idSalida) => (pares || []).filter(p => !tieneAnticipoActivo(idSalida, p.idConductor))
 
     return { loading, tieneAnticipoActivo, filtrarRutasDisponibles, filtrarParesDisponibles }
 }

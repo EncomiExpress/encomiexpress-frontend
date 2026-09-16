@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback, useMemo } 
 import * as anticipoService from '../services/anticipoService'
 import { useAuth } from '../../../shared/contexts/AuthContext.jsx'
 import { useConductor } from '../../conductores/context/ConductorContext.jsx'
-import { useRutaProgramacion } from '../../rutas/context/RutaProgramacionContext.jsx'
+import { useSalidaProgramacion } from '../../salidas/context/SalidaProgramacionContext.jsx'
 
 const AnticipoExcedenteContext = createContext()
 
@@ -11,7 +11,7 @@ export const useAnticipos = () => useContext(AnticipoExcedenteContext)
 export const AnticipoExcedenteProvider = ({ children }) => {
   const { token } = useAuth()
   const { conductores } = useConductor()
-  const { rutasProgramadas, fetchRutasProgramadas } = useRutaProgramacion()
+  const { salidasProgramadas, fetchSalidasProgramadas } = useSalidaProgramacion()
 
   const [anticipos, setAnticipos] = useState([])
   const [total, setTotal] = useState(0)
@@ -51,22 +51,22 @@ export const AnticipoExcedenteProvider = ({ children }) => {
     return () => abortController.abort()
   }, [token, fetchAnticipos])
 
-  // Cargar rutas al montar siempre que haya token,
+  // Cargar salidas al montar siempre que haya token,
   // independientemente de si el array ya tiene datos en el contexto padre
   useEffect(() => {
     if (token) {
-      fetchRutasProgramadas({ limit: 1000 })
+      fetchSalidasProgramadas({ limit: 1000 })
     }
   }, [token]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Normalizar conductores para el selector: { idConductor, nombre } — solo habilitados.
-  // Memoizado: sin esto, este array (y los de rutas de abajo) se reconstruían enteros —
-  // con objetos nuevos — en CADA render del provider, aunque `conductores`/`rutasProgramadas`
+  // Memoizado: sin esto, este array (y los de salidas de abajo) se reconstruían enteros —
+  // con objetos nuevos — en CADA render del provider, aunque `conductores`/`salidasProgramadas`
   // no hubieran cambiado en nada. Un Autocomplete controlado (ver PasoRutaVehiculo.jsx)
   // interpreta esa referencia nueva como "el valor cambió" y resetea lo que el usuario
   // esté escribiendo para buscar — mismo bug de fondo que el de la "x" en Editar Anticipo
   // (ver ActualizarAnticipoExcedente.jsx, rutaSintetica), solo que acá podía disparar con
-  // cualquier ruta/conductor, no solo el caso sintético.
+  // cualquier salida/conductor, no solo el caso sintético.
   const conductoresNormalizados = useMemo(() => conductores
     .filter((c) => c.habilitado !== false)
     .map((c) => ({
@@ -78,22 +78,29 @@ export const AnticipoExcedenteProvider = ({ children }) => {
       numeroIdentificacion: c.numeroIdentificacion || '',
     })), [conductores])
 
-  // Normalizar rutas para el selector: { idRuta, nombre, paresVehiculoConductor } —
-  // solo habilitadas y Programadas (una ruta "En Ruta"/"Completada"/"Cancelada" ya no
-  // debería recibir anticipos nuevos). Una ruta ahora puede tener varios vehículo+conductor
-  // (convoy), así que el conductor ya no se autocompleta solo: el formulario debe dejar
-  // elegir cuál par corresponde entre los de `paresVehiculoConductor`.
-  const rutasNormalizadas = useMemo(() => rutasProgramadas
+  // Normalizar salidas para el selector: { idSalida, nombre, paresVehiculoConductor } —
+  // solo habilitadas y Programadas (una salida "En Ruta"/"Completada"/"Cancelada" ya no
+  // debería recibir anticipos nuevos). Una salida ahora puede tener varios vehículo+
+  // conductor (convoy), así que el conductor ya no se autocompleta solo: el formulario
+  // debe dejar elegir cuál par corresponde entre los de `paresVehiculoConductor`.
+  // El destino final ya no vive directo en la salida — se hereda de su Ruta (plantilla),
+  // ver models/index.js: SalidaProgramada.belongsTo(Ruta, {as:'ruta'}) — se aplana acá a
+  // `destino` para que el resto de la feature no tenga que saber de esa anidación.
+  const rutasNormalizadas = useMemo(() => salidasProgramadas
     .filter((r) => r.habilitado !== false && r.estado === 'Programada')
     .map((r) => ({
-      idRuta: r.idRuta,
-      nombre: r.origen || r.nombre || `Ruta ${r.idRuta}`,
-      destino: r.destino || null,
+      idSalida: r.idSalida,
+      nombre: r.origen || r.nombre || `Salida ${r.idSalida}`,
+      destino: r.ruta?.destino || null,
+      // Anticipo ida+regreso (ver LOGICA.md): si esta salida es un regreso, trae
+      // idSalidaIda -- lo usa PasoRutaVehiculo.jsx para NO mostrar el aviso de
+      // "cubre ida y regreso" (un anticipo sobre un regreso ya es autónomo).
+      idSalidaIda: r.idSalidaIda ?? null,
       // Para validar que fechaEntrega del anticipo no sea posterior a la salida de
-      // la ruta (ver anticipoValidation.js, validarCampo 'fechaEntrega').
+      // la salida (ver anticipoValidation.js, validarCampo 'fechaEntrega').
       fechaSalida: r.fechaSalida || null,
       // Paradas intermedias del corredor — solo para dibujar el recorrido en el
-      // selector de ruta (ModalRutaDiagrama, ver PasoRutaVehiculo.jsx), no se usa
+      // selector de salida (ModalRutaDiagrama, ver PasoRutaVehiculo.jsx), no se usa
       // para nada más acá.
       paradas: r.paradas || [],
       paresVehiculoConductor: (r.paresVehiculoConductor || [])
@@ -101,14 +108,14 @@ export const AnticipoExcedenteProvider = ({ children }) => {
         .map((p) => {
           const u = p.conductor?.usuario
           return {
-            idRutaVehiculoConductor: p.idRutaVehiculoConductor,
+            idSalidaVehiculoConductor: p.idSalidaVehiculoConductor,
             idVehiculo: p.idVehiculo,
             idConductor: p.idConductor,
             placa: p.vehiculo?.placa || '',
             conductorNombre: u ? `${u.nombre} ${u.apellido}` : `Conductor ${p.idConductor}`,
           }
         }),
-    })), [rutasProgramadas])
+    })), [salidasProgramadas])
 
   // ── CRUD ────────────────────────────────────────────────────────────────────
 
@@ -166,12 +173,12 @@ export const AnticipoExcedenteProvider = ({ children }) => {
         fetchAnticipos,
         conductores: conductoresNormalizados,
         rutas: rutasNormalizadas,
-        // Se reexpone para que Registrar/Editar Anticipo puedan pedir las rutas
-        // frescas al abrirse — `rutasProgramadas` solo se carga una vez por sesión
-        // (ver el useEffect de arriba, atado a `token`), así que si una ruta se edita
+        // Se reexpone para que Registrar/Editar Anticipo puedan pedir las salidas
+        // frescas al abrirse — `salidasProgramadas` solo se carga una vez por sesión
+        // (ver el useEffect de arriba, atado a `token`), así que si una salida se edita
         // en otra pantalla (ej. se reasigna un conductor) mientras el usuario sigue
         // logueado, el wizard de Anticipos seguiría viendo la versión vieja sin esto.
-        fetchRutasProgramadas,
+        fetchRutasProgramadas: fetchSalidasProgramadas,
         loading,
         error,
         agregarAnticipo,

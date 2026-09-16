@@ -36,7 +36,14 @@ export const SECTIONS = [
       { id: 'conductores',  label: 'Conductores',            icon: DriverIcon, path: '/transporte/conductores', permiso: 'listar_conductor' },
       { id: 'vehiculos',    label: 'Vehículos',              icon: TruckIcon,  path: '/vehiculos/listar', permiso: 'listar_vehiculo' },
       { id: 'destinos',     label: 'Destinos',               icon: DestIcon,   path: '/transporte/destinos', permiso: 'listar_destino' },
-      { id: 'rutas',        label: 'Programación de rutas',  icon: RouteIcon,  path: '/transporte/rutas', permiso: 'listar_ruta' },
+      // "Rutas" (plantilla liviana: nombre/destino/observaciones) y "Programación de
+      // Salidas" (la agenda: fecha/hora/estado/convoy/paradas, ver
+      // features/salidas) se separaron en la Fase 4 de la migración
+      // Ruta/SalidaProgramada. "Programación de Salidas" ya NO tiene ítem de menú
+      // propio: se llega solo desde una fila de Rutas (botón "Salidas"), scoped a
+      // esa plantilla — ver ListarRuta.jsx / rutas/hooks/useRutaColumns.jsx y la
+      // ruta /transporte/rutas/:idRuta/salidas en features/salidas/salidas.routes.jsx.
+      { id: 'rutas',        label: 'Rutas',                  icon: RouteIcon,  path: '/transporte/rutas', permiso: 'listar_ruta' },
       { id: 'anticipos',    label: 'Anticipos y Excedentes', icon: MoneyIcon,  path: '/anticipos/listar', permiso: 'listar_anticipo' },
     ],
   },

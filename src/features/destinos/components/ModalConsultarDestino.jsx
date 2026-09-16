@@ -1,6 +1,6 @@
 import { useTheme } from '@mui/material/styles'
 import { useState, useEffect } from 'react'
-import * as rutaService from '../../rutas/services/rutaService.js'
+import * as salidaService from '../../salidas/services/salidaService.js'
 import {
     Box, Typography, Paper, Chip, Button, Dialog, IconButton, CircularProgress,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tabs, Tab
@@ -10,6 +10,7 @@ import AttachMoneyOutlinedIcon from '@mui/icons-material/AttachMoneyOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import AdsClickOutlinedIcon from '@mui/icons-material/AdsClickOutlined'
 import { formatFecha } from '../../../shared/utils/formatters.js'
+import { buildSalidaHighlightUrl } from '../../../shared/utils/salidaLinks.js'
 import CampoFila from '../../../shared/components/CampoFila.jsx'
 import FichaCard from '../../../shared/components/FichaCard.jsx'
 import { RutaEstadoDot } from '../../rutas/components/EstadoDot.jsx'
@@ -86,7 +87,7 @@ const ModalConsultarDestino = ({ destino, onClose }) => {
         if (!destino || tabIndex !== 1) return
         // eslint-disable-next-line react-hooks/set-state-in-effect -- loading flag antes de fetch, patrón recomendado por React
         setTabRutas({ data: [], total: 0, loading: true })
-        rutaService.getRutas({ idDestino: destino.idDestino, limit: 100 })
+        salidaService.getSalidas({ idDestino: destino.idDestino, limit: 100 })
             .then(res => setTabRutas({ data: res?.data || [], total: res?.total ?? 0, loading: false }))
             .catch(() => setTabRutas({ data: [], total: 0, loading: false }))
     }, [destino, tabIndex])
@@ -192,8 +193,8 @@ const ModalConsultarDestino = ({ destino, onClose }) => {
                                     </TableHead>
                                     <TableBody>
                                         {tabRutas.data.map(r => (
-                                            <TableRow key={r.idRuta}
-                                                onClick={() => window.open(`/transporte/rutas?highlight=${r.idRuta}`, '_blank')}
+                                            <TableRow key={r.idSalida}
+                                                onClick={() => window.open(buildSalidaHighlightUrl(r), '_blank')}
                                                 sx={{ cursor: 'pointer', '&:hover': { backgroundColor: theme.palette.background.subtle } }}>
                                                 <TableCell sx={{ fontSize: '0.82rem' }}>{r.origen || '—'}</TableCell>
                                                 <TableCell sx={{ fontSize: '0.82rem' }}>

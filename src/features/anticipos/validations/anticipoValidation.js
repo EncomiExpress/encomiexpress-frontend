@@ -9,14 +9,14 @@ export const NUMERIC_LIMITS = { valorAnticipo: 9999999 }
 // se corrige un campo ya marcado con error). "Valor gastado" y las fechas de
 // legalización/entrega de excedente no viven en este formulario — las registra el
 // conductor cuando legaliza el anticipo, no el admin al crearlo/editarlo.
-// `rutaSeleccionada` es opcional (la ruta ya resuelta a partir de form.idRuta, la arma
-// cada pantalla) — solo hace falta para el tope superior de fechaEntrega.
+// `rutaSeleccionada` es opcional (la salida ya resuelta a partir de form.idSalida, la
+// arma cada pantalla) — solo hace falta para el tope superior de fechaEntrega.
 export const validarCampo = (name, form, rutaSeleccionada) => {
     switch (name) {
-        case 'idRuta':
-            return form.idRuta ? '' : 'Selecciona una ruta'
-        case 'idRutaVehiculoConductor':
-            return form.idRutaVehiculoConductor ? '' : 'Selecciona el vehículo y conductor de la ruta'
+        case 'idSalida':
+            return form.idSalida ? '' : 'Selecciona una salida'
+        case 'idSalidaVehiculoConductor':
+            return form.idSalidaVehiculoConductor ? '' : 'Selecciona el vehículo y conductor de la salida'
         case 'valorAnticipo':
             if (!form.valorAnticipo) return 'El valor del anticipo es obligatorio'
             if (isNaN(form.valorAnticipo) || parseFloat(form.valorAnticipo) <= 0) return 'Ingresa un valor válido mayor a 0'
@@ -24,12 +24,12 @@ export const validarCampo = (name, form, rutaSeleccionada) => {
             return ''
         case 'fechaEntrega': {
             if (!form.fechaEntrega) return 'La fecha de entrega es obligatoria'
-            // No tiene sentido entregar el anticipo DESPUÉS de que la ruta ya salió.
+            // No tiene sentido entregar el anticipo DESPUÉS de que la salida ya salió.
             if (rutaSeleccionada?.fechaSalida && form.fechaEntrega > rutaSeleccionada.fechaSalida) {
-                return `No puede ser posterior a la salida de la ruta (${formatFecha(rutaSeleccionada.fechaSalida)})`
+                return `No puede ser posterior a la salida (${formatFecha(rutaSeleccionada.fechaSalida)})`
             }
             // Tampoco una fecha absurdamente vieja — mismo horizonte (MAX_DIAS_ANTICIPACION)
-            // que ya limita las fechas de Ruta/Venta, aplicado hacia atrás en vez de adelante.
+            // que ya limita las fechas de Salida/Venta, aplicado hacia atrás en vez de adelante.
             const minima = sumarDias(hoyISO(), -MAX_DIAS_ANTICIPACION)
             if (form.fechaEntrega < minima) return `No puede ser más de ${MAX_DIAS_ANTICIPACION} días en el pasado`
             return ''
@@ -42,8 +42,8 @@ export const validarCampo = (name, form, rutaSeleccionada) => {
 export const validarPaso = (step, form, rutaSeleccionada) => {
     const e = {}
     if (step === 0) {
-        e.idRuta = validarCampo('idRuta', form)
-        e.idRutaVehiculoConductor = validarCampo('idRutaVehiculoConductor', form)
+        e.idSalida = validarCampo('idSalida', form)
+        e.idSalidaVehiculoConductor = validarCampo('idSalidaVehiculoConductor', form)
         e.valorAnticipo = validarCampo('valorAnticipo', form)
         e.fechaEntrega = validarCampo('fechaEntrega', form, rutaSeleccionada)
     }

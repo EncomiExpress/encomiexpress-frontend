@@ -6,9 +6,10 @@ import {
 } from '@mui/material'
 import BlockOutlinedIcon from '@mui/icons-material/BlockOutlined'
 import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined'
-import * as rutaService from '../../rutas/services/rutaService.js'
+import * as salidaService from '../../salidas/services/salidaService.js'
 import * as anticipoService from '../../anticipos/services/anticipoService.js'
 import { getEstadoColorRuta, getAnticipoEstadoDot } from '../../../shared/utils/estadoColors.js'
+import { buildSalidaHighlightUrl } from '../../../shared/utils/salidaLinks.js'
 import ConfirmToggleDialog from '../../../shared/components/ConfirmToggleDialog.jsx'
 
 const ESTADOS_BLOQUEO_ANTICIPO = ['Entregado', 'En Legalización', 'Excedente pendiente']
@@ -29,11 +30,11 @@ const RutasTabla = ({ rutas, theme }) => (
                         const { color } = getEstadoColorRuta(r.estado)
                         const esProgramada = r.estado === 'Programada'
                         return (
-                            <TableRow key={r.idRuta}
-                                onClick={() => window.open(`/transporte/rutas?highlight=${r.idRuta}`, '_blank')}
+                            <TableRow key={r.idSalida}
+                                onClick={() => window.open(buildSalidaHighlightUrl(r), '_blank')}
                                 sx={{ cursor: 'pointer', '&:hover td': { backgroundColor: theme.palette.action.hover } }}>
-                                <TableCell sx={{ fontSize: '0.8rem', fontWeight: 600, py: 0.75 }}>{r.origen || `#${r.idRuta}`}</TableCell>
-                                <TableCell sx={{ fontSize: '0.8rem', py: 0.75 }}>{r.destino?.municipio || '—'}</TableCell>
+                                <TableCell sx={{ fontSize: '0.8rem', fontWeight: 600, py: 0.75 }}>{r.origen || `#${r.idSalida}`}</TableCell>
+                                <TableCell sx={{ fontSize: '0.8rem', py: 0.75 }}>{r.ruta?.destino?.municipio || '—'}</TableCell>
                                 <TableCell sx={{ py: 0.75, textAlign: 'right' }}>
                                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.75 }}>
                                         <Box sx={{ width: 9, height: 9, borderRadius: '50%', flexShrink: 0, backgroundColor: esProgramada ? 'transparent' : color, border: `2px solid ${color}` }} />
@@ -63,7 +64,7 @@ const ModalInhabilitarConductor = ({ open, data, onClose, onExited, onConfirm })
             setRutasDetalle({ data: [], loading: true })
             setAnticiposDetalle({ data: [], loading: true })
             Promise.all([
-                rutaService.getRutas({ idConductor: data.idConductor, habilitado: 'true', limit: 100 }),
+                salidaService.getSalidas({ idConductor: data.idConductor, habilitado: 'true', limit: 100 }),
                 anticipoService.getAnticipos(undefined, { idConductor: data.idConductor, habilitado: 'true', limit: 100 }),
             ])
                 .then(([rutasRes, anticiposRes]) => {

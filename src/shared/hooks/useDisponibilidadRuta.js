@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { getDisponibilidadRuta } from '../../features/rutas/services/rutaService.js'
+import { getDisponibilidadSalida } from '../../features/salidas/services/salidaService.js'
 import { formatFecha } from '../utils/formatters'
 import { MIN_DIAS_SALIDA_LLEGADA, DIAS_MARGEN_ENTRE_RUTAS } from '../utils/horarioLaboral'
 
@@ -37,7 +37,7 @@ const parseISO = (iso) => {
 //
 // (fechaLlegadaEstimada puede venir null en rutas antiguas creadas antes de esta
 // migración: se trata como ocupación de un solo día, igual que en el backend.)
-export const useDisponibilidadRuta = ({ pares = [], idRutaExcluir, refrescarKey, modo = 'salida', fechaReferencia, maxDate }) => {
+export const useDisponibilidadRuta = ({ pares = [], idSalidaExcluir, refrescarKey, modo = 'salida', fechaReferencia, maxDate }) => {
     const [ocupaciones, setOcupaciones] = useState([])
     const [loading, setLoading] = useState(false)
 
@@ -55,13 +55,13 @@ export const useDisponibilidadRuta = ({ pares = [], idRutaExcluir, refrescarKey,
         }
         let cancelado = false
         setLoading(true)
-        getDisponibilidadRuta({ idVehiculos, idConductores, idRutaExcluir })
+        getDisponibilidadSalida({ idVehiculos, idConductores, idSalidaExcluir })
             .then(res => { if (!cancelado) setOcupaciones(res?.data || []) })
             .catch(() => { if (!cancelado) setOcupaciones([]) })
             .finally(() => { if (!cancelado) setLoading(false) })
         return () => { cancelado = true }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [idVehiculos.join(','), idConductores.join(','), idRutaExcluir, refrescarKey])
+    }, [idVehiculos.join(','), idConductores.join(','), idSalidaExcluir, refrescarKey])
 
     const motivosPorDia = useMemo(() => {
         const mapa = new Map()

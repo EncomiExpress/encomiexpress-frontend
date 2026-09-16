@@ -1,36 +1,25 @@
 import { fetchWithAuth } from '../../../shared/services/authService.js'
 
+// Fase 4 de la migración Ruta/SalidaProgramada (ver LOGICA.md): `Ruta` quedó
+// reducida a la PLANTILLA reutilizable de corredor (idDestino, observaciones,
+// habilitado, sin nombre propio) — la agenda concreta (fecha/hora/estado/convoy/
+// paradas) vive ahora en SalidaProgramada, expuesta por /salidas
+// (src/features/salidas/services/salidaService.js). Este archivo solo cubre el
+// CRUD de la plantilla, contra los 5 endpoints que sigue exponiendo /rutas en el
+// backend (routes/rutas.js): GET /, GET /:id, POST /, PUT /:id,
+// PATCH /:id/toggle-habilitado.
+
 export const getRutas = (params = {}, signal) => {
   const qs = new URLSearchParams()
   Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '') qs.set(k, v) })
   const suffix = qs.toString() ? `?${qs.toString()}` : ''
   return fetchWithAuth(`/rutas${suffix}`, { signal })
 }
-export const getRutaById     = (id)       => fetchWithAuth(`/rutas/${id}`)
-export const createRuta      = (datos)    => fetchWithAuth('/rutas',     { method: 'POST',  body: JSON.stringify(datos) })
-export const updateRuta      = (id, datos)=> fetchWithAuth(`/rutas/${id}`, { method: 'PUT', body: JSON.stringify(datos) })
-// `extra` queda como punto de extensión (hoy no se envía nada): el backend solo
-// necesita { estado }. La ubicación del vehículo al cancelar ya no se pregunta —
-// se deriva de lo que el conductor haya dejado en sede. Ver LOGICA.md.
-export const updateEstadoRuta = (id, estado, extra = {}) => fetchWithAuth(`/rutas/${id}/estado`, { method: 'PATCH', body: JSON.stringify({ estado, ...extra }) })
+export const getRutaById = (id) => fetchWithAuth(`/rutas/${id}`)
+export const createRuta  = (datos) => fetchWithAuth('/rutas', { method: 'POST', body: JSON.stringify(datos) })
+export const updateRuta  = (id, datos) => fetchWithAuth(`/rutas/${id}`, { method: 'PUT', body: JSON.stringify(datos) })
 export const toggleHabilitadoRuta = (id) => fetchWithAuth(`/rutas/${id}/toggle-habilitado`, { method: 'PATCH' })
-export const getPageOfRuta = (id, limit = 10) => fetchWithAuth(`/rutas/${id}/page-of?limit=${limit}`)
-export const getAniosDisponiblesRuta = () => fetchWithAuth('/rutas/anios-disponibles')
 
-// operador_sede: dispara el regreso de su sede con solo fecha/hora de salida —
-// el resto (convoy, paradas, origen, destino) lo arma el backend a partir de la
-// ida. Ver LOGICA.md, "Sedes remotas".
-export const crearRegresoDesdeSede = (idRutaIda, { fechaSalida, horaSalida, fechaLlegadaEstimada, horaLlegadaEstimada }) =>
-  fetchWithAuth(`/rutas/${idRutaIda}/regreso-sede`, { method: 'POST', body: JSON.stringify({ fechaSalida, horaSalida, fechaLlegadaEstimada, horaLlegadaEstimada }) })
-
-// idVehiculos/idConductores: arrays de ids. idRutaExcluir: opcional, para editar sin
-// chocar contra la propia ruta. Usado por CalendarioDisponibilidad.jsx.
-export const getDisponibilidadRuta = ({ idVehiculos = [], idConductores = [], idRutaExcluir } = {}) => {
-  const qs = new URLSearchParams()
-  if (idVehiculos.length) qs.set('idVehiculos', idVehiculos.join(','))
-  if (idConductores.length) qs.set('idConductores', idConductores.join(','))
-  if (idRutaExcluir) qs.set('idRutaExcluir', idRutaExcluir)
-  return fetchWithAuth(`/rutas/disponibilidad?${qs.toString()}`)
+export default {
+  getRutas, getRutaById, createRuta, updateRuta, toggleHabilitadoRuta,
 }
-
-export default { getRutas, getRutaById, createRuta, updateRuta, updateEstadoRuta, toggleHabilitadoRuta, getPageOfRuta, getAniosDisponiblesRuta, getDisponibilidadRuta, crearRegresoDesdeSede }

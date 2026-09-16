@@ -24,11 +24,11 @@ const useAnticipoColumns = ({
         render: (anticipo) => (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.4 }}>
                 <Typography variant="body2" fontWeight={500} sx={{ fontSize: '0.8rem', color: theme.palette.text.primary }} noWrap>
-                    {anticipo.ruta ? `${anticipo.ruta.origen || '—'} → ${anticipo.ruta.destino?.municipio || 'Sin destino'}` : '—'}
+                    {anticipo.salida ? `${anticipo.salida.origen || '—'} → ${anticipo.salida.ruta?.destino?.municipio || 'Sin destino'}` : '—'}
                 </Typography>
-                {anticipo.ruta?.fechaSalida && (
+                {anticipo.salida?.fechaSalida && (
                     <Typography variant="caption" sx={{ fontSize: '0.7rem', color: theme.palette.text.secondary }} noWrap>
-                        Sale el {formatFecha(anticipo.ruta.fechaSalida)}
+                        Sale el {formatFecha(anticipo.salida.fechaSalida)}
                     </Typography>
                 )}
                 {/* Huérfano: el par de la ruta se reasignó a otro conductor después de

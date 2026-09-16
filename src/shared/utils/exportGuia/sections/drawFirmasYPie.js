@@ -34,9 +34,9 @@ export const drawFirmasYPie = (doc, y, venta, pkg) => {
   // "Ruta: origen" antes se quedaba corto -- se completa con el destino (mismo
   // criterio "origen → destino" que el resto de la aplicación) y, al lado, la
   // fecha de salida de esa ruta.
-  const rutaTexto = venta.ruta?.origen &&
-    `Ruta: ${venta.ruta.origen}${venta.ruta.destino?.municipio ? ` → ${venta.ruta.destino.municipio}` : ''}`
-  const salidaTexto = venta.ruta?.fechaSalida && `Salida: ${formatFecha(venta.ruta.fechaSalida)}`
+  const rutaTexto = venta.salida?.origen &&
+    `Ruta: ${venta.salida.origen}${venta.salida.ruta?.destino?.municipio ? ` → ${venta.salida.ruta.destino.municipio}` : ''}`
+  const salidaTexto = venta.salida?.fechaSalida && `Salida: ${formatFecha(venta.salida.fechaSalida)}`
   const refOperativa = [
     rutaTexto,
     salidaTexto,

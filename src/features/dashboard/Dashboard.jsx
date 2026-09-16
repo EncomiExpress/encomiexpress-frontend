@@ -157,11 +157,11 @@ const Dashboard = () => {
     const contador = {}
     ventas.forEach((venta) => {
       if (!isWithinRange(venta.fechaRegistro, filtroActivo.desde, filtroActivo.hasta)) return
-      if (!venta.ruta?.origen) return
+      if (!venta.salida?.origen) return
       // Solo municipio, sin departamento -- mismo criterio que la columna "Destino"
       // de Listar Ventas (venta.destinatario.destino.municipio), no formatRutaDestino
       // (que agrega " — Departamento").
-      const ruta = `${venta.ruta.origen} → ${venta.ruta.destino?.municipio || '—'}`
+      const ruta = `${venta.salida.origen} → ${venta.salida.ruta?.destino?.municipio || '—'}`
       contador[ruta] = (contador[ruta] || 0) + 1
     })
     return Object.entries(contador)

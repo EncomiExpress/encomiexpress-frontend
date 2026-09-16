@@ -15,7 +15,7 @@ import { formatFecha } from '../../../../shared/utils/formatters.js'
  * campos se modificaron).
  */
 export default function PasoConfirmacion({
-    theme, apiError, setApiError, cardSx, clienteSeleccionado, form, rutasProgramadas, destinos,
+    theme, apiError, setApiError, cardSx, clienteSeleccionado, form, salidasProgramadas, destinos,
     formOriginal, ventaOriginal, sinCambios, setSinCambios, clientes,
 }) {
     const formatDestino = (d) => d ? `${d.municipio} - ${d.departamento}` : null
@@ -45,7 +45,7 @@ export default function PasoConfirmacion({
         [form.idDestinoDestinatario, formOriginal.idDestinoDestinatario],
         [form.direccionDestinatario, formOriginal.direccionDestinatario],
         [JSON.stringify(form.paquetes), JSON.stringify(formOriginal.paquetes)],
-        [form.idRuta, formOriginal.idRuta],
+        [form.idSalida, formOriginal.idSalida],
         [form.fechaEstimadaEntrega, formOriginal.fechaEstimadaEntrega],
         [form.observaciones, formOriginal.observaciones],
         [form.modalidadRecaudo, formOriginal.modalidadRecaudo],
@@ -116,8 +116,8 @@ export default function PasoConfirmacion({
                         const pOriginal = formOriginal?.paquetes?.[i]
                         const dimensionesActual = p.alto ? `${p.alto}×${p.ancho}×${p.profundidad} cm` : null
                         const dimensionesOriginal = pOriginal?.alto ? `${pOriginal.alto}×${pOriginal.ancho}×${pOriginal.profundidad} cm` : undefined
-                        const rutaSelActual = rutasProgramadas.find(r => r.idRuta === parseInt(form.idRuta))
-                        const placaActual = (rutaSelActual?.paresVehiculoConductor || []).find(par => par.idRutaVehiculoConductor === parseInt(p.idRutaVehiculoConductor))?.vehiculo?.placa || '—'
+                        const rutaSelActual = salidasProgramadas.find(r => r.idSalida === parseInt(form.idSalida))
+                        const placaActual = (rutaSelActual?.paresVehiculoConductor || []).find(par => par.idSalidaVehiculoConductor === parseInt(p.idSalidaVehiculoConductor))?.vehiculo?.placa || '—'
                         const placaOriginal = pOriginal ? (ventaOriginal?.paquetes?.[i]?.asignacion?.vehiculo?.placa || '—') : undefined
                         return (
                             <Box key={i}>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useVehiculo } from '../context/VehiculoContext.jsx'
 import { useToast } from '../../../shared/contexts/ToastContext.jsx'
-import { getRutas } from '../../rutas/services/rutaService.js'
+import { getSalidas } from '../../salidas/services/salidaService.js'
 
 // refetch (opcional): recarga la página actual de ListarVehiculo.jsx tras un cambio
 // exitoso — su tabla ya no lee del arreglo compartido de VehiculoContext (ver
@@ -19,7 +19,7 @@ const useVehiculoAcciones = (refetch) => {
     useEffect(() => {
         if (!confirmMantenimiento.open || !confirmMantenimiento.id) return
         setRutasMantenimiento({ data: [], loading: true })
-        getRutas({ idVehiculo: confirmMantenimiento.id, estado: 'Programada', habilitado: 'true', limit: 100 })
+        getSalidas({ idVehiculo: confirmMantenimiento.id, estado: 'Programada', habilitado: 'true', limit: 100 })
             .then(res => setRutasMantenimiento({ data: res?.data || [], loading: false }))
             .catch(() => setRutasMantenimiento({ data: [], loading: false }))
     }, [confirmMantenimiento.open, confirmMantenimiento.id])

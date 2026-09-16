@@ -29,7 +29,7 @@ const PasoRutaVehiculo = ({
             popupIcon={<KeyboardArrowDownOutlinedIcon />}
             disabled={rutaDisabled}
             getOptionLabel={getEtiquetaRuta}
-            isOptionEqualToValue={(opt, val) => opt.idRuta === val.idRuta}
+            isOptionEqualToValue={(opt, val) => opt.idSalida === val.idSalida}
             value={rutaSeleccionada || null}
             inputValue={rutaInput}
             onInputChange={(_, newVal, reason) => {
@@ -37,16 +37,16 @@ const PasoRutaVehiculo = ({
                 else setRutaInput(newVal)
             }}
             onChange={(_, val) => {
-                setForm(prev => ({ ...prev, idRuta: val ? val.idRuta : '', idRutaVehiculoConductor: '' }))
+                setForm(prev => ({ ...prev, idSalida: val ? val.idSalida : '', idSalidaVehiculoConductor: '' }))
                 setErrores(prev => ({
                     ...prev,
-                    idRuta: val ? '' : (prev.idRuta ? validarCampo('idRuta', { idRuta: '' }) : prev.idRuta),
-                    idRutaVehiculoConductor: '',
+                    idSalida: val ? '' : (prev.idSalida ? validarCampo('idSalida', { idSalida: '' }) : prev.idSalida),
+                    idSalidaVehiculoConductor: '',
                 }))
                 setParInput('')
                 afterChange()
             }}
-            onBlur={() => setErrores(prev => ({ ...prev, idRuta: validarCampo('idRuta', form) }))}
+            onBlur={() => setErrores(prev => ({ ...prev, idSalida: validarCampo('idSalida', form) }))}
             renderOption={(props, r) => {
                 const { key, ...rest } = props
                 return (
@@ -68,9 +68,9 @@ const PasoRutaVehiculo = ({
                 )
             }}
             filterOptions={(opts, { inputValue }) => {
-                if (!inputValue.trim()) return [...opts].sort((a, b) => b.idRuta - a.idRuta).slice(0, 5)
+                if (!inputValue.trim()) return [...opts].sort((a, b) => b.idSalida - a.idSalida).slice(0, 5)
                 // Se busca por palabra, no por el texto completo de una — así "medellin
-                // caucasia" encuentra la ruta aunque "medellin" sea el origen y "caucasia"
+                // caucasia" encuentra la salida aunque "medellin" sea el origen y "caucasia"
                 // el destino (en cualquier orden), y sigue funcionando buscar por uno solo.
                 const palabras = normalizarTexto(inputValue).split(/\s+/).filter(Boolean)
                 return opts.filter(r => {
@@ -78,11 +78,11 @@ const PasoRutaVehiculo = ({
                     return palabras.every(p => combinado.includes(p))
                 })
             }}
-            noOptionsText="No se encontraron rutas"
+            noOptionsText="No se encontraron salidas"
             renderInput={(params) => (
-                <TextField {...params} label="Ruta *"
-                    error={!!errores.idRuta}
-                    helperText={errores.idRuta || (rutaDisabled ? rutaHelperTextDisabled : rutaHelperTextOk)}
+                <TextField {...params} label="Salida *"
+                    error={!!errores.idSalida}
+                    helperText={errores.idSalida || (rutaDisabled ? rutaHelperTextDisabled : rutaHelperTextOk)}
                     slotProps={{
                         inputLabel: { shrink: true },
                         htmlInput: { ...params.inputProps, maxLength: 100 },
@@ -116,15 +116,15 @@ const PasoRutaVehiculo = ({
         />
 
         {/* Anticipo ida+retorno (2026-09-13, ver LOGICA.md): un anticipo sobre una
-            IDA (idRutaIda == null) cubre también su regreso, aunque ese regreso
+            IDA (idSalidaIda == null) cubre también su regreso, aunque ese regreso
             todavía no exista -- se avisa acá, en el momento en que se elige la
-            ruta, para que no sea una sorpresa cuando el conductor no pueda
+            salida, para que no sea una sorpresa cuando el conductor no pueda
             legalizar recién al completar la ida. Un anticipo creado directo
             sobre un regreso (caso raro) no lo necesita: se legaliza solo con sus
-            propias sedes, como cualquier ruta suelta. */}
-        {rutaSeleccionada && rutaSeleccionada.idRutaIda == null && (
+            propias sedes, como cualquier salida suelta. */}
+        {rutaSeleccionada && rutaSeleccionada.idSalidaIda == null && (
             <Alert severity="info" sx={{ borderRadius: 2, mt: -1 }}>
-                Este anticipo cubre ida y regreso de la ruta. El conductor solo podrá legalizarlo
+                Este anticipo cubre ida y regreso de la salida. El conductor solo podrá legalizarlo
                 cuando también termine de entregar los paquetes asignados de regreso.
             </Alert>
         )}
@@ -134,7 +134,7 @@ const PasoRutaVehiculo = ({
             popupIcon={<KeyboardArrowDownOutlinedIcon />}
             disabled={parDisabled}
             getOptionLabel={(p) => `${p.placa || 'Sin placa'} — ${p.conductorNombre}`}
-            isOptionEqualToValue={(opt, val) => opt.idRutaVehiculoConductor === val.idRutaVehiculoConductor}
+            isOptionEqualToValue={(opt, val) => opt.idSalidaVehiculoConductor === val.idSalidaVehiculoConductor}
             value={parSeleccionado || null}
             inputValue={parInput}
             onInputChange={(_, newVal, reason) => {
@@ -142,14 +142,14 @@ const PasoRutaVehiculo = ({
                 else setParInput(newVal)
             }}
             onChange={(_, val) => {
-                setForm(prev => ({ ...prev, idRutaVehiculoConductor: val ? val.idRutaVehiculoConductor : '' }))
+                setForm(prev => ({ ...prev, idSalidaVehiculoConductor: val ? val.idSalidaVehiculoConductor : '' }))
                 setErrores(prev => ({
                     ...prev,
-                    idRutaVehiculoConductor: val ? '' : (prev.idRutaVehiculoConductor ? validarCampo('idRutaVehiculoConductor', { idRutaVehiculoConductor: '' }) : prev.idRutaVehiculoConductor),
+                    idSalidaVehiculoConductor: val ? '' : (prev.idSalidaVehiculoConductor ? validarCampo('idSalidaVehiculoConductor', { idSalidaVehiculoConductor: '' }) : prev.idSalidaVehiculoConductor),
                 }))
                 afterChange()
             }}
-            onBlur={() => setErrores(prev => ({ ...prev, idRutaVehiculoConductor: validarCampo('idRutaVehiculoConductor', form) }))}
+            onBlur={() => setErrores(prev => ({ ...prev, idSalidaVehiculoConductor: validarCampo('idSalidaVehiculoConductor', form) }))}
             renderOption={(props, p) => {
                 const { key, ...rest } = props
                 const iniciales = (p.conductorNombre || '').split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase()
@@ -173,11 +173,11 @@ const PasoRutaVehiculo = ({
                     </Box>
                 )
             }}
-            noOptionsText={form?.idRuta ? 'No hay vehículos en esta ruta' : 'Primero selecciona una ruta'}
+            noOptionsText={form?.idSalida ? 'No hay vehículos en esta salida' : 'Primero selecciona una salida'}
             renderInput={(params) => (
                 <TextField {...params} label="Vehículo y conductor *"
-                    error={!!errores.idRutaVehiculoConductor}
-                    helperText={errores.idRutaVehiculoConductor || (parDisabled ? parHelperTextDisabled : 'Elige a cuál vehículo/conductor de la ruta corresponde este anticipo')}
+                    error={!!errores.idSalidaVehiculoConductor}
+                    helperText={errores.idSalidaVehiculoConductor || (parDisabled ? parHelperTextDisabled : 'Elige a cuál vehículo/conductor de la salida corresponde este anticipo')}
                     slotProps={{ inputLabel: { shrink: true } }}
                     sx={formFieldStyles} />
             )}
@@ -185,7 +185,7 @@ const PasoRutaVehiculo = ({
 
         {mostrarAdvertencia && (
             <Alert severity="warning" sx={{ borderRadius: 2, mt: -1 }}>
-                Este vehículo no tiene paquetes asignados en esta ruta — el anticipo se registrará igual, solo confírmalo a propósito.
+                Este vehículo no tiene paquetes asignados en esta salida — el anticipo se registrará igual, solo confírmalo a propósito.
             </Alert>
         )}
 
@@ -212,7 +212,7 @@ const PasoRutaVehiculo = ({
                 error={!!errores.fechaEntrega}
                 helperText={errores.fechaEntrega || (fechaDisabled
                     ? fechaHelperTextDisabled
-                    : (rutaSeleccionada?.fechaSalida ? `Hasta el ${formatFecha(rutaSeleccionada.fechaSalida)} (salida de la ruta)` : undefined))}
+                    : (rutaSeleccionada?.fechaSalida ? `Hasta el ${formatFecha(rutaSeleccionada.fechaSalida)} (salida)` : undefined))}
                 slotProps={{ inputLabel: { shrink: true }, htmlInput: {
                     min: sumarDias(hoyISO(), -MAX_DIAS_ANTICIPACION),
                     max: rutaSeleccionada?.fechaSalida || undefined,
