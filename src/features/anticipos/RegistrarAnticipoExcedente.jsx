@@ -20,6 +20,8 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
     const [errores, setErrores] = useState({})
     const [activeStep, setActiveStep] = useState(0)
     const [submitting, setSubmitting] = useState(false)
+    const [idCorredorSel, setIdCorredorSel] = useState(null)
+    const [corredorInput, setCorredorInput] = useState('')
     const [rutaInput, setRutaInput] = useState('')
     const [parInput, setParInput] = useState('')
 
@@ -40,13 +42,24 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
     }, [open, fetchRutasProgramadas])
 
     const { paquetesPorPar, loading: cargandoPaquetesPorPar } = usePaquetesPorPar(form.idSalida)
-    const { filtrarRutasDisponibles, filtrarParesDisponibles } = useAnticiposActivos()
+    const { filtrarRutasDisponibles, filtrarParesDisponibles, refetchActivos } = useAnticiposActivos()
+
+    // Mismo motivo que el refresco de "rutas" arriba: este wizard queda montado de
+    // forma permanente en ListarAnticipoExcedente.jsx, así que sin esto la lista de
+    // "quién ya tiene anticipo activo" quedaba congelada desde que se cargó la
+    // página -- un anticipo registrado en esta misma sesión no bloqueaba su propio
+    // par acá hasta recargar todo, y el backend recién lo rechazaba en Confirmación.
+    useEffect(() => {
+        if (open) refetchActivos()
+    }, [open, refetchActivos])
 
     const handleClose = () => {
         if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
         setForm(formInicial)
         setErrores({})
         setActiveStep(0)
+        setIdCorredorSel(null)
+        setCorredorInput('')
         setRutaInput('')
         setParInput('')
         onClose()
@@ -121,10 +134,11 @@ const RegistrarAnticipoExcedente = ({ open, onClose, onSuccess }) => {
                     <PasoRutaVehiculo
                         theme={theme} form={form} errores={errores} setErrores={setErrores} setForm={setForm} handleChange={handleChange}
                         rutas={rutasDisponibles} rutaSeleccionada={rutaSeleccionada} pares={paresDisponibles} parSeleccionado={parSeleccionado} paquetesPorPar={paquetesPorPar}
+                        idCorredorSel={idCorredorSel} setIdCorredorSel={setIdCorredorSel}
+                        corredorInput={corredorInput} setCorredorInput={setCorredorInput}
                         rutaInput={rutaInput} setRutaInput={setRutaInput} parInput={parInput} setParInput={setParInput}
-                        getEtiquetaRuta={getEtiquetaRuta}
                         parDisabled={!form.idSalida}
-                        rutaHelperTextOk="Busca por origen o destino"
+                        rutaHelperTextOk="Busca por destino"
                         parHelperTextDisabled="Selecciona primero una salida"
                         mostrarAdvertencia={!!(!cargandoPaquetesPorPar && parSeleccionado && !(paquetesPorPar[parSeleccionado.idSalidaVehiculoConductor] > 0))}
                     />

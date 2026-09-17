@@ -26,6 +26,8 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
     const [sinCambios, setSinCambios] = useState(false)
     const [form, setForm] = useState(null)
     const cargado = useRef(false)
+    const [idCorredorSel, setIdCorredorSel] = useState(null)
+    const [corredorInput, setCorredorInput] = useState('')
     const [rutaInput, setRutaInput] = useState('')
     const [parInput, setParInput] = useState('')
 
@@ -75,6 +77,10 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
         }
         setFormOriginal(datos)
         setForm(datos)
+        const rutaParaEtiqueta = r || anticipo.salida
+        const destinoParaEtiqueta = rutaParaEtiqueta?.destino || rutaParaEtiqueta?.ruta?.destino || null
+        setIdCorredorSel(destinoParaEtiqueta?.idDestino ?? destinoParaEtiqueta?.municipio ?? null)
+        setCorredorInput(getEtiquetaCorredor(rutaParaEtiqueta))
         setRutaInput(r ? getEtiquetaRuta(r) : (getEtiquetaRuta(anticipo.salida) || ''))
         const parActivo = parInicial || parSintetico
         setParInput(parActivo ? `${parActivo.placa || 'Sin placa'} — ${parActivo.conductorNombre}` : '')
@@ -84,7 +90,15 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
     // excluirIdAnticipo: este mismo anticipo no debe contar contra sí mismo al decidir
     // qué rutas/pares ya "tienen anticipo activo" — igual que el backend con
     // `idAnticipoExcedente: Op.ne` en update() (ver anticipoService.js).
-    const { filtrarRutasDisponibles, filtrarParesDisponibles } = useAnticiposActivos({ excluirIdAnticipo: anticipoProp?.idAnticipoExcedente })
+    const { filtrarRutasDisponibles, filtrarParesDisponibles, refetchActivos } = useAnticiposActivos({ excluirIdAnticipo: anticipoProp?.idAnticipoExcedente })
+
+    // Mismo motivo que el refresco de "rutas" (useEffect de arriba): este wizard
+    // queda montado de forma permanente en ListarAnticipoExcedente.jsx, así que sin
+    // esto la lista de "quién ya tiene anticipo activo" quedaba congelada desde que
+    // se cargó la página.
+    useEffect(() => {
+        if (open) refetchActivos()
+    }, [open, refetchActivos])
 
     // Si la ruta ya avanzó de estado no aparece en "rutas" (solo trae "Programada") —
     // se arma una opción sintética con los datos del anticipo para que el Autocomplete
@@ -104,6 +118,7 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
                 nombre: anticipoOriginal.salida.origen || `Salida ${anticipoOriginal.idSalida}`,
                 destino: anticipoOriginal.salida.ruta?.destino || null,
                 fechaSalida: anticipoOriginal.salida.fechaSalida || null,
+                horaSalida: anticipoOriginal.salida.horaSalida || null,
                 paresVehiculoConductor: [{
                     idSalidaVehiculoConductor: `original-${anticipoOriginal.idConductor}`,
                     idVehiculo: anticipoOriginal.salida.vehiculo?.idVehiculo,
@@ -219,12 +234,27 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
 
     const getNombreConductor = () => parSeleccionado?.conductorNombre || nombreConductorOriginal
 
+    // `ruta.destino` (ya aplanado, viene de "rutas" del contexto) o
+    // `ruta.ruta.destino` (forma cruda de `anticipo.salida`, sin aplanar) --
+    // cualquiera de las dos formas que pueda traer `getEtiquetaCorredor`/
+    // `getEtiquetaRuta`/`idCorredorSel` más abajo.
+    const destinoDe = (ruta) => ruta?.destino || ruta?.ruta?.destino || null
+
+    // Solo origen+destino, sin fecha -- lo que va en el input del primer select
+    // (Ruta) al cargar un anticipo ya guardado.
+    const getEtiquetaCorredor = (ruta) => {
+        if (!ruta) return ''
+        const origen = ruta.nombre || ruta.origen || 'Sin nombre'
+        const destino = destinoDe(ruta)
+        return `${origen} → ${destino ? destino.municipio : 'Sin destino'}`
+    }
+
     const getEtiquetaRuta = (ruta) => {
         if (!ruta) return null
         const origen = ruta.nombre || ruta.origen || 'Sin nombre'
-        const destinoTxt = ruta.destino ? ruta.destino.municipio : 'Sin destino'
+        const destino = destinoDe(ruta)
         const fechaTxt = ruta.fechaSalida ? ` — ${formatFecha(ruta.fechaSalida)}` : ''
-        return `${origen} → ${destinoTxt}${fechaTxt}`
+        return `${origen} → ${destino ? destino.municipio : 'Sin destino'}${fechaTxt}`
     }
 
     const getNombreRuta = (id) => {
@@ -247,12 +277,13 @@ const ActualizarAnticipoExcedente = ({ open, onClose, anticipo: anticipoProp, on
                     <PasoRutaVehiculo
                         theme={theme} form={form} errores={errores} setErrores={setErrores} setForm={setForm} handleChange={handleChange}
                         rutas={rutasDisponibles} rutaSeleccionada={rutaSeleccionada} pares={paresDisponibles} parSeleccionado={parSeleccionado} paquetesPorPar={paquetesPorPar}
+                        idCorredorSel={idCorredorSel} setIdCorredorSel={setIdCorredorSel}
+                        corredorInput={corredorInput} setCorredorInput={setCorredorInput}
                         rutaInput={rutaInput} setRutaInput={setRutaInput} parInput={parInput} setParInput={setParInput}
-                        getEtiquetaRuta={getEtiquetaRuta}
                         afterChange={() => setSinCambios(false)}
                         rutaDisabled={!puedeEditarAsignacion} parDisabled={!puedeEditarAsignacion}
                         valorDisabled={!puedeEditarAsignacion} fechaDisabled={!puedeEditarAsignacion}
-                        rutaHelperTextOk="Busca por origen de la ruta"
+                        rutaHelperTextOk="Busca por destino"
                         rutaHelperTextDisabled="La ruta ya arrancó: no se puede reasignar"
                         parHelperTextDisabled="La ruta ya arrancó: no se puede reasignar"
                         valorHelperTextDisabled="La ruta ya arrancó: no se puede modificar"

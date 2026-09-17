@@ -3,7 +3,7 @@ import { Box, Typography, IconButton, Chip, Tooltip, Button } from '@mui/materia
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import ToggleSwitch from '../../../shared/components/ToggleSwitch.jsx'
-import { formatFecha } from '../../../shared/utils/formatters.js'
+import { formatFecha, formatHora12 } from '../../../shared/utils/formatters.js'
 import { formatMoney } from '../validations/anticipoValidation.js'
 import AnticipoEstadoDot from '../components/AnticipoEstadoDot.jsx'
 
@@ -28,7 +28,7 @@ const useAnticipoColumns = ({
                 </Typography>
                 {anticipo.salida?.fechaSalida && (
                     <Typography variant="caption" sx={{ fontSize: '0.7rem', color: theme.palette.text.secondary }} noWrap>
-                        Sale el {formatFecha(anticipo.salida.fechaSalida)}
+                        Sale el {formatFecha(anticipo.salida.fechaSalida)}{anticipo.salida.horaSalida ? ` · ${formatHora12(anticipo.salida.horaSalida)}` : ''}
                     </Typography>
                 )}
                 {/* Huérfano: el par de la ruta se reasignó a otro conductor después de

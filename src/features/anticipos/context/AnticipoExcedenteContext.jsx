@@ -90,6 +90,10 @@ export const AnticipoExcedenteProvider = ({ children }) => {
     .filter((r) => r.habilitado !== false && r.estado === 'Programada')
     .map((r) => ({
       idSalida: r.idSalida,
+      // Necesario para armar el link "ver esta salida" (buildSalidaHighlightUrl) desde
+      // los modales de inhabilitar/consultar anticipo -- sin esto el link cae al
+      // listado general de Rutas en vez de abrir la salida puntual.
+      idRuta: r.ruta?.idRuta ?? null,
       nombre: r.origen || r.nombre || `Salida ${r.idSalida}`,
       destino: r.ruta?.destino || null,
       // Anticipo ida+regreso (ver LOGICA.md): si esta salida es un regreso, trae
@@ -99,6 +103,9 @@ export const AnticipoExcedenteProvider = ({ children }) => {
       // Para validar que fechaEntrega del anticipo no sea posterior a la salida de
       // la salida (ver anticipoValidation.js, validarCampo 'fechaEntrega').
       fechaSalida: r.fechaSalida || null,
+      // Para distinguir salidas del mismo destino en el mismo día (ver
+      // PasoRutaVehiculo.jsx, paso "Salida" dentro de una ruta ya elegida).
+      horaSalida: r.horaSalida || null,
       paresVehiculoConductor: (r.paresVehiculoConductor || [])
         .filter((p) => p.habilitado !== false)
         .map((p) => {

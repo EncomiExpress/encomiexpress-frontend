@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import * as anticipoService from '../services/anticipoService.js'
 
 // Anticipos "activos" = habilitado:true + estado en {Entregado, En Legalización} — mismo
@@ -19,34 +19,41 @@ export function useAnticiposActivos({ excluirIdAnticipo } = {}) {
     const [activos, setActivos] = useState([])
     const [loading, setLoading] = useState(true)
 
-    useEffect(() => {
-        let cancelado = false
-        const cargarTodo = async () => {
-            setLoading(true)
-            try {
-                let pagina = 1
-                let acumulado = []
-                let total = Infinity
-                while (acumulado.length < total) {
-                    const res = await anticipoService.getAnticipos(undefined, {
-                        estado: 'Entregado,En Legalización', habilitado: 'true', page: pagina, limit: 100,
-                    })
-                    const datos = res?.data || []
-                    total = res?.total ?? datos.length
-                    acumulado = acumulado.concat(datos)
-                    if (datos.length === 0) break
-                    pagina += 1
-                }
-                if (!cancelado) setActivos(acumulado)
-            } catch {
-                if (!cancelado) setActivos([])
-            } finally {
-                if (!cancelado) setLoading(false)
+    // Expuesto como `refetchActivos` para que Registrar/Editar Anticipo lo vuelvan a
+    // llamar cada vez que el wizard se abre (mismo patrón que `fetchRutasProgramadas`
+    // para "rutas") -- sin esto, como esos wizards quedan montados de forma permanente
+    // en ListarAnticipoExcedente.jsx (solo alternan `open`, nunca se remontan), esta
+    // lista se traía una sola vez al cargar la página y nunca se refrescaba: un
+    // anticipo recién registrado en esta misma sesión no bloqueaba su propio par en el
+    // selector hasta recargar la página entera -- el backend lo rechazaba igual (409),
+    // pero recién al final, en Confirmación, en vez de no ofrecerlo desde un principio.
+    const cargarActivos = useCallback(async () => {
+        setLoading(true)
+        try {
+            let pagina = 1
+            let acumulado = []
+            let total = Infinity
+            while (acumulado.length < total) {
+                const res = await anticipoService.getAnticipos(undefined, {
+                    estado: 'Entregado,En Legalización', habilitado: 'true', page: pagina, limit: 100,
+                })
+                const datos = res?.data || []
+                total = res?.total ?? datos.length
+                acumulado = acumulado.concat(datos)
+                if (datos.length === 0) break
+                pagina += 1
             }
+            setActivos(acumulado)
+        } catch {
+            setActivos([])
+        } finally {
+            setLoading(false)
         }
-        cargarTodo()
-        return () => { cancelado = true }
     }, [])
+
+    useEffect(() => {
+        cargarActivos()
+    }, [cargarActivos])
 
     const clave = (idSalida, idConductor) => `${idSalida}-${idConductor}`
     const activosPorRutaConductor = new Set(
@@ -67,5 +74,5 @@ export function useAnticiposActivos({ excluirIdAnticipo } = {}) {
     // anticipo activo — los que ya tienen uno no aparecen ahí, ni deshabilitados.
     const filtrarParesDisponibles = (pares, idSalida) => (pares || []).filter(p => !tieneAnticipoActivo(idSalida, p.idConductor))
 
-    return { loading, tieneAnticipoActivo, filtrarRutasDisponibles, filtrarParesDisponibles }
+    return { loading, tieneAnticipoActivo, filtrarRutasDisponibles, filtrarParesDisponibles, refetchActivos: cargarActivos }
 }
