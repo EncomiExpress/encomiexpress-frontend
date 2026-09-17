@@ -142,7 +142,7 @@ const ModalAsignarRepartidor = ({ open, salida, onClose, onSuccess }) => {
                         Agrega o quita vehículos y conductores del convoy de esta salida.
                     </Typography>
                 </Box>
-                <IconButton onClick={onClose} sx={{ color: theme.palette.text.secondary }}>
+                <IconButton onClick={onClose} sx={{ color: theme.palette.neutral.main, '&:hover': { backgroundColor: theme.palette.neutral.dim } }}>
                     <CloseIcon />
                 </IconButton>
             </DialogTitle>
@@ -235,7 +235,7 @@ const ModalAsignarRepartidor = ({ open, salida, onClose, onSuccess }) => {
                 </Box>
             </DialogContent>
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5, px: 3, py: 2.5, borderTop: `1px solid ${theme.palette.divider}` }}>
-                <Button onClick={onClose} sx={{ textTransform: 'none', color: theme.palette.text.secondary }}>Cancelar</Button>
+                <Button onClick={onClose} sx={{ textTransform: 'none', color: theme.palette.neutral.main, '&:hover': { backgroundColor: theme.palette.neutral.dim } }}>Cancelar</Button>
                 <Button onClick={handleSubmit} variant="contained" disabled={submitting || yaAlTope}
                     startIcon={submitting ? <CircularProgress size={16} color="inherit" /> : <CheckOutlinedIcon />}
                     sx={{

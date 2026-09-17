@@ -46,7 +46,7 @@ const HeaderPersonalizationPopover = ({
         },
       }}
     >
-      <IconButton onClick={onClose} sx={{ position: 'absolute', top: 11, right: 8, color: theme.palette.text.secondary }}>
+      <IconButton onClick={onClose} sx={{ position: 'absolute', top: 11, right: 8, color: theme.palette.neutral.main, '&:hover': { backgroundColor: theme.palette.neutral.dim } }}>
         <Close sx={{ fontSize: '1.3rem' }} />
       </IconButton>
       <Box sx={{ p: 2.5 }}>

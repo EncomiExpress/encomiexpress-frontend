@@ -64,7 +64,8 @@ const ModalProgramarRegresoSede = ({ open, salida, destinos = [], onClose, onCon
                     <SyncAltOutlinedIcon sx={{ color: theme.palette.primary.main }} />
                     <Typography fontWeight={700} fontSize="1.05rem">Programar regreso</Typography>
                 </Box>
-                <IconButton size="small" onClick={onClose} disabled={enviando}>
+                <IconButton size="small" onClick={onClose} disabled={enviando}
+                    sx={{ color: theme.palette.neutral.main, '&:hover': { backgroundColor: theme.palette.neutral.dim } }}>
                     <CloseOutlinedIcon sx={{ fontSize: 18 }} />
                 </IconButton>
             </DialogTitle>
@@ -176,7 +177,8 @@ const ModalProgramarRegresoSede = ({ open, salida, destinos = [], onClose, onCon
             </Box>
             </DialogContent>
             <DialogActions sx={{ px: 3, py: 2.5, borderTop: `1px solid ${theme.palette.divider}` }}>
-                <Button onClick={onClose} disabled={enviando} sx={{ textTransform: 'none' }}>Cancelar</Button>
+                <Button onClick={onClose} disabled={enviando}
+                    sx={{ textTransform: 'none', color: theme.palette.neutral.main, '&:hover': { backgroundColor: theme.palette.neutral.dim } }}>Cancelar</Button>
                 <Button onClick={handleConfirmar} disabled={enviando} variant="contained"
                     startIcon={enviando ? <CircularProgress size={16} sx={{ color: 'inherit' }} /> : undefined}
                     sx={{ textTransform: 'none', borderRadius: 2 }}>

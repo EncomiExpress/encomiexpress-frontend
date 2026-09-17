@@ -68,7 +68,8 @@ const ModalEditarHorarioRegresoSede = ({ open, salida, destinos = [], onClose, o
                     <EditOutlinedIcon sx={{ color: theme.palette.primary.main }} />
                     <Typography fontWeight={700} fontSize="1.05rem">Editar fecha/hora del regreso</Typography>
                 </Box>
-                <IconButton size="small" onClick={onClose} disabled={enviando}>
+                <IconButton size="small" onClick={onClose} disabled={enviando}
+                    sx={{ color: theme.palette.neutral.main, '&:hover': { backgroundColor: theme.palette.neutral.dim } }}>
                     <CloseOutlinedIcon sx={{ fontSize: 18 }} />
                 </IconButton>
             </DialogTitle>
@@ -182,7 +183,8 @@ const ModalEditarHorarioRegresoSede = ({ open, salida, destinos = [], onClose, o
             </Box>
             </DialogContent>
             <DialogActions sx={{ px: 3, py: 2.5, borderTop: `1px solid ${theme.palette.divider}` }}>
-                <Button onClick={onClose} disabled={enviando} sx={{ textTransform: 'none' }}>Cancelar</Button>
+                <Button onClick={onClose} disabled={enviando}
+                    sx={{ textTransform: 'none', color: theme.palette.neutral.main, '&:hover': { backgroundColor: theme.palette.neutral.dim } }}>Cancelar</Button>
                 <Button onClick={handleConfirmar} disabled={enviando} variant="contained"
                     startIcon={enviando ? <CircularProgress size={16} sx={{ color: 'inherit' }} /> : undefined}
                     sx={{ textTransform: 'none', borderRadius: 2 }}>

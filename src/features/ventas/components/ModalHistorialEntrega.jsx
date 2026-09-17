@@ -57,7 +57,7 @@ const ModalHistorialEntrega = ({ open, onClose, idPaquete }) => {
                         Historial de entrega
                     </Typography>
                 </Box>
-                <IconButton size="small" onClick={onClose} sx={{ color: theme.palette.text.secondary }}>
+                <IconButton size="small" onClick={onClose} sx={{ color: theme.palette.neutral.main, '&:hover': { backgroundColor: theme.palette.neutral.dim } }}>
                     <CloseIcon fontSize="small" />
                 </IconButton>
             </Box>

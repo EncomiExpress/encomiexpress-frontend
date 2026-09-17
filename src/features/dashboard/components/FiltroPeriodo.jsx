@@ -56,8 +56,8 @@ const FiltroPeriodo = ({
             onClick={onLimpiar}
             sx={{
                 borderRadius: 2, textTransform: 'none', fontWeight: 500, fontSize: '0.8rem', px: 2,
-                borderColor: theme.palette.divider, color: theme.palette.text.primary,
-                '&:hover': { backgroundColor: theme.palette.background.muted },
+                borderColor: theme.palette.divider, color: theme.palette.neutral.main,
+                '&:hover': { backgroundColor: theme.palette.neutral.dim, borderColor: theme.palette.divider },
             }}
         >
             Limpiar

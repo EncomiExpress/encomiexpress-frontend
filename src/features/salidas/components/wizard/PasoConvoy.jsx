@@ -165,7 +165,7 @@ const PasoConvoy = ({
                             />
                             <IconButton onClick={() => handleQuitarPar(index)}
                                 disabled={form.pares.length === 1}
-                                sx={{ visibility: form.pares.length === 1 ? 'hidden' : 'visible', mt: 1 }}>
+                                sx={{ visibility: form.pares.length === 1 ? 'hidden' : 'visible', mt: 1, color: theme.palette.neutral.main, '&:hover': { backgroundColor: theme.palette.neutral.dim } }}>
                                 <CloseIcon fontSize="small" />
                             </IconButton>
                         </Box>

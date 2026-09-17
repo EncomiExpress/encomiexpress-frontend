@@ -90,7 +90,8 @@ export function BuscadorField({ value, onChange, placeholder = 'Buscar...', widt
           ),
           endAdornment: value && (
             <InputAdornment position="end">
-              <IconButton size="small" onClick={() => onChange('')}>
+              <IconButton size="small" onClick={() => onChange('')}
+                sx={{ color: theme.palette.neutral.main, '&:hover': { backgroundColor: theme.palette.neutral.dim } }}>
                 <ClearIcon sx={{ fontSize: 16 }} />
               </IconButton>
             </InputAdornment>

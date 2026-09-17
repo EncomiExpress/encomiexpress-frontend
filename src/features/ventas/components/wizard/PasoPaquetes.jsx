@@ -39,7 +39,7 @@ export default function PasoPaquetes({
                                 </Typography>
                                 <IconButton onClick={() => handleQuitarPaquete(index)}
                                     disabled={form.paquetes.length === 1}
-                                    sx={{ visibility: form.paquetes.length === 1 ? 'hidden' : 'visible' }}>
+                                    sx={{ visibility: form.paquetes.length === 1 ? 'hidden' : 'visible', color: theme.palette.neutral.main, '&:hover': { backgroundColor: theme.palette.neutral.dim } }}>
                                     <CloseIcon fontSize="small" />
                                 </IconButton>
                             </Box>

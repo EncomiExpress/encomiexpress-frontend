@@ -45,7 +45,7 @@ const PasoLicencia = ({
                         inputProps={minVencimiento ? { min: minVencimiento } : undefined} />
                     <IconButton onClick={() => handleQuitarCategoria(index)}
                         disabled={form.categoriasLicencia.length === 1}
-                        sx={{ visibility: form.categoriasLicencia.length === 1 ? 'hidden' : 'visible' }}>
+                        sx={{ visibility: form.categoriasLicencia.length === 1 ? 'hidden' : 'visible', color: theme.palette.neutral.main, '&:hover': { backgroundColor: theme.palette.neutral.dim } }}>
                         <CloseIcon fontSize="small" />
                     </IconButton>
                 </Box>

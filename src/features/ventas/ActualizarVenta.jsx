@@ -337,7 +337,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                         </Box>
                         <Typography variant="h6" fontWeight={700}>Editar Venta</Typography>
                     </Box>
-                    <IconButton onClick={cerrar} sx={{ color: theme.palette.text.secondary }}>
+                    <IconButton onClick={cerrar} sx={{ color: theme.palette.neutral.main, '&:hover': { backgroundColor: theme.palette.neutral.dim } }}>
                         <CloseIcon />
                     </IconButton>
                 </DialogTitle>
@@ -365,7 +365,7 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                         </Box>
                         <Typography variant="h6" fontWeight={700}>Editar Venta</Typography>
                     </Box>
-                    <IconButton onClick={cerrar} sx={{ color: theme.palette.text.secondary }}>
+                    <IconButton onClick={cerrar} sx={{ color: theme.palette.neutral.main, '&:hover': { backgroundColor: theme.palette.neutral.dim } }}>
                         <CloseIcon />
                     </IconButton>
                 </DialogTitle>
