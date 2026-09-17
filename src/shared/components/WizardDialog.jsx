@@ -73,11 +73,16 @@ const WizardDialog = ({
                 </IconButton>
             </DialogTitle>
             <DialogContent sx={{ p: 3, pt: 1.5 }}>
-                <Box sx={{ mb: 3 }}>
-                    <Stepper activeStep={activeStep} alternativeLabel sx={stepperSx(theme)}>
-                        {steps.map(label => <Step key={label}><StepLabel>{label}</StepLabel></Step>)}
-                    </Stepper>
-                </Box>
+                {/* Con un solo paso, el indicador (número + título) no aporta nada --
+                    se muestra únicamente cuando el wizard de verdad tiene varios pasos
+                    entre los que navegar (ej. Salidas, Ventas). */}
+                {steps.length > 1 && (
+                    <Box sx={{ mb: 3 }}>
+                        <Stepper activeStep={activeStep} alternativeLabel sx={stepperSx(theme)}>
+                            {steps.map(label => <Step key={label}><StepLabel>{label}</StepLabel></Step>)}
+                        </Stepper>
+                    </Box>
+                )}
                 <Box sx={{ px: 4, py: 2 }}>
                     <Box sx={{ maxWidth: 700, mx: 'auto' }}>
                         {children}
