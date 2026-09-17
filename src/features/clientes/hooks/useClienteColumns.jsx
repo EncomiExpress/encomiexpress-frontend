@@ -51,7 +51,7 @@ const useClienteColumns = ({ theme, tienePermiso, PERMISOS, onConsultar, onEdita
                         <IconButton
                             size="small"
                             onClick={() => onConsultar(cliente)}
-                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}
+                            sx={{ color: theme.palette.primary.main, '&:hover': { backgroundColor: theme.palette.primary.dim } }}
                         >
                             <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
                         </IconButton>
@@ -71,7 +71,7 @@ const useClienteColumns = ({ theme, tienePermiso, PERMISOS, onConsultar, onEdita
                             <IconButton
                                 size="small"
                                 onClick={() => onEditar(cliente)}
-                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}
+                                sx={{ color: theme.palette.primary.main, '&:hover': { backgroundColor: theme.palette.primary.dim } }}
                             >
                                 <EditOutlinedIcon sx={{ fontSize: 18 }} />
                             </IconButton>

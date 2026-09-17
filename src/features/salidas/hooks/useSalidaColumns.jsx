@@ -251,7 +251,7 @@ const useSalidaColumns = ({
                     {tienePermiso(PERMISOS.REGISTRAR_RUTA) && salida.estado === 'Completada' && !esRegreso && !salida.salidaRegreso && !salida.miDestinoTieneOperadorSede && (
                         <Tooltip title="Programar viaje de regreso">
                             <IconButton size="small" onClick={() => onProgramarRegreso(salida)}
-                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}>
+                                sx={{ color: theme.palette.primary.main, '&:hover': { backgroundColor: theme.palette.primary.dim } }}>
                                 <SyncAltOutlinedIcon sx={{ fontSize: 18 }} />
                             </IconButton>
                         </Tooltip>
@@ -262,7 +262,7 @@ const useSalidaColumns = ({
                     {tienePermiso(PERMISOS.REGISTRAR_RUTA) && salida.estado === 'Completada' && !esRegreso && (
                         <Tooltip title="Reutilizar salida">
                             <IconButton size="small" onClick={() => onReutilizarSalida(salida)}
-                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}>
+                                sx={{ color: theme.palette.primary.main, '&:hover': { backgroundColor: theme.palette.primary.dim } }}>
                                 <ContentCopyOutlinedIcon sx={{ fontSize: 16 }} />
                             </IconButton>
                         </Tooltip>
@@ -276,7 +276,7 @@ const useSalidaColumns = ({
                         ) && (
                         <Tooltip title="Programar regreso">
                             <IconButton size="small" onClick={() => onProgramarRegresoSede(salida)}
-                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}>
+                                sx={{ color: theme.palette.primary.main, '&:hover': { backgroundColor: theme.palette.primary.dim } }}>
                                 <SyncAltOutlinedIcon sx={{ fontSize: 18 }} />
                             </IconButton>
                         </Tooltip>
@@ -288,7 +288,7 @@ const useSalidaColumns = ({
                     {puedeEditarAdmin && !esRegreso && salida.estado === 'Programada' && (
                         <Tooltip title="Gestionar convoy">
                             <IconButton size="small" onClick={() => onAsignarRepartidor(salida)}
-                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}>
+                                sx={{ color: theme.palette.primary.main, '&:hover': { backgroundColor: theme.palette.primary.dim } }}>
                                 <PersonAddOutlinedIcon sx={{ fontSize: 18 }} />
                             </IconButton>
                         </Tooltip>
@@ -296,7 +296,7 @@ const useSalidaColumns = ({
                     {tienePermiso(PERMISOS.CONSULTAR_RUTA) && (
                         <Tooltip title="Ver detalle">
                             <IconButton size="small" onClick={() => onConsultar(salida)}
-                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}>
+                                sx={{ color: theme.palette.primary.main, '&:hover': { backgroundColor: theme.palette.primary.dim } }}>
                                 <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
                             </IconButton>
                         </Tooltip>
@@ -321,7 +321,7 @@ const useSalidaColumns = ({
                         ) : (
                             <Tooltip title="Editar">
                                 <IconButton size="small" onClick={() => onEditar(salida)}
-                                    sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}>
+                                    sx={{ color: theme.palette.primary.main, '&:hover': { backgroundColor: theme.palette.primary.dim } }}>
                                     <EditOutlinedIcon sx={{ fontSize: 18 }} />
                                 </IconButton>
                             </Tooltip>
@@ -347,7 +347,7 @@ const useSalidaColumns = ({
                         ) : (
                             <Tooltip title="Editar fecha/hora">
                                 <IconButton size="small" onClick={() => onEditarHorarioSede(salida)}
-                                    sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}>
+                                    sx={{ color: theme.palette.primary.main, '&:hover': { backgroundColor: theme.palette.primary.dim } }}>
                                     <EditOutlinedIcon sx={{ fontSize: 18 }} />
                                 </IconButton>
                             </Tooltip>

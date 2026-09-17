@@ -86,7 +86,7 @@ const useUsuarioColumns = ({ theme, tienePermiso, PERMISOS, usuarioActual, onCon
                 {tienePermiso(PERMISOS.CONSULTAR_USUARIO) && (
                     <Tooltip title="Ver detalle">
                         <IconButton size="small" onClick={() => onConsultar(usuario)}
-                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}>
+                            sx={{ color: theme.palette.primary.main, '&:hover': { backgroundColor: theme.palette.primary.dim } }}>
                             <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
                         </IconButton>
                     </Tooltip>
@@ -117,7 +117,7 @@ const useUsuarioColumns = ({ theme, tienePermiso, PERMISOS, usuarioActual, onCon
                         <Tooltip title="Editar">
                             <IconButton size="small"
                                 onClick={() => onEditar(usuario)}
-                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}>
+                                sx={{ color: theme.palette.primary.main, '&:hover': { backgroundColor: theme.palette.primary.dim } }}>
                                 <EditOutlinedIcon sx={{ fontSize: 18 }} />
                             </IconButton>
                         </Tooltip>

@@ -19,6 +19,11 @@ const ConfirmToggleDialog = ({
     subtitulo,
     soloCerrar = false,
     textoConfirmar = 'Confirmar',
+    // Color de la acción que se está confirmando, según la paleta de acciones
+    // estandarizada (ver shared/styles/theme/palette.js): 'success' (habilitar),
+    // 'warning' (inhabilitar), 'danger' (eliminar/quitar/irreversible) o el
+    // 'primary' (azul) por defecto para confirmaciones neutrales.
+    variante = 'primary',
     // Significa "está cargando algo de fondo" en los llamadores existentes (ej. trayendo
     // dependencias antes de poder confirmar) -- por eso, mientras está en true, el botón
     // muestra el spinner además de deshabilitarse.
@@ -31,6 +36,11 @@ const ConfirmToggleDialog = ({
 }) => {
     const theme = useTheme()
     const [confirming, setConfirming] = useState(false)
+
+    const paleta = variante === 'danger' ? theme.palette.error : theme.palette[variante] || theme.palette.primary
+    const colorAccion = paleta.main
+    const colorAccionHover = paleta.dark || paleta.main
+    const colorCirculo = paleta.dim || theme.palette.primary.light
 
     const handleConfirm = async () => {
         setConfirming(true)
@@ -55,14 +65,14 @@ const ConfirmToggleDialog = ({
             slotProps={{ paper: { sx: { borderRadius: 3, p: 0, maxHeight: '85vh', overflow: 'hidden' } } }}
         >
             <DialogContent sx={{ p: 3, pb: children ? 1 : 2, textAlign: 'center', position: 'relative', overflowY: 'auto' }}>
-                <IconButton onClick={onClose} sx={{ position: 'absolute', top: 8, right: 8, color: theme.palette.text.secondary }}>
+                <IconButton onClick={onClose} sx={{ position: 'absolute', top: 8, right: 8, color: theme.palette.neutral.main, '&:hover': { backgroundColor: theme.palette.neutral.dim } }}>
                     <CloseIcon />
                 </IconButton>
 
                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5, pt: 2 }}>
                     <Box sx={{
                         width: 67, height: 67, borderRadius: '50%',
-                        backgroundColor: theme.palette.primary.light,
+                        backgroundColor: colorCirculo,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}>
                         {icono}
@@ -93,10 +103,10 @@ const ConfirmToggleDialog = ({
                 ) : (
                     <>
                         <Button onClick={onClose} disableRipple sx={{
-                            textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500,
+                            textTransform: 'none', color: theme.palette.neutral.main, fontWeight: 500,
                             borderRadius: 2, px: 3.5, py: 0.75, fontSize: '0.875rem',
                             border: `1px solid ${theme.palette.divider}`,
-                            '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary },
+                            '&:hover': { backgroundColor: theme.palette.neutral.dim, color: theme.palette.neutral.dark },
                         }}>
                             Cancelar
                         </Button>
@@ -105,8 +115,8 @@ const ConfirmToggleDialog = ({
                             sx={{
                                 textTransform: 'none', borderRadius: 2, fontWeight: 600, minWidth: 140,
                                 px: 5, py: 0.76, fontSize: '0.875rem',
-                                backgroundColor: theme.palette.primary.main,
-                                '&:hover': { backgroundColor: theme.palette.primary.dark },
+                                backgroundColor: colorAccion,
+                                '&:hover': { backgroundColor: colorAccionHover },
                             }}>
                             {(confirming || deshabilitarConfirmar)
                                 ? <CircularProgress size={18} sx={{ color: 'white' }} />

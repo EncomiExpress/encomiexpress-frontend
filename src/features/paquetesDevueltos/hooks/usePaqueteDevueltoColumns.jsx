@@ -113,7 +113,7 @@ const usePaqueteDevueltoColumns = ({ theme, onVerVenta, onVerImagen }) => [
                     <IconButton
                         size="small"
                         onClick={() => onVerVenta(paquete)}
-                        sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}
+                        sx={{ color: theme.palette.primary.main, '&:hover': { backgroundColor: theme.palette.primary.dim } }}
                     >
                         <OpenInNewOutlinedIcon sx={{ fontSize: 18 }} />
                     </IconButton>
@@ -123,7 +123,7 @@ const usePaqueteDevueltoColumns = ({ theme, onVerVenta, onVerImagen }) => [
                         <IconButton
                             size="small"
                             onClick={() => onVerImagen(paquete.fotoEntrega)}
-                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}
+                            sx={{ color: theme.palette.primary.main, '&:hover': { backgroundColor: theme.palette.primary.dim } }}
                         >
                             <PhotoCameraOutlinedIcon sx={{ fontSize: 18 }} />
                         </IconButton>

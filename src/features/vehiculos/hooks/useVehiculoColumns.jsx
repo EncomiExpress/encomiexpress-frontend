@@ -127,7 +127,7 @@ const useVehiculoColumns = ({ theme, tienePermiso, PERMISOS, onConsultar, onEdit
                 {tienePermiso(PERMISOS.CONSULTAR_VEHICULO) && (
                     <Tooltip title="Ver detalle">
                         <IconButton size="small" onClick={() => onConsultar(transporte)}
-                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}>
+                            sx={{ color: theme.palette.primary.main, '&:hover': { backgroundColor: theme.palette.primary.dim } }}>
                             <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
                         </IconButton>
                     </Tooltip>
@@ -144,7 +144,7 @@ const useVehiculoColumns = ({ theme, tienePermiso, PERMISOS, onConsultar, onEdit
                     ) : (
                         <Tooltip title="Editar">
                             <IconButton size="small" onClick={() => onEditar(transporte)}
-                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}>
+                                sx={{ color: theme.palette.primary.main, '&:hover': { backgroundColor: theme.palette.primary.dim } }}>
                                 <EditOutlinedIcon sx={{ fontSize: 18 }} />
                             </IconButton>
                         </Tooltip>

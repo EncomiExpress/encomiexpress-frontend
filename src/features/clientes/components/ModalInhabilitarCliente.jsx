@@ -77,11 +77,12 @@ const ModalInhabilitarCliente = ({ open, data, onClose, onExited, onConfirm }) =
             onExited={handleExited}
             onConfirm={onConfirm}
             icono={data?.habilitadoActual
-                ? <DoNotDisturbOutlinedIcon sx={{ fontSize: 35, color: theme.palette.primary.darker }} />
-                : <CheckCircleOutlinedIcon sx={{ fontSize: 35, color: theme.palette.primary.darker }} />}
+                ? <DoNotDisturbOutlinedIcon sx={{ fontSize: 35, color: theme.palette.warning.dark }} />
+                : <CheckCircleOutlinedIcon sx={{ fontSize: 35, color: theme.palette.success.dark }} />}
             titulo={titulo}
             subtitulo={subtexto}
             soloCerrar={bloqueado}
+            variante={data?.habilitadoActual ? 'warning' : 'success'}
             textoConfirmar={data?.habilitadoActual ? 'Inhabilitar' : 'Habilitar'}
             deshabilitarConfirmar={cargando}
         >

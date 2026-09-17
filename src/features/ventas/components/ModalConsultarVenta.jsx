@@ -104,7 +104,7 @@ const ModalConsultarVenta = ({ venta, onClose }) => {
             slotProps={{ paper: { sx: { borderRadius: 3, position: 'relative', backgroundColor: theme.palette.background.subtle } } }}>
 
             <IconButton onClick={onClose} size="small"
-                sx={{ position: 'absolute', right: 12, top: 12, color: theme.palette.text.secondary, zIndex: 1 }}>
+                sx={{ position: 'absolute', right: 12, top: 12, color: theme.palette.neutral.main, zIndex: 1, '&:hover': { backgroundColor: theme.palette.neutral.dim } }}>
                 <CloseIcon fontSize="small" />
             </IconButton>
 
@@ -352,9 +352,10 @@ const ModalConsultarVenta = ({ venta, onClose }) => {
                 open={confirmarDevolucionOpen}
                 onClose={() => setConfirmarDevolucionOpen(false)}
                 onConfirm={handleMarcarDevolucion}
-                icono={<UndoOutlinedIcon sx={{ fontSize: 32, color: theme.palette.primary.darker }} />}
+                icono={<UndoOutlinedIcon sx={{ fontSize: 32, color: theme.palette.error.dark }} />}
                 titulo="¿Confirmar llegada?"
                 subtitulo={`El paquete ${paquetes.length > 1 ? `${paqueteIndex + 1} de ${paquetes.length} de la guía ` : ''}${venta.numeroGuia || ''} quedará marcado como devuelto a Medellín. Esta acción no se puede deshacer.`}
+                variante="danger"
                 textoConfirmar="Marcar devuelto"
             />
         </Dialog>

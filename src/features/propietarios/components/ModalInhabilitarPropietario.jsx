@@ -41,8 +41,9 @@ const ModalInhabilitarPropietario = ({ open, data, onClose, onExited, onConfirm 
             onExited={handleExited}
             onConfirm={onConfirm}
             icono={data.habilitadoActual
-                ? <BlockOutlinedIcon sx={{ fontSize: 35, color: theme.palette.primary.darker }} />
-                : <CheckCircleOutlinedIcon sx={{ fontSize: 35, color: theme.palette.primary.darker }} />}
+                ? <BlockOutlinedIcon sx={{ fontSize: 35, color: theme.palette.warning.dark }} />
+                : <CheckCircleOutlinedIcon sx={{ fontSize: 35, color: theme.palette.success.dark }} />}
+            variante={data.habilitadoActual ? 'warning' : 'success'}
             titulo={data.habilitadoActual
                 ? bloqueado ? 'No se puede inhabilitar' : vehiculosDetalle.loading ? 'Inhabilitar propietario' : '¿Inhabilitar propietario?'
                 : '¿Habilitar propietario?'}

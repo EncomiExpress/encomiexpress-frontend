@@ -14,7 +14,7 @@ const AlertaBloqueoDialog = ({ theme, alertaBloqueo, onClose }) => (
         slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}>
         <DialogContent sx={{ p: 3, textAlign: 'center', position: 'relative' }}>
             <IconButton onClick={onClose}
-                sx={{ position: 'absolute', top: 8, right: 8, color: theme.palette.text.secondary }}>
+                sx={{ position: 'absolute', top: 8, right: 8, color: theme.palette.neutral.main, '&:hover': { backgroundColor: theme.palette.neutral.dim } }}>
                 <CloseIcon />
             </IconButton>
             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5, pt: 2 }}>

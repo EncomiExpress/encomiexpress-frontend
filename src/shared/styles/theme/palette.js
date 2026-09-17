@@ -2,6 +2,20 @@
 //  Construcción de paletas MUI
 // ─────────────────────────────────────────────
 
+import { alpha } from '@mui/material/styles'
+
+// Colores de acción estandarizados (botones, alertas, iconos) — mismo valor en
+// claro/oscuro a propósito, tal cual los definió el cliente; no se desaturan
+// para dark mode como primary (ver tokens.js) porque el cliente los dio como
+// un único set fijo, no como paleta light/dark. `dim` es el fondo hover/chip
+// (10% de opacidad) que acompaña a cada color en los botones tipo IconButton.
+const ACTION = {
+  success: '#10b981',
+  danger:  '#CC1818',
+  warning: '#f59e0b',
+  neutral: '#64748b',
+}
+
 export const buildLightPalette = (t) => ({
   mode: 'light',
   primary: {
@@ -9,6 +23,7 @@ export const buildLightPalette = (t) => ({
     light:         t.primaryLight,
     dark:          t.primaryDark,
     darker:        t.primaryDarker,
+    dim:           alpha(t.primary, 0.1),
     contrastText:  '#ffffff',
     // Expone los tokens de sidebar para consumirlos en componentes
     activeBg:      t.activeBg,
@@ -16,6 +31,35 @@ export const buildLightPalette = (t) => ({
     hoverBg:       t.hoverBg,
     hoverIcon:     t.hoverIcon,
     hoverText:     t.hoverText,
+  },
+  // Éxito / confirmaciones (habilitar, aprobar, confirmar entrega) — botones e iconos.
+  success: {
+    main:          ACTION.success,
+    dim:           alpha(ACTION.success, 0.1),
+    contrastText:  '#ffffff',
+  },
+  // Acciones destructivas o irreversibles (eliminar, rechazar, anular, quitar) —
+  // reemplaza el error.main por defecto de MUI por el rojo de marca (#CC1818),
+  // el mismo que ya usan los correos transaccionales (config/email.js).
+  error: {
+    main:          ACTION.danger,
+    dim:           alpha(ACTION.danger, 0.1),
+    contrastText:  '#ffffff',
+  },
+  // Cambios de estado reversibles / precaución (inhabilitar).
+  warning: {
+    main:          ACTION.warning,
+    dim:           alpha(ACTION.warning, 0.1),
+    contrastText:  '#ffffff',
+  },
+  // Acciones neutrales (cancelar, cerrar, volver, limpiar filtros) — distinto de
+  // `secondary` (que en esta paleta es a propósito el mismo azul que `primary`,
+  // ver comentario más abajo), para no reintroducir rojo/otros tonos no-semánticos.
+  neutral: {
+    main:          ACTION.neutral,
+    dark:          '#475569',
+    dim:           alpha(ACTION.neutral, 0.1),
+    contrastText:  '#ffffff',
   },
   secondary: {
     main:          '#1A2E6E',
@@ -99,12 +143,34 @@ export const buildDarkPalette = (t) => ({
     light:         t.primaryLight,
     dark:          t.primaryDark,
     darker:        t.primaryDarker,
+    dim:           alpha(t.primary, 0.1),
     contrastText:  '#ffffff',
     activeBg:      t.activeBg,
     activeGrad:    t.activeGrad,
     hoverBg:       t.hoverBg,
     hoverIcon:     t.hoverIcon,
     hoverText:     t.hoverText,
+  },
+  success: {
+    main:          ACTION.success,
+    dim:           alpha(ACTION.success, 0.1),
+    contrastText:  '#ffffff',
+  },
+  error: {
+    main:          ACTION.danger,
+    dim:           alpha(ACTION.danger, 0.1),
+    contrastText:  '#ffffff',
+  },
+  warning: {
+    main:          ACTION.warning,
+    dim:           alpha(ACTION.warning, 0.1),
+    contrastText:  '#ffffff',
+  },
+  neutral: {
+    main:          ACTION.neutral,
+    dark:          '#475569',
+    dim:           alpha(ACTION.neutral, 0.1),
+    contrastText:  '#ffffff',
   },
   // Mismo azul de marca que primary (igual que en buildLightPalette, donde
   // secondary.main ya coincidía con primary.main) -- antes era un rojo fijo

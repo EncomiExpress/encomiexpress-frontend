@@ -88,8 +88,9 @@ const ModalInhabilitarAnticipo = ({ open, anticipo, onClose, onExited, onConfirm
             onExited={() => { setMotivo(''); onExited?.() }}
             onConfirm={() => onConfirm(necesitaMotivo ? motivo.trim() : undefined)}
             icono={habilitadoActual
-                ? <DoNotDisturbOutlinedIcon sx={{ fontSize: 35, color: theme.palette.primary.darker }} />
-                : <CheckCircleOutlinedIcon sx={{ fontSize: 35, color: theme.palette.primary.darker }} />}
+                ? <DoNotDisturbOutlinedIcon sx={{ fontSize: 35, color: theme.palette.warning.dark }} />
+                : <CheckCircleOutlinedIcon sx={{ fontSize: 35, color: theme.palette.success.dark }} />}
+            variante={habilitadoActual ? 'warning' : 'success'}
             titulo={titulo}
             subtitulo={subtexto}
             soloCerrar={bloqueadoDuro}

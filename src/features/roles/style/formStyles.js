@@ -4,10 +4,10 @@
 // A diferencia de los demás módulos, el botón Cancelar aquí lleva borde y padding
 // horizontal propio (no es un botón "de texto" plano).
 export const cancelButtonSx = (theme) => ({
-    textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 2,
+    textTransform: 'none', color: theme.palette.neutral.main, fontWeight: 500, borderRadius: 2,
     border: `1px solid ${theme.palette.divider}`,
     px: 2.5,
-    '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary },
+    '&:hover': { backgroundColor: theme.palette.neutral.dim, color: theme.palette.neutral.dark },
 })
 
 export const primaryButtonSx = (theme, { minWidth = 160 } = {}) => ({

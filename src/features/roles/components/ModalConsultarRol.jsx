@@ -37,7 +37,7 @@ const ModalConsultarRol = ({ rol, onClose }) => {
             slotProps={{ paper: { sx: { borderRadius: 3, p: 3, position: 'relative', backgroundColor: theme.palette.background.subtle } } }}>
 
             <IconButton onClick={onClose} size="small"
-                sx={{ position: 'absolute', right: 12, top: 12, color: theme.palette.text.secondary, zIndex: 1 }}>
+                sx={{ position: 'absolute', right: 12, top: 12, color: theme.palette.neutral.main, zIndex: 1, '&:hover': { backgroundColor: theme.palette.neutral.dim } }}>
                 <CloseIcon fontSize="small" />
             </IconButton>
 

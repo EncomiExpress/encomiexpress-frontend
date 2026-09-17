@@ -1,3 +1,4 @@
+import { useTheme } from '@mui/material/styles'
 import { Box, MenuItem, Tooltip, IconButton } from '@mui/material'
 import RestartAltOutlinedIcon from '@mui/icons-material/RestartAltOutlined'
 import { FormField, FormSelect } from '../../../../shared/components/FormularioEstandarizado.jsx'
@@ -6,6 +7,7 @@ import { validarCampo } from '../../validations/validacion.js'
 
 /** Paso 4 del wizard: método de pago y valores (tarifa auto-calculada pero editable). */
 export default function PasoPago({ form, errores, setErrores, handleChange, ventaOriginal, handleResetearTotal, totalEditadoManualmente }) {
+    const theme = useTheme()
     return (
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
             <FormSelect label="Modalidad de recaudo" name="modalidadRecaudo" value={form.modalidadRecaudo}
@@ -26,7 +28,8 @@ export default function PasoPago({ form, errores, setErrores, handleChange, vent
                 inputProps={{ maxLength: 9 }}
                 endAdornment={totalEditadoManualmente && (
                     <Tooltip title="Volver a poner el valor calculado por el sistema">
-                        <IconButton onClick={handleResetearTotal} edge="end" size="small">
+                        <IconButton onClick={handleResetearTotal} edge="end" size="small"
+                            sx={{ color: theme.palette.neutral.main, '&:hover': { backgroundColor: theme.palette.neutral.dim } }}>
                             <RestartAltOutlinedIcon fontSize="small" />
                         </IconButton>
                     </Tooltip>

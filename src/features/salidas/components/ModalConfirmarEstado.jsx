@@ -105,7 +105,7 @@ const ModalConfirmarEstado = ({ open, nuevoEstado, info, salida, pares = [], onC
             slotProps={{ paper: { sx: { borderRadius: 3, p: 0, maxHeight: '85vh', overflow: 'hidden' } } }}>
 
             <DialogContent sx={{ p: 3, pb: isEnCurso ? 1 : 3, textAlign: 'center', position: 'relative', overflowY: 'auto' }}>
-                <IconButton onClick={onClose} sx={{ position: 'absolute', top: 8, right: 8, color: theme.palette.text.secondary }}>
+                <IconButton onClick={onClose} sx={{ position: 'absolute', top: 8, right: 8, color: theme.palette.neutral.main, '&:hover': { backgroundColor: theme.palette.neutral.dim } }}>
                     <CloseIcon />
                 </IconButton>
 
@@ -189,8 +189,8 @@ const ModalConfirmarEstado = ({ open, nuevoEstado, info, salida, pares = [], onC
                                         </>
                                     )}
                                     {!esOperadorSede && detalle.anticipos.length === 0 && !esRegreso && (
-                                        <Box sx={{ px: 1.5, py: 1, mb: 2, borderRadius: 2, backgroundColor: '#f59e0b1a', border: '1px solid #f59e0b40' }}>
-                                            <Typography sx={{ fontSize: '0.78rem', fontWeight: 600, color: '#b45309' }}>
+                                        <Box sx={{ px: 1.5, py: 1, mb: 2, borderRadius: 2, backgroundColor: theme.palette.warning.dim, border: `1px solid ${theme.palette.warning.main}40` }}>
+                                            <Typography sx={{ fontSize: '0.78rem', fontWeight: 600, color: theme.palette.warning.dark }}>
                                                 No hay ningún anticipo registrado para esta salida — puedes continuar, pero recuerda registrarlo si el conductor va a tener gastos del viaje.
                                             </Typography>
                                         </Box>
@@ -216,10 +216,10 @@ const ModalConfirmarEstado = ({ open, nuevoEstado, info, salida, pares = [], onC
 
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 3, px: 3, pt: 1, pb: 3 }}>
                 <Button onClick={onClose} disableRipple sx={{
-                    textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500,
+                    textTransform: 'none', color: theme.palette.neutral.main, fontWeight: 500,
                     borderRadius: 2, px: 3.5, py: 0.75, fontSize: '0.875rem',
                     border: `1px solid ${theme.palette.divider}`,
-                    '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary },
+                    '&:hover': { backgroundColor: theme.palette.neutral.dim, color: theme.palette.neutral.dark },
                 }}>
                     Cancelar
                 </Button>

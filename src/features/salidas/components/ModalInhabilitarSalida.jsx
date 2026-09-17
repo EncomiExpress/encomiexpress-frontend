@@ -98,8 +98,9 @@ const ModalInhabilitarSalida = ({ open, data, onClose, onExited, onConfirm }) =>
             onExited={handleExited}
             onConfirm={onConfirm}
             icono={data?.habilitadoActual
-                ? <DoNotDisturbOutlinedIcon sx={{ fontSize: 35, color: theme.palette.primary.darker }} />
-                : <CheckCircleOutlinedIcon sx={{ fontSize: 35, color: theme.palette.primary.darker }} />}
+                ? <DoNotDisturbOutlinedIcon sx={{ fontSize: 35, color: theme.palette.warning.dark }} />
+                : <CheckCircleOutlinedIcon sx={{ fontSize: 35, color: theme.palette.success.dark }} />}
+            variante={data?.habilitadoActual ? 'warning' : 'success'}
             titulo={titulo}
             subtitulo={subtexto}
             soloCerrar={enCurso || bloqueado}

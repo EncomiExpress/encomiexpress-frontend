@@ -160,7 +160,7 @@ const ActualizarRol = ({ open, onClose, rol: rolProp, onSuccess }) => {
             Modifica los permisos del rol.
           </Typography>
         </Box>
-        <IconButton onClick={cerrar} sx={{ color: theme.palette.text.secondary }}>
+        <IconButton onClick={cerrar} sx={{ color: theme.palette.neutral.main, '&:hover': { backgroundColor: theme.palette.neutral.dim } }}>
           <Close />
         </IconButton>
       </DialogTitle>

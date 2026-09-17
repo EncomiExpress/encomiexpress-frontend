@@ -39,7 +39,7 @@ const ModalCambioEstadoVehiculo = ({
             slotProps={{ paper: { sx: { borderRadius: 3 } } }}
         >
             <DialogContent sx={{ p: 3, position: 'relative' }}>
-                <IconButton onClick={onCloseMantenimiento} sx={{ position: 'absolute', top: 8, right: 8, color: theme.palette.text.secondary }}>
+                <IconButton onClick={onCloseMantenimiento} sx={{ position: 'absolute', top: 8, right: 8, color: theme.palette.neutral.main, '&:hover': { backgroundColor: theme.palette.neutral.dim } }}>
                     <CloseIcon />
                 </IconButton>
                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5, pt: 2, textAlign: 'center' }}>
@@ -66,7 +66,7 @@ const ModalCambioEstadoVehiculo = ({
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 3 }}>
                     <Button onClick={onCloseMantenimiento} disableRipple
-                        sx={{ textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 2, px: 3.5, py: 0.75, fontSize: '0.875rem', border: `1px solid ${theme.palette.divider}`, '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary } }}>
+                        sx={{ textTransform: 'none', color: theme.palette.neutral.main, fontWeight: 500, borderRadius: 2, px: 3.5, py: 0.75, fontSize: '0.875rem', border: `1px solid ${theme.palette.divider}`, '&:hover': { backgroundColor: theme.palette.neutral.dim, color: theme.palette.neutral.dark } }}>
                         Cancelar
                     </Button>
                     <Button onClick={onConfirmarMantenimiento}

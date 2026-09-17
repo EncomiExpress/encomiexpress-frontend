@@ -146,7 +146,7 @@ const RegistrarRol = ({ open, onClose, onSuccess }) => {
             Selecciona los permisos del nuevo rol.
           </Typography>
         </Box>
-        <IconButton onClick={handleClose} sx={{ color: theme.palette.text.secondary }}>
+        <IconButton onClick={handleClose} sx={{ color: theme.palette.neutral.main, '&:hover': { backgroundColor: theme.palette.neutral.dim } }}>
           <Close />
         </IconButton>
       </DialogTitle>

@@ -10,7 +10,7 @@ const LogoutConfirmDialog = ({ open, onClose, onConfirm }) => {
       slotProps={{ paper: { sx: { borderRadius: 3, p: 0 } } }}>
 
       <DialogContent sx={{ p: 3, textAlign: 'center', position: 'relative' }}>
-        <IconButton onClick={onClose} sx={{ position: 'absolute', top: 8, right: 8, color: theme.palette.text.secondary }}>
+        <IconButton onClick={onClose} sx={{ position: 'absolute', top: 8, right: 8, color: theme.palette.neutral.main, '&:hover': { backgroundColor: theme.palette.neutral.dim } }}>
           <Close />
         </IconButton>
 
@@ -35,8 +35,8 @@ const LogoutConfirmDialog = ({ open, onClose, onConfirm }) => {
       }}>
         <Button onClick={onClose} disableRipple
           sx={{
-            textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 2, px: 3.5, py: 0.75, fontSize: '0.875rem', border: `1px solid ${theme.palette.divider}`,
-            '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary, },
+            textTransform: 'none', color: theme.palette.neutral.main, fontWeight: 500, borderRadius: 2, px: 3.5, py: 0.75, fontSize: '0.875rem', border: `1px solid ${theme.palette.divider}`,
+            '&:hover': { backgroundColor: theme.palette.neutral.dim, color: theme.palette.neutral.dark },
           }}>
           Cancelar
         </Button>

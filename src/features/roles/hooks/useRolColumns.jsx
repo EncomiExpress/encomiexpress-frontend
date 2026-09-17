@@ -40,7 +40,7 @@ const useRolColumns = ({ theme, tienePermiso, PERMISOS, onConsultar, onEditar, o
             <IconButton
               size="small"
               onClick={(e) => { e.currentTarget.blur(); onConsultar(rol) }}
-              sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}
+              sx={{ color: theme.palette.primary.main, '&:hover': { backgroundColor: theme.palette.primary.dim } }}
             >
               <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
             </IconButton>
@@ -63,7 +63,7 @@ const useRolColumns = ({ theme, tienePermiso, PERMISOS, onConsultar, onEditar, o
               <IconButton
                 size="small"
                 onClick={(e) => { e.currentTarget.blur(); onEditar(rol) }}
-                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}
+                sx={{ color: theme.palette.primary.main, '&:hover': { backgroundColor: theme.palette.primary.dim } }}
               >
                 <EditOutlinedIcon sx={{ fontSize: 18 }} />
               </IconButton>

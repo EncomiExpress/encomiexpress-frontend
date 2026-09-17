@@ -241,13 +241,13 @@ const useVentaColumns = ({
             <Box sx={{ display: 'flex', gap: 0.5 }}>
                 <Tooltip title="Ver detalle">
                     <IconButton size="small" onClick={() => onConsultar(venta)}
-                        sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.action.hover } }}>
+                        sx={{ color: theme.palette.primary.main, '&:hover': { backgroundColor: theme.palette.primary.dim } }}>
                         <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
                     </IconButton>
                 </Tooltip>
                 <Tooltip title="Descargar guía">
                     <IconButton size="small" onClick={() => onDescargarGuia(venta)}
-                        sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.action.hover } }}>
+                        sx={{ color: theme.palette.primary.main, '&:hover': { backgroundColor: theme.palette.primary.dim } }}>
                         <ReceiptLongOutlinedIcon sx={{ fontSize: 18 }} />
                     </IconButton>
                 </Tooltip>
@@ -275,7 +275,7 @@ const useVentaColumns = ({
                     <Tooltip title="Editar">
                         <IconButton size="small"
                             onClick={() => onEditar(venta)}
-                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.action.hover } }}>
+                            sx={{ color: theme.palette.primary.main, '&:hover': { backgroundColor: theme.palette.primary.dim } }}>
                             <EditOutlinedIcon sx={{ fontSize: 18 }} />
                         </IconButton>
                     </Tooltip>

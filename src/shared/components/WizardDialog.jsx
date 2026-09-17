@@ -18,16 +18,18 @@ const stepperSx = (theme) => ({
     '& .MuiStepLabel-label.Mui-completed': { color: theme.palette.primary.main, fontWeight: 500 },
 })
 
+// Volver/Cancelar → acción neutral (paleta de acciones estandarizada,
+// ver shared/styles/theme/palette.js).
 const backButtonSx = (theme) => ({
     textTransform: 'none', borderRadius: 2, borderColor: theme.palette.divider,
-    color: theme.palette.text.primary, fontWeight: 500,
-    '&:hover': { borderColor: theme.palette.divider, backgroundColor: theme.palette.background.subtle },
+    color: theme.palette.neutral.main, fontWeight: 500,
+    '&:hover': { borderColor: theme.palette.divider, backgroundColor: theme.palette.neutral.dim },
     '&.Mui-disabled': { borderColor: theme.palette.divider, color: theme.palette.text.secondary },
 })
 
 const cancelButtonSx = (theme) => ({
-    textTransform: 'none', color: theme.palette.text.secondary, fontWeight: 500, borderRadius: 2,
-    '&:hover': { backgroundColor: theme.palette.background.subtle, color: theme.palette.text.primary },
+    textTransform: 'none', color: theme.palette.neutral.main, fontWeight: 500, borderRadius: 2,
+    '&:hover': { backgroundColor: theme.palette.neutral.dim, color: theme.palette.neutral.dark },
 })
 
 // Estilo único de "deshabilitado" (tokens de theme, se adapta a modo oscuro) — antes
@@ -68,7 +70,7 @@ const WizardDialog = ({
                         {subtitle}
                     </Typography>
                 </Box>
-                <IconButton onClick={onClose} sx={{ color: theme.palette.text.secondary }}>
+                <IconButton onClick={onClose} sx={{ color: theme.palette.neutral.main, '&:hover': { backgroundColor: theme.palette.neutral.dim } }}>
                     <CloseIcon />
                 </IconButton>
             </DialogTitle>

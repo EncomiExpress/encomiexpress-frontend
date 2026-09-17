@@ -81,7 +81,7 @@ const TarifaControl = ({ theme, tienePermiso, PERMISOS, editor, icono: Icono, et
                         onOpen={() => setCancelarTooltipOpen(true)}
                         onClose={() => setCancelarTooltipOpen(false)}>
                         <IconButton size="small" onClick={cancelar} disabled={guardandoTarifa}
-                            sx={{ color: theme.palette.text.secondary, p: 0.5 }}>
+                            sx={{ color: theme.palette.neutral.main, p: 0.5, '&:hover': { backgroundColor: theme.palette.neutral.dim } }}>
                             <CloseIcon sx={{ fontSize: 16 }} />
                         </IconButton>
                     </Tooltip>

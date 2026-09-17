@@ -251,9 +251,10 @@ const ModalAsignarRepartidor = ({ open, salida, onClose, onSuccess }) => {
                 open={!!parAQuitar}
                 onClose={() => setParAQuitar(null)}
                 onConfirm={handleConfirmarQuitar}
-                icono={<PersonRemoveOutlinedIcon sx={{ fontSize: 32, color: theme.palette.primary.darker }} />}
+                icono={<PersonRemoveOutlinedIcon sx={{ fontSize: 32, color: theme.palette.error.dark }} />}
                 titulo="¿Quitar del convoy?"
                 subtitulo={`${parAQuitar?.placa || ''} — ${parAQuitar?.conductorNombre || ''} se quitará del convoy de esta salida. Podrás asignarlo a otra ruta después.`}
+                variante="danger"
                 textoConfirmar="Quitar"
             >
                 {errorQuitar && (

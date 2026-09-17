@@ -40,7 +40,7 @@ const useDestinoColumns = ({ theme, tienePermiso, PERMISOS, onConsultar, onEdita
                 {tienePermiso(PERMISOS.CONSULTAR_DESTINO) && (
                     <Tooltip title="Ver detalle">
                         <IconButton size="small" onClick={() => onConsultar(destino)}
-                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}>
+                            sx={{ color: theme.palette.primary.main, '&:hover': { backgroundColor: theme.palette.primary.dim } }}>
                             <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
                         </IconButton>
                     </Tooltip>
@@ -58,7 +58,7 @@ const useDestinoColumns = ({ theme, tienePermiso, PERMISOS, onConsultar, onEdita
                         <Tooltip title="Editar">
                             <IconButton size="small"
                                 onClick={() => onEditar(destino)}
-                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}>
+                                sx={{ color: theme.palette.primary.main, '&:hover': { backgroundColor: theme.palette.primary.dim } }}>
                                 <EditOutlinedIcon sx={{ fontSize: 18 }} />
                             </IconButton>
                         </Tooltip>

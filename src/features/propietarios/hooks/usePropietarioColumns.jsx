@@ -35,7 +35,7 @@ const usePropietarioColumns = ({ theme, tienePermiso, PERMISOS, onConsultar, onE
             <Box sx={{ display: 'flex', gap: 0.5 }}>
                 <Tooltip title="Ver detalle">
                     <IconButton size="small" onClick={() => onConsultar(propietario)}
-                        sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}>
+                        sx={{ color: theme.palette.primary.main, '&:hover': { backgroundColor: theme.palette.primary.dim } }}>
                         <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
                     </IconButton>
                 </Tooltip>
@@ -51,7 +51,7 @@ const usePropietarioColumns = ({ theme, tienePermiso, PERMISOS, onConsultar, onE
                     <Tooltip title="Editar">
                         <IconButton size="small"
                             onClick={() => onEditar(propietario)}
-                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}>
+                            sx={{ color: theme.palette.primary.main, '&:hover': { backgroundColor: theme.palette.primary.dim } }}>
                             <EditOutlinedIcon sx={{ fontSize: 18 }} />
                         </IconButton>
                     </Tooltip>

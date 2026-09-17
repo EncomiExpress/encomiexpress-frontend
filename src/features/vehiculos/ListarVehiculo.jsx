@@ -156,7 +156,7 @@ const ListarTransporte = () => {
                          startIcon={exportando ? <CircularProgress size={16} sx={{ color: 'inherit' }} /> : <FileDownloadOutlinedIcon sx={{ fontSize: 18 }} />}
                          sx={{
                              backgroundColor: theme.palette.background.paper,
-                             color: theme.palette.text.primary,
+                             color: theme.palette.primary.main,
                              borderRadius: 2,
                              textTransform: 'none',
                              fontSize: '0.875rem',
@@ -164,8 +164,8 @@ const ListarTransporte = () => {
                              border: `1px solid ${theme.palette.divider}`,
                              boxShadow: 'none',
                              '&:hover': {
-                                 backgroundColor: theme.palette.primary.activeBg,
-                                 color: theme.palette.text.primary,
+                                 backgroundColor: theme.palette.primary.dim,
+                                 color: theme.palette.primary.main,
                                  border: `1px solid ${theme.palette.divider}`,
                                  boxShadow: 'none',
                              },

@@ -1,10 +1,10 @@
 import { useTheme } from '@mui/material/styles'
 import { GlobalStyles, Tooltip } from '@mui/material'
 
-const getToggleCss = (primaryColor) => `
+const getToggleCss = (onColor, offColor) => `
   .ee-toggle {
     --sz: 10px; --sz1: calc(var(--sz) / 10);
-    --on: ${primaryColor}; --no: #9ca3af; --bg: #212121;
+    --on: ${onColor}; --no: ${offColor}; --bg: #212121;
     --tr: all 0.5s ease 0s;
     position: relative;
     width: calc(var(--sz) * 4);
@@ -83,7 +83,9 @@ const ToggleSwitch = ({ id, checked, onChange }) => {
     const theme = useTheme()
     return (
         <>
-            <GlobalStyles styles={getToggleCss(theme.palette.primary.main)} />
+            {/* on = habilitado (success, verde) / off = inhabilitado (warning, naranja) —
+                paleta de acciones estandarizada, ver shared/styles/theme/palette.js */}
+            <GlobalStyles styles={getToggleCss(theme.palette.success.main, theme.palette.warning.main)} />
             <Tooltip title={checked ? 'Inhabilitar' : 'Habilitar'}>
                 <div className="ee-toggle">
                     <input

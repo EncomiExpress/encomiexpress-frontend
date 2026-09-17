@@ -226,7 +226,7 @@ const ListarSalidaProgramada = () => {
             <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
                 <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
                     <Tooltip title="Volver a Rutas">
-                        <IconButton onClick={() => navigate('/transporte/rutas')} sx={{ mt: 0.25, color: theme.palette.text.secondary }}>
+                        <IconButton onClick={() => navigate('/transporte/rutas')} sx={{ mt: 0.25, color: theme.palette.neutral.main, '&:hover': { backgroundColor: theme.palette.neutral.dim } }}>
                             <ArrowBackOutlinedIcon />
                         </IconButton>
                     </Tooltip>
@@ -249,7 +249,7 @@ const ListarSalidaProgramada = () => {
                         startIcon={exportando ? <CircularProgress size={16} sx={{ color: 'inherit' }} /> : <FileDownloadOutlinedIcon sx={{ fontSize: 18 }} />}
                         sx={{
                             backgroundColor: theme.palette.background.paper,
-                            color: theme.palette.text.primary,
+                            color: theme.palette.primary.main,
                             borderRadius: 2,
                             textTransform: 'none',
                             fontSize: '0.875rem',
@@ -257,8 +257,8 @@ const ListarSalidaProgramada = () => {
                             border: `1px solid ${theme.palette.divider}`,
                             boxShadow: 'none',
                             '&:hover': {
-                                backgroundColor: theme.palette.primary.activeBg,
-                                color: theme.palette.text.primary,
+                                backgroundColor: theme.palette.primary.dim,
+                                color: theme.palette.primary.main,
                                 border: `1px solid ${theme.palette.divider}`,
                                 boxShadow: 'none',
                             },

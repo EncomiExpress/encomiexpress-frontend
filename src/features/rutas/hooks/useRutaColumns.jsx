@@ -50,7 +50,7 @@ const useRutaColumns = ({ theme, tienePermiso, PERMISOS, onConsultar, onEditar, 
                 {tienePermiso(PERMISOS.CONSULTAR_RUTA) && (
                     <Tooltip title="Ver detalle">
                         <IconButton size="small" onClick={() => onConsultar(ruta)}
-                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}>
+                            sx={{ color: theme.palette.primary.main, '&:hover': { backgroundColor: theme.palette.primary.dim } }}>
                             <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
                         </IconButton>
                     </Tooltip>
@@ -58,7 +58,7 @@ const useRutaColumns = ({ theme, tienePermiso, PERMISOS, onConsultar, onEditar, 
                 {tienePermiso(PERMISOS.CONSULTAR_RUTA) && (
                     <Tooltip title="Salidas — ver y programar los viajes de esta ruta">
                         <IconButton size="small" onClick={() => onVerSalidas(ruta)}
-                            sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}>
+                            sx={{ color: theme.palette.primary.main, '&:hover': { backgroundColor: theme.palette.primary.dim } }}>
                             <EventRepeatOutlinedIcon sx={{ fontSize: 18 }} />
                         </IconButton>
                     </Tooltip>
@@ -75,7 +75,7 @@ const useRutaColumns = ({ theme, tienePermiso, PERMISOS, onConsultar, onEditar, 
                     ) : (
                         <Tooltip title="Editar">
                             <IconButton size="small" onClick={() => onEditar(ruta)}
-                                sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}>
+                                sx={{ color: theme.palette.primary.main, '&:hover': { backgroundColor: theme.palette.primary.dim } }}>
                                 <EditOutlinedIcon sx={{ fontSize: 18 }} />
                             </IconButton>
                         </Tooltip>
