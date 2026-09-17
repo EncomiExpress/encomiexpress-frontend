@@ -147,12 +147,20 @@ const ActualizarUsuario = ({ open, onClose, usuario: usuarioProp, onSuccess }) =
         }
         if (name === 'idRol') {
             const rolNombre = (rolesDisponibles.find(r => String(r.idRol) === String(value))?.codigo || '').toLowerCase()
-            setForm(prev => ({
-                ...prev,
-                idRol: value,
-                rolNombre,
-                sedes: ['distribuidor', 'operador_sede'].includes(rolNombre) ? prev.sedes : [],
-            }))
+            setForm(prev => {
+                // Medellín es válida como sede de un distribuidor pero NO de un
+                // operador_sede -- si ya había una sede elegida bajo el rol anterior y
+                // deja de ser válida para el nuevo, se limpia en vez de dejarla colada
+                // sin revalidar (mismo fix que RegistrarUsuario.jsx).
+                const sedeActual = sedesDisponibles.find(s => s.idDestino === (Array.isArray(prev.sedes) ? prev.sedes[0] : undefined))
+                const sedeSigueValida = rolNombre !== 'operador_sede' || sedeActual?.municipio !== 'Medellín'
+                return {
+                    ...prev,
+                    idRol: value,
+                    rolNombre,
+                    sedes: ['distribuidor', 'operador_sede'].includes(rolNombre) && sedeSigueValida ? prev.sedes : [],
+                }
+            })
             setErrores(prev => ({ ...prev, idRol: '', sedes: '' }))
             setApiError(null)
             setSinCambios(false)

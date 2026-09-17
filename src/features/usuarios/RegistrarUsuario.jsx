@@ -95,14 +95,26 @@ const RegistrarUsuario = ({ open, onClose, onSuccess }) => {
             // nombre visible — así este gate no se rompe si alguien renombra el rol
             // desde el módulo de Roles. Ver LOGICA.md, "Rol: nombre editable vs codigo".
             const rolNombre = (rolesDisponibles.find(r => String(r.idRol) === String(value))?.codigo || '').toLowerCase()
-            setForm(prev => ({
-                ...prev,
-                idRol: value,
-                rolNombre,
-                // Al salir de un rol con sede (distribuidor/operador_sede) las sedes ya
-                // no aplican; al entrar se conservan las que hubiera.
-                sedes: ['distribuidor', 'operador_sede'].includes(rolNombre) ? prev.sedes : [],
-            }))
+            setForm(prev => {
+                // Medellín es válida como sede de un distribuidor pero NO de un
+                // operador_sede (ver PasoContactoRol.jsx, sedesParaRol) -- si ya había
+                // una sede elegida bajo el rol anterior (ej. Distribuidor + Medellín) y
+                // deja de ser válida para el nuevo rol, hay que limpiarla en vez de
+                // dejarla colada sin revalidar: antes de este fix, cambiar de
+                // Distribuidor a Operador Sede sin tocar la Sede se guardaba tal cual,
+                // saltándose la exclusión que el propio Autocomplete ya hace ver.
+                const sedeActual = sedesDisponibles.find(s => s.idDestino === (Array.isArray(prev.sedes) ? prev.sedes[0] : undefined))
+                const sedeSigueValida = rolNombre !== 'operador_sede' || sedeActual?.municipio !== 'Medellín'
+                return {
+                    ...prev,
+                    idRol: value,
+                    rolNombre,
+                    // Al salir de un rol con sede (distribuidor/operador_sede) las sedes ya
+                    // no aplican; al entrar se conservan las que hubiera, si siguen siendo
+                    // válidas para el nuevo rol.
+                    sedes: ['distribuidor', 'operador_sede'].includes(rolNombre) && sedeSigueValida ? prev.sedes : [],
+                }
+            })
             setErrores(prev => ({ ...prev, idRol: '', sedes: '' }))
             setApiError(null)
             return
