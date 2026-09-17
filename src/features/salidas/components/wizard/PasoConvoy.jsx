@@ -17,6 +17,7 @@ const PasoConvoy = ({
     // ver REGLA NUEVA en salidaProgramadaService.js.
     esRegreso = false,
     vehiculos, conductores, vehiculosExcluidos, conductoresExcluidos,
+    vehiculosOcupados = 0, conductoresOcupados = 0,
     vehiculoInputs, setVehiculoInputs, conductorInputs, setConductorInputs,
     getVehiculoOpciones, getConductorOpciones,
 }) => (
@@ -44,11 +45,16 @@ const PasoConvoy = ({
             </Box>
         ) : (
             <>
-            {(vehiculosExcluidos > 0 || conductoresExcluidos > 0) && (
+            {(vehiculosExcluidos > 0 || conductoresExcluidos > 0 || vehiculosOcupados > 0 || conductoresOcupados > 0) && (
                 <Typography variant="caption" color={theme.palette.text.secondary}>
-                    {vehiculosExcluidos > 0 && `${vehiculosExcluidos} vehículo${vehiculosExcluidos > 1 ? 's' : ''} oculto${vehiculosExcluidos > 1 ? 's' : ''} por documentos vencidos`}
-                    {vehiculosExcluidos > 0 && conductoresExcluidos > 0 && ' · '}
-                    {conductoresExcluidos > 0 && `${conductoresExcluidos} conductor${conductoresExcluidos > 1 ? 'es' : ''} oculto${conductoresExcluidos > 1 ? 's' : ''} por licencia vencida`}
+                    {[
+                        vehiculosExcluidos > 0 && `${vehiculosExcluidos} vehículo${vehiculosExcluidos > 1 ? 's' : ''} oculto${vehiculosExcluidos > 1 ? 's' : ''} por documentos vencidos`,
+                        conductoresExcluidos > 0 && `${conductoresExcluidos} conductor${conductoresExcluidos > 1 ? 'es' : ''} oculto${conductoresExcluidos > 1 ? 's' : ''} por licencia vencida`,
+                        // Ya tienen otra salida programada/en ruta que choca con las fechas
+                        // elegidas en el paso "Horario" (ver useDisponibilidadPares.js).
+                        vehiculosOcupados > 0 && `${vehiculosOcupados} vehículo${vehiculosOcupados > 1 ? 's' : ''} oculto${vehiculosOcupados > 1 ? 's' : ''} por choque de horario`,
+                        conductoresOcupados > 0 && `${conductoresOcupados} conductor${conductoresOcupados > 1 ? 'es' : ''} oculto${conductoresOcupados > 1 ? 's' : ''} por choque de horario`,
+                    ].filter(Boolean).join(' · ')}
                 </Typography>
             )}
             {form.pares.map((par, index) => {

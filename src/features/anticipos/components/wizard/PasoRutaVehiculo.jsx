@@ -1,11 +1,9 @@
-import { useState } from 'react'
-import { Box, Typography, TextField, Alert, Autocomplete, Avatar, Divider, Button } from '@mui/material'
+import { Box, Typography, TextField, Alert, Autocomplete, Avatar, Divider } from '@mui/material'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import RouteOutlinedIcon from '@mui/icons-material/RouteOutlined'
 import AttachMoneyOutlinedIcon from '@mui/icons-material/AttachMoneyOutlined'
 import PlacaDisplay from '../../../../shared/components/PlacaDisplay.jsx'
 import { FormField } from '../../../../shared/components/FormularioEstandarizado.jsx'
-import ModalRutaDiagrama from '../../../../shared/components/ModalRutaDiagrama.jsx'
 import { formFieldStyles } from '../../../../shared/utils/formStyles.js'
 import { normalizarTexto } from '../../../../shared/utils/duplicados.js'
 import { formatearMoneda, formatFecha } from '../../../../shared/utils/formatters.js'
@@ -21,7 +19,6 @@ const PasoRutaVehiculo = ({
     rutaHelperTextOk, rutaHelperTextDisabled, parHelperTextDisabled, valorHelperTextDisabled, fechaHelperTextDisabled,
     mostrarAdvertencia,
 }) => {
-    const [diagramaOpen, setDiagramaOpen] = useState(false)
     return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
         <Autocomplete
@@ -83,34 +80,7 @@ const PasoRutaVehiculo = ({
                 <TextField {...params} label="Salida *"
                     error={!!errores.idSalida}
                     helperText={errores.idSalida || (rutaDisabled ? rutaHelperTextDisabled : rutaHelperTextOk)}
-                    slotProps={{
-                        inputLabel: { shrink: true },
-                        htmlInput: { ...params.inputProps, maxLength: 100 },
-                        input: {
-                            ...params.InputProps,
-                            endAdornment: (
-                                <>
-                                    {rutaSeleccionada && (
-                                        <>
-                                            <Button size="small"
-                                                onMouseDown={(e) => e.stopPropagation()}
-                                                onClick={() => setDiagramaOpen(true)}
-                                                startIcon={<RouteOutlinedIcon sx={{ fontSize: 16 }} />}
-                                                sx={{
-                                                    textTransform: 'none', color: theme.palette.text.secondary,
-                                                    fontSize: '0.72rem', minWidth: 0, px: 1, py: 0.25, whiteSpace: 'nowrap',
-                                                    '& .MuiButton-startIcon': { mr: 0.5 },
-                                                }}>
-                                                Ver recorrido
-                                            </Button>
-                                            <Divider orientation="vertical" flexItem sx={{ my: 0.75, mx: 0.5 }} />
-                                        </>
-                                    )}
-                                    {params.InputProps.endAdornment}
-                                </>
-                            ),
-                        },
-                    }}
+                    slotProps={{ inputLabel: { shrink: true }, htmlInput: { ...params.inputProps, maxLength: 100 } }}
                     sx={formFieldStyles} />
             )}
         />
@@ -219,13 +189,6 @@ const PasoRutaVehiculo = ({
                 } }} sx={formFieldStyles}
             />
         </Box>
-        <ModalRutaDiagrama
-            open={diagramaOpen}
-            onClose={() => setDiagramaOpen(false)}
-            origen={rutaSeleccionada?.nombre}
-            destino={rutaSeleccionada?.destino?.municipio}
-            subtitulo={rutaSeleccionada ? `${rutaSeleccionada.nombre || ''} → ${rutaSeleccionada.destino?.municipio || ''}` : ''}
-        />
     </Box>
     )
 }

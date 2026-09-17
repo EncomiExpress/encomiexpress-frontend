@@ -2,26 +2,24 @@ import { useTheme } from '@mui/material/styles'
 import { useState, useEffect } from 'react'
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined'
 import { useSalidaProgramacion } from './context/SalidaProgramacionContext.jsx'
-import { useRuta } from '../rutas/context/RutaContext.jsx'
 import { useVehiculo } from '../vehiculos/context/VehiculoContext.jsx'
 import { useConductor } from '../conductores/context/ConductorContext.jsx'
 import { useDestino } from '../destinos/context/DestinoContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { vehiculoDocumentosVigentes, conductorLicenciaVigente } from '../../shared/utils/vigenciaDocumentos.js'
+import { useDisponibilidadPares } from '../../shared/hooks/useDisponibilidadPares.js'
 import WizardDialog from '../../shared/components/WizardDialog.jsx'
 import { steps, validarCampo, validarPares, validarPaso } from './validations/salidaValidation.js'
 import { resolveDestinoPartes } from './utils/salidaResolvers.js'
-import { getRutaLabel } from '../rutas/utils/rutaResolvers.js'
+import { formatFecha } from '../../shared/utils/formatters.js'
 import { filtrarObservacionesRuta } from '../../shared/validations/observacionesRutaValidation.js'
-import PasoRuta from './components/wizard/PasoRuta.jsx'
 import PasoHorario from './components/wizard/PasoHorario.jsx'
 import PasoConvoy from './components/wizard/PasoConvoy.jsx'
 import PasoConfirmacion from './components/wizard/PasoConfirmacion.jsx'
 
 const ActualizarSalidaProgramada = ({ open, onClose, salida, onSuccess }) => {
     const { actualizarSalidaProgramada } = useSalidaProgramacion()
-    const { getRutasHabilitadas } = useRuta()
     const { showToast } = useToast()
     const theme = useTheme()
     const { getVehiculosHabilitados } = useVehiculo()
@@ -34,20 +32,22 @@ const ActualizarSalidaProgramada = ({ open, onClose, salida, onSuccess }) => {
     const [submitting, setSubmitting]   = useState(false)
     const [originalData, setOriginalData] = useState(null)
     const [sinCambios, setSinCambios]   = useState(false)
-    const [rutaInput, setRutaInput]     = useState('')
     const [vehiculoInputs, setVehiculoInputs]     = useState([''])
     const [conductorInputs, setConductorInputs]   = useState([''])
     const [refrescarDisponibilidad, setRefrescarDisponibilidad] = useState(0)
+    const [form, setForm] = useState({
+        origen: '', idRuta: '', pares: [{ idSalidaVehiculoConductor: '', idVehiculo: '', idConductor: '' }],
+        fechaSalida: '', horaSalida: '', fechaLlegadaEstimada: '', horaLlegadaEstimada: '', observaciones: ''
+    })
 
     useEffect(() => {
-        if (activeStep !== 1) return
+        if (activeStep !== 0 && activeStep !== 1) return
         setRefrescarDisponibilidad(k => k + 1)
     }, [activeStep])
 
     const vehiculos   = getVehiculosHabilitados()
     const conductores = getConductoresHabilitados()
     const destinos    = getDestinosHabilitados()
-    const rutas       = getRutasHabilitadas()
 
     // "Fuera de base": conductor/vehículo que quedó en otro municipio tras una salida
     // que no volvió a Medellín (idDestinoActual). Para un regreso (salida.idSalidaIda)
@@ -61,15 +61,25 @@ const ActualizarSalidaProgramada = ({ open, onClose, salida, onSuccess }) => {
         ? idDestinoActual === idaIdDestino
         : (idDestinoActual === null || idDestinoActual === undefined)
 
-    const vehiculosSeleccionables = vehiculos.filter(v => vehiculoDocumentosVigentes(v) && ubicacionOk(v.idDestinoActual))
-    const conductoresSeleccionables = conductores.filter(c => conductorLicenciaVigente(c.categoriasLicencia) && ubicacionOk(c.idDestinoActual))
-    const vehiculosExcluidos = vehiculos.length - vehiculosSeleccionables.length
-    const conductoresExcluidos = conductores.length - conductoresSeleccionables.length
+    const vehiculosPorDocUbicacion = vehiculos.filter(v => vehiculoDocumentosVigentes(v) && ubicacionOk(v.idDestinoActual))
+    const conductoresPorDocUbicacion = conductores.filter(c => conductorLicenciaVigente(c.categoriasLicencia) && ubicacionOk(c.idDestinoActual))
 
-    const [form, setForm] = useState({
-        origen: '', idRuta: '', pares: [{ idSalidaVehiculoConductor: '', idVehiculo: '', idConductor: '' }],
-        fechaSalida: '', horaSalida: '', fechaLlegadaEstimada: '', horaLlegadaEstimada: '', observaciones: ''
+    // Choque de horario contra OTRA salida (Programada/En Ruta) -- excluye a esta
+    // misma salida (idSalidaExcluir) para no bloquearse a sí misma. Un regreso no
+    // lo necesita: su convoy lo hereda la ida.
+    const { idVehiculosOcupados, idConductoresOcupados } = useDisponibilidadPares({
+        idVehiculos: esRegreso ? [] : vehiculosPorDocUbicacion.map(v => v.idVehiculo),
+        idConductores: esRegreso ? [] : conductoresPorDocUbicacion.map(c => c.idConductor),
+        fechaSalida: form.fechaSalida, fechaLlegadaEstimada: form.fechaLlegadaEstimada,
+        idSalidaExcluir: salida?.idSalida,
+        refrescarKey: refrescarDisponibilidad,
     })
+    const vehiculosSeleccionables = vehiculosPorDocUbicacion.filter(v => !idVehiculosOcupados.has(v.idVehiculo))
+    const conductoresSeleccionables = conductoresPorDocUbicacion.filter(c => !idConductoresOcupados.has(c.idConductor))
+    const vehiculosExcluidos = vehiculos.length - vehiculosPorDocUbicacion.length
+    const conductoresExcluidos = conductores.length - conductoresPorDocUbicacion.length
+    const vehiculosOcupadosCount = vehiculosPorDocUbicacion.length - vehiculosSeleccionables.length
+    const conductoresOcupadosCount = conductoresPorDocUbicacion.length - conductoresSeleccionables.length
 
     useEffect(() => {
         if (salida && open) {
@@ -111,7 +121,6 @@ const ActualizarSalidaProgramada = ({ open, onClose, salida, onSuccess }) => {
                 const original = paresSalida.find(x => x.idConductor === parseInt(p.idConductor))?.conductor?.usuario
                 return original ? `${original.nombre} ${original.apellido}` : ''
             }))
-            setRutaInput(salida.ruta ? getRutaLabel(salida.ruta) : '')
         }
     }, [salida, open, getVehiculosHabilitados, getConductoresHabilitados, getDestinosHabilitados])
 
@@ -169,7 +178,7 @@ const ActualizarSalidaProgramada = ({ open, onClose, salida, onSuccess }) => {
     const getVehiculoOpciones = (index) => {
         const par = form.pares[index]
         const usados = form.pares.filter((_, i) => i !== index).map(p => parseInt(p.idVehiculo))
-        const base = vehiculos.filter(v => !usados.includes(v.idVehiculo) && vehiculoDocumentosVigentes(v) && ubicacionOk(v.idDestinoActual))
+        const base = vehiculosSeleccionables.filter(v => !usados.includes(v.idVehiculo))
         if (par.idVehiculo && !base.some(v => v.idVehiculo === parseInt(par.idVehiculo))) {
             const original = (salida?.paresVehiculoConductor || []).find(p => p.idVehiculo === parseInt(par.idVehiculo))?.vehiculo
             if (original) return [...base, original]
@@ -179,12 +188,27 @@ const ActualizarSalidaProgramada = ({ open, onClose, salida, onSuccess }) => {
     const getConductorOpciones = (index) => {
         const par = form.pares[index]
         const usados = form.pares.filter((_, i) => i !== index).map(p => parseInt(p.idConductor))
-        const base = conductores.filter(c => !usados.includes(c.idConductor) && conductorLicenciaVigente(c.categoriasLicencia) && ubicacionOk(c.idDestinoActual))
+        const base = conductoresSeleccionables.filter(c => !usados.includes(c.idConductor))
         if (par.idConductor && !base.some(c => c.idConductor === parseInt(par.idConductor))) {
             const original = (salida?.paresVehiculoConductor || []).find(p => p.idConductor === parseInt(par.idConductor))?.conductor?.usuario
             if (original) return [...base, { idConductor: parseInt(par.idConductor), nombre: original.nombre, apellido: original.apellido }]
         }
         return base
+    }
+
+    // Limpieza silenciosa de filas de par totalmente vacías (ni vehículo ni
+    // conductor) al salir del paso Convoy -- en cualquier dirección (Siguiente o
+    // Anterior), para que una fila que se agregó y se dejó sin llenar no quede
+    // pegada ahí al volver más tarde a este paso.
+    const limpiarParesVacios = () => {
+        const indicesConDatos = form.pares
+            .map((p, i) => (p.idVehiculo || p.idConductor) ? i : -1)
+            .filter(i => i !== -1)
+        if (indicesConDatos.length !== form.pares.length) {
+            setVehiculoInputs(indicesConDatos.map(i => vehiculoInputs[i]))
+            setConductorInputs(indicesConDatos.map(i => conductorInputs[i]))
+            setForm(prev => ({ ...prev, pares: indicesConDatos.map(i => form.pares[i]) }))
+        }
     }
 
     const handleNext = () => {
@@ -193,20 +217,14 @@ const ActualizarSalidaProgramada = ({ open, onClose, salida, onSuccess }) => {
             setErrores(erroresEncontrados)
             return
         }
-        if (activeStep === 2 && !esRegreso) {
-            const indicesConDatos = form.pares
-                .map((p, i) => (p.idVehiculo || p.idConductor) ? i : -1)
-                .filter(i => i !== -1)
-            if (indicesConDatos.length !== form.pares.length) {
-                setVehiculoInputs(indicesConDatos.map(i => vehiculoInputs[i]))
-                setConductorInputs(indicesConDatos.map(i => conductorInputs[i]))
-                setForm(prev => ({ ...prev, pares: indicesConDatos.map(i => form.pares[i]) }))
-            }
-        }
+        if (activeStep === 1 && !esRegreso) limpiarParesVacios()
         setActiveStep(prev => prev + 1)
     }
 
-    const handleBack = () => setActiveStep(prev => prev - 1)
+    const handleBack = () => {
+        if (activeStep === 1 && !esRegreso) limpiarParesVacios()
+        setActiveStep(prev => prev - 1)
+    }
 
     const handleSubmit = async () => {
         const erroresPorPaso = [0, 1, 2].map(s => validarPaso(s, form, capacidadCtx, esRegreso))
@@ -267,31 +285,14 @@ const ActualizarSalidaProgramada = ({ open, onClose, salida, onSuccess }) => {
         setActiveStep(0)
         setOriginalData(null)
         setSinCambios(false)
-        setRutaInput('')
         setVehiculoInputs([''])
         setConductorInputs([''])
         onClose?.()
     }
 
-    // Respaldo por si la plantilla ya fue inhabilitada desde que se creó esta salida.
-    const rutaSeleccionada = rutas.find(r => r.idRuta === parseInt(form.idRuta)) || (
-        salida?.ruta && parseInt(form.idRuta) === salida.idRuta
-            ? { idRuta: salida.idRuta, idDestino: salida.ruta.idDestino, destino: salida.ruta.destino }
-            : null
-    )
-
     const renderStepContent = () => {
         switch (activeStep) {
             case 0:
-                return (
-                    <PasoRuta
-                        theme={theme} form={form} errores={errores} setErrores={setErrores}
-                        handleChange={handleChange}
-                        rutas={rutas} rutaInput={rutaInput} setRutaInput={setRutaInput} rutaSeleccionada={rutaSeleccionada}
-                        esRegreso={esRegreso}
-                    />
-                )
-            case 1:
                 return (
                     <PasoHorario
                         form={form} setForm={setForm} errores={errores} setErrores={setErrores} setApiError={setApiError} handleChange={handleChange}
@@ -300,37 +301,41 @@ const ActualizarSalidaProgramada = ({ open, onClose, salida, onSuccess }) => {
                         afterChange={() => setSinCambios(false)}
                     />
                 )
-            case 2:
+            case 1:
                 return (
                     <PasoConvoy
                         theme={theme} form={form} errores={errores} setErrores={setErrores}
                         handleParChange={handleParChange} handleAgregarPar={handleAgregarPar} handleQuitarPar={handleQuitarPar}
                         esRegreso={esRegreso}
                         vehiculos={vehiculos} conductores={conductores} vehiculosExcluidos={vehiculosExcluidos} conductoresExcluidos={conductoresExcluidos}
+                        vehiculosOcupados={vehiculosOcupadosCount} conductoresOcupados={conductoresOcupadosCount}
                         vehiculoInputs={vehiculoInputs} setVehiculoInputs={setVehiculoInputs} conductorInputs={conductorInputs} setConductorInputs={setConductorInputs}
                         getVehiculoOpciones={getVehiculoOpciones} getConductorOpciones={getConductorOpciones}
                     />
                 )
-            case 3:
+            case 2:
                 return (
                     <PasoConfirmacion
                         theme={theme} form={form} formOriginal={originalData}
                         apiError={apiError} setApiError={setApiError}
                         sinCambios={sinCambios} setSinCambios={setSinCambios}
                         destinos={destinos} vehiculos={vehiculos} conductores={conductores} salida={salida}
-                        rutaSeleccionada={rutaSeleccionada}
                     />
                 )
             default: return null
         }
     }
 
+    // Un mismo corredor (Medellín -> Ayapel, ej.) puede tener varias salidas
+    // programadas -- el subtítulo identifica CUÁL, por su fecha, para que no
+    // parezca que se está editando la Ruta (plantilla) en sí, sino esta salida
+    // puntual (ver Rutas/ActualizarRuta.jsx para el caso de editar la plantilla).
     return (
         <WizardDialog
             open={open} onClose={handleClose}
             title="Editar Salida"
-            subtitle={originalData?.origen
-                ? `Modificando datos de ${originalData.origen} - ${resolveDestinoPartes(salida || {}, destinos).municipio}`
+            subtitle={originalData?.fechaSalida
+                ? `Salida del ${formatFecha(originalData.fechaSalida)} · ${originalData.origen} → ${resolveDestinoPartes(salida || {}, destinos).municipio}`
                 : 'Modifica los campos que necesites.'}
             steps={steps} activeStep={activeStep}
             onBack={handleBack} onNext={handleNext} onSubmit={handleSubmit}

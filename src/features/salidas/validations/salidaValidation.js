@@ -7,20 +7,17 @@ import { validarObservacionesRuta } from '../../../shared/validations/observacio
 // MAX_DIAS_ANTICIPACION del backend (salidaProgramadaService.js/horarioLaboral.js).
 export const maxISO = () => sumarDias(hoyISO(), MAX_DIAS_ANTICIPACION)
 
-// Orden pensado como se arma una salida en la práctica: primero la Ruta
-// (plantilla, define destino final), luego el Horario (a qué hora sale de la
-// base y cuándo se espera que llegue), y por último a quién se le encarga el
-// viaje -- Vehículo y Conductor.
-export const steps = ['Ruta', 'Horario', 'Vehículo y Conductor', 'Confirmación']
+// Orden pensado como se arma una salida en la práctica: primero el Horario (a
+// qué hora sale de la base y cuándo se espera que llegue), y luego a quién se
+// le encarga el viaje -- Vehículo y Conductor. Sin paso "Ruta": la plantilla ya
+// viene fija por el contexto en el que se abre el wizard (siempre se llega
+// desde "Salidas de <ruta>", ver ListarSalidaProgramada.jsx) o, en un regreso,
+// la resuelve sola el backend -- nunca es una elección del usuario.
+export const steps = ['Horario', 'Vehículo y Conductor', 'Confirmación']
 
 // Máximo de pares vehículo+conductor por salida — igual al tope del backend
 // (MAX_PARES_RUTA en salidaProgramadaService.js), mismo criterio que MAX_PAQUETES en Ventas.
 export const MAX_PARES = 10
-
-// Mismo alfabeto que ya filtra RegistrarSalidaProgramada.jsx en vivo para origen
-// (letras + guion + guion bajo) — el validador replica esa misma regla.
-const ORIGEN_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s\-_]+$/
-const ORIGEN_MAX_LENGTH = 100
 
 // Valida un único campo del formulario (usado en onBlur y para re-validar en vivo
 // mientras se corrige un campo ya marcado con error). "horaLlegadaEstimada" no vive
@@ -29,14 +26,6 @@ const ORIGEN_MAX_LENGTH = 100
 // reprograma. Mismo piso replicado en el backend (salidaProgramadaService.validarHorarioRuta).
 export const validarCampo = (name, form) => {
     switch (name) {
-        case 'origen':
-            if (!form.origen?.trim()) return 'El origen es obligatorio'
-            if (esSoloRelleno(form.origen)) return 'El origen no puede contener solo espacios o guiones'
-            if (!ORIGEN_REGEX.test(form.origen)) return 'El origen contiene caracteres no permitidos'
-            if (form.origen.length > ORIGEN_MAX_LENGTH) return `El origen no puede superar los ${ORIGEN_MAX_LENGTH} caracteres`
-            return ''
-        case 'idRuta':
-            return form.idRuta ? '' : 'Selecciona una ruta (plantilla)'
         case 'fechaSalida':
             if (!form.fechaSalida) return 'La fecha de salida es obligatoria'
             if (form.fechaSalida < hoyISO()) return 'La fecha de salida no puede ser anterior a hoy'
@@ -111,25 +100,20 @@ export const validarPares = (pares, { vehiculos, paresOriginales } = {}) => {
     return ''
 }
 
-// esRegreso: en modo regreso el paso "Ruta" no pide plantilla (la determina el
-// backend a partir de la ida) y el paso "Vehículo y Conductor" no valida nada (el
+// esRegreso: en modo regreso el paso "Vehículo y Conductor" no valida nada (el
 // convoy lo hereda el backend, ver REGLA NUEVA en salidaProgramadaService.js).
 // `esRegreso` lo pasan los componentes del wizard
 // (RegistrarSalidaProgramada/ActualizarSalidaProgramada).
 export const validarPaso = (step, form, capacidadCtx, esRegreso = false) => {
     const e = {}
     if (step === 0) {
-        e.origen = validarCampo('origen', form)
-        if (!esRegreso) e.idRuta = validarCampo('idRuta', form)
-    }
-    if (step === 1) {
         e.fechaSalida = validarCampo('fechaSalida', form)
         e.horaSalida = validarCampo('horaSalida', form)
         e.fechaLlegadaEstimada = validarCampo('fechaLlegadaEstimada', form)
         e.horaLlegadaEstimada = validarCampo('horaLlegadaEstimada', form)
         e.observaciones = validarCampo('observaciones', form)
     }
-    if (step === 2) {
+    if (step === 1) {
         e.pares = esRegreso ? '' : validarPares(form.pares, capacidadCtx)
     }
     Object.keys(e).forEach(k => { if (!e[k]) delete e[k] })

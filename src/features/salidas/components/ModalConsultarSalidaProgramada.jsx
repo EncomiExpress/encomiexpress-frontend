@@ -23,7 +23,6 @@ import { formatFecha, formatHora12, getGuiaPrincipal } from '../../../shared/uti
 import CampoFila from '../../../shared/components/CampoFila.jsx'
 import FichaCard from '../../../shared/components/FichaCard.jsx'
 import EstadoDot, { RutaEstadoDot as SalidaEstadoDot } from '../../rutas/components/EstadoDot.jsx'
-import ModalRutaDiagrama from '../../../shared/components/ModalRutaDiagrama.jsx'
 import { resolvePares, resolveDestino, resolveDestinoPartes } from '../utils/salidaResolvers.js'
 import { errorChipSx } from '../style/chips.js'
 
@@ -33,7 +32,6 @@ const ModalConsultarSalidaProgramada = ({ salida, onClose }) => {
     const [tabIndex, setTabIndex] = useState('info')
     const [tabEncomiendas, setTabEncomiendas] = useState({ data: [], total: 0, loading: false })
     const [tabAnticipos, setTabAnticipos] = useState({ data: [], total: 0, loading: false })
-    const [diagramaOpen, setDiagramaOpen] = useState(false)
 
     const { getVehiculos } = useVehiculo()
     const { getConductores } = useConductor()
@@ -108,14 +106,7 @@ const ModalConsultarSalidaProgramada = ({ salida, onClose }) => {
                 <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
                     <Box sx={{ display: 'flex', gap: 2 }}>
                         <FichaCard icon={RouteOutlinedIcon} title="Recorrido">
-                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, mb: 1 }}>
-                                <Typography variant="body2" color={theme.palette.text.secondary}>Ruta (plantilla), origen y destino</Typography>
-                                <Button size="small" startIcon={<RouteOutlinedIcon sx={{ fontSize: 16 }} />}
-                                    onClick={() => setDiagramaOpen(true)}
-                                    sx={{ textTransform: 'none', color: theme.palette.text.secondary, fontSize: '0.78rem', flexShrink: 0 }}>
-                                    Ver recorrido
-                                </Button>
-                            </Box>
+                            <Typography variant="body2" color={theme.palette.text.secondary} sx={{ mb: 1 }}>Ruta (plantilla), origen y destino</Typography>
                             <CampoFila label="Ruta (plantilla)" value={getRutaLabel(salida.ruta)} />
                             <CampoFila label="Origen" value={salida.origen} />
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
@@ -318,13 +309,6 @@ const ModalConsultarSalidaProgramada = ({ salida, onClose }) => {
                     Cerrar
                 </Button>
             </Box>
-            <ModalRutaDiagrama
-                open={diagramaOpen}
-                onClose={() => setDiagramaOpen(false)}
-                origen={salida.origen}
-                destino={resolveDestinoPartes(salida, destinos).municipio}
-                subtitulo={`${salida.origen || ''} → ${resolveDestinoPartes(salida, destinos).municipio}`}
-            />
         </Dialog>
     )
 }

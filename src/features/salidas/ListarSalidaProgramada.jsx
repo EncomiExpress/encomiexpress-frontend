@@ -27,7 +27,6 @@ import FiltroSalida from './components/FiltroSalida.jsx'
 import AlertaBloqueoDialog from './components/AlertaBloqueoDialog.jsx'
 import MenuCambioEstadoSalida from './components/MenuCambioEstadoSalida.jsx'
 import { getPageOfSalida, getAniosDisponiblesSalida, getSalidas } from './services/salidaService.js'
-import { hoyISO, sumarDias, siguienteDiaHabil } from '../../shared/utils/horarioLaboral.js'
 import { getSalidaId } from './utils/salidaResolvers.js'
 import { useEstadoSalida } from './hooks/useEstadoSalida.js'
 import useSalidaColumns from './hooks/useSalidaColumns.jsx'
@@ -169,31 +168,12 @@ const ListarSalidaProgramada = () => {
 
     // "Nuevo" en esta vista scoped siempre crea una salida de LA plantilla actual
     // (idRuta viene de la URL) — a diferencia de "Programar regreso"/"Reutilizar",
-    // no hay convoy que precargar, solo la plantilla ya elegida.
-    // Precarga vehículo+conductor y horario de la ÚLTIMA salida de esta misma Ruta
-    // (cualquier estado, no solo Completada -- refleja el último ajuste real del
-    // operador) -- así "crear la salida de mañana" es solo confirmar, en vez de
-    // volver a armar el convoy desde cero cada día.
-    const handleAbrirNuevo = async () => {
-        if (!idRuta) { setPrefillRegreso(null); setModalRegistrarOpen(true); return }
-        try {
-            const res = await getSalidas({ idRuta, limit: 1, sortBy: 'idSalida.desc' })
-            const ultima = res?.data?.[0]
-            if (!ultima) { setPrefillRegreso({ idRuta }); setModalRegistrarOpen(true); return }
-            // Fecha propuesta: mañana (el ciclo del negocio es "se recibe hoy, se entrega
-            // mañana"), saltando domingo -- no el día después de la última salida, que
-            // para este punto ya suele estar en el pasado.
-            const fechaSalida = siguienteDiaHabil(sumarDias(hoyISO(), 1))
-            const fechaLlegadaEstimada = siguienteDiaHabil(sumarDias(fechaSalida, 1))
-            setPrefillRegreso({
-                idRuta,
-                pares: (ultima.paresVehiculoConductor || []).map(p => ({ idVehiculo: p.idVehiculo, idConductor: p.idConductor })),
-                fechaSalida, horaSalida: ultima.horaSalida || '',
-                fechaLlegadaEstimada, horaLlegadaEstimada: ultima.horaLlegadaEstimada || '',
-            })
-        } catch {
-            setPrefillRegreso({ idRuta })
-        }
+    // no hay nada más que precargar: es un registro nuevo de verdad, así que el
+    // convoy y el horario quedan en blanco para que el usuario los complete a
+    // mano (para repetir el convoy/horario de un viaje anterior está el botón
+    // "Reutilizar salida" en cada fila, que sí es una acción explícita de copiar).
+    const handleAbrirNuevo = () => {
+        setPrefillRegreso(idRuta ? { idRuta } : null)
         setModalRegistrarOpen(true)
     }
 

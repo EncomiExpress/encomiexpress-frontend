@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Box, Typography, Paper, Divider, Avatar, TextField, Autocomplete, MenuItem, Alert, IconButton, Tooltip, Button } from '@mui/material'
+import { Box, Typography, Paper, Divider, Avatar, TextField, Autocomplete, MenuItem, Alert, Button } from '@mui/material'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import RouteOutlinedIcon from '@mui/icons-material/RouteOutlined'
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
@@ -9,7 +9,6 @@ import { normalizarTexto } from '../../../../shared/utils/duplicados.js'
 import { formatFecha, formatHora12 } from '../../../../shared/utils/formatters.js'
 import { sumarDias, hoyISO, MAX_DIAS_ANTICIPACION } from '../../../../shared/utils/horarioLaboral.js'
 import PlacaDisplay from '../../../../shared/components/PlacaDisplay.jsx'
-import ModalRutaDiagrama from '../../../../shared/components/ModalRutaDiagrama.jsx'
 import { validarCampo, validarCampoPaquete } from '../../validations/validacion.js'
 import { rutaLlegaAlDestino, paresQueLleganAlDestino, MENSAJE_RUTA_NO_LLEGA } from '../../validations/ventaValidation.js'
 import { useAuth } from '../../../../shared/contexts/AuthContext.jsx'
@@ -30,7 +29,6 @@ export default function PasoEnvio({
 }) {
     const { usuario, sedeActual } = useAuth()
     const esOperadorSede = usuario?.rol?.codigo === 'operador_sede'
-    const [diagramaOpen, setDiagramaOpen] = useState(false)
     const rutaElegida = salidasProgramadas.find(r => r.idSalida === parseInt(form.idSalida))
     // El destino de la venta (elegido en el paso "Participantes", uno por venta —
     // no por paquete, ver LOGICA.md "Aprovechar el destino que ya existe por
@@ -145,13 +143,9 @@ export default function PasoEnvio({
                     popupIcon={<KeyboardArrowDownOutlinedIcon />}
                     options={rutasOpciones}
                     getOptionLabel={(option) => {
-                        // Placas de todos los vehículos del convoy en la etiqueta misma: si hay
-                        // dos salidas con el mismo nombre (ej. mismo conductor, distinto vehículo),
-                        // así se distinguen directo en la lista, sin tener que elegir una para verlo.
-                        const placas = (option.paresVehiculoConductor || []).map(p => p.vehiculo?.placa).filter(Boolean).join(', ')
                         const destinoTxt = option.ruta?.destino?.municipio || 'Sin destino'
                         const fechaTxt = option.fechaSalida ? ` — ${formatFecha(option.fechaSalida)}` : ''
-                        return `${option.origen || 'Sin nombre'} → ${destinoTxt}${placas ? ` (${placas})` : ''}${fechaTxt}`
+                        return `${option.origen || 'Sin nombre'} → ${destinoTxt}${fechaTxt}`
                     }}
                     isOptionEqualToValue={(opt, val) => opt.idSalida === val.idSalida}
                     renderOption={(props, option) => {
@@ -259,30 +253,7 @@ export default function PasoEnvio({
                     renderInput={(params) => (
                         <TextField {...params} label="Salida *"
                             error={!!errores.idSalida} helperText={errores.idSalida || 'Busca por origen o destino'}
-                            slotProps={{
-                                inputLabel: { shrink: true },
-                                htmlInput: { ...params.inputProps, maxLength: 100 },
-                                input: {
-                                    ...params.InputProps,
-                                    endAdornment: (
-                                        <>
-                                            {rutaElegida && (
-                                                <>
-                                                    <Tooltip title="Ver recorrido de la salida">
-                                                        <IconButton size="small"
-                                                            onMouseDown={(e) => e.stopPropagation()}
-                                                            onClick={() => setDiagramaOpen(true)}>
-                                                            <RouteOutlinedIcon sx={{ fontSize: 18, color: theme.palette.text.secondary }} />
-                                                        </IconButton>
-                                                    </Tooltip>
-                                                    <Divider orientation="vertical" flexItem sx={{ my: 0.75, mx: 0.5 }} />
-                                                </>
-                                            )}
-                                            {params.InputProps.endAdornment}
-                                        </>
-                                    ),
-                                },
-                            }}
+                            slotProps={{ inputLabel: { shrink: true }, htmlInput: { ...params.inputProps, maxLength: 100 } }}
                             sx={formFieldStyles} />
                     )}
                 />
@@ -416,13 +387,6 @@ export default function PasoEnvio({
                 helperText={errores.observaciones || `Opcional · ${(form.observaciones || '').length}/500`}
                 error={errores.observaciones}
                 inputProps={{ maxLength: 500 }} />
-            <ModalRutaDiagrama
-                open={diagramaOpen}
-                onClose={() => setDiagramaOpen(false)}
-                origen={rutaElegida?.origen}
-                destino={rutaElegida?.ruta?.destino?.municipio}
-                subtitulo={rutaElegida ? `${rutaElegida.origen || ''} → ${rutaElegida.ruta?.destino?.municipio || ''}` : ''}
-            />
         </Box>
     )
 }

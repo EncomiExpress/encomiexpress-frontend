@@ -9,12 +9,12 @@ import { useDestino } from '../destinos/context/DestinoContext.jsx'
 import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { vehiculoDocumentosVigentes, conductorLicenciaVigente } from '../../shared/utils/vigenciaDocumentos.js'
+import { useDisponibilidadPares } from '../../shared/hooks/useDisponibilidadPares.js'
 import WizardDialog from '../../shared/components/WizardDialog.jsx'
 import { steps, validarCampo, validarPares, validarPaso } from './validations/salidaValidation.js'
 import { esMunicipioOrigen } from '../../shared/config/negocio.js'
 import { getRutaLabel } from '../rutas/utils/rutaResolvers.js'
 import { filtrarObservacionesRuta } from '../../shared/validations/observacionesRutaValidation.js'
-import PasoRuta from './components/wizard/PasoRuta.jsx'
 import PasoHorario from './components/wizard/PasoHorario.jsx'
 import PasoConvoy from './components/wizard/PasoConvoy.jsx'
 import PasoConfirmacion from './components/wizard/PasoConfirmacion.jsx'
@@ -36,10 +36,13 @@ import PasoConfirmacion from './components/wizard/PasoConfirmacion.jsx'
 //   — se llega desde Rutas/ListarRuta.jsx, botón "Salidas" -> navega a
 //   /transporte/rutas/:idRuta/salidas, y CUALQUIER "Nuevo" desde ahí manda este
 //   prefill): la plantilla ya está decidida por el contexto de la página (no por
-//   una elección puntual del usuario), así que el paso "Ruta" ni siquiera se
-//   muestra en el stepper -- sería mostrarle de vuelta algo que ya escogió al
-//   entrar a esa vista. El resto del formulario (horario/convoy) se completa a
-//   mano como si fuera nuevo.
+//   una elección puntual del usuario). El resto del formulario (horario/convoy)
+//   se completa a mano como si fuera nuevo.
+//
+// El wizard nunca pide la Ruta a mano: SIEMPRE se llega con `idRuta` ya resuelto
+// (por contexto, o automático en un regreso), así que no existe un paso "Ruta" —
+// solo Horario, Vehículo y Conductor y Confirmación (ver steps en
+// salidaValidation.js).
 const RegistrarSalidaProgramada = ({ open, onClose, onSuccess, prefill }) => {
     const { registrarSalidaProgramada } = useSalidaProgramacion()
     const { getRutasHabilitadas } = useRuta()
@@ -53,13 +56,22 @@ const RegistrarSalidaProgramada = ({ open, onClose, onSuccess, prefill }) => {
     const [apiError, setApiError]     = useState(null)
     const [activeStep, setActiveStep] = useState(0)
     const [submitting, setSubmitting] = useState(false)
-    const [rutaInput, setRutaInput]     = useState('')
     const [vehiculoInputs, setVehiculoInputs]     = useState([''])
     const [conductorInputs, setConductorInputs]   = useState([''])
     const [refrescarDisponibilidad, setRefrescarDisponibilidad] = useState(0)
+    const [form, setForm] = useState({
+        origen: 'Medellín',
+        idRuta: '',
+        pares: [{ idVehiculo: '', idConductor: '' }],
+        fechaSalida: '',
+        horaSalida: '',
+        fechaLlegadaEstimada: '',
+        horaLlegadaEstimada: '',
+        observaciones: ''
+    })
 
     useEffect(() => {
-        if (activeStep !== 1) return
+        if (activeStep !== 0 && activeStep !== 1) return
         setRefrescarDisponibilidad(k => k + 1)
     }, [activeStep])
 
@@ -88,21 +100,25 @@ const RegistrarSalidaProgramada = ({ open, onClose, onSuccess, prefill }) => {
         ? idDestinoActual === idaIdDestino
         : (idDestinoActual === null || idDestinoActual === undefined)
 
-    const vehiculosSeleccionables = vehiculos.filter(v => vehiculoDocumentosVigentes(v) && ubicacionOk(v.idDestinoActual))
-    const conductoresSeleccionables = conductores.filter(c => conductorLicenciaVigente(c.categoriasLicencia) && ubicacionOk(c.idDestinoActual))
-    const vehiculosExcluidos = vehiculos.length - vehiculosSeleccionables.length
-    const conductoresExcluidos = conductores.length - conductoresSeleccionables.length
+    const vehiculosPorDocUbicacion = vehiculos.filter(v => vehiculoDocumentosVigentes(v) && ubicacionOk(v.idDestinoActual))
+    const conductoresPorDocUbicacion = conductores.filter(c => conductorLicenciaVigente(c.categoriasLicencia) && ubicacionOk(c.idDestinoActual))
 
-    const [form, setForm] = useState({
-        origen: 'Medellín',
-        idRuta: '',
-        pares: [{ idVehiculo: '', idConductor: '' }],
-        fechaSalida: '',
-        horaSalida: '',
-        fechaLlegadaEstimada: '',
-        horaLlegadaEstimada: '',
-        observaciones: ''
+    // Choque de horario contra OTRA salida (Programada/En Ruta): sin esto, el
+    // Autocomplete deja elegir un vehículo/conductor ya comprometido en ese rango
+    // de fechas y el choque recién se descubre al guardar (o peor, al cambiar
+    // estado a "En Ruta"). Un regreso no lo necesita: su convoy lo hereda la ida.
+    const { idVehiculosOcupados, idConductoresOcupados } = useDisponibilidadPares({
+        idVehiculos: esRegreso ? [] : vehiculosPorDocUbicacion.map(v => v.idVehiculo),
+        idConductores: esRegreso ? [] : conductoresPorDocUbicacion.map(c => c.idConductor),
+        fechaSalida: form.fechaSalida, fechaLlegadaEstimada: form.fechaLlegadaEstimada,
+        refrescarKey: refrescarDisponibilidad,
     })
+    const vehiculosSeleccionables = vehiculosPorDocUbicacion.filter(v => !idVehiculosOcupados.has(v.idVehiculo))
+    const conductoresSeleccionables = conductoresPorDocUbicacion.filter(c => !idConductoresOcupados.has(c.idConductor))
+    const vehiculosExcluidos = vehiculos.length - vehiculosPorDocUbicacion.length
+    const conductoresExcluidos = conductores.length - conductoresPorDocUbicacion.length
+    const vehiculosOcupadosCount = vehiculosPorDocUbicacion.length - vehiculosSeleccionables.length
+    const conductoresOcupadosCount = conductoresPorDocUbicacion.length - conductoresSeleccionables.length
 
     // Aplica el prefill (si viene) cada vez que se abre el diálogo.
     useEffect(() => {
@@ -136,13 +152,6 @@ const RegistrarSalidaProgramada = ({ open, onClose, onSuccess, prefill }) => {
                 return c ? `${c.nombre} ${c.apellido}` : ''
             }))
         }
-        // "Asignar salida" (Rutas/ListarRuta.jsx): la plantilla ya viene decidida —
-        // mostrar igual el paso "Ruta" sería redundante, así que se arranca
-        // directo en "Horario". El paso "Ruta" sigue existiendo por si el usuario
-        // quiere volver con "Anterior" a revisarlo o cambiarlo.
-        if (prefill.idRuta && !prefill.idSalidaIda && !prefill.reutilizar) {
-            setActiveStep(1)
-        }
         // eslint-disable-next-line react-hooks/exhaustive-deps -- solo debe correr al abrir con un prefill nuevo
     }, [open, prefill])
 
@@ -153,15 +162,6 @@ const RegistrarSalidaProgramada = ({ open, onClose, onSuccess, prefill }) => {
         if (form.idRuta === rutaRegresoResuelta.idRuta) return
         setForm(prev => ({ ...prev, idRuta: rutaRegresoResuelta.idRuta }))
     }, [open, esRegreso, rutaRegresoResuelta, form.idRuta])
-
-    // "Asignar salida" (prefill solo con idRuta, sin idSalidaIda/reutilizar): el
-    // texto visible del Autocomplete de Ruta no se fija en el efecto del prefill de
-    // arriba porque `rutas` puede no estar cargado todavía en ese momento.
-    useEffect(() => {
-        if (!open || !prefill?.idRuta || esRegreso || rutaInput) return
-        const r = rutas.find(x => x.idRuta === parseInt(prefill.idRuta))
-        if (r) setRutaInput(getRutaLabel(r))
-    }, [open, prefill, esRegreso, rutas, rutaInput])
 
     const handleChange = (e) => {
         let { name, value } = e.target
@@ -194,28 +194,35 @@ const RegistrarSalidaProgramada = ({ open, onClose, onSuccess, prefill }) => {
         setConductorInputs(prev => prev.filter((_, i) => i !== index))
     }
 
+    // Limpieza silenciosa de filas de par totalmente vacías (ni vehículo ni
+    // conductor) al salir del paso Convoy -- en cualquier dirección (Siguiente o
+    // Anterior), para que una fila que se agregó y se dejó sin llenar no quede
+    // pegada ahí al volver más tarde a este paso.
+    const limpiarParesVacios = () => {
+        const indicesConDatos = form.pares
+            .map((p, i) => (p.idVehiculo || p.idConductor) ? i : -1)
+            .filter(i => i !== -1)
+        if (indicesConDatos.length !== form.pares.length) {
+            setVehiculoInputs(indicesConDatos.map(i => vehiculoInputs[i]))
+            setConductorInputs(indicesConDatos.map(i => conductorInputs[i]))
+            setForm(prev => ({ ...prev, pares: indicesConDatos.map(i => form.pares[i]) }))
+        }
+    }
+
     const handleNext = () => {
         const erroresEncontrados = validarPaso(activeStep, form, undefined, esRegreso)
         if (Object.keys(erroresEncontrados).length > 0) {
             setErrores(erroresEncontrados)
             return
         }
-        if (activeStep === 2 && !esRegreso) {
-            // Limpieza silenciosa al avanzar: quita filas de par totalmente vacías
-            // (ni vehículo ni conductor).
-            const indicesConDatos = form.pares
-                .map((p, i) => (p.idVehiculo || p.idConductor) ? i : -1)
-                .filter(i => i !== -1)
-            if (indicesConDatos.length !== form.pares.length) {
-                setVehiculoInputs(indicesConDatos.map(i => vehiculoInputs[i]))
-                setConductorInputs(indicesConDatos.map(i => conductorInputs[i]))
-                setForm(prev => ({ ...prev, pares: indicesConDatos.map(i => form.pares[i]) }))
-            }
-        }
+        if (activeStep === 1 && !esRegreso) limpiarParesVacios()
         setActiveStep(prev => prev + 1)
     }
 
-    const handleBack = () => setActiveStep(prev => prev - 1)
+    const handleBack = () => {
+        if (activeStep === 1 && !esRegreso) limpiarParesVacios()
+        setActiveStep(prev => prev - 1)
+    }
 
     const handleSubmit = async () => {
         const erroresPorPaso = [0, 1, 2].map(s => validarPaso(s, form, undefined, esRegreso))
@@ -266,7 +273,6 @@ const RegistrarSalidaProgramada = ({ open, onClose, onSuccess, prefill }) => {
         setErrores({})
         setApiError(null)
         setActiveStep(0)
-        setRutaInput('')
         setVehiculoInputs([''])
         setConductorInputs([''])
         onClose?.()
@@ -287,61 +293,46 @@ const RegistrarSalidaProgramada = ({ open, onClose, onSuccess, prefill }) => {
         switch (activeStep) {
             case 0:
                 return (
-                    <PasoRuta
-                        theme={theme} form={form} errores={errores} setErrores={setErrores}
-                        handleChange={handleChange}
-                        rutas={rutas} rutaInput={rutaInput} setRutaInput={setRutaInput} rutaSeleccionada={rutaSeleccionada}
-                        esRegreso={esRegreso}
-                    />
-                )
-            case 1:
-                return (
                     <PasoHorario
                         form={form} setForm={setForm} errores={errores} setErrores={setErrores} setApiError={setApiError} handleChange={handleChange}
                         refrescarDisponibilidad={refrescarDisponibilidad} esRegreso={esRegreso}
                     />
                 )
-            case 2:
+            case 1:
                 return (
                     <PasoConvoy
                         theme={theme} form={form} errores={errores} setErrores={setErrores}
                         handleParChange={handleParChange} handleAgregarPar={handleAgregarPar} handleQuitarPar={handleQuitarPar}
                         esRegreso={esRegreso}
                         vehiculos={vehiculos} conductores={conductores} vehiculosExcluidos={vehiculosExcluidos} conductoresExcluidos={conductoresExcluidos}
+                        vehiculosOcupados={vehiculosOcupadosCount} conductoresOcupados={conductoresOcupadosCount}
                         vehiculoInputs={vehiculoInputs} setVehiculoInputs={setVehiculoInputs} conductorInputs={conductorInputs} setConductorInputs={setConductorInputs}
                         getVehiculoOpciones={getVehiculoOpciones} getConductorOpciones={getConductorOpciones}
                     />
                 )
-            case 3:
+            case 2:
                 return (
                     <PasoConfirmacion
                         theme={theme} form={form} formOriginal={null}
                         apiError={apiError} setApiError={setApiError}
                         sinCambios={false} setSinCambios={() => {}}
                         destinos={destinos} vehiculos={vehiculos} conductores={conductores}
-                        rutaSeleccionada={rutaSeleccionada}
                     />
                 )
             default: return null
         }
     }
 
-    // La plantilla ya viene fija por contexto (vista "Salidas de una ruta") — el
-    // paso "Ruta" no debe ni aparecer en el stepper, no solo saltarse. `activeStep`
-    // sigue usando el índice "real" (0=Ruta,1=Horario,2=Convoy,3=Confirmación) para
-    // toda la lógica de handlers/validación; acá se traduce a lo que de verdad se
-    // le muestra a WizardDialog (que decide con esos props si el botón "Anterior"
-    // está deshabilitado y cuál paso resalta).
-    const ocultarPasoRuta = !!prefill?.idRuta && !esRegreso && !esReutilizar
-    const stepsVisibles = ocultarPasoRuta ? steps.slice(1) : steps
-    const activeStepVisible = ocultarPasoRuta ? activeStep - 1 : activeStep
-
     return (
         <WizardDialog
             open={open} onClose={handleClose}
-            title={esReutilizar ? 'Reutilizar Salida' : esRegreso ? 'Programar Regreso' : prefill?.idRuta ? 'Nueva Salida' : 'Registrar Salida'}
-            subtitle={esReutilizar ? 'Revisa los datos precargados de la salida y complétalos.' : esRegreso ? 'Revisa los datos precargados del viaje de vuelta y complétalos.' : prefill?.idRuta ? `Programa el viaje paso a paso para ${rutaSeleccionada ? getRutaLabel(rutaSeleccionada) : 'esta ruta'}.` : 'Elige la ruta y programa el viaje paso a paso.'}
-            steps={stepsVisibles} activeStep={activeStepVisible}
+            title={esReutilizar ? 'Reutilizar Salida' : esRegreso ? 'Programar Regreso' : 'Nueva Salida'}
+            subtitle={esReutilizar
+                ? 'Revisa los datos precargados de la salida y complétalos.'
+                : esRegreso
+                    ? 'Revisa los datos precargados del viaje de vuelta y complétalos.'
+                    : `Programa el viaje paso a paso para ${rutaSeleccionada ? getRutaLabel(rutaSeleccionada) : 'esta ruta'}.`}
+            steps={steps} activeStep={activeStep}
             onBack={handleBack} onNext={handleNext} onSubmit={handleSubmit}
             submitting={submitting} submitLabel="Registrar" submitIcon={<CheckOutlinedIcon />}
         >

@@ -4,10 +4,8 @@ import { Box, Dialog, DialogTitle, DialogContent, DialogActions, Typography, But
 import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined'
 import SyncAltOutlinedIcon from '@mui/icons-material/SyncAltOutlined'
 import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined'
-import RouteOutlinedIcon from '@mui/icons-material/RouteOutlined'
 import CalendarioDisponibilidad from '../../../shared/components/CalendarioDisponibilidad.jsx'
 import SelectorHora from '../../../shared/components/SelectorHora.jsx'
-import ModalRutaDiagrama from '../../../shared/components/ModalRutaDiagrama.jsx'
 import { hoyISO, getRangoHorario, sumarDias, MIN_DIAS_SALIDA_LLEGADA } from '../../../shared/utils/horarioLaboral.js'
 import { validarCampo, maxISO } from '../validations/salidaValidation.js'
 import { resolveDestino } from '../utils/salidaResolvers.js'
@@ -23,7 +21,6 @@ const ModalProgramarRegresoSede = ({ open, salida, destinos = [], onClose, onCon
     const [errores, setErrores] = useState({})
     const [enviando, setEnviando] = useState(false)
     const [apiError, setApiError] = useState('')
-    const [diagramaOpen, setDiagramaOpen] = useState(false)
 
     useEffect(() => {
         if (open) {
@@ -74,18 +71,11 @@ const ModalProgramarRegresoSede = ({ open, salida, destinos = [], onClose, onCon
             <DialogContent sx={{ pt: 3 }}>
             <Box sx={{ maxWidth: 700, mx: 'auto', display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', borderRadius: 2, backgroundColor: theme.palette.background.subtle }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1, p: 1.5, flex: 1, minWidth: 200 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <LocalShippingOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.secondary }} />
-                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                                {origenRegreso} → Medellín
-                            </Typography>
-                        </Box>
-                        <Button size="small" startIcon={<RouteOutlinedIcon sx={{ fontSize: 16 }} />}
-                            onClick={() => setDiagramaOpen(true)}
-                            sx={{ textTransform: 'none', color: theme.palette.text.secondary, fontSize: '0.78rem' }}>
-                            Ver recorrido
-                        </Button>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1.5, flex: 1, minWidth: 200 }}>
+                        <LocalShippingOutlinedIcon sx={{ fontSize: 20, color: theme.palette.text.secondary }} />
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                            {origenRegreso} → Medellín
+                        </Typography>
                     </Box>
                     <Box sx={{ width: '1px', backgroundColor: theme.palette.divider, my: 1.5 }} />
                     <Box sx={{ p: 1.5, flex: 1, minWidth: 200 }}>
@@ -193,13 +183,6 @@ const ModalProgramarRegresoSede = ({ open, salida, destinos = [], onClose, onCon
                     {enviando ? 'Programando...' : 'Programar regreso'}
                 </Button>
             </DialogActions>
-            <ModalRutaDiagrama
-                open={diagramaOpen}
-                onClose={() => setDiagramaOpen(false)}
-                origen={origenRegreso}
-                destino="Medellín"
-                subtitulo={`${origenRegreso} → Medellín`}
-            />
         </Dialog>
     )
 }
