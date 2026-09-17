@@ -58,7 +58,7 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
     // (todas las ventas salen de ahí). Se filtra acá para que se propague de una vez a
     // PasoParticipantes, PasoEnvio y PasoConfirmacion. Para operador_sede el destino
     // válido no es "cualquiera menos mi sede" sino solo los que de verdad alcanza
-    // alguno de sus regresos disponibles (Medellín o una parada de esa salida) — y se
+    // alguno de sus regresos disponibles (el destino final de esa salida) — y se
     // arma directo de esas salidas, sin tocar el catálogo nacional de `/destinos`
     // (`destinosDesdeSede`, ver ahí por qué).
     const esOperadorSede = usuario?.rol?.codigo === 'operador_sede'

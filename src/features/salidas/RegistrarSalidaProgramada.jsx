@@ -10,7 +10,7 @@ import { useToast } from '../../shared/contexts/ToastContext.jsx'
 import { getErrorMessage } from '../../shared/utils/errorMessage.js'
 import { vehiculoDocumentosVigentes, conductorLicenciaVigente } from '../../shared/utils/vigenciaDocumentos.js'
 import WizardDialog from '../../shared/components/WizardDialog.jsx'
-import { steps, validarCampo, validarPares, validarParadas, validarPaso } from './validations/salidaValidation.js'
+import { steps, validarCampo, validarPares, validarPaso } from './validations/salidaValidation.js'
 import { esMunicipioOrigen } from '../../shared/config/negocio.js'
 import { getRutaLabel } from '../rutas/utils/rutaResolvers.js'
 import { filtrarObservacionesRuta } from '../../shared/validations/observacionesRutaValidation.js'
@@ -18,30 +18,28 @@ import PasoRuta from './components/wizard/PasoRuta.jsx'
 import PasoHorario from './components/wizard/PasoHorario.jsx'
 import PasoConvoy from './components/wizard/PasoConvoy.jsx'
 import PasoConfirmacion from './components/wizard/PasoConfirmacion.jsx'
-import { useSugerenciaParadas } from './hooks/useSugerenciaParadas.js'
 
 // `prefill` (opcional): datos con los que arranca el formulario — tres modos
 // distintos, según lo que traiga:
 // - "Programar regreso" (`idSalidaIda` presente, ListarSalidaProgramada.jsx
-//   handleProgramarRegreso): precarga origen/pares (con las paradas de CADA par
-//   ya invertidas) de la ida ya Completada. La plantilla del paso "Ruta" no se
-//   elige a mano: se resuelve sola hacia la base (Medellín) -- ver
-//   `rutaRegresoResuelta` más abajo. El backend general (POST /salidas) sigue
-//   exigiendo `idRuta` incluso para un regreso disparado desde acá (a
-//   diferencia de POST /salidas/:id/regreso-sede, que es exclusivo de
-//   operador_sede y arma su propia plantilla "Regreso a Medellín" solo).
+//   handleProgramarRegreso): precarga origen/pares de la ida ya Completada. La
+//   plantilla del paso "Ruta" no se elige a mano: se resuelve sola hacia la
+//   base (Medellín) -- ver `rutaRegresoResuelta` más abajo. El backend general
+//   (POST /salidas) sigue exigiendo `idRuta` incluso para un regreso disparado
+//   desde acá (a diferencia de POST /salidas/:id/regreso-sede, que es
+//   exclusivo de operador_sede y arma su propia plantilla "Regreso a
+//   Medellín" solo).
 // - "Reutilizar salida" (`reutilizar: true`, handleReutilizarSalida): precarga la
-//   MISMA plantilla y convoy (con las paradas propias de cada par) de una ida ya
-//   Completada, sin invertir nada. No manda `idSalidaIda`: la salida que se cree
-//   queda totalmente independiente.
+//   MISMA plantilla y convoy de una ida ya Completada, sin invertir nada. No
+//   manda `idSalidaIda`: la salida que se cree queda totalmente independiente.
 // - Vista "Salidas de una ruta" (solo `idRuta`, sin `idSalidaIda` ni `reutilizar`
 //   — se llega desde Rutas/ListarRuta.jsx, botón "Salidas" -> navega a
 //   /transporte/rutas/:idRuta/salidas, y CUALQUIER "Nuevo" desde ahí manda este
 //   prefill): la plantilla ya está decidida por el contexto de la página (no por
 //   una elección puntual del usuario), así que el paso "Ruta" ni siquiera se
 //   muestra en el stepper -- sería mostrarle de vuelta algo que ya escogió al
-//   entrar a esa vista. El resto del formulario (horario/convoy/paradas) se
-//   completa a mano como si fuera nuevo.
+//   entrar a esa vista. El resto del formulario (horario/convoy) se completa a
+//   mano como si fuera nuevo.
 const RegistrarSalidaProgramada = ({ open, onClose, onSuccess, prefill }) => {
     const { registrarSalidaProgramada } = useSalidaProgramacion()
     const { getRutasHabilitadas } = useRuta()
@@ -57,10 +55,6 @@ const RegistrarSalidaProgramada = ({ open, onClose, onSuccess, prefill }) => {
     const [submitting, setSubmitting] = useState(false)
     const [rutaInput, setRutaInput]     = useState('')
     const [vehiculoInputs, setVehiculoInputs]     = useState([''])
-    // paradaInputsPorPar[i]: array de textos visibles de los Autocompletes de
-    // paradas del par i -- mismo patrón que vehiculoInputs/conductorInputs, pero
-    // un nivel más anidado porque cada par tiene su propio recorrido.
-    const [paradaInputsPorPar, setParadaInputsPorPar] = useState([[]])
     const [conductorInputs, setConductorInputs]   = useState([''])
     const [refrescarDisponibilidad, setRefrescarDisponibilidad] = useState(0)
 
@@ -99,13 +93,10 @@ const RegistrarSalidaProgramada = ({ open, onClose, onSuccess, prefill }) => {
     const vehiculosExcluidos = vehiculos.length - vehiculosSeleccionables.length
     const conductoresExcluidos = conductores.length - conductoresSeleccionables.length
 
-    const origenMunicipio = esRegreso ? prefill.origen : 'Medellín'
-    const destinosSeleccionables = destinos.filter(d => d.municipio !== origenMunicipio)
-
     const [form, setForm] = useState({
         origen: 'Medellín',
         idRuta: '',
-        pares: [{ idVehiculo: '', idConductor: '', paradas: [] }],
+        pares: [{ idVehiculo: '', idConductor: '' }],
         fechaSalida: '',
         horaSalida: '',
         fechaLlegadaEstimada: '',
@@ -124,10 +115,6 @@ const RegistrarSalidaProgramada = ({ open, onClose, onSuccess, prefill }) => {
                 ? prefill.pares.map(p => ({
                     idVehiculo: p.idVehiculo || '',
                     idConductor: p.idConductor || '',
-                    // `municipio` (si viene) solo lo usa el render de solo lectura del modo
-                    // regreso (PasoConvoy) -- en modo editable no hace falta, getParadaOpciones
-                    // resuelve el label a partir del idDestino contra el catálogo.
-                    paradas: (p.paradas || []).map(pp => ({ idDestino: pp.idDestino, ...(pp.municipio ? { municipio: pp.municipio } : {}) })),
                 }))
                 : prev.pares,
             idSalidaIda: prefill.idSalidaIda || undefined,
@@ -148,10 +135,6 @@ const RegistrarSalidaProgramada = ({ open, onClose, onSuccess, prefill }) => {
                 const c = conductores.find(x => x.idConductor === p.idConductor)
                 return c ? `${c.nombre} ${c.apellido}` : ''
             }))
-            setParadaInputsPorPar(prefill.pares.map(p => (p.paradas || []).map(pp => {
-                const d = destinos.find(x => x.idDestino === parseInt(pp.idDestino))
-                return d ? `${d.municipio} - ${d.departamento}` : (pp.municipio || '')
-            })))
         }
         // "Asignar salida" (Rutas/ListarRuta.jsx): la plantilla ya viene decidida —
         // mostrar igual el paso "Ruta" sería redundante, así que se arranca
@@ -198,65 +181,17 @@ const RegistrarSalidaProgramada = ({ open, onClose, onSuccess, prefill }) => {
     }
 
     const handleAgregarPar = () => {
-        setForm(prev => ({ ...prev, pares: [...prev.pares, { idVehiculo: '', idConductor: '', paradas: [] }] }))
+        setForm(prev => ({ ...prev, pares: [...prev.pares, { idVehiculo: '', idConductor: '' }] }))
         setVehiculoInputs(prev => [...prev, ''])
         setConductorInputs(prev => [...prev, ''])
-        setParadaInputsPorPar(prev => [...prev, []])
     }
 
     const handleQuitarPar = (index) => {
         const pares = form.pares.filter((_, i) => i !== index)
         setForm(prev => ({ ...prev, pares }))
-        setErrores(prev => ({
-            ...prev,
-            pares: prev.pares ? validarPares(pares) : '',
-            paradasPorPar: prev.paradasPorPar ? prev.paradasPorPar.filter((_, i) => i !== index) : prev.paradasPorPar,
-        }))
+        setErrores(prev => ({ ...prev, pares: prev.pares ? validarPares(pares) : '' }))
         setVehiculoInputs(prev => prev.filter((_, i) => i !== index))
         setConductorInputs(prev => prev.filter((_, i) => i !== index))
-        setParadaInputsPorPar(prev => prev.filter((_, i) => i !== index))
-    }
-
-    // Paradas -- ahora propias de CADA par, así que todos los handlers reciben el
-    // índice del PAR además del índice de la parada dentro de ese par.
-    const handleParadaChange = (parIndex, paradaIndex, idDestino) => {
-        const pares = form.pares.map((p, i) => i === parIndex
-            ? { ...p, paradas: p.paradas.map((pp, j) => j === paradaIndex ? { idDestino } : pp) }
-            : p)
-        setForm(prev => ({ ...prev, pares }))
-        setErrores(prev => prev.paradasPorPar
-            ? { ...prev, paradasPorPar: prev.paradasPorPar.map((e, i) => i === parIndex ? validarParadas(pares[parIndex].paradas) : e) }
-            : prev)
-        setApiError(null)
-    }
-
-    const handleAgregarParada = (parIndex) => {
-        setForm(prev => ({ ...prev, pares: prev.pares.map((p, i) => i === parIndex ? { ...p, paradas: [...p.paradas, { idDestino: '' }] } : p) }))
-        setParadaInputsPorPar(prev => prev.map((arr, i) => i === parIndex ? [...arr, ''] : arr))
-    }
-
-    const handleQuitarParada = (parIndex, paradaIndex) => {
-        const pares = form.pares.map((p, i) => i === parIndex ? { ...p, paradas: p.paradas.filter((_, j) => j !== paradaIndex) } : p)
-        setForm(prev => ({ ...prev, pares }))
-        setErrores(prev => prev.paradasPorPar
-            ? { ...prev, paradasPorPar: prev.paradasPorPar.map((e, i) => i === parIndex ? validarParadas(pares[parIndex].paradas) : e) }
-            : prev)
-        setParadaInputsPorPar(prev => prev.map((arr, i) => i === parIndex ? arr.filter((_, j) => j !== paradaIndex) : arr))
-    }
-
-    const handleMoverParada = (parIndex, paradaIndex, direccion) => {
-        const par = form.pares[parIndex]
-        const destinoIdx = paradaIndex + direccion
-        if (!par || destinoIdx < 0 || destinoIdx >= par.paradas.length) return
-        const paradas = [...par.paradas]
-        ;[paradas[paradaIndex], paradas[destinoIdx]] = [paradas[destinoIdx], paradas[paradaIndex]]
-        setForm(prev => ({ ...prev, pares: prev.pares.map((p, i) => i === parIndex ? { ...p, paradas } : p) }))
-        setParadaInputsPorPar(prev => prev.map((arr, i) => {
-            if (i !== parIndex) return arr
-            const copia = [...arr]
-            ;[copia[paradaIndex], copia[destinoIdx]] = [copia[destinoIdx], copia[paradaIndex]]
-            return copia
-        }))
     }
 
     const handleNext = () => {
@@ -266,30 +201,15 @@ const RegistrarSalidaProgramada = ({ open, onClose, onSuccess, prefill }) => {
             return
         }
         if (activeStep === 2 && !esRegreso) {
-            // Limpieza silenciosa al avanzar: primero quita filas de par totalmente
-            // vacías (ni vehículo ni conductor), luego -- dentro de las que quedan --
-            // las paradas sin destino elegido. Se resuelve todo en un solo cálculo (en
-            // vez de encadenar setState) para no depender del orden de aplicación de
-            // actualizaciones de estado sucesivas.
+            // Limpieza silenciosa al avanzar: quita filas de par totalmente vacías
+            // (ni vehículo ni conductor).
             const indicesConDatos = form.pares
                 .map((p, i) => (p.idVehiculo || p.idConductor) ? i : -1)
                 .filter(i => i !== -1)
-            if (indicesConDatos.length !== form.pares.length || form.pares.some(p => (p.paradas || []).some(pp => !pp.idDestino))) {
-                const paresLimpios = indicesConDatos.map(i => ({
-                    ...form.pares[i],
-                    paradas: (form.pares[i].paradas || []).filter(pp => pp.idDestino),
-                }))
-                const paradaInputsLimpios = indicesConDatos.map(i => {
-                    const inputs = paradaInputsPorPar[i] || []
-                    return (form.pares[i].paradas || []).reduce((acc, pp, j) => {
-                        if (pp.idDestino) acc.push(inputs[j] || '')
-                        return acc
-                    }, [])
-                })
+            if (indicesConDatos.length !== form.pares.length) {
                 setVehiculoInputs(indicesConDatos.map(i => vehiculoInputs[i]))
                 setConductorInputs(indicesConDatos.map(i => conductorInputs[i]))
-                setParadaInputsPorPar(paradaInputsLimpios)
-                setForm(prev => ({ ...prev, pares: paresLimpios }))
+                setForm(prev => ({ ...prev, pares: indicesConDatos.map(i => form.pares[i]) }))
             }
         }
         setActiveStep(prev => prev + 1)
@@ -312,16 +232,15 @@ const RegistrarSalidaProgramada = ({ open, onClose, onSuccess, prefill }) => {
             await registrarSalidaProgramada({
                 origen: form.origen,
                 idRuta: parseInt(form.idRuta),
-                // En un regreso, el convoy (y sus paradas) lo hereda el backend de la ida
-                // -- no se manda `pares` (si se manda y no coincide EXACTO con el de la
-                // ida, el backend lo rechaza, ver REGLA NUEVA en salidaProgramadaService.js).
+                // En un regreso, el convoy lo hereda el backend de la ida -- no se manda
+                // `pares` (si se manda y no coincide EXACTO con el de la ida, el backend
+                // lo rechaza, ver REGLA NUEVA en salidaProgramadaService.js).
                 ...(esRegreso ? {} : {
                     pares: form.pares
                         .filter(p => p.idVehiculo && p.idConductor)
                         .map(p => ({
                             idVehiculo: parseInt(p.idVehiculo),
                             idConductor: parseInt(p.idConductor),
-                            paradas: (p.paradas || []).filter(pp => pp.idDestino).map(pp => ({ idDestino: parseInt(pp.idDestino) })),
                         })),
                 }),
                 fechaSalida: form.fechaSalida,
@@ -343,41 +262,17 @@ const RegistrarSalidaProgramada = ({ open, onClose, onSuccess, prefill }) => {
 
     const handleClose = () => {
         if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
-        setForm({ origen: 'Medellín', idRuta: '', pares: [{ idVehiculo: '', idConductor: '', paradas: [] }], fechaSalida: '', horaSalida: '', fechaLlegadaEstimada: '', horaLlegadaEstimada: '', observaciones: '' })
+        setForm({ origen: 'Medellín', idRuta: '', pares: [{ idVehiculo: '', idConductor: '' }], fechaSalida: '', horaSalida: '', fechaLlegadaEstimada: '', horaLlegadaEstimada: '', observaciones: '' })
         setErrores({})
         setApiError(null)
         setActiveStep(0)
         setRutaInput('')
         setVehiculoInputs([''])
         setConductorInputs([''])
-        setParadaInputsPorPar([[]])
         onClose?.()
     }
 
     const rutaSeleccionada = esRegreso ? rutaRegresoResuelta : (rutas.find(r => r.idRuta === parseInt(form.idRuta)) || null)
-
-    // Sugiere las paradas más usadas en salidas anteriores hacia el mismo destino
-    // final, para no volver a armarlas a mano cada vez. DECISIÓN: se ofrece solo
-    // para el PRIMER par del convoy -- con varios pares (recorridos distintos por
-    // diseño, "ruta fraccionada") no hay un criterio de negocio obvio para elegir a
-    // cuál de ellos sugerirle el patrón común, y el caso de uso dominante (un solo
-    // vehículo) sigue cubierto igual que antes.
-    const sugerenciaParadasRaw = useSugerenciaParadas(rutaSeleccionada?.idDestino || null)
-    const paradasPrimerParIds = (form.pares[0]?.paradas || []).filter(p => p.idDestino).map(p => parseInt(p.idDestino))
-    const sugerenciaParadas = sugerenciaParadasRaw && sugerenciaParadasRaw.ids.join(',') !== paradasPrimerParIds.join(',')
-        ? sugerenciaParadasRaw
-        : null
-    const handleUsarSugerenciaParadas = () => {
-        if (!sugerenciaParadas) return
-        setForm(prev => ({ ...prev, pares: prev.pares.map((p, i) => i === 0 ? { ...p, paradas: sugerenciaParadas.ids.map(id => ({ idDestino: id })) } : p) }))
-        setParadaInputsPorPar(prev => prev.map((arr, i) => i === 0
-            ? sugerenciaParadas.ids.map(id => {
-                const d = destinos.find(x => x.idDestino === id)
-                return d ? `${d.municipio} - ${d.departamento}` : ''
-            })
-            : arr))
-        setErrores(prev => ({ ...prev, paradasPorPar: prev.paradasPorPar ? prev.paradasPorPar.map((e, i) => i === 0 ? '' : e) : prev.paradasPorPar }))
-    }
 
     const getVehiculoOpciones = (index) => {
         const usados = form.pares.filter((_, i) => i !== index).map(p => p.idVehiculo)
@@ -386,14 +281,6 @@ const RegistrarSalidaProgramada = ({ open, onClose, onSuccess, prefill }) => {
     const getConductorOpciones = (index) => {
         const usados = form.pares.filter((_, i) => i !== index).map(p => p.idConductor)
         return conductoresSeleccionables.filter(c => !usados.includes(c.idConductor))
-    }
-    // Solo se compara contra las paradas del MISMO par -- dos pares distintos sí
-    // pueden compartir una misma parada (ruta fraccionada), el backend lo permite.
-    const getParadaOpciones = (parIndex, paradaIndex) => {
-        const paradasDelPar = form.pares[parIndex]?.paradas || []
-        const usados = paradasDelPar.filter((_, i) => i !== paradaIndex).map(p => parseInt(p.idDestino))
-        const idDestinoFinal = rutaSeleccionada?.idDestino
-        return destinosSeleccionables.filter(d => !usados.includes(d.idDestino) && d.idDestino !== idDestinoFinal)
     }
 
     const renderStepContent = () => {
@@ -423,11 +310,6 @@ const RegistrarSalidaProgramada = ({ open, onClose, onSuccess, prefill }) => {
                         vehiculos={vehiculos} conductores={conductores} vehiculosExcluidos={vehiculosExcluidos} conductoresExcluidos={conductoresExcluidos}
                         vehiculoInputs={vehiculoInputs} setVehiculoInputs={setVehiculoInputs} conductorInputs={conductorInputs} setConductorInputs={setConductorInputs}
                         getVehiculoOpciones={getVehiculoOpciones} getConductorOpciones={getConductorOpciones}
-                        paradaInputsPorPar={paradaInputsPorPar} setParadaInputsPorPar={setParadaInputsPorPar}
-                        handleParadaChange={handleParadaChange} handleAgregarParada={handleAgregarParada}
-                        handleQuitarParada={handleQuitarParada} handleMoverParada={handleMoverParada}
-                        getParadaOpciones={getParadaOpciones} destinosSeleccionablesCount={destinosSeleccionables.length}
-                        sugerenciaParadas={sugerenciaParadas} onUsarSugerenciaParadas={handleUsarSugerenciaParadas}
                     />
                 )
             case 3:

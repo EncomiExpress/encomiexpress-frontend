@@ -38,10 +38,8 @@ const usePaqueteDevueltoColumns = ({ theme, onVerVenta, onVerImagen }) => [
     },
     {
         // Municipio donde de verdad quedó varado el paquete (2026-09-13) —
-        // antes mostraba el origen→destino de toda la ruta de ida, que puede
-        // confundir cuando el paquete quedó en una parada intermedia y no en
-        // el destino final de esa ida (mismo criterio que la columna
-        // "Destino" de Ventas, ver useVentaColumns.jsx).
+        // antes mostraba el origen→destino de toda la ruta de ida (mismo
+        // criterio que la columna "Destino" de Ventas, ver useVentaColumns.jsx).
         key: 'destino', label: 'Destino', width: 90, cellSx: { py: 1.5, maxWidth: 90 },
         render: (paquete) => (
             <Typography variant="body2" color={theme.palette.text.primary} noWrap>

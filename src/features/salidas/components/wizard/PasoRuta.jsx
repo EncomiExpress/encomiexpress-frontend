@@ -12,8 +12,8 @@ import { getRutaLabel } from '../../../rutas/utils/rutaResolvers.js'
 // Paso 1 del wizard de Salidas ("Ruta"): elige la plantilla reutilizable
 // (origen→destino) sobre la que se agenda esta salida concreta. El destino
 // final se muestra de solo lectura (viene de `rutaSeleccionada.destino`) —
-// paradas, convoy y horario son propios de cada Salida y viven en pasos
-// siguientes. Cuando se llega desde "Asignar salida" (Rutas), la plantilla ya
+// convoy y horario son propios de cada Salida y viven en pasos siguientes.
+// Cuando se llega desde "Asignar salida" (Rutas), la plantilla ya
 // viene preseleccionada — el usuario solo confirma.
 const PasoRuta = ({
     theme, form, errores, setErrores, handleChange,

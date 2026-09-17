@@ -109,21 +109,15 @@ export const useVentaWizardForm = ({
                 // Cancelada por esa razón). Mismo criterio que rutaSigueSirviendo() del
                 // backend — ver utils/ventaResolvers.js, motivoVentaCancelada().
                 //
-                // Se le sumó (2026-09-13, ver LOGICA.md "Ventas huérfanas al editar
-                // paradas/destino de una ruta"): la salida puede seguir Programada y
-                // habilitada, pero haber dejado de cubrir el destino de ESTA venta (se le
-                // quitó como parada o como destino final de su plantilla). Mismo criterio
-                // que motivoVentaCancelada() -- si no calza, se trata igual que "la salida
-                // ya no sirve" y se limpia el selector, para que la usuaria elija una nueva
+                // Se le sumó (2026-09-13, ver LOGICA.md "Ventas huérfanas al editar el
+                // destino de una ruta"): la salida puede seguir Programada y habilitada,
+                // pero haber dejado de cubrir el destino de ESTA venta (le cambiaron el
+                // destino final de su plantilla). Mismo criterio que
+                // motivoVentaCancelada() -- si no calza, se trata igual que "la salida ya
+                // no sirve" y se limpia el selector, para que la usuaria elija una nueva
                 // salida a propósito en vez de guardar sin darse cuenta.
                 const idDestinoVenta = parseInt(prev.idDestinoDestinatario) || null
-                // Las paradas ya no son un array a nivel de la salida completa -- cada
-                // par del convoy trae el suyo (ruta fraccionada), así que se unen las de
-                // TODOS los pares: basta con que alguno cubra el destino de la venta.
-                const municipiosCubiertos = ruta
-                    ? new Set([ruta.ruta?.idDestino, ...(ruta.paresVehiculoConductor || []).flatMap(par => (par.paradas || []).map(p => p.idDestino))])
-                    : null
-                const destinoFueraDeRuta = !!ruta && idDestinoVenta != null && !municipiosCubiertos.has(idDestinoVenta)
+                const destinoFueraDeRuta = !!ruta && idDestinoVenta != null && idDestinoVenta !== ruta.ruta?.idDestino
                 if (!ruta || ruta.estado !== 'Programada' || ruta.habilitado === false || destinoFueraDeRuta) {
                     // La salida ya no sirve (salió, se completó, se canceló, se inhabilitó)
                     // — se limpia la selección en vez de dejar un id "fantasma":

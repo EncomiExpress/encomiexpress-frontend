@@ -37,7 +37,7 @@ export const SECTIONS = [
       { id: 'vehiculos',    label: 'Vehículos',              icon: TruckIcon,  path: '/vehiculos/listar', permiso: 'listar_vehiculo' },
       { id: 'destinos',     label: 'Destinos',               icon: DestIcon,   path: '/transporte/destinos', permiso: 'listar_destino' },
       // "Rutas" (plantilla liviana: nombre/destino/observaciones) y "Programación de
-      // Salidas" (la agenda: fecha/hora/estado/convoy/paradas, ver
+      // Salidas" (la agenda: fecha/hora/estado/convoy, ver
       // features/salidas) se separaron en la Fase 4 de la migración
       // Ruta/SalidaProgramada. "Programación de Salidas" ya NO tiene ítem de menú
       // propio: se llega solo desde una fila de Rutas (botón "Salidas"), scoped a

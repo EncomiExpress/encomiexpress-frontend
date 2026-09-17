@@ -10,14 +10,13 @@ import SelectorHora from '../../../shared/components/SelectorHora.jsx'
 import ModalRutaDiagrama from '../../../shared/components/ModalRutaDiagrama.jsx'
 import { hoyISO, getRangoHorario, sumarDias, MIN_DIAS_SALIDA_LLEGADA } from '../../../shared/utils/horarioLaboral.js'
 import { validarCampo, maxISO } from '../validations/salidaValidation.js'
-import { resolveParadas, resolveDestino } from '../utils/salidaResolvers.js'
+import { resolveDestino } from '../utils/salidaResolvers.js'
 
 // Modal chico del operador_sede para disparar el regreso de una ida ya Completada
 // (WS4, "Sedes remotas") — pide fecha/hora de salida y fecha/hora estimada de
-// llegada; el resto (convoy, paradas invertidas, origen, destino, y la propia
-// plantilla "Regreso a Medellín") lo arma el backend a partir de la ida
-// (crearRegresoDesdeSede en salidaProgramadaService.js) y se muestra acá solo como
-// resumen de confirmación.
+// llegada; el resto (convoy, origen, destino, y la propia plantilla "Regreso a
+// Medellín") lo arma el backend a partir de la ida (crearRegresoDesdeSede en
+// salidaProgramadaService.js) y se muestra acá solo como resumen de confirmación.
 const ModalProgramarRegresoSede = ({ open, salida, destinos = [], onClose, onConfirmar }) => {
     const theme = useTheme()
     const [form, setForm] = useState({ fechaSalida: '', horaSalida: '', fechaLlegadaEstimada: '', horaLlegadaEstimada: '' })
@@ -37,7 +36,6 @@ const ModalProgramarRegresoSede = ({ open, salida, destinos = [], onClose, onCon
     if (!salida) return null
 
     const origenRegreso = resolveDestino(salida, destinos, { preferNombre: true })
-    const paradasInvertidas = [...resolveParadas(salida)].reverse()
     const pares = (salida.paresVehiculoConductor || []).map(p => ({ idVehiculo: p.idVehiculo, idConductor: p.idConductor }))
 
     const handleConfirmar = async () => {
@@ -199,7 +197,6 @@ const ModalProgramarRegresoSede = ({ open, salida, destinos = [], onClose, onCon
                 open={diagramaOpen}
                 onClose={() => setDiagramaOpen(false)}
                 origen={origenRegreso}
-                paradas={paradasInvertidas.map(p => p.municipio)}
                 destino="Medellín"
                 subtitulo={`${origenRegreso} → Medellín`}
             />

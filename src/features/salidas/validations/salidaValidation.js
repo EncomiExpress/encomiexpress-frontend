@@ -10,20 +10,12 @@ export const maxISO = () => sumarDias(hoyISO(), MAX_DIAS_ANTICIPACION)
 // Orden pensado como se arma una salida en la práctica: primero la Ruta
 // (plantilla, define destino final), luego el Horario (a qué hora sale de la
 // base y cuándo se espera que llegue), y por último a quién se le encarga el
-// viaje -- Vehículo y Conductor, con las paradas de CADA par integradas en su
-// propia fila (ya no un paso global "Paradas": desde que las paradas pasaron a
-// ser del par, no de toda la salida, pedirlas aparte ya no tenía sentido -- dos
-// pares pueden tener recorridos distintos, ver PasoConvoy.jsx).
+// viaje -- Vehículo y Conductor.
 export const steps = ['Ruta', 'Horario', 'Vehículo y Conductor', 'Confirmación']
 
 // Máximo de pares vehículo+conductor por salida — igual al tope del backend
 // (MAX_PARES_RUTA en salidaProgramadaService.js), mismo criterio que MAX_PAQUETES en Ventas.
 export const MAX_PARES = 10
-
-// Máximo de paradas intermedias por CADA par vehículo+conductor (no por la suma de
-// todos los pares) — igual al tope del backend (MAX_PARADAS en
-// salidaProgramadaService.js/validarParadas).
-export const MAX_PARADAS = 20
 
 // Mismo alfabeto que ya filtra RegistrarSalidaProgramada.jsx en vivo para origen
 // (letras + guion + guion bajo) — el validador replica esa misma regla.
@@ -119,23 +111,9 @@ export const validarPares = (pares, { vehiculos, paresOriginales } = {}) => {
     return ''
 }
 
-// Paradas intermedias del recorrido de UN PAR vehículo+conductor — opcionales. Si
-// se agregan, no se puede repetir el mismo municipio dos veces DENTRO del
-// recorrido de ese mismo par (mismo criterio que valida el backend,
-// salidaProgramadaService.validarParadas) — dos pares DISTINTOS sí pueden
-// compartir una misma parada (ruta fraccionada), por eso esto se llama una vez
-// POR PAR, nunca con el array combinado de todos los pares.
-export const validarParadas = (paradas) => {
-    const completas = (paradas || []).filter(p => p.idDestino)
-    const idsDestino = completas.map(p => p.idDestino)
-    if (new Set(idsDestino).size !== idsDestino.length) return 'No repitas el mismo municipio en el recorrido de este vehículo'
-    return ''
-}
-
 // esRegreso: en modo regreso el paso "Ruta" no pide plantilla (la determina el
 // backend a partir de la ida) y el paso "Vehículo y Conductor" no valida nada (el
-// convoy y sus paradas los hereda el backend, ver REGLA NUEVA en
-// salidaProgramadaService.js).
+// convoy lo hereda el backend, ver REGLA NUEVA en salidaProgramadaService.js).
 // `esRegreso` lo pasan los componentes del wizard
 // (RegistrarSalidaProgramada/ActualizarSalidaProgramada).
 export const validarPaso = (step, form, capacidadCtx, esRegreso = false) => {
@@ -153,15 +131,6 @@ export const validarPaso = (step, form, capacidadCtx, esRegreso = false) => {
     }
     if (step === 2) {
         e.pares = esRegreso ? '' : validarPares(form.pares, capacidadCtx)
-        // Las paradas viven ahora dentro de cada par -- se validan una por una, cada
-        // una contra el recorrido de SU par. `paradasPorPar[i]` es el mensaje de
-        // error (si hay) para form.pares[i].paradas; el array solo se agrega al
-        // resultado si algún par realmente tiene un error, para no ensuciar
-        // `errores` con un array de strings vacíos.
-        if (!esRegreso) {
-            const paradasPorPar = form.pares.map(p => validarParadas(p.paradas))
-            if (paradasPorPar.some(err => err)) e.paradasPorPar = paradasPorPar
-        }
     }
     Object.keys(e).forEach(k => { if (!e[k]) delete e[k] })
     return e

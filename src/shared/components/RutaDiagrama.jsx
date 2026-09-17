@@ -2,18 +2,14 @@ import { Box, Typography } from '@mui/material'
 import { useTheme } from '@mui/material/styles'
 
 // Diagrama simple del recorrido de una ruta: origen y destino como puntos
-// principales (rellenos), cada parada intermedia como punto secundario (hueco),
-// todos conectados por una línea horizontal — para distinguir de un vistazo dos
-// rutas que en texto se ven idénticas (mismo origen/destino) pero tienen paradas
-// distintas. Con muchas paradas la fila hace scroll horizontal en vez de
-// aplastar los puntos entre sí.
+// principales, conectados por una línea horizontal (rutas directas, sin paradas
+// intermedias).
 const ANCHO_PUNTO = 90
 
-const RutaDiagrama = ({ origen, paradas = [], destino }) => {
+const RutaDiagrama = ({ origen, destino }) => {
     const theme = useTheme()
     const puntos = [
         { label: origen || 'Origen', principal: true },
-        ...paradas.filter(Boolean).map(p => ({ label: p, principal: false })),
         { label: destino || 'Destino', principal: true },
     ]
     const ancho = puntos.length * ANCHO_PUNTO

@@ -10,11 +10,11 @@ import SelectorHora from '../../../shared/components/SelectorHora.jsx'
 import ModalRutaDiagrama from '../../../shared/components/ModalRutaDiagrama.jsx'
 import { hoyISO, getRangoHorario, sumarDias, MIN_DIAS_SALIDA_LLEGADA } from '../../../shared/utils/horarioLaboral.js'
 import { validarCampo, maxISO } from '../validations/salidaValidation.js'
-import { resolveParadas, resolveDestino } from '../utils/salidaResolvers.js'
+import { resolveDestino } from '../utils/salidaResolvers.js'
 
 // Modal chico del operador_sede para editar SOLO la fecha/hora de su propio
-// regreso ya creado (Programado o Cancelado) — convoy, paradas, destino y origen
-// los hereda de la ida y no puede tocarlos. El backend (salidaProgramadaService.update)
+// regreso ya creado (Programado o Cancelado) — convoy, destino y origen los
+// hereda de la ida y no puede tocarlos. El backend (salidaProgramadaService.update)
 // revalida ownership y rechaza cualquier otro campo que no sea uno de estos 4.
 const ModalEditarHorarioRegresoSede = ({ open, salida, destinos = [], onClose, onConfirmar }) => {
     const theme = useTheme()
@@ -40,7 +40,6 @@ const ModalEditarHorarioRegresoSede = ({ open, salida, destinos = [], onClose, o
     if (!salida) return null
 
     const destinoRegreso = resolveDestino(salida, destinos, { preferNombre: true })
-    const paradasInvertidas = [...resolveParadas(salida)].reverse()
     const pares = (salida.paresVehiculoConductor || []).map(p => ({ idVehiculo: p.idVehiculo, idConductor: p.idConductor }))
 
     const handleConfirmar = async () => {
@@ -204,7 +203,6 @@ const ModalEditarHorarioRegresoSede = ({ open, salida, destinos = [], onClose, o
                 open={diagramaOpen}
                 onClose={() => setDiagramaOpen(false)}
                 origen={salida.origen || 'Tu sede'}
-                paradas={paradasInvertidas.map(p => p.municipio)}
                 destino={destinoRegreso}
                 subtitulo={`${salida.origen || 'Tu sede'} → ${destinoRegreso}`}
             />

@@ -3,49 +3,34 @@ import { CAMPOS_PAQUETE, validarCampo, validarCampoPaquete, validarDocumentoDest
 export const NUMERIC_LIMITS = { total: 9999999 }
 export const PAQUETE_NUMERIC_LIMITS = { peso: 999, alto: 999, ancho: 999, profundidad: 999 }
 
-// El municipio de destino de la venta (elegido en "Participantes") tiene que ser el
-// destino final de la salida elegida o una parada intermedia de ALGÚN par de su
-// convoy. Si no, esa salida no sirve para esta venta — se BLOQUEA el paso (antes
-// era solo un aviso). El destino final ya no es un campo directo de la Salida — se
-// hereda de su Ruta (plantilla): `salida.ruta.idDestino` (ver models/index.js). Las
-// paradas ya no viven en un array a nivel de la salida completa: cada elemento de
-// `paresVehiculoConductor` trae su propio recorrido (ruta fraccionada -- dos pares
-// pueden pasar por municipios distintos), así que acá basta con que CUALQUIER par
-// del convoy llegue al destino -- el filtro fino de "cuál PAR en particular llega"
-// (para elegir `idSalidaVehiculoConductor` en cada paquete) lo hace
-// paresQueLleganAlDestino más abajo, usado por PasoEnvio.jsx.
+// Rutas directas: el municipio de destino de la venta (elegido en "Participantes")
+// tiene que ser EXACTAMENTE el destino final de la salida elegida. Si no, esa
+// salida no sirve para esta venta — se BLOQUEA el paso. El destino final no es un
+// campo directo de la Salida — se hereda de su Ruta (plantilla):
+// `salida.ruta.idDestino` (ver models/index.js).
 export const rutaLlegaAlDestino = (salida, idDestinoVenta) => {
     if (!salida || !idDestinoVenta) return true
-    if (idDestinoVenta === salida.ruta?.idDestino) return true
-    return (salida.paresVehiculoConductor || []).some(par => (par.paradas || []).some(p => p.idDestino === idDestinoVenta))
+    return idDestinoVenta === salida.ruta?.idDestino
 }
 export const MENSAJE_RUTA_NO_LLEGA = 'Esta salida no llega al municipio de destino de la venta'
 
-// A diferencia de rutaLlegaAlDestino (¿llega ALGÚN par?), esto filtra a los pares
-// que de verdad llegan a idDestinoVenta -- por su propio recorrido o porque el
-// destino final de la salida es compartido por todo el convoy. Nueva regla de
-// negocio (ver encomiendaService.validarParLlegaADestino en el backend): un
-// paquete solo puede asignarse a un `idSalidaVehiculoConductor` que realmente pase
-// por el destino de SU venta, ya no basta con que cualquier par de la salida
-// llegue ahí.
+// Rutas directas: todos los pares del convoy de una salida llegan al mismo (único)
+// destino final -- si `rutaLlegaAlDestino` ya validó la salida, cualquier par sirve.
 export const paresQueLleganAlDestino = (salida, idDestinoVenta) => {
     const pares = salida?.paresVehiculoConductor || []
-    if (!idDestinoVenta) return pares
-    const destinoFinalCompartido = idDestinoVenta === salida?.ruta?.idDestino
-    if (destinoFinalCompartido) return pares
-    return pares.filter(par => (par.paradas || []).some(p => p.idDestino === idDestinoVenta))
+    if (!idDestinoVenta || idDestinoVenta === salida?.ruta?.idDestino) return pares
+    return []
 }
 
 // Para operador_sede, el destino de una venta solo puede ser uno al que de verdad
 // pueda llegar alguno de los regresos disponibles de SU sede (mismo filtro de
 // salidas que ofrece PasoEnvio — regreso, sale de mi sede, Programada, habilitada).
-// Se arma directo del `ruta.destino`/`paradas[].destino` que YA vienen anidados en
-// cada salida (mismo dato que ya usa `rutaLlegaAlDestino` y que PasoEnvio pinta en
-// el diagrama) — a propósito SIN llamar a `/destinos`: ese catálogo es el listado
-// nacional completo (con tarifas), y `operador_sede` no tiene ni debería tener el
-// permiso `listar_destino` para verlo. Si no hay ningún regreso disponible todavía,
-// el resultado es un array vacío (a propósito: no hay ningún destino válido para
-// ofrecer, ver plan-sedes-remotas.md, WS5).
+// Se arma directo del `ruta.destino` que YA viene anidado en cada salida (mismo
+// dato que ya usa `rutaLlegaAlDestino`) — a propósito SIN llamar a `/destinos`: ese
+// catálogo es el listado nacional completo (con tarifas), y `operador_sede` no
+// tiene ni debería tener el permiso `listar_destino` para verlo. Si no hay ningún
+// regreso disponible todavía, el resultado es un array vacío (a propósito: no hay
+// ningún destino válido para ofrecer, ver plan-sedes-remotas.md, WS5).
 export const destinosDesdeSede = (salidas, municipioSede) => {
     const regresosDisponibles = (salidas || []).filter((r) =>
         r.habilitado !== false && r.estado === 'Programada' && r.idSalidaIda != null && r.origen === municipioSede
@@ -53,14 +38,6 @@ export const destinosDesdeSede = (salidas, municipioSede) => {
     const porId = new Map()
     for (const r of regresosDisponibles) {
         if (r.ruta?.destino) porId.set(r.ruta.destino.idDestino, r.ruta.destino)
-        // Paradas propias de CADA par del convoy (ya no un array a nivel de la
-        // salida) -- se recorren todos, cualquier par que pase por un municipio lo
-        // vuelve un destino ofrecible.
-        for (const par of (r.paresVehiculoConductor || [])) {
-            for (const p of (par.paradas || [])) {
-                if (p.destino) porId.set(p.destino.idDestino, p.destino)
-            }
-        }
     }
     return [...porId.values()]
 }

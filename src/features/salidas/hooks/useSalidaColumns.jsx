@@ -257,7 +257,7 @@ const useSalidaColumns = ({
                         </Tooltip>
                     )}
                     {/* "Reutilizar salida": preselecciona la MISMA plantilla de ruta (y
-                        convoy/paradas) como punto de partida editable para una salida NUEVA
+                        convoy) como punto de partida editable para una salida NUEVA
                         e independiente -- no toca idSalidaIda. Nunca sobre un regreso. */}
                     {tienePermiso(PERMISOS.REGISTRAR_RUTA) && salida.estado === 'Completada' && !esRegreso && (
                         <Tooltip title="Reutilizar salida">

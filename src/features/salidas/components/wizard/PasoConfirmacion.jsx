@@ -7,7 +7,7 @@ import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import ConfirmRow from '../../../../shared/components/ConfirmRow.jsx'
 import ModalRutaDiagrama from '../../../../shared/components/ModalRutaDiagrama.jsx'
 import { formatFecha, formatHora12 } from '../../../../shared/utils/formatters.js'
-import { getVehiculoLabel, getConductorLabel, getDestinoLabel } from '../../utils/salidaResolvers.js'
+import { getVehiculoLabel, getConductorLabel } from '../../utils/salidaResolvers.js'
 import { getRutaLabel } from '../../../rutas/utils/rutaResolvers.js'
 import { cardSx } from '../../style/wizardStyles.js'
 
@@ -15,7 +15,7 @@ const sonDistintos = (a, b) => String(a ?? '') !== String(b ?? '')
 
 const PasoConfirmacion = ({
     theme, form, formOriginal, apiError, setApiError, sinCambios, setSinCambios,
-    destinos, vehiculos, conductores, salida, rutaSeleccionada,
+    vehiculos, conductores, salida, rutaSeleccionada,
 }) => {
     const [diagramaOpen, setDiagramaOpen] = useState(false)
     const paresOriginales = salida?.paresVehiculoConductor || []
@@ -23,8 +23,6 @@ const PasoConfirmacion = ({
 
     const camposComparados = formOriginal ? [
         [form.origen, formOriginal.origen],
-        // Las paradas viven dentro de cada par -- comparar form.pares contra
-        // formOriginal.pares ya cubre convoy Y recorrido de cada uno.
         [JSON.stringify(form.pares), JSON.stringify(formOriginal.pares)],
         [form.idRuta, formOriginal.idRuta],
         [form.fechaSalida, formOriginal.fechaSalida],
@@ -36,12 +34,6 @@ const PasoConfirmacion = ({
     const totalModificados = camposComparados.filter(([a, b]) => sonDistintos(a, b)).length
 
     const paresConfirmacion = form.pares.filter(p => p.idVehiculo && p.idConductor)
-    // Un diagrama POR PAR -- cada vehículo puede tener su propio recorrido ("ruta
-    // fraccionada"), ya no se muestra solo el del primero como "representativo".
-    const recorridosPorPar = paresConfirmacion.map((par, i, arr) => ({
-        label: arr.length > 1 ? `Vehículo ${i + 1}` : 'Recorrido',
-        paradas: (par.paradas || []).filter(p => p.idDestino).map(p => getDestinoLabel(p.idDestino, destinos, salida).split(' - ')[0]),
-    }))
 
     return (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -67,7 +59,7 @@ const PasoConfirmacion = ({
                         <Typography fontWeight={700} fontSize="0.95rem" color={theme.palette.text.primary}>Recorrido</Typography>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, mb: 1 }}>
-                        <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>Verifica la ruta, el origen, las paradas y el destino</Typography>
+                        <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>Verifica la ruta, el origen y el destino</Typography>
                         <Button size="small" startIcon={<RouteOutlinedIcon sx={{ fontSize: 16 }} />}
                             onClick={() => setDiagramaOpen(true)}
                             sx={{ textTransform: 'none', color: theme.palette.text.secondary, fontSize: '0.78rem', flexShrink: 0 }}>
@@ -76,9 +68,6 @@ const PasoConfirmacion = ({
                     </Box>
                     <ConfirmRow label="Ruta (plantilla)" value={getRutaLabel(rutaSeleccionada)} />
                     <ConfirmRow label="Origen" value={form.origen} previousValue={formOriginal?.origen} />
-                    {/* Las paradas ya NO se listan acá -- son del recorrido propio de cada
-                        repartidor, no del corredor compartido. Se muestran junto a cada
-                        vehículo en la tarjeta de al lado. */}
                     <ConfirmRow label="Destino" value={destinoLabel} />
                 </Paper>
                 <Paper elevation={0} sx={cardSx(theme)}>
@@ -93,8 +82,6 @@ const PasoConfirmacion = ({
                     </Typography>
                     {paresConfirmacion.map((par, i, arr) => {
                         const orig = formOriginal?.pares?.[i]
-                        const paradasActuales = (par.paradas || []).filter(p => p.idDestino)
-                        const paradasOriginales = (orig?.paradas || []).filter(p => p.idDestino)
                         return (
                             <Box key={i}>
                                 <ConfirmRow label={arr.length > 1 ? `Vehículo ${i + 1}` : 'Vehículo'}
@@ -103,14 +90,6 @@ const PasoConfirmacion = ({
                                 <ConfirmRow label={arr.length > 1 ? `Conductor ${i + 1}` : 'Conductor'}
                                     value={getConductorLabel(par.idConductor, conductores, paresOriginales)}
                                     previousValue={orig ? getConductorLabel(orig.idConductor, conductores, paresOriginales) : undefined} />
-                                {/* Recorrido propio de ESTE repartidor -- dos pares del mismo
-                                    convoy pueden pasar por municipios distintos ("ruta
-                                    fraccionada"), así que no se listan junto al corredor. */}
-                                {paradasActuales.map((p, j) => (
-                                    <ConfirmRow key={j} label={paradasActuales.length > 1 ? `Parada ${j + 1}` : 'Parada'}
-                                        value={getDestinoLabel(p.idDestino, destinos, salida)}
-                                        previousValue={formOriginal ? (paradasOriginales[j] ? getDestinoLabel(paradasOriginales[j].idDestino, destinos, salida) : 'Ninguna') : undefined} />
-                                ))}
                                 {i < arr.length - 1 && <Divider sx={{ my: 1 }} />}
                             </Box>
                         )
@@ -133,7 +112,6 @@ const PasoConfirmacion = ({
                 open={diagramaOpen}
                 onClose={() => setDiagramaOpen(false)}
                 origen={form.origen}
-                recorridos={recorridosPorPar}
                 destino={destinoLabel}
                 subtitulo={`${form.origen || ''} → ${destinoLabel}`}
             />

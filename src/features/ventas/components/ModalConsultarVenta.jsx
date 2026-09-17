@@ -72,8 +72,8 @@ const ModalConsultarVenta = ({ venta, onClose }) => {
     }
 
     // "Marcar devuelto a Medellín" (B.5, plan-ventas-regreso-paquetes.md): solo
-    // mientras algún regreso "En Ruta" pase por el municipio de este paquete
-    // (destino final o parada) — corregido 2026-09-13: antes miraba
+    // mientras algún regreso "En Ruta" salga del municipio de este paquete
+    // (destino final) — corregido 2026-09-13: antes miraba
     // específicamente `venta.ruta?.rutaRegreso` (el regreso de ESTA ida
     // puntual), pero un paquete puede esperar semanas en bodega y para
     // entonces ESE regreso ya completó, aunque después pasen otros regresos

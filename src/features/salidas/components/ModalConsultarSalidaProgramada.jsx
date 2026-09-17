@@ -24,7 +24,7 @@ import CampoFila from '../../../shared/components/CampoFila.jsx'
 import FichaCard from '../../../shared/components/FichaCard.jsx'
 import EstadoDot, { RutaEstadoDot as SalidaEstadoDot } from '../../rutas/components/EstadoDot.jsx'
 import ModalRutaDiagrama from '../../../shared/components/ModalRutaDiagrama.jsx'
-import { resolvePares, resolveDestino, resolveDestinoPartes, resolveParadasPorPar } from '../utils/salidaResolvers.js'
+import { resolvePares, resolveDestino, resolveDestinoPartes } from '../utils/salidaResolvers.js'
 import { errorChipSx } from '../style/chips.js'
 
 // Adaptado de rutas/components/ModalConsultarRutaProgramacion.jsx.
@@ -109,7 +109,7 @@ const ModalConsultarSalidaProgramada = ({ salida, onClose }) => {
                     <Box sx={{ display: 'flex', gap: 2 }}>
                         <FichaCard icon={RouteOutlinedIcon} title="Recorrido">
                             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, mb: 1 }}>
-                                <Typography variant="body2" color={theme.palette.text.secondary}>Ruta (plantilla), origen, paradas y destino</Typography>
+                                <Typography variant="body2" color={theme.palette.text.secondary}>Ruta (plantilla), origen y destino</Typography>
                                 <Button size="small" startIcon={<RouteOutlinedIcon sx={{ fontSize: 16 }} />}
                                     onClick={() => setDiagramaOpen(true)}
                                     sx={{ textTransform: 'none', color: theme.palette.text.secondary, fontSize: '0.78rem', flexShrink: 0 }}>
@@ -118,11 +118,6 @@ const ModalConsultarSalidaProgramada = ({ salida, onClose }) => {
                             </Box>
                             <CampoFila label="Ruta (plantilla)" value={getRutaLabel(salida.ruta)} />
                             <CampoFila label="Origen" value={salida.origen} />
-                            {/* Las paradas ya NO se listan acá -- son del recorrido propio de cada
-                                repartidor (vehículo+conductor), no del corredor compartido. Se
-                                muestran junto a cada vehículo en la tarjeta de al lado, para no dar
-                                la impresión de que TODO el convoy pasa por ahí cuando puede ser solo
-                                uno de los pares. */}
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>Destino</Typography>
                                 <Chip label={resolveDestino(salida, destinos) || '—'} size="small"
@@ -134,9 +129,7 @@ const ModalConsultarSalidaProgramada = ({ salida, onClose }) => {
                         <FichaCard icon={DirectionsCarOutlinedIcon}
                             title={resolvePares(salida, { getVehiculos, getConductores }).length > 1 ? 'Vehículos y Conductores' : 'Vehículo y Conductor'}
                             subtitle="Recursos asignados a esta salida">
-                            {resolvePares(salida, { getVehiculos, getConductores }).map((par, i, arr) => {
-                                const paradasPropias = resolveParadasPorPar(salida)[i]?.paradas || []
-                                return (
+                            {resolvePares(salida, { getVehiculos, getConductores }).map((par, i, arr) => (
                                 <Box key={par.idSalidaVehiculoConductor ?? i}>
                                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
                                         <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>
@@ -168,23 +161,9 @@ const ModalConsultarSalidaProgramada = ({ salida, onClose }) => {
                                             </Typography>
                                         </Box>
                                     </Box>
-                                    {/* Recorrido propio de ESTE repartidor -- no de toda la salida (ver
-                                        §4 del rediseño: dos pares del mismo convoy pueden pasar por
-                                        municipios distintos, "ruta fraccionada"). */}
-                                    {paradasPropias.length > 0 && (
-                                        <Box sx={{ py: 0.9 }}>
-                                            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500, mb: 0.5 }}>
-                                                Paradas de este repartidor
-                                            </Typography>
-                                            <Typography variant="body2" fontWeight={500}>
-                                                {paradasPropias.map((p, j) => `${j + 1}. ${p.municipio}`).join(' · ')}
-                                            </Typography>
-                                        </Box>
-                                    )}
                                     {i < arr.length - 1 && <Divider sx={{ my: 1 }} />}
                                 </Box>
-                                )
-                            })}
+                            ))}
                             {resolvePares(salida, { getVehiculos, getConductores }).length === 0 && (
                                 <Typography variant="body2" color={theme.palette.text.secondary}>Sin vehículos asignados</Typography>
                             )}
@@ -343,12 +322,6 @@ const ModalConsultarSalidaProgramada = ({ salida, onClose }) => {
                 open={diagramaOpen}
                 onClose={() => setDiagramaOpen(false)}
                 origen={salida.origen}
-                // Un diagrama POR PAR -- cada vehículo puede tener su propio recorrido
-                // ("ruta fraccionada"), ya no se muestra solo el del primero.
-                recorridos={resolveParadasPorPar(salida).map((item, i, arr) => ({
-                    label: arr.length > 1 ? `Vehículo ${i + 1}` : 'Recorrido',
-                    paradas: item.paradas.map(p => p.municipio),
-                }))}
                 destino={resolveDestinoPartes(salida, destinos).municipio}
                 subtitulo={`${salida.origen || ''} → ${resolveDestinoPartes(salida, destinos).municipio}`}
             />

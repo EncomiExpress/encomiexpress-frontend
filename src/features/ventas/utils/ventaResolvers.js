@@ -1,9 +1,9 @@
 // Por qué una Venta terminó "Cancelada" — dos productores posibles:
 // encomiendaService.toggleHabilitado() al REHABILITAR, cuando la ruta asociada ya no
 // "sigue sirviendo" (ver LOGICA.md, "Ventas — Cancelada e inhabilitar/habilitar"); y
-// rutaService.update(), cuando se edita el destino final o las paradas de la ruta y el
-// municipio de esta venta queda fuera del recorrido nuevo (2026-09-13, ver LOGICA.md,
-// "Ventas huérfanas al editar paradas/destino de una ruta"). No se guarda el motivo en
+// rutaService.update(), cuando se edita el destino final de la ruta y el municipio
+// de esta venta queda fuera del recorrido nuevo (2026-09-13, ver LOGICA.md, "Ventas
+// huérfanas al editar el destino de una ruta"). No se guarda el motivo en
 // la venta en sí — se resuelve acá, en el momento de mostrar la fila, mirando el
 // estado ACTUAL de `venta.ruta`. Mismo criterio que rutaSigueSirviendo() del backend
 // (`!!ruta && ruta.estado === 'Programada' && ruta.habilitado !== false`), descompuesto
@@ -16,16 +16,12 @@ export const motivoVentaCancelada = (venta) => {
     if (ruta.estado === 'Cancelada') return 'rutaCancelada'
     if (ruta.estado === 'En Ruta' || ruta.estado === 'Completada') return 'rutaAvanzo'
     // La ruta sigue Programada y habilitada, pero puede que ya no llegue al
-    // municipio de esta venta -- se le quitó como parada o como destino final
-    // en una edición posterior a que la venta se registrara. A propósito NO se
-    // trata como una cancelación real de cara a la usuaria (ver
-    // LABEL_VENTA_CANCELADA más abajo): la venta sigue siendo válida, solo la
-    // ruta dejó de cubrir su destino.
+    // municipio de esta venta -- le cambiaron el destino final en una edición
+    // posterior a que la venta se registrara. A propósito NO se trata como una
+    // cancelación real de cara a la usuaria (ver LABEL_VENTA_CANCELADA más abajo):
+    // la venta sigue siendo válida, solo la ruta dejó de cubrir su destino.
     const idDestinoVenta = venta?.destinatario?.idDestino
-    // Las paradas ahora son propias de CADA par del convoy (ruta fraccionada) -- se
-    // unen las de todos los pares, basta con que alguno cubra el destino de la venta.
-    const municipiosCubiertos = new Set([ruta.ruta?.idDestino, ...(ruta.paresVehiculoConductor || []).flatMap(par => (par.paradas || []).map(p => p.idDestino))])
-    if (idDestinoVenta != null && !municipiosCubiertos.has(idDestinoVenta)) return 'destinoFueraDeRuta'
+    if (idDestinoVenta != null && idDestinoVenta !== ruta.ruta?.idDestino) return 'destinoFueraDeRuta'
     // La ruta sigue sirviendo (Programada + habilitada) — típicamente porque se
     // canceló y ya se reprogramó de nuevo. No hace falta asignarle una ruta
     // DISTINTA, así que este caso tiene su propio mensaje (ver MENSAJE_VENTA_CANCELADA)

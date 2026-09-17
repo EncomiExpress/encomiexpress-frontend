@@ -223,7 +223,6 @@ const PasoRutaVehiculo = ({
             open={diagramaOpen}
             onClose={() => setDiagramaOpen(false)}
             origen={rutaSeleccionada?.nombre}
-            paradas={(rutaSeleccionada?.paradas || []).filter(p => p.destino).map(p => p.destino.municipio)}
             destino={rutaSeleccionada?.destino?.municipio}
             subtitulo={rutaSeleccionada ? `${rutaSeleccionada.nombre || ''} → ${rutaSeleccionada.destino?.municipio || ''}` : ''}
         />

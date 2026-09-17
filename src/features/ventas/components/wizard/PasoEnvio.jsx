@@ -34,18 +34,14 @@ export default function PasoEnvio({
     const rutaElegida = salidasProgramadas.find(r => r.idSalida === parseInt(form.idSalida))
     // El destino de la venta (elegido en el paso "Participantes", uno por venta —
     // no por paquete, ver LOGICA.md "Aprovechar el destino que ya existe por
-    // venta") tiene que ser el destino final de la salida elegida o una de sus
-    // paradas intermedias. Si no calza, se marca el campo Salida en rojo y se
-    // BLOQUEA el paso (ver rutaLlegaAlDestino en ventaValidation.js).
+    // venta") tiene que ser EXACTAMENTE el destino final de la salida elegida
+    // (rutas directas). Si no calza, se marca el campo Salida en rojo y se BLOQUEA
+    // el paso (ver rutaLlegaAlDestino en ventaValidation.js).
     const idDestinoVenta = parseInt(form.idDestinoDestinatario) || null
     const destinoCalzaConRuta = rutaLlegaAlDestino(rutaElegida, idDestinoVenta)
-    // Cada paquete se asigna a un PAR concreto (idSalidaVehiculoConductor) -- desde
-    // que las paradas pasaron a ser del par y no de toda la salida, ya no basta con
-    // que la SALIDA llegue al destino: ese par en particular tiene que llegar
-    // (destino final compartido, o una parada propia suya). Antes se ofrecían todos
-    // los pares del convoy sin filtrar; ahora solo los que de verdad sirven para
-    // esta venta (ver paresQueLleganAlDestino en ventaValidation.js, que replica la
-    // regla nueva del backend, encomiendaService.validarParLlegaADestino).
+    // Todos los pares del convoy de una salida llegan al mismo destino final —
+    // paresQueLleganAlDestino solo filtra a [] si la salida en sí no calza (caso
+    // que ya bloquea el paso, ver arriba).
     const paresElegida = paresQueLleganAlDestino(rutaElegida, idDestinoVenta)
     const nombreDestinoVenta = destinos?.find(d => d.idDestino === idDestinoVenta)
 
@@ -89,13 +85,13 @@ export default function PasoEnvio({
         setVehiculosActivos(prev => [...prev, siguienteVehiculoDisponible.idSalidaVehiculoConductor])
     }
     // Solo tiene sentido ofrecer salidas que de verdad lleguen al municipio de destino
-    // de la venta (destino final o una parada intermedia) — mismo criterio que ya
-    // bloqueaba el paso si se elegía una que no calzaba (rutaLlegaAlDestino/
+    // de la venta (destino final, rutas directas) — mismo criterio que ya bloqueaba
+    // el paso si se elegía una que no calzaba (rutaLlegaAlDestino/
     // MENSAJE_RUTA_NO_LLEGA más abajo), ahora aplicado ANTES, para no ni mostrar las
     // que no sirven. Si la venta ya traía una salida elegida que dejó de calzar
-    // entretanto (ej. le quitaron esa parada), sigue mostrándose igual como valor
-    // seleccionado — el Autocomplete no exige que `value` esté dentro de `options` —
-    // y el Alert de abajo sigue avisando del problema.
+    // entretanto (ej. le cambiaron el destino final), sigue mostrándose igual como
+    // valor seleccionado — el Autocomplete no exige que `value` esté dentro de
+    // `options` — y el Alert de abajo sigue avisando del problema.
     // Un viaje de regreso (r.idSalidaIda) nunca lleva ventas nuevas — solo devuelve el
     // convoy a la base. Se excluye del selector; el backend también lo rechaza.
     // EXCEPTO para operador_sede (WS5, "Sedes remotas"): la sede recibe y
@@ -334,7 +330,7 @@ export default function PasoEnvio({
             {rutaElegida && !destinoCalzaConRuta && (
                 <Alert severity="error" sx={{ borderRadius: 2 }}>
                     Esta venta va para <strong>{nombreDestinoVenta ? `${nombreDestinoVenta.municipio}, ${nombreDestinoVenta.departamento}` : 'un municipio'}</strong>, pero
-                    esa salida no pasa por ahí (ni es su destino final, ni una de sus paradas). Elige otra salida, o agrégale esa parada desde Programación de Salidas.
+                    esa salida no llega ahí. Elige otra salida.
                 </Alert>
             )}
             {rutaElegida && (
@@ -424,10 +420,6 @@ export default function PasoEnvio({
                 open={diagramaOpen}
                 onClose={() => setDiagramaOpen(false)}
                 origen={rutaElegida?.origen}
-                // El diagrama solo puede dibujar un camino a la vez -- se usa el
-                // recorrido del primer par que de verdad llega al destino de esta venta
-                // (mismo criterio que paresElegida arriba), no el del convoy completo.
-                paradas={(paresElegida[0]?.paradas || []).filter(p => p.destino).map(p => p.destino.municipio)}
                 destino={rutaElegida?.ruta?.destino?.municipio}
                 subtitulo={rutaElegida ? `${rutaElegida.origen || ''} → ${rutaElegida.ruta?.destino?.municipio || ''}` : ''}
             />

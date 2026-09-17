@@ -1,12 +1,12 @@
 import { fetchWithAuth } from '../../../shared/services/authService.js'
 
-// Agenda concreta de viajes (SalidaProgramada) — fecha/hora/estado/convoy/paradas
-// sobre una plantilla de /rutas (ver src/features/rutas). Contrato confirmado
-// contra encomiexpress-backend/src/routes/salidas.js y
+// Agenda concreta de viajes (SalidaProgramada) — fecha/hora/estado/convoy sobre
+// una plantilla de /rutas (ver src/features/rutas). Contrato confirmado contra
+// encomiexpress-backend/src/routes/salidas.js y
 // src/validators/salidasValidator.js:
 //   POST/PUT body: idRuta (solo create, requerido), pares[]{idVehiculo,idConductor},
 //   observaciones, fechaSalida, horaSalida, fechaLlegadaEstimada, horaLlegadaEstimada,
-//   estado, paradas[]{idDestino}, idSalidaIda (opcional, solo create).
+//   estado, idSalidaIda (opcional, solo create).
 
 export const getSalidas = (params = {}, signal) => {
   const qs = new URLSearchParams()
@@ -35,7 +35,7 @@ export const getDisponibilidadSalida = ({ idVehiculos = [], idConductores = [], 
 }
 
 // operador_sede: dispara el regreso de su sede con solo fecha/hora de salida — el
-// resto (convoy, paradas, origen, destino) lo arma el backend a partir de la ida.
+// resto (convoy, origen, destino) lo arma el backend a partir de la ida.
 export const crearRegresoDesdeSede = (idSalidaIda, { fechaSalida, horaSalida, fechaLlegadaEstimada, horaLlegadaEstimada }) =>
   fetchWithAuth(`/salidas/${idSalidaIda}/regreso-sede`, { method: 'POST', body: JSON.stringify({ fechaSalida, horaSalida, fechaLlegadaEstimada, horaLlegadaEstimada }) })
 

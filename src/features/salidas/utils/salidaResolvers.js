@@ -90,47 +90,6 @@ export const getConductorLabel = (id, conductores, paresOriginales = []) => {
     return original ? `${original.nombre} ${original.apellido}` : '—'
 }
 
-// Mismo orden "municipio - departamento" que usa el selector de destino/paradas --
-// salidaOriginal acá es la SALIDA (no la ruta), así que el fallback mira
-// salidaOriginal.ruta.destino/idDestino en vez de salidaOriginal.destino/idDestino.
-export const getDestinoLabel = (id, destinos, salidaOriginal = null) => {
-    const d = destinos.find(x => x.idDestino === parseInt(id))
-    if (d) return `${d.municipio} - ${d.departamento}`
-    const ruta = getRutaTemplate(salidaOriginal)
-    if (ruta?.destino && parseInt(id) === ruta.idDestino) return `${ruta.destino.municipio} - ${ruta.destino.departamento}`
-    return '—'
-}
-
-// Paradas intermedias del recorrido de CADA par vehículo+conductor, ya ordenadas
-// por el backend (paresVehiculoConductor[i].paradas viene ordenado por "orden") --
-// ya no es un array plano a nivel de la salida completa: dos pares del mismo
-// convoy pueden tener recorridos distintos ("ruta fraccionada"), así que esto
-// devuelve un array por par, cada uno con su propio listado de paradas.
-export const resolveParadasPorPar = (salida) => (salida?.paresVehiculoConductor || []).map((par) => ({
-    idSalidaVehiculoConductor: par.idSalidaVehiculoConductor,
-    paradas: (par.paradas || [])
-        .filter(p => p.destino)
-        .map(p => ({ idDestino: p.idDestino, municipio: p.destino.municipio, departamento: p.destino.departamento })),
-}))
-
-// Todas las paradas de la salida en un solo array plano (unión de las de todos los
-// pares, sin duplicar destinos repetidos entre pares distintos) -- útil cuando de
-// verdad no importa a cuál par pertenece cada una (ej. useSugerenciaParadas ya lee
-// directo de la API, no de acá). Se mantiene por si algún consumidor solo necesita
-// "¿esta salida toca este municipio en algún lado?" sin desglosar por par.
-export const resolveParadas = (salida) => {
-    const vistos = new Set()
-    const resultado = []
-    for (const { paradas } of resolveParadasPorPar(salida)) {
-        for (const p of paradas) {
-            if (vistos.has(p.idDestino)) continue
-            vistos.add(p.idDestino)
-            resultado.push(p)
-        }
-    }
-    return resultado
-}
-
 // Corredor ("Medellín → Destino") de la PLANTILLA elegida — usado por el paso
 // "Elegir Ruta" del wizard y por la columna "Ruta" del listado. Sin nombre propio,
 // ver rutas/utils/rutaResolvers.js.

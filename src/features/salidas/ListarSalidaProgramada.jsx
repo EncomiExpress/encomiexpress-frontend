@@ -37,8 +37,8 @@ import useSalidaExport from './hooks/useSalidaExport.js'
 // Adaptado de rutas/ListarRutaProgramacion.jsx (ver step 1 de la migración) — misma
 // tabla/filtros/estado/año/mes/búsqueda, mismas acciones. "Reutilizar" ahora
 // simplemente preselecciona la MISMA plantilla de ruta en el wizard de nueva
-// salida (ya no copia destino/paradas a mano, aunque paradas/convoy sí se siguen
-// precargando como punto de partida editable).
+// salida (ya no copia el destino a mano, aunque el convoy sí se sigue precargando
+// como punto de partida editable).
 //
 // Ya no existe una vista global de Salidas: esta pantalla SIEMPRE cuelga de
 // /transporte/rutas/:idRuta/salidas (ver salidas.routes.jsx) y muestra/permite
@@ -137,11 +137,8 @@ const ListarSalidaProgramada = () => {
     }
 
     // Precarga el formulario de Registrar con el corredor invertido de una salida ya
-    // Completada — mismo convoy, con las paradas de CADA par (ya no un array global)
-    // también en orden inverso. La plantilla no se precarga (RegistrarSalidaProgramada
-    // la resuelve sola hacia la base). `municipio` se manda junto al idDestino de cada
-    // parada porque en modo regreso el wizard las muestra de solo lectura (heredadas
-    // automáticamente, igual que el convoy) sin volver a consultar el catálogo.
+    // Completada — mismo convoy. La plantilla no se precarga
+    // (RegistrarSalidaProgramada la resuelve sola hacia la base).
     const handleProgramarRegreso = (salida) => {
         setPrefillRegreso({
             idSalidaIda: salida.idSalida,
@@ -149,18 +146,15 @@ const ListarSalidaProgramada = () => {
             pares: (salida.paresVehiculoConductor || []).map(p => ({
                 idVehiculo: p.idVehiculo,
                 idConductor: p.idConductor,
-                paradas: [...(p.paradas || [])].sort((a, b) => b.orden - a.orden).map(pp => ({ idDestino: pp.idDestino, municipio: pp.destino?.municipio })),
             })),
         })
         setModalRegistrarOpen(true)
     }
 
-    // "Reutilizar salida": precarga la MISMA plantilla y convoy (con el recorrido
-    // propio de cada par) de una ida ya Completada, en el mismo orden -- a diferencia
-    // de "Programar Regreso", no manda idSalidaIda: la salida que se cree queda
-    // totalmente independiente de esta, solo repite los datos como punto de partida
-    // editable (por eso acá no hace falta el `municipio`, el wizard vuelve a mostrar
-    // Autocompletes editables que resuelven el label contra el catálogo).
+    // "Reutilizar salida": precarga la MISMA plantilla y convoy de una ida ya
+    // Completada -- a diferencia de "Programar Regreso", no manda idSalidaIda: la
+    // salida que se cree queda totalmente independiente de esta, solo repite los
+    // datos como punto de partida editable.
     const handleReutilizarSalida = (salida) => {
         setPrefillRegreso({
             reutilizar: true,
@@ -168,7 +162,6 @@ const ListarSalidaProgramada = () => {
             pares: (salida.paresVehiculoConductor || []).map(p => ({
                 idVehiculo: p.idVehiculo,
                 idConductor: p.idConductor,
-                paradas: [...(p.paradas || [])].sort((a, b) => a.orden - b.orden).map(pp => ({ idDestino: pp.idDestino })),
             })),
         })
         setModalRegistrarOpen(true)
@@ -176,14 +169,11 @@ const ListarSalidaProgramada = () => {
 
     // "Nuevo" en esta vista scoped siempre crea una salida de LA plantilla actual
     // (idRuta viene de la URL) — a diferencia de "Programar regreso"/"Reutilizar",
-    // no hay convoy/paradas que precargar, solo la plantilla ya elegida.
+    // no hay convoy que precargar, solo la plantilla ya elegida.
     // Precarga vehículo+conductor y horario de la ÚLTIMA salida de esta misma Ruta
     // (cualquier estado, no solo Completada -- refleja el último ajuste real del
     // operador) -- así "crear la salida de mañana" es solo confirmar, en vez de
-    // volver a armar el convoy desde cero cada día. A propósito NO se copian las
-    // paradas: cuáles paquetes le tocan a cada par (y por lo tanto qué paradas
-    // hace) varía día a día según lo que se venda (ruta directa vs. fraccionada) --
-    // eso lo decide el operador cada vez, no un valor heredado.
+    // volver a armar el convoy desde cero cada día.
     const handleAbrirNuevo = async () => {
         if (!idRuta) { setPrefillRegreso(null); setModalRegistrarOpen(true); return }
         try {

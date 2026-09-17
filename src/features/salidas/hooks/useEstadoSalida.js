@@ -31,14 +31,12 @@ export function useEstadoSalida({ salidasProgramadas, getVehiculos, getConductor
                 })
                 return
             }
-            if (err.errorCode === 'SEDE_SIN_CARGA' || err.errorCode === 'VEHICULO_SIN_CARGA') {
+            if (err.errorCode === 'VEHICULO_SIN_CARGA') {
                 setAlertaBloqueo({
                     open: true,
                     tipo: 'carga',
                     titulo: 'No se puede iniciar la salida',
-                    mensaje: err.errorCode === 'SEDE_SIN_CARGA'
-                        ? 'Cada parada y el destino final deben tener al menos una encomienda asignada. Sin paquetes:'
-                        : 'Todos los vehículos del convoy deben llevar carga. Sin paquetes:',
+                    mensaje: 'Todos los vehículos del convoy deben llevar carga. Sin paquetes:',
                     entidades: (err.details || []).map(d => ({ label: d.descripcion })),
                 })
                 return
@@ -143,25 +141,7 @@ export function useEstadoSalida({ salidasProgramadas, getVehiculos, getConductor
                             mensaje: 'Esta salida no tiene ninguna encomienda asignada. Registra al menos una antes de ponerla En Ruta.', entidades: [] })
                         return
                     }
-                    // (2) Alguna sede del recorrido (parada o destino final) sin carga.
-                    const sedesConCarga = new Set(
-                        ventas.filter(v => (v.paquetes || []).length > 0).map(v => v.destinatario?.idDestino).filter(Boolean)
-                    )
-                    // Las paradas ahora son propias de CADA par del convoy (ruta
-                    // fraccionada) -- se unen las de todos los pares, sin duplicar un
-                    // mismo municipio si dos pares comparten esa parada.
-                    const sedesSalida = [
-                        ...(salidaActual.paresVehiculoConductor || []).flatMap(par => (par.paradas || []).map(p => ({ id: p.idDestino, label: p.destino?.municipio || 'Parada' }))),
-                        { id: salidaActual.ruta?.idDestino, label: salidaActual.ruta?.destino?.municipio || 'Destino final' },
-                    ].filter((s, i, arr) => arr.findIndex(x => x.id === s.id) === i)
-                    const sedesVacias = sedesSalida.filter(s => s.id && !sedesConCarga.has(s.id))
-                    if (sedesVacias.length > 0) {
-                        setAlertaBloqueo({ open: true, tipo: 'carga', titulo: 'No se puede iniciar la salida',
-                            mensaje: 'Cada parada y el destino final deben tener al menos una encomienda asignada. Sin paquetes:',
-                            entidades: sedesVacias.map(s => ({ label: `${s.label} — sin paquetes` })) })
-                        return
-                    }
-                    // (3) Algún vehículo del convoy sin carga.
+                    // (2) Algún vehículo del convoy sin carga.
                     const paqPorPar = {}
                     ventas.forEach(v => (v.paquetes || []).forEach(p => { paqPorPar[p.idSalidaVehiculoConductor] = (paqPorPar[p.idSalidaVehiculoConductor] || 0) + 1 }))
                     const paresVacios = (salidaActual.paresVehiculoConductor || []).filter(par => !(paqPorPar[par.idSalidaVehiculoConductor] > 0))
