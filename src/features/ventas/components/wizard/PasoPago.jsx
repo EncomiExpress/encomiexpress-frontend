@@ -24,7 +24,7 @@ export default function PasoPago({ form, errores, setErrores, handleChange, vent
             </FormSelect>
             <FormField label="Total a pagar ($)" name="total"
                 value={formatearMoneda(form.total)} onChange={handleChange}
-                helperText="Tarifa del destino + costo por peso de cada paquete + cantidad × tarifa por paquete (editable)"
+                helperText="Tarifa del destino + costo por peso de cada paquete + cantidad × tarifa por paquete + póliza (si aplica) — editable"
                 inputProps={{ maxLength: 9 }}
                 endAdornment={totalEditadoManualmente && (
                     <Tooltip title="Volver a poner el valor calculado por el sistema">

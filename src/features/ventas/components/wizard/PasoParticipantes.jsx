@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Box, Typography, Paper, Divider, Avatar, TextField, MenuItem, InputAdornment, Autocomplete } from '@mui/material'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
@@ -11,6 +12,7 @@ import { FormField } from '../../../../shared/components/FormularioEstandarizado
 import NacionSVG from '../../../../shared/components/NacionSVG.jsx'
 import { formFieldStyles } from '../../../../shared/utils/formStyles.js'
 import { normalizarTexto } from '../../../../shared/utils/duplicados.js'
+import { useAuth } from '../../../../shared/contexts/AuthContext.jsx'
 import { maxLengthTelefono, telefonoHelperText } from '../../../../shared/validations/telefonoValidation.js'
 import {
     validarCampo, OPCION_CLIENTE_NUEVO,
@@ -30,6 +32,8 @@ export default function PasoParticipantes({
     form, setForm, errores, setErrores, handleChange, onNuevoCliente, setSinCambios, ventaOriginal,
     destinos, destinoDestinatarioInput, setDestinoDestinatarioInput, setParticipanteRef,
 }) {
+    const { usuario } = useAuth()
+    const esOperadorSede = usuario?.rol?.codigo === 'operador_sede'
     // Si el destino de este destinatario ya fue inhabilitado desde que se registró la
     // venta, no aparece en `destinos` (solo trae habilitados) — se usa el dato que ya
     // trae la propia venta como respaldo sintético, para que el campo nunca se vea vacío.
@@ -38,6 +42,16 @@ export default function PasoParticipantes({
             ? ventaOriginal.destinatario.destino
             : null
     )
+    // operador_sede (2026-09-17): destinosDesdeSede() nunca le da más de un destino
+    // posible -- toda venta suya viaja en un regreso, y todo regreso va a Medellín
+    // (deduplicado por destino, ver ventaValidation.js). No tiene sentido hacerla
+    // elegir de un Autocomplete con una sola opción; se autoselecciona y el campo
+    // queda de solo lectura más abajo.
+    useEffect(() => {
+        if (!esOperadorSede || destinos.length !== 1) return
+        if (parseInt(form.idDestinoDestinatario) === destinos[0].idDestino) return
+        handleChange({ target: { name: 'idDestinoDestinatario', value: destinos[0].idDestino } })
+    }, [esOperadorSede, destinos, form.idDestinoDestinatario, handleChange])
     return (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
             {/* Remitente */}
@@ -242,6 +256,16 @@ export default function PasoParticipantes({
                         inputProps={{ maxLength: 150 }} />
                     </Box>
                     <Box ref={(el) => setParticipanteRef?.('idDestinoDestinatario', el)}>
+                    {esOperadorSede ? (
+                        <TextField fullWidth label="Destino *" disabled
+                            value={destinoDestinatarioSeleccionado ? `${destinoDestinatarioSeleccionado.municipio} - ${destinoDestinatarioSeleccionado.departamento}` : ''}
+                            error={!!errores.idDestinoDestinatario}
+                            helperText={errores.idDestinoDestinatario || (destinoDestinatarioSeleccionado
+                                ? 'Toda venta desde tu sede viaja de regreso a Medellín'
+                                : 'Programa primero el regreso de tu sede para poder registrar ventas')}
+                            slotProps={{ inputLabel: { shrink: true } }}
+                            sx={formFieldStyles} />
+                    ) : (
                     <Autocomplete
                         popupIcon={<KeyboardArrowDownOutlinedIcon />}
                         options={destinos}
@@ -291,6 +315,7 @@ export default function PasoParticipantes({
                                 sx={formFieldStyles} />
                         )}
                     />
+                    )}
                     </Box>
                     <Box sx={{ gridColumn: '1 / -1' }}
                         ref={(el) => setParticipanteRef?.('direccionDestinatario', el)}>

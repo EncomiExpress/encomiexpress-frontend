@@ -88,8 +88,9 @@ export const calcularValorPoliza = (paquete) => {
 
 // total = tarifa base del destino + (suma del costo por peso de cada paquete,
 // según su tipo de carga y el mayor entre su peso real y volumétrico) + (cantidad de
-// paquetes × tarifa por paquete). El resultado sigue siendo editable a mano después
-// de este auto-cálculo.
+// paquetes × tarifa por paquete) + (suma de la póliza de cada paquete con valor
+// declarado, ver calcularValorPoliza -- P5). El resultado sigue siendo editable a
+// mano después de este auto-cálculo.
 //
 // Se redondea SIEMPRE al peso colombiano más cercano (sin centavos, ver LOGICA.md) antes
 // de devolverlo — el peso volumétrico (alto×ancho×profundidad/100³×400) puede dar un
