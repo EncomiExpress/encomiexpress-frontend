@@ -107,18 +107,25 @@ const RegistrarSalidaProgramada = ({ open, onClose, onSuccess, prefill }) => {
     // Autocomplete deja elegir un vehículo/conductor ya comprometido en ese rango
     // de fechas y el choque recién se descubre al guardar (o peor, al cambiar
     // estado a "En Ruta"). Un regreso no lo necesita: su convoy lo hereda la ida.
-    const { idVehiculosOcupados, idConductoresOcupados } = useDisponibilidadPares({
+    const { idVehiculosOcupados, idConductoresOcupados, idVehiculosProyectadosFuera, idConductoresProyectadosFuera } = useDisponibilidadPares({
         idVehiculos: esRegreso ? [] : vehiculosPorDocUbicacion.map(v => v.idVehiculo),
         idConductores: esRegreso ? [] : conductoresPorDocUbicacion.map(c => c.idConductor),
-        fechaSalida: form.fechaSalida, fechaLlegadaEstimada: form.fechaLlegadaEstimada,
+        fechaSalida: form.fechaSalida, horaSalida: form.horaSalida, fechaLlegadaEstimada: form.fechaLlegadaEstimada,
         refrescarKey: refrescarDisponibilidad,
     })
-    const vehiculosSeleccionables = vehiculosPorDocUbicacion.filter(v => !idVehiculosOcupados.has(v.idVehiculo))
-    const conductoresSeleccionables = conductoresPorDocUbicacion.filter(c => !idConductoresOcupados.has(c.idConductor))
+    const vehiculosPorChoque = vehiculosPorDocUbicacion.filter(v => !idVehiculosOcupados.has(v.idVehiculo))
+    const conductoresPorChoque = conductoresPorDocUbicacion.filter(c => !idConductoresOcupados.has(c.idConductor))
+    // Aunque ninguna otra salida choque de fecha con esta, si la última que le toca a
+    // este vehículo/conductor antes de esta no es un regreso, va a quedar fuera de
+    // Medellín justo cuando esta necesite arrancar (ver useDisponibilidadPares.js).
+    const vehiculosSeleccionables = vehiculosPorChoque.filter(v => !idVehiculosProyectadosFuera.has(v.idVehiculo))
+    const conductoresSeleccionables = conductoresPorChoque.filter(c => !idConductoresProyectadosFuera.has(c.idConductor))
     const vehiculosExcluidos = vehiculos.length - vehiculosPorDocUbicacion.length
     const conductoresExcluidos = conductores.length - conductoresPorDocUbicacion.length
-    const vehiculosOcupadosCount = vehiculosPorDocUbicacion.length - vehiculosSeleccionables.length
-    const conductoresOcupadosCount = conductoresPorDocUbicacion.length - conductoresSeleccionables.length
+    const vehiculosOcupadosCount = vehiculosPorDocUbicacion.length - vehiculosPorChoque.length
+    const conductoresOcupadosCount = conductoresPorDocUbicacion.length - conductoresPorChoque.length
+    const vehiculosProyectadosFueraCount = vehiculosPorChoque.length - vehiculosSeleccionables.length
+    const conductoresProyectadosFueraCount = conductoresPorChoque.length - conductoresSeleccionables.length
 
     // Aplica el prefill (si viene) cada vez que se abre el diálogo.
     useEffect(() => {
@@ -306,6 +313,7 @@ const RegistrarSalidaProgramada = ({ open, onClose, onSuccess, prefill }) => {
                         esRegreso={esRegreso}
                         vehiculos={vehiculos} conductores={conductores} vehiculosExcluidos={vehiculosExcluidos} conductoresExcluidos={conductoresExcluidos}
                         vehiculosOcupados={vehiculosOcupadosCount} conductoresOcupados={conductoresOcupadosCount}
+                        vehiculosProyectadosFuera={vehiculosProyectadosFueraCount} conductoresProyectadosFuera={conductoresProyectadosFueraCount}
                         vehiculoInputs={vehiculoInputs} setVehiculoInputs={setVehiculoInputs} conductorInputs={conductorInputs} setConductorInputs={setConductorInputs}
                         getVehiculoOpciones={getVehiculoOpciones} getConductorOpciones={getConductorOpciones}
                     />

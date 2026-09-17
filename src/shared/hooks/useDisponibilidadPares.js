@@ -12,7 +12,31 @@ import { sumarDias, DIAS_MARGEN_ENTRE_RUTAS } from '../utils/horarioLaboral.js'
 // otraSalida < candidatoLlegada+GAP.
 const GAP_TRANSICION = DIAS_MARGEN_ENTRE_RUTAS
 
-export const useDisponibilidadPares = ({ idVehiculos = [], idConductores = [], fechaSalida, fechaLlegadaEstimada, idSalidaExcluir, refrescarKey }) => {
+// Misma proyección que validarUbicacionParaRuta (backend, salidaProgramadaService.js,
+// 2026-09-17): de las ocupaciones de un vehículo/conductor que arrancan ANTES que la
+// candidata, la más tardía -- si esa no es un regreso (sin idSalidaIda), ese
+// vehículo/conductor va a estar fuera de Medellín justo cuando la candidata necesite
+// arrancar, aunque hoy mismo (idDestinoActual) todavía no lo esté porque esa otra
+// salida ni siquiera arrancó.
+const masTardiaAntesDe = (ocupaciones, idKey, fechaSalida, horaSalida) => {
+    const porId = new Map()
+    const horaB = horaSalida || '00:00'
+    for (const o of ocupaciones) {
+        const id = o[idKey]
+        if (!id) continue
+        const horaO = o.horaSalida || '00:00'
+        const esAntes = o.fechaSalida < fechaSalida || (o.fechaSalida === fechaSalida && horaO < horaB)
+        if (!esAntes) continue
+        const actual = porId.get(id)
+        const horaActual = actual ? (actual.horaSalida || '00:00') : null
+        if (!actual || o.fechaSalida > actual.fechaSalida || (o.fechaSalida === actual.fechaSalida && horaO > horaActual)) {
+            porId.set(id, o)
+        }
+    }
+    return porId
+}
+
+export const useDisponibilidadPares = ({ idVehiculos = [], idConductores = [], fechaSalida, horaSalida, fechaLlegadaEstimada, idSalidaExcluir, refrescarKey }) => {
     const [ocupaciones, setOcupaciones] = useState([])
 
     useEffect(() => {
@@ -31,7 +55,9 @@ export const useDisponibilidadPares = ({ idVehiculos = [], idConductores = [], f
     return useMemo(() => {
         const idVehiculosOcupados = new Set()
         const idConductoresOcupados = new Set()
-        if (!fechaSalida) return { idVehiculosOcupados, idConductoresOcupados }
+        const idVehiculosProyectadosFuera = new Set()
+        const idConductoresProyectadosFuera = new Set()
+        if (!fechaSalida) return { idVehiculosOcupados, idConductoresOcupados, idVehiculosProyectadosFuera, idConductoresProyectadosFuera }
 
         const llegadaCandidata = fechaLlegadaEstimada || fechaSalida
         for (const o of ocupaciones) {
@@ -43,6 +69,12 @@ export const useDisponibilidadPares = ({ idVehiculos = [], idConductores = [], f
                 if (o.idConductor) idConductoresOcupados.add(o.idConductor)
             }
         }
-        return { idVehiculosOcupados, idConductoresOcupados }
-    }, [ocupaciones, fechaSalida, fechaLlegadaEstimada])
+
+        const ultimaVehiculoAntes = masTardiaAntesDe(ocupaciones, 'idVehiculo', fechaSalida, horaSalida)
+        const ultimaConductorAntes = masTardiaAntesDe(ocupaciones, 'idConductor', fechaSalida, horaSalida)
+        for (const [id, o] of ultimaVehiculoAntes) if (!o.idSalidaIda) idVehiculosProyectadosFuera.add(id)
+        for (const [id, o] of ultimaConductorAntes) if (!o.idSalidaIda) idConductoresProyectadosFuera.add(id)
+
+        return { idVehiculosOcupados, idConductoresOcupados, idVehiculosProyectadosFuera, idConductoresProyectadosFuera }
+    }, [ocupaciones, fechaSalida, horaSalida, fechaLlegadaEstimada])
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Box, Typography, Button } from '@mui/material'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Box, Typography, Button, ButtonBase } from '@mui/material'
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
 import TablaPaginacionFooter from '../../shared/components/TablaPaginacionFooter.jsx'
 import DataTable, { FiltroEstadoTabs, BuscadorField } from '../../shared/components/DataTable.jsx'
@@ -26,6 +26,20 @@ const ListarRuta = () => {
     const [modalRegistrarOpen, setModalRegistrarOpen] = useState(false)
     const [modalActualizarOpen, setModalActualizarOpen] = useState(false)
     const [rutaEditar, setRutaEditar] = useState(null)
+    // "Rutas de ida" (normal) vs "Rutas de regreso" (2026-09-17): la plantilla
+    // compartida "Medellín" nunca se muestra como fila propia -- en su lugar, esta
+    // pestaña muestra las MISMAS rutas reales que ya tienen al menos un regreso
+    // registrado, con el corredor invertido (ver rutaResolvers.getRutaLabelRegreso).
+    // Vive en la URL (no useState) para que persista al entrar a "Salidas" de una
+    // fila y volver -- si no, cada vuelta reseteaba la pestaña a "Ida" sin avisar.
+    const [searchParams, setSearchParams] = useSearchParams()
+    const tipoRuta = searchParams.get('tipo') === 'regreso' ? 'regreso' : 'ida'
+    const setTipoRuta = (tipo) => setSearchParams(prev => {
+        const next = new URLSearchParams(prev)
+        if (tipo === 'regreso') next.set('tipo', 'regreso')
+        else next.delete('tipo')
+        return next
+    }, { replace: true })
 
     // Estado propio de esta tabla paginada (no el arreglo compartido de
     // RutaContext, que otras pantallas usan con limit alto para Autocompletes —
@@ -47,11 +61,12 @@ const ListarRuta = () => {
     } = useEntityCrud({
         fetchPage: async (signal, params) => {
             if (!usuario) return
-            const res = await getRutas(params, signal)
+            const res = await getRutas({ ...params, tipo: tipoRuta }, signal)
             setRutas(res?.data ?? [])
             setTotal(res?.total ?? (res?.data ?? []).length)
         },
-        extraDeps: [usuario],
+        extraDeps: [usuario, tipoRuta],
+        enabled: !!usuario,
     })
 
     const { confirmInhabilitar, setConfirmInhabilitar, handleToggleHabilitado, onConfirmar } = useRutaAcciones(refetch)
@@ -64,14 +79,42 @@ const ListarRuta = () => {
         ? 'No se encontraron rutas que coincidan con los filtros aplicados.'
         : debouncedSearch.trim()
             ? 'No se encontraron rutas que coincidan con la búsqueda.'
-            : 'No hay rutas registradas en el sistema.'
+            : tipoRuta === 'regreso'
+                ? 'Ninguna sede tiene un regreso registrado todavía.'
+                : 'No hay rutas registradas en el sistema.'
 
     // "Salidas": lleva a la sub-vista de Programación de Salidas SCOPED a esta
     // plantilla (/transporte/rutas/:idRuta/salidas) — ya no existe una vista
-    // global de Salidas; solo se llega a ella eligiendo una Ruta primero.
+    // global de Salidas; solo se llega a ella eligiendo una Ruta primero. En la
+    // pestaña "Rutas de regreso" la URL sigue siendo la de la ruta real (idRuta no
+    // cambia, sigue siendo la misma fila) pero con ?vista=regreso: ahí
+    // ListarSalidaProgramada.jsx pide las salidas de regreso de esa ruta en vez de
+    // sus idas (ver salidaProgramadaService.buildRutaWhere, filtro regresoDeRuta).
     const handleVerSalidas = (ruta) => {
-        navigate(`/transporte/rutas/${ruta.idRuta}/salidas`)
+        navigate(`/transporte/rutas/${ruta.idRuta}/salidas${tipoRuta === 'regreso' ? '?vista=regreso' : ''}`)
     }
+
+    // Compacto a propósito: vive pegado al encabezado "Ruta" de la tabla (ver
+    // DataTable.jsx, `headerExtra`), no suelto arriba como un filtro más.
+    const tipoRutaToggle = (
+        <Box sx={{ display: 'inline-flex', gap: 0.3, p: 0.25, borderRadius: 1.5, backgroundColor: theme.palette.background.paper, border: `1px solid ${theme.palette.divider}` }}>
+            {[{ value: 'ida', label: 'Ida' }, { value: 'regreso', label: 'Regreso' }].map((op) => (
+                <ButtonBase
+                    key={op.value}
+                    onClick={() => { setTipoRuta(op.value); setPage(1) }}
+                    disableRipple
+                    sx={{
+                        px: 1, py: 0.3, borderRadius: 1, fontSize: '0.68rem', fontWeight: 700, textTransform: 'none',
+                        color: tipoRuta === op.value ? '#fff' : theme.palette.text.secondary,
+                        backgroundColor: tipoRuta === op.value ? theme.palette.primary.main : 'transparent',
+                        transition: 'background-color 0.15s ease, color 0.15s ease',
+                    }}
+                >
+                    {op.label}
+                </ButtonBase>
+            ))}
+        </Box>
+    )
 
     const columns = useRutaColumns({
         theme, tienePermiso, PERMISOS,
@@ -79,6 +122,8 @@ const ListarRuta = () => {
         onEditar: (ruta) => { setRutaEditar(ruta); setModalActualizarOpen(true) },
         onToggleHabilitado: handleToggleHabilitado,
         onVerSalidas: handleVerSalidas,
+        invertirLabel: tipoRuta === 'regreso',
+        headerExtraRuta: tipoRutaToggle,
     })
 
     return (
@@ -138,6 +183,7 @@ const ListarRuta = () => {
                 onSort={handleSort}
                 highlightId={highlightId}
                 highlightRef={highlightRef}
+                onRowClick={handleVerSalidas}
                 rowSx={(ruta) => ({ opacity: ruta.habilitado !== false ? 1 : 0.55 })}
                 emptyMessage={emptyMessage}
                 loadingMessage="Cargando rutas..."

@@ -1,13 +1,20 @@
 import { useState } from 'react'
 import { getEncomiendas } from '../../ventas/services/ventaService.js'
 import { getDisponibilidadSalida } from '../services/salidaService.js'
-import { getGuiaPrincipal } from '../../../shared/utils/formatters.js'
+import { getGuiaPrincipal, formatFecha } from '../../../shared/utils/formatters.js'
+import { getDocumentoVehiculoVencido, conductorLicenciaVigente } from '../../../shared/utils/vigenciaDocumentos.js'
 import { getSalidaId } from '../utils/salidaResolvers.js'
 
 // Adaptado de useEstadoRuta.js -- es la pieza de mayor riesgo de todo el módulo:
 // detecta conflictos de disponibilidad de vehículo/conductor contra TODAS las
 // salidas En Ruta (no solo la página cargada) y bloquea ventas sin fecha de entrega
 // antes de permitir pasar una salida a "En Ruta".
+// La etiqueta necesita la fecha además de origen/destino: dos salidas al mismo
+// destino (ej. dos viajes a Montería en semanas distintas) se ven idénticas sin
+// ella, y el usuario no puede saber CUÁL de las dos es la que está en conflicto.
+const etiquetaSalidaConflicto = (s) =>
+  s.origen ? `${s.origen} → ${s.destino?.municipio || 'Sin destino'} · ${formatFecha(s.fechaSalida)}` : `#${s.idSalida}`
+
 export function useEstadoSalida({ salidasProgramadas, getVehiculos, getConductores, fetchVehiculos, fetchConductores, updateEstado, refetch, showToast }) {
     const [confirmEstado, setConfirmEstado] = useState({ open: false, id: null, nuevoEstado: null, info: '', salida: null, pares: [] })
     const [alertaBloqueo, setAlertaBloqueo] = useState({ open: false, tipo: 'conflicto', titulo: '', entidades: [] })
@@ -88,6 +95,13 @@ export function useEstadoSalida({ salidasProgramadas, getVehiculos, getConductor
             for (const par of paresResueltos) {
                 const conflictoVehiculo = disponibilidad.find(d => d.idVehiculo === par.idVehiculo && d.estado === 'En Ruta')
                 const conflictoConductor = disponibilidad.find(d => d.idConductor === par.idConductor && d.estado === 'En Ruta')
+                // Mismo orden que valida el backend al pasar a "En Ruta" (ver LOGICA.md,
+                // tabla de transiciones): 1. vehículo ocupado, 2. conductor ocupado, 3.
+                // documentos/licencia vigentes -- revalidados acá también, no solo al
+                // elegir el par en el wizard, por si vencieron mientras la salida seguía
+                // Programada.
+                const documentoVencido = par.vehiculo ? getDocumentoVehiculoVencido(par.vehiculo) : null
+                const licenciaVencida = par.conductor && !conductorLicenciaVigente(par.conductor.categoriasLicencia)
 
                 if (par.vehiculo?.estado === 'Mantenimiento') {
                     vehiculoBlocked = true
@@ -97,8 +111,11 @@ export function useEstadoSalida({ salidasProgramadas, getVehiculos, getConductor
                     entidades.push({
                         tipo: 'vehiculo', etiqueta: par.vehiculo?.placa || '', estado: par.vehiculo?.estado, id: par.vehiculo?.idVehiculo,
                         mensaje: 'está en curso con la salida',
-                        salidaConflicto: { idSalida: conflictoVehiculo.idSalida, label: conflictoVehiculo.origen ? `${conflictoVehiculo.origen} → ${conflictoVehiculo.destino?.municipio || 'Sin destino'}` : `#${conflictoVehiculo.idSalida}` },
+                        salidaConflicto: { idSalida: conflictoVehiculo.idSalida, idRuta: conflictoVehiculo.idRuta, label: etiquetaSalidaConflicto(conflictoVehiculo) },
                     })
+                } else if (documentoVencido) {
+                    vehiculoBlocked = true
+                    entidades.push({ tipo: 'vehiculo', etiqueta: par.vehiculo?.placa || '', estado: par.vehiculo?.estado, id: par.vehiculo?.idVehiculo, mensaje: `tiene el ${documentoVencido} vencido y no puede asignarse a una salida En Ruta.`, salidaConflicto: null })
                 }
 
                 if (conflictoConductor) {
@@ -107,8 +124,12 @@ export function useEstadoSalida({ salidasProgramadas, getVehiculos, getConductor
                     entidades.push({
                         tipo: 'conductor', etiqueta: nombre, estado: par.conductor?.estado || 'en_ruta', id: par.conductor?.idConductor,
                         mensaje: 'está en curso con la salida',
-                        salidaConflicto: { idSalida: conflictoConductor.idSalida, label: conflictoConductor.origen ? `${conflictoConductor.origen} → ${conflictoConductor.destino?.municipio || 'Sin destino'}` : `#${conflictoConductor.idSalida}` },
+                        salidaConflicto: { idSalida: conflictoConductor.idSalida, idRuta: conflictoConductor.idRuta, label: etiquetaSalidaConflicto(conflictoConductor) },
                     })
+                } else if (licenciaVencida) {
+                    conductorBlocked = true
+                    const nombre = par.conductor?.nombre ? `${par.conductor.nombre} ${par.conductor.apellido || ''}`.trim() : 'Conductor'
+                    entidades.push({ tipo: 'conductor', etiqueta: nombre, estado: par.conductor?.estado, id: par.conductor?.idConductor, mensaje: 'tiene la licencia de conducción vencida y no puede asignarse a una salida En Ruta.', salidaConflicto: null })
                 }
             }
 
@@ -132,25 +153,25 @@ export function useEstadoSalida({ salidasProgramadas, getVehiculos, getConductor
                 const ventasRes = await getEncomiendas(undefined, { idSalida: id, habilitado: 'true', limit: 1000 })
                 const ventas = (ventasRes?.data || []).filter(v => v.estado !== 'Cancelada')
 
-                // Pre-chequeos que replican al backend. No aplica a un viaje de regreso
-                // (puede ir vacío).
-                if (!salidaActual?.idSalidaIda) {
-                    // (1) Sin ninguna encomienda.
-                    if (ventas.length === 0) {
-                        setAlertaBloqueo({ open: true, tipo: 'carga', titulo: 'No se puede iniciar la salida',
-                            mensaje: 'Esta salida no tiene ninguna encomienda asignada. Registra al menos una antes de ponerla En Ruta.', entidades: [] })
-                        return
-                    }
-                    // (2) Algún vehículo del convoy sin carga.
-                    const paqPorPar = {}
-                    ventas.forEach(v => (v.paquetes || []).forEach(p => { paqPorPar[p.idSalidaVehiculoConductor] = (paqPorPar[p.idSalidaVehiculoConductor] || 0) + 1 }))
-                    const paresVacios = (salidaActual.paresVehiculoConductor || []).filter(par => !(paqPorPar[par.idSalidaVehiculoConductor] > 0))
-                    if (paresVacios.length > 0) {
-                        setAlertaBloqueo({ open: true, tipo: 'carga', titulo: 'No se puede iniciar la salida',
-                            mensaje: 'Todos los vehículos del convoy deben llevar carga. Sin paquetes:',
-                            entidades: paresVacios.map(par => ({ label: `${par.vehiculo?.placa || 'Vehículo'} — sin paquetes` })) })
-                        return
-                    }
+                // Pre-chequeos que replican al backend. Un viaje de regreso ya NO está
+                // exento (2026-09-17) -- ver el mismo comentario en updateEstado
+                // (salidaProgramadaService.js): ahora sí hay forma de cargarle
+                // encomiendas, así que le aplica la misma regla de "no salir vacío".
+                // (1) Sin ninguna encomienda.
+                if (ventas.length === 0) {
+                    setAlertaBloqueo({ open: true, tipo: 'carga', titulo: 'No se puede iniciar la salida',
+                        mensaje: 'Esta salida no tiene ninguna encomienda asignada. Registra al menos una antes de ponerla En Ruta.', entidades: [] })
+                    return
+                }
+                // (2) Algún vehículo del convoy sin carga.
+                const paqPorPar = {}
+                ventas.forEach(v => (v.paquetes || []).forEach(p => { paqPorPar[p.idSalidaVehiculoConductor] = (paqPorPar[p.idSalidaVehiculoConductor] || 0) + 1 }))
+                const paresVacios = (salidaActual.paresVehiculoConductor || []).filter(par => !(paqPorPar[par.idSalidaVehiculoConductor] > 0))
+                if (paresVacios.length > 0) {
+                    setAlertaBloqueo({ open: true, tipo: 'carga', titulo: 'No se puede iniciar la salida',
+                        mensaje: 'Todos los vehículos del convoy deben llevar carga. Sin paquetes:',
+                        entidades: paresVacios.map(par => ({ label: `${par.vehiculo?.placa || 'Vehículo'} — sin paquetes` })) })
+                    return
                 }
 
                 const ventasSinFecha = ventas.filter(v => !v.fechaEstimadaEntrega)

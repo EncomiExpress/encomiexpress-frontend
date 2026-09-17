@@ -15,8 +15,18 @@ const useVisibleNav = () => {
   const itemVisible = (item) =>
     tienePermiso(item.permiso) && !(item.excluirRoles || []).includes(rolCodigo)
 
+  // operador_sede nunca ve el listado de Rutas (2026-09-17, ver LOGICA.md "Sedes
+  // remotas"): como su sede siempre es la misma, el ítem "Rutas" se reemplaza por un
+  // acceso directo a su agenda completa (ida + regreso juntos, sin elegir ruta
+  // primero) -- ver ListarSalidaProgramada.jsx y salidas.routes.jsx
+  // (/transporte/mis-salidas).
+  const conRutaParaOperadorSede = (item) =>
+    item.id === 'rutas' && rolCodigo === 'operador_sede'
+      ? { ...item, label: 'Salidas', path: '/transporte/mis-salidas' }
+      : item
+
   const sections = SECTIONS
-    .map((s) => ({ ...s, items: s.items.filter(itemVisible) }))
+    .map((s) => ({ ...s, items: s.items.filter(itemVisible).map(conRutaParaOperadorSede) }))
     .filter((s) => s.items.length > 0)
 
   const dashboardItem = itemVisible(DASHBOARD_ITEM) ? DASHBOARD_ITEM : null

@@ -12,11 +12,13 @@ import AccountBalanceWalletOutlinedIcon from '@mui/icons-material/AccountBalance
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
 import PlaceOutlinedIcon from '@mui/icons-material/PlaceOutlined'
 import WarningAmberOutlinedIcon from '@mui/icons-material/WarningAmberOutlined'
+import { buildSalidaHighlightUrl } from '../utils/salidaLinks.js'
 
 const ICONOS_TIPO = {
     'Vehículo': <DirectionsCarOutlinedIcon sx={{ fontSize: 16 }} />,
-    'Ruta': <RouteOutlinedIcon sx={{ fontSize: 16 }} />,
-    'Ruta activa': <RouteOutlinedIcon sx={{ fontSize: 16 }} />,
+    'Salida': <RouteOutlinedIcon sx={{ fontSize: 16 }} />,
+    'Salida activa': <RouteOutlinedIcon sx={{ fontSize: 16 }} />,
+    'Regreso pendiente': <RouteOutlinedIcon sx={{ fontSize: 16 }} />,
     'Encomienda': <LocalShippingOutlinedIcon sx={{ fontSize: 16 }} />,
     'Anticipo Pendiente': <AccountBalanceWalletOutlinedIcon sx={{ fontSize: 16 }} />,
     'Estado del anticipo': <AccountBalanceWalletOutlinedIcon sx={{ fontSize: 16 }} />,
@@ -38,19 +40,25 @@ const agruparPorTipo = (dependencias) => {
 // A qué módulo lleva cada tipo de dependencia al hacer clic (siempre con
 // ?highlight=id, mismo comportamiento que el resto del sistema: abre en otra
 // pestaña, ubica la página correcta y resalta la fila).
-// "Ruta"/"Ruta activa"/"Conflicto de..." son dependencias sobre la AGENDA (una
-// salida concreta: fecha/hora/estado/convoy), no sobre la plantilla liviana de
-// /transporte/rutas -- por eso apuntan a /transporte/salidas (ver Fase 4 de la
-// migración Ruta/SalidaProgramada).
+// "Salida"/"Salida activa"/"Regreso pendiente"/"Conflicto de..." son dependencias
+// sobre una SalidaProgramada puntual, no sobre la plantilla liviana de
+// /transporte/rutas -- esas viven en /transporte/rutas/:idRuta/salidas (ya no existe
+// una vista global /transporte/salidas, ver Fase 4 de la migración
+// Ruta/SalidaProgramada), así que no alcanza con una ruta base fija: hace falta el
+// idRuta que ya viene en la propia dependencia (ver validateDependencies.js /
+// salidaProgramadaService.js) y arman el link con buildSalidaHighlightUrl, igual que
+// el resto del sistema.
 const RUTA_POR_TIPO = {
     'Vehículo': '/vehiculos/listar',
-    'Ruta': '/transporte/salidas',
-    'Ruta activa': '/transporte/salidas',
     'Encomienda': '/ventas/listar',
     'Anticipo Pendiente': '/anticipos/listar',
     'Estado del anticipo': '/anticipos/listar',
-    'Conflicto de vehículo': '/transporte/salidas',
-    'Conflicto de conductor': '/transporte/salidas',
+}
+const TIPOS_SALIDA = new Set(['Salida', 'Salida activa', 'Regreso pendiente', 'Conflicto de vehículo', 'Conflicto de conductor'])
+
+const linkDeDependencia = (dep) => {
+    if (TIPOS_SALIDA.has(dep.tipo)) return dep.idRuta ? buildSalidaHighlightUrl({ idRuta: dep.idRuta, idSalida: dep.id }) : null
+    return RUTA_POR_TIPO[dep.tipo] ? `${RUTA_POR_TIPO[dep.tipo]}?highlight=${dep.id}` : null
 }
 
 const ModalBloqueoInhabilitacion = ({ open, onClose, entidad = 'registro', mensaje, dependencias = [] }) => {
@@ -75,9 +83,12 @@ const ModalBloqueoInhabilitacion = ({ open, onClose, entidad = 'registro', mensa
                 }
             }}
         >
-            {/* Cabecera con color de advertencia */}
+            {/* Cabecera en warning (naranja) -- que el sistema rechace inhabilitar algo no
+                es una acción destructiva/irreversible (eso es "danger"), es un aviso de
+                que hay que resolver algo antes -- misma familia de color que "Inhabilitar"
+                en ConfirmToggleDialog. */}
             <Box sx={{
-                backgroundColor: theme.palette.error.main,
+                backgroundColor: theme.palette.warning.main,
                 px: 3,
                 py: 2.5,
                 display: 'flex',
@@ -152,13 +163,13 @@ const ModalBloqueoInhabilitacion = ({ open, onClose, entidad = 'registro', mensa
 
                             {/* Items del grupo */}
                             {grupos[tipo].map((dep, idx) => {
-                                const ruta = RUTA_POR_TIPO[dep.tipo]
-                                const clickeable = !!(ruta && dep.id)
+                                const link = dep.id ? linkDeDependencia(dep) : null
+                                const clickeable = !!link
                                 return (
                                     <Box key={dep.id ?? idx}>
                                         {idx > 0 && <Divider />}
                                         <Box
-                                            onClick={clickeable ? () => window.open(`${ruta}?highlight=${dep.id}`, '_blank') : undefined}
+                                            onClick={clickeable ? () => window.open(link, '_blank') : undefined}
                                             sx={{ px: 2, py: 1.2, cursor: clickeable ? 'pointer' : 'default', '&:hover': clickeable ? { backgroundColor: theme.palette.background.subtle } : {} }}>
                                             <Typography variant="body2" color={clickeable ? theme.palette.primary.main : theme.palette.text.secondary} lineHeight={1.5}
                                                 sx={clickeable ? { textDecoration: 'underline', textDecorationStyle: 'dotted' } : undefined}>
@@ -178,16 +189,12 @@ const ModalBloqueoInhabilitacion = ({ open, onClose, entidad = 'registro', mensa
                     onClick={onClose}
                     variant="contained"
                     sx={{
-                        backgroundColor: theme.palette.primary.main,
+                        backgroundColor: theme.palette.warning.main,
                         borderRadius: 2,
                         textTransform: 'none',
                         fontWeight: 600,
                         px: 3,
-                        boxShadow: `0 4px 14px ${theme.palette.primary.activeBg}`,
-                        '&:hover': {
-                            backgroundColor: theme.palette.primary.dark,
-                            boxShadow: `0 6px 20px ${theme.palette.primary.activeBg}`,
-                        },
+                        '&:hover': { backgroundColor: theme.palette.warning.main, filter: 'brightness(0.88)' },
                     }}
                 >
                     Entendido

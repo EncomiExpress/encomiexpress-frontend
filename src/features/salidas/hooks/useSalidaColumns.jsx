@@ -4,7 +4,6 @@ import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
 import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined'
 import SyncAltOutlinedIcon from '@mui/icons-material/SyncAltOutlined'
 import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined'
-import PersonAddOutlinedIcon from '@mui/icons-material/PersonAddOutlined'
 import ToggleSwitch from '../../../shared/components/ToggleSwitch.jsx'
 import PlacaDisplay from '../../../shared/components/PlacaDisplay.jsx'
 import { formatFecha, formatHora12 } from '../../../shared/utils/formatters.js'
@@ -22,7 +21,7 @@ import { warningChipSx, errorChipSx } from '../style/chips.js'
 // fila era redundante.
 const useSalidaColumns = ({
     theme, tienePermiso, PERMISOS, getVehiculos, getConductores, sedeActual, usuario,
-    onConsultar, onEditar, onEditarHorarioSede, onToggleHabilitado, onAbrirMenuEstado, onCancelarEnRuta, onProgramarRegreso, onProgramarRegresoSede, onReutilizarSalida, onAsignarRepartidor,
+    onConsultar, onEditar, onEditarHorarioSede, onToggleHabilitado, onAbrirMenuEstado, onCancelarEnRuta, onProgramarRegreso, onProgramarRegresoSede, onReutilizarSalida,
 }) => [
     {
         key: 'fechaHora', label: 'Fecha y hora salida', cellSx: { py: 1.5 },
@@ -278,18 +277,6 @@ const useSalidaColumns = ({
                             <IconButton size="small" onClick={() => onProgramarRegresoSede(salida)}
                                 sx={{ color: theme.palette.primary.main, '&:hover': { backgroundColor: theme.palette.primary.dim } }}>
                                 <SyncAltOutlinedIcon sx={{ fontSize: 18 }} />
-                            </IconButton>
-                        </Tooltip>
-                    )}
-                    {/* Agregar o quitar un vehículo+conductor del convoy sin abrir todo el wizard
-                        de edición -- solo tiene sentido antes de que la salida arranque, con el
-                        mismo permiso que editarla. Un regreso nunca lo muestra: hereda el
-                        convoy completo de la ida, no se le puede tocar nada. */}
-                    {puedeEditarAdmin && !esRegreso && salida.estado === 'Programada' && (
-                        <Tooltip title="Gestionar convoy">
-                            <IconButton size="small" onClick={() => onAsignarRepartidor(salida)}
-                                sx={{ color: theme.palette.primary.main, '&:hover': { backgroundColor: theme.palette.primary.dim } }}>
-                                <PersonAddOutlinedIcon sx={{ fontSize: 18 }} />
                             </IconButton>
                         </Tooltip>
                     )}

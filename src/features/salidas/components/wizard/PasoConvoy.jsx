@@ -18,6 +18,7 @@ const PasoConvoy = ({
     esRegreso = false,
     vehiculos, conductores, vehiculosExcluidos, conductoresExcluidos,
     vehiculosOcupados = 0, conductoresOcupados = 0,
+    vehiculosProyectadosFuera = 0, conductoresProyectadosFuera = 0,
     vehiculoInputs, setVehiculoInputs, conductorInputs, setConductorInputs,
     getVehiculoOpciones, getConductorOpciones,
 }) => (
@@ -45,7 +46,7 @@ const PasoConvoy = ({
             </Box>
         ) : (
             <>
-            {(vehiculosExcluidos > 0 || conductoresExcluidos > 0 || vehiculosOcupados > 0 || conductoresOcupados > 0) && (
+            {(vehiculosExcluidos > 0 || conductoresExcluidos > 0 || vehiculosOcupados > 0 || conductoresOcupados > 0 || vehiculosProyectadosFuera > 0 || conductoresProyectadosFuera > 0) && (
                 <Typography variant="caption" color={theme.palette.text.secondary}>
                     {[
                         vehiculosExcluidos > 0 && `${vehiculosExcluidos} vehículo${vehiculosExcluidos > 1 ? 's' : ''} oculto${vehiculosExcluidos > 1 ? 's' : ''} por documentos vencidos`,
@@ -54,6 +55,10 @@ const PasoConvoy = ({
                         // elegidas en el paso "Horario" (ver useDisponibilidadPares.js).
                         vehiculosOcupados > 0 && `${vehiculosOcupados} vehículo${vehiculosOcupados > 1 ? 's' : ''} oculto${vehiculosOcupados > 1 ? 's' : ''} por choque de horario`,
                         conductoresOcupados > 0 && `${conductoresOcupados} conductor${conductoresOcupados > 1 ? 'es' : ''} oculto${conductoresOcupados > 1 ? 's' : ''} por choque de horario`,
+                        // No chocan de fecha, pero su última salida antes de esta no es un
+                        // regreso -- van a seguir fuera de Medellín cuando esta arranque.
+                        vehiculosProyectadosFuera > 0 && `${vehiculosProyectadosFuera} vehículo${vehiculosProyectadosFuera > 1 ? 's' : ''} oculto${vehiculosProyectadosFuera > 1 ? 's' : ''} porque van a quedar fuera de base`,
+                        conductoresProyectadosFuera > 0 && `${conductoresProyectadosFuera} conductor${conductoresProyectadosFuera > 1 ? 'es' : ''} oculto${conductoresProyectadosFuera > 1 ? 's' : ''} porque van a quedar fuera de base`,
                     ].filter(Boolean).join(' · ')}
                 </Typography>
             )}

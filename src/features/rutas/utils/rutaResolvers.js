@@ -8,3 +8,10 @@ import { MUNICIPIO_ORIGEN } from '../../../shared/config/negocio.js'
 // mostrar tal cual, no hace falta un caso especial.
 export const getRutaLabel = (ruta) =>
     ruta?.destino?.municipio ? `${MUNICIPIO_ORIGEN} → ${ruta.destino.municipio}` : (ruta ? `Ruta #${ruta.idRuta}` : '—')
+
+// Para la pestaña "Rutas de regreso" (ListarRuta.jsx) y la vista de regresos de
+// Salidas: mismo dato, corredor invertido -- el regreso sale del destino de la ruta
+// hacia Medellín, no al revés. La ruta en sí no cambia (sigue siendo la misma fila,
+// ver rutaService.buildRutaSedeCondition), esto es puramente de presentación.
+export const getRutaLabelRegreso = (ruta) =>
+    ruta?.destino?.municipio ? `${ruta.destino.municipio} → ${MUNICIPIO_ORIGEN}` : (ruta ? `Ruta #${ruta.idRuta}` : '—')

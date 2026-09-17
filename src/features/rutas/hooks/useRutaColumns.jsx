@@ -4,25 +4,31 @@ import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
 import EventRepeatOutlinedIcon from '@mui/icons-material/EventRepeatOutlined'
 import ToggleSwitch from '../../../shared/components/ToggleSwitch.jsx'
 import NacionSVG from '../../../shared/components/NacionSVG.jsx'
-import { getRutaLabel } from '../utils/rutaResolvers.js'
+import { getRutaLabel, getRutaLabelRegreso } from '../utils/rutaResolvers.js'
 
 // Columnas de la tabla de plantillas de Ruta — mucho más liviana que la de
 // Salidas (sin fecha/hora/estado/convoy: eso vive en la agenda). Sin columna de
 // "Nombre": cada ruta se identifica por su corredor (Medellín -> destino),
 // calculado en getRutaLabel, igual que antes de la migración Ruta/SalidaProgramada.
-const useRutaColumns = ({ theme, tienePermiso, PERMISOS, onConsultar, onEditar, onToggleHabilitado, onVerSalidas }) => [
+// invertirLabel: true en la pestaña "Rutas de regreso" (ver ListarRuta.jsx) -- la
+// fila sigue siendo la MISMA ruta real, solo se pinta con el corredor al revés
+// (destino → Medellín) porque de eso se trata esa pestaña.
+// headerExtraRuta: contenido opcional junto al encabezado "Ruta" (ver DataTable.jsx,
+// `headerExtra`) -- lo usa ListarRuta.jsx para el selector Ida/Regreso, en vez de
+// dejarlo suelto arriba de la tabla.
+const useRutaColumns = ({ theme, tienePermiso, PERMISOS, onConsultar, onEditar, onToggleHabilitado, onVerSalidas, invertirLabel = false, headerExtraRuta }) => [
     {
         // sortField ordena por el destino (municipio), no por la etiqueta completa
         // "Medellín -> destino": el origen es siempre fijo, así que ordenar por la
         // etiqueta entera no aportaría nada que ordenar por el destino no dé ya.
-        key: 'ruta', label: 'Ruta', sortField: 'municipio', cellSx: { py: 1.5 },
+        key: 'ruta', label: 'Ruta', sortField: 'municipio', cellSx: { py: 1.5 }, headerExtra: headerExtraRuta,
         render: (ruta) => (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                 <Box sx={{ width: 26, height: 28, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <NacionSVG color={ruta.habilitado !== false ? theme.palette.primary.main : theme.palette.text.disabled} />
                 </Box>
                 <Typography variant="body2" fontWeight={500} color={theme.palette.text.primary} sx={{ fontSize: '0.85rem' }}>
-                    {getRutaLabel(ruta)}
+                    {invertirLabel ? getRutaLabelRegreso(ruta) : getRutaLabel(ruta)}
                 </Typography>
             </Box>
         ),
@@ -56,7 +62,7 @@ const useRutaColumns = ({ theme, tienePermiso, PERMISOS, onConsultar, onEditar, 
                     </Tooltip>
                 )}
                 {tienePermiso(PERMISOS.CONSULTAR_RUTA) && (
-                    <Tooltip title="Salidas — ver y programar los viajes de esta ruta">
+                    <Tooltip title={invertirLabel ? 'Ver los regresos programados desde esta sede' : 'Salidas — ver y programar los viajes de esta ruta'}>
                         <IconButton size="small" onClick={() => onVerSalidas(ruta)}
                             sx={{ color: theme.palette.primary.main, '&:hover': { backgroundColor: theme.palette.primary.dim } }}>
                             <EventRepeatOutlinedIcon sx={{ fontSize: 18 }} />

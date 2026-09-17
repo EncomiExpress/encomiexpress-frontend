@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Box, Typography, Button, CircularProgress, IconButton, Tooltip } from '@mui/material'
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
@@ -9,7 +9,7 @@ import DataTable, { FiltroEstadoTabs, BuscadorField } from '../../shared/compone
 import useEntityCrud from '../../shared/hooks/useEntityCrud.js'
 import { useSalidaProgramacion } from './context/SalidaProgramacionContext.jsx'
 import { useRuta } from '../rutas/context/RutaContext.jsx'
-import { getRutaLabel } from '../rutas/utils/rutaResolvers.js'
+import { getRutaLabel, getRutaLabelRegreso } from '../rutas/utils/rutaResolvers.js'
 import { useVehiculo } from '../vehiculos/context/VehiculoContext.jsx'
 import { useConductor } from '../conductores/context/ConductorContext.jsx'
 import { useDestino } from '../destinos/context/DestinoContext.jsx'
@@ -22,7 +22,6 @@ import ModalConfirmarEstado from './components/ModalConfirmarEstado'
 import ModalInhabilitarSalida from './components/ModalInhabilitarSalida'
 import ModalProgramarRegresoSede from './components/ModalProgramarRegresoSede.jsx'
 import ModalEditarHorarioRegresoSede from './components/ModalEditarHorarioRegresoSede.jsx'
-import ModalAsignarRepartidor from './components/ModalAsignarRepartidor.jsx'
 import FiltroSalida from './components/FiltroSalida.jsx'
 import AlertaBloqueoDialog from './components/AlertaBloqueoDialog.jsx'
 import MenuCambioEstadoSalida from './components/MenuCambioEstadoSalida.jsx'
@@ -39,14 +38,23 @@ import useSalidaExport from './hooks/useSalidaExport.js'
 // salida (ya no copia el destino a mano, aunque el convoy sí se sigue precargando
 // como punto de partida editable).
 //
-// Ya no existe una vista global de Salidas: esta pantalla SIEMPRE cuelga de
-// /transporte/rutas/:idRuta/salidas (ver salidas.routes.jsx) y muestra/permite
-// registrar únicamente las salidas de ESA plantilla — se llega acá solo desde el
-// botón "Salidas" de una fila en Rutas/ListarRuta.jsx.
+// Dos formas de llegar acá (2026-09-17, ver salidas.routes.jsx):
+// - /transporte/rutas/:idRuta/salidas (el caso normal): scoped a UNA plantilla, se
+//   llega desde el botón "Salidas" de una fila en Rutas/ListarRuta.jsx. Con
+//   ?vista=regreso (pestaña "Rutas de regreso" de esa misma pantalla) muestra los
+//   REGRESOS de esa ruta en vez de sus idas -- misma fila de Ruta, mismo idRuta en
+//   la URL, pero el filtro que se le pasa al backend cambia (ver buildRutaWhere,
+//   parámetro regresoDeRuta).
+// - /transporte/mis-salidas (sin :idRuta, solo operador_sede): su agenda completa,
+//   ida y regreso de su propia sede juntos -- no pasa por el listado de Rutas en
+//   absoluto (ver useVisibleNav.js). El filtro por sede ya lo aplica el backend
+//   solo (contextoSede), así que alcanza con no mandar idRuta.
 const ListarSalidaProgramada = () => {
     const navigate = useNavigate()
     const { idRuta: idRutaParam } = useParams()
     const idRuta = idRutaParam ? parseInt(idRutaParam) : undefined
+    const [searchParams] = useSearchParams()
+    const esVistaRegreso = searchParams.get('vista') === 'regreso' && !!idRuta
     const { getRutaById } = useRuta()
     const rutaActual = idRuta ? getRutaById(idRuta) : null
     const { tienePermiso, PERMISOS, usuario, sedeActual } = useAuth()
@@ -63,7 +71,6 @@ const ListarSalidaProgramada = () => {
     const [prefillRegreso, setPrefillRegreso] = useState(null)
     const [salidaRegresoSede, setSalidaRegresoSede] = useState(null)
     const [salidaEditarHorarioSede, setSalidaEditarHorarioSede] = useState(null)
-    const [salidaAsignarRepartidor, setSalidaAsignarRepartidor] = useState(null)
 
     // Estado propio de esta tabla paginada (NO el arreglo compartido de
     // SalidaProgramacionContext, que otras pantallas/hooks piden completo o con un
@@ -92,7 +99,8 @@ const ListarSalidaProgramada = () => {
             if (!usuario) return
             const res = await getSalidas({
                 ...params,
-                idRuta,
+                idRuta: esVistaRegreso ? undefined : idRuta,
+                regresoDeRuta: esVistaRegreso ? idRuta : undefined,
                 estado: filtroEstadoRuta || undefined,
                 anio: filtroAnio || undefined,
                 mes: filtroMes || undefined,
@@ -100,8 +108,9 @@ const ListarSalidaProgramada = () => {
             setSalidasProgramadas(res?.data ?? [])
             setTotal(res?.total ?? (res?.data ?? []).length)
         },
-        extraDeps: [idRuta, filtroEstadoRuta, filtroAnio, filtroMes, usuario],
-        fetchPageForHighlight: (id, limit) => getPageOfSalida(id, limit),
+        extraDeps: [idRuta, esVistaRegreso, filtroEstadoRuta, filtroAnio, filtroMes, usuario],
+        enabled: !!usuario,
+        fetchPageForHighlight: (id, limit) => getPageOfSalida(id, limit, esVistaRegreso ? undefined : idRuta, esVistaRegreso ? idRuta : undefined),
     })
 
     const { confirmEstado, setConfirmEstado, alertaBloqueo, setAlertaBloqueo, handleEstadoChange, ejecutarCambioEstado } = useEstadoSalida({
@@ -205,7 +214,9 @@ const ListarSalidaProgramada = () => {
         ? 'No se encontraron salidas que coincidan con los filtros aplicados.'
         : debouncedSearch.trim()
             ? 'No se encontraron salidas que coincidan con la búsqueda.'
-            : 'No hay salidas programadas en el sistema.'
+            : esVistaRegreso
+                ? 'Todavía no hay regresos programados para esta ruta.'
+                : 'No hay salidas programadas en el sistema.'
 
     const columns = useSalidaColumns({
         theme, tienePermiso, PERMISOS, getVehiculos, getConductores, sedeActual, usuario,
@@ -218,26 +229,37 @@ const ListarSalidaProgramada = () => {
         onProgramarRegresoSede: setSalidaRegresoSede,
         onProgramarRegreso: handleProgramarRegreso,
         onReutilizarSalida: handleReutilizarSalida,
-        onAsignarRepartidor: setSalidaAsignarRepartidor,
     })
 
     return (
         <Box sx={{ p: 3.5 }}>
             <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
                 <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-                    <Tooltip title="Volver a Rutas">
-                        <IconButton onClick={() => navigate('/transporte/rutas')} sx={{ mt: 0.25, color: theme.palette.neutral.main, '&:hover': { backgroundColor: theme.palette.neutral.dim } }}>
-                            <ArrowBackOutlinedIcon />
-                        </IconButton>
-                    </Tooltip>
+                    {idRuta && (
+                        <Tooltip title="Volver a Rutas">
+                            {/* Vuelve a la misma pestaña Ida/Regreso de la que se llegó -- si no, se
+                                pierde el filtro cada vez que se entra a ver las salidas de una fila. */}
+                            <IconButton onClick={() => navigate(esVistaRegreso ? '/transporte/rutas?tipo=regreso' : '/transporte/rutas')} sx={{ mt: 0.25, color: theme.palette.neutral.main, '&:hover': { backgroundColor: theme.palette.neutral.dim } }}>
+                                <ArrowBackOutlinedIcon />
+                            </IconButton>
+                        </Tooltip>
+                    )}
                     <Box>
                         <Typography variant="h5" fontWeight={700} color={theme.palette.text.primary}>
-                            Salidas de {rutaActual ? getRutaLabel(rutaActual) : 'esta ruta'}
+                            {!idRuta
+                                ? `Salidas de ${sedeActual?.municipio || 'mi sede'}`
+                                : esVistaRegreso
+                                    ? `Regresos de ${rutaActual ? getRutaLabelRegreso(rutaActual) : 'esta ruta'}`
+                                    : `Salidas de ${rutaActual ? getRutaLabel(rutaActual) : 'esta ruta'}`}
                         </Typography>
                         <Typography variant="body2" color={theme.palette.text.secondary} mt={0.3}>
-                            {rutaActual?.destino
-                                ? `Viajes programados hacia ${rutaActual.destino.municipio}, ${rutaActual.destino.departamento}.`
-                                : 'Viajes programados para esta ruta.'}
+                            {!idRuta
+                                ? 'Viajes de ida y de regreso de tu sede.'
+                                : esVistaRegreso
+                                    ? `Viajes de regreso programados desde ${rutaActual?.destino?.municipio || 'esta sede'} hacia Medellín.`
+                                    : rutaActual?.destino
+                                        ? `Viajes programados hacia ${rutaActual.destino.municipio}, ${rutaActual.destino.departamento}.`
+                                        : 'Viajes programados para esta ruta.'}
                         </Typography>
                     </Box>
                 </Box>
@@ -267,7 +289,7 @@ const ListarSalidaProgramada = () => {
                         {exportando ? 'Exportando...' : 'Exportar'}
                     </Button>
 
-                    {tienePermiso(PERMISOS.REGISTRAR_RUTA) && (
+                    {tienePermiso(PERMISOS.REGISTRAR_RUTA) && !esVistaRegreso && (
                         <Button
                             onClick={handleAbrirNuevo}
                             variant="contained"
@@ -415,13 +437,6 @@ const ListarSalidaProgramada = () => {
                 destinos={destinos}
                 onClose={() => setSalidaEditarHorarioSede(null)}
                 onConfirmar={handleConfirmarEditarHorarioSede}
-            />
-
-            <ModalAsignarRepartidor
-                open={!!salidaAsignarRepartidor}
-                salida={salidaAsignarRepartidor}
-                onClose={() => setSalidaAsignarRepartidor(null)}
-                onSuccess={refetch}
             />
 
         </Box>

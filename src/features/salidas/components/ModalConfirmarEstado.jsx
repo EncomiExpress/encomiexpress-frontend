@@ -58,7 +58,11 @@ const ModalConfirmarEstado = ({ open, nuevoEstado, info, salida, pares = [], onC
         }
         setDetalle({ anticipos: [], ventas: [], loading: true })
         Promise.all([
-            anticipoService.getAnticipos(undefined, { idSalida: salida.idSalida, estado: 'Entregado', habilitado: 'true', limit: 1 }),
+            // operador_sede no tiene el permiso listar_anticipo (nunca ve la Sección 2,
+            // el anticipo no es su dominio) -- pedirlo igual hacía que ESTE Promise.all
+            // completo rechazara con el 403 de esa llamada, y de paso se perdía también
+            // la Sección 3 (ventas), que a ella sí le aplica y sí tiene permiso de ver.
+            esOperadorSede ? Promise.resolve({ data: [] }) : anticipoService.getAnticipos(undefined, { idSalida: salida.idSalida, estado: 'Entregado', habilitado: 'true', limit: 1 }),
             ventaService.getEncomiendas(undefined, { idSalida: salida.idSalida, limit: 100 }),
         ])
             .then(([antRes, ventRes]) => setDetalle({
@@ -67,7 +71,7 @@ const ModalConfirmarEstado = ({ open, nuevoEstado, info, salida, pares = [], onC
                 loading: false,
             }))
             .catch(() => setDetalle({ anticipos: [], ventas: [], loading: false }))
-    }, [open, nuevoEstado, salida])
+    }, [open, nuevoEstado, salida, esOperadorSede])
 
     // Cuántos paquetes tiene cada par vehículo+conductor — un vehículo del convoy puede
     // salir vacío (nada lo bloquea) así que esto es solo para avisar, no para impedir

@@ -19,6 +19,17 @@ export const FILTROS_ESTADO = [
 export default function useEntityCrud({
   fetchPage,
   extraDeps = [],
+  // Cuando el `fetchPage` del caller depende de algo que carga aparte y todavía
+  // no está listo (ej. `usuario` de useAuth, que en una pestaña nueva empieza en
+  // null mientras se restaura la sesión), pasar `enabled: false` evita correr el
+  // efecto de carga por completo -- ni siquiera toca `loading`/`initialLoad`.
+  // Sin esto, varios `fetchPage` resolvían ese caso con un `if (!usuario) return`
+  // silencioso DENTRO de la función: el efecto de acá abajo igual marcaba
+  // loading=true->false y initialLoad=false como si la carga hubiera terminado
+  // (aunque en realidad nunca se hizo la consulta), así que la tabla mostraba
+  // "no hay registros" de entrada -- y solo con un F5 (que a veces alcanza a
+  // tener la sesión lista para el primer render) se veía el listado real.
+  enabled = true,
   highlightParam = 'highlight',
   fetchPageForHighlight,
   exportConfig,
@@ -101,6 +112,8 @@ export default function useEntityCrud({
   }
 
   useEffect(() => {
+    if (!enabled) return
+
     const controller = new AbortController()
     let cancelled = false
 
@@ -125,7 +138,7 @@ export default function useEntityCrud({
     // caller), así que no entra en las deps: solo nos interesa reaccionar a los
     // filtros/paginación reales, no a que el componente se haya vuelto a renderizar.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, rowsPerPage, filtroEstado, debouncedBusqueda, sortBy, ...extraDeps])
+  }, [enabled, page, rowsPerPage, filtroEstado, debouncedBusqueda, sortBy, ...extraDeps])
 
   useEffect(() => {
     if (!loading) initialLoad.current = false

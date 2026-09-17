@@ -82,7 +82,13 @@ export const getPrimerDestinoVisible = (usuario) => {
   if (visible(DASHBOARD_ITEM)) return DASHBOARD_ITEM.path
   for (const s of SECTIONS) {
     for (const item of s.items) {
-      if (visible(item)) return item.path
+      if (visible(item)) {
+        // operador_sede nunca ve el listado de Rutas (ver useVisibleNav.js) -- si
+        // "Rutas" es lo primero visible para ella, el destino real es su agenda
+        // combinada de ida+regreso, no el listado.
+        if (item.id === 'rutas' && rolCodigo === 'operador_sede') return '/transporte/mis-salidas'
+        return item.path
+      }
     }
   }
   // No debería pasar -- login() ya rechaza una cuenta sin ningún permiso de

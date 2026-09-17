@@ -14,6 +14,12 @@ import ActualizarSalidaProgramada from './ActualizarSalidaProgramada.jsx'
 // de la Fase 4 de la migración (ver src/features/rutas, que ahora es solo el CRUD
 // liviano de la plantilla).
 const salidasRoutes = [
+  // 2026-09-17: operador_sede ya no pasa por el listado de Rutas en absoluto (ver
+  // useVisibleNav.js) -- entra directo acá, sin :idRuta, y ve su agenda completa
+  // (ida + regreso de su propia sede) gracias al filtro por sede que ya aplica el
+  // backend solo (contextoSede). Debe registrarse ANTES que la ruta con :idRuta para
+  // no chocar con el matching de react-router (paths estáticos primero).
+  <Route key="salidas-mis-salidas" path="/transporte/mis-salidas" element={<PrivateRoute permisosRequeridos={[PERMISOS.LISTAR_RUTA]}><ListarSalidaProgramada /></PrivateRoute>} />,
   <Route key="salidas-listar" path="/transporte/rutas/:idRuta/salidas" element={<PrivateRoute permisosRequeridos={[PERMISOS.LISTAR_RUTA]}><ListarSalidaProgramada /></PrivateRoute>} />,
   <Route key="salidas-registrar" path="/transporte/rutas/:idRuta/salidas/registrar" element={<PrivateRoute permisosRequeridos={[PERMISOS.REGISTRAR_RUTA]}><RegistrarSalidaProgramada /></PrivateRoute>} />,
   <Route key="salidas-actualizar" path="/transporte/rutas/:idRuta/salidas/actualizar/:id" element={<PrivateRoute permisosRequeridos={[PERMISOS.ACTUALIZAR_RUTA]}><ActualizarSalidaProgramada /></PrivateRoute>} />,

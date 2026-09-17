@@ -21,7 +21,7 @@ export const updateSalida  = (id, datos) => fetchWithAuth(`/salidas/${id}`, { me
 // necesita { estado }.
 export const updateEstadoSalida = (id, estado, extra = {}) => fetchWithAuth(`/salidas/${id}/estado`, { method: 'PATCH', body: JSON.stringify({ estado, ...extra }) })
 export const toggleHabilitadoSalida = (id) => fetchWithAuth(`/salidas/${id}/toggle-habilitado`, { method: 'PATCH' })
-export const getPageOfSalida = (id, limit = 10) => fetchWithAuth(`/salidas/${id}/page-of?limit=${limit}`)
+export const getPageOfSalida = (id, limit = 10, idRuta, regresoDeRuta) => fetchWithAuth(`/salidas/${id}/page-of?limit=${limit}${idRuta ? `&idRuta=${idRuta}` : ''}${regresoDeRuta ? `&regresoDeRuta=${regresoDeRuta}` : ''}`)
 export const getAniosDisponiblesSalida = () => fetchWithAuth('/salidas/anios-disponibles')
 
 // idVehiculos/idConductores: arrays de ids. idSalidaExcluir: opcional, para editar

@@ -20,8 +20,7 @@ export const steps = ['Horario', 'Vehículo y Conductor', 'Confirmación']
 export const MAX_PARES = 10
 
 // Valida un único campo del formulario (usado en onBlur y para re-validar en vivo
-// mientras se corrige un campo ya marcado con error). "horaLlegadaEstimada" no vive
-// aquí: es opcional y no tiene ninguna regla que validar. El piso de fechaSalida es
+// mientras se corrige un campo ya marcado con error). El piso de fechaSalida es
 // hoy, no mañana — una salida puede salir más tarde el mismo día en que se programa o
 // reprograma. Mismo piso replicado en el backend (salidaProgramadaService.validarHorarioRuta).
 export const validarCampo = (name, form) => {
@@ -58,6 +57,12 @@ export const validarCampo = (name, form) => {
             if (!form.horaLlegadaEstimada) return ''
             const rango = getRangoHorario(form.fechaLlegadaEstimada)
             if (rango && (form.horaLlegadaEstimada < rango.min || form.horaLlegadaEstimada > rango.max)) return `Debe estar entre las ${rango.min} y las ${rango.max}`
+            // Mismo día: MIN_DIAS_SALIDA_LLEGADA=0 permite que la llegada sea el mismo
+            // día de la salida, pero eso no garantiza el orden de las horas dentro de
+            // ese día -- sin esto se podía guardar una llegada antes que la salida.
+            if (form.fechaLlegadaEstimada === form.fechaSalida && form.horaSalida && form.horaLlegadaEstimada <= form.horaSalida) {
+                return 'Debe ser posterior a la hora de salida (mismo día)'
+            }
             return ''
         }
         case 'observaciones':

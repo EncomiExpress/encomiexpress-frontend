@@ -10,7 +10,17 @@ import { maxISO, validarCampo } from '../../validations/salidaValidation.js'
 const PasoHorario = ({
     form, setForm, errores, setErrores, setApiError, handleChange,
     idSalidaExcluir, refrescarDisponibilidad, esRegreso = false, afterChange = () => { },
-}) => (
+}) => {
+    // Mismo día: el rango de la llegada arranca en la hora de salida, no en el
+    // inicio del horario laboral -- sin esto, el selector deja escoger una
+    // llegada antes que la salida (ver validarCampo, mismo chequeo replicado).
+    const rangoLlegadaBase = getRangoHorario(form.fechaLlegadaEstimada)
+    const rangoLlegada = rangoLlegadaBase && form.fechaLlegadaEstimada === form.fechaSalida
+        && form.horaSalida && form.horaSalida > rangoLlegadaBase.min
+        ? { ...rangoLlegadaBase, min: form.horaSalida }
+        : rangoLlegadaBase
+
+    return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
         <Box sx={{ display: 'flex', gap: 2.5, alignItems: 'flex-start', flexWrap: 'wrap' }}>
             <Box sx={{ flex: 1, minWidth: 260 }}>
@@ -84,7 +94,13 @@ const PasoHorario = ({
                     onChange={(v) => {
                         const formActualizado = { ...form, horaSalida: v }
                         setForm(formActualizado)
-                        setErrores(prev => ({ ...prev, horaSalida: validarCampo('horaSalida', formActualizado) }))
+                        setErrores(prev => ({
+                            ...prev,
+                            horaSalida: validarCampo('horaSalida', formActualizado),
+                            // La llegada (si ya estaba elegida) puede haber quedado inválida
+                            // al mover la salida más tarde el mismo día.
+                            horaLlegadaEstimada: prev.horaLlegadaEstimada ? validarCampo('horaLlegadaEstimada', formActualizado) : prev.horaLlegadaEstimada,
+                        }))
                         afterChange()
                     }}
                     onBlur={() => setErrores(prev => ({ ...prev, horaSalida: validarCampo('horaSalida', form) }))}
@@ -96,14 +112,15 @@ const PasoHorario = ({
                 <SelectorHora label="Hora Estimada de Llegada"
                     value={form.horaLlegadaEstimada}
                     onChange={(v) => {
-                        setForm(prev => ({ ...prev, horaLlegadaEstimada: v }))
-                        setErrores(prev => ({ ...prev, horaLlegadaEstimada: '' }))
+                        const formActualizado = { ...form, horaLlegadaEstimada: v }
+                        setForm(formActualizado)
+                        setErrores(prev => ({ ...prev, horaLlegadaEstimada: validarCampo('horaLlegadaEstimada', formActualizado) }))
                         afterChange()
                     }}
                     onBlur={() => setErrores(prev => ({ ...prev, horaLlegadaEstimada: validarCampo('horaLlegadaEstimada', form) }))}
-                    rango={getRangoHorario(form.fechaLlegadaEstimada)}
+                    rango={rangoLlegada}
                     error={errores.horaLlegadaEstimada}
-                    helperText={form.fechaLlegadaEstimada ? 'Opcional' : 'Selecciona primero la fecha de llegada'} />
+                    helperText={form.fechaLlegadaEstimada ? (form.fechaLlegadaEstimada === form.fechaSalida ? 'Opcional · debe ser después de la hora de salida' : 'Opcional') : 'Selecciona primero la fecha de llegada'} />
             </Box>
         </Box>
         <FormField label="Observaciones" name="observaciones" value={form.observaciones}
@@ -115,6 +132,7 @@ const PasoHorario = ({
             error={errores.observaciones}
             helperText={errores.observaciones || `Opcional · ${form.observaciones?.length || 0}/500`} />
     </Box>
-)
+    )
+}
 
 export default PasoHorario

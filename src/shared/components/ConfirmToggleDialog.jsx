@@ -95,8 +95,8 @@ const ConfirmToggleDialog = ({
                     <Button onClick={onClose} variant="contained" disableRipple sx={{
                         textTransform: 'none', borderRadius: 2, fontWeight: 600,
                         px: 5, py: 0.76, fontSize: '0.875rem',
-                        backgroundColor: theme.palette.primary.main,
-                        '&:hover': { backgroundColor: theme.palette.primary.dark },
+                        backgroundColor: colorAccion,
+                        '&:hover': { backgroundColor: colorAccionHover },
                     }}>
                         Entendido
                     </Button>

@@ -18,11 +18,13 @@ const AlertaBloqueoDialog = ({ theme, alertaBloqueo, onClose }) => (
                 <CloseIcon />
             </IconButton>
             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5, pt: 2 }}>
+                {/* Warning (naranja), no primary -- esto es un bloqueo, no una confirmación
+                    neutral, misma familia de color que ConfirmToggleDialog/ModalBloqueoInhabilitacion. */}
                 <Box sx={{
-                    width: 67, height: 67, borderRadius: '50%', backgroundColor: `${theme.palette.primary.main}22`,
+                    width: 67, height: 67, borderRadius: '50%', backgroundColor: theme.palette.warning.dim,
                     display: 'flex', alignItems: 'center', justifyContent: 'center'
                 }}>
-                    <DoNotDisturbOutlinedIcon sx={{ fontSize: 35, color: theme.palette.primary.main }} />
+                    <DoNotDisturbOutlinedIcon sx={{ fontSize: 35, color: theme.palette.warning.main }} />
                 </Box>
                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5, width: '100%' }}>
                     <Typography fontWeight={700} fontSize="1.4rem" color={theme.palette.text.primary}>
@@ -100,8 +102,8 @@ const AlertaBloqueoDialog = ({ theme, alertaBloqueo, onClose }) => (
             <Button onClick={onClose} variant="contained" disableRipple
                 sx={{
                     textTransform: 'none', borderRadius: 2, fontWeight: 600, px: 5, py: 0.76,
-                    backgroundColor: theme.palette.primary.main,
-                    '&:hover': { backgroundColor: theme.palette.primary.main, filter: 'brightness(0.88)' }
+                    backgroundColor: theme.palette.warning.main,
+                    '&:hover': { backgroundColor: theme.palette.warning.main, filter: 'brightness(0.88)' }
                 }}>
                 Entendido
             </Button>

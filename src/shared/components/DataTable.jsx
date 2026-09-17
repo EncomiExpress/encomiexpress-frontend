@@ -108,7 +108,10 @@ export function BuscadorField({ value, onChange, placeholder = 'Buscar...', widt
  * `columns` (incluida la columna de Acciones) y sigue siendo dueña del contenido
  * de cada celda y de qué botones de acción mostrar según permisos.
  *
- * columns: [{ key, label, sortField?, width?, align?, render(row) }]
+ * columns: [{ key, label, sortField?, width?, align?, render(row), headerExtra? }]
+ * headerExtra: contenido opcional junto al label del encabezado (ej. un filtro
+ * propio de esa columna) — se pinta al lado, nunca adentro del TableSortLabel, para
+ * que sus clics no disparen también el ordenamiento de la columna.
  */
 export default function DataTable({
   columns,
@@ -123,6 +126,12 @@ export default function DataTable({
   highlightRef,
   isHighlighted,
   rowSx,
+  // Opcional: hace toda la fila clicable (ej. Rutas -> ver sus Salidas), como
+  // segunda forma de llegar a la misma acción que ya tiene su propio ícono en
+  // Acciones -- ese ícono sigue funcionando igual. La columna 'acciones' queda
+  // excluida (stopPropagation) para que sus botones/toggle no disparen también
+  // el click de la fila.
+  onRowClick,
   emptyMessage = 'No hay registros.',
   loadingMessage = 'Cargando...',
   errorMessage = 'No se pudieron cargar los datos. Verifica la conexión con el servidor.',
@@ -137,27 +146,35 @@ export default function DataTable({
         <Table>
           <TableHead>
             <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
-              {columns.map(col => (
-                <TableCell key={col.key} sx={{ ...thStyle, ...(col.width ? { width: col.width } : {}) }} align={col.align}>
-                  {col.sortField ? (
-                    <TableSortLabel
-                      active={sortBy.field === col.sortField}
-                      direction={sortBy.dir === 'desc' ? 'desc' : 'asc'}
-                      onClick={() => onSort(col.sortField)}
-                      IconComponent={sortBy.field === col.sortField ? undefined : UnfoldMoreOutlinedIcon}
-                      sx={{
-                        color: 'inherit',
-                        '&:hover': { color: 'inherit' },
-                        '&.Mui-active': { color: theme.palette.primary.main },
-                        '&.Mui-active:hover': { color: theme.palette.primary.main },
-                        '& .MuiTableSortLabel-icon': { opacity: 1, fontSize: 16 },
-                      }}
-                    >
-                      {col.label}
-                    </TableSortLabel>
-                  ) : col.label}
-                </TableCell>
-              ))}
+              {columns.map(col => {
+                const labelContent = col.sortField ? (
+                  <TableSortLabel
+                    active={sortBy.field === col.sortField}
+                    direction={sortBy.dir === 'desc' ? 'desc' : 'asc'}
+                    onClick={() => onSort(col.sortField)}
+                    IconComponent={sortBy.field === col.sortField ? undefined : UnfoldMoreOutlinedIcon}
+                    sx={{
+                      color: 'inherit',
+                      '&:hover': { color: 'inherit' },
+                      '&.Mui-active': { color: theme.palette.primary.main },
+                      '&.Mui-active:hover': { color: theme.palette.primary.main },
+                      '& .MuiTableSortLabel-icon': { opacity: 1, fontSize: 16 },
+                    }}
+                  >
+                    {col.label}
+                  </TableSortLabel>
+                ) : col.label
+                return (
+                  <TableCell key={col.key} sx={{ ...thStyle, ...(col.width ? { width: col.width } : {}) }} align={col.align}>
+                    {col.headerExtra ? (
+                      <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>
+                        {labelContent}
+                        {col.headerExtra}
+                      </Box>
+                    ) : labelContent}
+                  </TableCell>
+                )
+              })}
             </TableRow>
           </TableHead>
 
@@ -198,9 +215,11 @@ export default function DataTable({
                   <TableRow
                     key={key}
                     ref={highlighted ? highlightRef : null}
+                    onClick={onRowClick ? () => onRowClick(row) : undefined}
                     sx={{
                       '&:hover': { backgroundColor: theme.palette.background.subtle },
                       transition: 'background-color 0.15s',
+                      ...(onRowClick && { cursor: 'pointer' }),
                       ...(rowSx ? rowSx(row) : {}),
                       ...(highlighted && {
                         animation: 'highlightPulse 1.1s ease-in-out 4',
@@ -212,7 +231,8 @@ export default function DataTable({
                     }}
                   >
                     {columns.map(col => (
-                      <TableCell key={col.key} align={col.align} sx={col.cellSx}>
+                      <TableCell key={col.key} align={col.align} sx={col.cellSx}
+                        onClick={onRowClick && col.key === 'acciones' ? (e) => e.stopPropagation() : undefined}>
                         {col.render(row)}
                       </TableCell>
                     ))}
