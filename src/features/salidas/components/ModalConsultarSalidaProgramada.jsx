@@ -10,7 +10,7 @@ import { buildSalidaHighlightUrl } from '../../../shared/utils/salidaLinks.js'
 import { getRutaLabel } from '../../rutas/utils/rutaResolvers.js'
 import {
     Box, Typography, Paper, Chip, Button, Dialog, IconButton, CircularProgress, Divider,
-    Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tabs, Tab
+    Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tabs, Tab, Tooltip
 } from '@mui/material'
 import DirectionsCarOutlinedIcon from '@mui/icons-material/DirectionsCarOutlined'
 import CloseIcon from '@mui/icons-material/Close'
@@ -69,6 +69,34 @@ const ModalConsultarSalidaProgramada = ({ salida, onClose }) => {
 
     const handleClose = () => { setTabIndex('info'); onClose() }
 
+    // Se resuelve una sola vez acá (antes se llamaba inline en cada Box del
+    // paso "Información") -- también lo usa la pestaña "Encomiendas" para
+    // decidir si vale la pena mostrar la columna "Conductor" (con un solo par
+    // en el convoy, sería redundante, ya se ve en "Información").
+    const paresConvoy = resolvePares(salida, { getVehiculos, getConductores })
+
+    // Mismo criterio que ListarAnticipoExcedente.jsx (getNombreConductor) -- el
+    // include de anticipoService.getAll ya trae conductor.usuario, así que acá
+    // no hace falta el fallback contra el contexto de conductores.
+    const nombreConductorAnticipo = (a) => {
+        const usuario = a.conductor?.usuario
+        if (!usuario) return '—'
+        return usuario.apellido ? `${usuario.nombre} ${usuario.apellido}` : (usuario.nombre || '—')
+    }
+
+    // Un convoy puede tener varios pares vehículo+conductor -- cada PAQUETE de una
+    // venta trae su propia asignación (p.asignacion.conductor), así que dos
+    // paquetes de la MISMA venta podrían ir con conductores distintos. Se
+    // deduplican por nombre para no repetir el mismo conductor si todos sus
+    // paquetes van con el mismo par.
+    const conductoresDeVenta = (v) => {
+        const nombres = (v.paquetes || [])
+            .map(p => p.asignacion?.conductor?.usuario)
+            .filter(Boolean)
+            .map(u => u.apellido ? `${u.nombre} ${u.apellido}` : u.nombre)
+        return [...new Set(nombres)]
+    }
+
     return (
         <Dialog open onClose={handleClose} maxWidth="md" fullWidth
             slotProps={{ paper: { sx: { borderRadius: 3, position: 'relative', backgroundColor: theme.palette.background.subtle } } }}>
@@ -118,9 +146,9 @@ const ModalConsultarSalidaProgramada = ({ salida, onClose }) => {
                         </FichaCard>
 
                         <FichaCard icon={DirectionsCarOutlinedIcon}
-                            title={resolvePares(salida, { getVehiculos, getConductores }).length > 1 ? 'Vehículos y Conductores' : 'Vehículo y Conductor'}
+                            title={paresConvoy.length > 1 ? 'Vehículos y Conductores' : 'Vehículo y Conductor'}
                             subtitle="Recursos asignados a esta salida">
-                            {resolvePares(salida, { getVehiculos, getConductores }).map((par, i, arr) => (
+                            {paresConvoy.map((par, i, arr) => (
                                 <Box key={par.idSalidaVehiculoConductor ?? i}>
                                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.9 }}>
                                         <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>
@@ -155,7 +183,7 @@ const ModalConsultarSalidaProgramada = ({ salida, onClose }) => {
                                     {i < arr.length - 1 && <Divider sx={{ my: 1 }} />}
                                 </Box>
                             ))}
-                            {resolvePares(salida, { getVehiculos, getConductores }).length === 0 && (
+                            {paresConvoy.length === 0 && (
                                 <Typography variant="body2" color={theme.palette.text.secondary}>Sin vehículos asignados</Typography>
                             )}
                         </FichaCard>
@@ -224,23 +252,40 @@ const ModalConsultarSalidaProgramada = ({ salida, onClose }) => {
                                     <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
                                         <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Guía</TableCell>
                                         <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Cliente</TableCell>
+                                        {paresConvoy.length > 1 && (
+                                            <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Conductor</TableCell>
+                                        )}
                                         <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Valor</TableCell>
                                         <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Estado</TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
-                                    {tabEncomiendas.data.map(v => (
+                                    {tabEncomiendas.data.map(v => {
+                                        const conductores = conductoresDeVenta(v)
+                                        return (
                                         <TableRow key={v.idEncomiendaVenta}
                                             onClick={() => window.open(`/ventas/listar?highlight=${v.idEncomiendaVenta}`, '_blank')}
                                             sx={{ cursor: 'pointer', '&:hover': { backgroundColor: theme.palette.background.subtle } }}>
                                             <TableCell sx={{ fontSize: '0.82rem', fontWeight: 600 }}>{getGuiaPrincipal(v) || `#${v.idEncomiendaVenta}`}</TableCell>
                                             <TableCell sx={{ fontSize: '0.82rem' }}>{v.cliente ? `${v.cliente.nombre} ${v.cliente.apellido}` : '—'}</TableCell>
+                                            {paresConvoy.length > 1 && (
+                                                <TableCell sx={{ fontSize: '0.82rem' }}>
+                                                    {conductores.length === 0 ? '—'
+                                                        : conductores.length === 1 ? conductores[0]
+                                                        : (
+                                                            <Tooltip title={conductores.join(', ')}>
+                                                                <span>{conductores[0]} +{conductores.length - 1}</span>
+                                                            </Tooltip>
+                                                        )}
+                                                </TableCell>
+                                            )}
                                             <TableCell sx={{ fontSize: '0.82rem' }}>${Math.round(Number(v.total || 0)).toLocaleString('es-CO')}</TableCell>
                                             <TableCell>
                                                 <EstadoDot {...getVentaEstadoDot(v.estado)} />
                                             </TableCell>
                                         </TableRow>
-                                    ))}
+                                        )
+                                    })}
                                 </TableBody>
                             </Table>
                         </TableContainer>
@@ -254,7 +299,9 @@ const ModalConsultarSalidaProgramada = ({ salida, onClose }) => {
                         <Typography variant="body2" color={theme.palette.text.secondary}>
                             {salida.idSalidaIda
                                 ? 'Anticipo de la ida (cubre también este regreso)'
-                                : 'Anticipos asociados a esta salida'}
+                                : salida.salidaRegreso
+                                    ? 'Anticipos asociados a esta salida (cubren también su regreso)'
+                                    : 'Anticipos asociados a esta salida'}
                         </Typography>
                         {!tabAnticipos.loading && tabAnticipos.data.length > 0 && (
                             <Typography variant="caption" color={theme.palette.text.secondary} sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
@@ -276,6 +323,7 @@ const ModalConsultarSalidaProgramada = ({ salida, onClose }) => {
                             <Table size="small">
                                 <TableHead>
                                     <TableRow sx={{ backgroundColor: theme.palette.background.subtle }}>
+                                        <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Conductor</TableCell>
                                         <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Valor</TableCell>
                                         <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Gastado</TableCell>
                                         <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem' }}>Estado</TableCell>
@@ -286,6 +334,7 @@ const ModalConsultarSalidaProgramada = ({ salida, onClose }) => {
                                         <TableRow key={a.idAnticipoExcedente}
                                             onClick={() => window.open(`/anticipos/listar?highlight=${a.idAnticipoExcedente}`, '_blank')}
                                             sx={{ cursor: 'pointer', '&:hover': { backgroundColor: theme.palette.background.subtle } }}>
+                                            <TableCell sx={{ fontSize: '0.82rem', fontWeight: 600 }}>{nombreConductorAnticipo(a)}</TableCell>
                                             <TableCell sx={{ fontSize: '0.82rem' }}>${Number(a.valorAnticipo).toLocaleString('es-CO')}</TableCell>
                                             <TableCell sx={{ fontSize: '0.82rem' }}>${Number(a.valorGastado || 0).toLocaleString('es-CO')}</TableCell>
                                             <TableCell>

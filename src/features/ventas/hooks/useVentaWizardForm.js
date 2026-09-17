@@ -5,7 +5,7 @@ import { sumarDias } from '../../../shared/utils/horarioLaboral.js'
 import { filtrarDireccion } from '../../../shared/validations/direccionValidation.js'
 import { filtrarCorreo } from '../../../shared/validations/emailValidation.js'
 import { filtrarTelefono } from '../../../shared/validations/telefonoValidation.js'
-import { PAQUETE_VACIO, validarCampo, validarCampoPaquete, esDocAlfanumerico, formatearNit } from '../validations/validacion.js'
+import { PAQUETE_VACIO, VALOR_DECLARADO_MAX, validarCampo, validarCampoPaquete, esDocAlfanumerico, formatearNit } from '../validations/validacion.js'
 import {
     NUMERIC_LIMITS, PAQUETE_NUMERIC_LIMITS,
     calcularValorServicio as calcularValorServicioBase, calcularValoresPaquetes, validarPaso,
@@ -325,19 +325,36 @@ export const useVentaWizardForm = ({
                 if (!isNaN(num) && (num > PAQUETE_NUMERIC_LIMITS[campo] || num < 0)) return
             }
         }
-        const paquetes = form.paquetes.map((p, i) => i === index ? { ...p, [campo]: value } : p)
+        if (campo === 'valorDeclarado') {
+            // Campo de dinero (póliza de seguro) -- mismo tratamiento que "total" en
+            // handleChange: solo dígitos, sin punto decimal.
+            value = limpiarMonedaInput(value)
+            if (value !== '' && Number(value) > VALOR_DECLARADO_MAX) return
+        }
+        const paquetes = form.paquetes.map((p, i) => {
+            if (i !== index) return p
+            const actualizado = { ...p, [campo]: value }
+            // Apagar la póliza limpia el valor declarado -- no debe quedar un monto
+            // "fantasma" sumando al total mientras el toggle está apagado.
+            if (campo === 'aplicaPoliza' && !value) actualizado.valorDeclarado = ''
+            return actualizado
+        })
         setForm(prev => {
             const updated = { ...prev, paquetes }
             // peso/alto/ancho/profundidad alimentan el peso efectivo (real vs. volumétrico)
-            // y tipoCarga decide qué tarifa por kg aplica -- los cuatro afectan el costo por
-            // peso de este paquete y por lo tanto el total de toda la venta.
-            if (['peso', 'alto', 'ancho', 'profundidad', 'tipoCarga'].includes(campo)) {
+            // y tipoCarga decide qué tarifa por kg aplica; aplicaPoliza/valorDeclarado
+            // alimentan la póliza de seguro (1% del valor declarado) -- todos afectan el
+            // total de toda la venta.
+            if (['peso', 'alto', 'ancho', 'profundidad', 'tipoCarga', 'aplicaPoliza', 'valorDeclarado'].includes(campo)) {
                 Object.assign(updated, recalcularValorServicio(prev, paquetes))
             }
             return updated
         })
         const yaMarcado = errores.paquetes?.[index]?.[campo]
         setErrorPaquete(index, campo, yaMarcado ? validarCampoPaquete(campo, paquetes[index]) : '')
+        // Apagar la póliza también limpia cualquier error ya marcado en valorDeclarado
+        // -- el campo desaparece de la vista, no debe quedar un error rojo huérfano.
+        if (campo === 'aplicaPoliza' && !value) setErrorPaquete(index, 'valorDeclarado', '')
         // El peso o el vehículo asignado de un paquete afecta la capacidad de TODOS los
         // paquetes que comparten ese mismo vehículo, no solo este — el error de
         // "ya no tiene espacio" (guardado al intentar "Siguiente") puede quedar

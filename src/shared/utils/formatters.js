@@ -132,12 +132,11 @@ export const limpiarDecimalInput = (value) => {
 // traigan contenido.
 export const esSoloRelleno = (value) => /^[\s\-_]*$/.test(value ?? '')
 
-// El número de guía ahora vive en cada paquete (uno por paquete físico), no en la
-// venta — esto da "la" guía representativa de una venta para vistas que solo
-// necesitan mostrar/exportar un identificador (listados de dependencias, Excel,
-// dashboard). Para la vista detallada de una venta con varios paquetes, usar el
-// selector de paquete en vez de este helper.
-export const getGuiaPrincipal = (venta) => venta?.paquetes?.[0]?.numeroGuia || venta?.paquete?.numeroGuia || null
+// El número de guía es por VENTA (P12) — todos sus paquetes lo comparten. Se deja
+// este helper (en vez de leer venta.numeroGuia directo en cada call site) por
+// consistencia con el resto de la app y porque algunos objetos "venta" llegan
+// parcialmente poblados (ej. la fila de un listado que no trajo el campo).
+export const getGuiaPrincipal = (venta) => venta?.numeroGuia || null
 
 // Las horas de ruta se guardan en 24h ("14:30") pero se muestran en 12h con AM/PM.
 export const formatHora12 = (hora) => {

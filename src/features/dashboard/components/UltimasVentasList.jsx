@@ -44,7 +44,8 @@ const UltimasVentasList = ({ theme, ultimasVentas }) => (
                     </Typography>
                 </Box>
                 {ultimasVentas.map((venta) => {
-                    const guia = venta.paquetes?.[0]?.numeroGuia || '—'
+                    // numeroGuia es de la venta (P12), ya no del paquete.
+                    const guia = venta.numeroGuia || '—'
                     const destino = venta.destinatario?.destino?.municipio || '—'
                     return (
                         <Box

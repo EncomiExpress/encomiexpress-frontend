@@ -14,7 +14,7 @@ import UndoOutlinedIcon from '@mui/icons-material/UndoOutlined'
 import ConfirmToggleDialog from '../../../shared/components/ConfirmToggleDialog.jsx'
 import { buildSalidaHighlightUrl } from '../../../shared/utils/salidaLinks.js'
 import { getVentaEstadoDot, getPaqueteEstadoDot, getEstadoPagoDot } from '../../../shared/utils/estadoColors.js'
-import { descargarGuiaPaquete } from '../../../shared/utils/exportGuia/exportGuiaPdf.js'
+import { descargarGuiaPdf } from '../../../shared/utils/exportGuia/exportGuiaPdf.js'
 import { formatFecha, formatFechaHora } from '../../../shared/utils/formatters.js'
 import { getErrorMessage } from '../../../shared/utils/errorMessage.js'
 import { useAuth } from '../../../shared/contexts/AuthContext.jsx'
@@ -121,8 +121,10 @@ const ModalConsultarVenta = ({ venta, onClose }) => {
                     </Box>
                     <Box>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            {/* numeroGuia es de la VENTA (P12) -- una sola guía para todos sus
+                            paquetes, ya no cambia al cambiar de paquete en el selector de abajo. */}
                             <Typography fontWeight={700} fontSize="1rem" color={theme.palette.text.primary}>
-                                {paquete?.numeroGuia || '—'}
+                                {venta.numeroGuia || '—'}
                             </Typography>
                             <Chip label={getPaqueteEstadoDot(estadoPaqueteEfectivo).label} size="small"
                                 sx={{ fontWeight: 600, fontSize: '0.68rem', height: 20,
@@ -140,9 +142,14 @@ const ModalConsultarVenta = ({ venta, onClose }) => {
                                             return (
                                                 <MenuItem key={p.idPaquete || i} selected={i === paqueteIndex} onClick={() => seleccionarPaquete(i)}
                                                     sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}>
-                                                    <Box>
-                                                        <Typography variant="body2" fontWeight={600}>{p.numeroGuia}</Typography>
-                                                        <Typography variant="caption" color={theme.palette.text.secondary}>Paquete {i + 1} de {paquetes.length}</Typography>
+                                                    <Box sx={{ minWidth: 0 }}>
+                                                        <Typography variant="body2" fontWeight={600}>Paquete {i + 1} de {paquetes.length}</Typography>
+                                                        {/* Sin numeroGuia propio (P12), los paquetes de una misma venta se
+                                                        distinguen por su contenido. */}
+                                                        <Typography variant="caption" color={theme.palette.text.secondary} noWrap
+                                                            sx={{ display: 'block', maxWidth: 180 }}>
+                                                            {p.descripcionContenido || 'Sin descripción'}
+                                                        </Typography>
                                                     </Box>
                                                     <Chip label={getPaqueteEstadoDot(estadoP).label} size="small"
                                                         sx={{ fontWeight: 600, fontSize: '0.68rem', height: 20, flexShrink: 0,
@@ -236,6 +243,8 @@ const ModalConsultarVenta = ({ venta, onClose }) => {
                             <CampoFila label="Tipo de carga" value={paquete?.tipoCarga === 'hierro' ? 'Hierro' : paquete?.tipoCarga === 'normal' ? 'Paquete normal' : null} />
                             <CampoFila label="Peso" value={paquete?.peso != null ? `${paquete.peso} kg` : null} />
                             <CampoFila label="Dimensiones" value={dim} />
+                            <CampoFila label="Valor declarado" value={paquete?.valorDeclarado != null ? `$${Math.round(Number(paquete.valorDeclarado)).toLocaleString('es-CO')}` : null} />
+                            <CampoFila label="Póliza de seguro (1%)" value={paquete?.valorPoliza != null ? `$${Math.round(Number(paquete.valorPoliza)).toLocaleString('es-CO')}` : null} />
                         </Box>
                         <Box sx={{ width: '1px', backgroundColor: theme.palette.divider, flexShrink: 0 }} />
                         <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -303,7 +312,7 @@ const ModalConsultarVenta = ({ venta, onClose }) => {
             </Box>
 
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5, px: 3, pb: 3 }}>
-                <Button onClick={() => descargarGuiaPaquete(venta, paquete)} variant="outlined"
+                <Button onClick={() => descargarGuiaPdf(venta)} variant="outlined"
                     startIcon={<ReceiptLongOutlinedIcon sx={{ fontSize: 18 }} />}
                     sx={{
                         borderRadius: 2, textTransform: 'none', color: theme.palette.text.primary,
@@ -345,7 +354,7 @@ const ModalConsultarVenta = ({ venta, onClose }) => {
                 onConfirm={handleMarcarDevolucion}
                 icono={<UndoOutlinedIcon sx={{ fontSize: 32, color: theme.palette.primary.darker }} />}
                 titulo="¿Confirmar llegada?"
-                subtitulo={`El paquete ${paquete?.numeroGuia || ''} quedará marcado como devuelto a Medellín. Esta acción no se puede deshacer.`}
+                subtitulo={`El paquete ${paquetes.length > 1 ? `${paqueteIndex + 1} de ${paquetes.length} de la guía ` : ''}${venta.numeroGuia || ''} quedará marcado como devuelto a Medellín. Esta acción no se puede deshacer.`}
                 textoConfirmar="Marcar devuelto"
             />
         </Dialog>

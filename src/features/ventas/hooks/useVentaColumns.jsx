@@ -11,30 +11,24 @@ import EstadoVentaCancelada from '../components/EstadoVentaCancelada.jsx'
 import { motivoVentaCancelada, LABEL_VENTA_CANCELADA } from '../utils/ventaResolvers.js'
 
 const useVentaColumns = ({
-    theme, debouncedBusqueda, tienePermiso, PERMISOS,
+    theme, tienePermiso, PERMISOS,
     onConsultar, onDescargarGuia, onEditar, onToggleHabilitado,
     onReactivar,
 }) => [
     {
         key: 'guia', label: 'Guía', sortField: 'numeroGuia', cellSx: { py: 1.5 },
         render: (venta) => {
-            const q = debouncedBusqueda.trim().toLowerCase()
-            const paquetes = venta.paquetes || []
-            // Si la búsqueda coincide con la guía de un paquete que NO es el primero,
-            // se muestra esa — para no contradecir lo que la usuaria buscó.
-            const guiaVisible = (q && paquetes.find(p => p.numeroGuia?.toLowerCase().includes(q))?.numeroGuia)
-                || paquetes[0]?.numeroGuia
-                || '—'
-            const adicionales = Math.max(0, paquetes.length - 1)
+            // Un solo numeroGuia por venta (P12) — todos sus paquetes lo comparten.
+            const cantidadPaquetes = (venta.paquetes || []).length
             return (
                 <>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                         <Typography variant="body2" fontWeight={600} color={theme.palette.primary.main}>
-                            {guiaVisible}
+                            {venta.numeroGuia || '—'}
                         </Typography>
-                        {adicionales > 0 && (
+                        {cantidadPaquetes > 1 && (
                             <Chip
-                                label={`+${adicionales} ${adicionales === 1 ? 'paquete' : 'paquetes'}`}
+                                label={`${cantidadPaquetes} paquetes`}
                                 size="small"
                                 sx={{ fontWeight: 600, backgroundColor: theme.palette.primary.light, color: theme.palette.primary.darker, fontSize: '0.65rem', borderRadius: '2px', height: 18 }}
                             />

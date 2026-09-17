@@ -6,6 +6,7 @@ import PaymentOutlinedIcon from '@mui/icons-material/PaymentOutlined'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import ConfirmRow from '../../../../shared/components/ConfirmRow.jsx'
 import { formatFecha } from '../../../../shared/utils/formatters.js'
+import { calcularValorPoliza } from '../../validations/ventaValidation.js'
 
 /**
  * Paso 5 del wizard: resumen de todo lo capturado, antes de enviar. `formOriginal`,
@@ -131,6 +132,9 @@ export default function PasoConfirmacion({
                                 <ConfirmRow label="Tipo de carga" value={p.tipoCarga === 'hierro' ? 'Hierro' : 'Paquete normal'} previousValue={pOriginal ? (pOriginal.tipoCarga === 'hierro' ? 'Hierro' : 'Paquete normal') : undefined} />
                                 <ConfirmRow label="Peso" value={p.peso ? `${p.peso} kg` : null} previousValue={pOriginal ? (pOriginal.peso ? `${pOriginal.peso} kg` : null) : undefined} />
                                 <ConfirmRow label="Dimensiones" value={dimensionesActual} previousValue={dimensionesOriginal} />
+                                <ConfirmRow label="Póliza de seguro"
+                                    value={p.aplicaPoliza && p.valorDeclarado ? `Declarado $${Math.round(Number(p.valorDeclarado)).toLocaleString('es-CO')} · Póliza $${Math.round(calcularValorPoliza(p)).toLocaleString('es-CO')}` : null}
+                                    previousValue={pOriginal ? (pOriginal.aplicaPoliza && pOriginal.valorDeclarado ? `Declarado $${Math.round(Number(pOriginal.valorDeclarado)).toLocaleString('es-CO')} · Póliza $${Math.round(calcularValorPoliza(pOriginal)).toLocaleString('es-CO')}` : null) : undefined} />
                                 <ConfirmRow label="Vehículo" value={placaActual} previousValue={placaOriginal} />
                                 {i < form.paquetes.length - 1 && <Divider sx={{ my: 1 }} />}
                             </Box>

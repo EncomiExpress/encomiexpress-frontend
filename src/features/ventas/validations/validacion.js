@@ -9,8 +9,12 @@ import { maxLengthDocumento, docHelperText as docHelperTextBase, validarNumeroDo
 export const steps = ['Participantes', 'Paquete', 'Envío', 'Pago', 'Confirmación']
 
 export const MAX_PAQUETES = 10
-export const PAQUETE_VACIO = { descripcionContenido: '', peso: '', alto: '', ancho: '', profundidad: '', tipoCarga: 'normal', idSalidaVehiculoConductor: '' }
-export const CAMPOS_PAQUETE = ['descripcionContenido', 'peso', 'alto', 'ancho', 'profundidad', 'tipoCarga']
+export const PAQUETE_VACIO = { descripcionContenido: '', peso: '', alto: '', ancho: '', profundidad: '', tipoCarga: 'normal', idSalidaVehiculoConductor: '', aplicaPoliza: false, valorDeclarado: '' }
+export const CAMPOS_PAQUETE = ['descripcionContenido', 'peso', 'alto', 'ancho', 'profundidad', 'tipoCarga', 'valorDeclarado']
+// Tope del valor declarado de un paquete (póliza de seguro, 1%) -- mismo tope que
+// NUMERIC_LIMITS.total en ventaValidation.js, para no dejar declarar más de lo que
+// el campo "Total a pagar" (y el backend) aceptan sumado al resto de la venta.
+export const VALOR_DECLARADO_MAX = 9999999
 const SOLO_LETRAS_REGEX = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/
 const NOMBRE_DESTINATARIO_MAX_LENGTH = 50
 const CORREO_DESTINATARIO_MAX_LENGTH = 150
@@ -156,6 +160,16 @@ export const validarCampoPaquete = (campo, paquete) => {
         }
         case 'tipoCarga':
             return ['hierro', 'normal'].includes(paquete.tipoCarga) ? '' : 'Selecciona el tipo de carga'
+        // Solo obligatorio si el remitente activó la póliza de seguro de este
+        // paquete -- sin el toggle, el campo ni siquiera se muestra en el wizard.
+        case 'valorDeclarado': {
+            if (!paquete.aplicaPoliza) return ''
+            const n = parseFloat(paquete.valorDeclarado)
+            if (!paquete.valorDeclarado) return 'El valor declarado es obligatorio si aplicas la póliza'
+            if (isNaN(n) || n <= 0) return 'El valor declarado debe ser mayor a 0'
+            if (n > VALOR_DECLARADO_MAX) return `Máximo $${VALOR_DECLARADO_MAX.toLocaleString('es-CO')}`
+            return ''
+        }
         case 'idSalidaVehiculoConductor':
             return paquete.idSalidaVehiculoConductor ? '' : 'Asigna un vehículo'
         default:

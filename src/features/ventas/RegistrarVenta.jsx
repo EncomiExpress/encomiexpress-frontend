@@ -121,6 +121,9 @@ const RegistrarVenta = ({ open, onClose, onSuccess }) => {
                     // (optional nullable), pero 0 sí choca contra isFloat({min:1}).
                     tipoCarga: p.tipoCarga,
                     idSalidaVehiculoConductor: parseInt(p.idSalidaVehiculoConductor),
+                    // Solo viaja si el remitente activó la póliza de este paquete -- el
+                    // backend calcula el 1% (valorPoliza) a partir de esto, nunca al revés.
+                    valorDeclarado: p.aplicaPoliza && p.valorDeclarado ? parseFloat(p.valorDeclarado) : null,
                 })),
                 fechaEstimadaEntrega: form.fechaEstimadaEntrega || null,
                 observaciones: form.observaciones || null,

@@ -1,11 +1,13 @@
-import { Box, Typography, IconButton, Button, MenuItem, Alert } from '@mui/material'
+import { Box, Typography, IconButton, Button, MenuItem, Alert, Switch } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
 import ScaleOutlinedIcon from '@mui/icons-material/ScaleOutlined'
+import SecurityOutlinedIcon from '@mui/icons-material/SecurityOutlined'
 import { FormField, FormSelect } from '../../../../shared/components/FormularioEstandarizado.jsx'
 import { validarCampoPaquete, MAX_PAQUETES } from '../../validations/validacion.js'
 import { filtrarDescripcionContenido } from '../../../../shared/validations/descripcionContenidoValidation.js'
-import { calcularPesoEfectivo, calcularCostoPeso } from '../../validations/ventaValidation.js'
+import { calcularPesoEfectivo, calcularCostoPeso, calcularValorPoliza } from '../../validations/ventaValidation.js'
+import { formatearMoneda } from '../../../../shared/utils/formatters.js'
 
 /** Paso 2 del wizard: uno o varios paquetes (contenido, dimensiones, peso, tipo de carga). */
 export default function PasoPaquetes({
@@ -84,6 +86,35 @@ export default function PasoPaquetes({
                                 <MenuItem value="normal">Paquete normal</MenuItem>
                             </FormSelect>
                         </Box>
+                        <Box sx={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2,
+                            p: 1.5, border: `1px solid ${theme.palette.divider}`, borderRadius: 2,
+                        }}>
+                            <Box>
+                                <Typography variant="body2" fontWeight={600} color={theme.palette.text.primary}>
+                                    ¿Aplicar póliza de seguro?
+                                </Typography>
+                                <Typography variant="caption" color={theme.palette.text.secondary}>
+                                    Cubre el 1% del valor declarado de la mercancía ante riesgos como desastres naturales
+                                </Typography>
+                            </Box>
+                            <Switch checked={!!paquete.aplicaPoliza}
+                                onChange={(e) => handlePaqueteChange(index, 'aplicaPoliza', e.target.checked)} />
+                        </Box>
+                        {paquete.aplicaPoliza && (<>
+                            <FormField label="Valor declarado del producto ($)" name="valorDeclarado"
+                                value={formatearMoneda(paquete.valorDeclarado)}
+                                onChange={(e) => handlePaqueteChange(index, 'valorDeclarado', e.target.value)}
+                                onBlur={() => setErrorPaquete(index, 'valorDeclarado', validarCampoPaquete('valorDeclarado', paquete))}
+                                required error={errPaquete.valorDeclarado}
+                                placeholder="Ej: 500.000" helperText={errPaquete.valorDeclarado || 'Valor de la mercancía transportada en este paquete'}
+                                inputProps={{ maxLength: 9 }} />
+                            {paquete.valorDeclarado && !errPaquete.valorDeclarado && (
+                                <Alert severity="info" icon={<SecurityOutlinedIcon fontSize="small" />} sx={{ borderRadius: 2 }}>
+                                    Póliza (1% del valor declarado): <strong>${formatearMoneda(calcularValorPoliza(paquete))}</strong> — se suma al total de la venta
+                                </Alert>
+                            )}
+                        </>)}
                         {paquete.peso && paquete.alto && paquete.ancho && paquete.profundidad && (() => {
                             const { pesoReal, pesoVolumetrico, pesoEfectivo, gana } = calcularPesoEfectivo(paquete)
                             const costoPeso = calcularCostoPeso(paquete, tarifaPorKgHierro, tarifaPorKgNormal)

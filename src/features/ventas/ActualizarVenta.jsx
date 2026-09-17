@@ -123,6 +123,10 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                 profundidad: limpiarNumero(p.profundidad),
                 tipoCarga: p.tipoCarga || 'normal',
                 idSalidaVehiculoConductor: p.idSalidaVehiculoConductor || '',
+                // aplicaPoliza se deriva de si ya tiene un valor declarado guardado -- no
+                // es una columna propia, ver encomiendaService.resolverPoliza.
+                aplicaPoliza: p.valorDeclarado != null,
+                valorDeclarado: limpiarNumero(p.valorDeclarado),
             }))
             : [{ ...PAQUETE_VACIO }]
         const datosForm = {
@@ -239,6 +243,9 @@ const ActualizarVenta = ({ open, onClose, venta, onSuccess }) => {
                     profundidad: p.profundidad ? parseFloat(p.profundidad) : null,
                     tipoCarga: p.tipoCarga,
                     idSalidaVehiculoConductor: parseInt(p.idSalidaVehiculoConductor),
+                    // Solo viaja si el remitente activó la póliza de este paquete -- el
+                    // backend calcula el 1% (valorPoliza) a partir de esto, nunca al revés.
+                    valorDeclarado: p.aplicaPoliza && p.valorDeclarado ? parseFloat(p.valorDeclarado) : null,
                 })),
             }
             await actualizarVenta(numId, payload)

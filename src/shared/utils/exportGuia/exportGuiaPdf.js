@@ -13,9 +13,12 @@ const cargarLogo = async () => {
   }
 }
 
-// Descarga la guía completa de una venta: una página por cada paquete, cada una
-// con su propio número de guía y código de barras (mismo remitente/destinatario/
-// valores en todas). Es la que se usa desde el botón rápido del Listar.
+// Descarga el documento de guía completo de una venta: un solo PDF con una
+// página por cada paquete físico (todas comparten el mismo numeroGuia de la
+// venta, P12, y el mismo remitente/destinatario/valores; solo cambia el
+// contenido específico de cada paquete). Es el único punto de descarga de guía
+// hoy — tanto el botón rápido del Listar como el del modal Consultar Venta
+// generan este mismo documento completo, ya no uno separado por paquete.
 export const descargarGuiaPdf = async (venta) => {
   if (!venta) return
 
@@ -30,19 +33,5 @@ export const descargarGuiaPdf = async (venta) => {
     drawGuiaPage(doc, venta, pkg, index, paginas.length, assets)
   })
 
-  doc.save(`guia-${paquetes[0]?.numeroGuia || venta.idEncomiendaVenta}.pdf`)
-}
-
-// Descarga la guía de UN solo paquete (una sola página, con su propio número de
-// guía y código de barras) — la usa el botón "Descargar guía" del modal Consultar,
-// que ya está enfocado en un paquete específico (el que se esté viendo ahí).
-export const descargarGuiaPaquete = async (venta, paquete) => {
-  if (!venta || !paquete) return
-
-  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [PAGE_W, PAGE_H] })
-  const assets = await cargarLogo()
-
-  drawGuiaPage(doc, venta, paquete, 0, 1, assets)
-
-  doc.save(`guia-${paquete.numeroGuia || venta.idEncomiendaVenta}.pdf`)
+  doc.save(`guia-${venta.numeroGuia || venta.idEncomiendaVenta}.pdf`)
 }

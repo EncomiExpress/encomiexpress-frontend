@@ -281,12 +281,12 @@ const useSalidaColumns = ({
                             </IconButton>
                         </Tooltip>
                     )}
-                    {/* Agregar un vehículo+conductor más al convoy sin abrir todo el wizard de
-                        edición -- solo tiene sentido antes de que la salida arranque, con el
+                    {/* Agregar o quitar un vehículo+conductor del convoy sin abrir todo el wizard
+                        de edición -- solo tiene sentido antes de que la salida arranque, con el
                         mismo permiso que editarla. Un regreso nunca lo muestra: hereda el
-                        convoy completo de la ida, no se le puede sumar nada. */}
+                        convoy completo de la ida, no se le puede tocar nada. */}
                     {puedeEditarAdmin && !esRegreso && salida.estado === 'Programada' && (
-                        <Tooltip title="Asignar Conductor">
+                        <Tooltip title="Gestionar convoy">
                             <IconButton size="small" onClick={() => onAsignarRepartidor(salida)}
                                 sx={{ color: theme.palette.text.primary, '&:hover': { backgroundColor: theme.palette.primary.activeBg } }}>
                                 <PersonAddOutlinedIcon sx={{ fontSize: 18 }} />

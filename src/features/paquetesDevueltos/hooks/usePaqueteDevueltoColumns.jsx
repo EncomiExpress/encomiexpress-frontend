@@ -12,10 +12,11 @@ const usePaqueteDevueltoColumns = ({ theme, onVerVenta, onVerImagen }) => [
         // sin un `maxWidth` ahí el contenido con `noWrap` se salía del ancho
         // "sugerido" y la tabla igual desbordaba (2026-09-13, la usuaria notó que
         // el primer recorte "mejoró pero le faltó un poquito" -- esta era la razón).
+        // numeroGuia es de la venta dueña (P12), no del paquete.
         key: 'guia', label: 'Guía', width: 110, cellSx: { py: 1.5, maxWidth: 110 },
         render: (paquete) => (
             <Typography variant="body2" fontWeight={600} color={theme.palette.primary.main} noWrap>
-                {paquete.numeroGuia}
+                {paquete.encomienda?.numeroGuia || '—'}
             </Typography>
         ),
     },

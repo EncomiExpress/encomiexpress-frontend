@@ -24,7 +24,9 @@ const useVentaExport = ({ theme, debouncedBusqueda, filtroHabilitado, filtroEsta
             })
             const rows = (res?.data || []).map(venta => ({
                 'ID': venta.idEncomiendaVenta || venta.idVenta,
-                'Guía': (venta.paquetes || []).map(p => p.numeroGuia).filter(Boolean).join(', ') || getGuiaPrincipal(venta) || '—',
+                // numeroGuia es de la venta (P12) -- un solo valor, ya no hay que unir
+                // el de cada paquete.
+                'Guía': getGuiaPrincipal(venta) || '—',
                 'Cliente': `${venta.cliente?.nombre || ''} ${venta.cliente?.apellido || ''}`.trim() || venta.idCliente || '-',
                 'Ruta': venta.salida?.origen || '-',
                 'Destino': venta.destinatario?.destino?.municipio || '-',
@@ -40,6 +42,16 @@ const useVentaExport = ({ theme, debouncedBusqueda, filtroHabilitado, filtroEsta
                     : venta.estado,
                 'Estado de pago': venta.estadoPago,
                 'Modalidad de recaudo': venta.modalidadRecaudo,
+                // Suma de todos los paquetes de la venta que tienen póliza activa --
+                // la póliza es por paquete individual (P5), no por venta completa.
+                'Valor declarado': (() => {
+                    const suma = (venta.paquetes || []).reduce((s, p) => s + (p.valorDeclarado != null ? Number(p.valorDeclarado) : 0), 0)
+                    return suma > 0 ? `$${Math.round(suma).toLocaleString('es-CO')}` : '—'
+                })(),
+                'Valor póliza': (() => {
+                    const suma = (venta.paquetes || []).reduce((s, p) => s + (p.valorPoliza != null ? Number(p.valorPoliza) : 0), 0)
+                    return suma > 0 ? `$${Math.round(suma).toLocaleString('es-CO')}` : '—'
+                })(),
                 // Mismo formato que la columna "Total" del listado ("$150.000") -- antes
                 // salía como número pelado ("150000"), sin signo ni puntos de miles.
                 'Total a pagar': venta.total != null

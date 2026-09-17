@@ -75,6 +75,17 @@ export const calcularCostoPeso = (paquete, tarifaPorKgHierro, tarifaPorKgNormal)
     return pesoEfectivo * (Number(tarifaKg) || 0)
 }
 
+// Póliza de seguro opcional (1% del valor declarado de la mercancía) -- decisión
+// de negocio (P5): aplica por paquete individual, no por venta completa, así que
+// cada paquete tiene su propio toggle + valor declarado. Sin la póliza activa (o
+// sin valor declarado todavía), no suma nada al total.
+export const PORCENTAJE_POLIZA = 0.01
+export const calcularValorPoliza = (paquete) => {
+    if (!paquete.aplicaPoliza) return 0
+    const valorDeclarado = parseFloat(paquete.valorDeclarado) || 0
+    return valorDeclarado * PORCENTAJE_POLIZA
+}
+
 // total = tarifa base del destino + (suma del costo por peso de cada paquete,
 // según su tipo de carga y el mayor entre su peso real y volumétrico) + (cantidad de
 // paquetes × tarifa por paquete). El resultado sigue siendo editable a mano después
@@ -91,7 +102,8 @@ export const calcularCostoPeso = (paquete, tarifaPorKgHierro, tarifaPorKgNormal)
 // tocar esas dos funciones.
 export const calcularValorServicio = (tarifaBase, paquetes, tarifaPorKgHierro, tarifaPorKgNormal, tarifaPorPaquete = 0) => {
     const costoPesoTotal = paquetes.reduce((s, p) => s + calcularCostoPeso(p, tarifaPorKgHierro, tarifaPorKgNormal), 0)
-    const total = Number(tarifaBase || 0) + costoPesoTotal + (paquetes.length * (Number(tarifaPorPaquete) || 0))
+    const costoPolizaTotal = paquetes.reduce((s, p) => s + calcularValorPoliza(p), 0)
+    const total = Number(tarifaBase || 0) + costoPesoTotal + costoPolizaTotal + (paquetes.length * (Number(tarifaPorPaquete) || 0))
     // Se topa en NUMERIC_LIMITS.total para no dejar un valor auto-calculado por encima de
     // lo que el campo editable (y el backend) aceptan.
     return Math.min(Math.round(total), NUMERIC_LIMITS.total)

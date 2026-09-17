@@ -4,7 +4,9 @@ import { formatFecha } from '../../formatters.js'
 
 // Encabezado de la guía: logo + datos de la empresa, indicador "Paquete X de Y"
 // (cuando la venta tiene varios paquetes), caja de número de guía + código de
-// barras, y la fila de fecha emisión / fecha estimada de entrega.
+// barras, y la fila de fecha emisión / fecha estimada de entrega. El número de
+// guía y el código de barras son de la VENTA (P12) — se repiten idénticos en
+// todas las páginas, aunque cada una sea un paquete físico distinto.
 export const drawEncabezado = (doc, venta, pkg, index, totalPaginas, assets) => {
   let y = MARGIN
 
@@ -46,11 +48,11 @@ export const drawEncabezado = (doc, venta, pkg, index, totalPaginas, assets) => 
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(13)
   doc.setTextColor(20, 20, 20)
-  doc.text(sanitizeForPdf(pkg?.numeroGuia) || '—', guiaBoxX + 3, y + 8.5)
+  doc.text(sanitizeForPdf(venta?.numeroGuia) || '—', guiaBoxX + 3, y + 8.5)
 
-  // El código de barras es del PAQUETE (no de la venta) — cada paquete físico
-  // tiene su propio número de guía único, así que cada página necesita el suyo.
-  const barcodeDataUrl = generateBarcodeDataUrl(pkg?.numeroGuia)
+  // El código de barras es de la VENTA (P12), no del paquete — todos los
+  // paquetes de una misma venta comparten la misma guía/código de barras.
+  const barcodeDataUrl = generateBarcodeDataUrl(venta?.numeroGuia)
   doc.addImage(barcodeDataUrl, 'PNG', guiaBoxX, y + 11, guiaBoxW, 12)
 
   y += 26
