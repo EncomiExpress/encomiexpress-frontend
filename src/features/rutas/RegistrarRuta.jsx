@@ -14,7 +14,7 @@ import { formFieldStyles } from '../../shared/utils/formStyles.js'
 import { normalizarTexto } from '../../shared/utils/duplicados.js'
 import { filtrarObservacionesRuta } from '../../shared/validations/observacionesRutaValidation.js'
 import { MUNICIPIO_ORIGEN } from '../../shared/config/negocio.js'
-import { steps, validarCampo, validarPaso } from './validations/rutaValidation.js'
+import { steps, validarCampo, validarPaso, validarDestinoDuplicado } from './validations/rutaValidation.js'
 import WizardDialog from '../../shared/components/WizardDialog.jsx'
 
 // Plantilla de Ruta — formulario de una sola pantalla (no hace falta un wizard
@@ -22,7 +22,7 @@ import WizardDialog from '../../shared/components/WizardDialog.jsx'
 // para mantener el mismo look & feel que el resto de los módulos (Registrar
 // Destino, Registrar Cliente, etc.).
 const RegistrarRuta = ({ open, onClose, onSuccess }) => {
-    const { registrarRuta } = useRuta()
+    const { registrarRuta, rutas } = useRuta()
     const { getDestinosHabilitados } = useDestino()
     const { showToast } = useToast()
     const theme = useTheme()
@@ -47,7 +47,7 @@ const RegistrarRuta = ({ open, onClose, onSuccess }) => {
     }
 
     const handleSubmit = async () => {
-        const erroresEncontrados = validarPaso(0, form)
+        const erroresEncontrados = validarPaso(0, form, rutas)
         if (Object.keys(erroresEncontrados).length > 0) {
             setErrores(erroresEncontrados)
             return
@@ -108,8 +108,12 @@ const RegistrarRuta = ({ open, onClose, onSuccess }) => {
                         if (reason === 'input') setDestinoInput(newVal.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, ''))
                         else setDestinoInput(newVal)
                     }}
-                    onChange={(_, val) => handleChange({ target: { name: 'idDestino', value: val ? val.idDestino : '' } })}
-                    onBlur={() => setErrores(prev => ({ ...prev, idDestino: validarCampo('idDestino', form) }))}
+                    onChange={(_, val) => {
+                        const idDestino = val ? val.idDestino : ''
+                        handleChange({ target: { name: 'idDestino', value: idDestino } })
+                        setErrores(prev => ({ ...prev, idDestino: validarCampo('idDestino', { ...form, idDestino }) || validarDestinoDuplicado(rutas, idDestino) }))
+                    }}
+                    onBlur={() => setErrores(prev => ({ ...prev, idDestino: validarCampo('idDestino', form) || validarDestinoDuplicado(rutas, form.idDestino) }))}
                     renderOption={(props, d) => {
                         const { key, ...rest } = props
                         return (
@@ -143,7 +147,7 @@ const RegistrarRuta = ({ open, onClose, onSuccess }) => {
                     onChange={handleChange}
                     onBlur={() => setErrores(prev => ({ ...prev, observaciones: validarCampo('observaciones', form) }))}
                     icon={RouteOutlinedIcon}
-                    inputProps={{ maxLength: 500 }} placeholder="Ej: Corredor con parada habitual en Zaragoza"
+                    inputProps={{ maxLength: 500 }} placeholder="Ej: Corredor troncal hacia la costa"
                     multiline rows={3}
                     error={errores.observaciones}
                     helperText={errores.observaciones || `Opcional · ${form.observaciones?.length || 0}/500`} />

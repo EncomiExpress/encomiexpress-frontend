@@ -2,8 +2,8 @@ import { fetchWithAuth } from '../../../shared/services/authService.js'
 
 // Fase 4 de la migración Ruta/SalidaProgramada (ver LOGICA.md): `Ruta` quedó
 // reducida a la PLANTILLA reutilizable de corredor (idDestino, observaciones,
-// habilitado, sin nombre propio) — la agenda concreta (fecha/hora/estado/convoy/
-// paradas) vive ahora en SalidaProgramada, expuesta por /salidas
+// habilitado, sin nombre propio) — la agenda concreta (fecha/hora/estado/convoy)
+// vive ahora en SalidaProgramada, expuesta por /salidas
 // (src/features/salidas/services/salidaService.js). Este archivo solo cubre el
 // CRUD de la plantilla, contra los 5 endpoints que sigue exponiendo /rutas en el
 // backend (routes/rutas.js): GET /, GET /:id, POST /, PUT /:id,

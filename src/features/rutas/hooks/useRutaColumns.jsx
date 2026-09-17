@@ -12,7 +12,10 @@ import { getRutaLabel } from '../utils/rutaResolvers.js'
 // calculado en getRutaLabel, igual que antes de la migración Ruta/SalidaProgramada.
 const useRutaColumns = ({ theme, tienePermiso, PERMISOS, onConsultar, onEditar, onToggleHabilitado, onVerSalidas }) => [
     {
-        key: 'ruta', label: 'Ruta', cellSx: { py: 1.5 },
+        // sortField ordena por el destino (municipio), no por la etiqueta completa
+        // "Medellín -> destino": el origen es siempre fijo, así que ordenar por la
+        // etiqueta entera no aportaría nada que ordenar por el destino no dé ya.
+        key: 'ruta', label: 'Ruta', sortField: 'municipio', cellSx: { py: 1.5 },
         render: (ruta) => (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                 <Box sx={{ width: 26, height: 28, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

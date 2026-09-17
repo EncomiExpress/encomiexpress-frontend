@@ -16,8 +16,8 @@ import useRutaColumns from './hooks/useRutaColumns.jsx'
 import useRutaAcciones from './hooks/useRutaAcciones.js'
 
 // Listado de plantillas de Ruta — CRUD liviano (nombre, destino, observaciones,
-// habilitado). La agenda concreta (fecha/hora/estado/convoy/paradas) se gestiona
-// en la feature "Programación de Salidas" (src/features/salidas), no acá.
+// habilitado). La agenda concreta (fecha/hora/estado/convoy) se gestiona en la
+// feature "Programación de Salidas" (src/features/salidas), no acá.
 const ListarRuta = () => {
     const navigate = useNavigate()
     const { tienePermiso, PERMISOS, usuario } = useAuth()
