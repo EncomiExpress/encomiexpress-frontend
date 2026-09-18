@@ -4,20 +4,25 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import { FormField } from '../../../../shared/components/FormularioEstandarizado.jsx'
 import CalendarioDisponibilidad from '../../../../shared/components/CalendarioDisponibilidad.jsx'
 import SelectorHora from '../../../../shared/components/SelectorHora.jsx'
-import { getRangoHorario, sumarDias, hoyISO, MIN_DIAS_SALIDA_LLEGADA } from '../../../../shared/utils/horarioLaboral.js'
+import { getRangoSalida, getRangoLlegada, sumarDias, hoyISO, MIN_DIAS_SALIDA_LLEGADA } from '../../../../shared/utils/horarioLaboral.js'
 import { maxISO, validarCampo } from '../../validations/salidaValidation.js'
 
+// `original` (solo al editar): { fechaSalida, horaSalida } como estaban guardadas -- una salida
+// programada antes del despacho nocturno conserva su hora de día mientras no se le toque
+// la fecha ni la hora (ver validarCampo).
 const PasoHorario = ({
     form, setForm, errores, setErrores, setApiError, handleChange,
-    idSalidaExcluir, refrescarDisponibilidad, esRegreso = false, afterChange = () => { },
+    idSalidaExcluir, refrescarDisponibilidad, esRegreso = false, afterChange = () => { }, original = null,
 }) => {
-    // Mismo día: el rango de la llegada arranca en la hora de salida, no en el
-    // inicio del horario laboral -- sin esto, el selector deja escoger una
-    // llegada antes que la salida (ver validarCampo, mismo chequeo replicado).
-    const rangoLlegadaBase = getRangoHorario(form.fechaLlegadaEstimada)
+    // Mismo día: el rango de la llegada arranca en la hora de salida, no a las 00:00 --
+    // sin esto, el selector deja escoger una llegada antes que la salida (ver
+    // validarCampo, mismo chequeo replicado). La llegada no tiene otra ventana: un
+    // despacho de noche llega de madrugada o esa misma noche.
+    const rangoLlegadaBase = getRangoLlegada(form.fechaLlegadaEstimada)
+    const horaSalidaHM = (form.horaSalida || '').slice(0, 5)
     const rangoLlegada = rangoLlegadaBase && form.fechaLlegadaEstimada === form.fechaSalida
-        && form.horaSalida && form.horaSalida > rangoLlegadaBase.min
-        ? { ...rangoLlegadaBase, min: form.horaSalida }
+        && horaSalidaHM && horaSalidaHM > rangoLlegadaBase.min
+        ? { ...rangoLlegadaBase, min: horaSalidaHM }
         : rangoLlegadaBase
 
     return (
@@ -39,7 +44,7 @@ const PasoHorario = ({
                         ...prev,
                         fechaSalida: '',
                         fechaLlegadaEstimada: '',
-                        horaSalida: prev.horaSalida ? validarCampo('horaSalida', formActualizado) : '',
+                        horaSalida: prev.horaSalida ? validarCampo('horaSalida', formActualizado, original) : '',
                     }))
                     setApiError(null)
                     afterChange()
@@ -96,17 +101,17 @@ const PasoHorario = ({
                         setForm(formActualizado)
                         setErrores(prev => ({
                             ...prev,
-                            horaSalida: validarCampo('horaSalida', formActualizado),
+                            horaSalida: validarCampo('horaSalida', formActualizado, original),
                             // La llegada (si ya estaba elegida) puede haber quedado inválida
                             // al mover la salida más tarde el mismo día.
                             horaLlegadaEstimada: prev.horaLlegadaEstimada ? validarCampo('horaLlegadaEstimada', formActualizado) : prev.horaLlegadaEstimada,
                         }))
                         afterChange()
                     }}
-                    onBlur={() => setErrores(prev => ({ ...prev, horaSalida: validarCampo('horaSalida', form) }))}
-                    rango={getRangoHorario(form.fechaSalida)}
+                    onBlur={() => setErrores(prev => ({ ...prev, horaSalida: validarCampo('horaSalida', form, original) }))}
+                    rango={getRangoSalida(form.fechaSalida)}
                     error={errores.horaSalida}
-                    helperText={form.fechaSalida ? 'Solo horario laboral' : 'Selecciona primero la fecha de salida'} />
+                    helperText={form.fechaSalida ? 'Solo despacho nocturno' : 'Selecciona primero la fecha de salida'} />
             </Box>
             <Box sx={{ flex: 1, minWidth: 220 }}>
                 <SelectorHora label="Hora Estimada de Llegada"

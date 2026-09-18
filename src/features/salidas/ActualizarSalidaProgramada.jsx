@@ -219,7 +219,7 @@ const ActualizarSalidaProgramada = ({ open, onClose, salida, onSuccess }) => {
     }
 
     const handleNext = () => {
-        const erroresEncontrados = validarPaso(activeStep, form, capacidadCtx, esRegreso)
+        const erroresEncontrados = validarPaso(activeStep, form, capacidadCtx, esRegreso, originalData)
         if (Object.keys(erroresEncontrados).length > 0) {
             setErrores(erroresEncontrados)
             return
@@ -234,7 +234,7 @@ const ActualizarSalidaProgramada = ({ open, onClose, salida, onSuccess }) => {
     }
 
     const handleSubmit = async () => {
-        const erroresPorPaso = [0, 1, 2].map(s => validarPaso(s, form, capacidadCtx, esRegreso))
+        const erroresPorPaso = [0, 1, 2].map(s => validarPaso(s, form, capacidadCtx, esRegreso, originalData))
         const erroresEncontrados = Object.assign({}, ...erroresPorPaso)
         if (Object.keys(erroresEncontrados).length > 0) {
             setErrores(erroresEncontrados)
@@ -306,6 +306,7 @@ const ActualizarSalidaProgramada = ({ open, onClose, salida, onSuccess }) => {
                         idSalidaExcluir={salida?.idSalida}
                         refrescarDisponibilidad={refrescarDisponibilidad} esRegreso={esRegreso}
                         afterChange={() => setSinCambios(false)}
+                        original={originalData}
                     />
                 )
             case 1:

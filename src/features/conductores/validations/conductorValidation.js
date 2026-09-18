@@ -76,16 +76,18 @@ export const validarCategorias = (categoriasLicencia, { checkVencidas = false } 
     const incompletas = categoriasLicencia.some(c => (c.categoria && !c.vencimiento) || (!c.categoria && c.vencimiento))
     if (completas.length === 0) return 'Agrega al menos una categoría con su fecha de vencimiento'
     if (incompletas) return 'Completa la categoría y la fecha en cada fila, o quita la fila'
+    // Solo se admiten licencias C: una categoría A/B de un conductor registrado antes de este
+    // cambio hay que cambiarla a una C para poder guardar (ver CATEGORIAS_LICENCIA).
+    const noAdmitida = completas.find(c => !CATEGORIAS_LICENCIA.some(o => o.value === c.categoria))
+    if (noAdmitida) return `La categoría ${noAdmitida.categoria} ya no se admite: solo licencias C (servicio público)`
     if (checkVencidas && completas.some(c => c.vencimiento < hoyISO())) return 'El vencimiento no puede ser una fecha anterior a hoy'
     return ''
 }
 
+// Solo licencias C (servicio público): los conductores manejan vehículos de transporte, no
+// motos ni vehículos particulares (A1/A2/B1/B2/B3). DEBE coincidir con CATEGORIAS_VALIDAS de
+// encomiexpress-backend/src/validators/conductoresValidator.js.
 export const CATEGORIAS_LICENCIA = [
-    { value: 'A1', label: 'A1 - Motocicleta hasta 125 c.c.' },
-    { value: 'A2', label: 'A2 - Motocicleta de más de 125 c.c.' },
-    { value: 'B1', label: 'B1 - Automóvil, camioneta o microbús (particular)' },
-    { value: 'B2', label: 'B2 - Camión rígido, buseta o bus (particular)' },
-    { value: 'B3', label: 'B3 - Vehículo articulado (particular)' },
     { value: 'C1', label: 'C1 - Automóvil, camioneta o microbús (servicio público)' },
     { value: 'C2', label: 'C2 - Camión rígido, buseta o bus (servicio público)' },
     { value: 'C3', label: 'C3 - Vehículo articulado (servicio público)' },

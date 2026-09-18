@@ -6,7 +6,7 @@ import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined'
 import CalendarioDisponibilidad from '../../../shared/components/CalendarioDisponibilidad.jsx'
 import SelectorHora from '../../../shared/components/SelectorHora.jsx'
-import { hoyISO, getRangoHorario, sumarDias, MIN_DIAS_SALIDA_LLEGADA } from '../../../shared/utils/horarioLaboral.js'
+import { hoyISO, getRangoSalida, getRangoLlegada, sumarDias, MIN_DIAS_SALIDA_LLEGADA } from '../../../shared/utils/horarioLaboral.js'
 import { validarCampo, maxISO } from '../validations/salidaValidation.js'
 import { resolveDestino } from '../utils/salidaResolvers.js'
 
@@ -36,13 +36,16 @@ const ModalEditarHorarioRegresoSede = ({ open, salida, destinos = [], onClose, o
 
     if (!salida) return null
 
+    // Fecha/hora de salida como estaban guardadas: un regreso programado antes del despacho
+    // nocturno conserva su hora de día mientras no se le toque la fecha ni la hora.
+    const original = { fechaSalida: salida.fechaSalida, horaSalida: salida.horaSalida }
     const destinoRegreso = resolveDestino(salida, destinos, { preferNombre: true })
     const pares = (salida.paresVehiculoConductor || []).map(p => ({ idVehiculo: p.idVehiculo, idConductor: p.idConductor }))
 
     const handleConfirmar = async () => {
         const e = {
             fechaSalida: validarCampo('fechaSalida', form),
-            horaSalida: validarCampo('horaSalida', form),
+            horaSalida: validarCampo('horaSalida', form, original),
             fechaLlegadaEstimada: validarCampo('fechaLlegadaEstimada', form),
             horaLlegadaEstimada: validarCampo('horaLlegadaEstimada', form),
         }
@@ -112,7 +115,7 @@ const ModalEditarHorarioRegresoSede = ({ open, salida, destinos = [], onClose, o
                                 ...prev,
                                 fechaSalida: '',
                                 fechaLlegadaEstimada: '',
-                                horaSalida: prev.horaSalida ? validarCampo('horaSalida', formActualizado) : '',
+                                horaSalida: prev.horaSalida ? validarCampo('horaSalida', formActualizado, original) : '',
                             }))
                             setApiError('')
                         }}
@@ -154,13 +157,13 @@ const ModalEditarHorarioRegresoSede = ({ open, salida, destinos = [], onClose, o
                             onChange={(v) => {
                                 const formActualizado = { ...form, horaSalida: v }
                                 setForm(formActualizado)
-                                setErrores(prev => ({ ...prev, horaSalida: validarCampo('horaSalida', formActualizado) }))
+                                setErrores(prev => ({ ...prev, horaSalida: validarCampo('horaSalida', formActualizado, original) }))
                                 setApiError('')
                             }}
-                            onBlur={() => setErrores(prev => ({ ...prev, horaSalida: validarCampo('horaSalida', form) }))}
-                            rango={getRangoHorario(form.fechaSalida)}
+                            onBlur={() => setErrores(prev => ({ ...prev, horaSalida: validarCampo('horaSalida', form, original) }))}
+                            rango={getRangoSalida(form.fechaSalida)}
                             error={errores.horaSalida}
-                            helperText={form.fechaSalida ? 'Solo horario laboral' : 'Selecciona primero la fecha de salida'} />
+                            helperText={form.fechaSalida ? 'Solo despacho nocturno' : 'Selecciona primero la fecha de salida'} />
                     </Box>
                     <Box sx={{ flex: 1, minWidth: 220 }}>
                         <SelectorHora label="Hora Estimada de Llegada"
@@ -171,7 +174,7 @@ const ModalEditarHorarioRegresoSede = ({ open, salida, destinos = [], onClose, o
                                 setApiError('')
                             }}
                             onBlur={() => setErrores(prev => ({ ...prev, horaLlegadaEstimada: validarCampo('horaLlegadaEstimada', form) }))}
-                            rango={getRangoHorario(form.fechaLlegadaEstimada)}
+                            rango={getRangoLlegada(form.fechaLlegadaEstimada)}
                             error={errores.horaLlegadaEstimada}
                             helperText={form.fechaLlegadaEstimada ? 'Opcional' : 'Selecciona primero la fecha de llegada'} />
                     </Box>

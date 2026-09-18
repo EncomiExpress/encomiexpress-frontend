@@ -6,7 +6,7 @@ import SyncAltOutlinedIcon from '@mui/icons-material/SyncAltOutlined'
 import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined'
 import CalendarioDisponibilidad from '../../../shared/components/CalendarioDisponibilidad.jsx'
 import SelectorHora from '../../../shared/components/SelectorHora.jsx'
-import { hoyISO, getRangoHorario, sumarDias, MIN_DIAS_SALIDA_LLEGADA } from '../../../shared/utils/horarioLaboral.js'
+import { hoyISO, getRangoSalida, getRangoLlegada, sumarDias, MIN_DIAS_SALIDA_LLEGADA } from '../../../shared/utils/horarioLaboral.js'
 import { validarCampo, maxISO } from '../validations/salidaValidation.js'
 import { resolveDestino } from '../utils/salidaResolvers.js'
 
@@ -152,9 +152,9 @@ const ModalProgramarRegresoSede = ({ open, salida, destinos = [], onClose, onCon
                                 setApiError('')
                             }}
                             onBlur={() => setErrores(prev => ({ ...prev, horaSalida: validarCampo('horaSalida', form) }))}
-                            rango={getRangoHorario(form.fechaSalida)}
+                            rango={getRangoSalida(form.fechaSalida)}
                             error={errores.horaSalida}
-                            helperText={form.fechaSalida ? 'Solo horario laboral' : 'Selecciona primero la fecha de salida'} />
+                            helperText={form.fechaSalida ? 'Solo despacho nocturno' : 'Selecciona primero la fecha de salida'} />
                     </Box>
                     <Box sx={{ flex: 1, minWidth: 220 }}>
                         <SelectorHora label="Hora Estimada de Llegada"
@@ -165,7 +165,7 @@ const ModalProgramarRegresoSede = ({ open, salida, destinos = [], onClose, onCon
                                 setApiError('')
                             }}
                             onBlur={() => setErrores(prev => ({ ...prev, horaLlegadaEstimada: validarCampo('horaLlegadaEstimada', form) }))}
-                            rango={getRangoHorario(form.fechaLlegadaEstimada)}
+                            rango={getRangoLlegada(form.fechaLlegadaEstimada)}
                             error={errores.horaLlegadaEstimada}
                             helperText={form.fechaLlegadaEstimada ? 'Opcional' : 'Selecciona primero la fecha de llegada'} />
                     </Box>

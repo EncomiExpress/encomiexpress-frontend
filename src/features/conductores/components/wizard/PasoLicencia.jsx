@@ -30,10 +30,17 @@ const PasoLicencia = ({
             const categoriasUsadas = form.categoriasLicencia
                 .filter((_, i) => i !== index)
                 .map(c => c.categoria)
+            // Un conductor registrado antes de que solo se admitieran licencias C puede traer una
+            // A/B: se muestra en su fila (si no, el select quedaría en blanco) pero no se ofrece
+            // para elegir, y validarCategorias pide cambiarla a una C.
+            const categoriaVieja = cat.categoria && !CATEGORIAS_LICENCIA.some(c => c.value === cat.categoria) ? cat.categoria : null
             return (
                 <Box key={index} sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 1.5, alignItems: 'center' }}>
                     <FormSelect label="Categoría" value={cat.categoria}
                         onChange={(e) => handleCategoriaChange(index, 'categoria', e.target.value)}>
+                        {categoriaVieja && (
+                            <MenuItem value={categoriaVieja} disabled>{categoriaVieja} — ya no se admite, elige una C</MenuItem>
+                        )}
                         {CATEGORIAS_LICENCIA.filter(c => !categoriasUsadas.includes(c.value)).map(c => (
                             <MenuItem key={c.value} value={c.value}>{c.label}</MenuItem>
                         ))}

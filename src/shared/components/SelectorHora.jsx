@@ -9,11 +9,11 @@ const pad2 = (n) => String(n).padStart(2, '0')
 const parseHM = (s) => { const [h, m] = s.split(':').map(Number); return h * 60 + m }
 const formatHM = (total) => { const t = ((total % 1440) + 1440) % 1440; return `${pad2(Math.floor(t / 60))}:${pad2(t % 60)}` }
 
-// Al pasarse de un extremo del horario laboral, salta directo al otro extremo (en vez
+// Al pasarse de un extremo del rango permitido, salta directo al otro extremo (en vez
 // de seguir sumando/restando sin límite, como haría un <input type="number"> normal) —
-// ej. subir la hora estando en 19:00 (fin del horario) salta directo a 07:00 (inicio),
-// no a 20:00. Mismo paso para hora (±60 min) y minuto (±1 min), ambos respetan el
-// mismo rango del día elegido.
+// ej. con el despacho nocturno (19:00–23:59), subir la hora estando en 23:59 salta
+// directo a 19:00 (inicio), no a 00:00. Mismo paso para hora (±60 min) y minuto
+// (±1 min), ambos respetan el mismo rango del día elegido.
 const step = (valorActual, deltaMin, rango) => {
     // Sin valor todavía: la primera flecha va directo al extremo correspondiente
     // (↑ al inicio del horario, ↓ al final), no a "inicio + un paso".
@@ -33,7 +33,7 @@ const soloDigitos2 = (v) => v.replace(/\D/g, '').slice(0, 2)
 // las flechas del teclado (eso vive dentro del propio navegador, fuera del alcance de
 // cualquier página web). Este componente vive 100% en la aplicación: al escribir se
 // recorta al rango permitido al perder el foco, y las flechas ↑/↓ solo se mueven
-// dentro del horario laboral del día ya elegido, saltando de un extremo al otro.
+// dentro del rango del día ya elegido, saltando de un extremo al otro.
 const SelectorHora = ({
     label,
     value,
@@ -76,6 +76,10 @@ const SelectorHora = ({
         const h = Math.max(0, Math.min(23, parseInt(hTxt, 10) || 0))
         const m = Math.max(0, Math.min(59, parseInt(mTxt, 10) || 0))
         let nuevo = `${pad2(h)}:${pad2(m)}`
+        // Sin tocar: un valor que no cambió (ej. la hora de una salida programada antes de
+        // que el despacho fuera nocturno) no se recorta al rango solo por haber pasado
+        // por el campo.
+        if (value && nuevo === value.slice(0, 5)) return
         if (rango) {
             const t = parseHM(nuevo)
             if (t < parseHM(rango.min)) nuevo = rango.min
@@ -206,7 +210,8 @@ const SelectorHora = ({
                         <ClearOutlinedIcon sx={{ color: '#94a3b8', fontSize: 16 }} />
                     </IconButton>
                 )}
-                {rango && (
+                {/* El rango de todo el día (00:00–23:59, la hora de llegada) no informa nada: no se muestra. */}
+                {rango && !(rango.min === '00:00' && rango.max === '23:59') && (
                     <Typography sx={{ fontSize: '0.7rem', color: theme.palette.text.disabled, ml: !required && value && !inactivo ? 1 : 'auto' }}>
                         {rango.min}–{rango.max}
                     </Typography>
